@@ -2,7 +2,7 @@
 """Build deterministic albedo sheets for the city's service fringe.
 
 The west/south yards need their own material language without adding one
-material instance per prop.  This tool produces three seamless 1024x1024 RGB
+material instance per prop.  This tool produces four seamless 1024x1024 RGB
 sources under ``Resources``; their checked-in Unity importers cap the runtime
 copy at 512.  ``CityFringeYardSurfaceAppearance`` then applies the sheets and
 their measured tint compensation through ``MaterialPropertyBlock`` recipes on
@@ -11,9 +11,11 @@ the shared runtime primitive material.
 The common measured pipeline comes from ``build-home-textures.py``: seeded
 generation, wrap-aware drawing, linear-luminance normalization, compensation
 solving, seam/contrast validation, PNG hashing and a tiled contact sheet.  The
-three grammars here are deliberately specific to the edge-of-city service
+four grammars here are deliberately specific to the edge-of-city service
 belt:
 
+* forefield ground - low-contrast compacted earth, scattered ballast and
+  broad damp fields with no paired wheel runs or preferred travel direction;
 * service track - compacted fines, broad tyre presses, washed aggregate and
   occasional repaired potholes, readable without forcing every yard into one
   road direction;
@@ -33,7 +35,7 @@ import math
 import sys
 from pathlib import Path
 
-from PIL import Image, ImageChops, ImageDraw
+from PIL import Image, ImageChops, ImageDraw, ImageEnhance
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TEXTURE_DIR = ROOT / "Assets" / "Resources" / "Textures"
@@ -62,6 +64,93 @@ def wrap_polygon(
                 [(x + dx, y + dy) for x, y in points],
                 fill=fill,
             )
+
+
+def draw_forefield_ground(base: Image.Image, rng) -> Image.Image:
+    """Quiet non-directional earth between the ring road and mountain toe."""
+    grain = home.fractal_noise(
+        ((32, 0.72), (128, 0.52), (512, 0.24)),
+        rng,
+    )
+    image = Image.blend(base, grain, 0.18)
+    draw = ImageDraw.Draw(image)
+
+    # Sparse ballast provides close-range scale without drawing a route. The
+    # facets use independent aspect ratios and rotations, so there is no pair
+    # of wheel bands for the eye to connect into another service track.
+    for _ in range(2500):
+        x = rng.randrange(SHEET_SIZE)
+        y = rng.randrange(SHEET_SIZE)
+        radius = rng.randint(1, 4)
+        angle = rng.uniform(0.0, math.tau)
+        stretch = rng.uniform(0.65, 1.35)
+        points = []
+        for corner in range(3):
+            theta = angle + corner * math.tau / 3.0
+            points.append(
+                (
+                    x + math.cos(theta) * radius * stretch,
+                    y + math.sin(theta) * radius,
+                )
+            )
+        wrap_polygon(
+            draw,
+            points,
+            home.BASE + rng.choice((-16, -11, -7, 8, 12, 17)),
+        )
+
+    # A few larger stones keep the eight-metre repeat legible at ground level,
+    # but remain dispersed rather than forming borders, rows or directional
+    # drainage lines.
+    for _ in range(210):
+        x = rng.randrange(SHEET_SIZE)
+        y = rng.randrange(SHEET_SIZE)
+        width = rng.randint(5, 12)
+        height = rng.randint(4, 10)
+        tone = home.BASE + rng.choice((-18, -13, 13, 18))
+        wrap_polygon(
+            draw,
+            [
+                (x, y + height * 0.55),
+                (x + width * 0.28, y),
+                (x + width, y + height * 0.34),
+                (x + width * 0.72, y + height),
+            ],
+            tone,
+        )
+
+    # Broad overlapping damp and dried-compaction fields are the macro read.
+    # Their centres and aspect ratios are unconstrained, keeping the grammar
+    # calm and non-directional across rotated yard meshes.
+    def weathering(layer_draw: ImageDraw.ImageDraw) -> None:
+        for _ in range(8):
+            x = rng.randrange(SHEET_SIZE)
+            y = rng.randrange(SHEET_SIZE)
+            home.wrap_ellipse(
+                layer_draw,
+                (
+                    x,
+                    y,
+                    x + rng.randint(230, 520),
+                    y + rng.randint(170, 460),
+                ),
+                fill=rng.randint(112, 121),
+            )
+        for _ in range(6):
+            x = rng.randrange(SHEET_SIZE)
+            y = rng.randrange(SHEET_SIZE)
+            home.wrap_ellipse(
+                layer_draw,
+                (
+                    x,
+                    y,
+                    x + rng.randint(180, 440),
+                    y + rng.randint(150, 390),
+                ),
+                fill=rng.randint(136, 143),
+            )
+
+    return home.soft_overlay(image, 34, weathering)
 
 
 def draw_service_track(base: Image.Image, rng) -> Image.Image:
@@ -360,6 +449,7 @@ def draw_masonry(base: Image.Image, rng) -> Image.Image:
 
 home.GRAMMARS.update(
     {
+        "city_fringe_forefield_ground": draw_forefield_ground,
         "city_fringe_service_track": draw_service_track,
         "city_fringe_concrete": draw_concrete,
         "city_fringe_masonry": draw_masonry,
@@ -368,6 +458,19 @@ home.GRAMMARS.update(
 
 
 FRINGE_SHEET_SPECS: tuple[home.HomeSheetSpec, ...] = (
+    home.HomeSheetSpec(
+        key="CityFringeForefieldAlbedo",
+        grammar="city_fringe_forefield_ground",
+        seed=0x46524647,
+        cast=(1.025, 1.000, 0.955),
+        mean_target=0.48,
+        meters_per_tile=8.0,
+        smoothness=0.025,
+        metallic=0.0,
+        tints=(("CityExteriorAppearance.YardGround",
+                (0.300, 0.260, 0.190)),),
+        contrast_floor=34,
+    ),
     home.HomeSheetSpec(
         key="CityFringeServiceTrackAlbedo",
         grammar="city_fringe_service_track",
@@ -410,6 +513,28 @@ FRINGE_SHEET_SPECS: tuple[home.HomeSheetSpec, ...] = (
 )
 
 
+def build_fringe_sheet(
+    spec: home.HomeSheetSpec,
+) -> tuple[Image.Image, dict]:
+    """Build one sheet, keeping the broad forefield quieter than its props."""
+    image, record = home.build_sheet(spec)
+    if spec.grammar != "city_fringe_forefield_ground":
+        return image, record
+
+    # The shared macro pass intentionally gives close-read materials strong
+    # relief. This ground occupies much larger areas, so compress its finished
+    # value range before the usual measured normalization/compensation solve.
+    image = ImageEnhance.Contrast(image).enhance(0.65)
+    image, exposure = home.normalise_luminance(image, spec.mean_target)
+    mean = home.mean_linear_luminance(image)
+    compensation, brightness_error = home.solve_compensation(mean, spec)
+    record["meanLinearLuminance"] = round(mean, 6)
+    record["albedoCompensation"] = round(compensation, 6)
+    record["brightnessError"] = round(brightness_error, 6)
+    record["exposure"] = round(record["exposure"] * exposure, 6)
+    return image, record
+
+
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
@@ -434,7 +559,7 @@ def main() -> None:
     records: list[dict] = []
     built: list[tuple[home.HomeSheetSpec, Image.Image]] = []
     for spec in FRINGE_SHEET_SPECS:
-        image, record = home.build_sheet(spec)
+        image, record = build_fringe_sheet(spec)
         record["resourcePath"] = f"Textures/{spec.key}"
         home.validate(image, spec, record)
         built.append((spec, image))

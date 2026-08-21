@@ -279,6 +279,100 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void DefaultCoastal_CellTwelveElevenBuildsVisibleCornerGuard()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            RoadFencePlan plan = RoadFencePlanner.CreatePlan(layout);
+            var guardedCell = new Vector2Int(12, 11);
+            Vector2Int node = guardedCell + Vector2Int.one;
+            Vector3 nodePosition = layout.GetNodeWorldPosition(node);
+            float halfRoad = layout.RoadWidth * 0.5f;
+            Vector3 corner = nodePosition + new Vector3(
+                halfRoad,
+                0f,
+                halfRoad);
+            RoadFenceSegmentDescriptor[] guard = plan.Segments
+                .Where(segment =>
+                    segment.Purpose ==
+                    RoadFenceSegmentPurpose.CornerGuard)
+                .ToArray();
+
+            Assert.That(guard, Has.Length.EqualTo(2));
+            RoadFenceSegmentDescriptor horizontal = guard.Single(segment =>
+                segment.IsHorizontal);
+            RoadFenceSegmentDescriptor vertical = guard.Single(segment =>
+                !segment.IsHorizontal);
+            Assert.That(
+                horizontal.Start,
+                Is.EqualTo(new Vector3(
+                    nodePosition.x,
+                    nodePosition.y,
+                    corner.z)));
+            Assert.That(
+                horizontal.End,
+                Is.EqualTo(new Vector3(
+                    corner.x,
+                    nodePosition.y,
+                    corner.z)));
+            Assert.That(horizontal.OutwardNormal, Is.EqualTo(Vector3.forward));
+            Assert.That(
+                vertical.Start,
+                Is.EqualTo(new Vector3(
+                    corner.x,
+                    nodePosition.y,
+                    nodePosition.z)));
+            Assert.That(
+                vertical.End,
+                Is.EqualTo(new Vector3(
+                    corner.x,
+                    nodePosition.y,
+                    corner.z)));
+            Assert.That(vertical.OutwardNormal, Is.EqualTo(Vector3.right));
+            Assert.That(
+                horizontal.Length,
+                Is.EqualTo(halfRoad).Within(Tolerance));
+            Assert.That(
+                vertical.Length,
+                Is.EqualTo(halfRoad).Within(Tolerance));
+
+            var parent = new GameObject("North-East Corner Guard Test");
+            try
+            {
+                GameObject root = RoadFenceWorldBuilder.Build(
+                    parent.transform,
+                    plan);
+                Physics.SyncTransforms();
+                Collider[] colliders =
+                    root.GetComponentsInChildren<Collider>(true);
+                foreach (RoadFenceSegmentDescriptor leg in guard)
+                {
+                    Vector3 other = leg.Start;
+                    Vector3 railProbe = leg.End +
+                        (other - leg.End).normalized * 0.25f +
+                        leg.OutwardNormal * 0.08f +
+                        Vector3.up * 0.60f;
+                    Collider visibleRail = colliders.FirstOrDefault(item =>
+                        item.bounds.Contains(railProbe));
+                    Assert.That(
+                        visibleRail,
+                        Is.Not.Null,
+                        "A corner-guard rail is physically missing.");
+                    Assert.That(
+                        visibleRail.GetComponent<MeshRenderer>(),
+                        Is.Not.Null,
+                        "A corner-guard collider has no visible rail mesh.");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
         public void CreatePlan_WithNullLayout_Throws()
         {
             Assert.That(

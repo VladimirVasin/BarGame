@@ -7,8 +7,9 @@ namespace BarPromenade
 {
     /// <summary>
     /// Builds the close-range western and southern mountain boundary plus the
-    /// deliberately sealed southern tunnel stub. It does not extend the
-    /// walkable mask and it creates no interaction or scene transition.
+    /// deliberately sealed southern tunnel stub. The natural south-west
+    /// corner ground closes the view but remains behind the road fence; the
+    /// tunnel creates no navigation continuation, interaction or transition.
     /// </summary>
     internal static class CityMountainBoundaryWorldBuilder
     {
@@ -52,6 +53,13 @@ namespace BarPromenade
 
             var root = new GameObject("Mountain Boundary");
             root.transform.SetParent(parent, false);
+
+            if (plan.HasSouthWestCornerClosure)
+            {
+                CityMountainBoundaryMeshFactory.CreateCornerClosure(
+                    root.transform,
+                    plan.SouthWestCornerClosure);
+            }
 
             Transform ridges = new GameObject("Physical Ridges").transform;
             ridges.SetParent(root.transform, false);

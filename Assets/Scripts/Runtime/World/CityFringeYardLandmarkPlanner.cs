@@ -317,79 +317,202 @@ namespace BarPromenade
             ICollection<CityFringeYardPartDescriptor> parts)
         {
             Vector3 side = Vector3.Cross(Vector3.up, forecourt.Axis).normalized;
-            Vector3 mast = Vector3.Lerp(
+            float frameOffset = forecourt.DriveClearWidth * 0.5f +
+                                0.24f + 1.35f + 0.14f;
+            Vector3 roadwardPost = Vector3.Lerp(
                 forecourt.StreetAnchor,
                 forecourt.PortalAnchor,
-                0.48f);
-            mast += side * (forecourt.DriveClearWidth * 0.5f + 2.0f);
+                0.69f) + side * frameOffset;
+            Vector3 portalPost = Vector3.Lerp(
+                forecourt.StreetAnchor,
+                forecourt.PortalAnchor,
+                0.86f) + side * frameOffset;
             Quaternion cityRotation = Quaternion.LookRotation(
                 -forecourt.Axis,
                 Vector3.up);
-            AddPart(
-                layout,
-                yard,
-                parts,
-                $"{yard.AreaId}-landmark-return-light-mast",
-                CityFringeYardPartKind.RepairFrame,
-                CityFringeYardStyle.Iron,
-                mast,
-                cityRotation,
-                new Vector3(0.24f, 4.38f, 0.24f),
-                true);
-            AddPart(
-                layout,
-                yard,
-                parts,
-                $"{yard.AreaId}-landmark-return-light-arm",
-                CityFringeYardPartKind.RepairFrame,
-                CityFringeYardStyle.Iron,
-                mast - forecourt.Axis * 0.45f,
-                cityRotation,
-                new Vector3(0.22f, 0.22f, 1.12f),
-                false,
-                4.00f);
-            Vector3 housing = mast - forecourt.Axis * 0.92f;
-            AddPart(
-                layout,
-                yard,
-                parts,
-                $"{yard.AreaId}-landmark-practical-housing",
-                CityFringeYardPartKind.PracticalHousing,
-                CityFringeYardStyle.Iron,
-                housing,
-                cityRotation,
-                new Vector3(0.48f, 0.32f, 0.42f),
-                false,
-                3.82f);
-
-            Vector3 stock = Vector3.Lerp(
-                forecourt.StreetAnchor,
-                forecourt.PortalAnchor,
-                0.34f);
-            stock -= side * (forecourt.DriveClearWidth * 0.5f + 2.35f);
-            for (int index = 0; index < 2; index++)
-            {
-                AddPart(
+            Quaternion tunnelRotation = Quaternion.LookRotation(
+                forecourt.Axis,
+                Vector3.up);
+            CityFringeYardPartDescriptor firstPost =
+                AddMinimumGroundedPart(
                     layout,
                     yard,
                     parts,
-                    $"{yard.AreaId}-landmark-side-stock-{index:00}",
-                    CityFringeYardPartKind.PipeStock,
-                    CityFringeYardStyle.Concrete,
-                    stock - side * (index * 0.62f),
-                    Quaternion.LookRotation(forecourt.Axis, Vector3.up),
-                    new Vector3(0.36f, 0.36f, 3.45f),
+                    $"{yard.AreaId}-landmark-return-service-post-00",
+                    CityFringeYardPartKind.RepairFrame,
+                    CityFringeYardStyle.Iron,
+                    roadwardPost,
+                    tunnelRotation,
+                    new Vector3(0.28f, 4.25f, 0.28f),
                     true,
-                    0.06f + index * 0.30f);
-            }
+                    0.06f);
+            CityFringeYardPartDescriptor secondPost =
+                AddMinimumGroundedPart(
+                    layout,
+                    yard,
+                    parts,
+                    $"{yard.AreaId}-landmark-return-service-post-01",
+                    CityFringeYardPartKind.RepairFrame,
+                    CityFringeYardStyle.Iron,
+                    portalPost,
+                    tunnelRotation,
+                    new Vector3(0.28f, 4.25f, 0.28f),
+                    true,
+                    0.06f);
 
-            Vector3 lampPosition = WithGroundY(layout, yard, housing, 3.98f);
+            Vector3 firstTop = firstPost.Center +
+                Vector3.up * (firstPost.Size.y * 0.5f);
+            Vector3 secondTop = secondPost.Center +
+                Vector3.up * (secondPost.Size.y * 0.5f);
+            const float beamThickness = 0.22f;
+            AddBeamBetween(
+                yard,
+                parts,
+                $"{yard.AreaId}-landmark-return-service-beam",
+                firstTop + Vector3.up * (beamThickness * 0.5f),
+                secondTop + Vector3.up * (beamThickness * 0.5f),
+                beamThickness);
+            AddBeamBetween(
+                yard,
+                parts,
+                $"{yard.AreaId}-landmark-return-service-brace",
+                firstPost.Center - Vector3.up * 1.15f,
+                secondTop - Vector3.up * 0.42f,
+                0.16f);
+
+            Vector3 armStart = firstTop +
+                Vector3.up * (beamThickness * 0.5f);
+            Vector3 armEnd = armStart - forecourt.Axis * 1.25f;
+            AddBeamBetween(
+                yard,
+                parts,
+                $"{yard.AreaId}-landmark-return-light-arm",
+                armStart,
+                armEnd,
+                0.20f);
+            Vector3 housingCenter = armEnd - Vector3.up * 0.25f;
+            var housing = new CityFringeYardPartDescriptor(
+                $"{yard.AreaId}-landmark-practical-housing",
+                yard.AreaId,
+                CityFringeYardPartKind.PracticalHousing,
+                CityFringeYardStyle.Iron,
+                housingCenter,
+                cityRotation,
+                new Vector3(0.48f, 0.32f, 0.42f),
+                false);
+            RequireContainedAndClear(yard, housing);
+            parts.Add(housing);
+
             return CreatePractical(
                 yard,
                 CityFringeYardPracticalKind.TunnelReturnLamp,
-                lampPosition,
+                housing.Center,
                 (-forecourt.Axis + Vector3.down * 0.72f).normalized,
                 new Color(2.80f, 1.42f, 0.38f, 1f));
+        }
+
+        private static CityFringeYardPartDescriptor AddMinimumGroundedPart(
+            CityLayout layout,
+            CityFringeYardDescriptor yard,
+            ICollection<CityFringeYardPartDescriptor> parts,
+            string stableId,
+            CityFringeYardPartKind kind,
+            CityFringeYardStyle style,
+            Vector3 xz,
+            Quaternion rotation,
+            Vector3 size,
+            bool blocksMovement,
+            float embed)
+        {
+            Vector3 right =
+                (rotation * Vector3.right) * (size.x * 0.5f);
+            Vector3 forward =
+                (rotation * Vector3.forward) * (size.z * 0.5f);
+            float minimumGround = float.PositiveInfinity;
+            for (int rightSign = -1; rightSign <= 1; rightSign += 2)
+            {
+                for (int forwardSign = -1;
+                     forwardSign <= 1;
+                     forwardSign += 2)
+                {
+                    Vector3 corner = xz +
+                        right * rightSign +
+                        forward * forwardSign;
+                    minimumGround = Mathf.Min(
+                        minimumGround,
+                        SampleYardTop(layout, yard, corner));
+                }
+            }
+
+            var part = new CityFringeYardPartDescriptor(
+                stableId,
+                yard.AreaId,
+                kind,
+                style,
+                new Vector3(
+                    xz.x,
+                    minimumGround - embed + size.y * 0.5f,
+                    xz.z),
+                rotation,
+                size,
+                blocksMovement);
+            RequireContainedAndClear(yard, part);
+            parts.Add(part);
+            return part;
+        }
+
+        private static CityFringeYardPartDescriptor AddBeamBetween(
+            CityFringeYardDescriptor yard,
+            ICollection<CityFringeYardPartDescriptor> parts,
+            string stableId,
+            Vector3 start,
+            Vector3 end,
+            float thickness)
+        {
+            Vector3 delta = end - start;
+            var part = new CityFringeYardPartDescriptor(
+                stableId,
+                yard.AreaId,
+                CityFringeYardPartKind.RepairFrame,
+                CityFringeYardStyle.Iron,
+                (start + end) * 0.5f,
+                Quaternion.LookRotation(delta.normalized, Vector3.up),
+                new Vector3(thickness, thickness, delta.magnitude),
+                false);
+            RequireContainedAndClear(yard, part);
+            parts.Add(part);
+            return part;
+        }
+
+        private static float SampleYardTop(
+            CityLayout layout,
+            CityFringeYardDescriptor yard,
+            Vector3 point)
+        {
+            const float tolerance = 0.002f;
+            Vector2 sample = new Vector2(point.x, point.z);
+            for (int index = 0; index < layout.Surfaces.Count; index++)
+            {
+                CitySurfaceDescriptor surface = layout.Surfaces[index];
+                Rect bounds = surface.WorldBounds;
+                if (string.Equals(
+                        surface.AreaId,
+                        yard.AreaId,
+                        StringComparison.Ordinal) &&
+                    sample.x >= bounds.xMin - tolerance &&
+                    sample.x <= bounds.xMax + tolerance &&
+                    sample.y >= bounds.yMin - tolerance &&
+                    sample.y <= bounds.yMax + tolerance)
+                {
+                    return CityTerrainSurfacePlan.SampleTop(
+                        layout,
+                        surface,
+                        sample);
+                }
+            }
+
+            throw new InvalidOperationException(
+                $"Fringe landmark '{yard.AreaId}' has no owner ground.");
         }
 
         private static CityFringeYardPracticalDescriptor AddFloodGauge(
@@ -488,18 +611,6 @@ namespace BarPromenade
                 new Vector3(0.12f, 0.12f, 0.92f),
                 false,
                 1.42f);
-            AddPart(
-                layout,
-                yard,
-                parts,
-                $"{yard.AreaId}-landmark-silt-fan",
-                CityFringeYardPartKind.SiltFan,
-                CityFringeYardStyle.Drainage,
-                PointAtDepth(yard, 12.9f, gaugeLong + 8.0f),
-                tangentRotation,
-                new Vector3(5.0f, 0.035f, 6.8f),
-                false,
-                0.025f);
             AddPart(
                 layout,
                 yard,

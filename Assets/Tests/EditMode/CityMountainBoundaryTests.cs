@@ -133,6 +133,364 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("CityMountain")]
+        public void SouthWestJoin_WeldsPhysicalCrossSectionsAtBothEnds()
+        {
+            CityMountainBoundaryPlan plan =
+                CityMountainBoundaryPlanner.Create(CreateDefaultLayout());
+            CityMountainRidgeDescriptor join = plan.Ridges.Single(ridge =>
+                ridge.IsSouthWestJoin);
+            CityMountainRidgeStation westJoin = join.Stations[0];
+            CityMountainRidgeStation southJoin =
+                join.Stations[join.Stations.Count - 1];
+            CityMountainRidgeStation westEndpoint = FindMatchingEndpoint(
+                plan,
+                CityMountainBoundarySide.West,
+                westJoin.WorldXZ);
+            CityMountainRidgeStation southEndpoint = FindMatchingEndpoint(
+                plan,
+                CityMountainBoundarySide.South,
+                southJoin.WorldXZ);
+
+            AssertCrossSectionsWelded(westEndpoint, westJoin);
+            AssertCrossSectionsWelded(southEndpoint, southJoin);
+        }
+
+        [Test]
+        [Category("CityMountain")]
+        public void SouthWestCornerClosure_WeldsSampledGroundAndCollision()
+        {
+            CityLayout layout = CreateDefaultLayout();
+            CityMountainBoundaryPlan plan =
+                CityMountainBoundaryPlanner.Create(layout);
+            CityMountainCornerClosureDescriptor closure =
+                plan.SouthWestCornerClosure;
+            CityMountainRidgeDescriptor join = plan.Ridges.Single(ridge =>
+                ridge.IsSouthWestJoin);
+
+            Assert.That(plan.HasSouthWestCornerClosure, Is.True);
+            Assert.That(closure, Is.Not.Null);
+            Assert.That(
+                closure.StableId,
+                Is.EqualTo(
+                    CityMountainCornerClosureDescriptor.SouthWestStableId));
+            Assert.That(closure.VoidCell, Is.EqualTo(new Vector2Int(-1, -1)));
+            Assert.That(
+                layout.Surfaces.Any(surface =>
+                    surface.Cell == closure.VoidCell),
+                Is.False);
+            Assert.That(plan.RidgeCount, Is.EqualTo(6));
+
+            float[] westCoordinates =
+            {
+                -182f, -180f, -178f, -175f, -172f,
+                -169f, -166f, -163f, -160f
+            };
+            float[] southCoordinates =
+            {
+                -160f, -163f, -166f, -169f, -172f,
+                -175f, -178f, -180f, -182f
+            };
+            Assert.That(
+                closure.WestBoundarySamples.Select(item => item.x).ToArray(),
+                Is.EqualTo(westCoordinates).Within(0.001f));
+            Assert.That(
+                closure.SouthBoundarySamples.Select(item => item.z).ToArray(),
+                Is.EqualTo(southCoordinates).Within(0.001f));
+            AssertBoundaryMatchesTerrain(
+                layout,
+                closure.WestAreaId,
+                closure.WestBoundarySamples);
+            AssertBoundaryMatchesTerrain(
+                layout,
+                closure.SouthAreaId,
+                closure.SouthBoundarySamples);
+
+            Assert.That(closure.WestToe, Is.EqualTo(join.Stations[0].Toe));
+            Assert.That(
+                closure.JoinMiddleToe,
+                Is.EqualTo(join.Stations[1].Toe));
+            Assert.That(
+                closure.SouthToe,
+                Is.EqualTo(join.Stations[2].Toe));
+            Vector3 roadNode = layout.GetNodeWorldPosition(Vector2Int.zero);
+            Assert.That(
+                closure.RoadCorner,
+                Is.EqualTo(new Vector3(
+                    roadNode.x - layout.RoadWidth * 0.5f,
+                    roadNode.y + CityStreetSurfacePlanner.RoadTop,
+                    roadNode.z - layout.RoadWidth * 0.5f)));
+            Assert.That(closure.ProjectedArea, Is.EqualTo(322f).Within(0.01f));
+            Assert.That(
+                closure.SurfaceTriangleIndices.Count,
+                Is.EqualTo(18 * 3));
+            Assert.That(closure.Vertices.Count, Is.EqualTo(20));
+            Assert.That(
+                closure.SupportTriangleIndices.Count,
+                Is.Zero,
+                "Plain corner ground must not contain steps or walls.");
+            Assert.That(
+                closure.TriangleIndices.Count,
+                Is.EqualTo(closure.SurfaceTriangleIndices.Count));
+            Assert.That(
+                closure.NaturalGroundSlopeDegrees,
+                Is.LessThanOrEqualTo(
+                    CityMountainCornerClosureDescriptor
+                        .MaximumNaturalGroundSlopeDegrees));
+            Assert.That(
+                closure.NaturalGroundSlopeDegrees,
+                Is.EqualTo(16.159f).Within(0.05f),
+                "The ordinary corner ground should keep its natural grade.");
+
+            float projectedArea = 0f;
+            for (int index = 0;
+                 index < closure.SurfaceTriangleIndices.Count;
+                 index += 3)
+            {
+                Vector3 first = closure.Vertices[
+                    closure.SurfaceTriangleIndices[index]];
+                Vector3 second = closure.Vertices[
+                    closure.SurfaceTriangleIndices[index + 1]];
+                Vector3 third = closure.Vertices[
+                    closure.SurfaceTriangleIndices[index + 2]];
+                Vector3 normal = Vector3.Cross(
+                    second - first,
+                    third - first);
+                Assert.That(
+                    normal.y,
+                    Is.GreaterThan(0.001f),
+                    $"Corner surface {index / 3} points down.");
+                projectedArea += normal.y * 0.5f;
+            }
+
+            Assert.That(
+                projectedArea,
+                Is.EqualTo(closure.ProjectedArea).Within(0.02f));
+            RoadWalkableArea originalWalkable =
+                RoadWalkableArea.FromLayout(layout);
+            Vector2[] blockedGround =
+            {
+                new Vector2(-160.4f, -160.4f),
+                new Vector2(-163f, -163f),
+                new Vector2(-168.6f, -168.6f)
+            };
+            for (int index = 0; index < blockedGround.Length; index++)
+            {
+                Vector2 sample = blockedGround[index];
+                Assert.That(
+                    originalWalkable.Contains(
+                        new Vector3(sample.x, 0f, sample.y),
+                        CityGroundTraversalPlanner.MaximumAgentRadius),
+                    Is.False,
+                    $"Fenced corner ground became walkable at {sample}.");
+            }
+
+            Assert.That(
+                originalWalkable.Contains(
+                    new Vector3(-175f, 0f, -175f),
+                    CityGroundTraversalPlanner.MaximumAgentRadius),
+                Is.False,
+                "The road mask must stop cityward of the rock toe.");
+
+            RoadFencePlan fencePlan = RoadFencePlanner.CreatePlan(layout);
+            Vector2 roadCornerXZ = new Vector2(
+                closure.RoadCorner.x,
+                closure.RoadCorner.z);
+            RoadFenceSegmentDescriptor[] cornerLegs = fencePlan.Segments
+                .Where(segment =>
+                    segment.Purpose ==
+                    RoadFenceSegmentPurpose.MapBoundary &&
+                    (Vector2.Distance(
+                         new Vector2(segment.Start.x, segment.Start.z),
+                         roadCornerXZ) < 0.001f ||
+                     Vector2.Distance(
+                         new Vector2(segment.End.x, segment.End.z),
+                         roadCornerXZ) < 0.001f))
+                .ToArray();
+            Assert.That(
+                cornerLegs,
+                Has.Length.EqualTo(2),
+                "The two ordinary fence remnants must meet at the corner.");
+            Assert.That(
+                cornerLegs.Any(segment =>
+                    segment.IsHorizontal &&
+                    segment.OutwardNormal == Vector3.back),
+                Is.True);
+            Assert.That(
+                cornerLegs.Any(segment =>
+                    !segment.IsHorizontal &&
+                    segment.OutwardNormal == Vector3.left),
+                Is.True);
+            foreach (RoadFenceSegmentDescriptor leg in cornerLegs)
+            {
+                Vector3 cornerDatum = Vector2.Distance(
+                        new Vector2(leg.Start.x, leg.Start.z),
+                        roadCornerXZ) < 0.001f
+                    ? leg.Start
+                    : leg.End;
+                Assert.That(
+                    cornerDatum.y,
+                    Is.EqualTo(roadNode.y).Within(0.001f),
+                    "An L-corner rail endpoint fell below its road node.");
+            }
+
+            var host = new GameObject("Corner Closure Test Host");
+            try
+            {
+                GameObject mountain = CityMountainBoundaryWorldBuilder.Build(
+                    host.transform,
+                    layout,
+                    plan);
+                GameObject fence = RoadFenceWorldBuilder.Build(
+                    host.transform,
+                    fencePlan);
+                GameObject built = FindChild(
+                        mountain.transform,
+                        closure.StableId)
+                    .gameObject;
+                Mesh mesh = built.GetComponent<MeshFilter>().sharedMesh;
+                MeshCollider collider = built.GetComponent<MeshCollider>();
+                MeshRenderer renderer = built.GetComponent<MeshRenderer>();
+                Assert.That(collider, Is.Not.Null);
+                Assert.That(collider.isTrigger, Is.False);
+                Assert.That(collider.sharedMesh, Is.SameAs(mesh));
+                Assert.That(renderer, Is.Not.Null);
+                Assert.That(
+                    renderer.shadowCastingMode,
+                    Is.EqualTo(UnityEngine.Rendering.ShadowCastingMode.On));
+                Assert.That(
+                    renderer.sharedMaterial,
+                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                var properties = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(properties);
+                Assert.That(
+                    properties.GetTexture(Shader.PropertyToID("_BaseMap")),
+                    Is.SameAs(
+                        CityFringeYardSurfaceAppearance.GetTexture(
+                            CityFringeYardSurfaceKind.ForefieldGround)));
+                CollectionAssert.AreEqual(
+                    closure.Vertices,
+                    mesh.vertices);
+                CollectionAssert.AreEqual(
+                    closure.TriangleIndices,
+                    mesh.triangles);
+                Assert.That(
+                    mesh.vertexCount,
+                    Is.LessThan(mesh.triangles.Length),
+                    "Natural ground should share vertices and smooth " +
+                    "across its small triangles.");
+
+                Physics.SyncTransforms();
+                Collider[] fenceColliders =
+                    fence.GetComponentsInChildren<Collider>(true);
+                foreach (RoadFenceSegmentDescriptor leg in cornerLegs)
+                {
+                    bool startsAtCorner = Vector2.Distance(
+                        new Vector2(leg.Start.x, leg.Start.z),
+                        roadCornerXZ) < 0.001f;
+                    Vector3 cornerDatum = startsAtCorner
+                        ? leg.Start
+                        : leg.End;
+                    Vector3 other = startsAtCorner ? leg.End : leg.Start;
+                    Vector3 lowerRailProbe = cornerDatum +
+                        (other - cornerDatum).normalized * 0.25f +
+                        leg.OutwardNormal * 0.08f +
+                        Vector3.up * 0.60f;
+                    Collider visibleRail = fenceColliders.FirstOrDefault(
+                        item => item.bounds.Contains(lowerRailProbe));
+                    Assert.That(
+                        visibleRail,
+                        Is.Not.Null,
+                        "A physical rail is missing beside the L corner.");
+                    Assert.That(
+                        visibleRail.GetComponent<MeshRenderer>(),
+                        Is.Not.Null,
+                        "The L-corner collider has no visible rail mesh.");
+                }
+                for (int index = 0;
+                     index < closure.SurfaceTriangleIndices.Count;
+                     index += 3)
+                {
+                    Vector3 centroid = (
+                        closure.Vertices[
+                            closure.SurfaceTriangleIndices[index]] +
+                        closure.Vertices[
+                            closure.SurfaceTriangleIndices[index + 1]] +
+                        closure.Vertices[
+                            closure.SurfaceTriangleIndices[index + 2]]) /
+                        3f;
+                    Assert.That(
+                        RaycastDown(collider, centroid, out _),
+                        Is.True,
+                        $"Corner surface {index / 3} has no " +
+                        "collision.");
+                }
+
+                Assert.That(
+                    RaycastDown(
+                        collider,
+                        new Vector3(-161f, 0f, -161f),
+                        out _),
+                    Is.True);
+                Assert.That(
+                    RaycastDown(
+                        collider,
+                        new Vector3(-175f, 0f, -175f),
+                        out _),
+                    Is.False,
+                    "The closure must not extend behind the rock toe.");
+                for (int sampleIndex = 0; sampleIndex <= 32; sampleIndex++)
+                {
+                    Vector2 sample = Vector2.Lerp(
+                        blockedGround[0],
+                        blockedGround[blockedGround.Length - 1],
+                        sampleIndex / 32f);
+                    Assert.That(
+                        RaycastDown(
+                            collider,
+                            new Vector3(sample.x, 0f, sample.y),
+                            out RaycastHit groundHit),
+                        Is.True,
+                        $"Plain ground is missing at {sample}.");
+                    Assert.That(
+                        Vector3.Angle(groundHit.normal, Vector3.up),
+                        Is.LessThanOrEqualTo(
+                            CityMountainCornerClosureDescriptor
+                                .MaximumNaturalGroundSlopeDegrees + 0.1f),
+                        $"Plain ground is too steep at {sample}.");
+                }
+
+                foreach (CityMountainRidgeStation station in join.Stations)
+                {
+                    Vector3 buried = station.Toe -
+                        station.OutwardNormal *
+                        CityMountainBoundaryMeshFactory.ToeGroundOverlap +
+                        Vector3.down *
+                        CityMountainBoundaryMeshFactory.ToeGroundBurial;
+                    Vector3 interiorProbe = Vector3.Lerp(
+                        buried,
+                        closure.RoadCorner,
+                        0.001f);
+                    Assert.That(
+                        RaycastDown(
+                            collider,
+                            interiorProbe,
+                            out RaycastHit hit),
+                        Is.True,
+                        station.StableId);
+                    Assert.That(
+                        hit.point.y - buried.y,
+                        Is.GreaterThanOrEqualTo(0.02f),
+                        $"{station.StableId} rock seam is exposed.");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        [Category("CityMountain")]
         public void DifferentSeed_KeepsOpeningsButVariesPeaks()
         {
             CityMountainBoundaryPlan first =
@@ -453,6 +811,175 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        [Category("CityMountain")]
+        public void PhysicalRidges_BuryRockSeamAcrossEveryOwnedTerrainToe()
+        {
+            CityLayout layout = CreateDefaultLayout();
+            CityMountainBoundaryPlan mountainPlan =
+                CityMountainBoundaryPlanner.Create(layout);
+            CityFringeYardPlan fringePlan =
+                CityFringeYardPlanner.Create(layout, mountainPlan);
+            var host = new GameObject("Mountain Toe Seam Test Host");
+
+            try
+            {
+                CityFringeYardGroundWorldResult ground =
+                    CityFringeYardGroundWorldBuilder.Build(
+                        host.transform,
+                        layout,
+                        fringePlan);
+                GameObject physical =
+                    CityMountainBoundaryWorldBuilder.Build(
+                        host.transform,
+                        layout,
+                        mountainPlan);
+
+                Assert.That(ground.MountainGround, Is.Not.Null);
+                Assert.That(
+                    ground.MountainGround.GetComponent<MeshCollider>(),
+                    Is.Not.Null);
+                Transform ridges = FindChild(
+                    physical.transform,
+                    "Physical Ridges");
+                string[] ownerAreaIds = mountainPlan.Ridges
+                    .Where(ridge => !ridge.IsSouthWestJoin)
+                    .Select(ridge => ridge.SourceAreaId)
+                    .Distinct()
+                    .ToArray();
+                Assert.That(
+                    ownerAreaIds,
+                    Is.EquivalentTo(new[]
+                    {
+                        CityMountainBoundaryDefinition.WestSouthAreaId,
+                        CityMountainBoundaryDefinition.WestNorthAreaId,
+                        CityMountainBoundaryDefinition.SouthWestAreaId,
+                        CityMountainBoundaryDefinition.SouthEastAreaId
+                    }));
+
+                foreach (CityMountainRidgeDescriptor ridge in
+                         mountainPlan.Ridges.Where(item =>
+                             !item.IsSouthWestJoin))
+                {
+                    Transform ridgeRoot = FindChild(
+                        ridges,
+                        ridge.StableId);
+                    MeshRenderer[] renderers = ridgeRoot
+                        .GetComponentsInChildren<MeshRenderer>(true)
+                        .OrderBy(item => item.name)
+                        .ToArray();
+                    MeshCollider[] colliders = ridgeRoot
+                        .GetComponentsInChildren<MeshCollider>(true)
+                        .OrderBy(item => item.name)
+                        .ToArray();
+                    Assert.That(
+                        colliders,
+                        Has.Length.EqualTo(renderers.Length),
+                        ridge.StableId);
+
+                    Vector3[] colliderVertices = colliders
+                        .SelectMany(collider =>
+                            collider.sharedMesh.vertices.Select(vertex =>
+                                collider.transform.TransformPoint(vertex)))
+                        .ToArray();
+                    foreach (CityMountainRidgeStation station in
+                             ridge.Stations)
+                    {
+                        Vector3 anchor = station.Toe;
+                        Vector3 buried = anchor -
+                            station.OutwardNormal *
+                            CityMountainBoundaryMeshFactory
+                                .ToeGroundOverlap +
+                            Vector3.down *
+                            CityMountainBoundaryMeshFactory
+                                .ToeGroundBurial;
+                        // Physical render meshes discard their CPU copy
+                        // after upload. Assert the exact cross-section fed
+                        // to every rendered quad, then prove below that all
+                        // five of its bands were emitted for every chunk.
+                        Vector3[] renderedCross =
+                            CityMountainBoundaryMeshFactory
+                                .CreateCrossSection(station);
+                        AssertContainsVertex(
+                            renderedCross,
+                            anchor,
+                            $"{station.StableId} rendered toe anchor");
+                        AssertContainsVertex(
+                            renderedCross,
+                            buried,
+                            $"{station.StableId} rendered buried seam");
+                        AssertContainsVertex(
+                            colliderVertices,
+                            anchor,
+                            $"{station.StableId} exact toe anchor");
+                        AssertContainsVertex(
+                            colliderVertices,
+                            buried,
+                            $"{station.StableId} buried seam");
+
+                        CitySurfaceDescriptor owner = layout.Surfaces.First(
+                            surface =>
+                                surface.Kind ==
+                                CitySurfaceKind.OpenGround &&
+                                surface.AreaId == ridge.SourceAreaId &&
+                                ContainsInclusive(
+                                    surface.WorldBounds,
+                                    new Vector2(
+                                        buried.x,
+                                        buried.z)));
+                        float terrainTop = CityTerrainSurfacePlan.SampleTop(
+                            layout,
+                            owner,
+                            new Vector2(buried.x, buried.z));
+                        Assert.That(
+                            terrainTop - buried.y,
+                            Is.GreaterThanOrEqualTo(0.02f),
+                            $"{station.StableId} seam must stay buried " +
+                            "below its owner terrain.");
+                    }
+
+                    for (int chunkIndex = 0;
+                         chunkIndex < renderers.Length;
+                         chunkIndex++)
+                    {
+                        Mesh renderedMesh = renderers[chunkIndex]
+                            .GetComponent<MeshFilter>()
+                            .sharedMesh;
+                        int renderedTriangles = checked((int)
+                            (renderedMesh.GetIndexCount(0) / 3u));
+                        const int renderedTrianglesPerSegment = 10;
+                        const int endCapTriangles = 8;
+                        int segmentTriangles =
+                            renderedTriangles - endCapTriangles;
+                        Assert.That(
+                            segmentTriangles,
+                            Is.GreaterThan(0),
+                            renderers[chunkIndex].name);
+                        Assert.That(
+                            segmentTriangles %
+                            renderedTrianglesPerSegment,
+                            Is.Zero,
+                            $"{renderers[chunkIndex].name} must close both " +
+                            "six-point end caps.");
+                        int segmentCount = segmentTriangles /
+                                           renderedTrianglesPerSegment;
+                        int colliderTriangles = checked((int)
+                            (colliders[chunkIndex].sharedMesh
+                                 .GetIndexCount(0) / 3u));
+                        Assert.That(
+                            colliderTriangles,
+                            Is.EqualTo(segmentCount * 6),
+                            $"{colliders[chunkIndex].name} must retain all " +
+                            "three near-toe collision bands.");
+                    }
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
         private static CityLayout CreateDefaultLayout()
         {
             return CityLayoutGenerator.Generate(
@@ -485,12 +1012,20 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(actual.Tunnel, Is.EqualTo(expected.Tunnel));
             Assert.That(actual.RiverNotch, Is.EqualTo(expected.RiverNotch));
+            Assert.That(
+                actual.HasSouthWestCornerClosure,
+                Is.EqualTo(expected.HasSouthWestCornerClosure));
+            Assert.That(
+                actual.SouthWestCornerClosure,
+                Is.EqualTo(expected.SouthWestCornerClosure));
         }
 
         private static void AssertEmpty(CityMountainBoundaryPlan plan)
         {
             Assert.That(plan.IsEnabled, Is.False);
             Assert.That(plan.RidgeCount, Is.Zero);
+            Assert.That(plan.HasSouthWestCornerClosure, Is.False);
+            Assert.That(plan.SouthWestCornerClosure, Is.Null);
             Assert.That(plan.HasTunnel, Is.False);
             Assert.That(plan.HasRiverNotch, Is.False);
         }
@@ -517,6 +1052,81 @@ namespace BarPromenade.Tests.EditMode
                  Vector2.Distance(ridge.EndXZ, target) < 0.02f));
         }
 
+        private static CityMountainRidgeStation FindMatchingEndpoint(
+            CityMountainBoundaryPlan plan,
+            CityMountainBoundarySide side,
+            Vector2 target)
+        {
+            return plan.Ridges
+                .Where(ridge => !ridge.IsSouthWestJoin && ridge.Side == side)
+                .SelectMany(ridge => new[]
+                {
+                    ridge.Stations[0],
+                    ridge.Stations[ridge.Stations.Count - 1]
+                })
+                .Single(station =>
+                    Vector2.Distance(station.WorldXZ, target) < 0.02f);
+        }
+
+        private static void AssertCrossSectionsWelded(
+            CityMountainRidgeStation expected,
+            CityMountainRidgeStation actual)
+        {
+            const float tolerance = 0.001f;
+            Assert.That(
+                Vector3.Distance(
+                    expected.OutwardNormal,
+                    actual.OutwardNormal),
+                Is.LessThanOrEqualTo(tolerance));
+            Vector3[] expectedCross =
+                CityMountainBoundaryMeshFactory.CreateCrossSection(expected);
+            Vector3[] actualCross =
+                CityMountainBoundaryMeshFactory.CreateCrossSection(actual);
+            Assert.That(actualCross, Has.Length.EqualTo(expectedCross.Length));
+            for (int index = 0; index < expectedCross.Length; index++)
+            {
+                Assert.That(
+                    Vector3.Distance(expectedCross[index], actualCross[index]),
+                    Is.LessThanOrEqualTo(tolerance),
+                    $"South-west join cross-section vertex {index} is open.");
+            }
+        }
+
+        private static void AssertBoundaryMatchesTerrain(
+            CityLayout layout,
+            string areaId,
+            System.Collections.Generic.IReadOnlyList<Vector3> samples)
+        {
+            foreach (Vector3 sample in samples)
+            {
+                CitySurfaceDescriptor owner = layout.Surfaces.First(surface =>
+                    surface.Kind == CitySurfaceKind.OpenGround &&
+                    surface.AreaId == areaId &&
+                    ContainsInclusive(
+                        surface.WorldBounds,
+                        new Vector2(sample.x, sample.z)));
+                float terrainTop = CityTerrainSurfacePlan.SampleTop(
+                    layout,
+                    owner,
+                    new Vector2(sample.x, sample.z));
+                Assert.That(
+                    sample.y,
+                    Is.EqualTo(terrainTop).Within(0.001f),
+                    $"Corner closure boundary {sample} left its terrain.");
+            }
+        }
+
+        private static bool RaycastDown(
+            Collider collider,
+            Vector3 point,
+            out RaycastHit hit)
+        {
+            return collider.Raycast(
+                new Ray(point + Vector3.up * 50f, Vector3.down),
+                out hit,
+                100f);
+        }
+
         private static bool SegmentCrossesRect(
             Vector2 first,
             Vector2 second,
@@ -539,6 +1149,28 @@ namespace BarPromenade.Tests.EditMode
                    left.xMax > right.xMin &&
                    left.yMin < right.yMax &&
                    left.yMax > right.yMin;
+        }
+
+        private static bool ContainsInclusive(Rect bounds, Vector2 point)
+        {
+            const float tolerance = 0.001f;
+            return point.x >= bounds.xMin - tolerance &&
+                   point.x <= bounds.xMax + tolerance &&
+                   point.y >= bounds.yMin - tolerance &&
+                   point.y <= bounds.yMax + tolerance;
+        }
+
+        private static void AssertContainsVertex(
+            Vector3[] vertices,
+            Vector3 expected,
+            string message)
+        {
+            const float tolerance = 0.001f;
+            Assert.That(
+                vertices.Any(vertex =>
+                    Vector3.Distance(vertex, expected) <= tolerance),
+                Is.True,
+                message);
         }
 
         private static Transform FindChild(Transform root, string name)

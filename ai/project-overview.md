@@ -89,26 +89,54 @@ The vertical slice contains:
   a restrained `0.10` visibility floor only after native Exp2 reaches it and
   return to native fog on approach. The fog-exempt shell mixes `0.86` toward
   the City fog colour, leaving only a faint distant mass while close physical
-  rock becomes readable.
+  rock becomes readable. At the south-west turn, the mountain plan owns a
+  validated city-side corner earthwork over the otherwise omitted `(-1,-1)`
+  blueprint cell instead of leaving a void. The closure is one continuous
+  textured natural-soil slope, not a stair, terrace or platform; its centre is
+  about `16.2°` and remains outside navigation behind the ordinary L-shaped
+  road fence whose two physical legs meet at the exact corner. Its outer wings retain the sampled west/south terrain seams and
+  exact diagonal toe, and the
+  diagonal ridge interpolates the full west-to-south cross-section, welding
+  its ground bond, shoulder, crest and back at both ends without changing the
+  northern/eastern openings.
+  A separate default-only `CornerGuard` pair closes the north-east urban-core
+  road cap beside lot `[12,11]` as an ordinary physical `4 m + 4 m` L. It does
+  not add ground or extend a boundary along the lake/waterfront, so their
+  authored approaches remain open.
   Portal, throat and gate pieces deliberately retain `RuntimePrimitiveLit`;
 - one immutable default-only `CityFringeYardPlan` turns all five typed Yard
   areas into authored middle ground derived from their canonical bounds,
   declared access and sampled terrain. Four west/south variants share an old
   municipal service-belt grammar of graded maintenance trace, drainage,
   retaining work, sparse poles/cables and bounded repair/rockfall pockets.
+  Their complete roughly `22 m` road-to-toe terrain is a separate conforming
+  batch with a quiet compacted-fill albedo. A narrow terrain-conforming
+  `0-4 m` road-shoulder trace,
+  three cross-field service traces and three or four seeded meso anchors per
+  strip fill the `4-14 m` working band; no longitudinal anchor gap exceeds
+  `40 m`, while the established paired-trace-or-flood-drain/retaining language
+  stays in the `14-22 m` toe band. All four mountain strips omit broad
+  earth-textured longitudinal service-track overlays.
   Their macro anchors are a stepped culvert terrace, an industrial repair
-  frame, the `6.9 m` tunnel forecourt with a validated `>6 m` clear lane, and
-  caged floodworks with a gauge; dedicated measured sheets distinguish service
-  aggregate, board-formed concrete and old masonry at close range. Four small
+  frame, the `6.9 m` tunnel forecourt with a validated `>6 m` clear terrain
+  lane, narrow embedded marks, two continuous grounded concrete return wings
+  and a supported two-post return-light frame, and caged floodworks with a
+  gauge; four dedicated measured sheets distinguish
+  compacted forefield, service aggregate, board-formed concrete and old
+  masonry at close range. Four small
   emissive practicals remain separate from the combined geometry, while the
   nearest supported anchor within `20 m` can lease the last existing street
   Spot from `CityNightAtmosphere`; its `12`-Light pool is unchanged. The
   eastern variant stays a separate low, unlit road/drain/pole/shed/berm utility
   edge and creates no ridge. Large masses are physical, small traces and cables
-  are visual only. Every level-safe ring-road seam into the four mountain Yards
-  is walkable, while true drops retain rails; three `6 m` gravel spurs reserve
-  capsule-clear cuts through the retaining line to the rock toe, and the fourth
-  route remains the sealed tunnel forecourt. The plan adds no interaction,
+  are visual only. Every physical ridge overlaps beneath its sampled terrain
+  toe and extends the near-toe collider across that join; intentional tunnel
+  and river openings remain open. Every level-safe ring-road seam into the four mountain Yards
+  is walkable, while true drops retain rails; three `6 m` routes reserve
+  capsule-clear cuts through the retaining line to the rock toe. Two use broad
+  gravel aprons, while the south-east flood route uses a narrow embedded trace
+  on continuous terrain; the fourth route remains the sealed tunnel forecourt.
+  The plan adds no interaction,
   destination, Light component, north/east mountain or
   world-bounds expansion. Portal frame, throat and sealed gate remain owned by
   `CityMountainBoundaryPlan`;

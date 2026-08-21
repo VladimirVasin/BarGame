@@ -6,13 +6,21 @@ namespace BarPromenade
     public static partial class CityFringeYardPlanner
     {
         public const int ExpectedYardCount = 5;
-        public const int MaximumPartCount = 360;
+        // The narrow-trace plan has a formal 638-part ceiling. Replacing its
+        // tunnel slivers/light stock with six supported caps and a two-post
+        // service frame adds at most seven descriptors. Runtime still batches
+        // the fine strokes by 48 m chunk/style/collision.
+        public const int MaximumPartCount = 650;
         public const float MinimumTunnelDriveClearWidth = 6f;
 
         private const float SurfaceLift = 0.035f;
         private const float SurfaceThickness = 0.055f;
         private const float BeltRunSegmentLength = 17.5f;
+        private const float NarrowSurfaceRunSegmentLength = 8f;
         private const float TunnelRunSegmentLength = 3f;
+        private const float TunnelReturnInnerClearance = 0.24f;
+        private const float TunnelReturnEmbed = 0.08f;
+        private const float TunnelReturnOverlap = 0.18f;
         private const float LongEdgeMargin = 1.2f;
         private const float MountainTrackInset = 6.1f;
         private const float MountainDrainInset = 3.15f;
@@ -148,6 +156,11 @@ namespace BarPromenade
                 access.Center,
                 outward,
                 trackInset);
+            Vector3 drainLine = PointAtOuterInset(
+                bounds,
+                access.Center,
+                outward,
+                MountainDrainInset);
             Vector3 toeApproach = PointAtOuterInset(
                 bounds,
                 access.Center,
@@ -169,24 +182,40 @@ namespace BarPromenade
                 ? 7.5f
                 : LongEdgeMargin;
 
-            AddLongSurfaceRun(
-                layout,
-                surfaces,
-                bounds,
-                areaId,
-                "service-track",
-                CityFringeYardPartKind.ServiceTrack,
-                CityFringeYardStyle.ServiceGround,
-                tangent,
-                trackLine,
-                4.6f,
-                SurfaceThickness,
-                LongEdgeMargin,
-                endTrim,
-                runGap,
-                parts);
+            if (kind != CityFringeYardKind.SouthFloodWorks)
+            {
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    AddLongSurfaceRun(
+                        layout,
+                        surfaces,
+                        bounds,
+                        areaId,
+                        side < 0
+                            ? "service-track-roadward"
+                            : "service-track-toeward",
+                        CityFringeYardPartKind.ServiceTrack,
+                        CityFringeYardStyle.ServiceGround,
+                        tangent,
+                        trackLine + outward * (side * 1.15f),
+                        kind == CityFringeYardKind.SouthTunnelForecourt
+                            ? MaximumTunnelTraceWidth
+                            : ShoulderWidth,
+                        SurfaceThickness,
+                        LongEdgeMargin,
+                        endTrim,
+                        runGap,
+                        parts,
+                        NarrowSurfaceRunSegmentLength,
+                        kind == CityFringeYardKind.SouthTunnelForecourt
+                            ? ForefieldSurfaceLift
+                            : SurfaceLift);
+                }
+            }
             if (!ownsTunnel)
             {
+                bool isFloodWorks =
+                    kind == CityFringeYardKind.SouthFloodWorks;
                 AddGradedStrip(
                     layout,
                     surfaces,
@@ -196,18 +225,35 @@ namespace BarPromenade
                     CityFringeYardStyle.ServiceGround,
                     access.Center + outward * 0.45f,
                     toeApproach,
-                    Mathf.Min(5.4f, access.Width - 1f),
-                    SurfaceThickness,
-                    4f,
+                    isFloodWorks
+                        ? ShoulderWidth
+                        : Mathf.Min(5.4f, access.Width - 1f),
+                    isFloodWorks
+                        ? FloodTraceThickness
+                        : SurfaceThickness,
+                    isFloodWorks ? 2f : 4f,
                     null,
-                    parts);
+                    parts,
+                    isFloodWorks
+                        ? ForefieldSurfaceLift
+                        : SurfaceLift);
             }
 
-            Vector3 drainLine = PointAtOuterInset(
+            AddForefield(
+                layout,
+                surfaces,
                 bounds,
-                access.Center,
+                areaId,
+                kind,
+                tangent,
                 outward,
-                MountainDrainInset);
+                access.Center,
+                kind == CityFringeYardKind.SouthFloodWorks
+                    ? drainLine
+                    : trackLine,
+                traversal,
+                parts);
+
             AddLongSurfaceRun(
                 layout,
                 surfaces,
@@ -262,17 +308,19 @@ namespace BarPromenade
                     : 34f,
                 parts);
 
-            AddRepairPocket(
-                layout,
-                surfaces,
-                bounds,
-                areaId,
-                tangent,
-                outward,
-                trackLine,
-                traversal,
-                kind,
-                parts);
+            if (kind == CityFringeYardKind.WestIndustrialBelt)
+            {
+                AddRepairStockPocket(
+                    layout,
+                    surfaces,
+                    bounds,
+                    areaId,
+                    tangent,
+                    outward,
+                    trackLine,
+                    traversal,
+                    parts);
+            }
             AddRockfallPockets(
                 layout,
                 surfaces,
@@ -592,15 +640,22 @@ namespace BarPromenade
                 8f,
                 out float start,
                 out float end);
-            int count = Mathf.Max(2, Mathf.FloorToInt((end - start) / spacing));
+            int count = ResolvePoleCount(areaId, end - start, spacing);
             float pitch = (end - start) / (count - 1);
             var tops = new List<Vector3>(count);
             for (int index = 0; index < count; index++)
             {
+                float coordinate = start + pitch * index;
                 Vector3 center = SetLongCoordinate(
                     line,
                     axis,
-                    start + pitch * index);
+                    coordinate);
+                center = MovePoleOutsideReserved(
+                    center,
+                    axis,
+                    start,
+                    end,
+                    reserved);
                 float ground = SampleAreaTop(
                     layout,
                     surfaces,
@@ -613,7 +668,9 @@ namespace BarPromenade
                     center.z + 0.2f);
                 if (footprint.Overlaps(reserved))
                 {
-                    continue;
+                    throw new InvalidOperationException(
+                        $"Unable to keep utility pole '{areaId}-{index:00}' " +
+                        "outside its reserved route.");
                 }
 
                 parts.Add(new CityFringeYardPartDescriptor(
@@ -692,7 +749,7 @@ namespace BarPromenade
                 false));
         }
 
-        private static void AddRepairPocket(
+        private static void AddRepairStockPocket(
             CityLayout layout,
             IReadOnlyList<CitySurfaceDescriptor> surfaces,
             Rect bounds,
@@ -701,32 +758,14 @@ namespace BarPromenade
             Vector3 outward,
             Vector3 trackLine,
             Rect reserved,
-            CityFringeYardKind kind,
             ICollection<CityFringeYardPartDescriptor> parts)
         {
             GetLongRange(bounds, axis, 5f, 5f, out float start, out float end);
-            float amount = kind == CityFringeYardKind.WestIndustrialBelt
-                ? 0.62f
-                : 0.34f;
             Vector3 pad = SetLongCoordinate(
                 trackLine - outward * 3.4f,
                 axis,
-                Mathf.Lerp(start, end, amount));
+                Mathf.Lerp(start, end, 0.62f));
             Quaternion rotation = Quaternion.LookRotation(axis, Vector3.up);
-            AddGroundedPart(
-                layout,
-                surfaces,
-                areaId,
-                $"{areaId}-repair-pad",
-                CityFringeYardPartKind.RepairPad,
-                CityFringeYardStyle.Concrete,
-                pad,
-                rotation,
-                new Vector3(4.2f, 0.10f, 5.4f),
-                false,
-                -0.025f,
-                reserved,
-                parts);
             for (int index = 0; index < 3; index++)
             {
                 Vector3 sleeper = pad +
@@ -797,7 +836,7 @@ namespace BarPromenade
                         Mathf.Lerp(1.0f, 1.7f, unit),
                         Mathf.Lerp(0.65f, 1.15f, unit),
                         Mathf.Lerp(1.2f, 2.2f, 1f - unit)),
-                    index == 0,
+                    true,
                     0.10f,
                     reserved,
                     parts);
@@ -925,11 +964,12 @@ namespace BarPromenade
                 CityFringeYardStyle.ServiceGround,
                 start,
                 end,
-                forecourt.ApproachWidth,
+                MaximumTunnelTraceWidth,
                 SurfaceThickness,
                 TunnelRunSegmentLength,
                 null,
-                parts);
+                parts,
+                ForefieldSurfaceLift);
 
             Vector3 right = Vector3.Cross(Vector3.up, axis).normalized;
             for (int side = -1; side <= 1; side += 2)
@@ -943,42 +983,45 @@ namespace BarPromenade
                     CityFringeYardStyle.Drainage,
                     start + right * (1.1f * side),
                     end + right * (1.1f * side),
-                    0.52f,
+                    MaximumTunnelTraceWidth,
                     0.028f,
                     TunnelRunSegmentLength,
                     null,
-                    parts);
+                    parts,
+                    ForefieldSurfaceLift);
             }
 
             Vector3 cheekStart = Vector3.Lerp(start, end, 0.48f);
             Vector3 cheekEnd = end - axis * 0.25f;
             float cheekLength = Vector3.Dot(cheekEnd - cheekStart, axis);
-            int cheekSegments = Mathf.Max(2, Mathf.CeilToInt(cheekLength / 4f));
-            float cheekPitch = cheekLength / cheekSegments;
-            float sideOffset = forecourt.DriveClearWidth * 0.5f + 0.48f;
+            const int returnCount = 3;
+            float returnPitch = cheekLength / returnCount;
+            float[] returnWidths = { 1.10f, 1.20f, 1.35f };
+            float[] returnHeights = { 0.80f, 1.55f, 2.35f };
             for (int side = -1; side <= 1; side += 2)
             {
-                for (int index = 0; index < cheekSegments; index++)
+                for (int index = 0; index < returnCount; index++)
                 {
-                    float amount = (index + 0.5f) / cheekSegments;
+                    float width = returnWidths[index];
+                    float length = returnPitch + TunnelReturnOverlap;
+                    float sideOffset =
+                        forecourt.DriveClearWidth * 0.5f +
+                        TunnelReturnInnerClearance +
+                        width * 0.5f;
                     Vector3 center = cheekStart +
-                        axis * (cheekPitch * (index + 0.5f)) +
+                        axis * (returnPitch * (index + 0.5f)) +
                         right * (sideOffset * side);
-                    AddGroundedPart(
+                    AddTunnelReturnSection(
                         layout,
                         surfaces,
                         areaId,
-                        $"{areaId}-tunnel-cheek-{side}-{index:00}",
-                        CityFringeYardPartKind.TunnelCheek,
-                        CityFringeYardStyle.Concrete,
+                        side,
+                        index,
                         center,
-                        Quaternion.LookRotation(axis, Vector3.up),
-                        new Vector3(
-                            0.68f,
-                            Mathf.Lerp(0.9f, 2.05f, amount),
-                            Mathf.Max(1f, cheekPitch - 0.25f)),
-                        true,
-                        0.14f,
+                        axis,
+                        width,
+                        returnHeights[index],
+                        length,
                         forecourt.DriveClearBounds,
                         parts);
                 }
@@ -998,11 +1041,86 @@ namespace BarPromenade
                     areaId,
                     CityFringeYardPartKind.DrainCover,
                     CityFringeYardStyle.Iron,
-                    new Vector3(bar.x, ground + 0.06f, bar.z),
+                    new Vector3(bar.x, ground + 0.025f, bar.z),
                     Quaternion.LookRotation(axis, Vector3.up),
                     new Vector3(0.10f, 0.07f, 1.18f),
                     false));
             }
+        }
+
+        private static void AddTunnelReturnSection(
+            CityLayout layout,
+            IReadOnlyList<CitySurfaceDescriptor> surfaces,
+            string areaId,
+            int side,
+            int index,
+            Vector3 xzCenter,
+            Vector3 axis,
+            float width,
+            float height,
+            float length,
+            Rect reserved,
+            ICollection<CityFringeYardPartDescriptor> parts)
+        {
+            Quaternion rotation = Quaternion.LookRotation(axis, Vector3.up);
+            Vector3 right =
+                (rotation * Vector3.right) * (width * 0.5f);
+            Vector3 forward =
+                (rotation * Vector3.forward) * (length * 0.5f);
+            float minimumGround = float.PositiveInfinity;
+            for (int rightSign = -1; rightSign <= 1; rightSign += 2)
+            {
+                for (int forwardSign = -1;
+                     forwardSign <= 1;
+                     forwardSign += 2)
+                {
+                    Vector3 corner = xzCenter +
+                        right * rightSign +
+                        forward * forwardSign;
+                    minimumGround = Mathf.Min(
+                        minimumGround,
+                        SampleAreaTop(layout, surfaces, ToXZ(corner)));
+                }
+            }
+
+            var section = new CityFringeYardPartDescriptor(
+                $"{areaId}-tunnel-return-{side}-{index:00}",
+                areaId,
+                CityFringeYardPartKind.TunnelCheek,
+                CityFringeYardStyle.Concrete,
+                new Vector3(
+                    xzCenter.x,
+                    minimumGround - TunnelReturnEmbed + height * 0.5f,
+                    xzCenter.z),
+                rotation,
+                new Vector3(width, height, length),
+                true);
+            if (section.Footprint.Overlaps(reserved))
+            {
+                throw new InvalidOperationException(
+                    $"Tunnel return '{section.StableId}' narrows the " +
+                    "declared drive-clear corridor.");
+            }
+
+            parts.Add(section);
+            const float capWidth = 0.14f;
+            const float capHeight = 0.12f;
+            Vector3 inside = -(rotation * Vector3.right) * side;
+            Vector3 capCenter = section.Center +
+                Vector3.up * (height * 0.5f + capHeight * 0.5f) +
+                inside * (width * 0.5f - capWidth * 0.5f);
+            parts.Add(new CityFringeYardPartDescriptor(
+                $"{areaId}-tunnel-return-cap-{side}-{index:00}",
+                areaId,
+                CityFringeYardPartKind.RepairFrame,
+                CityFringeYardStyle.Iron,
+                capCenter,
+                rotation,
+                new Vector3(
+                    capWidth,
+                    capHeight,
+                    length - TunnelReturnOverlap),
+                false));
         }
 
         private static void AddEastUtilitySheds(
@@ -1123,7 +1241,9 @@ namespace BarPromenade
             float startMargin,
             float endMargin,
             Rect? gap,
-            ICollection<CityFringeYardPartDescriptor> parts)
+            ICollection<CityFringeYardPartDescriptor> parts,
+            float maximumSegmentLength = BeltRunSegmentLength,
+            float surfaceLift = SurfaceLift)
         {
             GetLongRange(
                 bounds,
@@ -1145,9 +1265,10 @@ namespace BarPromenade
                 runEnd,
                 width,
                 thickness,
-                BeltRunSegmentLength,
+                maximumSegmentLength,
                 gap,
-                parts);
+                parts,
+                surfaceLift);
         }
 
         private static void AddGradedStrip(
@@ -1163,7 +1284,8 @@ namespace BarPromenade
             float thickness,
             float maximumSegmentLength,
             Rect? gap,
-            ICollection<CityFringeYardPartDescriptor> parts)
+            ICollection<CityFringeYardPartDescriptor> parts,
+            float surfaceLift = SurfaceLift)
         {
             Vector3 flatDelta = new Vector3(
                 end.x - start.x,
@@ -1187,11 +1309,11 @@ namespace BarPromenade
                 topStart.y = SampleAreaTop(
                     layout,
                     surfaces,
-                    ToXZ(topStart)) + SurfaceLift;
+                    ToXZ(topStart)) + surfaceLift;
                 topEnd.y = SampleAreaTop(
                     layout,
                     surfaces,
-                    ToXZ(topEnd)) + SurfaceLift;
+                    ToXZ(topEnd)) + surfaceLift;
                 Vector3 slope = topEnd - topStart;
                 Quaternion rotation = Quaternion.LookRotation(
                     slope.normalized,

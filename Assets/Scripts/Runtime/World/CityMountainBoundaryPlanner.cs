@@ -126,10 +126,20 @@ namespace BarPromenade
                 false);
             ridges.Add(southEast);
 
-            ridges.Add(CreateSouthWestJoin(
+            CityMountainRidgeDescriptor southWestJoin = CreateSouthWestJoin(
                 layout,
                 westSouth,
-                southWestBeforeTunnel));
+                southWestBeforeTunnel);
+            ridges.Add(southWestJoin);
+
+            CityMountainCornerClosureDescriptor southWestCornerClosure =
+                CreateSouthWestCornerClosure(
+                    layout,
+                    westSouthSurfaces,
+                    westSouthBounds,
+                    southWestSurfaces,
+                    southWestBounds,
+                    southWestJoin);
 
             CityMountainRiverNotchDescriptor notch = CreateRiverNotch(
                 layout,
@@ -140,6 +150,8 @@ namespace BarPromenade
             var plan = new CityMountainBoundaryPlan(
                 definition,
                 ridges,
+                true,
+                southWestCornerClosure,
                 true,
                 notch,
                 true,
@@ -261,7 +273,6 @@ namespace BarPromenade
                 Mathf.CeilToInt(
                     Vector2.Distance(start, end) /
                     CityMountainBoundaryDefinition.RidgeStationSpacing));
-            Vector3 outward = new Vector3(-1f, 0f, -1f).normalized;
             var stations = new List<CityMountainRidgeStation>(
                 segmentCount + 1);
             for (int index = 0; index <= segmentCount; index++)
@@ -272,6 +283,10 @@ namespace BarPromenade
                     westEndpoint.BaseY,
                     southEndpoint.BaseY,
                     amount);
+                Vector3 outward = Vector3.Lerp(
+                    westEndpoint.OutwardNormal,
+                    southEndpoint.OutwardNormal,
+                    amount).normalized;
                 stations.Add(CreateStation(
                     layout.Seed,
                     $"mountain-south-west-join-station-{index:00}",
@@ -287,6 +302,139 @@ namespace BarPromenade
                 CityMountainBoundarySide.West,
                 stations,
                 true);
+        }
+
+        private static CityMountainCornerClosureDescriptor
+            CreateSouthWestCornerClosure(
+                CityLayout layout,
+                IReadOnlyList<CitySurfaceDescriptor> westSurfaces,
+                Rect westBounds,
+                IReadOnlyList<CitySurfaceDescriptor> southSurfaces,
+                Rect southBounds,
+                CityMountainRidgeDescriptor join)
+        {
+            if (join.Stations.Count != 3)
+            {
+                throw new InvalidOperationException(
+                    "The south-west corner apron requires one middle " +
+                    "join station.");
+            }
+
+            Vector3 roadNode = layout.GetNodeWorldPosition(Vector2Int.zero);
+            float halfRoad = layout.RoadWidth * 0.5f;
+            var roadCornerXZ = new Vector2(
+                roadNode.x - halfRoad,
+                roadNode.z - halfRoad);
+            List<Vector3> westBoundarySamples = CreateBoundarySamples(
+                layout,
+                westSurfaces,
+                join.Stations[0].WorldXZ,
+                new Vector2(westBounds.xMax, westBounds.yMin),
+                true);
+            List<Vector3> southBoundarySamples = CreateBoundarySamples(
+                layout,
+                southSurfaces,
+                new Vector2(southBounds.xMin, southBounds.yMax),
+                join.Stations[join.Stations.Count - 1].WorldXZ,
+                false);
+            westBoundarySamples[0] = join.Stations[0].Toe;
+            southBoundarySamples[southBoundarySamples.Count - 1] =
+                join.Stations[join.Stations.Count - 1].Toe;
+            return new CityMountainCornerClosureDescriptor(
+                CityMountainCornerClosureDescriptor.SouthWestStableId,
+                new Vector2Int(-1, -1),
+                join.StableId,
+                CityMountainBoundaryDefinition.WestSouthAreaId,
+                CityMountainBoundaryDefinition.SouthWestAreaId,
+                westBoundarySamples,
+                new Vector3(
+                    roadCornerXZ.x,
+                    roadNode.y + CityStreetSurfacePlanner.RoadTop,
+                    roadCornerXZ.y),
+                southBoundarySamples,
+                join.Stations[1].Toe);
+        }
+
+        private static List<Vector3> CreateBoundarySamples(
+            CityLayout layout,
+            IReadOnlyList<CitySurfaceDescriptor> surfaces,
+            Vector2 start,
+            Vector2 end,
+            bool sampleXAxis)
+        {
+            CitySurfaceDescriptor surface = FindSurfaceContainingEdge(
+                surfaces,
+                start,
+                end);
+            float startCoordinate = sampleXAxis ? start.x : start.y;
+            float endCoordinate = sampleXAxis ? end.x : end.y;
+            float minimum = Mathf.Min(startCoordinate, endCoordinate);
+            float maximum = Mathf.Max(startCoordinate, endCoordinate);
+            float cellMinimum = sampleXAxis
+                ? layout.ElevationPlan.WorldOrigin.x +
+                  surface.Cell.x * layout.ElevationPlan.NodeSpacing.x
+                : layout.ElevationPlan.WorldOrigin.z +
+                  surface.Cell.y * layout.ElevationPlan.NodeSpacing.y;
+            float spacing = sampleXAxis
+                ? layout.ElevationPlan.NodeSpacing.x
+                : layout.ElevationPlan.NodeSpacing.y;
+            float halfRoad = layout.ElevationPlan.RoadWidth * 0.5f;
+            List<float> coordinates =
+                CityTerrainSurfaceWorldBuilder.CreateAxisCoordinates(
+                    minimum,
+                    maximum,
+                    cellMinimum + halfRoad,
+                    cellMinimum + spacing - halfRoad,
+                    Array.Empty<float>());
+            var result = new List<Vector3>(coordinates.Count);
+            bool reverse = startCoordinate > endCoordinate;
+            for (int index = 0; index < coordinates.Count; index++)
+            {
+                int coordinateIndex = reverse
+                    ? coordinates.Count - 1 - index
+                    : index;
+                float coordinate = coordinates[coordinateIndex];
+                var worldXZ = sampleXAxis
+                    ? new Vector2(coordinate, start.y)
+                    : new Vector2(start.x, coordinate);
+                result.Add(new Vector3(
+                    worldXZ.x,
+                    CityTerrainSurfacePlan.SampleTop(
+                        layout,
+                        surface,
+                        worldXZ),
+                    worldXZ.y));
+            }
+
+            return result;
+        }
+
+        private static CitySurfaceDescriptor FindSurfaceContainingEdge(
+            IReadOnlyList<CitySurfaceDescriptor> surfaces,
+            Vector2 start,
+            Vector2 end)
+        {
+            for (int index = 0; index < surfaces.Count; index++)
+            {
+                CitySurfaceDescriptor surface = surfaces[index];
+                Rect bounds = surface.WorldBounds;
+                if (ContainsInclusive(bounds, start) &&
+                    ContainsInclusive(bounds, end))
+                {
+                    return surface;
+                }
+            }
+
+            throw new InvalidOperationException(
+                "A mountain corner boundary left its source terrain.");
+        }
+
+        private static bool ContainsInclusive(Rect bounds, Vector2 point)
+        {
+            return point.x >= bounds.xMin - BoundsTolerance &&
+                   point.x <= bounds.xMax + BoundsTolerance &&
+                   point.y >= bounds.yMin - BoundsTolerance &&
+                   point.y <= bounds.yMax + BoundsTolerance;
         }
 
         private static CityMountainRiverNotchDescriptor CreateRiverNotch(

@@ -6,6 +6,30 @@
   "tintChannelFloor": 0.09,
   "sheets": [
     {
+      "key": "CityFringeForefieldAlbedo",
+      "grammar": "city_fringe_forefield_ground",
+      "resourcePath": "Textures/CityFringeForefieldAlbedo",
+      "meanLinearLuminance": 0.479975,
+      "albedoCompensation": 1.4415,
+      "brightnessError": 0.027312,
+      "metersPerTile": 8.0,
+      "smoothness": 0.025,
+      "metallic": 0.0,
+      "exposure": 0.675724,
+      "tints": {
+        "CityExteriorAppearance.YardGround": [
+          0.3,
+          0.26,
+          0.19
+        ]
+      },
+      "edgeDelta": 1.4567,
+      "seamRatio": 1.0106,
+      "contrast": 45,
+      "channelRatio": 1.0311,
+      "sha256": "6A00C60A83FBB66B4FA27EAD7235C8EB820F7C482487C7EE18FBEF11EB5AAA85"
+    },
+    {
       "key": "CityFringeServiceTrackAlbedo",
       "grammar": "city_fringe_service_track",
       "resourcePath": "Textures/CityFringeServiceTrackAlbedo",

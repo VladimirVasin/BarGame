@@ -6,6 +6,61 @@ using UnityEngine.Rendering;
 namespace BarPromenade
 {
     /// <summary>
+    /// Exact, ordinal source-area selection for a continuous terrain batch.
+    /// Keeping the selection as data rather than a caller-supplied predicate
+    /// makes complementary include/exclude batches auditable and prevents
+    /// culture-sensitive area matching from splitting one authored area.
+    /// </summary>
+    internal sealed class CityTerrainSurfaceAreaFilter
+    {
+        private readonly HashSet<string> areaIds;
+        private readonly bool includeMatches;
+
+        private CityTerrainSurfaceAreaFilter(
+            IEnumerable<string> sourceAreaIds,
+            bool includeMatches)
+        {
+            if (sourceAreaIds == null)
+            {
+                throw new ArgumentNullException(nameof(sourceAreaIds));
+            }
+
+            areaIds = new HashSet<string>(StringComparer.Ordinal);
+            foreach (string areaId in sourceAreaIds)
+            {
+                if (string.IsNullOrWhiteSpace(areaId))
+                {
+                    throw new ArgumentException(
+                        "A terrain area filter requires non-empty area IDs.",
+                        nameof(sourceAreaIds));
+                }
+
+                areaIds.Add(areaId);
+            }
+
+            this.includeMatches = includeMatches;
+        }
+
+        internal static CityTerrainSurfaceAreaFilter IncludeOnly(
+            IEnumerable<string> areaIds)
+        {
+            return new CityTerrainSurfaceAreaFilter(areaIds, true);
+        }
+
+        internal static CityTerrainSurfaceAreaFilter Excluding(
+            IEnumerable<string> areaIds)
+        {
+            return new CityTerrainSurfaceAreaFilter(areaIds, false);
+        }
+
+        internal bool Includes(string areaId)
+        {
+            bool matches = areaIds.Contains(areaId ?? string.Empty);
+            return includeMatches ? matches : !matches;
+        }
+    }
+
+    /// <summary>
     /// Materializes the continuous city-terrain contract as one static mesh.
     /// The mesh owns only its upward-facing terrain skin: authored retaining
     /// walls and safety rails remain responsible for deliberate exposed drops.
@@ -26,7 +81,8 @@ namespace BarPromenade
             Color color,
             bool applyGroundAppearance,
             float? worldUvTileSize = null,
-            IReadOnlyList<Rect> excavations = null)
+            IReadOnlyList<Rect> excavations = null,
+            CityTerrainSurfaceAreaFilter areaFilter = null)
         {
             if (string.IsNullOrWhiteSpace(name))
             {
@@ -45,7 +101,8 @@ namespace BarPromenade
                 layout,
                 kind,
                 worldUvTileSize,
-                excavations);
+                excavations,
+                areaFilter);
             if (mesh == null)
             {
                 return null;
@@ -106,7 +163,8 @@ namespace BarPromenade
                 layout,
                 kind,
                 worldUvTileSize,
-                excavations);
+                excavations,
+                null);
             if (mesh == null)
             {
                 return false;
@@ -155,7 +213,8 @@ namespace BarPromenade
             CityLayout layout,
             CitySurfaceKind kind,
             float? worldUvTileSize,
-            IReadOnlyList<Rect> excavations)
+            IReadOnlyList<Rect> excavations,
+            CityTerrainSurfaceAreaFilter areaFilter)
         {
             if (layout == null)
             {
@@ -174,7 +233,9 @@ namespace BarPromenade
                 CitySurfaceDescriptor surface =
                     layout.Surfaces[surfaceIndex];
                 if (surface.Kind != kind ||
-                    !CityTerrainSurfacePlan.UsesContinuousTop(surface))
+                    !CityTerrainSurfacePlan.UsesContinuousTop(surface) ||
+                    (areaFilter != null &&
+                     !areaFilter.Includes(surface.AreaId)))
                 {
                     continue;
                 }
@@ -709,7 +770,7 @@ namespace BarPromenade
             }
         }
 
-        private static List<float> CreateAxisCoordinates(
+        internal static List<float> CreateAxisCoordinates(
             float minimum,
             float maximum,
             float firstSlopeBoundary,

@@ -50,9 +50,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   legacy layouts receive `CityMountainBoundaryPlan.Empty` instead of acquiring
   scenery from coincidentally named cells. The planner derives flat-shaded
   physical ridges from the stable west/south perimeter Yards and samples every
-  toe from `CityTerrainSurfacePlan`. South is explicitly split around both the
+  toe from `CityTerrainSurfacePlan`. Each cross-section adds an exact toe
+  anchor plus a shallow rock lip buried `0.04 m` under the terrain and extended
+  `0.08 m` cityward; the renderer and near-toe collider cover the same join
+  instead of beginning at the former `0.35 m` outer foot inset. South is explicitly split around both the
   river corridor and the portal opening, and a diagonal south-west strip closes
-  the otherwise empty `(-1,-1)` corner. The west ridge tapers toward the
+  the otherwise empty `(-1,-1)` corner, so neither intentional opening is
+  bridged by the buried lip. The west ridge tapers toward the
   northern beach; north remains the sea and east is deliberately untouched.
   The physical ridge chunks use one shared opaque `CityMountainPhysical`
   material, MPBs and deterministic `CityMountainRockAlbedo`; only the near toe
@@ -65,8 +69,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   clip contract in `DepthOnly` and
   `DepthNormalsOnly`. Portal frame, throat and gate remain ordinary
   `RuntimePrimitiveLit` pieces because they are close-range props, not part of
-  the silhouette handoff; the graded approach, ruts, cross-drain, forecourt
-  cheeks and repair pocket belong to the sibling fringe-Yard plan.
+  the silhouette handoff; the conforming approach terrain, narrow ruts,
+  cross-drain, grounded stepped return wings and supported side light-frame
+  belong to the sibling fringe-Yard plan.
   The one portal is derived from `yard-south-west-access`: an approximately
   `8 x 5.5 m` opening, short dark rock throat and visible metal gate with a
   collider. It is a sealed future-location stub, not a gameplay tunnel: there
@@ -180,16 +185,38 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   accesses and terrain samples. Four west/south profiles share the grammar of
   an old municipal service belt: graded maintenance trace, drainage,
   retaining work, sparse poles/cables, repair stock and restrained rockfall.
+  The complete mountain-facing `OpenGround` skin is split from generic Yard
+  ground and receives one quiet measured compacted-fill sheet on its sampled
+  terrain mesh. Its depth is deliberately authored as road threshold `0-4 m`,
+  working middle `4-14 m` and existing service/toe belt `14-22 m`. A continuous
+  collider-free shoulder, three secondary service traces and three or four
+  seeded meso compositions per strip make the road-to-rock sequence legible;
+  the maximum longitudinal gap between those compositions and either strip end
+  is `40 m`. Wherever the toe chapter uses `ServiceTrack`, it is a pair of
+  narrow terrain-following traces rather than a broad collider-free surface
+  box; the south-east chapter uses its drain instead.
   One macro anchor distinguishes each mountain-facing strip: stepped masonry
   around a stone culvert, a concrete repair frame with winch and pipe stock,
-  the readable sealed-tunnel forecourt, and caged floodworks with a gauge and
-  silt fan. Three deterministic measured sheets give the service track,
-  board-formed concrete and old masonry independent metre-scale reads; rock,
-  silt and iron reuse their existing City families. The south-west profile
-  keeps a physical corridor wider than `6 m`. The other three mountain strips
-  reserve straight `6 m` gravel spurs from their declared entrances to within
-  one player radius of the ridge toe; retaining modules are split around each
-  corridor rather than deleting a full `~16 m` bay. At the ring road, the four
+  the readable sealed-tunnel forecourt with continuous stepped concrete wings
+  and a two-post return-light frame, and caged floodworks with a gauge and
+  narrow silt-wash cuts. The floodworks has no broad collider-free repair or
+  silt platform; every remaining surface trace is at most `0.8 m` wide. Four
+  deterministic measured sheets give the quiet forefield,
+  service track, board-formed concrete and old masonry independent metre-scale
+  reads; rock, silt and iron reuse their existing City families. The
+  south-west profile keeps a physical terrain corridor wider than `6 m`, marked
+  by a narrow embedded approach trace and paired wheel ruts rather than a
+  `6.9 m` visual platform. Its former loose portal blocks are now two continuous
+  three-stage concrete returns: their horizontal bases are seated below the
+  lowest sampled terrain corner, their iron caps rest on the concrete, and the
+  return lamp belongs to a supported two-post frame instead of floating stock.
+  The other three mountain strips
+  reserve straight capsule-clear `6 m` routes from their declared entrances to
+  within one player radius of the ridge toe. The two western routes have broad
+  gravel aprons; the south-east flood route stays on the continuous forefield
+  terrain and is marked only by a narrow embedded trace reaching its drain.
+  Retaining modules are split around each corridor rather than deleting a full
+  `~16 m` bay. At the ring road, the four
   mountain Yards opt out of single-gate navigation: every frontage interval
   already classified step-safe becomes a real connector, while unsafe height
   changes keep their rails. Custom layouts and the eastern Yard retain the
@@ -207,8 +234,28 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   interaction, prompt, scene or navigation continuation. The lot and road-grid footprint is
   still normalized to `(0,0)` because every
   per-cell random stream hashes raw cell coordinates; only the
-  `OpenLand`/`Water` fringe may reach `-1`, and the `(-1,-1)` corner stays
-  void. Yards are excluded from signature stairs and from bus-stop corner
+  `OpenLand`/`Water` fringe may reach `-1`. The `(-1,-1)` blueprint cell stays
+  absent from canonical surfaces, but the mountain plan now owns one precisely
+  bounded city-side earthwork over its former void. Its outer wings retain the
+  sampled west/south terrain edges and every diagonal toe station; inside them,
+  two ordinary upward ground triangles form a continuous central slope of
+  about `16.2°`. There are no stairs, benches, retaining faces or overlaid
+  platforms. The closure contributes nothing to `RoadWalkableArea`; the
+  ordinary horizontal and vertical map-boundary fence segments both reach the
+  exact road corner and form one physical L-shaped barrier. Fence endpoints
+  inside a square Street node cap fall back to that node's datum when the
+  edge-distance sampler cannot see the cap corner, so the rails stay at road
+  height instead of diving toward world zero. The default coastal blueprint
+  also authors two `4 m` `CornerGuard` legs at the north-east urban-core road
+  cap beside lot `[12,11]`. Their separate purpose is deliberate: active lake
+  and waterfront ground lies outside that cap, so generic unsupported-boundary
+  subtraction would otherwise remove the local L; the guard does not continue
+  along either shore or change navigation. Render and collision
+  share the same 20-vertex, 18-triangle soil topology behind that fence. The turning ridge interpolates its
+  entire cross-section from the west normal to the south normal, so its toe,
+  shoulder, crest and back weld at both endpoints instead of meeting at one
+  point. Yards
+  are excluded from signature stairs and from bus-stop corner
   eligibility so the canonical city's stairs, Route 01 and home stop do not
   drift.
 - **Accepted — The bar-side yard is an inter-building gap, not a fringe Yard:**

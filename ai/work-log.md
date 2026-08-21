@@ -6,6 +6,158 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-21 — The ridge turn and both authored road corners are continuous
+
+- Reproduced the report at player position `(-154.85,-159.40)`. The canonical
+  blueprint intentionally omits cell `(-1,-1)`, leaving a `322 m²` concave
+  pentagon between the west Yard, south Yard, road-node box and diagonal
+  mountain toe with neither render triangles nor collision.
+- Added a default-only mountain corner-closure descriptor. Its west and south
+  chains reuse the continuous-terrain axis samples and heights, its inner point
+  meets the actual south-west road-node corner, and its outer edge follows all
+  three diagonal toe stations. One world-UV forefield mesh supplies both the
+  renderer and the MeshCollider, without adding a full square surface behind
+  the mountain.
+- Follow-up traversal exposed that the first closure was absent from
+  `RoadWalkableArea`. A corrective stair-and-terrace pass was visually and
+  spatially wrong for an ordinary soil corner and was removed completely. The
+  final closure is one 20-vertex, 18-triangle natural-ground mesh: its direct
+  centre is a `16.2°` slope with no stairs, benches, retaining faces or props.
+  It contributes no footprint to `RoadWalkableArea`; the soil only fills the
+  visual and physical void behind the road edge.
+- Kept the ordinary map-boundary fence ownership. Its horizontal and vertical
+  legs both reach the exact road corner and meet there as one physical L-shaped
+  barrier, so the player cannot leave the street into the filled pocket.
+- The first visual check exposed a height-sampling defect hidden by that XZ
+  contract: the square road-node corner lies outside the elevation sampler's
+  round edge corridor, so both shared endpoints fell to world `Y=0` and the
+  rails plunged underground at `68.4°`. Fence planning now falls back to the
+  owning Street node datum for points inside its square cap. Both `4 m` legs
+  consequently remain horizontal at the actual road height and visibly meet.
+- Added a separate default-coastal `CornerGuard` pair at the north-east
+  urban-core road cap beside lot `[12,11]`. Its two level, perpendicular
+  `4 m` physical legs meet at the real node datum as an ordinary L. No ground, ridge,
+  navigation footprint or extended waterfront fence was added, so the lake
+  and northern-shore approaches remain open.
+- Traced the upper slit to the diagonal ridge using one fixed south-west normal:
+  only its toe anchor matched the neighbouring west/south ridges while shoulder,
+  crest and back diverged by metres. The join now interpolates the complete
+  outward profile and validation requires both endpoint cross-sections to weld.
+- **Verification:** the focused Unity EditMode regression
+  `SouthWestCornerClosure_WeldsSampledGroundAndCollision` passed (`1/1`)
+  after the natural-ground replacement. It builds the closure, verifies the
+  shared render/collision topology, confirms the former route remains outside
+  the radius-`0.35 m` walkable mask, checks both collidered and rendered fence
+  legs meet at the same corner on the road-node datum, and confirms navigation
+  stops cityward of the rock toe. The focused Unity EditMode regression
+  `DefaultCoastal_CellTwelveElevenBuildsVisibleCornerGuard` also passed (`1/1`),
+  proving both north-east legs, their exact height and their visible physical
+  rail meshes.
+  `git diff --check` passed with only
+  the existing texture-file line-ending notices. Full suites, a player build
+  and a manual City visual smoke were intentionally omitted in fast mode.
+
+## 2026-08-21 — South-west slabs, loose portal blocks and the rock void are gone
+
+- Reproduced the report in cell `[5,-1]`, inside
+  `yard-south-west`. Its `6.9 m` tunnel-approach ribbon, `4.6 m` longitudinal
+  service-track boxes and inherited repair pad were collider-free surfaces
+  sampled only on their centre lines; the cross-slope left visible corners up
+  to `0.16 m` in the air.
+- Kept the logical `6.9 m` forecourt and `>6 m` capsule-clear terrain route,
+  but replaced its broad visual box with a `0.36 m` embedded trace and retained
+  paired `0.36 m` wheel ruts. Western service tracks remain paired `0.76 m`
+  terrain-following traces; south-west tracks and spurs use the `0.36 m` cap,
+  and generic repair stock now belongs only to the industrial profile without
+  a ground pad. Pure-plan validation checks every affected lower corner with
+  no more than `0.02 m` positive gap. The paired `8 m` traces and compact portal
+  assembly keep a strict re-derived `650`-descriptor ceiling.
+- Traced the remaining portal-side float to two concrete `PipeStock` bars, one
+  deliberately offset `0.36 m` above ground, and to six isolated cheek boxes.
+  Replaced the whole loose read with two continuous three-stage board-formed
+  concrete returns, supported iron wear caps and a two-post side frame for the
+  cityward lamp. Each structural base is placed below the lowest of its four
+  terrain samples, while the freight anchor and drain covers are narrow,
+  terrain-seated marks. The exact drive-clear bounds remain untouched.
+- Traced the universal rock gap to the mountain cross-section starting at its
+  old foot `0.35 m` beyond the terrain toe. Added an exact toe anchor and a
+  rock seam buried `0.04 m` and overlapped `0.08 m` cityward; both the visible
+  ridge and its near-toe collider cover the new bands. Generalized ridge end
+  caps while preserving the declared tunnel and river openings.
+- **Verification:** the exact Unity EditMode regressions
+  `DefaultCoastal_CellFiveMinusOneUsesNarrowTunnelTraces` and
+  `PhysicalRidges_BuryRockSeamAcrossEveryOwnedTerrainToe` each passed `1/1`;
+  the first was rerun after the portal rebuild with its new terrain-seat,
+  support, depth-span and drive-clear assertions and again passed `1/1`.
+  `git diff --check` passed with only the existing texture-file line-ending
+  notices. Full suites, a player build and a manual City visual smoke were
+  intentionally not run in fast mode.
+
+## 2026-08-21 — Forefield overlays no longer float or pass through
+
+- Reproduced the report in cell `[7,-1]`, the first access cell of
+  `yard-south-east`. Its new floodworks composition combined a broad
+  center-grounded, collider-free anchor slab with wide shoulder sections; the
+  low gabion was physical but sampled only once across the terrain slope.
+- Replaced every broad forefield anchor with a narrow graded stroke directed
+  down the road-to-rock slope. Reduced the shoulder to a `0.76 m` trace, split
+  it exactly at source terrain-cell boundaries, lowered all new surface marks
+  into the ground skin, and divided each floodworks return into three separately
+  grounded solid gabions. Raised terrace shelves and all rockfall masses now
+  use the existing collidered world batches.
+- Extended pure-plan validation over maximum trace widths, slope direction,
+  terrain contact, low-return depth and physical-mass collision. Added one
+  regression that inspects the bottom corners of the exact `[7,-1]` parts and
+  the collision policy across all fringe Yards.
+- A follow-up screenshot exposed an older, separate culprit at the toe: the
+  south-east `service-track-*` run was a `4.6 m` wide earth-textured visual box
+  strip. Removed that whole longitudinal run from `SouthFloodWorks`; the
+  conforming forefield terrain remains underneath, and the toe drain/gabions
+  retain the floodworks read. Validation and the exact regression now require
+  that the south-east Yard cannot reacquire a `ServiceTrack` descriptor.
+- Narrowed the remaining south-east access overlay from a rigid `5.4 m` slab
+  to a `0.76 m` embedded trace without narrowing its capsule-clear terrain
+  route. Flood service traces now terminate at the actual toe drain; `2 m`
+  terrain-following segments and `0.10 m` downward thickness keep their bottom
+  edges seated below the sloped ground skin.
+- A second follow-up position `(77.50, -165.37)` exposed two older broad
+  collider-free boxes: the `5 x 6.8 m` dark silt fan and the generic
+  `5.4 x 4.2 m` repair pad. Removed both from `SouthFloodWorks`, narrowed its
+  service/anchor/overflow marks to at most `0.8 m`, and made the validator plus
+  focused regression reject either platform kind or any newly broad trace.
+- **Verification:** the focused Unity EditMode
+  `DefaultCoastal_CellSevenMinusOneSeatsForefieldAndBlocksMasses` regression
+  passed `1/1`; `git diff --check` passed with only the existing line-ending
+  notices for the texture manifest/generator. Full suites, a player build and
+  a manual City visual smoke were intentionally not run in fast mode.
+
+## 2026-08-21 — The road-to-mountain forefield is no longer empty
+
+- Traced the flat read to the authoritative terrain build: every `OpenGround`
+  Yard was emitted with `applyGroundAppearance=false`, while all measured
+  fringe sheets and most geometry lived only in the last metres at the rock
+  toe. Split the four mountain-facing area IDs into their own conforming
+  `Mountain Forefield Ground` mesh and applied a new quiet compacted-fill
+  albedo with baked `8 m` world UVs. The eastern/custom batch remains generic,
+  and every source area still owns exactly one terrain mesh collider.
+- Authored the complete roughly `22 m` depth as three readable chapters: a
+  continuous collider-free road shoulder in `0-4 m`, a `4-14 m` working band
+  crossed by three secondary service traces, and the established track,
+  drainage and retaining belt in `14-22 m`. Each mountain strip now carries
+  three or four deterministic meso compositions with no empty longitudinal
+  gap over `40 m`: drainage shelves, repair pipes/cradles, freight staging, or
+  silt-wash/gabion returns. Raised stock remains physical; surface marks do not.
+- Extended the validator over depth bands, anchor and pole spacing, all
+  step-safe road seams, the four capsule routes, river notch, tunnel lane and a
+  bounded `640`-descriptor ceiling. Runtime detail remains in shared
+  material/style batches and adds no `Light`.
+- **Verification:** `python tools/build-city-fringe-textures.py --verify`
+  passed all four measured sheets. The focused Unity EditMode `CityFringeYard`
+  category passed `5/5`, covering deterministic coverage/budget, every safe
+  seam and rock route, exact terrain ownership/texture/UV/collider split, and
+  the retained 12-Light lease. Full suites, a player build and a manual City
+  visual smoke were intentionally not run in fast mode.
+
 ## 2026-08-21 — The outer ring now opens into the mountain fringe
 
 - Traced the blocked edge to two independent contracts. All Yard ground was

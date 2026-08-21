@@ -14,11 +14,14 @@ namespace BarPromenade
     internal static class CityMountainBoundaryMeshFactory
     {
         private const float MaximumChunkLength = 48f;
+        internal const float ToeGroundOverlap = 0.08f;
+        internal const float ToeGroundBurial = 0.04f;
         private const float FootInset = 0.35f;
         private const float ShoulderDepthRatio = 0.20f;
         private const float CrestDepthRatio = 0.52f;
         private const float ShoulderHeightRatio = 0.34f;
         private const float BackHeightRatio = 0f;
+        private const int ToeColliderBandCount = 3;
 
         internal static GameObject CreateRidge(
             Transform parent,
@@ -69,6 +72,77 @@ namespace BarPromenade
             }
 
             return root;
+        }
+
+        internal static GameObject CreateCornerClosure(
+            Transform parent,
+            CityMountainCornerClosureDescriptor closure)
+        {
+            if (parent == null)
+            {
+                throw new ArgumentNullException(nameof(parent));
+            }
+
+            if (closure == null)
+            {
+                throw new ArgumentNullException(nameof(closure));
+            }
+
+            HomeSurfaceRecipe recipe =
+                CityFringeYardSurfaceAppearance.GetRecipe(
+                    CityFringeYardSurfaceKind.ForefieldGround);
+            float tilesPerMeter = 1f / recipe.MetersPerTile;
+            var vertices = new List<Vector3>(closure.Vertices);
+            List<Vector2> uvs = CreateCornerClosureUvs(
+                closure,
+                tilesPerMeter);
+
+            var triangles = new List<int>(closure.TriangleIndices);
+            var mesh = new Mesh
+            {
+                name = $"{closure.StableId} Mesh",
+                hideFlags = HideFlags.HideAndDontSave,
+                indexFormat = vertices.Count > ushort.MaxValue
+                    ? IndexFormat.UInt32
+                    : IndexFormat.UInt16
+            };
+            mesh.SetVertices(vertices);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(triangles, 0, true);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            var result = new GameObject(closure.StableId);
+            result.transform.SetParent(parent, false);
+            result.AddComponent<MeshFilter>().sharedMesh = mesh;
+            var renderer = result.AddComponent<MeshRenderer>();
+            renderer.shadowCastingMode = ShadowCastingMode.On;
+            renderer.receiveShadows = true;
+            renderer.lightProbeUsage = LightProbeUsage.Off;
+            renderer.reflectionProbeUsage = ReflectionProbeUsage.Off;
+            CityFringeYardSurfaceAppearance.ApplyCombined(
+                renderer,
+                CityFringeYardSurfaceKind.ForefieldGround,
+                CityExteriorAppearance.YardGround);
+            result.AddComponent<MeshCollider>().sharedMesh = mesh;
+            result.AddComponent<RuntimeGeneratedMeshOwner>()
+                .Initialize(mesh);
+            mesh.UploadMeshData(false);
+            return result;
+        }
+
+        private static List<Vector2> CreateCornerClosureUvs(
+            CityMountainCornerClosureDescriptor closure,
+            float tilesPerMeter)
+        {
+            var result = new List<Vector2>(closure.Vertices.Count);
+            for (int index = 0; index < closure.Vertices.Count; index++)
+            {
+                Vector3 vertex = closure.Vertices[index];
+                result.Add(new Vector2(vertex.x, vertex.z) * tilesPerMeter);
+            }
+
+            return result;
         }
 
         internal static GameObject CreatePortalFrame(
@@ -292,16 +366,21 @@ namespace BarPromenade
                 Vector3[] nextCross = CreateCrossSection(next);
                 Vector3 inward = -Flatten(
                     current.OutwardNormal + next.OutwardNormal);
-                AddQuad(
-                    vertices,
-                    uvs,
-                    triangles,
-                    currentCross[0],
-                    currentCross[1],
-                    nextCross[0],
-                    nextCross[1],
-                    (inward * 0.72f +
-                     Vector3.up * 0.28f).normalized);
+                for (int band = 0;
+                     band < ToeColliderBandCount;
+                     band++)
+                {
+                    AddQuad(
+                        vertices,
+                        uvs,
+                        triangles,
+                        currentCross[band],
+                        currentCross[band + 1],
+                        nextCross[band],
+                        nextCross[band + 1],
+                        (inward * 0.72f +
+                         Vector3.up * 0.28f).normalized);
+                }
             }
 
             var mesh = new Mesh
@@ -378,7 +457,7 @@ namespace BarPromenade
             return result;
         }
 
-        private static Vector3[] CreateCrossSection(
+        internal static Vector3[] CreateCrossSection(
             CityMountainRidgeStation station)
         {
             Vector3 outward = Flatten(station.OutwardNormal);
@@ -389,6 +468,9 @@ namespace BarPromenade
             float height = Mathf.Max(1f, station.PeakY - station.BaseY);
             return new[]
             {
+                anchor - outward * ToeGroundOverlap +
+                Vector3.down * ToeGroundBurial,
+                anchor,
                 anchor + outward * FootInset + Vector3.down * 0.12f,
                 anchor + outward *
                 (station.Depth * ShoulderDepthRatio) +
@@ -412,22 +494,17 @@ namespace BarPromenade
                 direction.x,
                 0f,
                 direction.y).normalized;
-            AddTriangle(
-                vertices,
-                uvs,
-                triangles,
-                cross[0],
-                cross[1],
-                cross[2],
-                desired);
-            AddTriangle(
-                vertices,
-                uvs,
-                triangles,
-                cross[0],
-                cross[2],
-                cross[3],
-                desired);
+            for (int index = 1; index < cross.Count - 1; index++)
+            {
+                AddTriangle(
+                    vertices,
+                    uvs,
+                    triangles,
+                    cross[0],
+                    cross[index],
+                    cross[index + 1],
+                    desired);
+            }
         }
 
         private static void AddQuad(

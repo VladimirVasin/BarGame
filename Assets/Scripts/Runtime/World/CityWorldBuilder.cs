@@ -80,6 +80,7 @@ namespace BarPromenade
             Bounds bounds = BuildGround(
                 world,
                 layout,
+                fringeYardPlan,
                 settings,
                 out GameObject parkLawn,
                 out CityCemeteryGroundExcavation cemeteryExcavation);
@@ -192,6 +193,7 @@ namespace BarPromenade
         private static Bounds BuildGround(
             Transform parent,
             CityLayout layout,
+            CityFringeYardPlan fringeYardPlan,
             CityGenerationSettings settings,
             out GameObject parkLawn,
             out CityCemeteryGroundExcavation cemeteryExcavation)
@@ -267,13 +269,10 @@ namespace BarPromenade
                 Color.white,
                 true);
             parkLawn = BuildParkLawn(surfaces, layout);
-            CityTerrainSurfaceWorldBuilder.Build(
-                "Yard Ground",
+            CityFringeYardGroundWorldBuilder.Build(
                 surfaces,
                 layout,
-                CitySurfaceKind.OpenGround,
-                CityExteriorAppearance.YardGround,
-                false);
+                fringeYardPlan);
             CityTerrainSurfaceWorldBuilder.Build(
                 "Beach",
                 surfaces,

@@ -8,7 +8,8 @@ namespace BarPromenade
     public enum RoadFenceSegmentPurpose
     {
         MapBoundary = 0,
-        DeadEnd = 1
+        DeadEnd = 1,
+        CornerGuard = 2
     }
 
     public enum RoadFenceOpeningKind

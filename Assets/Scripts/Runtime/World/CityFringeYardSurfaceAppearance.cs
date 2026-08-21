@@ -7,11 +7,12 @@ namespace BarPromenade
     {
         ServiceTrack,
         Concrete,
-        Masonry
+        Masonry,
+        ForefieldGround
     }
 
     /// <summary>
-    /// Owns the three packaged surface recipes specific to the west/south
+    /// Owns the four packaged surface recipes specific to the west/south
     /// service fringe. The constants mirror the measured contract emitted by
     /// <c>tools/build-city-fringe-textures.py</c>: a compensated authored tint
     /// multiplies each mean-controlled albedo without changing the brightness
@@ -31,9 +32,11 @@ namespace BarPromenade
             "Textures/CityFringeConcreteAlbedo";
         public const string MasonryTextureResourcePath =
             "Textures/CityFringeMasonryAlbedo";
+        public const string ForefieldGroundTextureResourcePath =
+            "Textures/CityFringeForefieldAlbedo";
 
         private const int SurfaceCount =
-            (int)CityFringeYardSurfaceKind.Masonry + 1;
+            (int)CityFringeYardSurfaceKind.ForefieldGround + 1;
         private const float MinimumUvScale = 0.35f;
         private const int HashSaltBase = 8000;
 
@@ -79,6 +82,13 @@ namespace BarPromenade
                         0.035f,
                         0f,
                         1.3895f);
+                case CityFringeYardSurfaceKind.ForefieldGround:
+                    return new HomeSurfaceRecipe(
+                        ForefieldGroundTextureResourcePath,
+                        8.0f,
+                        0.025f,
+                        0f,
+                        1.4415f);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(kind),

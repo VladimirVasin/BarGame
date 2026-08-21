@@ -244,6 +244,348 @@ namespace BarPromenade
         }
     }
 
+    /// <summary>
+    /// The authoritative ground skin for the otherwise omitted south-west
+    /// blueprint corner. Its perimeter follows the west yard, the road-node
+    /// corner, the south yard and every toe station of the diagonal join.
+    /// </summary>
+    public sealed class CityMountainCornerClosureDescriptor :
+        IEquatable<CityMountainCornerClosureDescriptor>
+    {
+        public const string SouthWestStableId =
+            "mountain-south-west-corner-apron";
+
+        public const float MaximumNaturalGroundSlopeDegrees = 18f;
+
+        private readonly ReadOnlyCollection<Vector3> westBoundarySamples;
+        private readonly ReadOnlyCollection<Vector3> southBoundarySamples;
+        private readonly ReadOnlyCollection<Vector3> vertices;
+        private readonly ReadOnlyCollection<int> surfaceTriangleIndices;
+        private readonly ReadOnlyCollection<int> supportTriangleIndices;
+        private readonly ReadOnlyCollection<int> triangleIndices;
+
+        internal CityMountainCornerClosureDescriptor(
+            string stableId,
+            Vector2Int voidCell,
+            string joinStableId,
+            string westAreaId,
+            string southAreaId,
+            IList<Vector3> sourceWestBoundarySamples,
+            Vector3 roadCorner,
+            IList<Vector3> sourceSouthBoundarySamples,
+            Vector3 joinMiddleToe)
+        {
+            if (sourceWestBoundarySamples == null ||
+                sourceWestBoundarySamples.Count < 2)
+            {
+                throw new ArgumentException(
+                    "A mountain corner closure requires a sampled west " +
+                    "boundary.",
+                    nameof(sourceWestBoundarySamples));
+            }
+
+            if (sourceSouthBoundarySamples == null ||
+                sourceSouthBoundarySamples.Count < 2)
+            {
+                throw new ArgumentException(
+                    "A mountain corner closure requires a sampled south " +
+                    "boundary.",
+                    nameof(sourceSouthBoundarySamples));
+            }
+
+            StableId = stableId ?? string.Empty;
+            VoidCell = voidCell;
+            JoinStableId = joinStableId ?? string.Empty;
+            WestAreaId = westAreaId ?? string.Empty;
+            SouthAreaId = southAreaId ?? string.Empty;
+            westBoundarySamples = new ReadOnlyCollection<Vector3>(
+                new List<Vector3>(sourceWestBoundarySamples));
+            southBoundarySamples = new ReadOnlyCollection<Vector3>(
+                new List<Vector3>(sourceSouthBoundarySamples));
+
+            var vertexSource = new List<Vector3>(
+                westBoundarySamples.Count + southBoundarySamples.Count + 2);
+            vertexSource.AddRange(westBoundarySamples);
+            RoadCornerVertexIndex = vertexSource.Count;
+            vertexSource.Add(roadCorner);
+            SouthBoundaryStartVertexIndex = vertexSource.Count;
+            vertexSource.AddRange(southBoundarySamples);
+            JoinMiddleToeVertexIndex = vertexSource.Count;
+            vertexSource.Add(joinMiddleToe);
+            var surfaceTriangles = new List<int>(18 * 3);
+            var supportTriangles = new List<int>();
+            BuildNaturalGroundTriangles(
+                westBoundarySamples.Count,
+                southBoundarySamples.Count,
+                RoadCornerVertexIndex,
+                SouthBoundaryStartVertexIndex,
+                JoinMiddleToeVertexIndex,
+                surfaceTriangles);
+            vertices = new ReadOnlyCollection<Vector3>(vertexSource);
+            surfaceTriangleIndices = new ReadOnlyCollection<int>(
+                surfaceTriangles);
+            supportTriangleIndices = new ReadOnlyCollection<int>(
+                supportTriangles);
+            var triangles = new List<int>(
+                surfaceTriangles.Count + supportTriangles.Count);
+            triangles.AddRange(surfaceTriangles);
+            triangles.AddRange(supportTriangles);
+            triangleIndices = new ReadOnlyCollection<int>(triangles);
+            XZBounds = CalculateBounds(vertices);
+            ProjectedArea = CalculateProjectedArea(
+                westBoundarySamples,
+                roadCorner,
+                southBoundarySamples,
+                joinMiddleToe);
+
+            MaximumSurfaceSlopeDegrees = CalculateMaximumSurfaceSlope(
+                vertices,
+                surfaceTriangleIndices);
+            NaturalGroundSlopeDegrees = Mathf.Max(
+                CalculateTriangleSlope(
+                    vertices[0],
+                    roadCorner,
+                    joinMiddleToe),
+                CalculateTriangleSlope(
+                    joinMiddleToe,
+                    roadCorner,
+                    southBoundarySamples[
+                        southBoundarySamples.Count - 1]));
+        }
+
+        public string StableId { get; }
+        public Vector2Int VoidCell { get; }
+        public string JoinStableId { get; }
+        public string WestAreaId { get; }
+        public string SouthAreaId { get; }
+        public IReadOnlyList<Vector3> WestBoundarySamples =>
+            westBoundarySamples;
+        public IReadOnlyList<Vector3> SouthBoundarySamples =>
+            southBoundarySamples;
+        public IReadOnlyList<Vector3> Vertices => vertices;
+        public IReadOnlyList<int> SurfaceTriangleIndices =>
+            surfaceTriangleIndices;
+        public IReadOnlyList<int> SupportTriangleIndices =>
+            supportTriangleIndices;
+        public IReadOnlyList<int> TriangleIndices => triangleIndices;
+        public Rect XZBounds { get; }
+        public float ProjectedArea { get; }
+        public float MaximumSurfaceSlopeDegrees { get; }
+        public float NaturalGroundSlopeDegrees { get; }
+        public int RoadCornerVertexIndex { get; }
+        public int SouthBoundaryStartVertexIndex { get; }
+        public int JoinMiddleToeVertexIndex { get; }
+        public int SouthToeVertexIndex =>
+            SouthBoundaryStartVertexIndex + southBoundarySamples.Count - 1;
+
+        public Vector3 WestToe => westBoundarySamples[0];
+        public Vector3 WestGround =>
+            westBoundarySamples[westBoundarySamples.Count - 1];
+        public Vector3 RoadCorner => vertices[RoadCornerVertexIndex];
+        public Vector3 SouthGround => southBoundarySamples[0];
+        public Vector3 SouthToe =>
+            southBoundarySamples[southBoundarySamples.Count - 1];
+        public Vector3 JoinMiddleToe => vertices[JoinMiddleToeVertexIndex];
+
+        public bool Equals(CityMountainCornerClosureDescriptor other)
+        {
+            if (ReferenceEquals(null, other))
+            {
+                return false;
+            }
+
+            if (ReferenceEquals(this, other))
+            {
+                return true;
+            }
+
+            if (!string.Equals(
+                    StableId,
+                    other.StableId,
+                    StringComparison.Ordinal) ||
+                VoidCell != other.VoidCell ||
+                !string.Equals(
+                    JoinStableId,
+                    other.JoinStableId,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    WestAreaId,
+                    other.WestAreaId,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    SouthAreaId,
+                    other.SouthAreaId,
+                    StringComparison.Ordinal) ||
+                vertices.Count != other.vertices.Count ||
+                triangleIndices.Count != other.triangleIndices.Count)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < vertices.Count; index++)
+            {
+                if (!vertices[index].Equals(other.vertices[index]))
+                {
+                    return false;
+                }
+            }
+
+            for (int index = 0; index < triangleIndices.Count; index++)
+            {
+                if (triangleIndices[index] != other.triangleIndices[index])
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is CityMountainCornerClosureDescriptor other &&
+                   Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = StringComparer.Ordinal.GetHashCode(
+                    StableId ?? string.Empty);
+                hash = (hash * 397) ^ VoidCell.GetHashCode();
+                hash = (hash * 397) ^ StringComparer.Ordinal.GetHashCode(
+                    JoinStableId ?? string.Empty);
+                hash = (hash * 397) ^ StringComparer.Ordinal.GetHashCode(
+                    WestAreaId ?? string.Empty);
+                hash = (hash * 397) ^ StringComparer.Ordinal.GetHashCode(
+                    SouthAreaId ?? string.Empty);
+                for (int index = 0; index < vertices.Count; index++)
+                {
+                    hash = (hash * 397) ^ vertices[index].GetHashCode();
+                }
+
+                for (int index = 0; index < triangleIndices.Count; index++)
+                {
+                    hash = (hash * 397) ^ triangleIndices[index];
+                }
+
+                return hash;
+            }
+        }
+
+        private static Rect CalculateBounds(IReadOnlyList<Vector3> source)
+        {
+            float xMin = source[0].x;
+            float xMax = source[0].x;
+            float zMin = source[0].z;
+            float zMax = source[0].z;
+            for (int index = 1; index < source.Count; index++)
+            {
+                Vector3 vertex = source[index];
+                xMin = Mathf.Min(xMin, vertex.x);
+                xMax = Mathf.Max(xMax, vertex.x);
+                zMin = Mathf.Min(zMin, vertex.z);
+                zMax = Mathf.Max(zMax, vertex.z);
+            }
+
+            return Rect.MinMaxRect(xMin, zMin, xMax, zMax);
+        }
+
+        private static float CalculateProjectedArea(
+            IReadOnlyList<Vector3> west,
+            Vector3 roadCorner,
+            IReadOnlyList<Vector3> south,
+            Vector3 joinMiddleToe)
+        {
+            var source = new List<Vector3>(
+                west.Count + south.Count + 2);
+            source.AddRange(west);
+            source.Add(roadCorner);
+            source.AddRange(south);
+            source.Add(joinMiddleToe);
+            float twiceArea = 0f;
+            for (int index = 0; index < source.Count; index++)
+            {
+                Vector3 current = source[index];
+                Vector3 next = source[(index + 1) % source.Count];
+                twiceArea += current.x * next.z - next.x * current.z;
+            }
+
+            return Mathf.Abs(twiceArea) * 0.5f;
+        }
+
+        private static float CalculateMaximumSurfaceSlope(
+            IReadOnlyList<Vector3> sourceVertices,
+            IReadOnlyList<int> sourceTriangles)
+        {
+            float maximum = 0f;
+            for (int index = 0; index < sourceTriangles.Count; index += 3)
+            {
+                Vector3 first = sourceVertices[sourceTriangles[index]];
+                Vector3 second = sourceVertices[sourceTriangles[index + 1]];
+                Vector3 third = sourceVertices[sourceTriangles[index + 2]];
+                maximum = Mathf.Max(
+                    maximum,
+                    CalculateTriangleSlope(first, second, third));
+            }
+
+            return maximum;
+        }
+
+        private static float CalculateTriangleSlope(
+            Vector3 first,
+            Vector3 second,
+            Vector3 third)
+        {
+            Vector3 normal = Vector3.Cross(
+                second - first,
+                third - first).normalized;
+            return Vector3.Angle(normal, Vector3.up);
+        }
+
+        private static void BuildNaturalGroundTriangles(
+            int westSampleCount,
+            int southSampleCount,
+            int roadIndex,
+            int southStartIndex,
+            int middleToeIndex,
+            ICollection<int> destination)
+        {
+            for (int index = 0; index < westSampleCount - 1; index++)
+            {
+                AddTriangle(destination, index, index + 1, roadIndex);
+            }
+
+            AddTriangle(destination, 0, roadIndex, middleToeIndex);
+            AddTriangle(
+                destination,
+                middleToeIndex,
+                roadIndex,
+                southStartIndex + southSampleCount - 1);
+
+            for (int index = 0; index < southSampleCount - 1; index++)
+            {
+                AddTriangle(
+                    destination,
+                    roadIndex,
+                    southStartIndex + index,
+                    southStartIndex + index + 1);
+            }
+        }
+
+        private static void AddTriangle(
+            ICollection<int> destination,
+            int first,
+            int second,
+            int third)
+        {
+            destination.Add(first);
+            destination.Add(second);
+            destination.Add(third);
+        }
+    }
+
     public readonly struct CityMountainRiverNotchDescriptor :
         IEquatable<CityMountainRiverNotchDescriptor>
     {
@@ -415,6 +757,8 @@ namespace BarPromenade
                 null,
                 Array.Empty<CityMountainRidgeDescriptor>(),
                 false,
+                null,
+                false,
                 default,
                 false,
                 default);
@@ -425,6 +769,8 @@ namespace BarPromenade
         internal CityMountainBoundaryPlan(
             CityMountainBoundaryDefinition definition,
             IList<CityMountainRidgeDescriptor> ridgeSource,
+            bool hasSouthWestCornerClosure,
+            CityMountainCornerClosureDescriptor southWestCornerClosure,
             bool hasRiverNotch,
             CityMountainRiverNotchDescriptor riverNotch,
             bool hasTunnel,
@@ -433,6 +779,8 @@ namespace BarPromenade
             Definition = definition;
             ridges = new ReadOnlyCollection<CityMountainRidgeDescriptor>(
                 new List<CityMountainRidgeDescriptor>(ridgeSource));
+            HasSouthWestCornerClosure = hasSouthWestCornerClosure;
+            SouthWestCornerClosure = southWestCornerClosure;
             HasRiverNotch = hasRiverNotch;
             RiverNotch = riverNotch;
             HasTunnel = hasTunnel;
@@ -444,6 +792,11 @@ namespace BarPromenade
         public bool IsEnabled => Definition != null;
         public IReadOnlyList<CityMountainRidgeDescriptor> Ridges => ridges;
         public int RidgeCount => ridges.Count;
+        public bool HasSouthWestCornerClosure { get; }
+        public CityMountainCornerClosureDescriptor SouthWestCornerClosure
+        {
+            get;
+        }
         public bool HasRiverNotch { get; }
         public CityMountainRiverNotchDescriptor RiverNotch { get; }
         public bool HasTunnel { get; }

@@ -22,14 +22,44 @@ mountain ridges close only its western and southern edges, with a separate
 southern notch left around the river. All five typed fringe Yards now carry
 deterministic authored edge compositions. The four west/south strips form one
 old municipal service belt of retaining work, drainage, a narrow maintenance
-trace, sparse utility verticals and repair/rockfall pockets. Four large anchors
-keep that belt from becoming repeated noise: stepped masonry and a culvert,
-an industrial repair frame, the sealed-tunnel freight forecourt, and caged
-floodworks with a gauge. Dedicated service-track, board-formed concrete and
-old-masonry sheets carry the close read. Every height-safe seam along the
-west/south ring now opens into that walkable ground instead of acting as an
-invisible wall. Three visible `6 m` gravel spurs cut precisely through the
-retaining line to the mountain toe; the fourth route reaches the sealed portal.
+trace, sparse utility verticals and repair/rockfall pockets. The complete
+roughly `22 m` road-to-rock forefield of those four strips is now a conforming
+terrain mesh with its own quiet compacted-fill sheet instead of flat
+`YardGround` colour. A narrow terrain-conforming road-shoulder trace occupies
+the first `4 m`,
+three secondary service traces cross the working middle, and three or four
+yard-specific meso anchors keep every longitudinal empty interval at or below
+`40 m` before the paired-trace-or-flood-drain/retaining toe belt. All four
+mountain strips use narrow terrain-following maintenance marks instead of
+broad earth-textured longitudinal service-track overlays. Four large anchors
+still finish the chapters: stepped masonry and a culvert, an industrial repair
+frame, the sealed-tunnel freight forecourt with grounded stepped return wings
+and a supported two-post return-light frame, and caged floodworks with a gauge.
+Dedicated forefield, service-track, board-formed concrete and old-masonry
+sheets carry the close read. Every height-safe seam along the west/south ring
+now opens into that walkable ground instead of acting as an invisible wall.
+Three capsule-clear `6 m` routes cut precisely through the retaining line to
+the mountain toe. The two western routes use broad gravel aprons, while the
+south-east floodworks marks its equally clear terrain route with a narrow,
+embedded trace ending at the drain. The fourth route reaches the sealed portal
+over the conforming terrain and is read from a narrow embedded approach mark
+plus two wheel ruts, not from a floating `6.9 m` surface box. At every
+non-opening toe, the physical
+rock mesh now overlaps beneath the ground edge and carries collision through
+that bond, so there is no visual or physical void between soil and mountain.
+The omitted south-west blueprint cell is closed cityward of the diagonal toe
+by one validated, textured corner earthwork mesh whose renderer and collider
+share the same sampled topology. It is one continuous natural-soil slope,
+about `16.2°` across its centre, with no stairs, platforms, retaining faces or
+props. It remains outside the navigation mask behind the two ordinary
+map-boundary fence legs, which meet in a physical right angle at the exact road
+corner; neither geometry nor navigation crosses the rock toe. The turning ridge interpolates its complete cross-section
+from west to south, so both endpoint profiles and the overhead silhouette are
+welded rather than touching at one toe point.
+The north-east urban-core road cap beside lot `[12,11]` has a separate local
+`4 m + 4 m` physical `CornerGuard` pair meeting in the same ordinary right
+angle. It guards only that cap; the northern waterfront, eastern lake ground
+and their authored approaches remain open.
 Each anchor owns one small emissive
 practical; at night the nearest one may lease the last of the existing eight
 street Spot slots, so `CityNightAtmosphere` still owns exactly `12` realtime
@@ -370,8 +400,10 @@ mountain rim starts at `CityMountainBoundaryPlanner.cs` and materializes
 through `CityMountainBoundaryWorldBuilder.cs` plus the presentation-only
 `CityMountainBackdropWorldBuilder.cs`; the authored ground before that rim and
 the separate eastern utility edge start at `CityFringeYardPlanner.cs` and
+`CityFringeYardForefieldPlanner.cs` plus
 `CityFringeYardLandmarkPlanner.cs`, receive measured surfaces through
-`CityFringeYardSurfaceAppearance.cs`, and materialize through
+`CityFringeYardSurfaceAppearance.cs`, split their conforming terrain through
+`CityFringeYardGroundWorldBuilder.cs`, and materialize detail through
 `CityFringeYardWorldBuilder.cs`; its four runtime practical anchors are leased
 by `CityNightAtmosphere.cs` without expanding that pool. Supermarket truth starts
 at `Assets/Scripts/Runtime/Scenes/SupermarketInteriorRoot.cs` and

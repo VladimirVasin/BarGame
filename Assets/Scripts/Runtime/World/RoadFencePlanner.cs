@@ -79,7 +79,7 @@ namespace BarPromenade
 
             var segments =
                 new List<RoadFenceSegmentDescriptor>(
-                    mapBoundary.Count + deadEnds.Count);
+                    mapBoundary.Count + deadEnds.Count + 2);
             AddDescriptors(
                 segments,
                 mapBoundary,
@@ -90,9 +90,85 @@ namespace BarPromenade
                 deadEnds,
                 RoadFenceSegmentPurpose.DeadEnd,
                 layout);
+            AddDefaultNorthEastCornerGuard(segments, layout);
             segments.Sort(CompareSegments);
 
             return new RoadFencePlan(segments, openings);
+        }
+
+        private static void AddDefaultNorthEastCornerGuard(
+            ICollection<RoadFenceSegmentDescriptor> destination,
+            CityLayout layout)
+        {
+            if (!string.Equals(
+                    layout.BlueprintId,
+                    CityBlueprintCatalog.DefaultBlueprintId,
+                    StringComparison.Ordinal))
+            {
+                return;
+            }
+
+            var guardedCell = new Vector2Int(12, 11);
+            bool hasGuardedCell = false;
+            for (int index = 0; index < layout.Surfaces.Count; index++)
+            {
+                if (layout.Surfaces[index].Cell == guardedCell)
+                {
+                    hasGuardedCell = true;
+                    break;
+                }
+            }
+
+            if (!hasGuardedCell)
+            {
+                return;
+            }
+
+            Vector2Int node = guardedCell + Vector2Int.one;
+            var horizontalApproach = new RoadEdge(
+                node + Vector2Int.left,
+                node);
+            var verticalApproach = new RoadEdge(
+                node + Vector2Int.down,
+                node);
+            if (!layout.HasRoad(horizontalApproach) ||
+                !layout.HasRoad(verticalApproach) ||
+                layout.GetPathKind(horizontalApproach) !=
+                CityPathKind.Street ||
+                layout.GetPathKind(verticalApproach) !=
+                CityPathKind.Street)
+            {
+                return;
+            }
+
+            Vector3 nodePosition = layout.GetNodeWorldPosition(node);
+            float halfRoad = layout.RoadWidth * 0.5f;
+            Vector3 corner = nodePosition + new Vector3(
+                halfRoad,
+                0f,
+                halfRoad);
+            Vector3 horizontalStart = new Vector3(
+                nodePosition.x,
+                0f,
+                corner.z);
+            Vector3 verticalStart = new Vector3(
+                corner.x,
+                0f,
+                nodePosition.z);
+            horizontalStart.y = SampleRoadDatum(layout, horizontalStart);
+            verticalStart.y = SampleRoadDatum(layout, verticalStart);
+            corner.y = SampleRoadDatum(layout, corner);
+
+            destination.Add(new RoadFenceSegmentDescriptor(
+                horizontalStart,
+                corner,
+                Vector3.forward,
+                RoadFenceSegmentPurpose.CornerGuard));
+            destination.Add(new RoadFenceSegmentDescriptor(
+                verticalStart,
+                corner,
+                Vector3.right,
+                RoadFenceSegmentPurpose.CornerGuard));
         }
 
         private static IReadOnlyList<Rect> CreateFenceSourceStreetRects(
@@ -336,13 +412,79 @@ namespace BarPromenade
             CityLayout layout,
             Vector3 position)
         {
-            return layout.ElevationPlan.TrySampleSurface(
-                new Vector2(position.x, position.z),
-                CitySurfaceRole.RoadDatum,
-                out float height,
-                out _)
-                ? height
-                : 0f;
+            if (layout.ElevationPlan.TrySampleSurface(
+                    new Vector2(position.x, position.z),
+                    CitySurfaceRole.RoadDatum,
+                    out float height,
+                    out _))
+            {
+                return height;
+            }
+
+            // Street meshes include a square cap at every node. Its four
+            // corners sit outside the round distance test used by the road
+            // sampler, so a fence endpoint there must inherit the node datum
+            // instead of falling back to world zero and diving underground.
+            bool found = false;
+            float bestDistance = float.PositiveInfinity;
+            float nodeDatum = 0f;
+            float halfRoad = layout.RoadWidth * 0.5f + CoordinateEpsilon;
+            for (int index = 0; index < layout.RoadEdges.Count; index++)
+            {
+                RoadEdge edge = layout.RoadEdges[index];
+                if (layout.GetPathKind(edge) != CityPathKind.Street)
+                {
+                    continue;
+                }
+
+                TrySelectRoadNodeDatum(
+                    layout,
+                    edge.A,
+                    position,
+                    halfRoad,
+                    ref found,
+                    ref bestDistance,
+                    ref nodeDatum);
+                TrySelectRoadNodeDatum(
+                    layout,
+                    edge.B,
+                    position,
+                    halfRoad,
+                    ref found,
+                    ref bestDistance,
+                    ref nodeDatum);
+            }
+
+            return found ? nodeDatum : 0f;
+        }
+
+        private static void TrySelectRoadNodeDatum(
+            CityLayout layout,
+            Vector2Int node,
+            Vector3 position,
+            float halfRoad,
+            ref bool found,
+            ref float bestDistance,
+            ref float nodeDatum)
+        {
+            Vector3 nodePosition = layout.GetNodeWorldPosition(node);
+            float deltaX = position.x - nodePosition.x;
+            float deltaZ = position.z - nodePosition.z;
+            if (Mathf.Abs(deltaX) > halfRoad ||
+                Mathf.Abs(deltaZ) > halfRoad)
+            {
+                return;
+            }
+
+            float distance = deltaX * deltaX + deltaZ * deltaZ;
+            if (distance >= bestDistance)
+            {
+                return;
+            }
+
+            found = true;
+            bestDistance = distance;
+            nodeDatum = nodePosition.y;
         }
 
         private static List<BoundarySpan> SubtractSpans(

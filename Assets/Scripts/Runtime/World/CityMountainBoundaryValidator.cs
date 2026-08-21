@@ -30,6 +30,8 @@ namespace BarPromenade
             {
                 if (plan.IsEnabled ||
                     plan.RidgeCount != 0 ||
+                    plan.HasSouthWestCornerClosure ||
+                    plan.SouthWestCornerClosure != null ||
                     plan.HasRiverNotch ||
                     plan.HasTunnel)
                 {
@@ -45,6 +47,8 @@ namespace BarPromenade
                 plan.RidgeCount < 6 ||
                 plan.GetRidgeCount(CityMountainBoundarySide.West) < 3 ||
                 plan.GetRidgeCount(CityMountainBoundarySide.South) < 3 ||
+                !plan.HasSouthWestCornerClosure ||
+                plan.SouthWestCornerClosure == null ||
                 !plan.HasRiverNotch ||
                 !plan.HasTunnel)
             {
@@ -52,13 +56,18 @@ namespace BarPromenade
                     "The default coastal mountain contract is incomplete.");
             }
 
-            ValidateRidges(layout, plan);
+            CityMountainRidgeDescriptor southWestJoin =
+                ValidateRidges(layout, plan);
+            ValidateSouthWestCornerClosure(
+                layout,
+                plan.SouthWestCornerClosure,
+                southWestJoin);
             ValidateTunnel(layout, plan.Tunnel);
             ValidateRiverNotch(layout, plan.RiverNotch);
             ValidateOpenings(plan);
         }
 
-        private static void ValidateRidges(
+        private static CityMountainRidgeDescriptor ValidateRidges(
             CityLayout layout,
             CityMountainBoundaryPlan plan)
         {
@@ -109,6 +118,7 @@ namespace BarPromenade
                         layout,
                         ridge,
                         station,
+                        stationIndex,
                         stationIds);
                     if (stationIndex == 0)
                     {
@@ -138,6 +148,8 @@ namespace BarPromenade
                     "The mountain rim requires one continuous " +
                     "south-west join.");
             }
+
+            return southWestJoin;
         }
 
         private static void ValidateSourceArea(
@@ -167,10 +179,169 @@ namespace BarPromenade
             }
         }
 
+        private static void ValidateSouthWestCornerClosure(
+            CityLayout layout,
+            CityMountainCornerClosureDescriptor closure,
+            CityMountainRidgeDescriptor join)
+        {
+            if (!string.Equals(
+                    closure.StableId,
+                    CityMountainCornerClosureDescriptor.SouthWestStableId,
+                    StringComparison.Ordinal) ||
+                closure.VoidCell != new Vector2Int(-1, -1) ||
+                !string.Equals(
+                    closure.JoinStableId,
+                    join.StableId,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    closure.WestAreaId,
+                    CityMountainBoundaryDefinition.WestSouthAreaId,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    closure.SouthAreaId,
+                    CityMountainBoundaryDefinition.SouthWestAreaId,
+                    StringComparison.Ordinal) ||
+                join.Stations.Count != 3)
+            {
+                throw new InvalidOperationException(
+                    "The south-west mountain corner closure has invalid " +
+                    "ownership.");
+            }
+
+            for (int index = 0; index < layout.Surfaces.Count; index++)
+            {
+                if (layout.Surfaces[index].Cell == closure.VoidCell)
+                {
+                    throw new InvalidOperationException(
+                        "The mountain corner closure must only fill an " +
+                        "omitted blueprint cell.");
+                }
+            }
+
+            Vector3 roadNode = layout.GetNodeWorldPosition(Vector2Int.zero);
+            float halfRoad = layout.RoadWidth * 0.5f;
+            var westGroundXZ = new Vector2(
+                roadNode.x - halfRoad,
+                roadNode.z);
+            var roadCorner = new Vector3(
+                roadNode.x - halfRoad,
+                roadNode.y + CityStreetSurfacePlanner.RoadTop,
+                roadNode.z - halfRoad);
+            var southGroundXZ = new Vector2(
+                roadNode.x,
+                roadNode.z - halfRoad);
+            List<Vector3> expectedWest = CreateExpectedBoundarySamples(
+                layout,
+                closure.WestAreaId,
+                join.Stations[0].WorldXZ,
+                westGroundXZ,
+                true);
+            List<Vector3> expectedSouth = CreateExpectedBoundarySamples(
+                layout,
+                closure.SouthAreaId,
+                southGroundXZ,
+                join.Stations[join.Stations.Count - 1].WorldXZ,
+                false);
+            expectedWest[0] = join.Stations[0].Toe;
+            expectedSouth[expectedSouth.Count - 1] =
+                join.Stations[join.Stations.Count - 1].Toe;
+            var expected = new CityMountainCornerClosureDescriptor(
+                CityMountainCornerClosureDescriptor.SouthWestStableId,
+                new Vector2Int(-1, -1),
+                join.StableId,
+                CityMountainBoundaryDefinition.WestSouthAreaId,
+                CityMountainBoundaryDefinition.SouthWestAreaId,
+                expectedWest,
+                roadCorner,
+                expectedSouth,
+                join.Stations[1].Toe);
+            if (!closure.Equals(expected) ||
+                closure.ProjectedArea <= Tolerance ||
+                !IsPositiveRect(closure.XZBounds))
+            {
+                throw new InvalidOperationException(
+                    "The south-west mountain corner closure left its road, " +
+                    "terrain or rock-toe boundary.");
+            }
+
+            ValidateCornerGround(closure);
+
+            if (closure.SurfaceTriangleIndices.Count == 0 ||
+                closure.SupportTriangleIndices.Count != 0 ||
+                closure.TriangleIndices.Count !=
+                closure.SurfaceTriangleIndices.Count)
+            {
+                throw new InvalidOperationException(
+                    "The mountain corner closure must be one continuous " +
+                    "ground surface without stairs or retaining faces.");
+            }
+
+            float projectedTriangleArea = 0f;
+            for (int index = 0;
+                 index < closure.SurfaceTriangleIndices.Count;
+                 index += 3)
+            {
+                if (index + 2 >= closure.TriangleIndices.Count)
+                {
+                    throw new InvalidOperationException(
+                        "The mountain corner closure has incomplete " +
+                        "triangles.");
+                }
+
+                int first = closure.SurfaceTriangleIndices[index];
+                int second = closure.SurfaceTriangleIndices[index + 1];
+                int third = closure.SurfaceTriangleIndices[index + 2];
+                if (first < 0 || first >= closure.Vertices.Count ||
+                    second < 0 || second >= closure.Vertices.Count ||
+                    third < 0 || third >= closure.Vertices.Count)
+                {
+                    throw new InvalidOperationException(
+                        "The mountain corner closure has invalid triangle " +
+                        "indices.");
+                }
+
+                Vector3 normal = Vector3.Cross(
+                    closure.Vertices[second] - closure.Vertices[first],
+                    closure.Vertices[third] - closure.Vertices[first]);
+                if (!IsFinite(normal) || normal.y <= Tolerance)
+                {
+                    throw new InvalidOperationException(
+                        "The mountain corner closure must contain only " +
+                        "non-degenerate upward triangles.");
+                }
+
+                projectedTriangleArea += normal.y * 0.5f;
+            }
+
+            if (Mathf.Abs(
+                    projectedTriangleArea - closure.ProjectedArea) >
+                Tolerance)
+            {
+                throw new InvalidOperationException(
+                    "The mountain corner closure triangles overlap or " +
+                    "leave a ground gap.");
+            }
+        }
+
+        private static void ValidateCornerGround(
+            CityMountainCornerClosureDescriptor closure)
+        {
+            if (closure.NaturalGroundSlopeDegrees < 0f ||
+                closure.NaturalGroundSlopeDegrees >
+                CityMountainCornerClosureDescriptor
+                    .MaximumNaturalGroundSlopeDegrees + Tolerance)
+            {
+                throw new InvalidOperationException(
+                    "The south-west corner is not one naturally graded " +
+                    "ground surface.");
+            }
+        }
+
         private static void ValidateStation(
             CityLayout layout,
             CityMountainRidgeDescriptor ridge,
             CityMountainRidgeStation station,
+            int stationIndex,
             ISet<string> stationIds)
         {
             if (string.IsNullOrWhiteSpace(station.StableId) ||
@@ -196,8 +367,13 @@ namespace BarPromenade
                     $"Mountain station '{station.StableId}' is invalid.");
             }
 
+            float joinAmount = stationIndex /
+                (float)(ridge.Stations.Count - 1);
             Vector3 expectedOutward = ridge.IsSouthWestJoin
-                ? new Vector3(-1f, 0f, -1f).normalized
+                ? Vector3.Lerp(
+                    Vector3.left,
+                    Vector3.back,
+                    joinAmount).normalized
                 : ridge.Side == CityMountainBoundarySide.West
                     ? Vector3.left
                     : Vector3.back;
@@ -398,9 +574,11 @@ namespace BarPromenade
                 return false;
             }
 
+            CityMountainRidgeStation westJoin = join.Stations[0];
+            CityMountainRidgeStation southJoin =
+                join.Stations[join.Stations.Count - 1];
             bool westMatch = false;
             bool southMatch = false;
-            Vector2[] joinEnds = { join.StartXZ, join.EndXZ };
             for (int ridgeIndex = 0;
                  ridgeIndex < plan.Ridges.Count;
                  ridgeIndex++)
@@ -411,20 +589,36 @@ namespace BarPromenade
                     continue;
                 }
 
-                for (int endIndex = 0; endIndex < joinEnds.Length; endIndex++)
+                CityMountainRidgeStation first = ridge.Stations[0];
+                CityMountainRidgeStation last =
+                    ridge.Stations[ridge.Stations.Count - 1];
+                if (ridge.Side == CityMountainBoundarySide.West)
                 {
-                    if (Approximately(joinEnds[endIndex], ridge.StartXZ) ||
-                        Approximately(joinEnds[endIndex], ridge.EndXZ))
-                    {
-                        westMatch |=
-                            ridge.Side == CityMountainBoundarySide.West;
-                        southMatch |=
-                            ridge.Side == CityMountainBoundarySide.South;
-                    }
+                    westMatch |= ProfilesMatch(westJoin, first) ||
+                                 ProfilesMatch(westJoin, last);
+                }
+                else
+                {
+                    southMatch |= ProfilesMatch(southJoin, first) ||
+                                  ProfilesMatch(southJoin, last);
                 }
             }
 
             return westMatch && southMatch;
+        }
+
+        private static bool ProfilesMatch(
+            CityMountainRidgeStation left,
+            CityMountainRidgeStation right)
+        {
+            return Approximately(left.WorldXZ, right.WorldXZ) &&
+                   Mathf.Abs(left.BaseY - right.BaseY) <= Tolerance &&
+                   Mathf.Abs(left.PeakY - right.PeakY) <= Tolerance &&
+                   Mathf.Abs(left.Depth - right.Depth) <= Tolerance &&
+                   Vector3.SqrMagnitude(
+                       left.OutwardNormal - right.OutwardNormal) <=
+                   Tolerance * Tolerance &&
+                   left.Seed == right.Seed;
         }
 
         private static bool HasSouthEndpoint(
@@ -480,6 +674,80 @@ namespace BarPromenade
             return false;
         }
 
+        private static List<Vector3> CreateExpectedBoundarySamples(
+            CityLayout layout,
+            string areaId,
+            Vector2 start,
+            Vector2 end,
+            bool sampleXAxis)
+        {
+            CitySurfaceDescriptor owner = default;
+            bool foundOwner = false;
+            for (int index = 0; index < layout.Surfaces.Count; index++)
+            {
+                CitySurfaceDescriptor candidate = layout.Surfaces[index];
+                if (candidate.Kind != CitySurfaceKind.OpenGround ||
+                    !string.Equals(
+                        candidate.AreaId,
+                        areaId,
+                        StringComparison.Ordinal) ||
+                    !ContainsInclusive(candidate.WorldBounds, start) ||
+                    !ContainsInclusive(candidate.WorldBounds, end))
+                {
+                    continue;
+                }
+
+                owner = candidate;
+                foundOwner = true;
+                break;
+            }
+
+            if (!foundOwner)
+            {
+                throw new InvalidOperationException(
+                    "A mountain corner edge has no terrain owner.");
+            }
+
+            float startCoordinate = sampleXAxis ? start.x : start.y;
+            float endCoordinate = sampleXAxis ? end.x : end.y;
+            float cellMinimum = sampleXAxis
+                ? layout.ElevationPlan.WorldOrigin.x +
+                  owner.Cell.x * layout.ElevationPlan.NodeSpacing.x
+                : layout.ElevationPlan.WorldOrigin.z +
+                  owner.Cell.y * layout.ElevationPlan.NodeSpacing.y;
+            float spacing = sampleXAxis
+                ? layout.ElevationPlan.NodeSpacing.x
+                : layout.ElevationPlan.NodeSpacing.y;
+            float halfRoad = layout.ElevationPlan.RoadWidth * 0.5f;
+            List<float> coordinates =
+                CityTerrainSurfaceWorldBuilder.CreateAxisCoordinates(
+                    Mathf.Min(startCoordinate, endCoordinate),
+                    Mathf.Max(startCoordinate, endCoordinate),
+                    cellMinimum + halfRoad,
+                    cellMinimum + spacing - halfRoad,
+                    Array.Empty<float>());
+            bool reverse = startCoordinate > endCoordinate;
+            var result = new List<Vector3>(coordinates.Count);
+            for (int index = 0; index < coordinates.Count; index++)
+            {
+                float coordinate = coordinates[reverse
+                    ? coordinates.Count - 1 - index
+                    : index];
+                var worldXZ = sampleXAxis
+                    ? new Vector2(coordinate, start.y)
+                    : new Vector2(start.x, coordinate);
+                result.Add(new Vector3(
+                    worldXZ.x,
+                    CityTerrainSurfacePlan.SampleTop(
+                        layout,
+                        owner,
+                        worldXZ),
+                    worldXZ.y));
+            }
+
+            return result;
+        }
+
         private static bool SegmentCrossesRect(
             Vector2 first,
             Vector2 second,
@@ -512,6 +780,7 @@ namespace BarPromenade
                    bounds.width > Tolerance &&
                    bounds.height > Tolerance;
         }
+
 
         private static bool OverlapsStrict(Rect left, Rect right)
         {

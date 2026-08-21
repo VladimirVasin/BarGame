@@ -46,7 +46,27 @@ namespace BarPromenade
         PracticalHousing = 22,
         GabionCage = 23,
         FloodGauge = 24,
-        SiltFan = 25
+        SiltFan = 25,
+
+        /// <summary>
+        /// A narrow, collider-free surface trace within the first four
+        /// metres beyond a step-safe road edge. It follows terrain-cell
+        /// breaks instead of bridging them as a raised slab.
+        /// </summary>
+        RoadShoulder = 26,
+
+        /// <summary>
+        /// A collider-free service trace that joins the road-side band to
+        /// the existing longitudinal service track, never the mountain toe.
+        /// </summary>
+        ServiceSpur = 27,
+
+        /// <summary>
+        /// The primary, collider-free terrain stroke of one middle-distance
+        /// forefield composition. Validators use this explicit role for
+        /// longitudinal coverage instead of interpreting stable ids.
+        /// </summary>
+        ForefieldAnchor = 28
     }
 
     /// <summary>

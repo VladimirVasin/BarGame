@@ -60,6 +60,8 @@ namespace BarPromenade
             }
 
             ValidateForecourt(mountains, plan.TunnelForecourt);
+            CityRoadGroundBoundaryPlan roadGroundBoundaries =
+                CityRoadGroundBoundaryPlanner.Create(layout);
             var areaIds = new HashSet<string>(StringComparer.Ordinal);
             var accessIds = new HashSet<string>(StringComparer.Ordinal);
             var partIds = new HashSet<string>(StringComparer.Ordinal);
@@ -73,7 +75,13 @@ namespace BarPromenade
                         "Fringe Yard areas and accesses must be unique.");
                 }
 
-                ValidateYard(layout, mountains, plan, yard, partIds);
+                ValidateYard(
+                    layout,
+                    mountains,
+                    plan,
+                    roadGroundBoundaries,
+                    yard,
+                    partIds);
             }
 
             ValidateExpectedMapping(plan);
@@ -84,6 +92,7 @@ namespace BarPromenade
             CityLayout layout,
             CityMountainBoundaryPlan mountains,
             CityFringeYardPlan plan,
+            CityRoadGroundBoundaryPlan roadGroundBoundaries,
             CityFringeYardDescriptor yard,
             ISet<string> partIds)
         {
@@ -146,15 +155,33 @@ namespace BarPromenade
             bool hasGabion = false;
             bool hasShed = false;
             bool hasBerm = false;
+            bool hasRoadShoulder = false;
+            bool hasServiceSpur = false;
+            bool hasToeTrack = false;
+            float spurMinimumDepth = float.PositiveInfinity;
+            float spurMaximumDepth = float.NegativeInfinity;
+            float trackMaximumDepth = float.NegativeInfinity;
+            bool isMountainYard =
+                CityMountainBoundaryDefinition.IsMountainFacingAreaId(
+                    yard.AreaId);
+            var forefieldAnchors = new List<float>(
+                CityFringeYardPlanner.MaximumForefieldAnchorCount);
+            var poleCoordinates = new List<float>();
             for (int index = 0; index < yard.Parts.Count; index++)
             {
                 CityFringeYardPartDescriptor part = yard.Parts[index];
                 ValidatePart(
                     layout,
                     mountains,
+                    roadGroundBoundaries,
                     yard,
                     part,
                     partIds);
+                if (isMountainYard)
+                {
+                    ValidateMountainSurfacePolicy(yard, part);
+                }
+
                 hasTrack |= part.Kind == CityFringeYardPartKind.ServiceTrack;
                 hasDrain |= part.Kind == CityFringeYardPartKind.DrainChannel;
                 hasRetaining |=
@@ -170,13 +197,177 @@ namespace BarPromenade
                 hasGabion |= part.Kind == CityFringeYardPartKind.Gabion;
                 hasShed |= part.Kind == CityFringeYardPartKind.UtilityShed;
                 hasBerm |= part.Kind == CityFringeYardPartKind.EarthBerm;
+                float depth = DepthFromRoad(yard, part.Center);
+                if (part.Kind == CityFringeYardPartKind.ServiceTrack)
+                {
+                    if (isMountainYard)
+                    {
+                        ValidateColliderlessRole(yard, part, "service track");
+                        ValidateSurfaceCorners(
+                            layout,
+                            yard,
+                            part,
+                            "service track",
+                            yard.Kind ==
+                                    CityFringeYardKind.SouthTunnelForecourt
+                                ? 0.02f
+                                : 0.04f,
+                            0.10f);
+                    }
+                    hasToeTrack |= depth >=
+                        CityFringeYardPlanner.ForefieldMiddleBandMaximumDepth -
+                        GeometryTolerance &&
+                        depth <=
+                        CityFringeYardPlanner.ForefieldToeBandMaximumDepth +
+                        GeometryTolerance;
+                    trackMaximumDepth = Mathf.Max(trackMaximumDepth, depth);
+                }
+                else if (yard.Kind == CityFringeYardKind.SouthFloodWorks &&
+                         part.Kind == CityFringeYardPartKind.DrainChannel &&
+                         depth >=
+                             CityFringeYardPlanner
+                                 .ForefieldMiddleBandMaximumDepth -
+                             GeometryTolerance &&
+                         depth <=
+                             CityFringeYardPlanner
+                                 .ForefieldToeBandMaximumDepth +
+                             GeometryTolerance)
+                {
+                    hasToeTrack = true;
+                    trackMaximumDepth = Mathf.Max(trackMaximumDepth, depth);
+                }
+                else if (part.Kind ==
+                         CityFringeYardPartKind.RoadShoulder)
+                {
+                    ValidateRoadShoulder(layout, yard, part);
+                    hasRoadShoulder = true;
+                }
+                else if (part.Kind == CityFringeYardPartKind.ServiceSpur)
+                {
+                    ValidateColliderlessRole(yard, part, "service spur");
+                    if (yard.Kind ==
+                        CityFringeYardKind.SouthTunnelForecourt)
+                    {
+                        ValidateSurfaceCorners(
+                            layout,
+                            yard,
+                            part,
+                            "tunnel service spur",
+                            0.02f,
+                            0.10f);
+                    }
+                    else
+                    {
+                        ValidateSurfaceContact(
+                            layout,
+                            yard,
+                            part,
+                            "service spur",
+                            0.015f,
+                            yard.Kind == CityFringeYardKind.SouthFloodWorks
+                                ? 0.14f
+                                : 0.06f);
+                    }
+                    GetDepthRange(
+                        yard,
+                        part.Footprint,
+                        out float minimumDepth,
+                        out float maximumDepth);
+                    spurMinimumDepth = Mathf.Min(
+                        spurMinimumDepth,
+                        minimumDepth);
+                    spurMaximumDepth = Mathf.Max(
+                        spurMaximumDepth,
+                        maximumDepth);
+                    hasServiceSpur = true;
+                }
+                else if ((yard.Kind ==
+                              CityFringeYardKind.SouthFloodWorks ||
+                          yard.Kind ==
+                              CityFringeYardKind.SouthTunnelForecourt) &&
+                         part.Kind == CityFringeYardPartKind.AccessApron)
+                {
+                    ValidateNarrowAccessTrace(layout, yard, part);
+                }
+                else if (yard.Kind ==
+                             CityFringeYardKind.SouthTunnelForecourt &&
+                         part.Kind == CityFringeYardPartKind.WheelRut)
+                {
+                    ValidateColliderlessRole(yard, part, "tunnel wheel rut");
+                    ValidateSurfaceCorners(
+                        layout,
+                        yard,
+                        part,
+                        "tunnel wheel rut",
+                        0.02f,
+                        0.10f);
+                }
+                else if (part.Kind ==
+                         CityFringeYardPartKind.ForefieldAnchor)
+                {
+                    ValidateForefieldAnchor(layout, yard, part);
+                    if (depth <
+                            CityFringeYardPlanner
+                                .ForefieldRoadBandMaximumDepth -
+                            GeometryTolerance ||
+                        depth >
+                            CityFringeYardPlanner
+                                .ForefieldMiddleBandMaximumDepth +
+                            GeometryTolerance)
+                    {
+                        throw new InvalidOperationException(
+                            $"Fringe part '{part.StableId}' leaves the " +
+                            "middle forefield band.");
+                    }
+
+                    forefieldAnchors.Add(LongCoordinate(yard, part.Center));
+                }
+
+                if (part.Kind == CityFringeYardPartKind.UtilityPole)
+                {
+                    poleCoordinates.Add(LongCoordinate(yard, part.Center));
+                }
             }
 
-            if (!hasTrack || !hasDrain)
+            bool expectsServiceTrack =
+                yard.Kind != CityFringeYardKind.SouthFloodWorks;
+            if ((expectsServiceTrack && !hasTrack) ||
+                (!expectsServiceTrack && hasTrack) ||
+                !hasDrain)
             {
                 throw new InvalidOperationException(
-                    $"Fringe Yard '{yard.AreaId}' is missing its service " +
-                    "trace or drainage line.");
+                    $"Fringe Yard '{yard.AreaId}' has the wrong service-" +
+                    "track or drainage contract.");
+            }
+
+            if (isMountainYard)
+            {
+                ValidateForefieldBands(
+                    yard,
+                    hasRoadShoulder,
+                    hasServiceSpur,
+                    hasToeTrack,
+                    spurMinimumDepth,
+                    spurMaximumDepth,
+                    trackMaximumDepth,
+                    forefieldAnchors);
+                ValidatePoleSpacing(yard, poleCoordinates);
+            }
+            else if (hasRoadShoulder ||
+                     hasServiceSpur ||
+                     forefieldAnchors.Count > 0)
+            {
+                throw new InvalidOperationException(
+                    $"Non-mountain fringe Yard '{yard.AreaId}' acquired " +
+                    "mountain forefield vocabulary.");
+            }
+
+            if (hasRepairStock &&
+                yard.Kind != CityFringeYardKind.WestIndustrialBelt)
+            {
+                throw new InvalidOperationException(
+                    $"Fringe Yard '{yard.AreaId}' acquired generic repair " +
+                    "stock outside the industrial service belt.");
             }
 
             switch (yard.Kind)
@@ -221,6 +412,7 @@ namespace BarPromenade
         private static void ValidatePart(
             CityLayout layout,
             CityMountainBoundaryPlan mountains,
+            CityRoadGroundBoundaryPlan roadGroundBoundaries,
             CityFringeYardDescriptor yard,
             CityFringeYardPartDescriptor part,
             ISet<string> partIds)
@@ -262,6 +454,50 @@ namespace BarPromenade
                     "street or traversal corridor.");
             }
 
+            if (part.BlocksMovement)
+            {
+                ValidateStepSafeSeamsClear(
+                    roadGroundBoundaries,
+                    yard,
+                    part);
+            }
+
+            bool isLowReturn =
+                part.Kind == CityFringeYardPartKind.Gabion &&
+                part.StableId.IndexOf(
+                    "forefield-low-return-",
+                    StringComparison.Ordinal) >= 0;
+            bool requiresCollision =
+                part.Kind == CityFringeYardPartKind.RockfallMass ||
+                (part.Kind == CityFringeYardPartKind.TerraceShelf &&
+                 part.Size.y >= 0.20f) ||
+                isLowReturn;
+            if (requiresCollision && !part.BlocksMovement)
+            {
+                throw new InvalidOperationException(
+                    $"Fringe mass '{part.StableId}' must block movement.");
+            }
+
+            if (isLowReturn)
+            {
+                if (part.Size.x >
+                    CityFringeYardPlanner.MaximumLowReturnDepth +
+                    GeometryTolerance)
+                {
+                    throw new InvalidOperationException(
+                        $"Fringe low return '{part.StableId}' spans too " +
+                        "far across the terrain slope.");
+                }
+
+                ValidateSurfaceContact(
+                    layout,
+                    yard,
+                    part,
+                    "low return",
+                    0.015f,
+                    0.14f);
+            }
+
             if (mountains.HasRiverNotch &&
                 part.Footprint.Overlaps(mountains.RiverNotch.OpeningBounds))
             {
@@ -291,6 +527,489 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     $"Fringe part '{part.StableId}' has no terrain owner.");
             }
+        }
+
+        private static void ValidateRoadShoulder(
+            CityLayout layout,
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartDescriptor part)
+        {
+            ValidateColliderlessRole(yard, part, "road shoulder");
+            if (part.Size.x >
+                CityFringeYardPlanner.MaximumRoadShoulderWidth +
+                GeometryTolerance)
+            {
+                throw new InvalidOperationException(
+                    $"Fringe road shoulder '{part.StableId}' is wide " +
+                    "enough to read as a raised plate.");
+            }
+
+            ValidateSurfaceContact(
+                layout,
+                yard,
+                part,
+                "road shoulder",
+                0.015f,
+                0.06f);
+            GetDepthRange(
+                yard,
+                part.Footprint,
+                out float minimumDepth,
+                out float maximumDepth);
+            if (minimumDepth < -GeometryTolerance ||
+                maximumDepth >
+                CityFringeYardPlanner.ForefieldRoadBandMaximumDepth +
+                GeometryTolerance)
+            {
+                throw new InvalidOperationException(
+                    $"Fringe part '{part.StableId}' leaves the road-side " +
+                    "forefield band.");
+            }
+        }
+
+        private static void ValidateMountainSurfacePolicy(
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartDescriptor part)
+        {
+            if (part.Kind == CityFringeYardPartKind.RepairPad ||
+                part.Kind == CityFringeYardPartKind.SiltFan)
+            {
+                throw new InvalidOperationException(
+                    $"Mountain Yard '{yard.AreaId}' acquired a broad " +
+                    $"floating surface platform '{part.StableId}'.");
+            }
+
+            bool isSurfaceTrace =
+                part.Kind == CityFringeYardPartKind.ServiceTrack ||
+                (yard.Kind == CityFringeYardKind.SouthTunnelForecourt &&
+                 (part.Kind == CityFringeYardPartKind.AccessApron ||
+                  part.Kind == CityFringeYardPartKind.ServiceSpur ||
+                  part.Kind == CityFringeYardPartKind.WheelRut ||
+                  part.Kind == CityFringeYardPartKind.ForefieldAnchor)) ||
+                (yard.Kind == CityFringeYardKind.SouthFloodWorks &&
+                 (part.Kind == CityFringeYardPartKind.AccessApron ||
+                  part.Kind == CityFringeYardPartKind.RoadShoulder ||
+                  part.Kind == CityFringeYardPartKind.ServiceSpur ||
+                  part.Kind == CityFringeYardPartKind.ForefieldAnchor ||
+                  part.Kind == CityFringeYardPartKind.DrainChannel));
+            bool isTunnelTrace =
+                yard.Kind == CityFringeYardKind.SouthTunnelForecourt &&
+                (part.Kind == CityFringeYardPartKind.ServiceTrack ||
+                 part.Kind == CityFringeYardPartKind.AccessApron ||
+                 part.Kind == CityFringeYardPartKind.ServiceSpur ||
+                 part.Kind == CityFringeYardPartKind.WheelRut ||
+                 part.Kind == CityFringeYardPartKind.ForefieldAnchor);
+            float maximumWidth = isTunnelTrace
+                ? CityFringeYardPlanner.MaximumTunnelTraceWidth
+                : CityFringeYardPlanner.MaximumRoadShoulderWidth;
+            if (isSurfaceTrace &&
+                part.Size.x >
+                    maximumWidth + GeometryTolerance)
+            {
+                throw new InvalidOperationException(
+                    $"Mountain surface trace '{part.StableId}' is wider " +
+                    "than the narrow terrain-mark contract.");
+            }
+        }
+
+        private static void ValidateForefieldAnchor(
+            CityLayout layout,
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartDescriptor part)
+        {
+            ValidateColliderlessRole(yard, part, "forefield anchor");
+            float maximumWidth =
+                yard.Kind == CityFringeYardKind.SouthTunnelForecourt
+                    ? CityFringeYardPlanner.MaximumTunnelTraceWidth
+                    : CityFringeYardPlanner.MaximumForefieldAnchorWidth;
+            if (part.Size.x >
+                maximumWidth + GeometryTolerance)
+            {
+                throw new InvalidOperationException(
+                    $"Fringe anchor '{part.StableId}' is wide enough to " +
+                    "read as a raised plate.");
+            }
+
+            Vector3 forward = part.Rotation * Vector3.forward;
+            forward.y = 0f;
+            Vector3 outward = yard.Access.OutwardNormal;
+            outward.y = 0f;
+            if (forward.sqrMagnitude <= 0.001f ||
+                Vector3.Dot(forward.normalized, outward.normalized) < 0.99f)
+            {
+                throw new InvalidOperationException(
+                    $"Fringe anchor '{part.StableId}' must follow the " +
+                    "road-to-mountain terrain slope.");
+            }
+
+            if (yard.Kind == CityFringeYardKind.SouthTunnelForecourt)
+            {
+                ValidateSurfaceCorners(
+                    layout,
+                    yard,
+                    part,
+                    "tunnel forefield anchor",
+                    0.02f,
+                    0.10f);
+            }
+            else
+            {
+                ValidateSurfaceContact(
+                    layout,
+                    yard,
+                    part,
+                    "forefield anchor",
+                    0.015f,
+                    0.06f);
+            }
+        }
+
+        private static void ValidateNarrowAccessTrace(
+            CityLayout layout,
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartDescriptor part)
+        {
+            bool isFlood =
+                yard.Kind == CityFringeYardKind.SouthFloodWorks;
+            string role = isFlood
+                ? "flood access trace"
+                : "tunnel approach trace";
+            ValidateColliderlessRole(yard, part, role);
+            float maximumWidth = isFlood
+                ? CityFringeYardPlanner.MaximumRoadShoulderWidth
+                : CityFringeYardPlanner.MaximumTunnelTraceWidth;
+            if (part.Size.x >
+                maximumWidth +
+                GeometryTolerance)
+            {
+                throw new InvalidOperationException(
+                    $"Fringe {role} '{part.StableId}' is wide enough to " +
+                    "read as a raised earth slab.");
+            }
+
+            ValidateSurfaceCorners(
+                layout,
+                yard,
+                part,
+                role,
+                isFlood ? 0.04f : 0.02f,
+                isFlood ? 0.16f : 0.10f);
+        }
+
+        private static void ValidateSurfaceCorners(
+            CityLayout layout,
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartDescriptor part,
+            string role,
+            float maximumGap,
+            float maximumEmbed)
+        {
+            Vector3 right =
+                (part.Rotation * Vector3.right) * (part.Size.x * 0.5f);
+            Vector3 forward =
+                (part.Rotation * Vector3.forward) * (part.Size.z * 0.5f);
+            Vector3 down =
+                (part.Rotation * Vector3.up) * (part.Size.y * 0.5f);
+            for (int rightSign = -1; rightSign <= 1; rightSign += 2)
+            {
+                for (int forwardSign = -1;
+                     forwardSign <= 1;
+                     forwardSign += 2)
+                {
+                    Vector3 corner = part.Center - down +
+                        right * rightSign +
+                        forward * forwardSign;
+                    ValidateSurfacePoint(
+                        layout,
+                        yard,
+                        part,
+                        role,
+                        corner,
+                        maximumGap,
+                        maximumEmbed);
+                }
+            }
+        }
+
+        private static void ValidateSurfaceContact(
+            CityLayout layout,
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartDescriptor part,
+            string role,
+            float maximumGap,
+            float maximumEmbed)
+        {
+            Vector3 bottom = part.Center -
+                (part.Rotation * Vector3.up) * (part.Size.y * 0.5f);
+            ValidateSurfacePoint(
+                layout,
+                yard,
+                part,
+                role,
+                bottom,
+                maximumGap,
+                maximumEmbed);
+        }
+
+        private static void ValidateSurfacePoint(
+            CityLayout layout,
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartDescriptor part,
+            string role,
+            Vector3 point,
+            float maximumGap,
+            float maximumEmbed)
+        {
+            Vector2 sample = new Vector2(point.x, point.z);
+            for (int index = 0; index < layout.Surfaces.Count; index++)
+            {
+                CitySurfaceDescriptor surface = layout.Surfaces[index];
+                if (!string.Equals(
+                        surface.AreaId,
+                        yard.AreaId,
+                        StringComparison.Ordinal) ||
+                    !Contains(
+                        surface.WorldBounds,
+                        sample,
+                        GeometryTolerance))
+                {
+                    continue;
+                }
+
+                float ground = CityTerrainSurfacePlan.SampleTop(
+                    layout,
+                    surface,
+                    sample);
+                float offset = point.y - ground;
+                if (offset > maximumGap || offset < -maximumEmbed)
+                {
+                    throw new InvalidOperationException(
+                        $"Fringe {role} '{part.StableId}' is not seated " +
+                        $"on its terrain surface (bottom offset " +
+                        $"{offset:0.000} m).");
+                }
+
+                return;
+            }
+
+            throw new InvalidOperationException(
+                $"Fringe {role} '{part.StableId}' has no terrain sample.");
+        }
+
+        private static void ValidateColliderlessRole(
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartDescriptor part,
+            string role)
+        {
+            if (part.BlocksMovement)
+            {
+                throw new InvalidOperationException(
+                    $"Fringe Yard '{yard.AreaId}' {role} must remain " +
+                    "collider-free.");
+            }
+        }
+
+        private static void ValidateForefieldBands(
+            CityFringeYardDescriptor yard,
+            bool hasRoadShoulder,
+            bool hasServiceSpur,
+            bool hasToeTrack,
+            float spurMinimumDepth,
+            float spurMaximumDepth,
+            float trackMaximumDepth,
+            List<float> forefieldAnchors)
+        {
+            if (!hasRoadShoulder ||
+                !hasServiceSpur ||
+                !hasToeTrack ||
+                spurMinimumDepth >
+                    CityFringeYardPlanner.ForefieldRoadBandMaximumDepth +
+                    GeometryTolerance ||
+                spurMaximumDepth <
+                    CityFringeYardPlanner.ForefieldMiddleBandMaximumDepth -
+                    GeometryTolerance ||
+                spurMaximumDepth > trackMaximumDepth + 0.12f)
+            {
+                throw new InvalidOperationException(
+                    $"Fringe Yard '{yard.AreaId}' does not connect its " +
+                    "road, middle and toe-service depth bands.");
+            }
+
+            if (forefieldAnchors.Count <
+                    CityFringeYardPlanner.MinimumForefieldAnchorCount ||
+                forefieldAnchors.Count >
+                    CityFringeYardPlanner.MaximumForefieldAnchorCount)
+            {
+                throw new InvalidOperationException(
+                    $"Fringe Yard '{yard.AreaId}' needs three or four " +
+                    "explicit forefield anchors.");
+            }
+
+            forefieldAnchors.Sort();
+            GetLongRange(yard, out float minimum, out float maximum);
+            float previous = minimum;
+            for (int index = 0; index < forefieldAnchors.Count; index++)
+            {
+                float coordinate = forefieldAnchors[index];
+                if (coordinate - previous >
+                    CityFringeYardPlanner.MaximumForefieldAnchorGap +
+                    GeometryTolerance)
+                {
+                    throw new InvalidOperationException(
+                        $"Fringe Yard '{yard.AreaId}' has an empty " +
+                        "forefield interval wider than 40 metres.");
+                }
+
+                previous = coordinate;
+            }
+
+            if (maximum - previous >
+                CityFringeYardPlanner.MaximumForefieldAnchorGap +
+                GeometryTolerance)
+            {
+                throw new InvalidOperationException(
+                    $"Fringe Yard '{yard.AreaId}' leaves its final " +
+                    "forefield interval empty.");
+            }
+        }
+
+        private static void ValidatePoleSpacing(
+            CityFringeYardDescriptor yard,
+            List<float> poleCoordinates)
+        {
+            float maximumSpacing =
+                yard.Kind == CityFringeYardKind.WestStoneTerraces
+                    ? 40f
+                    : 34f;
+            poleCoordinates.Sort();
+            for (int index = 1; index < poleCoordinates.Count; index++)
+            {
+                if (poleCoordinates[index] - poleCoordinates[index - 1] >
+                    maximumSpacing + GeometryTolerance)
+                {
+                    throw new InvalidOperationException(
+                        $"Fringe Yard '{yard.AreaId}' utility poles exceed " +
+                        $"their {maximumSpacing:0}-metre maximum spacing.");
+                }
+            }
+        }
+
+        private static void ValidateStepSafeSeamsClear(
+            CityRoadGroundBoundaryPlan boundaries,
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartDescriptor part)
+        {
+            float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            Rect expandedPart = Expand(part.Footprint, radius + 0.05f);
+            for (int index = 0;
+                 index < boundaries.SafeConnections.Count;
+                 index++)
+            {
+                CityRoadGroundBoundarySpan span =
+                    boundaries.SafeConnections[index];
+                if (!string.Equals(
+                        span.Surface.AreaId,
+                        yard.AreaId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                Rect seam = span.CreateConnector(radius + 0.10f);
+                if (expandedPart.Overlaps(seam))
+                {
+                    throw new InvalidOperationException(
+                        $"Fringe part '{part.StableId}' blocks a step-safe " +
+                        "road seam for the player capsule.");
+                }
+            }
+        }
+
+        private static float DepthFromRoad(
+            CityFringeYardDescriptor yard,
+            Vector3 point)
+        {
+            Vector3 outward = yard.Access.OutwardNormal;
+            if (outward.x < -0.5f)
+            {
+                return yard.AreaBounds.xMax - point.x;
+            }
+
+            if (outward.x > 0.5f)
+            {
+                return point.x - yard.AreaBounds.xMin;
+            }
+
+            if (outward.z < -0.5f)
+            {
+                return yard.AreaBounds.yMax - point.z;
+            }
+
+            return point.z - yard.AreaBounds.yMin;
+        }
+
+        private static void GetDepthRange(
+            CityFringeYardDescriptor yard,
+            Rect footprint,
+            out float minimum,
+            out float maximum)
+        {
+            Vector3 outward = yard.Access.OutwardNormal;
+            if (outward.x < -0.5f)
+            {
+                minimum = yard.AreaBounds.xMax - footprint.xMax;
+                maximum = yard.AreaBounds.xMax - footprint.xMin;
+            }
+            else if (outward.x > 0.5f)
+            {
+                minimum = footprint.xMin - yard.AreaBounds.xMin;
+                maximum = footprint.xMax - yard.AreaBounds.xMin;
+            }
+            else if (outward.z < -0.5f)
+            {
+                minimum = yard.AreaBounds.yMax - footprint.yMax;
+                maximum = yard.AreaBounds.yMax - footprint.yMin;
+            }
+            else
+            {
+                minimum = footprint.yMin - yard.AreaBounds.yMin;
+                maximum = footprint.yMax - yard.AreaBounds.yMin;
+            }
+        }
+
+        private static float LongCoordinate(
+            CityFringeYardDescriptor yard,
+            Vector3 point)
+        {
+            return Mathf.Abs(yard.Access.OutwardNormal.x) > 0.5f
+                ? point.z
+                : point.x;
+        }
+
+        private static void GetLongRange(
+            CityFringeYardDescriptor yard,
+            out float minimum,
+            out float maximum)
+        {
+            if (Mathf.Abs(yard.Access.OutwardNormal.x) > 0.5f)
+            {
+                minimum = yard.AreaBounds.yMin;
+                maximum = yard.AreaBounds.yMax;
+            }
+            else
+            {
+                minimum = yard.AreaBounds.xMin;
+                maximum = yard.AreaBounds.xMax;
+            }
+        }
+
+        private static Rect Expand(Rect source, float amount)
+        {
+            return Rect.MinMaxRect(
+                source.xMin - amount,
+                source.yMin - amount,
+                source.xMax + amount,
+                source.yMax + amount);
         }
 
         private static void ValidateForecourt(

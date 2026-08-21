@@ -26,6 +26,7 @@ Assets/
       CityFringeServiceTrackAlbedo.png measured compacted aggregate; 512 runtime, Repeat/mips
       CityFringeConcreteAlbedo.png measured board-formed concrete; 512 runtime, Repeat/mips
       CityFringeMasonryAlbedo.png measured old irregular masonry; 512 runtime, Repeat/mips
+      CityFringeForefieldAlbedo.png quiet compacted fill for full mountain forefields; 512 runtime, Repeat/mips
       CityMountainRockAlbedo.png   deterministic weathered rock; 512 runtime, Repeat/mips
       CityRoadAsphaltAlbedo.png    dark generated carriageway albedo; 512 runtime, Repeat/mips
       CitySidewalkAlbedo.png       retained light road texture, now used by sidewalks
@@ -200,21 +201,23 @@ Assets/
         CityElevationValidator.cs coverage, water, grade + four-district stair invariants
         CityElevationRebaser.cs  canonical lots, park, POIs, surfaces + access anchors
         CityTerrainSurfacePlan.cs continuous Buildable/Park/Open/Beach top and normal sampler
-        CityTerrainSurfaceWorldBuilder.cs triangulated terrain meshes + matching mesh colliders
-        CityMountainBoundaryPlan.cs default-only west/south ridges, river notch + sealed tunnel contract
-        CityMountainBoundaryPlanner.cs deterministic terrain-sampled boundary materialization plan
-        CityMountainBoundaryValidator.cs side/opening/tunnel invariants
-        CityMountainBoundaryMeshFactory.cs flat-shaded physical ridge and portal-frame meshes
-        CityMountainBoundaryWorldBuilder.cs physical ridges, portal, throat + collidered gate
+        CityTerrainSurfaceWorldBuilder.cs triangulated/filterable terrain batches + matching mesh colliders
+        CityMountainBoundaryPlan.cs west/south ridges, fenced natural SW ground, river notch + sealed tunnel
+        CityMountainBoundaryPlanner.cs deterministic terrain/toe-sampled boundary + corner-ground infill
+        CityMountainBoundaryValidator.cs side/opening/tunnel/corner geometry + natural-ground invariants
+        CityMountainBoundaryMeshFactory.cs ridges with buried toe bonds + shared render/collider corner earthwork
+        CityMountainBoundaryWorldBuilder.cs corner ground, physical ridges, portal, throat + collidered gate
         CityMountainSurfaceAppearance.cs rock recipe + one shared fog-safe physical-ridge material
         CityMountainBackdrop{Resources,WorldBuilder,Follower}.cs camera-relative west/south shell only
         CityFringeYardPlan.cs     five typed Yard profiles, parts, practicals + sealed forecourt contract
-        CityFringeYardPlanner.cs  terrain-graded service belt and separate low east utility edge
+        CityFringeYardPlanner.cs  terrain-graded service belt, grounded tunnel returns + low east utility edge
+        CityFringeYardForefieldPlanner.cs road/middle/toe bands + 3-4 seeded meso anchors per mountain strip
+        CityFringeYardGroundWorldBuilder.cs exact generic/forefield terrain split with one collider per source area
         CityFringeYardRetainingPlanner.cs precise retaining cuts around rock-access corridors
-        CityFringeYardLandmarkPlanner.cs four west/south macro anchors and close-read vocabulary
+        CityFringeYardLandmarkPlanner.cs four macro anchors incl. supported tunnel side light-frame
         CityFringeYard{PracticalPlan,PracticalValidator}.cs four clear, deterministic practicals
-        CityFringeYardSurfaceAppearance.cs three measured shared surface families
-        CityFringeYardValidator.cs area/access/corridor/vocabulary/budget invariants
+        CityFringeYardSurfaceAppearance.cs four measured shared surface families
+        CityFringeYardValidator.cs bands/gaps/all-safe-seams/corridors/vocabulary/budget invariants
         CityFringeYard{WorldBuilder,WorldResult}.cs 48 m batches, emissive anchors, no new Lights
         CityFringePracticalAnchor.cs runtime pose passed to the fixed night-light pool
         CityElevationStairPlacement.cs  sidewalk flight/landing integration
@@ -228,7 +231,7 @@ Assets/
         CityBusIntersectionSelector.cs safe Road v2.1 corner/three-/four-way apron selection
         CityStreetSurfacePlan.cs immutable oriented carriageway/sidewalk/marking geometry
         CityStreetSurfacePlanner.cs  graded strips, level pads, stair cuts, dashes + zebras
-        CityWorldBuilder.cs      continuous terrain, river/bridges, graded streets, stairs + guarded drops
+        CityWorldBuilder.cs      continuous terrain, fenced corner infill, river/bridges, graded streets, stairs + guarded drops
         HomeYardSitePlan.cs      shared roadless-gap, rider-ring, neighbour-light + leaning-utility geometry
         CityOpenAreaDecorationPlan.cs  deterministic Lake + inter-building bar-side yard/light descriptors
         CityOpenAreaWorldBuilder.cs    chunked landmarks + fixed always-on neighbour-wall yard Spot
@@ -277,8 +280,8 @@ Assets/
         CityBarFacadeWorldBuilder.cs shared passive bar-front identity + 3D blade sign
         CitySupermarketFacadeWorldBuilder.cs  shared branded supermarket storefront
         SupermarketEntranceGeometry.cs  frontage, apron and fence-opening dimensions
-        RoadFencePlan.cs         MapBoundary/DeadEnd rails + clearance-opening metadata
-        RoadFencePlanner.cs      unsupported footprint edges + true Street terminals
+        RoadFencePlan.cs         MapBoundary/DeadEnd/CornerGuard rails + clearance-opening metadata
+        RoadFencePlanner.cs      unsupported edges, true Street terminals + default NE road-cap L
         CityNightFixturePlanner.cs  lamps/signals clear public ground and approaches
         CityDayNightController.cs   session lighting + exterior night factor
         CityWeatherController.cs    per-frame weather sample -> rain, flash, thunder
@@ -539,7 +542,8 @@ Assets/
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
       CityMapMountainPresentationTests.cs west/south-only bounds + notch/tunnel map contract
       CityMountainBoundaryTests.cs       deterministic ridges/tunnel + fog-safe physical handoff
-      CityFringeYardTests.cs             five profiles, four anchors, ring-to-rock capsule routes + light-free build
+      CityFringeYardTests.cs             five profiles, grounded portal works, capsule routes + light-free build
+      CityFringeYardGroundWorldBuilderTests.cs exact terrain split, texture, UV + collider ownership
       CityFringeYardSurfaceAppearanceTests.cs measured sheets, imports + shared MPB application
       CityNightAtmosphereTests.cs         nearest fringe practical leases one existing street Spot
       HomeBalconyLayoutTests.cs         Home exterior layout/pedestrians + static stop pole
@@ -606,7 +610,7 @@ ArtSource/
   City/
     mountain-contact-sheet.png    deterministic physical-ridge albedo review sheet
     mountain-textures.json        generated mountain texture manifest
-    fringe-contact-sheet.png      service-track/concrete/masonry comparison sheet
+    fringe-contact-sheet.png      forefield/service-track/concrete/masonry comparison sheet
     fringe-textures.json          measured fringe texture manifest
     Facades/                     facade albedo contract, contact sheet and the cell-grid README
     Blender/                     generated park chess-set .blend and the six-silhouette review row
@@ -629,7 +633,7 @@ tools/
   build-cemetery-textures.py        deterministic cemetery surface albedos (granite/stone/gravel/soil) + validator
   build-city-park-textures.py       deterministic park surface albedos (ground, objects and landmark materials) + validator
   build-city-mountain-textures.py   deterministic weathered-rock albedo + validator
-  build-city-fringe-textures.py     three measured fringe albedos + validator
+  build-city-fringe-textures.py     four measured fringe albedos + validator
   build-home-textures.py            deterministic apartment surface albedos + validator
 Packages/
 ProjectSettings/
@@ -670,6 +674,8 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                              -> camera-relative west/south backdrop
                                           -> five typed fringe Yards
                                              -> west/south municipal service belt
+                                                -> textured 22 m conforming forefield
+                                                -> road/middle/toe bands, <=40 m anchor gaps
                                              -> sealed tunnel forecourt with >=6 m clear lane
                                              -> low eastern utility edge, no ridge
                                           -> CityLayoutGenerator -> validated CityLayout

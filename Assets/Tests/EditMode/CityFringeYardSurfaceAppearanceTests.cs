@@ -43,6 +43,8 @@ namespace BarPromenade.Tests.EditMode
                         new Color(0.285f, 0.315f, 0.305f),
                     [CityFringeYardSurfaceKind.Masonry] =
                         new Color(0.335f, 0.350f, 0.325f),
+                    [CityFringeYardSurfaceKind.ForefieldGround] =
+                        CityExteriorAppearance.YardGround,
                 };
 
         private static SheetManifest manifest;
@@ -65,7 +67,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest, Is.Not.Null);
             Assert.That(manifest.sheetSize, Is.EqualTo(1024));
             Assert.That(manifest.runtimeImportSize, Is.EqualTo(512));
-            Assert.That(manifest.sheets, Has.Length.EqualTo(3));
+            Assert.That(manifest.sheets, Has.Length.EqualTo(4));
         }
 
         [TestCase(
@@ -77,6 +79,9 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(
             (int)CityFringeYardSurfaceKind.Masonry,
             "CityFringeMasonryAlbedo")]
+        [TestCase(
+            (int)CityFringeYardSurfaceKind.ForefieldGround,
+            "CityFringeForefieldAlbedo")]
         public void Recipe_MatchesMeasuredSheetAndRuntimeImport(
             int kindValue,
             string expectedKey)
@@ -142,6 +147,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase((int)CityFringeYardSurfaceKind.ServiceTrack, 4f)]
         [TestCase((int)CityFringeYardSurfaceKind.Concrete, 3f)]
         [TestCase((int)CityFringeYardSurfaceKind.Masonry, 2.4f)]
+        [TestCase((int)CityFringeYardSurfaceKind.ForefieldGround, 8f)]
         public void Apply_UsesMetreTilingAndSharedMaterial(
             int kindValue,
             float expectedPitch)
@@ -183,6 +189,7 @@ namespace BarPromenade.Tests.EditMode
         [TestCase((int)CityFringeYardSurfaceKind.ServiceTrack)]
         [TestCase((int)CityFringeYardSurfaceKind.Concrete)]
         [TestCase((int)CityFringeYardSurfaceKind.Masonry)]
+        [TestCase((int)CityFringeYardSurfaceKind.ForefieldGround)]
         public void ApplyCombined_UsesBakedUvsAndSharedMaterial(int kindValue)
         {
             var kind = (CityFringeYardSurfaceKind)kindValue;
@@ -214,6 +221,23 @@ namespace BarPromenade.Tests.EditMode
             {
                 UnityEngine.Object.DestroyImmediate(surface);
             }
+        }
+
+        [Test]
+        public void ForefieldGround_UsesQuietNonDirectionalGrammar()
+        {
+            SheetRecord record = FindRecord(
+                "CityFringeForefieldAlbedo");
+
+            Assert.That(
+                record.grammar,
+                Is.EqualTo("city_fringe_forefield_ground"));
+            Assert.That(record.metersPerTile, Is.EqualTo(8f));
+            Assert.That(
+                record.contrast,
+                Is.InRange(34, 60),
+                "Forefield ground must stay quieter than the service-track " +
+                "grammar across its broad uninterrupted area.");
         }
 
         private static void AssertCommonProperties(
@@ -341,12 +365,14 @@ namespace BarPromenade.Tests.EditMode
         private sealed class SheetRecord
         {
             public string key;
+            public string grammar;
             public string resourcePath;
             public float meanLinearLuminance;
             public float albedoCompensation;
             public float metersPerTile;
             public float smoothness;
             public float metallic;
+            public int contrast;
             public string sha256;
         }
     }

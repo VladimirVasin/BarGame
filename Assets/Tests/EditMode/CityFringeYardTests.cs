@@ -28,7 +28,7 @@ namespace BarPromenade.Tests.EditMode
                 Has.Count.EqualTo(CityFringeYardPlanner.ExpectedYardCount));
             Assert.That(
                 first.PartCount,
-                Is.InRange(120, CityFringeYardPlanner.MaximumPartCount));
+                Is.InRange(300, CityFringeYardPlanner.MaximumPartCount));
             Assert.That(first.HasTunnelForecourt, Is.True);
             Assert.That(
                 first.Practicals,
@@ -108,6 +108,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     right.Parts,
                     Is.EqualTo(left.Parts));
+                AssertForefieldCoverage(left);
+                AssertPoleSpacing(left);
                 foreach (CityFringeYardPartDescriptor part in left.Parts)
                 {
                     Assert.That(
@@ -123,6 +125,15 @@ namespace BarPromenade.Tests.EditMode
                             part.StableId);
                         Assert.That(
                             part.Footprint.Overlaps(left.TraversalBounds),
+                            Is.False,
+                            part.StableId);
+                    }
+
+                    if (mountains.HasRiverNotch)
+                    {
+                        Assert.That(
+                            part.Footprint.Overlaps(
+                                mountains.RiverNotch.OpeningBounds),
                             Is.False,
                             part.StableId);
                     }
@@ -163,7 +174,7 @@ namespace BarPromenade.Tests.EditMode
                     root.GetComponentsInChildren<MeshRenderer>(true);
                 Assert.That(
                     renderers.Length,
-                    Is.InRange(12, 116),
+                    Is.InRange(12, 120),
                     "The 48-metre style/collision batches must stay bounded.");
                 Assert.That(
                     renderers.Count(item =>
@@ -195,6 +206,544 @@ namespace BarPromenade.Tests.EditMode
             finally
             {
                 Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        [Category("CityFringeYard")]
+        public void DefaultCoastal_CellFiveMinusOneUsesNarrowTunnelTraces()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityMountainBoundaryPlan mountains =
+                CityMountainBoundaryPlanner.Create(layout);
+            CityFringeYardPlan fringe =
+                CityFringeYardPlanner.Create(layout, mountains);
+            CitySurfaceDescriptor cell = layout.Surfaces.Single(surface =>
+                surface.Cell == new Vector2Int(5, -1) &&
+                surface.AreaId ==
+                    CityMountainBoundaryDefinition.SouthWestAreaId);
+            CityFringeYardDescriptor yard = fringe.Yards.Single(item =>
+                item.AreaId ==
+                    CityMountainBoundaryDefinition.SouthWestAreaId);
+
+            Assert.That(
+                yard.Kind,
+                Is.EqualTo(CityFringeYardKind.SouthTunnelForecourt));
+            Assert.That(
+                fringe.TunnelForecourt.ApproachWidth,
+                Is.EqualTo(6.9f).Within(0.01f));
+            Assert.That(
+                fringe.TunnelForecourt.DriveClearWidth,
+                Is.GreaterThanOrEqualTo(
+                    CityFringeYardPlanner.MinimumTunnelDriveClearWidth));
+            Assert.That(
+                yard.TraversalBounds,
+                Is.EqualTo(fringe.TunnelForecourt.DriveClearBounds));
+            Assert.That(
+                yard.Parts.Any(part =>
+                    part.Kind == CityFringeYardPartKind.RepairPad ||
+                    part.Kind == CityFringeYardPartKind.RepairStack),
+                Is.False,
+                "The tunnel forecourt must not inherit a repair pocket.");
+
+            CityFringeYardPartDescriptor[] surfaceTraces = yard.Parts.Where(
+                    part =>
+                        !part.BlocksMovement &&
+                        (part.Kind == CityFringeYardPartKind.ServiceTrack ||
+                         part.Kind == CityFringeYardPartKind.AccessApron ||
+                         part.Kind == CityFringeYardPartKind.ServiceSpur))
+                .ToArray();
+            Assert.That(surfaceTraces, Is.Not.Empty);
+            foreach (CityFringeYardPartKind kind in new[]
+                     {
+                         CityFringeYardPartKind.ServiceTrack,
+                         CityFringeYardPartKind.AccessApron,
+                         CityFringeYardPartKind.ServiceSpur
+                     })
+            {
+                Assert.That(
+                    surfaceTraces.Any(part => part.Kind == kind),
+                    Is.True,
+                    $"The tunnel forecourt lacks its {kind} trace.");
+            }
+
+            foreach (CityFringeYardPartDescriptor trace in surfaceTraces)
+            {
+                Assert.That(
+                    trace.Size.x,
+                    Is.LessThanOrEqualTo(
+                        CityFringeYardPlanner.MaximumTunnelTraceWidth),
+                    $"{trace.StableId} reads as a floating slab.");
+                AssertBottomCornersSeated(
+                    layout,
+                    yard,
+                    trace,
+                    0.02f,
+                    0.11f);
+            }
+            Assert.That(
+                surfaceTraces.Any(part => part.StableId.Contains(
+                    "service-track-roadward")),
+                Is.True,
+                "The roadward maintenance trace disappeared.");
+            Assert.That(
+                surfaceTraces.Any(part => part.StableId.Contains(
+                    "service-track-toeward")),
+                Is.True,
+                "The toe-side maintenance trace disappeared.");
+
+            CityFringeYardPartDescriptor[] wheelRuts = yard.Parts.Where(
+                    part =>
+                        part.Kind == CityFringeYardPartKind.WheelRut &&
+                        part.Footprint.Overlaps(cell.WorldBounds))
+                .ToArray();
+            Assert.That(wheelRuts, Is.Not.Empty);
+            foreach (CityFringeYardPartDescriptor wheelRut in wheelRuts)
+            {
+                Assert.That(wheelRut.BlocksMovement, Is.False);
+                Assert.That(
+                    wheelRut.Size.x,
+                    Is.LessThanOrEqualTo(
+                        CityFringeYardPlanner.MaximumTunnelTraceWidth));
+                AssertBottomCornersSeated(
+                    layout,
+                    yard,
+                    wheelRut,
+                    0.02f,
+                    0.11f);
+            }
+            CityFringeYardPartDescriptor[] approachWheelRuts = wheelRuts
+                .Where(part => part.StableId.Contains(
+                    $"{yard.AreaId}-tunnel-wheel-rut-"))
+                .ToArray();
+            Assert.That(
+                approachWheelRuts.All(part =>
+                    part.Footprint.Overlaps(yard.TraversalBounds)),
+                Is.True,
+                "Approach wheel ruts must remain inside the logical route.");
+            Assert.That(
+                approachWheelRuts.Any(part => part.StableId.Contains(
+                    "tunnel-wheel-rut--1-")),
+                Is.True,
+                "The left tunnel wheel rut disappeared.");
+            Assert.That(
+                approachWheelRuts.Any(part => part.StableId.Contains(
+                    "tunnel-wheel-rut-1-")),
+                Is.True,
+                "The right tunnel wheel rut disappeared.");
+
+            CityFringeYardPartDescriptor[] freightAnchors = yard.Parts
+                .Where(part =>
+                    part.Kind == CityFringeYardPartKind.ForefieldAnchor)
+                .ToArray();
+            Assert.That(
+                freightAnchors.Length,
+                Is.InRange(
+                    CityFringeYardPlanner.MinimumForefieldAnchorCount,
+                    CityFringeYardPlanner.MaximumForefieldAnchorCount));
+            foreach (CityFringeYardPartDescriptor anchor in freightAnchors)
+            {
+                Assert.That(anchor.BlocksMovement, Is.False, anchor.StableId);
+                Assert.That(
+                    anchor.Size.x,
+                    Is.LessThanOrEqualTo(
+                        CityFringeYardPlanner.MaximumTunnelTraceWidth),
+                    $"{anchor.StableId} reads as a freight slab.");
+                AssertBottomCornersSeated(
+                    layout,
+                    yard,
+                    anchor,
+                    0.02f,
+                    0.11f);
+            }
+
+            float[] expectedReturnWidths = { 1.10f, 1.20f, 1.35f };
+            float[] expectedReturnHeights = { 0.80f, 1.55f, 2.35f };
+            var tunnelReturns = new List<CityFringeYardPartDescriptor>(6);
+            foreach (int side in new[] { -1, 1 })
+            {
+                float previousEnd = float.NegativeInfinity;
+                float previousHeight = 0f;
+                for (int index = 0; index < 3; index++)
+                {
+                    CityFringeYardPartDescriptor section =
+                        yard.Parts.Single(part => part.StableId ==
+                            $"{yard.AreaId}-tunnel-return-{side}-{index:00}");
+                    tunnelReturns.Add(section);
+                    Assert.That(
+                        section.Kind,
+                        Is.EqualTo(CityFringeYardPartKind.TunnelCheek));
+                    Assert.That(
+                        section.Style,
+                        Is.EqualTo(CityFringeYardStyle.Concrete));
+                    Assert.That(section.BlocksMovement, Is.True);
+                    Assert.That(
+                        section.Size.x,
+                        Is.EqualTo(expectedReturnWidths[index])
+                            .Within(0.001f));
+                    Assert.That(
+                        section.Size.y,
+                        Is.EqualTo(expectedReturnHeights[index])
+                            .Within(0.001f));
+                    Assert.That(
+                        section.Size.x,
+                        Is.GreaterThanOrEqualTo(1.10f));
+                    Assert.That(
+                        section.Size.y,
+                        Is.GreaterThan(previousHeight),
+                        "Tunnel returns must rise toward the portal.");
+                    previousHeight = section.Size.y;
+                    Assert.That(
+                        Expanded(section.Footprint, 0.20f).Overlaps(
+                            fringe.TunnelForecourt.DriveClearBounds),
+                        Is.False,
+                        $"{section.StableId} pinches the exact drive clear.");
+                    AssertBottomCornersSeated(
+                        layout,
+                        yard,
+                        section,
+                        0.001f,
+                        0.85f);
+
+                    float startAlong = Vector3.Dot(
+                        section.Center,
+                        fringe.TunnelForecourt.Axis) -
+                        section.Size.z * 0.5f;
+                    float endAlong = startAlong + section.Size.z;
+                    if (index > 0)
+                    {
+                        Assert.That(
+                            startAlong,
+                            Is.LessThanOrEqualTo(previousEnd + 0.001f),
+                            "Portal returns must read as a continuous run.");
+                    }
+
+                    previousEnd = endAlong;
+                    CityFringeYardPartDescriptor cap = yard.Parts.Single(
+                        part => part.StableId ==
+                            $"{yard.AreaId}-tunnel-return-cap-" +
+                            $"{side}-{index:00}");
+                    Assert.That(
+                        cap.Kind,
+                        Is.EqualTo(CityFringeYardPartKind.RepairFrame));
+                    Assert.That(
+                        cap.Style,
+                        Is.EqualTo(CityFringeYardStyle.Iron));
+                    Assert.That(cap.BlocksMovement, Is.False);
+                    Assert.That(
+                        Contains(section.Footprint, cap.Footprint),
+                        Is.True,
+                        $"{cap.StableId} leaves its concrete support.");
+                    Assert.That(
+                        cap.Center.y - cap.Size.y * 0.5f,
+                        Is.EqualTo(
+                                section.Center.y + section.Size.y * 0.5f)
+                            .Within(0.001f),
+                        $"{cap.StableId} floats above its return.");
+                }
+            }
+
+            Assert.That(tunnelReturns, Has.Count.EqualTo(6));
+            Assert.That(
+                yard.Parts.Count(part =>
+                    part.Kind == CityFringeYardPartKind.TunnelCheek),
+                Is.EqualTo(6),
+                "The portal must have exactly three returns per side.");
+            Assert.That(
+                yard.Parts.Count(part => part.StableId.StartsWith(
+                    $"{yard.AreaId}-tunnel-return-cap-")),
+                Is.EqualTo(6));
+            float returnStart = tunnelReturns.Min(part =>
+                Vector3.Dot(part.Center, fringe.TunnelForecourt.Axis) -
+                part.Size.z * 0.5f);
+            float returnEnd = tunnelReturns.Max(part =>
+                Vector3.Dot(part.Center, fringe.TunnelForecourt.Axis) +
+                part.Size.z * 0.5f);
+            Assert.That(
+                returnEnd - returnStart,
+                Is.GreaterThanOrEqualTo(8f),
+                "The portal works lost their legible longitudinal mass.");
+            Assert.That(
+                yard.Parts.Any(part =>
+                    part.StableId.Contains("landmark-side-stock")),
+                Is.False);
+            Assert.That(
+                yard.Parts.Any(part =>
+                    part.StableId.Contains("landmark-return-light-mast")),
+                Is.False);
+            Assert.That(
+                yard.Parts.Any(part =>
+                    part.Kind == CityFringeYardPartKind.PipeStock),
+                Is.False,
+                "SouthTunnel must not inherit unsupported pipe stock.");
+
+            CityFringeYardPartDescriptor[] framePosts = yard.Parts.Where(
+                    part => part.StableId.StartsWith(
+                        $"{yard.AreaId}-landmark-return-service-post-"))
+                .OrderBy(part => Vector3.Dot(
+                    part.Center,
+                    fringe.TunnelForecourt.Axis))
+                .ToArray();
+            Assert.That(framePosts, Has.Length.EqualTo(2));
+            foreach (CityFringeYardPartDescriptor post in framePosts)
+            {
+                Assert.That(
+                    post.Kind,
+                    Is.EqualTo(CityFringeYardPartKind.RepairFrame));
+                Assert.That(post.Style, Is.EqualTo(CityFringeYardStyle.Iron));
+                Assert.That(post.BlocksMovement, Is.True);
+                Assert.That(post.Size.y, Is.GreaterThanOrEqualTo(4.2f));
+                Assert.That(
+                    Expanded(post.Footprint, 0.20f).Overlaps(
+                        fringe.TunnelForecourt.DriveClearBounds),
+                    Is.False,
+                    $"{post.StableId} enters the traversal margin.");
+                AssertBottomCornersSeated(
+                    layout,
+                    yard,
+                    post,
+                    0.001f,
+                    0.18f);
+            }
+
+            CityFringeYardPartDescriptor serviceBeam = yard.Parts.Single(
+                part => part.StableId ==
+                    $"{yard.AreaId}-landmark-return-service-beam");
+            CityFringeYardPartDescriptor serviceBrace = yard.Parts.Single(
+                part => part.StableId ==
+                    $"{yard.AreaId}-landmark-return-service-brace");
+            CityFringeYardPartDescriptor lightArm = yard.Parts.Single(
+                part => part.StableId ==
+                    $"{yard.AreaId}-landmark-return-light-arm");
+            CityFringeYardPartDescriptor housing = yard.Parts.Single(
+                part => part.StableId ==
+                    $"{yard.AreaId}-landmark-practical-housing");
+            foreach (CityFringeYardPartDescriptor member in new[]
+                     {
+                         serviceBeam,
+                         serviceBrace,
+                         lightArm
+                     })
+            {
+                Assert.That(
+                    member.Kind,
+                    Is.EqualTo(CityFringeYardPartKind.RepairFrame));
+                Assert.That(
+                    member.Style,
+                    Is.EqualTo(CityFringeYardStyle.Iron));
+                Assert.That(member.BlocksMovement, Is.False);
+                Assert.That(
+                    member.Footprint.Overlaps(
+                        fringe.TunnelForecourt.DriveClearBounds),
+                    Is.False,
+                    $"{member.StableId} enters the traversal.");
+            }
+
+            AssertMemberEndpointsSupported(serviceBeam, framePosts, true);
+            AssertMemberEndpointsSupported(serviceBrace, framePosts, false);
+            Vector3[] armEndpoints = PartEndpoints(lightArm);
+            Vector3 supportedArmEnd = armEndpoints
+                .OrderBy(point => framePosts.Min(post =>
+                    HorizontalDistance(point, post.Center)))
+                .First();
+            Vector3 freeArmEnd = armEndpoints.Single(point =>
+                point != supportedArmEnd);
+            Assert.That(
+                framePosts.Min(post =>
+                    HorizontalDistance(supportedArmEnd, post.Center)),
+                Is.LessThanOrEqualTo(0.03f),
+                "The practical arm is not carried by the frame.");
+            Assert.That(
+                ContainsPoint(housing.Footprint, freeArmEnd, 0.03f),
+                Is.True,
+                "The practical housing left the arm end.");
+            float armBottom = freeArmEnd.y - lightArm.Size.y * 0.5f;
+            float housingTop = housing.Center.y + housing.Size.y * 0.5f;
+            Assert.That(
+                housingTop,
+                Is.InRange(armBottom, armBottom + 0.02f),
+                "The practical housing floats below its support arm.");
+            Assert.That(
+                housing.Kind,
+                Is.EqualTo(CityFringeYardPartKind.PracticalHousing));
+            Assert.That(housing.BlocksMovement, Is.False);
+            Assert.That(
+                Vector3.Dot(
+                    fringe.Practicals.Single(practical =>
+                        practical.AreaId == yard.AreaId).Forward,
+                    -fringe.TunnelForecourt.Axis),
+                Is.GreaterThan(0.70f),
+                "The tunnel practical no longer faces the city.");
+
+            CityFringeYardPartDescriptor[] drainCovers = yard.Parts.Where(
+                    part => part.StableId.StartsWith(
+                        $"{yard.AreaId}-drain-cover-"))
+                .ToArray();
+            Assert.That(drainCovers, Has.Length.EqualTo(5));
+            foreach (CityFringeYardPartDescriptor cover in drainCovers)
+            {
+                float ground = SampleOwnerTop(layout, yard, cover.Center);
+                float bottomOffset = cover.Center.y -
+                                     cover.Size.y * 0.5f - ground;
+                Assert.That(
+                    bottomOffset,
+                    Is.InRange(-0.02f, 0.001f),
+                    $"{cover.StableId} floats above its drain seat.");
+            }
+        }
+
+        [Test]
+        [Category("CityFringeYard")]
+        public void DefaultCoastal_CellSevenMinusOneSeatsForefieldAndBlocksMasses()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityMountainBoundaryPlan mountains =
+                CityMountainBoundaryPlanner.Create(layout);
+            CityFringeYardPlan fringe =
+                CityFringeYardPlanner.Create(layout, mountains);
+            CitySurfaceDescriptor cell = layout.Surfaces.Single(surface =>
+                surface.Cell == new Vector2Int(7, -1) &&
+                surface.AreaId ==
+                    CityMountainBoundaryDefinition.SouthEastAreaId);
+            CityFringeYardDescriptor yard = fringe.Yards.Single(item =>
+                item.AreaId ==
+                    CityMountainBoundaryDefinition.SouthEastAreaId);
+
+            Assert.That(
+                yard.Kind,
+                Is.EqualTo(CityFringeYardKind.SouthFloodWorks));
+            Assert.That(
+                yard.Parts.Any(part =>
+                    part.Kind == CityFringeYardPartKind.ServiceTrack),
+                Is.False,
+                "The south-east toe must not rebuild the broad earth slab.");
+            Assert.That(
+                yard.Parts.Any(part =>
+                    part.Kind == CityFringeYardPartKind.RepairPad ||
+                    part.Kind == CityFringeYardPartKind.SiltFan),
+                Is.False,
+                "Floodworks must not rebuild a broad decorative platform.");
+            CityFringeYardPartDescriptor[] floodSurfaceTraces = yard.Parts
+                .Where(part =>
+                    !part.BlocksMovement &&
+                    (part.Kind == CityFringeYardPartKind.AccessApron ||
+                     part.Kind == CityFringeYardPartKind.RoadShoulder ||
+                     part.Kind == CityFringeYardPartKind.ServiceSpur ||
+                     part.Kind == CityFringeYardPartKind.ForefieldAnchor ||
+                     part.Kind == CityFringeYardPartKind.DrainChannel))
+                .ToArray();
+            Assert.That(floodSurfaceTraces, Is.Not.Empty);
+            foreach (CityFringeYardPartDescriptor trace in floodSurfaceTraces)
+            {
+                Assert.That(
+                    trace.Size.x,
+                    Is.LessThanOrEqualTo(
+                        CityFringeYardPlanner.MaximumRoadShoulderWidth),
+                    $"{trace.StableId} reads as a broad surface platform.");
+            }
+
+            CityFringeYardPartDescriptor[] floodAccess = yard.Parts.Where(
+                    part => part.Kind ==
+                            CityFringeYardPartKind.AccessApron)
+                .ToArray();
+            Assert.That(floodAccess, Is.Not.Empty);
+            foreach (CityFringeYardPartDescriptor trace in floodAccess)
+            {
+                Assert.That(
+                    trace.Size.x,
+                    Is.LessThanOrEqualTo(
+                        CityFringeYardPlanner.MaximumRoadShoulderWidth),
+                    trace.StableId);
+                AssertBottomCornersSeated(
+                    layout,
+                    yard,
+                    trace,
+                    0.04f,
+                    0.16f);
+            }
+            CityFringeYardPartDescriptor[] roadShoulders = yard.Parts
+                .Where(part =>
+                    part.Kind == CityFringeYardPartKind.RoadShoulder &&
+                    part.Footprint.Overlaps(cell.WorldBounds))
+                .ToArray();
+            Assert.That(roadShoulders, Is.Not.Empty);
+            foreach (CityFringeYardPartDescriptor shoulder in roadShoulders)
+            {
+                Assert.That(
+                    shoulder.Size.x,
+                    Is.LessThanOrEqualTo(
+                        CityFringeYardPlanner.MaximumRoadShoulderWidth),
+                    shoulder.StableId);
+                AssertBottomCornersSeated(
+                    layout,
+                    yard,
+                    shoulder,
+                    0.04f,
+                    0.07f);
+            }
+
+            CityFringeYardPartDescriptor anchor = yard.Parts.Single(part =>
+                part.Kind == CityFringeYardPartKind.ForefieldAnchor &&
+                part.StableId.Contains("forefield-anchor-00-") &&
+                part.Footprint.Overlaps(cell.WorldBounds));
+            Assert.That(anchor.BlocksMovement, Is.False);
+            Assert.That(
+                anchor.Size.x,
+                Is.LessThanOrEqualTo(
+                    CityFringeYardPlanner.MaximumForefieldAnchorWidth));
+            Vector3 anchorForward = anchor.Rotation * Vector3.forward;
+            anchorForward.y = 0f;
+            Assert.That(
+                Vector3.Dot(
+                    anchorForward.normalized,
+                    yard.Access.OutwardNormal),
+                Is.GreaterThan(0.99f));
+            AssertBottomCornersSeated(
+                layout,
+                yard,
+                anchor,
+                0.04f,
+                0.07f);
+
+            CityFringeYardPartDescriptor[] lowReturns = yard.Parts.Where(
+                    part => part.StableId.Contains(
+                        "forefield-low-return-00-"))
+                .ToArray();
+            Assert.That(lowReturns, Has.Length.EqualTo(3));
+            foreach (CityFringeYardPartDescriptor lowReturn in lowReturns)
+            {
+                Assert.That(lowReturn.BlocksMovement, Is.True);
+                Assert.That(
+                    lowReturn.Size.x,
+                    Is.LessThanOrEqualTo(
+                        CityFringeYardPlanner.MaximumLowReturnDepth));
+                AssertBottomCornersSeated(
+                    layout,
+                    yard,
+                    lowReturn,
+                    0.04f,
+                    0.16f);
+            }
+
+            foreach (CityFringeYardPartDescriptor mass in fringe.Yards
+                         .SelectMany(item => item.Parts)
+                         .Where(part =>
+                             part.Kind ==
+                                 CityFringeYardPartKind.RockfallMass ||
+                             (part.Kind ==
+                                  CityFringeYardPartKind.TerraceShelf &&
+                              part.Size.y >= 0.20f)))
+            {
+                Assert.That(
+                    mass.BlocksMovement,
+                    Is.True,
+                    $"{mass.StableId} is a pass-through solid mass.");
             }
         }
 
@@ -245,6 +794,11 @@ namespace BarPromenade.Tests.EditMode
                     openAlong,
                     playerRadius,
                     areaId);
+                AssertAllStepSafeRoadSeamsCapsuleClear(
+                    walkable,
+                    boundaries,
+                    yard,
+                    playerRadius);
 
                 Vector3 target = CreateToeApproach(yard, playerRadius);
                 Assert.That(
@@ -344,6 +898,135 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        private static void AssertForefieldCoverage(
+            CityFringeYardDescriptor yard)
+        {
+            CityFringeYardPartDescriptor[] forefield = yard.Parts.Where(
+                    part => part.Kind ==
+                            CityFringeYardPartKind.ForefieldAnchor)
+                .ToArray();
+            bool mountain =
+                CityMountainBoundaryDefinition.IsMountainFacingAreaId(
+                    yard.AreaId);
+            if (!mountain)
+            {
+                Assert.That(forefield, Is.Empty);
+                Assert.That(
+                    yard.Parts.Any(part =>
+                        part.Kind == CityFringeYardPartKind.RoadShoulder ||
+                        part.Kind == CityFringeYardPartKind.ServiceSpur),
+                    Is.False);
+                return;
+            }
+
+            Assert.That(
+                forefield.Length,
+                Is.InRange(
+                    CityFringeYardPlanner.MinimumForefieldAnchorCount,
+                    CityFringeYardPlanner.MaximumForefieldAnchorCount),
+                yard.AreaId);
+            Assert.That(
+                yard.Parts.Any(part =>
+                    part.Kind == CityFringeYardPartKind.RoadShoulder &&
+                    !part.BlocksMovement),
+                Is.True,
+                $"{yard.AreaId} lacks its collider-free road band.");
+            Assert.That(
+                yard.Parts.Any(part =>
+                    part.Kind == CityFringeYardPartKind.ServiceSpur &&
+                    !part.BlocksMovement),
+                Is.True,
+                $"{yard.AreaId} lacks road-to-track service traces.");
+            bool usesServiceTrack =
+                yard.Kind != CityFringeYardKind.SouthFloodWorks;
+            Assert.That(
+                yard.Parts.Any(part =>
+                    part.Kind == CityFringeYardPartKind.ServiceTrack &&
+                    DepthFromRoad(yard, part.Center) >=
+                        CityFringeYardPlanner
+                            .ForefieldMiddleBandMaximumDepth),
+                Is.EqualTo(usesServiceTrack),
+                $"{yard.AreaId} has the wrong mountain-toe track contract.");
+            if (!usesServiceTrack)
+            {
+                Assert.That(
+                    yard.Parts.Any(part =>
+                        part.Kind == CityFringeYardPartKind.DrainChannel &&
+                        DepthFromRoad(yard, part.Center) >=
+                            CityFringeYardPlanner
+                                .ForefieldMiddleBandMaximumDepth),
+                    Is.True,
+                    $"{yard.AreaId} lacks its floodworks toe drain.");
+            }
+
+            float[] coordinates = forefield
+                .Select(part => LongCoordinate(yard, part.Center))
+                .OrderBy(value => value)
+                .ToArray();
+            float minimum = Mathf.Abs(yard.Access.OutwardNormal.x) > 0.5f
+                ? yard.AreaBounds.yMin
+                : yard.AreaBounds.xMin;
+            float maximum = Mathf.Abs(yard.Access.OutwardNormal.x) > 0.5f
+                ? yard.AreaBounds.yMax
+                : yard.AreaBounds.xMax;
+            float previous = minimum;
+            foreach (float coordinate in coordinates)
+            {
+                Assert.That(
+                    coordinate - previous,
+                    Is.LessThanOrEqualTo(
+                        CityFringeYardPlanner.MaximumForefieldAnchorGap +
+                        0.04f),
+                    $"{yard.AreaId} has an empty forefield interval.");
+                previous = coordinate;
+            }
+
+            Assert.That(
+                maximum - previous,
+                Is.LessThanOrEqualTo(
+                    CityFringeYardPlanner.MaximumForefieldAnchorGap + 0.04f),
+                $"{yard.AreaId} has an empty terminal forefield interval.");
+            foreach (CityFringeYardPartDescriptor anchor in forefield)
+            {
+                Assert.That(anchor.BlocksMovement, Is.False, anchor.StableId);
+                Assert.That(
+                    DepthFromRoad(yard, anchor.Center),
+                    Is.InRange(
+                        CityFringeYardPlanner.ForefieldRoadBandMaximumDepth,
+                        CityFringeYardPlanner
+                            .ForefieldMiddleBandMaximumDepth),
+                    anchor.StableId);
+            }
+        }
+
+        private static void AssertPoleSpacing(
+            CityFringeYardDescriptor yard)
+        {
+            if (!CityMountainBoundaryDefinition.IsMountainFacingAreaId(
+                    yard.AreaId))
+            {
+                return;
+            }
+
+            float maximum =
+                yard.Kind == CityFringeYardKind.WestStoneTerraces
+                    ? 40f
+                    : 34f;
+            float[] coordinates = yard.Parts.Where(part =>
+                    part.Kind == CityFringeYardPartKind.UtilityPole)
+                .Select(part => LongCoordinate(yard, part.Center))
+                .OrderBy(value => value)
+                .ToArray();
+            Assert.That(coordinates.Length, Is.GreaterThanOrEqualTo(2));
+            for (int index = 1; index < coordinates.Length; index++)
+            {
+                Assert.That(
+                    coordinates[index] - coordinates[index - 1],
+                    Is.LessThanOrEqualTo(maximum + 0.04f),
+                    $"{yard.AreaId} pole spacing {index - 1}->{index}");
+            }
+        }
+
         private static bool Contains(Rect outer, Rect inner)
         {
             const float tolerance = 0.04f;
@@ -433,6 +1116,60 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        private static void AssertAllStepSafeRoadSeamsCapsuleClear(
+            RoadWalkableArea walkable,
+            CityRoadGroundBoundaryPlan boundaries,
+            CityFringeYardDescriptor yard,
+            float radius)
+        {
+            CityRoadGroundBoundarySpan[] spans = boundaries.SafeConnections
+                .Where(span => span.Surface.AreaId == yard.AreaId)
+                .ToArray();
+            Assert.That(
+                spans,
+                Is.Not.Empty,
+                $"{yard.AreaId} has no step-safe road frontage.");
+            foreach (CityRoadGroundBoundarySpan span in spans)
+            {
+                float usableMinimum = span.MinimumCoordinate + radius + 0.02f;
+                float usableMaximum = span.MaximumCoordinate - radius - 0.02f;
+                Assert.That(
+                    usableMaximum,
+                    Is.GreaterThanOrEqualTo(usableMinimum),
+                    $"{yard.AreaId} safe span is narrower than the capsule.");
+                float[] samples =
+                {
+                    usableMinimum,
+                    (usableMinimum + usableMaximum) * 0.5f,
+                    usableMaximum
+                };
+                foreach (float along in samples)
+                {
+                    AssertWalkableAcrossRoadSeam(
+                        walkable,
+                        span,
+                        along,
+                        radius,
+                        yard.AreaId);
+                }
+
+                Rect seam = span.CreateConnector(radius + 0.10f);
+                foreach (CityFringeYardPartDescriptor part in yard.Parts)
+                {
+                    if (!part.BlocksMovement)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(
+                        Expanded(part.Footprint, radius + 0.05f)
+                            .Overlaps(seam),
+                        Is.False,
+                        $"{part.StableId} blocks a step-safe road seam.");
+                }
+            }
+        }
+
         private static Vector3 CreateToeApproach(
             CityFringeYardDescriptor yard,
             float inset)
@@ -479,6 +1216,17 @@ namespace BarPromenade.Tests.EditMode
             Vector3 start = yard.Access.Center;
             float distance = HorizontalDistance(start, target);
             int sampleCount = Mathf.CeilToInt(distance / 0.10f);
+            foreach (CityFringeYardPartDescriptor part in yard.Parts)
+            {
+                if (part.BlocksMovement)
+                {
+                    Assert.That(
+                        part.Footprint.Overlaps(yard.TraversalBounds),
+                        Is.False,
+                        $"{part.StableId} narrows the declared 6 m route.");
+                }
+            }
+
             for (int sampleIndex = 0;
                  sampleIndex <= sampleCount;
                  sampleIndex++)
@@ -555,6 +1303,154 @@ namespace BarPromenade.Tests.EditMode
             return Vector2.Distance(
                 new Vector2(first.x, first.z),
                 new Vector2(second.x, second.z));
+        }
+
+        private static void AssertMemberEndpointsSupported(
+            CityFringeYardPartDescriptor member,
+            IReadOnlyList<CityFringeYardPartDescriptor> posts,
+            bool seatsOnPostTops)
+        {
+            foreach (Vector3 endpoint in PartEndpoints(member))
+            {
+                CityFringeYardPartDescriptor post = posts.OrderBy(candidate =>
+                        HorizontalDistance(endpoint, candidate.Center))
+                    .First();
+                Assert.That(
+                    HorizontalDistance(endpoint, post.Center),
+                    Is.LessThanOrEqualTo(0.03f),
+                    $"{member.StableId} misses its frame post.");
+                float postBottom = post.Center.y - post.Size.y * 0.5f;
+                float postTop = post.Center.y + post.Size.y * 0.5f;
+                if (seatsOnPostTops)
+                {
+                    Vector3 memberBottom = endpoint -
+                        (member.Rotation * Vector3.up) *
+                        (member.Size.y * 0.5f);
+                    Assert.That(
+                        memberBottom.y,
+                        Is.EqualTo(postTop).Within(0.035f),
+                        $"{member.StableId} is not seated on {post.StableId}.");
+                }
+                else
+                {
+                    Assert.That(
+                        endpoint.y,
+                        Is.InRange(postBottom - 0.01f, postTop + 0.01f),
+                        $"{member.StableId} leaves {post.StableId}.");
+                }
+            }
+        }
+
+        private static Vector3[] PartEndpoints(
+            CityFringeYardPartDescriptor part)
+        {
+            Vector3 halfRun = (part.Rotation * Vector3.forward) *
+                              (part.Size.z * 0.5f);
+            return new[]
+            {
+                part.Center - halfRun,
+                part.Center + halfRun
+            };
+        }
+
+        private static bool ContainsPoint(
+            Rect bounds,
+            Vector3 point,
+            float tolerance)
+        {
+            return point.x >= bounds.xMin - tolerance &&
+                   point.x <= bounds.xMax + tolerance &&
+                   point.z >= bounds.yMin - tolerance &&
+                   point.z <= bounds.yMax + tolerance;
+        }
+
+        private static float SampleOwnerTop(
+            CityLayout layout,
+            CityFringeYardDescriptor yard,
+            Vector3 point)
+        {
+            Vector2 sample = new Vector2(point.x, point.z);
+            CitySurfaceDescriptor surface = layout.Surfaces.First(candidate =>
+                candidate.AreaId == yard.AreaId &&
+                sample.x >= candidate.WorldBounds.xMin - 0.04f &&
+                sample.x <= candidate.WorldBounds.xMax + 0.04f &&
+                sample.y >= candidate.WorldBounds.yMin - 0.04f &&
+                sample.y <= candidate.WorldBounds.yMax + 0.04f);
+            return CityTerrainSurfacePlan.SampleTop(layout, surface, sample);
+        }
+
+        private static void AssertBottomCornersSeated(
+            CityLayout layout,
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartDescriptor part,
+            float maximumGap,
+            float maximumEmbed)
+        {
+            Vector3 right =
+                (part.Rotation * Vector3.right) * (part.Size.x * 0.5f);
+            Vector3 forward =
+                (part.Rotation * Vector3.forward) * (part.Size.z * 0.5f);
+            Vector3 down =
+                (part.Rotation * Vector3.up) * (part.Size.y * 0.5f);
+            for (int rightSign = -1; rightSign <= 1; rightSign += 2)
+            {
+                for (int forwardSign = -1;
+                     forwardSign <= 1;
+                     forwardSign += 2)
+                {
+                    Vector3 corner = part.Center - down +
+                        right * rightSign +
+                        forward * forwardSign;
+                    Vector2 sample = new Vector2(corner.x, corner.z);
+                    CitySurfaceDescriptor surface = layout.Surfaces.First(
+                        candidate =>
+                            candidate.AreaId == yard.AreaId &&
+                            sample.x >= candidate.WorldBounds.xMin - 0.04f &&
+                            sample.x <= candidate.WorldBounds.xMax + 0.04f &&
+                            sample.y >= candidate.WorldBounds.yMin - 0.04f &&
+                            sample.y <= candidate.WorldBounds.yMax + 0.04f);
+                    float ground = CityTerrainSurfacePlan.SampleTop(
+                        layout,
+                        surface,
+                        sample);
+                    Assert.That(
+                        corner.y - ground,
+                        Is.InRange(-maximumEmbed, maximumGap),
+                        $"{part.StableId} has a floating/buried corner.");
+                }
+            }
+        }
+
+        private static float DepthFromRoad(
+            CityFringeYardDescriptor yard,
+            Vector3 point)
+        {
+            Vector3 outward = yard.Access.OutwardNormal;
+            if (outward.x < -0.5f)
+            {
+                return yard.AreaBounds.xMax - point.x;
+            }
+
+            if (outward.x > 0.5f)
+            {
+                return point.x - yard.AreaBounds.xMin;
+            }
+
+            if (outward.z < -0.5f)
+            {
+                return yard.AreaBounds.yMax - point.z;
+            }
+
+            return point.z - yard.AreaBounds.yMin;
+        }
+
+        private static float LongCoordinate(
+            CityFringeYardDescriptor yard,
+            Vector3 point)
+        {
+            return Mathf.Abs(yard.Access.OutwardNormal.x) > 0.5f
+                ? point.z
+                : point.x;
         }
 
         private static Rect Expanded(Rect source, float amount)
