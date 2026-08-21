@@ -450,12 +450,12 @@ namespace BarPromenade
                 case CityFringeYardKind.SouthTunnelForecourt:
                     return new PracticalLightProfile(
                         new Color(1f, 0.56f, 0.28f),
-                        24f,
-                        10f,
-                        80f,
-                        48f,
-                        1.0f,
-                        2.55f,
+                        150f,
+                        16f,
+                        72f,
+                        40f,
+                        1.15f,
+                        3.10f,
                         new Color(4.0f, 1.55f, 0.34f, 0.18f),
                         new Color(2.15f, 0.92f, 0.30f, 0.05f));
                 case CityFringeYardKind.SouthFloodWorks:

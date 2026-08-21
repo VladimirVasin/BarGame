@@ -748,6 +748,129 @@ namespace BarPromenade.Tests.EditMode
                     portal.GetComponent<MeshRenderer>().sharedMaterial,
                     Is.EqualTo(RuntimePrimitiveFactory.DefaultMaterial),
                     "The close tunnel stub must not dither with the ridge.");
+                CityMountainTunnelDescriptor tunnel = plan.Tunnel;
+                Vector3 tunnelAxis = tunnel.Axis.normalized;
+                Vector3 tunnelRight = Vector3.Cross(
+                    Vector3.up,
+                    tunnelAxis).normalized;
+                Vector3 portalGround = tunnel.PortalGroundCenter;
+                Vector3[] portalVertices = portal
+                    .GetComponent<MeshFilter>()
+                    .sharedMesh
+                    .vertices
+                    .Select(vertex =>
+                        portal.transform.TransformPoint(vertex))
+                    .ToArray();
+                float portalBack = portalVertices.Max(vertex =>
+                    Vector3.Dot(vertex - portalGround, tunnelAxis));
+
+                Transform throat = FindChild(
+                    physical.transform,
+                    "Dark Rock Throat");
+                Vector3[] throatVertices = throat
+                    .GetComponent<MeshFilter>()
+                    .sharedMesh
+                    .vertices
+                    .Select(vertex =>
+                        throat.transform.TransformPoint(vertex))
+                    .ToArray();
+                float throatInnerPlane = throatVertices
+                    .Where(vertex =>
+                        Vector3.Dot(vertex - portalGround, tunnelAxis) <=
+                        portalBack + 0.001f)
+                    .Min(vertex => Mathf.Abs(Vector3.Dot(
+                        vertex - portalGround,
+                        tunnelRight)));
+                Assert.That(
+                    throatInnerPlane,
+                    Is.EqualTo(
+                            tunnel.OpeningWidth * 0.5f +
+                            CityMountainBoundaryWorldBuilder
+                                .ThroatJointOverlap)
+                        .Within(0.001f),
+                    "The portal and throat regained coplanar side faces.");
+
+                Transform floor = FindChild(
+                    physical.transform,
+                    "Tunnel Floor");
+                Vector3[] floorVertices = floor
+                    .GetComponent<MeshFilter>()
+                    .sharedMesh
+                    .vertices
+                    .Select(vertex =>
+                        floor.transform.TransformPoint(vertex))
+                    .ToArray();
+                float floorStart = floorVertices.Min(vertex =>
+                    Vector3.Dot(vertex - portalGround, tunnelAxis));
+                float floorEnd = floorVertices.Max(vertex =>
+                    Vector3.Dot(vertex - portalGround, tunnelAxis));
+                float floorTop = floorVertices.Max(vertex => vertex.y);
+                Assert.That(
+                    floorStart,
+                    Is.LessThanOrEqualTo(
+                        -CityMountainBoundaryWorldBuilder
+                            .ThroatFloorGroundOverlap + 0.001f),
+                    "The throat floor no longer overlaps the terrain edge.");
+                Assert.That(
+                    floorEnd,
+                    Is.GreaterThanOrEqualTo(
+                        tunnel.ThroatDepth +
+                        CityMountainBoundaryWorldBuilder
+                            .ThroatPortalOffset - 0.001f));
+                Assert.That(
+                    floorTop,
+                    Is.EqualTo(
+                            portalGround.y +
+                            CityMountainBoundaryWorldBuilder
+                                .ThroatFloorSurfaceLift)
+                        .Within(0.001f));
+
+                float wallBottom = portalGround.y -
+                                   CityMountainBoundaryWorldBuilder
+                                       .ThroatJointOverlap;
+                float wallTop = portalGround.y + tunnel.OpeningHeight -
+                                CityMountainBoundaryWorldBuilder
+                                    .ThroatJointOverlap;
+                float ceilingBottom = portalGround.y +
+                                      tunnel.OpeningHeight - 0.075f;
+                Assert.That(
+                    floorTop - wallBottom,
+                    Is.GreaterThanOrEqualTo(0.06f),
+                    "The floor-to-wall joint reopened.");
+                Assert.That(
+                    wallTop - ceilingBottom,
+                    Is.GreaterThanOrEqualTo(0.03f),
+                    "The wall-to-ceiling slit reopened.");
+                float wallOuterPlane = throatVertices
+                    .Where(vertex =>
+                        Mathf.Abs(vertex.y - wallBottom) < 0.001f)
+                    .Max(vertex => Mathf.Abs(Vector3.Dot(
+                        vertex - portalGround,
+                        tunnelRight)));
+                float ceilingOuterPlane = throatVertices
+                    .Where(vertex =>
+                        Mathf.Abs(vertex.y - ceilingBottom) < 0.001f)
+                    .Max(vertex => Mathf.Abs(Vector3.Dot(
+                        vertex - portalGround,
+                        tunnelRight)));
+                Assert.That(
+                    ceilingOuterPlane - wallOuterPlane,
+                    Is.GreaterThanOrEqualTo(
+                        CityMountainBoundaryWorldBuilder
+                            .ThroatJointOverlap - 0.001f),
+                    "The wall and ceiling regained coplanar outer faces.");
+                Assert.That(
+                    throatVertices.Any(vertex =>
+                        Mathf.Abs(vertex.y - wallBottom) < 0.001f),
+                    Is.True);
+                Assert.That(
+                    throatVertices.Any(vertex =>
+                        Mathf.Abs(vertex.y - wallTop) < 0.001f),
+                    Is.True);
+                Assert.That(
+                    throatVertices.Any(vertex =>
+                        Mathf.Abs(vertex.y - ceilingBottom) < 0.001f),
+                    Is.True);
                 Assert.That(
                     physical.GetComponentsInChildren<Light>(true),
                     Is.Empty);

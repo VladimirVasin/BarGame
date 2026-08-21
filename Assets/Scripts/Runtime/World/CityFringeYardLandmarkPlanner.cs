@@ -49,7 +49,7 @@ namespace BarPromenade
                             parts);
                         break;
                     case CityFringeYardKind.SouthTunnelForecourt:
-                        practical = AddTunnelReturnLight(
+                        practical = AddTunnelPortalLight(
                             layout,
                             yard,
                             forecourt,
@@ -310,7 +310,7 @@ namespace BarPromenade
                 new Color(1.28f, 2.15f, 1.62f, 1f));
         }
 
-        private static CityFringeYardPracticalDescriptor AddTunnelReturnLight(
+        private static CityFringeYardPracticalDescriptor AddTunnelPortalLight(
             CityLayout layout,
             CityFringeYardDescriptor yard,
             CityTunnelForecourtDescriptor forecourt,
@@ -327,9 +327,6 @@ namespace BarPromenade
                 forecourt.StreetAnchor,
                 forecourt.PortalAnchor,
                 0.86f) + side * frameOffset;
-            Quaternion cityRotation = Quaternion.LookRotation(
-                -forecourt.Axis,
-                Vector3.up);
             Quaternion tunnelRotation = Quaternion.LookRotation(
                 forecourt.Axis,
                 Vector3.up);
@@ -380,34 +377,27 @@ namespace BarPromenade
                 secondTop - Vector3.up * 0.42f,
                 0.16f);
 
-            Vector3 armStart = firstTop +
-                Vector3.up * (beamThickness * 0.5f);
-            Vector3 armEnd = armStart - forecourt.Axis * 1.25f;
-            AddBeamBetween(
-                yard,
-                parts,
-                $"{yard.AreaId}-landmark-return-light-arm",
-                armStart,
-                armEnd,
-                0.20f);
-            Vector3 housingCenter = armEnd - Vector3.up * 0.25f;
+            Vector3 housingCenter =
+                CityTunnelPortalLightGeometry.ResolvePosition(forecourt);
+            Vector3 lightForward =
+                CityTunnelPortalLightGeometry.ResolveForward(forecourt);
             var housing = new CityFringeYardPartDescriptor(
                 $"{yard.AreaId}-landmark-practical-housing",
                 yard.AreaId,
                 CityFringeYardPartKind.PracticalHousing,
                 CityFringeYardStyle.Iron,
                 housingCenter,
-                cityRotation,
-                new Vector3(0.48f, 0.32f, 0.42f),
+                Quaternion.LookRotation(lightForward, Vector3.up),
+                CityTunnelPortalLightGeometry.HousingSize,
                 false);
-            RequireContainedAndClear(yard, housing);
+            RequireOverheadPortalHousing(layout, yard, housing);
             parts.Add(housing);
 
             return CreatePractical(
                 yard,
                 CityFringeYardPracticalKind.TunnelReturnLamp,
                 housing.Center,
-                (-forecourt.Axis + Vector3.down * 0.72f).normalized,
+                lightForward,
                 new Color(2.80f, 1.42f, 0.38f, 1f));
         }
 
@@ -745,6 +735,42 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     $"Fringe landmark part '{part.StableId}' leaves or " +
                     "blocks its reserved Yard space.");
+            }
+        }
+
+        private static void RequireOverheadPortalHousing(
+            CityLayout layout,
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartDescriptor housing)
+        {
+            Rect footprint = housing.Footprint;
+            const float tolerance = 0.035f;
+            if (housing.BlocksMovement ||
+                footprint.xMin < yard.AreaBounds.xMin - tolerance ||
+                footprint.xMax > yard.AreaBounds.xMax + tolerance ||
+                footprint.yMin < yard.AreaBounds.yMin - tolerance ||
+                footprint.yMax > yard.AreaBounds.yMax + tolerance ||
+                !footprint.Overlaps(yard.TraversalBounds))
+            {
+                throw new InvalidOperationException(
+                    $"Tunnel portal housing '{housing.StableId}' is not " +
+                    "safely centred over its reserved route.");
+            }
+
+            Vector3 localRight = housing.Rotation * Vector3.right;
+            Vector3 localUp = housing.Rotation * Vector3.up;
+            Vector3 localForward = housing.Rotation * Vector3.forward;
+            float verticalExtent =
+                Mathf.Abs(localRight.y) * housing.Size.x * 0.5f +
+                Mathf.Abs(localUp.y) * housing.Size.y * 0.5f +
+                Mathf.Abs(localForward.y) * housing.Size.z * 0.5f;
+            float ground = SampleYardTop(layout, yard, housing.Center);
+            if (housing.Center.y - verticalExtent - ground <
+                CityTunnelPortalLightGeometry.MinimumHousingClearance)
+            {
+                throw new InvalidOperationException(
+                    $"Tunnel portal housing '{housing.StableId}' hangs " +
+                    "inside the traversal clearance.");
             }
         }
 

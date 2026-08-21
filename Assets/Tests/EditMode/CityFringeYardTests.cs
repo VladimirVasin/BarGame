@@ -145,11 +145,27 @@ namespace BarPromenade.Tests.EditMode
                 first.Practicals.Single(item =>
                     item.Kind ==
                     CityFringeYardPracticalKind.TunnelReturnLamp);
+            Vector3 expectedTunnelLightPosition =
+                CityTunnelPortalLightGeometry.ResolvePosition(
+                    first.TunnelForecourt);
+            Vector3 expectedTunnelLightForward =
+                CityTunnelPortalLightGeometry.ResolveForward(
+                    first.TunnelForecourt);
+            Assert.That(
+                Vector3.Distance(
+                    tunnelPractical.Position,
+                    expectedTunnelLightPosition),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Vector3.Angle(
+                    tunnelPractical.Forward,
+                    expectedTunnelLightForward),
+                Is.LessThan(0.01f));
             Assert.That(
                 Vector3.Dot(
                     tunnelPractical.Forward,
-                    -first.TunnelForecourt.Axis),
-                Is.GreaterThan(0.75f));
+                    first.TunnelForecourt.Axis),
+                Is.GreaterThan(0.60f));
             Assert.DoesNotThrow(() =>
                 CityFringeYardValidator.ValidateOrThrow(
                     layout,
@@ -515,17 +531,13 @@ namespace BarPromenade.Tests.EditMode
             CityFringeYardPartDescriptor serviceBrace = yard.Parts.Single(
                 part => part.StableId ==
                     $"{yard.AreaId}-landmark-return-service-brace");
-            CityFringeYardPartDescriptor lightArm = yard.Parts.Single(
-                part => part.StableId ==
-                    $"{yard.AreaId}-landmark-return-light-arm");
             CityFringeYardPartDescriptor housing = yard.Parts.Single(
                 part => part.StableId ==
                     $"{yard.AreaId}-landmark-practical-housing");
             foreach (CityFringeYardPartDescriptor member in new[]
                      {
                          serviceBeam,
-                         serviceBrace,
-                         lightArm
+                         serviceBrace
                      })
             {
                 Assert.That(
@@ -544,39 +556,68 @@ namespace BarPromenade.Tests.EditMode
 
             AssertMemberEndpointsSupported(serviceBeam, framePosts, true);
             AssertMemberEndpointsSupported(serviceBrace, framePosts, false);
-            Vector3[] armEndpoints = PartEndpoints(lightArm);
-            Vector3 supportedArmEnd = armEndpoints
-                .OrderBy(point => framePosts.Min(post =>
-                    HorizontalDistance(point, post.Center)))
-                .First();
-            Vector3 freeArmEnd = armEndpoints.Single(point =>
-                point != supportedArmEnd);
+            CityFringeYardPracticalDescriptor tunnelPractical =
+                fringe.Practicals.Single(practical =>
+                    practical.AreaId == yard.AreaId);
             Assert.That(
-                framePosts.Min(post =>
-                    HorizontalDistance(supportedArmEnd, post.Center)),
-                Is.LessThanOrEqualTo(0.03f),
-                "The practical arm is not carried by the frame.");
+                housing.Center,
+                Is.EqualTo(
+                    CityTunnelPortalLightGeometry.ResolvePosition(
+                        fringe.TunnelForecourt)));
             Assert.That(
-                ContainsPoint(housing.Footprint, freeArmEnd, 0.03f),
+                housing.Center,
+                Is.EqualTo(tunnelPractical.Position),
+                "The emissive lens left its portal housing.");
+            Assert.That(
+                housing.Size,
+                Is.EqualTo(CityTunnelPortalLightGeometry.HousingSize));
+            float housingFront = housing.Size.z * 0.5f;
+            float lensBack =
+                CityFringeYardWorldBuilder.PracticalLensForwardOffset -
+                tunnelPractical.LensSize.z * 0.5f;
+            Assert.That(
+                lensBack - housingFront,
+                Is.GreaterThanOrEqualTo(0.015f),
+                "The emissive lens is buried inside the portal housing.");
+            Assert.That(
+                housing.Footprint.Overlaps(
+                    fringe.TunnelForecourt.DriveClearBounds),
                 Is.True,
-                "The practical housing left the arm end.");
-            float armBottom = freeArmEnd.y - lightArm.Size.y * 0.5f;
-            float housingTop = housing.Center.y + housing.Size.y * 0.5f;
+                "The floodlight is no longer centred over the portal lane.");
+            float housingGround = SampleOwnerTop(
+                layout,
+                yard,
+                housing.Center);
             Assert.That(
-                housingTop,
-                Is.InRange(armBottom, armBottom + 0.02f),
-                "The practical housing floats below its support arm.");
+                housing.Center.y - housingGround,
+                Is.GreaterThan(5.5f),
+                "The portal floodlight dropped into traversal clearance.");
             Assert.That(
                 housing.Kind,
                 Is.EqualTo(CityFringeYardPartKind.PracticalHousing));
             Assert.That(housing.BlocksMovement, Is.False);
             Assert.That(
                 Vector3.Dot(
-                    fringe.Practicals.Single(practical =>
-                        practical.AreaId == yard.AreaId).Forward,
-                    -fringe.TunnelForecourt.Axis),
-                Is.GreaterThan(0.70f),
-                "The tunnel practical no longer faces the city.");
+                    tunnelPractical.Forward,
+                    fringe.TunnelForecourt.Axis),
+                Is.GreaterThan(0.60f),
+                "The portal floodlight no longer aims into the throat.");
+            Assert.That(
+                tunnelPractical.Forward.y,
+                Is.LessThan(-0.70f),
+                "The portal floodlight no longer washes the tunnel floor.");
+            float gateRayDistance =
+                CityMountainBoundaryDefinition.TunnelGateInset /
+                Vector3.Dot(
+                    tunnelPractical.Forward,
+                    fringe.TunnelForecourt.Axis);
+            float gateRayHeight = tunnelPractical.Position.y +
+                                  tunnelPractical.Forward.y *
+                                  gateRayDistance;
+            Assert.That(
+                gateRayHeight - fringe.TunnelForecourt.PortalAnchor.y,
+                Is.InRange(1f, 2f),
+                "The floodlight misses the floor-to-gate read.");
 
             CityFringeYardPartDescriptor[] drainCovers = yard.Parts.Where(
                     part => part.StableId.StartsWith(
@@ -1351,17 +1392,6 @@ namespace BarPromenade.Tests.EditMode
                 part.Center - halfRun,
                 part.Center + halfRun
             };
-        }
-
-        private static bool ContainsPoint(
-            Rect bounds,
-            Vector3 point,
-            float tolerance)
-        {
-            return point.x >= bounds.xMin - tolerance &&
-                   point.x <= bounds.xMax + tolerance &&
-                   point.z >= bounds.yMin - tolerance &&
-                   point.z <= bounds.yMax + tolerance;
         }
 
         private static float SampleOwnerTop(

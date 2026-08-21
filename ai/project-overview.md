@@ -76,8 +76,9 @@ The vertical slice contains:
   and south edges with deterministic flat-shaded low-poly ridge strips whose
   toes sample the authoritative terrain top. The south rim is split around a
   dedicated river notch and around one `8 x 5.5 m` tunnel portal derived from
-  `yard-south-west-access`. Its short dark throat ends at a collidered metal
-  gate: it has no prompt, interaction, destination scene, transition or
+  `yard-south-west-access`. Its short throat has a terrain-overlapping raised
+  floor and non-coplanar, closed wall/ceiling joints, then ends at a collidered
+  metal gate: it has no prompt, interaction, destination scene, transition or
   addition to `RoadWalkableArea`. The north remains the open sea edge and the
   east remains deliberately unbounded for a separate pass. One two-layer
   camera-relative presentation shell adds only west/south ridge silhouette at
@@ -119,14 +120,16 @@ The vertical slice contains:
   earth-textured longitudinal service-track overlays.
   Their macro anchors are a stepped culvert terrace, an industrial repair
   frame, the `6.9 m` tunnel forecourt with a validated `>6 m` clear terrain
-  lane, narrow embedded marks, two continuous grounded concrete return wings
-  and a supported two-post return-light frame, and caged floodworks with a
-  gauge; four dedicated measured sheets distinguish
+  lane, narrow embedded marks, two continuous grounded concrete return wings,
+  a two-post service frame and a crown-mounted floodlight, and caged floodworks
+  with a gauge; four dedicated measured sheets distinguish
   compacted forefield, service aggregate, board-formed concrete and old
   masonry at close range. Four small
   emissive practicals remain separate from the combined geometry, while the
   nearest supported anchor within `20 m` can lease the last existing street
-  Spot from `CityNightAtmosphere`; its `12`-Light pool is unchanged. The
+  Spot from `CityNightAtmosphere`; its `12`-Light pool is unchanged. The portal
+  profile uses that lease as a `150`-intensity, `16 m` Spot aimed down the
+  sealed throat from above the opening. The
   eastern variant stays a separate low, unlit road/drain/pole/shed/berm utility
   edge and creates no ridge. Large masses are physical, small traces and cables
   are visual only. Every physical ridge overlaps beneath its sampled terrain

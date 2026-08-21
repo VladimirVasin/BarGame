@@ -69,9 +69,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   clip contract in `DepthOnly` and
   `DepthNormalsOnly`. Portal frame, throat and gate remain ordinary
   `RuntimePrimitiveLit` pieces because they are close-range props, not part of
-  the silhouette handoff; the conforming approach terrain, narrow ruts,
-  cross-drain, grounded stepped return wings and supported side light-frame
-  belong to the sibling fringe-Yard plan.
+  the silhouette handoff. The throat floor reaches `0.25 m` under the terrain
+  edge and sits `0.03 m` above its old plane; the wall planes move `0.04 m`
+  outside the portal faces, overlap both floor and ceiling, and the ceiling
+  overhangs their outer faces by another `0.04 m`. This eliminates the former
+  `0.45 m` ground gap, `0.175 m` coplanar strip and `0.275 m` upper slit. The
+  conforming approach terrain, narrow ruts, cross-drain, grounded
+  stepped return wings, side service frame and crown floodlight belong to the
+  sibling fringe-Yard plan.
   The one portal is derived from `yard-south-west-access`: an approximately
   `8 x 5.5 m` opening, short dark rock throat and visible metal gate with a
   collider. It is a sealed future-location stub, not a gameplay tunnel: there
@@ -197,8 +202,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   box; the south-east chapter uses its drain instead.
   One macro anchor distinguishes each mountain-facing strip: stepped masonry
   around a stone culvert, a concrete repair frame with winch and pipe stock,
-  the readable sealed-tunnel forecourt with continuous stepped concrete wings
-  and a two-post return-light frame, and caged floodworks with a gauge and
+  the readable sealed-tunnel forecourt with continuous stepped concrete wings,
+  a two-post service frame and a crown-mounted floodlight, and caged floodworks
+  with a gauge and
   narrow silt-wash cuts. The floodworks has no broad collider-free repair or
   silt platform; every remaining surface trace is at most `0.8 m` wide. Four
   deterministic measured sheets give the quiet forefield,
@@ -208,8 +214,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   by a narrow embedded approach trace and paired wheel ruts rather than a
   `6.9 m` visual platform. Its former loose portal blocks are now two continuous
   three-stage concrete returns: their horizontal bases are seated below the
-  lowest sampled terrain corner, their iron caps rest on the concrete, and the
-  return lamp belongs to a supported two-post frame instead of floating stock.
+  lowest sampled terrain corner, their iron caps rest on the concrete, the
+  two-post service frame stays beside the lane, and the working lamp is fixed
+  over the portal crown instead of floating on that side structure.
   The other three mountain strips
   reserve straight capsule-clear `6 m` routes from their declared entrances to
   within one player radius of the ridge toe. The two western routes have broad
@@ -229,8 +236,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   player comes within `20 m`, only the nearest supported anchor can lease the
   eighth street Spot already owned by `CityNightAtmosphere`: the pool remains
   `4` bar + `7` street + `1` fringe, still `12` total, and returns to `4+8`
-  outside the activation radius. The tunnel practical aims back at the city,
-  never into the closed throat; the eastern edge has no practical. There is no
+  outside the activation radius. The tunnel lease is the deliberate stronger
+  exception: a warm shadowless `150`-intensity, `16 m`, `72°`/`40°` Spot above
+  the crown aims down to the floor and sealed gate. The eastern edge has no
+  practical. There is no
   interaction, prompt, scene or navigation continuation. The lot and road-grid footprint is
   still normalized to `(0,0)` because every
   per-cell random stream hashes raw cell coordinates; only the

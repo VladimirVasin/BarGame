@@ -94,7 +94,7 @@ namespace BarPromenade.Tests.EditMode
                     atmosphere.ActivePracticalKind,
                     Is.EqualTo(CityFringeYardKind.SouthTunnelForecourt));
                 Assert.That(practicalLight.enabled, Is.True);
-                Assert.That(practicalLight.intensity, Is.EqualTo(24f));
+                Assert.That(practicalLight.intensity, Is.EqualTo(150f));
                 Assert.That(practicalHalo.IntensityFactor, Is.EqualTo(1f));
                 Assert.That(practicalHalo.IsVisible, Is.True);
 
@@ -188,10 +188,10 @@ namespace BarPromenade.Tests.EditMode
                     expectedInnerSpotAngle = 42f;
                     break;
                 case CityFringeYardKind.SouthTunnelForecourt:
-                    expectedIntensity = 24f;
-                    expectedRange = 10f;
-                    expectedSpotAngle = 80f;
-                    expectedInnerSpotAngle = 48f;
+                    expectedIntensity = 150f;
+                    expectedRange = 16f;
+                    expectedSpotAngle = 72f;
+                    expectedInnerSpotAngle = 40f;
                     break;
                 case CityFringeYardKind.SouthFloodWorks:
                     expectedIntensity = 20f;

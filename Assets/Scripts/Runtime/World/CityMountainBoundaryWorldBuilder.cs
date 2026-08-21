@@ -13,6 +13,12 @@ namespace BarPromenade
     /// </summary>
     internal static class CityMountainBoundaryWorldBuilder
     {
+        internal const float ThroatPortalOffset = 0.45f;
+        internal const float ThroatJointOverlap = 0.04f;
+        internal const float ThroatFloorGroundOverlap = 0.25f;
+        internal const float ThroatFloorSurfaceLift = 0.03f;
+        internal const float ThroatFloorThickness = 0.36f;
+
         internal static readonly Color ForeRock =
             new Color(0.21f, 0.235f, 0.215f, 1f);
         internal static readonly Color MidRock =
@@ -101,18 +107,19 @@ namespace BarPromenade
             Quaternion rotation = Quaternion.LookRotation(axis, Vector3.up);
             float depth = Mathf.Max(1.5f, tunnel.ThroatDepth);
             float wallThickness = 0.55f;
-            float centreDistance = depth * 0.5f + 0.45f;
-            float wallHeight = tunnel.OpeningHeight - 0.35f;
+            float centreDistance = depth * 0.5f + ThroatPortalOffset;
+            float wallHeight = tunnel.OpeningHeight;
             Vector3 centre = tunnel.PortalGroundCenter +
                              axis * centreDistance;
-            var lining = new List<RuntimeOrientedBox>(4);
+            var lining = new List<RuntimeOrientedBox>(3);
             for (int side = -1; side <= 1; side += 2)
             {
                 lining.Add(new RuntimeOrientedBox(
                     centre +
-                    right * ((tunnel.OpeningWidth + wallThickness) *
-                             0.5f * side) +
-                    Vector3.up * (wallHeight * 0.5f),
+                    right * (((tunnel.OpeningWidth + wallThickness) *
+                              0.5f + ThroatJointOverlap) * side) +
+                    Vector3.up *
+                    (wallHeight * 0.5f - ThroatJointOverlap),
                     rotation,
                     new Vector3(wallThickness, wallHeight, depth)));
             }
@@ -121,16 +128,45 @@ namespace BarPromenade
                 centre + Vector3.up * (tunnel.OpeningHeight + 0.20f),
                 rotation,
                 new Vector3(
-                    tunnel.OpeningWidth + wallThickness * 2f,
+                    tunnel.OpeningWidth + wallThickness * 2f +
+                    ThroatJointOverlap * 4f,
                     0.55f,
                     depth)));
-            lining.Add(new RuntimeOrientedBox(
-                centre + Vector3.down * 0.18f,
-                rotation,
-                new Vector3(
-                    tunnel.OpeningWidth + wallThickness,
-                    0.36f,
-                    depth)));
+
+            float floorEndDistance = depth + ThroatPortalOffset;
+            float floorDepth = floorEndDistance +
+                               ThroatFloorGroundOverlap;
+            float floorCentreDistance =
+                (floorEndDistance - ThroatFloorGroundOverlap) * 0.5f;
+            var floor = new List<RuntimeOrientedBox>(1)
+            {
+                new RuntimeOrientedBox(
+                    tunnel.PortalGroundCenter +
+                    axis * floorCentreDistance +
+                    Vector3.up *
+                    (ThroatFloorSurfaceLift -
+                     ThroatFloorThickness * 0.5f),
+                    rotation,
+                    new Vector3(
+                        tunnel.OpeningWidth + wallThickness,
+                        ThroatFloorThickness,
+                        floorDepth))
+            };
+
+            GameObject floorObject =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "Tunnel Floor",
+                    parent,
+                    floor,
+                    ThroatRock,
+                    false,
+                    CityMountainSurfaceAppearance.MetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            Renderer floorRenderer = floorObject.GetComponent<Renderer>();
+            CityMountainSurfaceAppearance.ApplyCombined(
+                floorRenderer,
+                ThroatRock);
+            floorRenderer.shadowCastingMode = ShadowCastingMode.Off;
 
             GameObject liningObject =
                 RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(

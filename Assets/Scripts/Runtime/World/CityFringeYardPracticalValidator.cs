@@ -58,9 +58,16 @@ namespace BarPromenade
                 Vector2 xz = new Vector2(
                     practical.Position.x,
                     practical.Position.z);
-                if (!Contains(yard.AreaBounds, xz) ||
+                bool isTunnelPortalLight =
+                    practical.YardKind ==
+                    CityFringeYardKind.SouthTunnelForecourt &&
+                    practical.Kind ==
+                    CityFringeYardPracticalKind.TunnelReturnLamp;
+                bool overlapsReservedRoute =
                     yard.Access.ApproachBounds.Contains(xz) ||
-                    yard.TraversalBounds.Contains(xz) ||
+                    yard.TraversalBounds.Contains(xz);
+                if (!Contains(yard.AreaBounds, xz) ||
+                    (overlapsReservedRoute && !isTunnelPortalLight) ||
                     !HasOwnerGround(layout, yard.AreaId, xz))
                 {
                     throw new InvalidOperationException(
@@ -94,12 +101,25 @@ namespace BarPromenade
                     break;
                 case CityFringeYardKind.SouthTunnelForecourt:
                     expected = CityFringeYardPracticalKind.TunnelReturnLamp;
-                    if (Vector3.Dot(
+                    Vector3 expectedPosition =
+                        CityTunnelPortalLightGeometry.ResolvePosition(
+                            plan.TunnelForecourt);
+                    Vector3 expectedForward =
+                        CityTunnelPortalLightGeometry.ResolveForward(
+                            plan.TunnelForecourt);
+                    if (Vector3.Distance(
+                            practical.Position,
+                            expectedPosition) > 0.01f ||
+                        Vector3.Angle(
                             practical.Forward,
-                            -plan.TunnelForecourt.Axis) <= 0.75f)
+                            expectedForward) > 0.1f ||
+                        Vector3.Dot(
+                            practical.Forward,
+                            plan.TunnelForecourt.Axis) <= 0.60f)
                     {
                         throw new InvalidOperationException(
-                            "The tunnel practical must point back to the city.");
+                            "The tunnel practical must sit over the portal " +
+                            "and point down the sealed throat.");
                     }
                     break;
                 case CityFringeYardKind.SouthFloodWorks:

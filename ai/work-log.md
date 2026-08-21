@@ -6,6 +6,35 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-21 — The tunnel meets the ground and lights its throat
+
+- Traced the visible entrance gap to the throat floor starting `0.45 m` behind
+  the portal while the Yard terrain ends exactly at the portal plane. The floor
+  is now an independent lining piece that reaches `0.25 m` cityward beneath the
+  terrain, ends at the original sealed depth and rises `0.03 m` through the
+  ground joint, so the entrance has continuous visible ground coverage.
+- Removed the exact coplanar portal/throat overlap that caused z-fighting. The
+  throat walls now start outside the portal's inner planes, overlap the floor
+  vertically and meet an overlapping, outward-overhanging ceiling instead of
+  leaving the former `0.275 m` upper slits or another coplanar outer seam.
+- Reused the existing `SouthTunnelForecourt` pooled Spot rather than adding a
+  thirteenth Light. Its housing now sits above the portal crown, aims down and
+  inward at the gate/floor, and uses the stronger tunnel profile
+  `150` intensity / `16 m` range / `72°` outer / `40°` inner cone. The night
+  pool remains `4` bar + `7` street + `1` tunnel practical = `12` Lights; the
+  shallower housing leaves its emissive lens visibly proud of the front face.
+- **Verification:** four focused Unity EditMode regressions passed (`4/4`):
+  `WorldBuilders_CreatePhysicalClosureAndPresentationOnlyRim`,
+  `DefaultCoastal_PlansFiveDeterministicFringesAndSealedForecourt`,
+  `DefaultCoastal_CellFiveMinusOneUsesNarrowTunnelTraces`, and
+  `FringePractical_LeasesOneStreetSlotWithinTwelveLightBudget`. They cover the
+  closed lining joints, portal-light pose and direction, strengthened light
+  profile, and unchanged 12-Light budget. A final geometry review then exposed
+  a buried lens and one remaining outer wall/ceiling coplanar face; after those
+  corrections the two affected regressions passed again (`2/2`).
+  `git diff --check` also passed. Full suites, a player build and manual visual
+  smoke were intentionally omitted in fast mode.
+
 ## 2026-08-21 — The ridge turn and both authored road corners are continuous
 
 - Reproduced the report at player position `(-154.85,-159.40)`. The canonical

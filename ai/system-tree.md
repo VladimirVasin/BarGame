@@ -206,7 +206,7 @@ Assets/
         CityMountainBoundaryPlanner.cs deterministic terrain/toe-sampled boundary + corner-ground infill
         CityMountainBoundaryValidator.cs side/opening/tunnel/corner geometry + natural-ground invariants
         CityMountainBoundaryMeshFactory.cs ridges with buried toe bonds + shared render/collider corner earthwork
-        CityMountainBoundaryWorldBuilder.cs corner ground, physical ridges, portal, throat + collidered gate
+        CityMountainBoundaryWorldBuilder.cs corner ground, ridges + seamless portal floor/lining and collidered gate
         CityMountainSurfaceAppearance.cs rock recipe + one shared fog-safe physical-ridge material
         CityMountainBackdrop{Resources,WorldBuilder,Follower}.cs camera-relative west/south shell only
         CityFringeYardPlan.cs     five typed Yard profiles, parts, practicals + sealed forecourt contract
@@ -214,7 +214,7 @@ Assets/
         CityFringeYardForefieldPlanner.cs road/middle/toe bands + 3-4 seeded meso anchors per mountain strip
         CityFringeYardGroundWorldBuilder.cs exact generic/forefield terrain split with one collider per source area
         CityFringeYardRetainingPlanner.cs precise retaining cuts around rock-access corridors
-        CityFringeYardLandmarkPlanner.cs four macro anchors incl. supported tunnel side light-frame
+        CityFringeYardLandmarkPlanner.cs four macro anchors incl. tunnel service frame + crown floodlight
         CityFringeYard{PracticalPlan,PracticalValidator}.cs four clear, deterministic practicals
         CityFringeYardSurfaceAppearance.cs four measured shared surface families
         CityFringeYardValidator.cs bands/gaps/all-safe-seams/corridors/vocabulary/budget invariants
@@ -541,8 +541,8 @@ Assets/
       CityBusDriverAssetContractTests.cs 31-bone rig, eyes, shared material + passive prefab
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
       CityMapMountainPresentationTests.cs west/south-only bounds + notch/tunnel map contract
-      CityMountainBoundaryTests.cs       deterministic ridges/tunnel + fog-safe physical handoff
-      CityFringeYardTests.cs             five profiles, grounded portal works, capsule routes + light-free build
+      CityMountainBoundaryTests.cs       deterministic ridges, seamless tunnel lining + fog-safe physical handoff
+      CityFringeYardTests.cs             five profiles, grounded portal/crown light, routes + light-free build
       CityFringeYardGroundWorldBuilderTests.cs exact terrain split, texture, UV + collider ownership
       CityFringeYardSurfaceAppearanceTests.cs measured sheets, imports + shared MPB application
       CityNightAtmosphereTests.cs         nearest fringe practical leases one existing street Spot

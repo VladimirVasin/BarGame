@@ -33,8 +33,9 @@ yard-specific meso anchors keep every longitudinal empty interval at or below
 mountain strips use narrow terrain-following maintenance marks instead of
 broad earth-textured longitudinal service-track overlays. Four large anchors
 still finish the chapters: stepped masonry and a culvert, an industrial repair
-frame, the sealed-tunnel freight forecourt with grounded stepped return wings
-and a supported two-post return-light frame, and caged floodworks with a gauge.
+frame, the sealed-tunnel freight forecourt with grounded stepped return wings,
+a two-post service frame and a crown-mounted floodlight, and caged floodworks
+with a gauge.
 Dedicated forefield, service-track, board-formed concrete and old-masonry
 sheets carry the close read. Every height-safe seam along the west/south ring
 now opens into that walkable ground instead of acting as an invisible wall.
@@ -60,10 +61,13 @@ The north-east urban-core road cap beside lot `[12,11]` has a separate local
 `4 m + 4 m` physical `CornerGuard` pair meeting in the same ordinary right
 angle. It guards only that cap; the northern waterfront, eastern lake ground
 and their authored approaches remain open.
-Each anchor owns one small emissive
-practical; at night the nearest one may lease the last of the existing eight
-street Spot slots, so `CityNightAtmosphere` still owns exactly `12` realtime
-Lights rather than adding four more. The eastern Yard uses a separate low,
+Each anchor owns one emissive practical; at night the nearest one may lease the
+last of the existing eight street Spot slots, so `CityNightAtmosphere` still
+owns exactly `12` realtime Lights rather than adding four more. The tunnel
+profile is a `150`-intensity, `16 m` crown floodlight aimed down its sealed
+throat. Its floor overlaps the terrain edge, and offset/overlapping lining
+joints remove the former ground gap, coplanar wall flicker and ceiling slits.
+The eastern Yard uses a separate low,
 unlit utility-edge composition and creates no eastern ridge. The portal still
 adds no interaction, scene transition or walkable continuation. A camera-relative
 west/south ridge shell keeps that enclosing silhouette inside City's fixed
