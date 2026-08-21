@@ -26,7 +26,11 @@ trace, sparse utility verticals and repair/rockfall pockets. Four large anchors
 keep that belt from becoming repeated noise: stepped masonry and a culvert,
 an industrial repair frame, the sealed-tunnel freight forecourt, and caged
 floodworks with a gauge. Dedicated service-track, board-formed concrete and
-old-masonry sheets carry the close read. Each anchor owns one small emissive
+old-masonry sheets carry the close read. Every height-safe seam along the
+west/south ring now opens into that walkable ground instead of acting as an
+invisible wall. Three visible `6 m` gravel spurs cut precisely through the
+retaining line to the mountain toe; the fourth route reaches the sealed portal.
+Each anchor owns one small emissive
 practical; at night the nearest one may lease the last of the existing eight
 street Spot slots, so `CityNightAtmosphere` still owns exactly `12` realtime
 Lights rather than adding four more. The eastern Yard uses a separate low,

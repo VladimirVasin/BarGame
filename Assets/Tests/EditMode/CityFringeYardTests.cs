@@ -198,6 +198,100 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        [Category("CityFringeYard")]
+        public void DefaultCoastal_OpensRingFrontagesAndKeepsRockRoutesClear()
+        {
+            const float playerRadius = 0.32f;
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityMountainBoundaryPlan mountains =
+                CityMountainBoundaryPlanner.Create(layout);
+            CityFringeYardPlan fringe =
+                CityFringeYardPlanner.Create(layout, mountains);
+            CityRoadGroundBoundaryPlan boundaries =
+                CityRoadGroundBoundaryPlanner.Create(layout);
+            RoadWalkableArea walkable = RoadWalkableArea.FromLayout(layout);
+            string[] mountainAreas =
+            {
+                CityMountainBoundaryDefinition.WestNorthAreaId,
+                CityMountainBoundaryDefinition.WestSouthAreaId,
+                CityMountainBoundaryDefinition.SouthWestAreaId,
+                CityMountainBoundaryDefinition.SouthEastAreaId
+            };
+
+            foreach (string areaId in mountainAreas)
+            {
+                Assert.That(
+                    fringe.TryGetYard(
+                        areaId,
+                        out CityFringeYardDescriptor yard),
+                    Is.True,
+                    areaId);
+                Assert.That(
+                    TryFindOpenSampleBeyondAuthoredGate(
+                        boundaries,
+                        yard,
+                        playerRadius,
+                        out CityRoadGroundBoundarySpan openSpan,
+                        out float openAlong),
+                    Is.True,
+                    $"{areaId} kept its invisible single-gate boundary.");
+                AssertWalkableAcrossRoadSeam(
+                    walkable,
+                    openSpan,
+                    openAlong,
+                    playerRadius,
+                    areaId);
+
+                Vector3 target = CreateToeApproach(yard, playerRadius);
+                Assert.That(
+                    TraversalReaches(yard, target),
+                    Is.True,
+                    $"{areaId} traversal stops before the mountain toe.");
+                AssertCapsuleClearRoute(
+                    walkable,
+                    yard,
+                    target,
+                    playerRadius);
+
+                if (yard.Kind == CityFringeYardKind.SouthTunnelForecourt)
+                {
+                    Assert.That(mountains.Tunnel.IsSealed, Is.True);
+                    Assert.That(
+                        HorizontalDistance(
+                            target,
+                            mountains.Tunnel.PortalGroundCenter),
+                        Is.LessThanOrEqualTo(playerRadius + 0.05f));
+                }
+                else
+                {
+                    Assert.That(
+                        DistanceToRidgeToe(mountains, areaId, target),
+                        Is.LessThanOrEqualTo(playerRadius + 0.05f),
+                        $"{areaId} route does not reach its rock face.");
+                    Assert.That(
+                        yard.Parts.Any(part =>
+                            part.Kind ==
+                                CityFringeYardPartKind.AccessApron &&
+                            Expanded(part.Footprint, 0.08f).Contains(
+                                new Vector2(target.x, target.z))),
+                        Is.True,
+                        $"{areaId} route needs a visible gravel spur.");
+                }
+            }
+
+            Assert.That(
+                fringe.TryGetYard("yard-east", out _),
+                Is.True);
+            Assert.That(
+                CityMountainBoundaryDefinition.IsMountainFacingAreaId(
+                    "yard-east"),
+                Is.False);
+        }
+
         private static void AssertVocabulary(CityFringeYardPlan plan)
         {
             var required = new Dictionary<CityFringeYardKind,
@@ -257,6 +351,219 @@ namespace BarPromenade.Tests.EditMode
                    inner.xMax <= outer.xMax + tolerance &&
                    inner.yMin >= outer.yMin - tolerance &&
                    inner.yMax <= outer.yMax + tolerance;
+        }
+
+        private static bool TryFindOpenSampleBeyondAuthoredGate(
+            CityRoadGroundBoundaryPlan boundaries,
+            CityFringeYardDescriptor yard,
+            float radius,
+            out CityRoadGroundBoundarySpan selected,
+            out float along)
+        {
+            float gateCenter = yard.Access.FrontageEdge.IsHorizontal
+                ? yard.Access.Center.x
+                : yard.Access.Center.z;
+            float gateMinimum = gateCenter - yard.Access.Width * 0.5f;
+            float gateMaximum = gateCenter + yard.Access.Width * 0.5f;
+            for (int index = 0;
+                 index < boundaries.SafeConnections.Count;
+                 index++)
+            {
+                CityRoadGroundBoundarySpan span =
+                    boundaries.SafeConnections[index];
+                if (span.Surface.AreaId != yard.AreaId ||
+                    span.Edge != yard.Access.FrontageEdge)
+                {
+                    continue;
+                }
+
+                float usableMinimum = span.MinimumCoordinate + radius + 0.02f;
+                float usableMaximum = span.MaximumCoordinate - radius - 0.02f;
+                if (usableMinimum < gateMinimum - 0.05f)
+                {
+                    selected = span;
+                    along = Mathf.Min(
+                        gateMinimum - 0.08f,
+                        usableMaximum);
+                    return along >= usableMinimum;
+                }
+
+                if (usableMaximum > gateMaximum + 0.05f)
+                {
+                    selected = span;
+                    along = Mathf.Max(
+                        gateMaximum + 0.08f,
+                        usableMinimum);
+                    return along <= usableMaximum;
+                }
+            }
+
+            selected = default;
+            along = 0f;
+            return false;
+        }
+
+        private static void AssertWalkableAcrossRoadSeam(
+            RoadWalkableArea walkable,
+            CityRoadGroundBoundarySpan span,
+            float along,
+            float radius,
+            string label)
+        {
+            Rect surface = span.Surface.WorldBounds;
+            Vector3 inward = span.IsHorizontal
+                ? new Vector3(
+                    0f,
+                    0f,
+                    Mathf.Sign(surface.center.y - span.FixedCoordinate))
+                : new Vector3(
+                    Mathf.Sign(surface.center.x - span.FixedCoordinate),
+                    0f,
+                    0f);
+            Vector3 seam = span.IsHorizontal
+                ? new Vector3(along, 0f, span.FixedCoordinate)
+                : new Vector3(span.FixedCoordinate, 0f, along);
+            for (int index = -4; index <= 4; index++)
+            {
+                Vector3 sample = seam + inward * (index * 0.10f);
+                Assert.That(
+                    walkable.Contains(sample, radius),
+                    Is.True,
+                    $"{label} road seam sample {index}");
+            }
+        }
+
+        private static Vector3 CreateToeApproach(
+            CityFringeYardDescriptor yard,
+            float inset)
+        {
+            Vector3 result = yard.Access.Center;
+            Vector3 outward = yard.Access.OutwardNormal;
+            if (outward.x < -0.5f)
+            {
+                result.x = yard.AreaBounds.xMin + inset;
+            }
+            else if (outward.x > 0.5f)
+            {
+                result.x = yard.AreaBounds.xMax - inset;
+            }
+            else if (outward.z < -0.5f)
+            {
+                result.z = yard.AreaBounds.yMin + inset;
+            }
+            else
+            {
+                result.z = yard.AreaBounds.yMax - inset;
+            }
+
+            return result;
+        }
+
+        private static bool TraversalReaches(
+            CityFringeYardDescriptor yard,
+            Vector3 target)
+        {
+            const float tolerance = 0.04f;
+            return target.x >= yard.TraversalBounds.xMin - tolerance &&
+                   target.x <= yard.TraversalBounds.xMax + tolerance &&
+                   target.z >= yard.TraversalBounds.yMin - tolerance &&
+                   target.z <= yard.TraversalBounds.yMax + tolerance;
+        }
+
+        private static void AssertCapsuleClearRoute(
+            RoadWalkableArea walkable,
+            CityFringeYardDescriptor yard,
+            Vector3 target,
+            float radius)
+        {
+            Vector3 start = yard.Access.Center;
+            float distance = HorizontalDistance(start, target);
+            int sampleCount = Mathf.CeilToInt(distance / 0.10f);
+            for (int sampleIndex = 0;
+                 sampleIndex <= sampleCount;
+                 sampleIndex++)
+            {
+                float amount = sampleIndex / (float)sampleCount;
+                Vector3 sample = Vector3.Lerp(start, target, amount);
+                Assert.That(
+                    walkable.Contains(sample, radius),
+                    Is.True,
+                    $"{yard.AreaId} route sample {sampleIndex}");
+                foreach (CityFringeYardPartDescriptor part in yard.Parts)
+                {
+                    if (!part.BlocksMovement)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(
+                        Expanded(part.Footprint, radius + 0.05f).Contains(
+                            new Vector2(sample.x, sample.z)),
+                        Is.False,
+                        $"{part.StableId} blocks {yard.AreaId} route.");
+                }
+            }
+        }
+
+        private static float DistanceToRidgeToe(
+            CityMountainBoundaryPlan mountains,
+            string areaId,
+            Vector3 target)
+        {
+            Vector2 point = new Vector2(target.x, target.z);
+            float best = float.PositiveInfinity;
+            foreach (CityMountainRidgeDescriptor ridge in mountains.Ridges)
+            {
+                if (ridge.SourceAreaId != areaId)
+                {
+                    continue;
+                }
+
+                for (int index = 1; index < ridge.Stations.Count; index++)
+                {
+                    best = Mathf.Min(
+                        best,
+                        DistanceToSegment(
+                            point,
+                            ridge.Stations[index - 1].WorldXZ,
+                            ridge.Stations[index].WorldXZ));
+                }
+            }
+
+            return best;
+        }
+
+        private static float DistanceToSegment(
+            Vector2 point,
+            Vector2 start,
+            Vector2 end)
+        {
+            Vector2 delta = end - start;
+            float lengthSquared = delta.sqrMagnitude;
+            if (lengthSquared <= 0.0001f)
+            {
+                return Vector2.Distance(point, start);
+            }
+
+            float amount = Mathf.Clamp01(
+                Vector2.Dot(point - start, delta) / lengthSquared);
+            return Vector2.Distance(point, start + delta * amount);
+        }
+
+        private static float HorizontalDistance(Vector3 first, Vector3 second)
+        {
+            return Vector2.Distance(
+                new Vector2(first.x, first.z),
+                new Vector2(second.x, second.z));
+        }
+
+        private static Rect Expanded(Rect source, float amount)
+        {
+            return Rect.MinMaxRect(
+                source.xMin - amount,
+                source.yMin - amount,
+                source.xMax + amount,
+                source.yMax + amount);
         }
     }
 }

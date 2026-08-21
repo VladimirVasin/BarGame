@@ -66,6 +66,26 @@ namespace BarPromenade
             definition = null;
             return false;
         }
+
+        public static bool IsMountainFacingAreaId(string areaId)
+        {
+            return string.Equals(
+                       areaId,
+                       WestSouthAreaId,
+                       StringComparison.Ordinal) ||
+                   string.Equals(
+                       areaId,
+                       WestNorthAreaId,
+                       StringComparison.Ordinal) ||
+                   string.Equals(
+                       areaId,
+                       SouthWestAreaId,
+                       StringComparison.Ordinal) ||
+                   string.Equals(
+                       areaId,
+                       SouthEastAreaId,
+                       StringComparison.Ordinal);
+        }
     }
 
     /// <summary>

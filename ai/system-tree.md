@@ -210,6 +210,7 @@ Assets/
         CityMountainBackdrop{Resources,WorldBuilder,Follower}.cs camera-relative west/south shell only
         CityFringeYardPlan.cs     five typed Yard profiles, parts, practicals + sealed forecourt contract
         CityFringeYardPlanner.cs  terrain-graded service belt and separate low east utility edge
+        CityFringeYardRetainingPlanner.cs precise retaining cuts around rock-access corridors
         CityFringeYardLandmarkPlanner.cs four west/south macro anchors and close-read vocabulary
         CityFringeYard{PracticalPlan,PracticalValidator}.cs four clear, deterministic practicals
         CityFringeYardSurfaceAppearance.cs three measured shared surface families
@@ -538,7 +539,7 @@ Assets/
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
       CityMapMountainPresentationTests.cs west/south-only bounds + notch/tunnel map contract
       CityMountainBoundaryTests.cs       deterministic ridges/tunnel + fog-safe physical handoff
-      CityFringeYardTests.cs             five profiles, four anchors, clear sealed forecourt + light-free build
+      CityFringeYardTests.cs             five profiles, four anchors, ring-to-rock capsule routes + light-free build
       CityFringeYardSurfaceAppearanceTests.cs measured sheets, imports + shared MPB application
       CityNightAtmosphereTests.cs         nearest fringe practical leases one existing street Spot
       HomeBalconyLayoutTests.cs         Home exterior layout/pedestrians + static stop pole

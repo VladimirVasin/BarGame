@@ -105,8 +105,11 @@ The vertical slice contains:
   Spot from `CityNightAtmosphere`; its `12`-Light pool is unchanged. The
   eastern variant stays a separate low, unlit road/drain/pole/shed/berm utility
   edge and creates no ridge. Large masses are physical, small traces and cables
-  are visual only; declared street accesses remain walkable, and the plan adds
-  no interaction, destination, Light component, north/east mountain or
+  are visual only. Every level-safe ring-road seam into the four mountain Yards
+  is walkable, while true drops retain rails; three `6 m` gravel spurs reserve
+  capsule-clear cuts through the retaining line to the rock toe, and the fourth
+  route remains the sealed tunnel forecourt. The plan adds no interaction,
+  destination, Light component, north/east mountain or
   world-bounds expansion. Portal frame, throat and sealed gate remain owned by
   `CityMountainBoundaryPlan`;
 - one immutable river contract splits that default urban envelope with a

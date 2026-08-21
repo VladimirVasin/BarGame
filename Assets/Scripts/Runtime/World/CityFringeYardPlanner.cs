@@ -3,7 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 namespace BarPromenade
 {
-    public static class CityFringeYardPlanner
+    public static partial class CityFringeYardPlanner
     {
         public const int ExpectedYardCount = 5;
         public const int MaximumPartCount = 360;
@@ -17,6 +17,8 @@ namespace BarPromenade
         private const float MountainTrackInset = 6.1f;
         private const float MountainDrainInset = 3.15f;
         private const float MountainWallInset = 1.15f;
+        private const float RetainingOpeningMargin = 0.15f;
+        private const float MinimumRetainingFragmentLength = 0.75f;
         public static CityFringeYardPlan Create(
             CityLayout layout,
             CityMountainBoundaryPlan mountains)
@@ -146,11 +148,16 @@ namespace BarPromenade
                 access.Center,
                 outward,
                 trackInset);
+            Vector3 toeApproach = PointAtOuterInset(
+                bounds,
+                access.Center,
+                outward,
+                CityGroundTraversalPlanner.MaximumAgentRadius);
             Rect traversal = ownsTunnel
                 ? forecourt.DriveClearBounds
                 : CreateCorridorBounds(
                     access.Center + outward * 0.25f,
-                    trackLine,
+                    toeApproach,
                     Mathf.Min(6f, access.Width - 0.8f));
             var parts = new List<CityFringeYardPartDescriptor>(72);
 
@@ -188,7 +195,7 @@ namespace BarPromenade
                     CityFringeYardPartKind.AccessApron,
                     CityFringeYardStyle.ServiceGround,
                     access.Center + outward * 0.45f,
-                    trackLine,
+                    toeApproach,
                     Mathf.Min(5.4f, access.Width - 1f),
                     SurfaceThickness,
                     4f,
@@ -458,10 +465,13 @@ namespace BarPromenade
             for (int index = 0; index < segmentCount; index++)
             {
                 float segmentLength = Mathf.Max(1f, pitch - 0.7f);
+                float segmentMiddle = start + pitch * (index + 0.5f);
+                float segmentMinimum = segmentMiddle - segmentLength * 0.5f;
+                float segmentMaximum = segmentMiddle + segmentLength * 0.5f;
                 Vector3 center = SetLongCoordinate(
                     line,
                     axis,
-                    start + pitch * (index + 0.5f));
+                    segmentMiddle);
                 float variation = HashUnit(
                     layout.Seed,
                     $"{areaId}-retaining-{index:00}");
@@ -484,26 +494,61 @@ namespace BarPromenade
                     Vector3.up);
                 Vector3 size = new Vector3(0.76f, height, segmentLength);
                 Rect footprint = CalculateFootprint(center, rotation, size);
-                if ((gap.HasValue && footprint.Overlaps(gap.Value)) ||
-                    footprint.Overlaps(reserved))
+                string stableId = $"{areaId}-retaining-{index:00}";
+                if (TryGetRetainingCut(
+                        footprint,
+                        axis,
+                        gap,
+                        reserved,
+                        out float cutMinimum,
+                        out float cutMaximum))
                 {
+                    AddRetainingFragment(
+                        layout,
+                        surfaces,
+                        areaId,
+                        $"{stableId}-a",
+                        yardKind,
+                        style,
+                        axis,
+                        line,
+                        segmentMinimum,
+                        Mathf.Min(segmentMaximum, cutMinimum),
+                        height,
+                        rotation,
+                        reserved,
+                        parts);
+                    AddRetainingFragment(
+                        layout,
+                        surfaces,
+                        areaId,
+                        $"{stableId}-b",
+                        yardKind,
+                        style,
+                        axis,
+                        line,
+                        Mathf.Max(segmentMinimum, cutMaximum),
+                        segmentMaximum,
+                        height,
+                        rotation,
+                        reserved,
+                        parts);
                     continue;
                 }
 
-                AddGroundedPart(
+                AddRetainingFragment(
                     layout,
                     surfaces,
                     areaId,
-                    $"{areaId}-retaining-{index:00}",
-                    yardKind == CityFringeYardKind.SouthFloodWorks
-                        ? CityFringeYardPartKind.Gabion
-                        : CityFringeYardPartKind.RetainingSection,
+                    stableId,
+                    yardKind,
                     style,
-                    center,
+                    axis,
+                    line,
+                    segmentMinimum,
+                    segmentMaximum,
+                    height,
                     rotation,
-                    size,
-                    true,
-                    0.18f,
                     reserved,
                     parts);
 

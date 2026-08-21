@@ -919,7 +919,9 @@ namespace BarPromenade.Tests
             return surface.Kind == CitySurfaceKind.Beach ||
                    surface.Kind == CitySurfaceKind.LakeShore ||
                    surface.Kind == CitySurfaceKind.CemeteryGround ||
-                   surface.Kind == CitySurfaceKind.OpenGround;
+                   (surface.Kind == CitySurfaceKind.OpenGround &&
+                    !CityMountainBoundaryDefinition.IsMountainFacingAreaId(
+                        surface.AreaId));
         }
 
         private static void AssertApproachInnerRail(

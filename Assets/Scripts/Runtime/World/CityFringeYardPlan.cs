@@ -194,8 +194,8 @@ namespace BarPromenade
         public CityOpenAreaAccessDescriptor Access { get; }
 
         /// <summary>
-        /// Reserved route from the declared street opening to the service
-        /// trace. For the south-west site it continues all the way to the
+        /// Reserved route from the declared street opening to the mountain
+        /// toe. For the south-west site it follows the forecourt to the
         /// sealed portal.
         /// </summary>
         public Rect TraversalBounds { get; }

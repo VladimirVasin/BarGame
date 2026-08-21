@@ -6,6 +6,27 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-21 — The outer ring now opens into the mountain fringe
+
+- Traced the blocked edge to two independent contracts. All Yard ground was
+  walkable, but the road/ground union exposed only one `8.8 m` connector per
+  long strip, leaving visually open, height-safe seams as invisible motor
+  clamps. Three non-tunnel traversal reservations also stopped at the service
+  track, so their collidered retaining runs cut off the final `5-6 m` to rock.
+- Scoped the navigation exception to the four mountain-facing Yards of
+  `default-coastal`: every already step-safe Street frontage now becomes a
+  connector, while real drops still produce terrain rails. The eastern Yard,
+  beach, lake, cemetery and custom/legacy blueprints keep authored gates.
+- Extended three visible gravel spurs to one player radius from the ridge toe
+  and split only the intersected retaining module around each `6 m` corridor.
+  The south-west drive-clear route and sealed portal remain unchanged.
+- **Verification:** the exact Unity EditMode regression
+  `DefaultCoastal_OpensRingFrontagesAndKeepsRockRoutesClear` passed `1/1`. It
+  samples a `0.32 m` player capsule across newly open road seams and along all
+  four rock/portal routes against both the walkable mask and blocking fringe
+  footprints. Full suites, a player build and a manual City smoke were
+  intentionally not run in fast mode.
+
 ## 2026-08-21 — The western and southern fringe gained authored anchors
 
 - Expanded the existing five-Yard service-belt plan without changing access,

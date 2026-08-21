@@ -395,6 +395,23 @@ namespace BarPromenade
                        layout.GetPathKind(edge) == CityPathKind.Street;
             }
 
+            // The default mountain service belt has visible open ground
+            // beyond the ring road. Keeping those four Yards behind their
+            // single composition anchor creates an unexplained invisible
+            // wall along every other level-safe metre. Let the shared
+            // height classifier open only genuinely safe frontage; real
+            // drops still become protected rails below.
+            if (surface.Kind == CitySurfaceKind.OpenGround &&
+                layout.GetPathKind(edge) == CityPathKind.Street &&
+                CityMountainBoundaryDefinition.TryResolve(
+                    layout.BlueprintId,
+                    out _) &&
+                CityMountainBoundaryDefinition.IsMountainFacingAreaId(
+                    surface.AreaId))
+            {
+                return false;
+            }
+
             return surface.Kind == CitySurfaceKind.Beach ||
                    surface.Kind == CitySurfaceKind.LakeShore ||
                    surface.Kind == CitySurfaceKind.CemeteryGround ||

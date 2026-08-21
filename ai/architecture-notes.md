@@ -174,8 +174,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   five `Yard` areas: one `4 x 6` pocket east of the player's home and four
   one-cell perimeter strips, each halved so it aligns to its own access datum
   on the terraced perimeter. They reuse the open-area contract wholesale —
-  one declared street access, sampled `OpenGround`, walkable `OpenLand` and
-  guard rails on unsafe spans — and a separate default-only
+  one declared street access as the composition anchor, sampled `OpenGround`,
+  walkable `OpenLand` and guard rails on unsafe spans — and a separate default-only
   `CityFringeYardPlan` derives deterministic geometry from those same bounds,
   accesses and terrain samples. Four west/south profiles share the grammar of
   an old municipal service belt: graded maintenance trace, drainage,
@@ -186,7 +186,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   silt fan. Three deterministic measured sheets give the service track,
   board-formed concrete and old masonry independent metre-scale reads; rock,
   silt and iron reuse their existing City families. The south-west profile
-  keeps a physical corridor wider than `6 m`; the east profile instead stays
+  keeps a physical corridor wider than `6 m`. The other three mountain strips
+  reserve straight `6 m` gravel spurs from their declared entrances to within
+  one player radius of the ridge toe; retaining modules are split around each
+  corridor rather than deleting a full `~16 m` bay. At the ring road, the four
+  mountain Yards opt out of single-gate navigation: every frontage interval
+  already classified step-safe becomes a real connector, while unsafe height
+  changes keep their rails. Custom layouts and the eastern Yard retain the
+  ordinary authored-access rule. The east profile instead stays
   low and unlit with a longitudinal service road, drain, poles, locked utility
   masses and broken spoil berm, and never creates an east ridge. Large masses
   collide; tracks, drains, cables and small traces do not.
