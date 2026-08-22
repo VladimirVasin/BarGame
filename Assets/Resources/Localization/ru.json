@@ -525,6 +525,10 @@
       "value": "Лодочная станция"
     },
     {
+      "key": "map.seacoast.boat_station",
+      "value": "Лодочная станция"
+    },
+    {
       "key": "map.mountain.tunnel_closed",
       "value": "Закрытый тоннель"
     },

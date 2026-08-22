@@ -1,0 +1,129 @@
+{
+  "sheetSize": 1024,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "maximumRippleAnisotropy": 1.25,
+  "sheets": [
+    {
+      "key": "CitySeacoastSandAlbedo",
+      "grammar": "seacoast_sand",
+      "resourcePath": "Textures/CitySeacoastSandAlbedo",
+      "meanLinearLuminance": 0.500026,
+      "albedoCompensation": 1.3825,
+      "brightnessError": 0.020679,
+      "metersPerTile": 2.6,
+      "smoothness": 0.03,
+      "metallic": 0.0,
+      "exposure": 0.7009,
+      "tints": {
+        "CityExteriorAppearance.BeachSand": [
+          0.52,
+          0.45,
+          0.3
+        ]
+      },
+      "edgeDelta": 4.2384,
+      "seamRatio": 1.0181,
+      "contrast": 83,
+      "channelRatio": 1.0815,
+      "sha256": "AF5C8111D6A682E0255B6E3626A480B88CAB2F0FF9D36E3BA12646924B413743"
+    },
+    {
+      "key": "CitySeacoastConcreteAlbedo",
+      "grammar": "seacoast_concrete",
+      "resourcePath": "Textures/CitySeacoastConcreteAlbedo",
+      "meanLinearLuminance": 0.499838,
+      "albedoCompensation": 1.401,
+      "brightnessError": 0.003694,
+      "metersPerTile": 2.2,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 0.748967,
+      "tints": {
+        "CitySeacoastWorldBuilder.Concrete": [
+          0.29,
+          0.29,
+          0.27
+        ]
+      },
+      "edgeDelta": 10.7606,
+      "seamRatio": 1.5734,
+      "contrast": 89,
+      "channelRatio": 1.0078,
+      "sha256": "3E91F440E8D7E33BE620F6BB1E76CA6D5C3456FD8BAC9D636BF5CF23C48133BA"
+    },
+    {
+      "key": "CitySeacoastPlankAlbedo",
+      "grammar": "seacoast_plank",
+      "resourcePath": "Textures/CitySeacoastPlankAlbedo",
+      "meanLinearLuminance": 0.499955,
+      "albedoCompensation": 1.4355,
+      "brightnessError": 0.064061,
+      "metersPerTile": 1.2,
+      "smoothness": 0.06,
+      "metallic": 0.0,
+      "exposure": 0.702401,
+      "tints": {
+        "CitySeacoastWorldBuilder.Planking": [
+          0.31,
+          0.28,
+          0.24
+        ],
+        "CitySeacoastWorldBuilder.TarredTimber": [
+          0.16,
+          0.14,
+          0.12
+        ]
+      },
+      "edgeDelta": 2.2437,
+      "seamRatio": 0.9626,
+      "contrast": 66,
+      "channelRatio": 1.0218,
+      "sha256": "68A4734AF04D675CFE56F39B180748D8EC717EBCD670089C6B8A618FBE823E1B"
+    },
+    {
+      "key": "CitySeacoastHullAlbedo",
+      "grammar": "seacoast_hull",
+      "resourcePath": "Textures/CitySeacoastHullAlbedo",
+      "meanLinearLuminance": 0.500283,
+      "albedoCompensation": 1.439,
+      "brightnessError": 0.073633,
+      "metersPerTile": 1.6,
+      "smoothness": 0.12,
+      "metallic": 0.0,
+      "exposure": 0.760269,
+      "tints": {
+        "CitySeacoastWorldBuilder.HullPaint": [
+          0.26,
+          0.32,
+          0.31
+        ],
+        "CitySeacoastWorldBuilder.HullTar": [
+          0.13,
+          0.12,
+          0.11
+        ]
+      },
+      "edgeDelta": 12.0838,
+      "seamRatio": 1.2275,
+      "contrast": 90,
+      "channelRatio": 1.0157,
+      "sha256": "126E60C589C7B8DCA99787AD8B4E552BE87CAB206AFC7413D0C51CFD4B9BE30C"
+    }
+  ],
+  "waterSheets": [
+    {
+      "key": "CitySeaWaterNormal",
+      "grammar": "sea_water_normal",
+      "resourcePath": "Textures/CitySeaWaterNormal",
+      "metersPerTile": 4.5,
+      "linear": true,
+      "slopeSpan": 66,
+      "slopeAnisotropy": 0.9848,
+      "edgeDelta": 2.2181,
+      "seamRatio": 0.9189,
+      "sha256": "365D85BD95CF076D26566CC4AB37E085CB9AAFB236ACD0A2BA29E4BEEB8EF7C6"
+    }
+  ]
+}

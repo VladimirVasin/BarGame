@@ -16,6 +16,7 @@ namespace BarPromenade
         public CityDayNightController DayNight { get; private set; }
         public CityRainField Rain { get; private set; }
         public CityRainSoundPlayer RainSound { get; private set; }
+        public CitySurfSoundPlayer SurfSound { get; private set; }
         public CityLightningFlashLight Lightning { get; private set; }
         public CityThunderSoundPlayer Thunder { get; private set; }
         public CityWeatherController Weather { get; private set; }
@@ -611,6 +612,21 @@ namespace BarPromenade
             rainSoundObject.transform.SetParent(transform, false);
             RainSound =
                 rainSoundObject.AddComponent<CityRainSoundPlayer>();
+            // The surf bed sits under everything near the north
+            // shore: driven by the hero's distance to the waterline
+            // and the deterministic wind, silent when the layout has
+            // no coast.
+            GameObject surfSoundObject =
+                new GameObject("City Surf Sound");
+            surfSoundObject.transform.SetParent(transform, false);
+            SurfSound =
+                surfSoundObject.AddComponent<CitySurfSoundPlayer>();
+            surfSoundObject
+                .AddComponent<CitySurfSoundController>()
+                .Initialize(
+                    SurfSound,
+                    Player.GameObject.transform,
+                    World.SeacoastPlan);
             GameObject lightningObject =
                 new GameObject("City Lightning Flash");
             lightningObject.transform.SetParent(transform, false);
@@ -701,7 +717,8 @@ namespace BarPromenade
                 intoxicationHud,
                 BusPlan,
                 World.LakePlan,
-                World.MountainBoundaryPlan);
+                World.MountainBoundaryPlan,
+                World.SeacoastPlan);
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
                 Player,

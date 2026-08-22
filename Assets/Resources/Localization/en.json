@@ -525,6 +525,10 @@
       "value": "Boat station"
     },
     {
+      "key": "map.seacoast.boat_station",
+      "value": "Boat station"
+    },
+    {
       "key": "map.mountain.tunnel_closed",
       "value": "Closed tunnel"
     },

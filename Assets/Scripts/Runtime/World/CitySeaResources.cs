@@ -17,11 +17,11 @@ namespace BarPromenade
     /// motion, a foam line on the shore shelf, and glitter under the
     /// beacon.
     ///
-    /// The ripple sheet is the lake's isotropic normal map and the
-    /// foam sheet is the river's white water — borrowed rather than
-    /// authored, until the seacoast texture family takes ownership of
-    /// both in the skin pass. Air in water is white on a shore the
-    /// same way it is white under a quay.
+    /// The ripple sheet is the sea's own — the isotropic ring-and-chop
+    /// recipe the lake proved out, rebuilt at a coarser pitch by
+    /// `tools/build-city-seacoast-textures.py` — and the foam sheet is
+    /// the river's white water, borrowed on purpose: air in water is
+    /// white on a shore the same way it is white under a quay.
     ///
     /// Night factor and rain intensity arrive through
     /// <see cref="CityWaterResources"/>, which this material registers
@@ -33,7 +33,7 @@ namespace BarPromenade
             "Bar Promenade/City River Water";
 
         public const string RippleTextureResourcePath =
-            "Textures/CityLakeWaterNormal";
+            "Textures/CitySeaWaterNormal";
         public const string FoamTextureResourcePath =
             "Textures/CityRiverWaterFoam";
 

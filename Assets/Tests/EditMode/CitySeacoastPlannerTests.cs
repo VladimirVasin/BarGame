@@ -756,6 +756,68 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void SurfBed_LoopsSeamlesslyAndSwells()
+        {
+            float[] first = CitySurfAmbienceSynthesis.GenerateSamples();
+            float[] second = CitySurfAmbienceSynthesis.GenerateSamples();
+            CollectionAssert.AreEqual(first, second);
+
+            // Bounded, and the loop seam is not a click.
+            float peak = 0f;
+            foreach (float sample in first)
+            {
+                peak = Mathf.Max(peak, Mathf.Abs(sample));
+            }
+
+            Assert.That(peak, Is.LessThanOrEqualTo(0.72f));
+            Assert.That(peak, Is.GreaterThan(0.1f));
+
+            // The seam is not a click: wrapping from the last sample
+            // to the first steps no further than the signal steps
+            // anywhere inside the loop. (The breaker hiss makes the
+            // bed legitimately jumpy sample to sample; a click is a
+            // jump LARGER than that.)
+            float largestInteriorStep = 0f;
+            for (int index = 1; index < first.Length; index++)
+            {
+                largestInteriorStep = Mathf.Max(
+                    largestInteriorStep,
+                    Mathf.Abs(first[index] - first[index - 1]));
+            }
+
+            Assert.That(
+                Mathf.Abs(first[0] - first[first.Length - 1]),
+                Is.LessThanOrEqualTo(largestInteriorStep + 0.001f),
+                "The surf loop clicks at its seam.");
+
+            // The swell is audible: the loudest half-second of the bed
+            // stands clearly over the quietest.
+            int window = CitySurfAmbienceSynthesis.SampleRate / 2;
+            float loudest = 0f;
+            float quietest = float.MaxValue;
+            for (int start = 0;
+                 start + window <= first.Length;
+                 start += window)
+            {
+                float sum = 0f;
+                for (int index = 0; index < window; index++)
+                {
+                    float sample = first[start + index];
+                    sum += sample * sample;
+                }
+
+                float rms = Mathf.Sqrt(sum / window);
+                loudest = Mathf.Max(loudest, rms);
+                quietest = Mathf.Min(quietest, rms);
+            }
+
+            Assert.That(
+                loudest / Mathf.Max(0.0001f, quietest),
+                Is.GreaterThan(1.25f),
+                "The sea breathes; a flat bed is rain, not surf.");
+        }
+
+        [Test]
         public void LegacyCity_PlansNothingRatherThanThrowing()
         {
             CityLayout layout = CityLayoutGenerator.Generate(

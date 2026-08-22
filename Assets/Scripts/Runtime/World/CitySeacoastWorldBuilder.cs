@@ -184,12 +184,50 @@ namespace BarPromenade
             for (int index = 0; index < keys.Count; index++)
             {
                 BatchKey key = keys[index];
-                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                    $"Seacoast Chunk {key.X} {key.Z} {key.Style}",
-                    root,
-                    batches[key],
-                    ResolveColor(key.Style),
-                    CitySeacoastRules.BlocksMovement(key.Style));
+                CitySeacoastSurfaceKind? surface =
+                    ResolveSurface(key.Style);
+                float? uvTileSize = surface.HasValue
+                    ? CitySeacoastSurfaceAppearance
+                        .GetRecipe(surface.Value).MetersPerTile
+                    : (float?)null;
+                GameObject chunk =
+                    RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                        $"Seacoast Chunk {key.X} {key.Z} {key.Style}",
+                        root,
+                        batches[key],
+                        ResolveColor(key.Style),
+                        CitySeacoastRules.BlocksMovement(key.Style),
+                        uvTileSize);
+                if (surface.HasValue)
+                {
+                    CitySeacoastSurfaceAppearance.ApplyCombined(
+                        chunk.GetComponent<Renderer>(),
+                        surface.Value,
+                        ResolveColor(key.Style));
+                }
+            }
+        }
+
+        private static CitySeacoastSurfaceKind? ResolveSurface(
+            CitySeacoastStyle style)
+        {
+            switch (style)
+            {
+                case CitySeacoastStyle.Concrete:
+                    return CitySeacoastSurfaceKind.Concrete;
+                case CitySeacoastStyle.Granite:
+                    return CitySeacoastSurfaceKind.Granite;
+                case CitySeacoastStyle.Planking:
+                case CitySeacoastStyle.TarredTimber:
+                    return CitySeacoastSurfaceKind.Plank;
+                case CitySeacoastStyle.HullPaint:
+                case CitySeacoastStyle.HullTar:
+                    return CitySeacoastSurfaceKind.Hull;
+                default:
+                    // Iron, rust, grass, sign paint and litter stay
+                    // flat colour: their members are too thin for a
+                    // sheet to read through the PS1 composite.
+                    return null;
             }
         }
 

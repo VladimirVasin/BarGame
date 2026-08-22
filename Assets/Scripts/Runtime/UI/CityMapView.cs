@@ -133,6 +133,14 @@ namespace BarPromenade
             new Color32(141, 116, 84, 255);
         private static readonly Color BoatHut =
             new Color32(163, 134, 92, 255);
+        // The seacoast landmarks: pale concrete for the mol, the
+        // beacon's navigation white, rust for the stranded barge.
+        private static readonly Color MolConcrete =
+            new Color32(132, 133, 126, 255);
+        private static readonly Color BeaconLight =
+            new Color32(242, 230, 199, 255);
+        private static readonly Color BargeRust =
+            new Color32(112, 66, 47, 255);
         private static readonly Color CemeteryMarker =
             new Color32(176, 178, 166, 255);
         private static readonly Color BeachSand =
@@ -400,6 +408,7 @@ namespace BarPromenade
             DrawAreaOutlines(projection);
             DrawMountainTunnel(projection);
             DrawLakeStation(projection);
+            DrawSeacoastLandmarks(projection);
             DrawBusRoute(projection);
             DrawRoute(projection);
             DrawBusStops(projection);
@@ -1614,6 +1623,171 @@ namespace BarPromenade
                 marker.center,
                 LocalizationService.Get("map.lake.boat_station"),
                 LandmarkHoverPriority);
+        }
+
+        /// <summary>
+        /// The seacoast's five anchors, straight from the coast plan:
+        /// the mol with its beacon dot, the boat station's sea pier
+        /// and hut, the mouth footbridge, the sea wall line, the
+        /// rotten pile row and the stranded barge. Drawn the way the
+        /// lake station is drawn — projected part unions over an ink
+        /// backing — so the map and the world cannot disagree.
+        /// </summary>
+        private void DrawSeacoastLandmarks(MapProjection projection)
+        {
+            CitySeacoastPlan coast = controller.SeacoastPlan;
+            if (coast == null)
+            {
+                return;
+            }
+
+            if (TryProjectSeacoastParts(
+                    projection,
+                    coast,
+                    CitySeacoastPartKind.EsplanadeParapet,
+                    out Rect seaWall))
+            {
+                DrawSolidRect(seaWall, MolConcrete);
+            }
+
+            if (TryProjectSeacoastParts(
+                    projection,
+                    coast,
+                    CitySeacoastPartKind.FootbridgeDeck,
+                    out Rect footbridge))
+            {
+                DrawSolidRect(Expand(footbridge, 1f), RetroUiTheme.Ink);
+                DrawSolidRect(footbridge, PierTimber);
+            }
+
+            if (TryProjectSeacoastParts(
+                    projection,
+                    coast,
+                    CitySeacoastPartKind.MolDeck,
+                    out Rect mol))
+            {
+                DrawSolidRect(Expand(mol, 1f), RetroUiTheme.Ink);
+                DrawSolidRect(mol, MolConcrete);
+            }
+
+            for (int index = 0; index < coast.Lamps.Count; index++)
+            {
+                CitySeacoastLampDescriptor lamp = coast.Lamps[index];
+                if (lamp.Kind != CitySeacoastLampKind.Beacon)
+                {
+                    continue;
+                }
+
+                Vector2 beacon = projection.WorldToScreen(new Vector3(
+                    lamp.GroundPosition.x,
+                    0f,
+                    lamp.GroundPosition.z));
+                DrawSolidRect(
+                    new Rect(beacon.x - 2f, beacon.y - 2f, 4f, 4f),
+                    RetroUiTheme.Ink);
+                DrawSolidRect(
+                    new Rect(beacon.x - 1f, beacon.y - 1f, 2f, 2f),
+                    BeaconLight);
+            }
+
+            for (int index = 0; index < coast.Parts.Count; index++)
+            {
+                CitySeacoastPartDescriptor part = coast.Parts[index];
+                if (part.Kind != CitySeacoastPartKind.RottenPile)
+                {
+                    continue;
+                }
+
+                Vector2 pile = projection.WorldToScreen(new Vector3(
+                    part.Center.x,
+                    0f,
+                    part.Center.z));
+                DrawSolidRect(
+                    new Rect(pile.x - 1f, pile.y - 1f, 2f, 2f),
+                    RetroUiTheme.Ink);
+            }
+
+            if (TryProjectSeacoastParts(
+                    projection,
+                    coast,
+                    CitySeacoastPartKind.Barge,
+                    out Rect barge))
+            {
+                DrawSolidRect(Expand(barge, 1f), RetroUiTheme.Ink);
+                DrawSolidRect(barge, BargeRust);
+            }
+
+            if (TryProjectSeacoastParts(
+                    projection,
+                    coast,
+                    CitySeacoastPartKind.PierDeck,
+                    out Rect pier))
+            {
+                DrawSolidRect(Expand(pier, 1f), RetroUiTheme.Ink);
+                DrawSolidRect(pier, PierTimber);
+            }
+
+            if (!TryProjectSeacoastParts(
+                    projection,
+                    coast,
+                    CitySeacoastPartKind.Hut,
+                    out Rect hut))
+            {
+                return;
+            }
+
+            Rect marker = Expand(hut, 1f);
+            DrawSolidRect(marker, RetroUiTheme.Ink);
+            DrawSolidRect(hut, BoatHut);
+            RegisterHoverTarget(
+                Expand(marker, 3f),
+                marker.center,
+                LocalizationService.Get("map.seacoast.boat_station"),
+                LandmarkHoverPriority);
+        }
+
+        private static bool TryProjectSeacoastParts(
+            MapProjection projection,
+            CitySeacoastPlan coast,
+            CitySeacoastPartKind kind,
+            out Rect screenRect)
+        {
+            float minimumX = float.PositiveInfinity;
+            float maximumX = float.NegativeInfinity;
+            float minimumZ = float.PositiveInfinity;
+            float maximumZ = float.NegativeInfinity;
+            for (int index = 0; index < coast.Parts.Count; index++)
+            {
+                CitySeacoastPartDescriptor part = coast.Parts[index];
+                if (part.Kind != kind)
+                {
+                    continue;
+                }
+
+                Vector3 extents = part.Rotation * part.Size;
+                float halfX = Mathf.Abs(extents.x) * 0.5f;
+                float halfZ = Mathf.Abs(extents.z) * 0.5f;
+                minimumX = Mathf.Min(minimumX, part.Center.x - halfX);
+                maximumX = Mathf.Max(maximumX, part.Center.x + halfX);
+                minimumZ = Mathf.Min(minimumZ, part.Center.z - halfZ);
+                maximumZ = Mathf.Max(maximumZ, part.Center.z + halfZ);
+            }
+
+            if (minimumX > maximumX || minimumZ > maximumZ)
+            {
+                screenRect = default;
+                return false;
+            }
+
+            Rect projected = ProjectWorldRect(
+                projection,
+                Rect.MinMaxRect(minimumX, minimumZ, maximumX, maximumZ));
+            screenRect = new Rect(
+                projected.x,
+                projected.y,
+                Mathf.Max(2f, projected.width),
+                Mathf.Max(2f, projected.height));
+            return true;
         }
 
         private static bool TryProjectParts(

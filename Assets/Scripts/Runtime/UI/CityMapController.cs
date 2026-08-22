@@ -177,6 +177,7 @@ namespace BarPromenade
         /// draws stand exactly where the player will find them.
         /// </summary>
         public CityLakePlan LakePlan { get; private set; }
+        public CitySeacoastPlan SeacoastPlan { get; private set; }
         public CityMountainBoundaryPlan MountainBoundaryPlan
         {
             get;
@@ -228,7 +229,8 @@ namespace BarPromenade
             IntoxicationHudView hud,
             CityBusPlan busPlan,
             CityLakePlan lakePlan = null,
-            CityMountainBoundaryPlan mountainBoundaryPlan = null)
+            CityMountainBoundaryPlan mountainBoundaryPlan = null,
+            CitySeacoastPlan seacoastPlan = null)
         {
             Layout = layout ?? throw new ArgumentNullException(nameof(layout));
             player = playerRuntime;
@@ -238,6 +240,7 @@ namespace BarPromenade
             areaRegions = CityMapAreaOverlayBuilder.Create(Layout);
             CollectMapAreaTargets();
             LakePlan = lakePlan;
+            SeacoastPlan = seacoastPlan;
             MountainBoundaryPlan = mountainBoundaryPlan ??
                                    CityMountainBoundaryPlan.Empty;
             DisplayWorldXZBounds = CreateDisplayWorldXZBounds(

@@ -296,13 +296,25 @@ namespace BarPromenade
                 surfaces,
                 layout,
                 fringeYardPlan);
-            CityTerrainSurfaceWorldBuilder.Build(
+            // The sand carries the seacoast's tide-banded sheet over
+            // UVs baked at its metre pitch; the tint stays the flat
+            // colour the map and the compensation were solved against.
+            GameObject beach = CityTerrainSurfaceWorldBuilder.Build(
                 "Beach",
                 surfaces,
                 layout,
                 CitySurfaceKind.Beach,
                 CityExteriorAppearance.BeachSand,
-                false);
+                false,
+                CitySeacoastSurfaceAppearance.GetRecipe(
+                    CitySeacoastSurfaceKind.Sand).MetersPerTile);
+            if (beach != null)
+            {
+                CitySeacoastSurfaceAppearance.ApplyCombined(
+                    beach.GetComponent<Renderer>(),
+                    CitySeacoastSurfaceKind.Sand,
+                    CityExteriorAppearance.BeachSand);
+            }
             if (lakeShore.Count > 0)
             {
                 // The shore ring takes the same trodden-clay sheet the
