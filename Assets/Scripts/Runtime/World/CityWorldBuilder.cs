@@ -79,11 +79,17 @@ namespace BarPromenade
                     layout,
                     fencePlan,
                     nightPlan);
+            // Planned before the ground pass: when the seacoast will
+            // draw its own animated sea, the ground pass must not lay
+            // the flat municipal slab under it.
+            CitySeacoastPlan seacoastPlan =
+                CitySeacoastPlanner.Create(layout);
             Bounds bounds = BuildGround(
                 world,
                 layout,
                 fringeYardPlan,
                 settings,
+                seacoastPlan != null,
                 out GameObject parkLawn,
                 out CityCemeteryGroundExcavation cemeteryExcavation);
             CityTerrainSafetyWorldBuilder.Build(
@@ -136,8 +142,6 @@ namespace BarPromenade
                 CityLakeWorldBuilder.Build(world, lakePlan);
             }
 
-            CitySeacoastPlan seacoastPlan =
-                CitySeacoastPlanner.Create(layout);
             if (seacoastPlan != null)
             {
                 CitySeacoastWorldBuilder.Build(world, seacoastPlan);
@@ -206,6 +210,7 @@ namespace BarPromenade
             CityLayout layout,
             CityFringeYardPlan fringeYardPlan,
             CityGenerationSettings settings,
+            bool seacoastBuildsTheSea,
             out GameObject parkLawn,
             out CityCemeteryGroundExcavation cemeteryExcavation)
         {
@@ -254,13 +259,20 @@ namespace BarPromenade
                             lakeShore.Add(bounds);
                             break;
                         case CitySurfaceKind.Water:
-                            // The sea keeps its flat slab. The lake's
-                            // water is drawn by CityLakeWorldBuilder,
-                            // which insets it to a cut-cornered
-                            // waterline and gives it a bank and a bed -
-                            // the same hand-off the river already gets.
+                            // The lake's water is drawn by
+                            // CityLakeWorldBuilder, which insets it to
+                            // a cut-cornered waterline and gives it a
+                            // bank and a bed, and the sea's by
+                            // CitySeacoastWorldBuilder, which gives it
+                            // swell, a shore shelf and a foam line -
+                            // the same hand-off the river already
+                            // gets. The flat slab survives only where
+                            // no precinct claims the water.
                             if (surface.Feature !=
-                                CityAreaFeatureKind.Lake)
+                                    CityAreaFeatureKind.Lake &&
+                                !(seacoastBuildsTheSea &&
+                                  surface.Feature ==
+                                  CityAreaFeatureKind.NorthWaterfront))
                             {
                                 water.Add(bounds);
                             }

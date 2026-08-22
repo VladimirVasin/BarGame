@@ -530,6 +530,157 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void SeaMaterial_StandsStillGlintsAndFitsTheCrestRoom()
+        {
+            Material sea = CitySeaResources.WaterMaterial;
+
+            // Structural, not art direction: zero flow makes the
+            // trains stand and breathe, the additional-specular path
+            // is what carries the beacon's glitter, and the summed
+            // crest stays inside the surface factory's culling
+            // headroom so retuning the swell can never reintroduce
+            // pops.
+            Vector4 flow = sea.GetVector("_FlowDirection");
+            Assert.That(flow.x, Is.Zero);
+            Assert.That(flow.y, Is.Zero);
+            Assert.That(
+                sea.GetFloat("_AdditionalSpecular"),
+                Is.GreaterThan(0f));
+            Assert.That(
+                CitySeaResources.WaveHeight *
+                CitySeaResources.CrestFactor,
+                Is.LessThan(CityWaterSurfaceFactory.CrestAllowance));
+
+            // The shore shelf must be legible through the water and
+            // foamed over: shallower than the depth fade, its inner
+            // step inside the foam distance.
+            Assert.That(
+                CitySeaResources.FoamDistance,
+                Is.LessThan(CitySeaResources.DepthFadeDistance));
+        }
+
+        [Test]
+        public void DefaultCity_KeepsRiverAndSeaSheetsApartAtTheMouth()
+        {
+            CityLayout layout = CreateDefaultLayout();
+            CitySeacoastPlan plan = CitySeacoastPlanner.Create(layout);
+            CitySeacoastFrame frame = plan.Frame;
+
+            CitySeacoastPartDescriptor sill = plan.Parts.First(part =>
+                part.StableId == "seacoast-mouth-sill");
+            float sillCrest = sill.Center.y + sill.Size.y * 0.5f;
+
+            // The sea's highest possible crest.
+            float seaCrest = frame.SeaTopY +
+                             CitySeaResources.WaveHeight *
+                             CitySeaResources.CrestFactor;
+            Assert.That(
+                sillCrest,
+                Is.GreaterThan(seaCrest + 0.02f),
+                "The sea can wash over the sill.");
+
+            // The river's, at the mouth. Its material leaves the wave
+            // height at the shader's default, so read it back rather
+            // than assume it.
+            CityRiverSegmentDescriptor mouth = layout.River.Segments
+                .OrderBy(segment => segment.Cell.y)
+                .Last();
+            float riverWave = CityRiverResources.WaterMaterial
+                .GetFloat("_WaveHeight");
+            float riverCrest = mouth.NorthWaterY +
+                               riverWave *
+                               CitySeaResources.CrestFactor;
+            Assert.That(
+                sillCrest,
+                Is.GreaterThan(riverCrest + 0.02f),
+                "The river can wash over the sill.");
+
+            // And the sill spans the whole channel, banks included.
+            Rect footprint = new Rect(
+                sill.Center.x - sill.Size.x * 0.5f,
+                sill.Center.z - sill.Size.z * 0.5f,
+                sill.Size.x,
+                sill.Size.z);
+            Assert.That(
+                footprint.xMin,
+                Is.LessThanOrEqualTo(frame.ChannelXMin + 0.01f));
+            Assert.That(
+                footprint.xMax,
+                Is.GreaterThanOrEqualTo(frame.ChannelXMax - 0.01f));
+        }
+
+        [Test]
+        public void DefaultCity_ChunksItsSeaSheetsAndShelvesTheShore()
+        {
+            CityLayout layout = CreateDefaultLayout();
+            CitySeacoastPlan plan = CitySeacoastPlanner.Create(layout);
+            CitySeacoastFrame frame = plan.Frame;
+
+            var sheets = new List<Rect>();
+            CitySeacoastSeaLayout.CreateSheetRects(frame, sheets);
+            Assert.That(sheets.Count, Is.GreaterThan(1));
+            float covered = 0f;
+            foreach (Rect sheet in sheets)
+            {
+                Assert.That(
+                    sheet.width,
+                    Is.LessThanOrEqualTo(
+                        CitySeacoastSeaLayout.MaximumSheetWidth +
+                        0.01f),
+                    "A sheet wider than a world chunk never culls.");
+                Assert.That(
+                    sheet.yMin,
+                    Is.EqualTo(frame.WaterlineZ).Within(0.001f));
+                Assert.That(
+                    sheet.yMax,
+                    Is.EqualTo(
+                        frame.SeaRowBounds.yMax +
+                        CitySeacoastSeaLayout.ApronReach)
+                        .Within(0.001f));
+                covered += sheet.width;
+            }
+
+            Assert.That(
+                covered,
+                Is.EqualTo(frame.SeaRowBounds.width).Within(0.05f),
+                "The sheets must tile the sea row exactly.");
+
+            var shelves = new List<Bounds>();
+            CitySeacoastSeaLayout.CreateShelfBoxes(frame, shelves);
+            Assert.That(shelves.Count, Is.GreaterThan(10));
+            foreach (Bounds shelf in shelves)
+            {
+                float top = shelf.center.y + shelf.size.y * 0.5f;
+                Assert.That(
+                    top,
+                    Is.LessThan(frame.SeaTopY - 0.15f),
+                    "A shelf breaking the surface is a sandbar, not " +
+                    "a bed.");
+                Assert.That(
+                    top,
+                    Is.GreaterThan(frame.SeaTopY - 0.80f),
+                    "A shelf this deep grows no foam.");
+                Assert.That(
+                    shelf.center.z - shelf.size.z * 0.5f,
+                    Is.GreaterThanOrEqualTo(
+                        frame.WaterlineZ - 0.001f));
+
+                // The inner step is the surf line: inside the foam
+                // distance along the whole shore.
+                bool inner =
+                    shelf.center.z - shelf.size.z * 0.5f <
+                    frame.WaterlineZ + 0.5f;
+                if (inner)
+                {
+                    Assert.That(
+                        frame.SeaTopY - top,
+                        Is.LessThan(CitySeaResources.FoamDistance),
+                        "The surf line lost its shelf.");
+                }
+            }
+        }
+
+        [Test]
         public void LegacyCity_PlansNothingRatherThanThrowing()
         {
             CityLayout layout = CityLayoutGenerator.Generate(

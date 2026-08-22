@@ -13,8 +13,12 @@ namespace BarPromenade
     /// posts as glow-only fixtures one shade dimmer than the river
     /// embankment's, and the beacon's lens burning on the mol head.
     ///
-    /// The sea itself is not built here yet: the flat municipal water
-    /// slab still stands in for it, the way it always has.
+    /// The sea itself is built here too: chunked animated sheets of
+    /// the shared water shader where the flat municipal slab used to
+    /// be, over a shelving silt bed that rises to meet the sand — the
+    /// depth-threshold foam draws the surf line along that shelf on
+    /// its own. Each sheet runs a cosmetic apron past the map's north
+    /// edge, because past the apron there is only fog anyway.
     /// </summary>
     public static class CitySeacoastWorldBuilder
     {
@@ -51,6 +55,12 @@ namespace BarPromenade
             new Color(0.52f, 0.44f, 0.20f);
         internal static readonly Color Litter =
             new Color(0.27f, 0.22f, 0.16f);
+
+        // The silt shelf under the shallows. Darker than the sand it
+        // continues, because half a metre of sea water is what is
+        // between them.
+        internal static readonly Color Silt =
+            new Color(0.10f, 0.10f, 0.085f);
 
         // The hut bulb is the lake's, bolt for bolt: same warm
         // tungsten over the same kind of door, dimmed by day, full at
@@ -92,10 +102,50 @@ namespace BarPromenade
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
 
+            BuildSea(root, plan.Frame);
             BuildDressing(root, plan);
             BuildLamps(root, plan);
 
             return root.gameObject;
+        }
+
+        /// <summary>
+        /// The sea: animated sheets over a shelving bed. The bed only
+        /// exists near the shore — deeper out the depth fade bottoms
+        /// into the deep colour on its own, which is all the honesty a
+        /// sea seen through this fog can use.
+        /// </summary>
+        private static void BuildSea(
+            Transform root,
+            in CitySeacoastFrame frame)
+        {
+            Transform sea = new GameObject("Sea").transform;
+            sea.SetParent(root, false);
+
+            var sheets = new List<Rect>();
+            CitySeacoastSeaLayout.CreateSheetRects(frame, sheets);
+            for (int index = 0; index < sheets.Count; index++)
+            {
+                CityWaterSurfaceFactory.CreateSlopedSurface(
+                    $"Sea Water {index:D2}",
+                    sea,
+                    sheets[index],
+                    frame.SeaTopY,
+                    frame.SeaTopY,
+                    CitySeaResources.WaterMaterial);
+            }
+
+            var shelves = new List<Bounds>();
+            CitySeacoastSeaLayout.CreateShelfBoxes(frame, shelves);
+            if (shelves.Count > 0)
+            {
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    "Sea Bed Shelf",
+                    sea,
+                    shelves,
+                    Silt,
+                    false);
+            }
         }
 
         private static void BuildDressing(
@@ -396,6 +446,129 @@ namespace BarPromenade
 
                 int z = left.Z.CompareTo(right.Z);
                 return z != 0 ? z : left.Style.CompareTo(right.Style);
+            }
+        }
+    }
+
+    /// <summary>
+    /// The sea's pure geometry: where the sheets go and how the shore
+    /// shelves. Split out of the builder so the arithmetic that keeps
+    /// the sheets chunked, the apron cosmetic and the surf line inside
+    /// the shader's foam reach is testable without a scene.
+    /// </summary>
+    internal static class CitySeacoastSeaLayout
+    {
+        /// <summary>
+        /// Sheets never exceed a world chunk, so far ones frustum-cull
+        /// under the 48 m far plane; world-position waves make the
+        /// seams invisible by construction.
+        /// </summary>
+        internal const float MaximumSheetWidth = 48f;
+
+        /// <summary>
+        /// How far each sheet runs past the sea row into the fog. The
+        /// far plane sits at 48 m and the fog eats everything long
+        /// before that, so the apron only exists to keep the sheet's
+        /// north edge out of any legal camera.
+        /// </summary>
+        internal const float ApronReach = 18f;
+
+        // The shore shelf: silt rising to meet the sand. The inner
+        // step sits well inside the foam distance, so the surf line
+        // draws the whole shore; the outer step half-fades before the
+        // bottom drops away to the deep colour.
+        internal const float InnerShelfReach = 2.6f;
+        private const float InnerShelfDepth = 0.30f;
+        private const float OuterShelfDepth = 0.62f;
+        private const float ShelfRunLength = 10f;
+        private const float ShelfBottomDrop = 1.9f;
+
+        internal static void CreateSheetRects(
+            in CitySeacoastFrame frame,
+            ICollection<Rect> destination)
+        {
+            Rect row = frame.SeaRowBounds;
+            int count = Mathf.Max(
+                1,
+                Mathf.CeilToInt(row.width / MaximumSheetWidth));
+            float width = row.width / count;
+            for (int index = 0; index < count; index++)
+            {
+                float from = row.xMin + index * width;
+                destination.Add(Rect.MinMaxRect(
+                    from,
+                    frame.WaterlineZ,
+                    from + width,
+                    row.yMax + ApronReach));
+            }
+        }
+
+        internal static void CreateShelfBoxes(
+            in CitySeacoastFrame frame,
+            ICollection<Bounds> destination)
+        {
+            Rect row = frame.SeaRowBounds;
+            float bottom = frame.SeaTopY - ShelfBottomDrop;
+            int runs = Mathf.Max(
+                1,
+                Mathf.CeilToInt(row.width / ShelfRunLength));
+            float runLength = row.width / runs;
+            for (int index = 0; index < runs; index++)
+            {
+                float from = row.xMin + index * runLength;
+                float center = from + runLength * 0.5f;
+                uint hash = Hash(index);
+
+                // The inner step: ankle-deep, foam over its whole
+                // width. Its jitter is what makes the surf line
+                // wander instead of ruling itself along the map.
+                float innerTop = frame.SeaTopY - InnerShelfDepth +
+                                 ((hash & 0xFFu) / 255f - 0.5f) * 0.10f;
+                destination.Add(new Bounds(
+                    new Vector3(
+                        center,
+                        (innerTop + bottom) * 0.5f,
+                        frame.WaterlineZ + InnerShelfReach * 0.5f),
+                    new Vector3(
+                        runLength,
+                        innerTop - bottom,
+                        InnerShelfReach)));
+
+                // The outer step: knee-deep, foam breaking up, gone a
+                // few metres further out.
+                float reach = 5f +
+                              (((hash >> 8) & 0xFFu) / 255f) * 3.5f;
+                float outerTop = frame.SeaTopY - OuterShelfDepth +
+                                 (((hash >> 16) & 0xFFu) / 255f - 0.5f) *
+                                 0.16f;
+                destination.Add(new Bounds(
+                    new Vector3(
+                        center,
+                        (outerTop + bottom) * 0.5f,
+                        frame.WaterlineZ + InnerShelfReach +
+                            (reach - InnerShelfReach) * 0.5f),
+                    new Vector3(
+                        runLength,
+                        outerTop - bottom,
+                        reach - InnerShelfReach)));
+            }
+        }
+
+        /// <summary>
+        /// Positional, not seeded: the shelf wander is texture, and a
+        /// different city does not need a different shore any more
+        /// than it needs a different ripple sheet.
+        /// </summary>
+        private static uint Hash(int index)
+        {
+            unchecked
+            {
+                uint value = 0x53454142u ^ (uint)index; // "SEAB"
+                value *= 16777619u;
+                value ^= value >> 16;
+                value *= 0x7FEB352Du;
+                value ^= value >> 15;
+                return value;
             }
         }
     }
