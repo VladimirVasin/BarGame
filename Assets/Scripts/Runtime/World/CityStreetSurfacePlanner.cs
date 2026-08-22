@@ -302,20 +302,32 @@ namespace BarPromenade
                     (busIntersections.Contains(edge.B)
                         ? BusApproachApronLength
                         : 0f);
-                Vector3 start = Vector3.Lerp(
+                // A NEGATIVE inset (a dead end) extends the sidewalk
+                // PAST the node so the road cap gets its wrap - clamping
+                // it to zero used to stop the pavement at the node
+                // centre while the road ran half a road further. The
+                // elevation sample stays clamped: the extension is flat
+                // at the cap's own datum.
+                float startRatio = startInset < 0f
+                    ? startInset / planarLength
+                    : Mathf.Clamp01(startInset / planarLength);
+                float endRatio = endInset < 0f
+                    ? 1f - (endInset / planarLength)
+                    : 1f - Mathf.Clamp01(endInset / planarLength);
+                Vector3 start = Vector3.LerpUnclamped(
                     roadStart,
                     roadEnd,
-                    Mathf.Clamp01(startInset / planarLength));
-                Vector3 end = Vector3.Lerp(
+                    startRatio);
+                Vector3 end = Vector3.LerpUnclamped(
                     roadStart,
                     roadEnd,
-                    1f - Mathf.Clamp01(endInset / planarLength));
+                    endRatio);
                 start.y = layout.ElevationPlan.SampleRoadDatum(
                     edge,
-                    Mathf.Clamp01(startInset / planarLength));
+                    Mathf.Clamp01(startRatio));
                 end.y = layout.ElevationPlan.SampleRoadDatum(
                     edge,
-                    1f - Mathf.Clamp01(endInset / planarLength));
+                    Mathf.Clamp01(endRatio));
                 float length = Vector3.Distance(start, end);
                 if (length <= GeometryTolerance)
                 {

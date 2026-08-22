@@ -664,6 +664,12 @@ namespace BarPromenade
                 YardSalt);
             int firstSlot = (int)(hash & 3u);
 
+            // Ground actually taken by the corner objects, so the
+            // wall-hugging bin can refuse a spot that would stand it
+            // inside one of them. Offsets mirror the descriptor
+            // literals below, which are authored on world axes.
+            var placedFootprints = new List<Rect>(4);
+
             // Bench: faces the circuit, so the empty seat and the circling
             // are read in one frame.
             if (TryResolveYardSlot(
@@ -711,6 +717,11 @@ namespace BarPromenade
                     CreateGroundedBounds(
                         benchPosition + new Vector3(1.18f, 0f, 0.28f),
                         new Vector3(0.09f, 0.27f, 0.09f))));
+                placedFootprints.Add(Rect.MinMaxRect(
+                    benchPosition.x - 1.30f,
+                    benchPosition.z - 0.35f,
+                    benchPosition.x + 1.30f,
+                    benchPosition.z + 0.40f));
             }
 
             // Carpet-beating frame: the second vertical, deliberately
@@ -750,6 +761,11 @@ namespace BarPromenade
                     CreateGroundedBounds(
                         framePosition + new Vector3(1.22f, 0f, 0f),
                         new Vector3(0.13f, 1.69f, 0.13f))));
+                placedFootprints.Add(Rect.MinMaxRect(
+                    framePosition.x - 1.35f,
+                    framePosition.z - 0.20f,
+                    framePosition.x + 1.35f,
+                    framePosition.z + 0.20f));
             }
 
             // Sandpit with no sand, and the one object in the yard that
@@ -805,6 +821,11 @@ namespace BarPromenade
                     CreateGroundedBounds(
                         sandpitPosition + new Vector3(0.34f, 0f, 1.46f),
                         new Vector3(0.24f, 0.16f, 0.20f))));
+                placedFootprints.Add(Rect.MinMaxRect(
+                    sandpitPosition.x - 1.10f,
+                    sandpitPosition.z - 0.10f,
+                    sandpitPosition.x + 1.10f,
+                    sandpitPosition.z + 2.11f));
             }
 
             // A lamp post that has not worked in years: the yard owns no
@@ -836,18 +857,27 @@ namespace BarPromenade
                     new Bounds(
                         lampPosition + new Vector3(0.16f, 3.34f, 0f),
                         new Vector3(0.54f, 0.22f, 0.34f))));
+                placedFootprints.Add(Rect.MinMaxRect(
+                    lampPosition.x - 0.15f,
+                    lampPosition.z - 0.20f,
+                    lampPosition.x + 0.48f,
+                    lampPosition.z + 0.20f));
             }
 
             // The bin stands against a wall at one end, clear of the
-            // circuit like everything else here.
-            if (TryResolveYardSlot(
+            // circuit like everything else here. Not a corner slot:
+            // four corners already host four objects, so the bin hugs
+            // the end wall between them and refuses any spot that
+            // would stand it inside a placed neighbour.
+            if (TryResolveYardWallSlot(
                     center,
                     grounds,
                     radius,
-                    firstSlot + 2,
+                    firstSlot,
                     access,
                     new Vector3(1.02f, 1.02f, 0.72f),
                     reservedGround,
+                    placedFootprints,
                     out Vector3 binPosition))
             {
                 Bounds binBody = CreateGroundedBounds(
@@ -868,6 +898,101 @@ namespace BarPromenade
                         binPosition + new Vector3(0.06f, 1.07f, 0f),
                         new Vector3(1.06f, 0.10f, 0.76f))));
             }
+        }
+
+        /// <summary>
+        /// A slot pressed flush against one of the yard's end walls,
+        /// between the corner slots. The hash picks which end is tried
+        /// first; three lateral seats per end give the bin somewhere to
+        /// go when a corner object's skirt reaches the wall's middle.
+        /// </summary>
+        private static bool TryResolveYardWallSlot(
+            Vector3 center,
+            Rect grounds,
+            float radius,
+            int slot,
+            CityOpenAreaAccessDescriptor access,
+            Vector3 footprint,
+            IReadOnlyList<Rect> reservedGround,
+            IReadOnlyList<Rect> placedFootprints,
+            out Vector3 position)
+        {
+            bool longIsX = grounds.width >= grounds.height;
+            Vector3 along = longIsX ? Vector3.right : Vector3.forward;
+            Vector3 across = longIsX ? Vector3.forward : Vector3.right;
+            float halfLength =
+                (longIsX ? grounds.width : grounds.height) * 0.5f;
+            float alongHalf =
+                (longIsX ? footprint.x : footprint.z) * 0.5f;
+            const float wallGap = 0.08f;
+            float wallReach = halfLength - alongHalf - wallGap;
+
+            float[] laterals = { 0f, 0.9f, -0.9f };
+            for (int endAttempt = 0; endAttempt < 2; endAttempt++)
+            {
+                float endSign =
+                    ((slot + endAttempt) & 1) == 0 ? 1f : -1f;
+                for (int lateralIndex = 0;
+                     lateralIndex < laterals.Length;
+                     lateralIndex++)
+                {
+                    Vector3 candidate = center +
+                                        along * (wallReach * endSign) +
+                                        across * laterals[lateralIndex];
+                    candidate.y = center.y;
+                    candidate.x = Mathf.Clamp(
+                        candidate.x,
+                        grounds.xMin + footprint.x * 0.5f,
+                        grounds.xMax - footprint.x * 0.5f);
+                    candidate.z = Mathf.Clamp(
+                        candidate.z,
+                        grounds.yMin + footprint.z * 0.5f,
+                        grounds.yMax - footprint.z * 0.5f);
+
+                    float fromCircuit = Vector2.Distance(
+                        new Vector2(center.x, center.z),
+                        new Vector2(candidate.x, candidate.z));
+                    if (fromCircuit < radius + YardCircuitClearance)
+                    {
+                        continue;
+                    }
+
+                    Bounds bounds = CreateGroundedBounds(
+                        candidate,
+                        footprint);
+                    if (!IsClearOfAccess(bounds, access) ||
+                        OverlapsReservedGround(bounds, reservedGround))
+                    {
+                        continue;
+                    }
+
+                    Rect rect = Expand(ToXZRect(bounds), 0.18f);
+                    bool crowded = false;
+                    for (int index = 0;
+                         index < placedFootprints.Count;
+                         index++)
+                    {
+                        if (OverlapsStrict(
+                                rect,
+                                placedFootprints[index]))
+                        {
+                            crowded = true;
+                            break;
+                        }
+                    }
+
+                    if (crowded)
+                    {
+                        continue;
+                    }
+
+                    position = candidate;
+                    return true;
+                }
+            }
+
+            position = default;
+            return false;
         }
 
         private static bool TryResolveYardSlot(

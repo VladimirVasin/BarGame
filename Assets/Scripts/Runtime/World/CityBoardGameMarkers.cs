@@ -24,6 +24,15 @@ namespace BarPromenade
         public const float DestinationDotSize = 0.048f;
         public const float CaptureRingSize = 0.108f;
 
+        /// <summary>
+        /// Extra lift per draw layer (last-move, check, destinations,
+        /// selection, hover). Two marks on one square would otherwise
+        /// be perfectly coplanar boxes of the same material and
+        /// z-fight; 0.6 mm per layer settles the order and is
+        /// invisible at reading distance.
+        /// </summary>
+        public const float PlateLayerStep = 0.0006f;
+
         private static readonly Color HoverColor =
             new Color(0.72f, 0.62f, 0.34f, 1f);
         private static readonly Color SelectedColor =
@@ -82,7 +91,8 @@ namespace BarPromenade
                     lastFromSquare % CityChessBoardGeometry.SquaresPerSide,
                     lastFromSquare / CityChessBoardGeometry.SquaresPerSide,
                     SquarePlateSize,
-                    LastMoveColor);
+                    LastMoveColor,
+                    0);
             }
 
             if (lastToSquare >= 0)
@@ -91,7 +101,8 @@ namespace BarPromenade
                     lastToSquare % CityChessBoardGeometry.SquaresPerSide,
                     lastToSquare / CityChessBoardGeometry.SquaresPerSide,
                     SquarePlateSize,
-                    LastMoveColor);
+                    LastMoveColor,
+                    0);
             }
 
             if (checkFile >= 0)
@@ -100,7 +111,8 @@ namespace BarPromenade
                     checkFile,
                     checkRank,
                     SquarePlateSize,
-                    CheckColor);
+                    CheckColor,
+                    1);
             }
 
             if (destinations != null)
@@ -116,7 +128,8 @@ namespace BarPromenade
                             : DestinationDotSize,
                         action.IsCapture
                             ? CaptureColor
-                            : DestinationColor);
+                            : DestinationColor,
+                        2);
                 }
             }
 
@@ -126,7 +139,8 @@ namespace BarPromenade
                     selectedFile,
                     selectedRank,
                     SquarePlateSize,
-                    SelectedColor);
+                    SelectedColor,
+                    3);
             }
 
             if (hoverFile >= 0 &&
@@ -136,7 +150,8 @@ namespace BarPromenade
                     hoverFile,
                     hoverRank,
                     SquarePlateSize,
-                    HoverColor);
+                    HoverColor,
+                    4);
             }
 
             for (int index = used; index < pool.Count; index++)
@@ -161,7 +176,12 @@ namespace BarPromenade
             }
         }
 
-        private void AddPlate(int file, int rank, float size, Color color)
+        private void AddPlate(
+            int file,
+            int rank,
+            float size,
+            Color color,
+            int layer)
         {
             if (!CityChessBoardGeometry.IsOnBoard(file, rank))
             {
@@ -192,7 +212,9 @@ namespace BarPromenade
 
             used++;
             Vector3 center = table.SquareCenter(file, rank) +
-                Vector3.up * (PlateHoverMeters + PlateThickness * 0.5f);
+                Vector3.up * (PlateHoverMeters +
+                              (PlateThickness * 0.5f) +
+                              (layer * PlateLayerStep));
             plate.transform.SetPositionAndRotation(
                 center,
                 Quaternion.LookRotation(table.Forward, Vector3.up));

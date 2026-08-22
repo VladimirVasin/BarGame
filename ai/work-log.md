@@ -6,6 +6,36 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-22 — The audit's three deferred design calls, decided
+
+- **The yard bin got its own scheme instead of a corner slot** (the
+  user's call: вариант «б»). Four corner slots host four objects; the
+  fifth — the bin — now presses flush against an end wall between them
+  via `TryResolveYardWallSlot`: two ends tried in hash order, three
+  lateral seats per end, and every candidate must clear the circuit,
+  the access mouth, booth/dumpster reservations AND the actual
+  footprints of the already-placed corner objects (collected as
+  world-axis rects mirroring the descriptor literals). A yard with no
+  clear wall seat simply gets no bin — better absent than standing
+  inside the sandpit.
+- **Dead-end sidewalks extend past the cap again.** The degree-1
+  branch of `ResolveEndpointInset` returns `-halfRoad` by design, but
+  both callers clamped the ratio to [0,1] and `Vector3.Lerp` clamps
+  too, so the extension never happened. Negative insets now extrapolate
+  (`LerpUnclamped`; positive insets keep the old clamped semantics for
+  short edges) while the elevation sample stays clamped, so the wrap
+  runs flat at the cap's own datum.
+- **Board marks stack by draw layer.** Every plate sat at exactly
+  `PlateHoverMeters + PlateThickness/2`, so a hover over a destination
+  square (or a check square that is also the last move) was two
+  coplanar boxes z-fighting. Each Redraw layer (last-move, check,
+  destinations, selection, hover) now adds `PlateLayerStep = 0.6 mm` —
+  the read order settles, and 2.4 mm of total spread is invisible at
+  table distance.
+- **Verification:** full EditMode suite re-run after the three changes
+  (the sidewalk extension touches walkable/pedestrian-graph ground, so
+  the whole suite, not just the street classes).
+
 ## 2026-08-22 — Full-project audit: nine reviewers, one soft-lock, a leak chorus
 
 - **A parallel review swept the whole runtime, tests and editor tooling**
