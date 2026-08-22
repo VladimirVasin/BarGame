@@ -681,6 +681,81 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void Beacon_PulsesDeterministicallyWithOneDarkBreak()
+        {
+            const int seed = 40213;
+            const double step = 0.02;
+            int samples = (int)Math.Round(
+                CitySeacoastBeaconRules.PeriodMinutes / step);
+
+            float previous = CitySeacoastBeaconRules.EvaluateIntensity(
+                seed,
+                -step);
+            int litCount = 0;
+            int darkCount = 0;
+            bool sawFull = false;
+            for (int index = 0; index < samples; index++)
+            {
+                double minute = index * step;
+                float value = CitySeacoastBeaconRules.EvaluateIntensity(
+                    seed,
+                    minute);
+
+                // Deterministic, bounded, and periodic.
+                Assert.That(
+                    CitySeacoastBeaconRules.EvaluateIntensity(
+                        seed,
+                        minute),
+                    Is.EqualTo(value));
+                Assert.That(value, Is.InRange(0f, 1f));
+                Assert.That(
+                    CitySeacoastBeaconRules.EvaluateIntensity(
+                        seed,
+                        minute +
+                        CitySeacoastBeaconRules.PeriodMinutes * 3d),
+                    Is.EqualTo(value).Within(0.0001f));
+
+                // The trapezoid shoulders keep the cut from reading
+                // as flicker: no sample-to-sample jump bigger than a
+                // shoulder step.
+                Assert.That(
+                    Mathf.Abs(value - previous),
+                    Is.LessThan(0.12f),
+                    $"The beacon snaps at minute {minute:F2}.");
+                previous = value;
+
+                if (value >= 0.999f)
+                {
+                    sawFull = true;
+                }
+
+                if (value > 0.5f)
+                {
+                    litCount++;
+                }
+                else if (value <= 0f)
+                {
+                    darkCount++;
+                }
+            }
+
+            Assert.That(sawFull, Is.True, "The beacon never reaches full.");
+
+            // Occulting: lit most of the period, dark for its
+            // authored break.
+            double litFraction = litCount / (double)samples;
+            double darkFraction = darkCount / (double)samples;
+            Assert.That(litFraction, Is.InRange(0.65, 0.85));
+            Assert.That(
+                darkFraction,
+                Is.InRange(
+                    CitySeacoastBeaconRules.DarkMinutes /
+                    CitySeacoastBeaconRules.PeriodMinutes - 0.05,
+                    CitySeacoastBeaconRules.DarkMinutes /
+                    CitySeacoastBeaconRules.PeriodMinutes + 0.05));
+        }
+
+        [Test]
         public void LegacyCity_PlansNothingRatherThanThrowing()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
