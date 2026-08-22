@@ -51,6 +51,17 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   handoff is invisible. The reported texture flicker: the crown facade
   overlaps the flanks by 0.12 m with coplanar front faces - z-fighting
   strips right beside the arch - so the crown is recessed 3 cm.
+- **Round three - the user named the actual geometry.** The mouth is a
+  RECTANGULAR facade opening with a SEMICIRCULAR portal ring inside
+  it, and the two upper corners of the rectangle - the spandrels
+  outside the ring's outer arc - were simply open: a sightline through
+  them runs down the 56 m throat past the 48 m far clip and renders as
+  fog. Two stepped blocks per side now hug the outer arc (stepped, no
+  diagonals, per the project idiom), each inner-bottom corner kept
+  outside the ring's inner radius so the arch opening stays whole, and
+  recessed 6 cm so their overlap strips with the flanks (0) and crown
+  (3 cm) never share a front plane. Verified by head-on and oblique
+  captures (probe deleted): both corners closed, the arch intact.
 
 ## 2026-08-22 — The audit's three deferred design calls, decided
 

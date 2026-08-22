@@ -262,6 +262,28 @@ namespace BarPromenade
                 depthOffset + (Flatten(cave.Axis) * 0.03f),
                 rotation,
                 facadeDepth);
+
+            // The spandrels. The facade leaves a RECTANGULAR opening
+            // between the flanks and the crown, while the portal ring is
+            // a SEMICIRCLE inside it - the two upper corners of that
+            // rectangle, outside the ring's outer arc, were open, and a
+            // sightline through them runs down the throat past the far
+            // clip: a fog-bright gap in each corner. Two stepped blocks
+            // per side hug the outer arc (stepped, never diagonal), each
+            // inner-bottom corner kept outside the ring's inner radius so
+            // the arch opening itself stays whole. Recessed 6 cm - behind
+            // both the flanks (0) and the crown (3 cm) - so their overlap
+            // strips never share a front plane with either.
+            AddSpandrelBoxes(
+                rock,
+                cave,
+                portalBaseY,
+                ringThickness,
+                crownBottomY,
+                mouthZ,
+                depthOffset + (Flatten(cave.Axis) * 0.06f),
+                rotation,
+                facadeDepth);
             GameObject stop =
                 RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
                     "River Cave Rock Stop",
@@ -279,6 +301,64 @@ namespace BarPromenade
             CityMountainSurfaceAppearance.ApplyCombined(
                 stop.GetComponent<Renderer>(),
                 MidRock);
+        }
+
+        private static void AddSpandrelBoxes(
+            ICollection<RuntimeOrientedBox> target,
+            CityMountainRiverNotchDescriptor cave,
+            float portalBaseY,
+            float ringThickness,
+            float crownBottomY,
+            float mouthZ,
+            Vector3 depthOffset,
+            Quaternion rotation,
+            float depth)
+        {
+            float centreX = cave.WaterApproachBounds.center.x;
+            float innerRadius = cave.WaterApproachBounds.width * 0.5f;
+            float outerRadius = innerRadius + ringThickness;
+            // The arch springs where the vertical jambs meet the arc,
+            // mirroring the portal-frame construction.
+            float springY = portalBaseY +
+                            cave.OpeningHeight -
+                            innerRadius;
+            float topY = crownBottomY + 0.05f;
+
+            // Step edges chosen against the ring radii (inner 5.0,
+            // outer 6.15 for the authored 10 m mouth): the tall step's
+            // inner edge sits 0.1 outside the inner radius at spring
+            // level, and the short step's inner-bottom corner clears
+            // the inner radius, so neither block clips the opening
+            // while together with the ring band they close the corner.
+            float tallInset = innerRadius + 0.10f;
+            float shortInset = innerRadius - 1.30f;
+            float shortBottomY = springY + 3.40f;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                float outerX = centreX + (side * outerRadius);
+                float tallX = centreX + (side * tallInset);
+                float shortX = centreX + (side * shortInset);
+                AddFacadeBox(
+                    target,
+                    Mathf.Min(outerX, tallX),
+                    Mathf.Max(outerX, tallX),
+                    springY,
+                    topY,
+                    mouthZ,
+                    depthOffset,
+                    rotation,
+                    depth);
+                AddFacadeBox(
+                    target,
+                    Mathf.Min(tallX, shortX),
+                    Mathf.Max(tallX, shortX),
+                    shortBottomY,
+                    topY,
+                    mouthZ,
+                    depthOffset,
+                    rotation,
+                    depth);
+            }
         }
 
         private static void AddFacadeBox(
