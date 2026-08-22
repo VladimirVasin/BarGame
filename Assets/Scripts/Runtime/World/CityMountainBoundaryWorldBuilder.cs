@@ -214,9 +214,14 @@ namespace BarPromenade
             float rightInner =
                 cave.WaterApproachBounds.xMax + ringThickness;
             float crownBottomY = portalBaseY + cave.OpeningHeight - overlap;
+            // One flat-topped massif at the HIGHER of the two adjoining
+            // ridge peaks. The notch splits the ridge line, so there is
+            // no rock behind the facade: with the crown at the LOWER
+            // peak, the taller side stood 4+ m above it and the gap
+            // between them read as a bright hole in the mountain.
             float facadeTopY = Mathf.Max(
                 crownBottomY + 4f,
-                Mathf.Min(cave.WestPeakY, cave.EastPeakY));
+                Mathf.Max(cave.WestPeakY, cave.EastPeakY));
             float facadeBottomY = portalBaseY - 0.45f;
             Quaternion rotation = Quaternion.LookRotation(
                 Flatten(cave.Axis),
@@ -229,7 +234,7 @@ namespace BarPromenade
                 cave.ApproachBounds.xMin,
                 leftInner + overlap,
                 facadeBottomY,
-                cave.WestPeakY,
+                facadeTopY,
                 mouthZ,
                 depthOffset,
                 rotation,
@@ -239,7 +244,7 @@ namespace BarPromenade
                 rightInner - overlap,
                 cave.ApproachBounds.xMax,
                 facadeBottomY,
-                cave.EastPeakY,
+                facadeTopY,
                 mouthZ,
                 depthOffset,
                 rotation,
@@ -263,7 +268,12 @@ namespace BarPromenade
                     true,
                     CityMountainSurfaceAppearance.MetersPerTile,
                     RuntimeWorldUvMode.BoxProjected);
-            CityMountainSurfaceAppearance.ApplyCombined(
+            // The same fog-safe dither the physical ridges wear: the
+            // facade fills the notch the ridges leave, and a facade that
+            // stays opaque while the rock beside it dissolves into the
+            // night fog splits the massif's silhouette at the seam - a
+            // bright hole in the mountain right over the cave mouth.
+            CityMountainSurfaceAppearance.ApplyPhysicalRidge(
                 stop.GetComponent<Renderer>(),
                 MidRock);
         }

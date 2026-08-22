@@ -6,6 +6,37 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-22 — The cave gap and the embankment's invisible wall
+
+- **The user walked the new south embankment and found both bugs in
+  the cave zone.** A fact probe (throwaway EditMode test printing the
+  notch descriptor, south ridge stations and every walkable rect near
+  the cave) confirmed both mechanisms before any fix.
+- **The invisible wall:** the 4 m sloped forefield shoulders flanking
+  the banks (x∈[0,4] and x∈[22,26] over z∈[-182,-156]) are real
+  collidered ground, and the yards' land beyond them (x&lt;0, x&gt;26 down
+  to z=-182) is already in the walkable mask — but the shoulders
+  themselves were not, so the whole promenade extension was sealed
+  along its outer edge. Probe sample x=3: False at every z south of
+  -156. The mask now carries both shoulders plus seam strips on all
+  four of their edges (promenade side, yard side, and the -156 line),
+  same abutting-rect idiom as the existing cave seams.
+- **The gap in the mountain:** two layers. Geometrically, the mouth
+  facade used `min(WestPeakY, EastPeakY)` for the crown while each
+  side facade rose to its own peak — with peaks 27.0 vs 22.7 that left
+  a 4.3 m rectangle of open sky over the crown, and the notch splits
+  the ridge line so there is NO rock behind it. The whole facade now
+  tops out at the higher peak. Materially, the facade wore the
+  ordinary opaque rock material while the physical ridges beside it
+  wear the fog-safe dither — at night the ridge dissolves into the fog
+  and the opaque facade does not, splitting the silhouette at the seam
+  into a bright hole. The facade now wears `ApplyPhysicalRidge` like
+  the ridges; the portal arch deliberately keeps the ordinary material
+  (documented as a close-range piece).
+- **Verification:** before/after captures from four promenade poses
+  (probe deleted after use), the fact probe re-run showing the shoulder
+  samples flip to True, and the full EditMode suite.
+
 ## 2026-08-22 — The audit's three deferred design calls, decided
 
 - **The yard bin got its own scheme instead of a corner slot** (the

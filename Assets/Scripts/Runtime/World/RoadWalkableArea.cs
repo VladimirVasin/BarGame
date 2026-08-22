@@ -449,6 +449,63 @@ namespace BarPromenade
                         eastApproach.yMax - caveSeamReach,
                         eastApproach.xMax,
                         eastApproach.yMax + caveSeamReach));
+
+                    // The sloped forefield shoulders flanking the banks
+                    // are real collidered ground continuous with the
+                    // fringe yards - without them in the mask the whole
+                    // promenade extension had an invisible wall along
+                    // its outer edge, sealing the walk from the
+                    // embankment onto the yards' land. Each shoulder
+                    // needs its own seams: to the promenade beside it
+                    // and to the yard ground it abuts.
+                    Rect approach =
+                        mountainPlan.RiverCave.ApproachBounds;
+                    Rect westShoulder = Rect.MinMaxRect(
+                        approach.xMin,
+                        approach.yMin,
+                        mountainPlan.RiverCave.WestBankBounds.xMin,
+                        approach.yMax);
+                    Rect eastShoulder = Rect.MinMaxRect(
+                        mountainPlan.RiverCave.EastBankBounds.xMax,
+                        approach.yMin,
+                        approach.xMax,
+                        approach.yMax);
+                    area.Add(westShoulder);
+                    area.Add(eastShoulder);
+                    AddVerticalSeam(
+                        area,
+                        westShoulder.xMax,
+                        approach.yMin,
+                        approach.yMax,
+                        caveSeamReach);
+                    AddVerticalSeam(
+                        area,
+                        westShoulder.xMin,
+                        approach.yMin,
+                        approach.yMax,
+                        caveSeamReach);
+                    AddVerticalSeam(
+                        area,
+                        eastShoulder.xMin,
+                        approach.yMin,
+                        approach.yMax,
+                        caveSeamReach);
+                    AddVerticalSeam(
+                        area,
+                        eastShoulder.xMax,
+                        approach.yMin,
+                        approach.yMax,
+                        caveSeamReach);
+                    area.Add(Rect.MinMaxRect(
+                        westShoulder.xMin,
+                        westShoulder.yMax - caveSeamReach,
+                        westShoulder.xMax,
+                        westShoulder.yMax + caveSeamReach));
+                    area.Add(Rect.MinMaxRect(
+                        eastShoulder.xMin,
+                        eastShoulder.yMax - caveSeamReach,
+                        eastShoulder.xMax,
+                        eastShoulder.yMax + caveSeamReach));
                 }
             }
 
@@ -501,6 +558,20 @@ namespace BarPromenade
             }
 
             return area;
+        }
+
+        private static void AddVerticalSeam(
+            RoadWalkableArea area,
+            float x,
+            float zMin,
+            float zMax,
+            float reach)
+        {
+            area.Add(Rect.MinMaxRect(
+                x - reach,
+                zMin,
+                x + reach,
+                zMax));
         }
 
         public void Add(Rect xzRectangle)
