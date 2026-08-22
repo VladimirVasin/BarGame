@@ -85,13 +85,16 @@ namespace BarPromenade.Tests.EditMode
 
             // Offshore band: past the waterline far enough to sit at
             // the edge of visibility, inside the sheeted sea so
-            // there is always water under the rocks.
+            // there is always water under the rocks — the apron
+            // carries the water, so the bound derives from it.
             Assert.That(
                 first.IslandCenter.z,
                 Is.GreaterThan(frame.WaterlineZ + 24f));
             Assert.That(
                 first.IslandCenter.z,
-                Is.LessThan(frame.SeaRowBounds.yMax + 12f));
+                Is.LessThan(
+                    frame.SeaRowBounds.yMax +
+                    CitySeacoastSeaLayout.ApronReach - 4f));
 
             // The map's marker derives the same lantern spot without
             // building the island.

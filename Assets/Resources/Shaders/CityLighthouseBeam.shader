@@ -5,8 +5,8 @@ Shader "Bar Promenade/City Lighthouse Beam"
         [HDR] _BeamColor("Beam Color", Color) = (3.8, 3.6, 3.12, 1)
         _Intensity("Intensity", Range(0, 8)) = 1
         _Uniform("Uniform Glow", Range(0, 1)) = 0
-        _FadeStartDistance("Fade Start Distance", Float) = 43
-        _FadeEndDistance("Fade End Distance", Float) = 47
+        _FadeStartDistance("Fade Start Distance", Float) = 44.5
+        _FadeEndDistance("Fade End Distance", Float) = 47.5
     }
 
     SubShader

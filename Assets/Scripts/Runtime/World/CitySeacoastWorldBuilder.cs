@@ -490,9 +490,12 @@ namespace BarPromenade
         /// How far each sheet runs past the sea row into the fog. The
         /// far plane sits at 48 m and the fog eats everything long
         /// before that, so the apron only exists to keep the sheet's
-        /// north edge out of any legal camera.
+        /// north edge out of any legal camera — and to carry water
+        /// under the lighthouse island, whose offshore band ends a
+        /// metre inside it. Sized so the island at its far-plane-
+        /// limited anchor still has covered sea past its last rock.
         /// </summary>
-        internal const float ApronReach = 18f;
+        internal const float ApronReach = 23f;
 
         // The shore shelf: silt rising to meet the sand. The inner
         // step sits well inside the foam distance, so the surf line

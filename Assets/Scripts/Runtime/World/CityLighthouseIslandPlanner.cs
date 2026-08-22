@@ -26,18 +26,30 @@ namespace BarPromenade
     public static class CityLighthouseIslandPlanner
     {
         /// <summary>
-        /// How far past the waterline the island anchors. Chosen
-        /// against the fixed fog numbers: ~35–36 m of 3D distance
-        /// from the waterline sand and ~42 m from the esplanade
-        /// (deep in the silhouette shader's far haze — outlines
-        /// only), ~22 m from the pier head (the one place it firms
-        /// up), and past 48 m from every street — the far plane
-        /// retires the island before the city ever sees it. The
-        /// ceiling is the sea itself: the sheets' 18 m apron ends at
-        /// row end + 18, and the validator holds every rock a metre
-        /// inside it.
+        /// How far past the waterline the island anchors. The sea
+        /// apron follows the island (it is one constant), so the real
+        /// ceiling is the 48 m far plane: at 39 m the waterline sand
+        /// still sees the whole island (~40 m to the lantern, full
+        /// alpha), the pier head (~26 m) keeps its firmed-up view,
+        /// and from the esplanade (~46 m) the tower's top dissolves
+        /// into the self-fade band while the mound holds — the island
+        /// at the very edge of what the far plane permits. Pushing
+        /// past ~40 starts erasing it from the waterline itself.
         /// </summary>
-        internal const float OffshoreDistance = 35f;
+        internal const float OffshoreDistance = 39f;
+
+        /// <summary>
+        /// Forced perspective on top of the physical distance: the
+        /// anchor already stands as far out as the 48 m far plane
+        /// permits, so the rest of "farther" is drawn — the whole
+        /// silhouette at this fraction of its planned size around the
+        /// sea-level anchor. The lantern assembly (lens, beams)
+        /// scales by the same factor in the world builder so the
+        /// light agrees with the tower. The floor is the lantern
+        /// invariant: at 0.78 the lamp still clears its 12 m over
+        /// the sea.
+        /// </summary>
+        internal const float VisualScale = 0.78f;
 
         /// <summary>
         /// The pier points at the island: the anchor sits a step east
@@ -106,6 +118,25 @@ namespace BarPromenade
             AddTimber(parts, citySeed, anchor, seaTop);
             AddWreck(parts, citySeed, anchor, seaTop);
 
+            // The forced-perspective pass: everything shrinks toward
+            // the sea-level anchor, so rocks stay level with the
+            // swell and the whole island reads farther offshore than
+            // the sea sheets let it stand.
+            var pivot = new Vector3(anchor.x, seaTop, anchor.y);
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityLighthouseIslandPartDescriptor part = parts[index];
+                parts[index] = new CityLighthouseIslandPartDescriptor(
+                    part.StableId,
+                    part.Kind,
+                    pivot + (part.Center - pivot) * VisualScale,
+                    part.Rotation,
+                    part.Size * VisualScale,
+                    part.Shade);
+            }
+
+            lantern = pivot + (lantern - pivot) * VisualScale;
+
             var plan = new CityLighthouseIslandPlan(
                 parts,
                 new Vector3(anchor.x, seaTop, anchor.y),
@@ -130,12 +161,16 @@ namespace BarPromenade
             }
 
             Vector2 anchor = ResolveAnchor(seacoastPlan);
-            float deckTop = seacoastPlan.Frame.SeaTopY +
-                            MoundDeckAboveSea;
-            lanternPosition = new Vector3(
+            float seaTop = seacoastPlan.Frame.SeaTopY;
+            float deckTop = seaTop + MoundDeckAboveSea;
+            // Identical float operations to Create's scale pass, so
+            // the derived spot equals the built plan's bit for bit.
+            var pivot = new Vector3(anchor.x, seaTop, anchor.y);
+            var lantern = new Vector3(
                 anchor.x,
                 ResolveGalleryTop(deckTop) + LanternAboveGallery,
                 anchor.y);
+            lanternPosition = pivot + (lantern - pivot) * VisualScale;
             return true;
         }
 

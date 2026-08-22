@@ -44,12 +44,19 @@ namespace BarPromenade
         private static readonly Color Ironwork =
             new Color(0.10f, 0.11f, 0.11f);
 
-        private const float BeamLength = 12f;
-        private const float BeamStartRadius = 0.18f;
-        private const float BeamEndRadius = 1.6f;
+        // The lantern assembly shares the planner's forced-perspective
+        // factor: a shrunken tower with a full-size lens and beams
+        // would read as a near, small lighthouse instead of a far one.
+        private const float BeamLength =
+            12f * CityLighthouseIslandPlanner.VisualScale;
+        private const float BeamStartRadius =
+            0.18f * CityLighthouseIslandPlanner.VisualScale;
+        private const float BeamEndRadius =
+            1.6f * CityLighthouseIslandPlanner.VisualScale;
         private const int BeamSegments = 10;
         private const float BeamPitchDegrees = 2f;
-        private const float LensSize = 0.9f;
+        private const float LensSize =
+            0.9f * CityLighthouseIslandPlanner.VisualScale;
 
         public static GameObject Build(
             Transform parent,

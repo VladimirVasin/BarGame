@@ -21,24 +21,30 @@ namespace BarPromenade
 
         /// <summary>
         /// The distance-graded haze mix. From the waterline sand
-        /// (~36 m) the island sits at HazeFar — ~8 % contrast,
+        /// (~36 m) the island sits at HazeFar — ~6 % contrast,
         /// outlines only; from the pier head (~22 m) it eases toward
-        /// HazeNear — ~25 %, still ghostly but legible. Walking the
+        /// HazeNear — ~21 %, still ghostly but legible. Walking the
         /// pier is what brings the island out of the fog, and only
-        /// a little.
+        /// a little. Deepened alongside the planner's forced-
+        /// perspective shrink so the smaller silhouette also sits
+        /// deeper in the air, and the two cues agree on "farther".
         /// </summary>
-        public const float HazeNear = 0.75f;
-        public const float HazeFar = 0.92f;
+        public const float HazeNear = 0.79f;
+        public const float HazeFar = 0.94f;
         public const float HazeNearDistance = 20f;
         public const float HazeFarDistance = 38f;
 
         /// <summary>
-        /// The self-fade band. Starts past the esplanade's ~41.5 m
-        /// view of the lantern, ends a metre inside the 48 m far
-        /// plane so the island dissolves before it could ever pop.
+        /// The self-fade band. With the island at its far-plane-
+        /// limited anchor the esplanade sees the lantern at ~46 m:
+        /// the band lets the tower's top melt into the air from
+        /// there (the mound beneath stays), and still closes half a
+        /// metre inside the 48 m far plane so nothing ever pops. The
+        /// waterline sand (~40 m to the lantern) sits fully before
+        /// the band and keeps the whole island.
         /// </summary>
-        public const float FadeStartDistance = 43f;
-        public const float FadeEndDistance = 47f;
+        public const float FadeStartDistance = 44.5f;
+        public const float FadeEndDistance = 47.5f;
 
         /// <summary>
         /// The old mol beacon's lens colour, moved to the island with
