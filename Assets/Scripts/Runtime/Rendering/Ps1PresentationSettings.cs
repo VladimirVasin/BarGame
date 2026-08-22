@@ -19,11 +19,25 @@ namespace BarPromenade.Rendering
             Ps1ResolutionPreset.Balanced640x360;
         [SerializeField, Range(0f, 1f)]
         private float quantizationStrength = 0.35f;
+        [SerializeField] private bool ditherEnabled = true;
+        [SerializeField, Range(0f, 1f)]
+        private float ditherStrength = 0.6f;
+        [SerializeField, Range(0f, 0.6f)]
+        private float scanlineIntensity = 0.22f;
+        [SerializeField] private bool rainLensEnabled = true;
+        [SerializeField, Range(0f, 1f)]
+        private float rainLensStrength = 0.8f;
 
         public bool EffectEnabled => effectEnabled;
         public Ps1ResolutionPreset ResolutionPreset => resolutionPreset;
         public float QuantizationStrength =>
             Mathf.Clamp01(quantizationStrength);
+        public float DitherStrength =>
+            ditherEnabled ? Mathf.Clamp01(ditherStrength) : 0f;
+        public float ScanlineIntensity =>
+            Mathf.Clamp(scanlineIntensity, 0f, 0.6f);
+        public float RainLensStrength =>
+            rainLensEnabled ? Mathf.Clamp01(rainLensStrength) : 0f;
 
         public Vector2Int GetInternalResolution(int outputWidth, int outputHeight)
         {

@@ -26,7 +26,9 @@ namespace BarPromenade
             float warpStrength,
             float warmth,
             float exposurePulse,
-            float balanceDifficulty)
+            float balanceDifficulty,
+            float chromaticAberration,
+            float lensDistortion)
         {
             Level = level;
             Stage = stage;
@@ -41,6 +43,8 @@ namespace BarPromenade
             Warmth = warmth;
             ExposurePulse = exposurePulse;
             BalanceDifficulty = balanceDifficulty;
+            ChromaticAberration = chromaticAberration;
+            LensDistortion = lensDistortion;
         }
 
         public int Level { get; }
@@ -56,6 +60,8 @@ namespace BarPromenade
         public float Warmth { get; }
         public float ExposurePulse { get; }
         public float BalanceDifficulty { get; }
+        public float ChromaticAberration { get; }
+        public float LensDistortion { get; }
         public bool BalanceEnabled =>
             Level > IntoxicationStageRules.BalanceThreshold;
     }
@@ -150,7 +156,26 @@ namespace BarPromenade
                     0.03f,
                     0.05f,
                     0.08f),
-                balanceDifficulty);
+                balanceDifficulty,
+                Interpolate(
+                    clampedLevel,
+                    0f,
+                    0.05f,
+                    0.10f,
+                    0.20f,
+                    0.32f,
+                    0.45f),
+                // Small and negative: the frame pinches inward like a
+                // heavy lens, and |0.14| stays under the two internal
+                // pixels the PS1 point-sample can hide at the rim.
+                Interpolate(
+                    clampedLevel,
+                    0f,
+                    0f,
+                    -0.02f,
+                    -0.05f,
+                    -0.09f,
+                    -0.14f));
         }
 
         public static IntoxicationStage GetStage(int level)

@@ -19,6 +19,29 @@ namespace BarPromenade.Tests
         private Material sourceMaterial;
         private bool previousFogEnabled;
         private bool fogStateCaptured;
+        private bool previousDitherEnabled;
+        private bool previousScanlinesEnabled;
+        private bool previousRainOnLensEnabled;
+        private bool previousAspectRatio43Enabled;
+        private bool effectFlagsCaptured;
+
+        [SetUp]
+        public void CaptureEffectFlags()
+        {
+            previousDitherEnabled =
+                GraphicsEffectsSettings.DitherEnabled;
+            previousScanlinesEnabled =
+                GraphicsEffectsSettings.ScanlinesEnabled;
+            previousRainOnLensEnabled =
+                GraphicsEffectsSettings.RainOnLensEnabled;
+            previousAspectRatio43Enabled =
+                GraphicsEffectsSettings.AspectRatio43Enabled;
+            effectFlagsCaptured = true;
+            GraphicsEffectsSettings.DitherEnabled = false;
+            GraphicsEffectsSettings.ScanlinesEnabled = false;
+            GraphicsEffectsSettings.RainOnLensEnabled = false;
+            GraphicsEffectsSettings.AspectRatio43Enabled = false;
+        }
 
         [UnityTest]
         public IEnumerator GameCamera_AveragesDetailAndPreservesTones()
@@ -29,8 +52,248 @@ namespace BarPromenade.Tests
                     "Actual RenderGraph output requires a graphics device.");
             }
 
-            const int outputWidth = 1280;
-            const int outputHeight = 720;
+            RenderComposite(1280, 720);
+
+            const int sampleOriginX = 320;
+            const int sampleOriginY = 176;
+            const int blockSize = 2;
+            const int blockCount = 8;
+            HashSet<uint> colors = new HashSet<uint>();
+
+            for (int blockY = 0; blockY < blockCount; blockY++)
+            {
+                for (int blockX = 0; blockX < blockCount; blockX++)
+                {
+                    int x = sampleOriginX + blockX * blockSize;
+                    int y = sampleOriginY + blockY * blockSize;
+                    Color32 reference = readback.GetPixel(x, y);
+                    Color32 right = readback.GetPixel(x + 1, y);
+                    Color32 up = readback.GetPixel(x, y + 1);
+                    Color32 diagonal = readback.GetPixel(x + 1, y + 1);
+
+                    Assert.That(
+                        right,
+                        Is.EqualTo(reference),
+                        "Point upscale must duplicate each low-resolution " +
+                        "texel horizontally.");
+                    Assert.That(
+                        up,
+                        Is.EqualTo(reference),
+                        "Point upscale must duplicate each low-resolution " +
+                        "texel vertically.");
+                    Assert.That(
+                        diagonal,
+                        Is.EqualTo(reference));
+
+                    AssertAveragedChecker(reference);
+                    colors.Add(Pack(reference));
+                }
+            }
+
+            Assert.That(
+                colors.Count,
+                Is.EqualTo(1),
+                "The averaged checker must stay flat without a visible " +
+                "screen-space dither pattern.");
+
+            AssertToneMatchesPerceptualBlend(
+                readback.GetPixel(960, 180),
+                20);
+            AssertToneMatchesPerceptualBlend(
+                readback.GetPixel(960, 540),
+                228);
+
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator GameCamera_DitherSplitsFlatDarkTone()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+            {
+                Assert.Ignore(
+                    "Actual RenderGraph output requires a graphics device.");
+            }
+
+            GraphicsEffectsSettings.DitherEnabled = true;
+
+            RenderComposite(1280, 720);
+
+            // A 4x4-internal-texel block covers every Bayer cell. The
+            // flat 20-byte tone sits 0.118 of a step above its RGB555
+            // level, so at strength 0.6 five of the sixteen thresholds
+            // push it down one level. (The mid-gray averaged checker
+            // sits 0.298 above its level — outside the +-0.28 dither
+            // amplitude — which is why that region must NOT be used
+            // here.)
+            HashSet<uint> blockColors = new HashSet<uint>();
+            for (int blockY = 0; blockY < 4; blockY++)
+            {
+                for (int blockX = 0; blockX < 4; blockX++)
+                {
+                    blockColors.Add(Pack(readback.GetPixel(
+                        900 + blockX * 2,
+                        176 + blockY * 2)));
+                }
+            }
+
+            Assert.That(
+                blockColors.Count,
+                Is.GreaterThan(1),
+                "Enabled dithering must break a flat dark tone into " +
+                "more than one quantized color across a Bayer block.");
+
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator GameCamera_AspectRatio43PillarboxesTheFrame()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+            {
+                Assert.Ignore(
+                    "Actual RenderGraph output requires a graphics device.");
+            }
+
+            GraphicsEffectsSettings.AspectRatio43Enabled = true;
+
+            RenderComposite(1280, 720);
+
+            // At 1280x720 the 4:3 window keeps the central 960
+            // columns; 160-column bars flank it and stay pure black.
+            int[] barColumns = { 0, 80, 158, 1122, 1200, 1279 };
+            for (int index = 0; index < barColumns.Length; index++)
+            {
+                Color32 bar = readback.GetPixel(
+                    barColumns[index],
+                    360);
+                Assert.That(
+                    (int)bar.r + bar.g + bar.b,
+                    Is.Zero,
+                    "The pillarbox bars must stay pure black at " +
+                    $"column {barColumns[index]}.");
+            }
+
+            // Just inside the frame the averaged checker still shows.
+            Color32 inside = readback.GetPixel(200, 500);
+            Assert.That((int)inside.r, Is.InRange(60, 200));
+
+            // The crop and the pillarbox cancel over the visible
+            // region, so the flat tones keep the exact perceptual
+            // RGB555 blend at their original screen positions.
+            AssertToneMatchesPerceptualBlend(
+                readback.GetPixel(960, 180),
+                20);
+            AssertToneMatchesPerceptualBlend(
+                readback.GetPixel(960, 540),
+                228);
+
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator GameCamera_ScanlinesDarkenAlternateRows()
+        {
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+            {
+                Assert.Ignore(
+                    "Actual RenderGraph output requires a graphics device.");
+            }
+
+            GraphicsEffectsSettings.ScanlinesEnabled = true;
+
+            RenderComposite(1280, 720);
+
+            // At the 2x vertical scale every internal row spans two
+            // output rows and the scanline mask darkens exactly one of
+            // them, so alternate output rows must differ in the flat
+            // bright region.
+            float evenSum = 0f;
+            float oddSum = 0f;
+            for (int y = 500; y < 532; y++)
+            {
+                Color pixel = readback.GetPixel(960, y);
+                float luminance = pixel.r + pixel.g + pixel.b;
+                if (y % 2 == 0)
+                {
+                    evenSum += luminance;
+                }
+                else
+                {
+                    oddSum += luminance;
+                }
+            }
+
+            float brighter = Mathf.Max(evenSum, oddSum);
+            float darker = Mathf.Min(evenSum, oddSum);
+            Assert.That(brighter, Is.GreaterThan(0f));
+            Assert.That(
+                darker / brighter,
+                Is.LessThan(0.92f),
+                "Enabled scanlines must darken one output row of every " +
+                "internal row pair.");
+
+            yield return null;
+        }
+
+        [UnityTearDown]
+        public IEnumerator TearDown()
+        {
+            if (effectFlagsCaptured)
+            {
+                GraphicsEffectsSettings.DitherEnabled =
+                    previousDitherEnabled;
+                GraphicsEffectsSettings.ScanlinesEnabled =
+                    previousScanlinesEnabled;
+                GraphicsEffectsSettings.RainOnLensEnabled =
+                    previousRainOnLensEnabled;
+                GraphicsEffectsSettings.AspectRatio43Enabled =
+                    previousAspectRatio43Enabled;
+                effectFlagsCaptured = false;
+            }
+
+            if (fogStateCaptured)
+            {
+                RenderSettings.fog = previousFogEnabled;
+                fogStateCaptured = false;
+            }
+
+            if (cameraObject != null)
+            {
+                Object.Destroy(cameraObject);
+            }
+
+            if (sourceObject != null)
+            {
+                Object.Destroy(sourceObject);
+            }
+
+            if (target != null)
+            {
+                target.Release();
+                Object.Destroy(target);
+            }
+
+            if (sourceMaterial != null)
+            {
+                Object.Destroy(sourceMaterial);
+            }
+
+            if (sourceTexture != null)
+            {
+                Object.Destroy(sourceTexture);
+            }
+
+            if (readback != null)
+            {
+                Object.Destroy(readback);
+            }
+
+            yield return null;
+        }
+
+        private void RenderComposite(int outputWidth, int outputHeight)
+        {
             cameraObject = new GameObject("PS1 Composite Smoke Camera");
             Camera camera = cameraObject.AddComponent<Camera>();
             camera.enabled = false;
@@ -88,100 +351,6 @@ namespace BarPromenade.Tests
                 false);
             readback.Apply(false, false);
             RenderTexture.active = previous;
-
-            const int sampleOriginX = 320;
-            const int sampleOriginY = 176;
-            const int blockSize = 2;
-            const int blockCount = 8;
-            HashSet<uint> colors = new HashSet<uint>();
-
-            for (int blockY = 0; blockY < blockCount; blockY++)
-            {
-                for (int blockX = 0; blockX < blockCount; blockX++)
-                {
-                    int x = sampleOriginX + blockX * blockSize;
-                    int y = sampleOriginY + blockY * blockSize;
-                    Color32 reference = readback.GetPixel(x, y);
-                    Color32 right = readback.GetPixel(x + 1, y);
-                    Color32 up = readback.GetPixel(x, y + 1);
-                    Color32 diagonal = readback.GetPixel(x + 1, y + 1);
-
-                    Assert.That(
-                        right,
-                        Is.EqualTo(reference),
-                        "Point upscale must duplicate each low-resolution " +
-                        "texel horizontally.");
-                    Assert.That(
-                        up,
-                        Is.EqualTo(reference),
-                        "Point upscale must duplicate each low-resolution " +
-                        "texel vertically.");
-                    Assert.That(
-                        diagonal,
-                        Is.EqualTo(reference));
-
-                    AssertAveragedChecker(reference);
-                    colors.Add(Pack(reference));
-                }
-            }
-
-            Assert.That(
-                colors.Count,
-                Is.EqualTo(1),
-                "The averaged checker must stay flat without a visible " +
-                "screen-space dither pattern.");
-
-            AssertToneMatchesPerceptualBlend(
-                readback.GetPixel(960, 180),
-                20);
-            AssertToneMatchesPerceptualBlend(
-                readback.GetPixel(960, 540),
-                228);
-
-            yield return null;
-        }
-
-        [UnityTearDown]
-        public IEnumerator TearDown()
-        {
-            if (fogStateCaptured)
-            {
-                RenderSettings.fog = previousFogEnabled;
-                fogStateCaptured = false;
-            }
-
-            if (cameraObject != null)
-            {
-                Object.Destroy(cameraObject);
-            }
-
-            if (sourceObject != null)
-            {
-                Object.Destroy(sourceObject);
-            }
-
-            if (target != null)
-            {
-                target.Release();
-                Object.Destroy(target);
-            }
-
-            if (sourceMaterial != null)
-            {
-                Object.Destroy(sourceMaterial);
-            }
-
-            if (sourceTexture != null)
-            {
-                Object.Destroy(sourceTexture);
-            }
-
-            if (readback != null)
-            {
-                Object.Destroy(readback);
-            }
-
-            yield return null;
         }
 
         private void CreateSource(

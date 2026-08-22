@@ -1,5 +1,7 @@
 using System;
+using BarPromenade.Rendering;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
@@ -133,6 +135,8 @@ namespace BarPromenade
             get;
             private set;
         }
+        public Volume PostProcessVolume { get; private set; }
+        public VolumeProfile RuntimeProfile { get; private set; }
 
         public static SupermarketInteriorAtmosphere Install(
             Transform parent,
@@ -189,6 +193,7 @@ namespace BarPromenade
             atmosphere.Flicker = InstallFlicker(
                 parent,
                 lights[FlickerRowIndex]);
+            atmosphere.CreatePostProcessVolume();
 
             GameLog.Info(
                 "supermarket",
@@ -220,6 +225,51 @@ namespace BarPromenade
             light.range = range;
             light.shadows = LightShadows.None;
             return light;
+        }
+
+        private void CreatePostProcessVolume()
+        {
+            GameObject volumeObject = new GameObject(
+                "Supermarket Interior Grade");
+            volumeObject.transform.SetParent(transform, false);
+            PostProcessVolume = volumeObject.AddComponent<Volume>();
+            PostProcessVolume.isGlobal = true;
+            PostProcessVolume.priority = 4f;
+            PostProcessVolume.weight = 1f;
+
+            RuntimeProfile =
+                ScriptableObject.CreateInstance<VolumeProfile>();
+            RuntimeProfile.name =
+                "Runtime Supermarket Interior Grade";
+            RuntimeProfile.hideFlags = HideFlags.HideAndDontSave;
+            PostProcessVolume.profile = RuntimeProfile;
+
+            // Depth of field only: the fluorescent hall keeps its flat
+            // grade, the far aisles just soften.
+            RuntimeSceneSetup.AddGaussianDepthOfField(
+                RuntimeProfile, 7f, 20f, 1.0f);
+            volumeObject
+                .AddComponent<DepthOfFieldSettingsBinder>()
+                .Initialize(RuntimeProfile);
+        }
+
+        private void OnDestroy()
+        {
+            if (RuntimeProfile == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Destroy(RuntimeProfile);
+            }
+            else
+            {
+                DestroyImmediate(RuntimeProfile);
+            }
+
+            RuntimeProfile = null;
         }
 
         private static SupermarketFluorescentFlicker InstallFlicker(

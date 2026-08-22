@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -980,6 +981,20 @@ namespace BarPromenade
             cameraBlendFieldOfView = boardCamera.fieldOfView;
             cameraBlendElapsed = 0f;
             cameraPhase = phase;
+            if (phase == CameraPhase.Leaving || active == null)
+            {
+                CinematicDepthOfField.End();
+            }
+            else
+            {
+                // The board holds focus; the park and the opponent's
+                // bench soften behind it.
+                CinematicDepthOfField.Begin(
+                    Vector3.Distance(
+                        cameraBlendPosition,
+                        active.Table.BoardCenter),
+                    4f);
+            }
         }
 
         private void CaptureCameraOwnership()
@@ -1069,6 +1084,13 @@ namespace BarPromenade
                         cameraBlendFieldOfView,
                         CityBoardGamePlan.FieldOfView,
                         smooth));
+                CinematicDepthOfField.SetFocusDistance(
+                    Vector3.Distance(
+                        Vector3.Lerp(
+                            cameraBlendPosition,
+                            seatedPosition,
+                            smooth),
+                        active.Table.BoardCenter));
                 if (amount >= 1f)
                 {
                     cameraPhase = CameraPhase.Playing;
@@ -1081,10 +1103,15 @@ namespace BarPromenade
                 seatedPosition,
                 seatedRotation,
                 CityBoardGamePlan.FieldOfView);
+            CinematicDepthOfField.SetFocusDistance(
+                Vector3.Distance(
+                    seatedPosition,
+                    active.Table.BoardCenter));
         }
 
         private void RestoreCameraOwnership()
         {
+            CinematicDepthOfField.End();
             if (!cameraOwned || cameraFollow == null)
             {
                 return;

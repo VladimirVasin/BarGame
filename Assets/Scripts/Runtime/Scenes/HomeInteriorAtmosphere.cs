@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using System.Collections.ObjectModel;
+using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -305,6 +306,12 @@ namespace BarPromenade
             grain.type.Override(FilmGrainLookup.Thin1);
             grain.intensity.Override(0.14f);
             grain.response.Override(0.74f);
+
+            RuntimeSceneSetup.AddGaussianDepthOfField(
+                runtimeProfile, 5f, 14f, 1.0f);
+            volumeObject
+                .AddComponent<DepthOfFieldSettingsBinder>()
+                .Initialize(runtimeProfile);
         }
 
         private void CreateDust()

@@ -63,6 +63,13 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     current.ExposurePulse,
                     Is.GreaterThanOrEqualTo(previous.ExposurePulse));
+                Assert.That(
+                    current.ChromaticAberration,
+                    Is.GreaterThanOrEqualTo(
+                        previous.ChromaticAberration));
+                Assert.That(
+                    current.LensDistortion,
+                    Is.LessThanOrEqualTo(previous.LensDistortion));
 
                 previous = current;
             }
@@ -75,6 +82,19 @@ namespace BarPromenade.Tests.EditMode
                 IntoxicationStageRules.Evaluate(100).PuppetSwayDegrees,
                 Is.GreaterThan(
                     IntoxicationStageRules.Evaluate(60).PuppetSwayDegrees));
+
+            IntoxicationProfile sober =
+                IntoxicationStageRules.Evaluate(0);
+            Assert.That(sober.ChromaticAberration, Is.Zero);
+            Assert.That(sober.LensDistortion, Is.Zero);
+            IntoxicationProfile blackout =
+                IntoxicationStageRules.Evaluate(100);
+            Assert.That(
+                blackout.ChromaticAberration,
+                Is.EqualTo(0.45f).Within(0.001f));
+            Assert.That(
+                blackout.LensDistortion,
+                Is.EqualTo(-0.14f).Within(0.001f));
         }
 
         [Test]

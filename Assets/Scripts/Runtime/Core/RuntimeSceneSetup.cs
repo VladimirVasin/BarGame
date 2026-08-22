@@ -1,4 +1,5 @@
 using System;
+using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
@@ -37,7 +38,37 @@ namespace BarPromenade
             SetPostProcessing(camera, true);
             ApplyCityExteriorVisibility(camera);
             ApplyCityExteriorLighting();
+            BindAuthoredVolumeDepthOfField();
             return camera;
+        }
+
+        /// <summary>
+        /// Attaches the depth-of-field settings binder to every
+        /// authored global volume in the scene, working on the
+        /// volume's runtime profile clone so the shared asset is
+        /// never dirtied. The override is ensured on the clone, so a
+        /// stale authored profile still gets the city defaults.
+        /// </summary>
+        public static void BindAuthoredVolumeDepthOfField()
+        {
+            Volume[] volumes = Object.FindObjectsByType<Volume>();
+            for (int index = 0; index < volumes.Length; index++)
+            {
+                Volume volume = volumes[index];
+                if (!volume.isGlobal ||
+                    volume.sharedProfile == null ||
+                    volume.GetComponent<DepthOfFieldSettingsBinder>()
+                        != null)
+                {
+                    continue;
+                }
+
+                AddGaussianDepthOfField(
+                    volume.profile, 8f, 28f, 1.5f);
+                volume.gameObject
+                    .AddComponent<DepthOfFieldSettingsBinder>()
+                    .Initialize(volume.profile);
+            }
         }
 
         public static Camera EnsureDoorTransition()
@@ -206,7 +237,35 @@ namespace BarPromenade
             grain.type.Override(FilmGrainLookup.Thin1);
             grain.intensity.Override(0.015f);
             grain.response.Override(0.80f);
+
+            AddGaussianDepthOfField(profile, 8f, 28f, 1.5f);
             return profile;
+        }
+
+        public static DepthOfField AddGaussianDepthOfField(
+            VolumeProfile profile,
+            float gaussianStart,
+            float gaussianEnd,
+            float gaussianMaxRadius)
+        {
+            if (profile == null)
+            {
+                throw new ArgumentNullException(nameof(profile));
+            }
+
+            if (!profile.TryGet(out DepthOfField depthOfField))
+            {
+                depthOfField = profile.Add<DepthOfField>(true);
+            }
+
+            depthOfField.mode.Override(DepthOfFieldMode.Gaussian);
+            depthOfField.gaussianStart.Override(gaussianStart);
+            depthOfField.gaussianEnd.Override(gaussianEnd);
+            depthOfField.gaussianMaxRadius.Override(gaussianMaxRadius);
+            depthOfField.highQualitySampling.Override(false);
+            depthOfField.active =
+                GraphicsEffectsSettings.DepthOfFieldEnabled;
+            return depthOfField;
         }
 
         public static Camera EnsureStairwellInterior()

@@ -49,14 +49,47 @@ namespace BarPromenade.Rendering
                 return;
             }
 
+            int outputWidth =
+                cameraData.cameraTargetDescriptor.width;
+            int outputHeight =
+                cameraData.cameraTargetDescriptor.height;
+            // The 4:3 mode crops the widescreen frame to a centered
+            // 4:3 window (the exact view of a 4:3 camera with the same
+            // vertical FOV) and pillarboxes the upscale. On displays
+            // already at or narrower than 4:3 the fraction stays 1.
+            float aspectFraction = 1f;
+            int effectiveWidth = outputWidth;
+            if (GraphicsEffectsSettings.AspectRatio43Enabled)
+            {
+                float croppedWidth = outputHeight * (4f / 3f);
+                if (croppedWidth < outputWidth)
+                {
+                    aspectFraction = croppedWidth / outputWidth;
+                    effectiveWidth =
+                        Mathf.Max(1, Mathf.RoundToInt(croppedWidth));
+                }
+            }
+
             Vector2Int resolution =
                 presentationSettings.GetInternalResolution(
-                    cameraData.cameraTargetDescriptor.width,
-                    cameraData.cameraTargetDescriptor.height);
+                    effectiveWidth,
+                    outputHeight);
             pass.Setup(
                 compositeMaterial,
                 resolution,
+                aspectFraction,
                 presentationSettings.QuantizationStrength,
+                GraphicsEffectsSettings.DitherEnabled
+                    ? presentationSettings.DitherStrength
+                    : 0f,
+                GraphicsEffectsSettings.ScanlinesEnabled
+                    ? presentationSettings.ScanlineIntensity
+                    : 0f,
+                GraphicsEffectsSettings.RainOnLensEnabled
+                    ? presentationSettings.RainLensStrength *
+                      RainLensRenderState.Intensity
+                    : 0f,
+                Time.unscaledTime,
                 IntoxicationRenderState.Current);
             renderer.EnqueuePass(pass);
         }
@@ -112,6 +145,16 @@ namespace BarPromenade.Rendering
                 Shader.PropertyToID("_Ps1LowResolutionTexelSize");
             private static readonly int QuantizationStrengthId =
                 Shader.PropertyToID("_Ps1QuantizationStrength");
+            private static readonly int DitherStrengthId =
+                Shader.PropertyToID("_Ps1DitherStrength");
+            private static readonly int ScanlineIntensityId =
+                Shader.PropertyToID("_Ps1ScanlineIntensity");
+            private static readonly int RainLensId =
+                Shader.PropertyToID("_Ps1RainLens");
+            private static readonly int RainTimeId =
+                Shader.PropertyToID("_Ps1RainTime");
+            private static readonly int AspectFractionId =
+                Shader.PropertyToID("_Ps1AspectFraction");
             private static readonly int IntoxicationVignetteId =
                 Shader.PropertyToID("_IntoxicationVignette");
             private static readonly int IntoxicationGhostPixelsId =
@@ -136,7 +179,12 @@ namespace BarPromenade.Rendering
             public void Setup(
                 Material composite,
                 Vector2Int internalResolution,
+                float aspectFraction,
                 float quantizationStrength,
+                float ditherStrength,
+                float scanlineIntensity,
+                float rainLens,
+                float rainTime,
                 IntoxicationRenderParameters intoxication)
             {
                 material = composite;
@@ -149,8 +197,23 @@ namespace BarPromenade.Rendering
                         resolution.x,
                         resolution.y));
                 material.SetFloat(
+                    AspectFractionId,
+                    Mathf.Clamp(aspectFraction, 0.01f, 1f));
+                material.SetFloat(
                     QuantizationStrengthId,
                     Mathf.Clamp01(quantizationStrength));
+                material.SetFloat(
+                    DitherStrengthId,
+                    Mathf.Clamp01(ditherStrength));
+                material.SetFloat(
+                    ScanlineIntensityId,
+                    Mathf.Clamp01(scanlineIntensity));
+                material.SetFloat(
+                    RainLensId,
+                    Mathf.Clamp01(rainLens));
+                material.SetFloat(
+                    RainTimeId,
+                    Mathf.Max(0f, rainTime));
                 material.SetFloat(
                     IntoxicationVignetteId,
                     Mathf.Clamp01(

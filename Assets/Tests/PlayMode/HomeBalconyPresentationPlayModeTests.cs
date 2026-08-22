@@ -788,6 +788,15 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(bloom.threshold.value, Is.EqualTo(0.60f));
             Assert.That(
                 atmosphere.RuntimeCityProfile.TryGet(
+                    out DepthOfField balconyDepthOfField),
+                Is.True,
+                "The balcony's city mirror must inherit the far-blur " +
+                "band from the shared city noir profile.");
+            Assert.That(
+                balconyDepthOfField.mode.value,
+                Is.EqualTo(DepthOfFieldMode.Gaussian));
+            Assert.That(
+                atmosphere.RuntimeCityProfile.TryGet(
                     out ColorAdjustments color),
                 Is.True);
             Assert.That(

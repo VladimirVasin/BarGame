@@ -46,6 +46,8 @@ namespace BarPromenade
             model.ConfirmationTarget;
         public bool ConfirmationYesSelected =>
             model.ConfirmationYesSelected;
+        public PauseMenuOptionsRow SelectedOptionsRow =>
+            model.SelectedOptionsRow;
 
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
@@ -182,6 +184,9 @@ namespace BarPromenade
                     return;
                 case PauseMenuAction.Quit:
                     QuitGame();
+                    return;
+                case PauseMenuAction.ToggleGraphicsOption:
+                    ToggleGraphicsOption(model.SelectedOptionsRow);
                     return;
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -329,6 +334,10 @@ namespace BarPromenade
                 {
                     DrawMainPage(canvas);
                 }
+                else if (Page == PauseMenuPage.Options)
+                {
+                    DrawOptionsPage(canvas);
+                }
                 else
                 {
                     DrawConfirmationPage(canvas);
@@ -342,7 +351,7 @@ namespace BarPromenade
 
         private void DrawMainPage(RetroUiCanvas canvas)
         {
-            Rect panel = new Rect(198f, 64f, 244f, 232f);
+            Rect panel = new Rect(198f, 52f, 244f, 268f);
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
@@ -351,25 +360,220 @@ namespace BarPromenade
                 3f,
                 1f);
             GUI.Label(
-                new Rect(214f, 82f, 212f, 30f),
+                new Rect(214f, 70f, 212f, 30f),
                 LocalizationService.Get("pause.title"),
                 titleStyle);
 
             DrawMainOption(
                 canvas,
-                new Rect(216f, 130f, 208f, 32f),
+                new Rect(216f, 118f, 208f, 32f),
                 PauseMenuOption.Resume,
                 "pause.resume");
             DrawMainOption(
                 canvas,
-                new Rect(216f, 174f, 208f, 32f),
+                new Rect(216f, 158f, 208f, 32f),
+                PauseMenuOption.Options,
+                "pause.options");
+            DrawMainOption(
+                canvas,
+                new Rect(216f, 198f, 208f, 32f),
                 PauseMenuOption.Restart,
                 "pause.restart");
             DrawMainOption(
                 canvas,
-                new Rect(216f, 218f, 208f, 32f),
+                new Rect(216f, 238f, 208f, 32f),
                 PauseMenuOption.Quit,
                 "pause.quit");
+        }
+
+        private void DrawOptionsPage(RetroUiCanvas canvas)
+        {
+            Rect panel = new Rect(140f, 40f, 360f, 300f);
+            RetroUiTheme.DrawPanel(
+                panel,
+                RetroUiTheme.Panel,
+                RetroUiTheme.Accent,
+                true,
+                3f,
+                1f);
+            GUI.Label(
+                new Rect(156f, 56f, 328f, 28f),
+                LocalizationService.Get("pause.options"),
+                titleStyle);
+
+            DrawOptionsRow(
+                canvas,
+                0,
+                PauseMenuOptionsRow.DepthOfField,
+                "options.dof");
+            DrawOptionsRow(
+                canvas,
+                1,
+                PauseMenuOptionsRow.IntoxicationFx,
+                "options.intoxication_fx");
+            DrawOptionsRow(
+                canvas,
+                2,
+                PauseMenuOptionsRow.Dither,
+                "options.dither");
+            DrawOptionsRow(
+                canvas,
+                3,
+                PauseMenuOptionsRow.Scanlines,
+                "options.scanlines");
+            DrawOptionsRow(
+                canvas,
+                4,
+                PauseMenuOptionsRow.RainOnLens,
+                "options.rain_lens");
+            DrawOptionsRow(
+                canvas,
+                5,
+                PauseMenuOptionsRow.AspectRatio43,
+                "options.aspect_4_3");
+            DrawOptionsRow(
+                canvas,
+                6,
+                PauseMenuOptionsRow.Back,
+                "options.back");
+        }
+
+        private void DrawOptionsRow(
+            RetroUiCanvas canvas,
+            int index,
+            PauseMenuOptionsRow row,
+            string localizationKey)
+        {
+            Rect rect = new Rect(
+                156f,
+                94f + index * 32f,
+                328f,
+                28f);
+            Vector2 mouse =
+                RetroUiTheme.LogicalMousePosition(canvas);
+            if (rect.Contains(mouse) &&
+                Event.current.type == EventType.MouseMove)
+            {
+                model.SelectOptionsRow(row);
+            }
+
+            bool selected = SelectedOptionsRow == row;
+            DrawSelection(rect, selected);
+            if (GUI.Button(
+                    rect,
+                    (selected ? "> " : "  ") +
+                    LocalizationService.Get(localizationKey),
+                    selected ? selectedStyle : optionStyle))
+            {
+                model.SelectOptionsRow(row);
+                ConfirmSelection();
+            }
+
+            if (row != PauseMenuOptionsRow.Back)
+            {
+                // Drawn after the button so the box sits on top of
+                // its background; clicking the box still lands on the
+                // row button underneath.
+                DrawCheckbox(
+                    new Rect(
+                        rect.xMax - 28f,
+                        rect.y + 5f,
+                        18f,
+                        18f),
+                    IsGraphicsOptionEnabled(row),
+                    selected);
+            }
+        }
+
+        private static void DrawCheckbox(
+            Rect box,
+            bool value,
+            bool selected)
+        {
+            RetroUiTheme.FillRect(box, RetroUiTheme.PanelInset);
+            RetroUiTheme.StrokeRect(
+                box,
+                1f,
+                selected
+                    ? RetroUiTheme.Accent
+                    : RetroUiTheme.BorderMuted);
+            if (value)
+            {
+                RetroUiTheme.FillRect(
+                    new Rect(
+                        box.x + 4f,
+                        box.y + 4f,
+                        box.width - 8f,
+                        box.height - 8f),
+                    RetroUiTheme.AccentPale);
+            }
+        }
+
+        private static void ToggleGraphicsOption(
+            PauseMenuOptionsRow row)
+        {
+            switch (row)
+            {
+                case PauseMenuOptionsRow.DepthOfField:
+                    GraphicsEffectsSettings.DepthOfFieldEnabled =
+                        !GraphicsEffectsSettings.DepthOfFieldEnabled;
+                    return;
+                case PauseMenuOptionsRow.IntoxicationFx:
+                    GraphicsEffectsSettings
+                            .IntoxicationLensFxEnabled =
+                        !GraphicsEffectsSettings
+                            .IntoxicationLensFxEnabled;
+                    return;
+                case PauseMenuOptionsRow.Dither:
+                    GraphicsEffectsSettings.DitherEnabled =
+                        !GraphicsEffectsSettings.DitherEnabled;
+                    return;
+                case PauseMenuOptionsRow.Scanlines:
+                    GraphicsEffectsSettings.ScanlinesEnabled =
+                        !GraphicsEffectsSettings.ScanlinesEnabled;
+                    return;
+                case PauseMenuOptionsRow.RainOnLens:
+                    GraphicsEffectsSettings.RainOnLensEnabled =
+                        !GraphicsEffectsSettings.RainOnLensEnabled;
+                    return;
+                case PauseMenuOptionsRow.AspectRatio43:
+                    GraphicsEffectsSettings.AspectRatio43Enabled =
+                        !GraphicsEffectsSettings
+                            .AspectRatio43Enabled;
+                    return;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(row),
+                        row,
+                        null);
+            }
+        }
+
+        private static bool IsGraphicsOptionEnabled(
+            PauseMenuOptionsRow row)
+        {
+            switch (row)
+            {
+                case PauseMenuOptionsRow.DepthOfField:
+                    return GraphicsEffectsSettings
+                        .DepthOfFieldEnabled;
+                case PauseMenuOptionsRow.IntoxicationFx:
+                    return GraphicsEffectsSettings
+                        .IntoxicationLensFxEnabled;
+                case PauseMenuOptionsRow.Dither:
+                    return GraphicsEffectsSettings.DitherEnabled;
+                case PauseMenuOptionsRow.Scanlines:
+                    return GraphicsEffectsSettings
+                        .ScanlinesEnabled;
+                case PauseMenuOptionsRow.RainOnLens:
+                    return GraphicsEffectsSettings
+                        .RainOnLensEnabled;
+                case PauseMenuOptionsRow.AspectRatio43:
+                    return GraphicsEffectsSettings
+                        .AspectRatio43Enabled;
+                default:
+                    return false;
+            }
         }
 
         private void DrawMainOption(

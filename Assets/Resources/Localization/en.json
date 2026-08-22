@@ -45,6 +45,38 @@
       "value": "NO"
     },
     {
+      "key": "pause.options",
+      "value": "OPTIONS"
+    },
+    {
+      "key": "options.dof",
+      "value": "DEPTH OF FIELD"
+    },
+    {
+      "key": "options.intoxication_fx",
+      "value": "DRUNK LENS FX"
+    },
+    {
+      "key": "options.dither",
+      "value": "DITHERING"
+    },
+    {
+      "key": "options.scanlines",
+      "value": "SCANLINES"
+    },
+    {
+      "key": "options.rain_lens",
+      "value": "RAIN ON LENS"
+    },
+    {
+      "key": "options.aspect_4_3",
+      "value": "4:3 ASPECT"
+    },
+    {
+      "key": "options.back",
+      "value": "BACK"
+    },
+    {
       "key": "common.yes",
       "value": "Yes"
     },

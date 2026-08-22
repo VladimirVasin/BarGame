@@ -1,4 +1,5 @@
 using System;
+using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -15,6 +16,7 @@ namespace BarPromenade
         private Quaternion establishingRotation;
         private float establishingFieldOfView;
         private Vector3 pathControlPosition;
+        private Vector3 focusPosition;
         private Vector3 followPosition;
         private Quaternion followRotation;
         private float followFieldOfView;
@@ -108,6 +110,11 @@ namespace BarPromenade
             WasSkipped = false;
             IsPlaying = true;
 
+            // The arriving hero is what the establishing shot studies.
+            focusPosition = lookAtPosition;
+            CinematicDepthOfField.Begin(
+                Vector3.Distance(shotPosition, focusPosition),
+                5.6f);
             follow.SetOrbitInputEnabled(false);
             follow.enabled = false;
             ApplyFrame(BarArrivalTimeline.Evaluate(0f, duration));
@@ -203,6 +210,10 @@ namespace BarPromenade
                 establishingFieldOfView,
                 followFieldOfView,
                 blend);
+            CinematicDepthOfField.SetFocusDistance(
+                Vector3.Distance(
+                    controlledCamera.transform.position,
+                    focusPosition));
         }
 
         private void RestoreCapturedState()
@@ -213,6 +224,7 @@ namespace BarPromenade
             }
 
             IsPlaying = false;
+            CinematicDepthOfField.End();
 
             if (controlledCamera != null)
             {

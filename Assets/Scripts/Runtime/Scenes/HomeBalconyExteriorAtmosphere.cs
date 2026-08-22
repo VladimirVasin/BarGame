@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
 using Object = UnityEngine.Object;
@@ -451,6 +452,9 @@ namespace BarPromenade
                 RuntimeSceneSetup
                     .CreateCityNoirRuntimeProfile();
             CityPostProcessVolume.profile = runtimeCityProfile;
+            volumeObject
+                .AddComponent<DepthOfFieldSettingsBinder>()
+                .Initialize(runtimeCityProfile);
         }
 
         private void DestroyCityPostProcessProfile()

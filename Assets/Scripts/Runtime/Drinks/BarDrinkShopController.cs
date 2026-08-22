@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -42,6 +43,7 @@ namespace BarPromenade
         private float cameraStartFieldOfView;
         private Vector3 cameraControlPosition;
         private Vector3 cameraTargetPosition;
+        private Vector3 depthOfFieldFocusPoint;
         private Quaternion cameraTargetRotation;
         private float cameraTargetFieldOfView;
         private bool cameraWasFixed;
@@ -666,6 +668,16 @@ namespace BarPromenade
                     0.52f) +
                 Vector3.up * 0.18f +
                 cameraStartRotation * Vector3.right * 0.08f;
+
+            // The counter's pour spot is what the shot studies; the
+            // shelves and the hall behind melt into bokeh.
+            depthOfFieldFocusPoint = reference.TransformPoint(
+                servicePlan.BottlePourPose.Position);
+            CinematicDepthOfField.Begin(
+                Vector3.Distance(
+                    cameraStartPosition,
+                    depthOfFieldFocusPoint),
+                4f);
         }
 
         private void ApplyCurrentPresentation()
@@ -711,6 +723,10 @@ namespace BarPromenade
                     cameraStartFieldOfView,
                     cameraTargetFieldOfView,
                     amount));
+            CinematicDepthOfField.SetFocusDistance(
+                Vector3.Distance(
+                    position,
+                    depthOfFieldFocusPoint));
         }
 
         private void ApplyBottlePresentation(BarDrinkServiceFrame frame)
@@ -967,6 +983,7 @@ namespace BarPromenade
 
         private void RestoreCameraState()
         {
+            CinematicDepthOfField.End();
             if (cameraFollow == null || !hasPhysicalPresentation)
             {
                 return;

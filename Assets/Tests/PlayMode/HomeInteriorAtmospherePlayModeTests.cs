@@ -348,6 +348,32 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 grain.intensity.value,
                 Is.InRange(0.08f, 0.2f));
+            Assert.That(
+                profile.TryGet(out DepthOfField depthOfField),
+                Is.True);
+            Assert.That(
+                depthOfField.mode.value,
+                Is.EqualTo(DepthOfFieldMode.Gaussian));
+            bool previousDofEnabled =
+                GraphicsEffectsSettings.DepthOfFieldEnabled;
+            try
+            {
+                GraphicsEffectsSettings.DepthOfFieldEnabled = false;
+                yield return null;
+                Assert.That(
+                    depthOfField.active,
+                    Is.False,
+                    "The binder must deactivate the override when " +
+                    "the player disables depth of field.");
+                GraphicsEffectsSettings.DepthOfFieldEnabled = true;
+                yield return null;
+                Assert.That(depthOfField.active, Is.True);
+            }
+            finally
+            {
+                GraphicsEffectsSettings.DepthOfFieldEnabled =
+                    previousDofEnabled;
+            }
 
             Assert.That(atmosphere.Dust, Is.Not.Null);
             ParticleSystem.MainModule main =

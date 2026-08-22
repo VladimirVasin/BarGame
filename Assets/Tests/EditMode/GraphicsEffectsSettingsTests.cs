@@ -1,0 +1,131 @@
+using NUnit.Framework;
+using UnityEngine;
+
+namespace BarPromenade.Tests.EditMode
+{
+    public sealed class GraphicsEffectsSettingsTests
+    {
+        private static readonly string[] Keys =
+        {
+            "graphics.dof",
+            "graphics.intoxication_fx",
+            "graphics.dither",
+            "graphics.scanlines",
+            "graphics.rain_lens",
+            "graphics.aspect_4_3"
+        };
+
+        private bool[] savedExists;
+        private int[] savedValues;
+
+        [SetUp]
+        public void SetUp()
+        {
+            savedExists = new bool[Keys.Length];
+            savedValues = new int[Keys.Length];
+            for (int i = 0; i < Keys.Length; i++)
+            {
+                savedExists[i] = PlayerPrefs.HasKey(Keys[i]);
+                if (savedExists[i])
+                {
+                    savedValues[i] = PlayerPrefs.GetInt(Keys[i]);
+                }
+
+                PlayerPrefs.DeleteKey(Keys[i]);
+            }
+
+            GraphicsEffectsSettings.ResetLoadedStateForTests();
+        }
+
+        [TearDown]
+        public void TearDown()
+        {
+            for (int i = 0; i < Keys.Length; i++)
+            {
+                if (savedExists[i])
+                {
+                    PlayerPrefs.SetInt(Keys[i], savedValues[i]);
+                }
+                else
+                {
+                    PlayerPrefs.DeleteKey(Keys[i]);
+                }
+            }
+
+            PlayerPrefs.Save();
+            GraphicsEffectsSettings.ResetLoadedStateForTests();
+        }
+
+        [Test]
+        public void Defaults_AllEffectsEnabledWithoutPrefs()
+        {
+            Assert.That(
+                GraphicsEffectsSettings.DepthOfFieldEnabled,
+                Is.True);
+            Assert.That(
+                GraphicsEffectsSettings.IntoxicationLensFxEnabled,
+                Is.True);
+            Assert.That(
+                GraphicsEffectsSettings.DitherEnabled,
+                Is.True);
+            Assert.That(
+                GraphicsEffectsSettings.ScanlinesEnabled,
+                Is.True);
+            Assert.That(
+                GraphicsEffectsSettings.RainOnLensEnabled,
+                Is.True);
+            Assert.That(
+                GraphicsEffectsSettings.AspectRatio43Enabled,
+                Is.False,
+                "The 4:3 pillarbox is the one opt-in effect.");
+            Assert.That(GraphicsEffectsSettings.Version, Is.Zero);
+        }
+
+        [Test]
+        public void Setter_BumpsVersionOnlyOnActualChange()
+        {
+            int initial = GraphicsEffectsSettings.Version;
+
+            GraphicsEffectsSettings.DitherEnabled = true;
+            Assert.That(
+                GraphicsEffectsSettings.Version,
+                Is.EqualTo(initial));
+
+            GraphicsEffectsSettings.DitherEnabled = false;
+            Assert.That(
+                GraphicsEffectsSettings.Version,
+                Is.EqualTo(initial + 1));
+            Assert.That(
+                GraphicsEffectsSettings.DitherEnabled,
+                Is.False);
+
+            GraphicsEffectsSettings.DitherEnabled = false;
+            Assert.That(
+                GraphicsEffectsSettings.Version,
+                Is.EqualTo(initial + 1));
+        }
+
+        [Test]
+        public void Setter_PersistsAcrossReload()
+        {
+            GraphicsEffectsSettings.ScanlinesEnabled = false;
+            GraphicsEffectsSettings.DepthOfFieldEnabled = false;
+            GraphicsEffectsSettings.AspectRatio43Enabled = true;
+
+            GraphicsEffectsSettings.ResetLoadedStateForTests();
+
+            Assert.That(
+                GraphicsEffectsSettings.ScanlinesEnabled,
+                Is.False);
+            Assert.That(
+                GraphicsEffectsSettings.DepthOfFieldEnabled,
+                Is.False);
+            Assert.That(
+                GraphicsEffectsSettings.DitherEnabled,
+                Is.True);
+            Assert.That(
+                GraphicsEffectsSettings.AspectRatio43Enabled,
+                Is.True);
+        }
+    }
+}

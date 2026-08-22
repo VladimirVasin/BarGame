@@ -40,6 +40,7 @@ namespace BarPromenade
         private PlayerCameraFollow cameraFollow;
         private IntoxicationHudView hud;
         private BalanceCheckView balanceView;
+        private IntoxicationLensVolumeDriver lensDriver;
         private BalanceChallengeSettings challengeSettings;
         private BalanceChallengeModel challengeModel;
         private BalanceState balanceState;
@@ -91,6 +92,13 @@ namespace BarPromenade
             cameraFollow = follow;
             hud = intoxicationHud;
             balanceView = view;
+            lensDriver =
+                GetComponent<IntoxicationLensVolumeDriver>();
+            if (lensDriver == null)
+            {
+                lensDriver = gameObject
+                    .AddComponent<IntoxicationLensVolumeDriver>();
+            }
             presentationLevel =
                 GameSessionState.IntoxicationLevel;
             currentProfile = IntoxicationStageRules.Evaluate(
@@ -808,6 +816,9 @@ namespace BarPromenade
             IntoxicationRenderState.Set(
                 currentProfile,
                 Time.unscaledTime);
+            lensDriver?.Apply(
+                currentProfile.ChromaticAberration,
+                currentProfile.LensDistortion);
         }
 
         private float GetPresentationBalanceLean()
@@ -887,6 +898,7 @@ namespace BarPromenade
             cameraFollow?.SetIntoxication(0f);
             cameraFollow?.SetBalanceReaction(0f, 0f, 0f);
             IntoxicationRenderState.Clear();
+            lensDriver?.Clear();
             initialized = false;
         }
 

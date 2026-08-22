@@ -2393,3 +2393,54 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   than by somebody remembering to add it. Nothing below the collar is ever
   hidden: the body is what tells the player he is sitting at the board, and the
   camera is moved out of the skull instead.
+- **Accepted — player graphics toggles are one static service over
+  `PlayerPrefs`, the project's first persistence:** `GraphicsEffectsSettings`
+  holds five booleans (`graphics.dof`, `graphics.intoxication_fx`,
+  `graphics.dither`, `graphics.scanlines`, `graphics.rain_lens`, all
+  default-on), loaded lazily and saved on change, with a `Version` counter
+  consumers poll instead of subscribing to events — no lifecycle hazards, the
+  same polling idiom the weather controller already uses. Effect consumers gate
+  themselves: the PS1 composite zeroes its dither/scanline/rain floats per
+  frame, the intoxication lens driver forces zero per `Apply`, and
+  `DepthOfFieldSettingsBinder` flips `active` only on volume-profile clones or
+  runtime-built profiles, never on the authored `.asset` at play time.
+- **Accepted — depth of field runs in two tiers around the PS1 crush:** the
+  always-on tier is Gaussian in every scene grade (City `start 8 / end 28 /
+  radius 1.5` — the band must sit inside the `48 m` far clip where exp² fog
+  `0.070` has not yet flattened depth; Bar `6/18/1.2`, Home `5/14/1.0`,
+  Stairwell `5/16/1.2`, Supermarket `7/20/1.0`), and the modal tier is one
+  shared `CinematicDepthOfField` Bokeh volume at priority `10` (above scene
+  grades `4-5`) whose weight blends `0.35 s` in / `0.45 s` out; modal
+  controllers call `Begin`/`SetFocusDistance`/`End` around their existing
+  `SetFixedPose` trios. Because URP clamps the Gaussian radius at `1.5` render
+  pixels, the far blur is deliberately subtle after the `640x360` downsample;
+  the documented fallback if it reads as invisible is Bokeh in the city grade
+  (aperture ~10), not a render-scale change, which would soften the whole PS1
+  look. Transparent depth-less surfaces (river water, glass, particles) blur by
+  the opaque depth behind them — accepted at this subtlety.
+- **Accepted — the PS1 composite carries the new film layers itself:** Bayer
+  4x4 dithering perturbs the perceptual value by at most half an RGB555 step
+  before quantization, indexed by internal-pixel coordinates so the checker is
+  chunky-pixel-locked; the scanline mask darkens the leading third of each
+  internal row on the upscale pass (a step, not a cosine — a symmetric cosine
+  cancels at exactly 2x vertical scale, the 720p case); and rain-on-lens is a
+  UV offset applied to `warpedUv` before the 4-tap average (two hashed droplet
+  cell layers plus a crawling streak layer, fed by `RainLensRenderState`, which
+  `CityWeatherController` ramps over `2.5 s` and shelter dries). Rain time uses
+  its own `_Ps1RainTime` (unscaled) rather than `_IntoxicationTime`, which is
+  only fed while a status controller lives. Intoxication additionally drives
+  URP `ChromaticAberration` (`0 → 0.45`) and `LensDistortion` (`0 → -0.14`,
+  small and negative so the pinched rim stays under what the point-sample crop
+  hides) through `IntoxicationLensVolumeDriver` at volume priority `8`.
+- **Accepted — the opt-in 4:3 mode is a composite crop, not a camera change:**
+  when `graphics.aspect_4_3` is on (default off), the feature computes the
+  internal resolution for the centered 4:3 window (`480x360` from a 16:9
+  output), pass 0 reads only that window (`sourceUv.x = 0.5 + (uv.x - 0.5) *
+  _Ps1AspectFraction`) and pass 1 pillarboxes with pure black bars. Because
+  Unity FOV is vertical, the central crop of the widescreen frame IS the exact
+  image of a 4:3 camera at the same vertical FOV — no FOV compensation, no
+  `Camera.rect` cleanup, and the crop/pillarbox pair cancels to an identity
+  mapping over the visible region (flat-tone byte values keep the exact RGB555
+  blend at unchanged screen positions, which the pillarbox PlayMode test
+  exploits). On displays at or narrower than 4:3 the fraction clamps to 1. The
+  IMGUI retro overlay deliberately stays full-screen above the bars.

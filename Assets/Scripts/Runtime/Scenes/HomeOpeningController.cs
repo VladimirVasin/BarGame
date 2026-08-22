@@ -1,4 +1,5 @@
 ﻿using System;
+using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -373,6 +374,16 @@ namespace BarPromenade
                 rotation,
                 fieldOfView);
             appliedCameraPose = pose;
+            if (pose == OpeningCameraPose.Clock)
+            {
+                // The alarm clock macro: the dial sharp, the dark
+                // flat behind it a wash.
+                CinematicDepthOfField.Begin(
+                    Vector3.Distance(
+                        position,
+                        home.AlarmClock.transform.position),
+                    4f);
+            }
         }
 
         private void BeginWakeCameraTransition()
@@ -442,6 +453,11 @@ namespace BarPromenade
                     wakeCameraStartFieldOfView,
                     wakeCameraTargetFieldOfView,
                     blend));
+            CinematicDepthOfField.SetFocusDistance(
+                Vector3.Distance(
+                    position,
+                    home.Bed.transform.position +
+                    Vector3.up * 0.4f));
         }
 
         private void ApplyWakeCameraSettle()
@@ -475,6 +491,12 @@ namespace BarPromenade
                 blend < 1f
                     ? OpeningCameraPose.Sleeper
                     : OpeningCameraPose.None;
+            if (blend >= 1f)
+            {
+                // The gameplay shot has taken over; the wake close-up
+                // is finished.
+                CinematicDepthOfField.End();
+            }
         }
 
         private void ResolveCameraPose(
@@ -534,6 +556,7 @@ namespace BarPromenade
 
             home.AlarmClock.StopRinging();
             home.AlarmClock.FollowSessionTime();
+            CinematicDepthOfField.End();
             modalLock.Restore();
             home.FixedCamera.ReapplyActiveShot();
             restored = true;
@@ -554,6 +577,7 @@ namespace BarPromenade
             home?.AlarmClock?.StopRinging();
             home?.AnimatedInteraction?
                 .CancelActiveInteraction();
+            CinematicDepthOfField.End();
             modalLock.Restore();
             if (home != null &&
                 home.FixedCamera != null &&

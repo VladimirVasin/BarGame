@@ -1,4 +1,5 @@
 using System;
+using BarPromenade.Rendering;
 using UnityEngine;
 
 namespace BarPromenade
@@ -869,6 +870,9 @@ namespace BarPromenade
             cameraBlendStartFieldOfView = camera.fieldOfView;
             cameraBlendElapsed = 0f;
             cameraPhase = CameraPhase.Entering;
+            // The cabin interior stays sharp at arm's length while the
+            // passing city melts; mild aperture, the ride is long.
+            CinematicDepthOfField.Begin(1.4f, 8f);
         }
 
         private void BeginExitCameraBlend()
@@ -879,6 +883,7 @@ namespace BarPromenade
             cameraBlendStartFieldOfView = camera.fieldOfView;
             cameraBlendElapsed = 0f;
             cameraPhase = CameraPhase.Exiting;
+            CinematicDepthOfField.End();
         }
 
         private void CaptureCameraOwnership()
@@ -990,6 +995,7 @@ namespace BarPromenade
 
         private void RestoreCameraOwnership()
         {
+            CinematicDepthOfField.End();
             if (!cameraOwned || cameraFollow == null)
             {
                 return;

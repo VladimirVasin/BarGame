@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -35,6 +36,7 @@ namespace BarPromenade
         private Quaternion cameraStartRotation;
         private float cameraStartFieldOfView;
         private Vector3 cameraControlPosition;
+        private Vector3 depthOfFieldFocusPoint;
         private Vector3 cameraTargetPosition;
         private Quaternion cameraTargetRotation;
         private float cameraTargetFieldOfView;
@@ -350,6 +352,15 @@ namespace BarPromenade
                     0.48f) +
                 home.transform.up * 0.20f +
                 cameraStartRotation * Vector3.right * 0.07f;
+
+            // The shelves at arm's length hold focus; the kitchen
+            // behind the door melts away.
+            depthOfFieldFocusPoint = lookAt;
+            CinematicDepthOfField.Begin(
+                Vector3.Distance(
+                    cameraStartPosition,
+                    depthOfFieldFocusPoint),
+                4f);
         }
 
         private void ApplyCurrentPresentation()
@@ -409,6 +420,10 @@ namespace BarPromenade
                     cameraStartFieldOfView,
                     cameraTargetFieldOfView,
                     amount));
+            CinematicDepthOfField.SetFocusDistance(
+                Vector3.Distance(
+                    position,
+                    depthOfFieldFocusPoint));
         }
 
         private void CapturePlayerVisualState()
@@ -477,6 +492,7 @@ namespace BarPromenade
 
         private void RestoreOwnedState()
         {
+            CinematicDepthOfField.End();
             itemInspection?.SetBrowsingEnabled(false);
             itemInspection?.CancelAndRestore();
             view?.ResetPresentation();

@@ -1,5 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
+using BarPromenade.Rendering;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.TestTools;
@@ -22,10 +23,14 @@ namespace BarPromenade.Tests.PlayMode
         private Renderer hiddenSceneMarker;
         private bool[] initialRendererStates;
         private bool initialContactShadowState;
+        private bool previousDepthOfFieldEnabled;
 
         [UnitySetUp]
         public IEnumerator SetUp()
         {
+            previousDepthOfFieldEnabled =
+                GraphicsEffectsSettings.DepthOfFieldEnabled;
+            GraphicsEffectsSettings.DepthOfFieldEnabled = true;
             CloseExistingModalOwners();
             ResetSession();
 
@@ -95,6 +100,8 @@ namespace BarPromenade.Tests.PlayMode
         public IEnumerator TearDown()
         {
             controller?.Close();
+            GraphicsEffectsSettings.DepthOfFieldEnabled =
+                previousDepthOfFieldEnabled;
             DestroyObject(uiObject);
             if (player.GameObject != null)
             {
@@ -122,6 +129,10 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(controller.Open(player.Interactor), Is.True);
 
             Assert.That(controller.IsOpen, Is.True);
+            Assert.That(
+                CinematicDepthOfField.IsActive,
+                Is.True,
+                "The counter shot must engage the cinematic bokeh.");
             Assert.That(
                 controller.Phase,
                 Is.EqualTo(BarDrinkServicePhase.CameraApproach));
@@ -174,6 +185,10 @@ namespace BarPromenade.Tests.PlayMode
                 BarDrinkServiceTimeline.CameraReturnDurationSeconds);
 
             AssertPhysicalPresentationClosed();
+            Assert.That(
+                CinematicDepthOfField.IsActive,
+                Is.False,
+                "Closing the counter shot must release the bokeh.");
             yield return null;
         }
 

@@ -88,6 +88,9 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator IncreasingLevel_AppliesStrongerPresentation()
         {
+            bool previousLensFxEnabled =
+                GraphicsEffectsSettings.IntoxicationLensFxEnabled;
+            GraphicsEffectsSettings.IntoxicationLensFxEnabled = true;
             GameSessionState.UpdateDrinkingProgress(
                 20,
                 DrinkId.LightBeer,
@@ -128,6 +131,29 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 IntoxicationRenderState.Current.GhostPixels,
                 Is.EqualTo(3f).Within(0.001f));
+
+            IntoxicationLensVolumeDriver lensDriver =
+                uiObject
+                    .GetComponent<IntoxicationLensVolumeDriver>();
+            Assert.That(lensDriver, Is.Not.Null);
+            Assert.That(
+                lensDriver.AppliedChromaticAberration,
+                Is.EqualTo(0.45f).Within(0.001f));
+            Assert.That(
+                lensDriver.AppliedLensDistortion,
+                Is.EqualTo(-0.14f).Within(0.001f));
+
+            GraphicsEffectsSettings.IntoxicationLensFxEnabled =
+                false;
+            yield return null;
+            Assert.That(
+                lensDriver.AppliedChromaticAberration,
+                Is.Zero,
+                "Disabling the drunk lens toggle must collapse the " +
+                "aberration immediately.");
+            Assert.That(lensDriver.AppliedLensDistortion, Is.Zero);
+            GraphicsEffectsSettings.IntoxicationLensFxEnabled =
+                previousLensFxEnabled;
         }
 
         [UnityTest]

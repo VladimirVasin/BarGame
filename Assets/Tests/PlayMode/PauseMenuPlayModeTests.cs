@@ -159,6 +159,75 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator OptionsPage_TogglesAndPersistsGraphicsFlag()
+        {
+            bool previousDither =
+                GraphicsEffectsSettings.DitherEnabled;
+            bool hadKey = PlayerPrefs.HasKey("graphics.dither");
+            int previousKeyValue = hadKey
+                ? PlayerPrefs.GetInt("graphics.dither")
+                : 0;
+            try
+            {
+                GraphicsEffectsSettings.DitherEnabled = true;
+                Assert.That(menu.Open(), Is.True);
+
+                menu.MoveSelection(1);
+                Assert.That(
+                    menu.SelectedOption,
+                    Is.EqualTo(PauseMenuOption.Options));
+                menu.ConfirmSelection();
+                Assert.That(
+                    menu.Page,
+                    Is.EqualTo(PauseMenuPage.Options));
+
+                menu.MoveSelection(1);
+                menu.MoveSelection(1);
+                Assert.That(
+                    menu.SelectedOptionsRow,
+                    Is.EqualTo(PauseMenuOptionsRow.Dither));
+                menu.ConfirmSelection();
+
+                Assert.That(
+                    GraphicsEffectsSettings.DitherEnabled,
+                    Is.False,
+                    "Confirming a toggle row must flip the flag.");
+                Assert.That(
+                    PlayerPrefs.GetInt("graphics.dither", 1),
+                    Is.Zero,
+                    "The toggle must persist to PlayerPrefs.");
+                Assert.That(
+                    menu.Page,
+                    Is.EqualTo(PauseMenuPage.Options));
+
+                Assert.That(menu.Cancel(), Is.True);
+                Assert.That(
+                    menu.Page,
+                    Is.EqualTo(PauseMenuPage.Main));
+                Assert.That(menu.Cancel(), Is.True);
+                yield return null;
+                Assert.That(menu.IsOpen, Is.False);
+            }
+            finally
+            {
+                GraphicsEffectsSettings.DitherEnabled =
+                    previousDither;
+                if (hadKey)
+                {
+                    PlayerPrefs.SetInt(
+                        "graphics.dither",
+                        previousKeyValue);
+                }
+                else
+                {
+                    PlayerPrefs.DeleteKey("graphics.dither");
+                }
+
+                PlayerPrefs.Save();
+            }
+        }
+
+        [UnityTest]
         public IEnumerator ExistingModalOwner_BlocksPauseMenu()
         {
             var otherLock = new BarMinigameModalLock();

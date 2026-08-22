@@ -112,6 +112,17 @@ namespace BarPromenade.Editor
             grain.intensity.Override(0.015f);
             grain.response.Override(0.80f);
 
+            // Mirrors RuntimeSceneSetup.CreateCityNoirRuntimeProfile:
+            // the blur band must sit inside the 48 m far clip, where
+            // the exponential-squared fog has not yet flattened depth.
+            DepthOfField depthOfField = GetOrAdd<DepthOfField>(profile);
+            depthOfField.active = true;
+            depthOfField.mode.Override(DepthOfFieldMode.Gaussian);
+            depthOfField.gaussianStart.Override(8f);
+            depthOfField.gaussianEnd.Override(28f);
+            depthOfField.gaussianMaxRadius.Override(1.5f);
+            depthOfField.highQualitySampling.Override(false);
+
             return profile;
         }
 

@@ -6,6 +6,53 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-22 — Atmosphere pass: DOF, drunk lens, PS1 film layers, Options
+
+- **Depth of field in two tiers.** Every scene grade (city noir asset +
+  runtime mirror, Bar/Home/Stairwell, a new minimal Supermarket volume)
+  gained a subtle Gaussian far blur via the shared
+  `RuntimeSceneSetup.AddGaussianDepthOfField` helper (city `8-28 m`,
+  radius `1.5` — the band that still reads under the exp² fog and the
+  `640x360` crush). Modal close-ups (bar counter, fridge + item
+  inspection, grave work, park boards, bus seat, bar arrival, wake-up
+  clock) share one `CinematicDepthOfField` Bokeh volume at priority 10
+  with per-frame focus tracking and weight blending.
+- **Intoxication now bends the lens.** `IntoxicationProfile` grew
+  `ChromaticAberration` (`0→0.45`) and `LensDistortion` (`0→-0.14`)
+  stage curves; `IntoxicationLensVolumeDriver` (priority-8 volume owned
+  by the status controller's UI object) applies them each presentation
+  update.
+- **The PS1 composite grew three film layers**: Bayer 4x4 dithering
+  before RGB555 quantization (half-step amplitude, internal-pixel
+  locked), a step scanline mask on the point upscale (a cosine cancels
+  at exactly 2x — the 720p case), and procedural rain-on-lens droplets
+  + streaks as a UV offset before the 4-tap average, fed by the new
+  `RainLensRenderState` from `CityWeatherController` (2.5 s ramp,
+  bus shelter dries the lens).
+- **The pause menu gained an Options page** (Resume/Options/Restart/
+  Quit): six graphics toggles (DOF, drunk lens, dither, scanlines,
+  rain, 4:3 aspect) drawn as retro checkboxes on the row's right edge
+  (painted after the row button so the button background cannot cover
+  them), ru/en localization, instant effect and persistence through
+  the new `GraphicsEffectsSettings` static service over `PlayerPrefs`
+  — the project's first settings persistence.
+- **Opt-in 4:3 mode (default off)**: the composite reads the centered
+  4:3 window of the widescreen frame (internal `480x360`, the exact
+  view of a 4:3 camera at the same vertical FOV) and pillarboxes the
+  upscale with pure black bars; the crop/pillarbox pair is an identity
+  mapping over the visible region, verified by a pillarbox PlayMode
+  test that keeps the exact flat-tone RGB555 contract in place.
+- Verification: focused EditMode selection over the five touched
+  classes (`GraphicsEffectsSettings`, `PauseMenuModel`,
+  `Ps1Presentation`, `IntoxicationRules`, `LocalizationCatalog`) —
+  49/49 green; focused PlayMode `Ps1CompositeRenderGraphPlayModeTests`
+  (toggles forced off keep the exact-tone contract, a new test proves
+  dither splits a flat tone and scanlines darken alternate rows);
+  `NightPresentationAssetSetup.Run` regenerated
+  `CityNoirVolumeProfile.asset` headlessly. Not run: the remaining
+  PlayMode fixtures touched only additively (bar shop, home
+  atmosphere, balcony, intoxication status, pause menu, city night).
+
 ## 2026-08-22 — The mouth opened (playtest fixes)
 
 - First playtest of the coast surfaced two honest holes at the river

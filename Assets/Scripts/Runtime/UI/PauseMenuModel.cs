@@ -5,15 +5,29 @@ namespace BarPromenade
     public enum PauseMenuOption
     {
         Resume = 0,
-        Restart = 1,
-        Quit = 2,
-        Count = 3
+        Options = 1,
+        Restart = 2,
+        Quit = 3,
+        Count = 4
     }
 
     public enum PauseMenuPage
     {
         Main = 0,
-        Confirmation = 1
+        Confirmation = 1,
+        Options = 2
+    }
+
+    public enum PauseMenuOptionsRow
+    {
+        DepthOfField = 0,
+        IntoxicationFx = 1,
+        Dither = 2,
+        Scanlines = 3,
+        RainOnLens = 4,
+        AspectRatio43 = 5,
+        Back = 6,
+        Count = 7
     }
 
     public enum PauseMenuAction
@@ -21,7 +35,8 @@ namespace BarPromenade
         None = 0,
         Resume = 1,
         Restart = 2,
-        Quit = 3
+        Quit = 3,
+        ToggleGraphicsOption = 4
     }
 
     public sealed class PauseMenuModel
@@ -30,6 +45,11 @@ namespace BarPromenade
         public PauseMenuOption SelectedOption { get; private set; }
         public PauseMenuOption ConfirmationTarget { get; private set; }
         public bool ConfirmationYesSelected { get; private set; }
+        public PauseMenuOptionsRow SelectedOptionsRow
+        {
+            get;
+            private set;
+        }
 
         public void Open()
         {
@@ -37,6 +57,7 @@ namespace BarPromenade
             SelectedOption = PauseMenuOption.Resume;
             ConfirmationTarget = PauseMenuOption.Resume;
             ConfirmationYesSelected = false;
+            SelectedOptionsRow = PauseMenuOptionsRow.DepthOfField;
         }
 
         public bool MoveSelection(int delta)
@@ -53,6 +74,21 @@ namespace BarPromenade
                 return true;
             }
 
+            if (Page == PauseMenuPage.Options)
+            {
+                int rowCount = (int)PauseMenuOptionsRow.Count;
+                int nextRow =
+                    ((int)SelectedOptionsRow + Math.Sign(delta)) %
+                    rowCount;
+                if (nextRow < 0)
+                {
+                    nextRow += rowCount;
+                }
+
+                SelectedOptionsRow = (PauseMenuOptionsRow)nextRow;
+                return true;
+            }
+
             int count = (int)PauseMenuOption.Count;
             int next =
                 ((int)SelectedOption + Math.Sign(delta)) % count;
@@ -62,6 +98,20 @@ namespace BarPromenade
             }
 
             SelectedOption = (PauseMenuOption)next;
+            return true;
+        }
+
+        public bool SelectOptionsRow(PauseMenuOptionsRow row)
+        {
+            if (Page != PauseMenuPage.Options ||
+                row < PauseMenuOptionsRow.DepthOfField ||
+                row >= PauseMenuOptionsRow.Count ||
+                SelectedOptionsRow == row)
+            {
+                return false;
+            }
+
+            SelectedOptionsRow = row;
             return true;
         }
 
@@ -106,10 +156,26 @@ namespace BarPromenade
                     : PauseMenuAction.Quit;
             }
 
+            if (Page == PauseMenuPage.Options)
+            {
+                if (SelectedOptionsRow == PauseMenuOptionsRow.Back)
+                {
+                    Page = PauseMenuPage.Main;
+                    return PauseMenuAction.None;
+                }
+
+                return PauseMenuAction.ToggleGraphicsOption;
+            }
+
             switch (SelectedOption)
             {
                 case PauseMenuOption.Resume:
                     return PauseMenuAction.Resume;
+                case PauseMenuOption.Options:
+                    Page = PauseMenuPage.Options;
+                    SelectedOptionsRow =
+                        PauseMenuOptionsRow.DepthOfField;
+                    return PauseMenuAction.None;
                 case PauseMenuOption.Restart:
                 case PauseMenuOption.Quit:
                     ConfirmationTarget = SelectedOption;
@@ -128,6 +194,12 @@ namespace BarPromenade
             {
                 Page = PauseMenuPage.Main;
                 ConfirmationYesSelected = false;
+                return PauseMenuAction.None;
+            }
+
+            if (Page == PauseMenuPage.Options)
+            {
+                Page = PauseMenuPage.Main;
                 return PauseMenuAction.None;
             }
 

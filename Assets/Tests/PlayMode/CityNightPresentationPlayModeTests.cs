@@ -71,14 +71,26 @@ namespace BarPromenade.Tests.PlayMode
             AssertPlayerShadow(city.Player);
             AssertCityDecorations(city.World, city.Layout);
 
-            Volume volume =
-                UnityEngine.Object.FindAnyObjectByType<Volume>();
+            // The city scene now spawns extra runtime volumes (the
+            // cinematic depth-of-field owner, the intoxication lens),
+            // so the noir grade must be located by its authored
+            // profile instead of by any-volume lookup.
+            Volume volume = null;
+            Volume[] volumes =
+                UnityEngine.Object.FindObjectsByType<Volume>();
+            for (int index = 0; index < volumes.Length; index++)
+            {
+                if (volumes[index].isGlobal &&
+                    volumes[index].sharedProfile != null &&
+                    volumes[index].sharedProfile.name ==
+                    "CityNoirVolumeProfile")
+                {
+                    volume = volumes[index];
+                    break;
+                }
+            }
+
             Assert.That(volume, Is.Not.Null);
-            Assert.That(volume.isGlobal, Is.True);
-            Assert.That(volume.sharedProfile, Is.Not.Null);
-            Assert.That(
-                volume.sharedProfile.name,
-                Is.EqualTo("CityNoirVolumeProfile"));
             Assert.That(
                 volume.sharedProfile.TryGet(out Bloom bloom),
                 Is.True);
@@ -105,6 +117,26 @@ namespace BarPromenade.Tests.PlayMode
                 volume.sharedProfile.TryGet(out FilmGrain grain),
                 Is.True);
             Assert.That(grain.intensity.value, Is.EqualTo(0.015f));
+            Assert.That(
+                volume.profile.TryGet(
+                    out DepthOfField depthOfField),
+                Is.True,
+                "The city grade must carry the far-blur band on its " +
+                "runtime profile clone.");
+            Assert.That(
+                depthOfField.mode.value,
+                Is.EqualTo(DepthOfFieldMode.Gaussian));
+            Assert.That(
+                depthOfField.gaussianStart.value,
+                Is.EqualTo(8f));
+            Assert.That(
+                depthOfField.gaussianEnd.value,
+                Is.EqualTo(28f));
+            Assert.That(
+                volume.GetComponent<
+                    BarPromenade.Rendering
+                        .DepthOfFieldSettingsBinder>(),
+                Is.Not.Null);
 
             CityNightWorldResult night = city.Night;
             Assert.That(night, Is.Not.Null);

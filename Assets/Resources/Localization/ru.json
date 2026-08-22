@@ -45,6 +45,38 @@
       "value": "НЕТ"
     },
     {
+      "key": "pause.options",
+      "value": "НАСТРОЙКИ"
+    },
+    {
+      "key": "options.dof",
+      "value": "ГЛУБИНА РЕЗКОСТИ"
+    },
+    {
+      "key": "options.intoxication_fx",
+      "value": "ЭФФЕКТЫ ОПЬЯНЕНИЯ"
+    },
+    {
+      "key": "options.dither",
+      "value": "ДИЗЕРИНГ"
+    },
+    {
+      "key": "options.scanlines",
+      "value": "СКАНЛАЙНЫ"
+    },
+    {
+      "key": "options.rain_lens",
+      "value": "КАПЛИ НА ОБЪЕКТИВЕ"
+    },
+    {
+      "key": "options.aspect_4_3",
+      "value": "ФОРМАТ 4:3"
+    },
+    {
+      "key": "options.back",
+      "value": "НАЗАД"
+    },
+    {
       "key": "common.yes",
       "value": "Да"
     },

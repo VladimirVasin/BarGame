@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.Rendering;
@@ -227,6 +228,16 @@ namespace BarPromenade
                 HomeRefrigeratorItemInspectionPhase.FlyingOut;
             timeline.Advance(unscaledDeltaTime);
             ApplyInspectionFrame(timeline.CurrentFrame);
+            if (presentationPivot != null && targetCamera != null)
+            {
+                // While an item flies to the eye, it is the focus
+                // subject instead of the shelf behind it.
+                CinematicDepthOfField.SetFocusDistance(
+                    Vector3.Distance(
+                        targetCamera.transform.position,
+                        presentationPivot.position));
+            }
+
             if (wasReturning && timeline.IsBrowsing)
             {
                 RestoreActiveItem();

@@ -72,6 +72,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 profile.QuantizationStrength,
                 Is.EqualTo(0.35f).Within(0.001f));
+            Assert.That(
+                profile.DitherStrength,
+                Is.EqualTo(0.6f).Within(0.001f));
+            Assert.That(
+                profile.ScanlineIntensity,
+                Is.EqualTo(0.22f).Within(0.001f));
+            Assert.That(
+                profile.RainLensStrength,
+                Is.EqualTo(0.8f).Within(0.001f));
             Assert.That(material, Is.Not.Null);
             Assert.That(material.shader, Is.Not.Null);
             Assert.That(material.shader.name,

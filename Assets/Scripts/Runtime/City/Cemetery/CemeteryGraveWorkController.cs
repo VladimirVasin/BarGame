@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -1347,6 +1348,20 @@ namespace BarPromenade
             cameraBlendFieldOfView = workCamera.fieldOfView;
             cameraBlendElapsed = 0f;
             cameraPhase = target;
+            if (target == CemeteryGraveWorkPhase.Leaving)
+            {
+                CinematicDepthOfField.End();
+            }
+            else
+            {
+                // The grave itself holds focus; the rest of the
+                // cemetery falls away into bokeh.
+                CinematicDepthOfField.Begin(
+                    Vector3.Distance(
+                        cameraBlendPosition,
+                        GetCameraInterest()),
+                    5.6f);
+            }
         }
 
         private void CaptureCameraOwnership()
@@ -1428,6 +1443,13 @@ namespace BarPromenade
                         cameraBlendFieldOfView,
                         workFieldOfView,
                         smooth));
+                CinematicDepthOfField.SetFocusDistance(
+                    Vector3.Distance(
+                        Vector3.Lerp(
+                            cameraBlendPosition,
+                            workPosition,
+                            smooth),
+                        GetCameraInterest()));
                 if (amount >= 1f)
                 {
                     cameraPhase = CemeteryGraveWorkPhase.Working;
@@ -1440,6 +1462,10 @@ namespace BarPromenade
                 workPosition,
                 workRotation,
                 workFieldOfView);
+            CinematicDepthOfField.SetFocusDistance(
+                Vector3.Distance(
+                    workPosition,
+                    GetCameraInterest()));
         }
 
         /// <summary>
@@ -1507,6 +1533,7 @@ namespace BarPromenade
 
         private void RestoreCameraOwnership()
         {
+            CinematicDepthOfField.End();
             if (!cameraOwned || cameraFollow == null)
             {
                 return;
