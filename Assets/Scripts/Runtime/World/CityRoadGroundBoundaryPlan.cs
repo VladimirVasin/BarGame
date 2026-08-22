@@ -412,6 +412,21 @@ namespace BarPromenade
                 return false;
             }
 
+            // The waterfront sand ramps down from its boundary street
+            // in plain sight, exactly like the mountain belt's open
+            // ground: walling 300 m of it behind one composition
+            // anchor left every block that faces the sea (the drying
+            // yard's among them) staring at an unexplained invisible
+            // band. From the street every level-safe metre of sand is
+            // an entrance; the shared height classifier still shuts
+            // each genuinely unsafe piece, and real drops still
+            // become protected rails below.
+            if (surface.Kind == CitySurfaceKind.Beach &&
+                layout.GetPathKind(edge) == CityPathKind.Street)
+            {
+                return false;
+            }
+
             return surface.Kind == CitySurfaceKind.Beach ||
                    surface.Kind == CitySurfaceKind.CemeteryGround ||
                    surface.Kind == CitySurfaceKind.OpenGround;

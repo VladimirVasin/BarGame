@@ -891,8 +891,10 @@ namespace BarPromenade.Tests
         private static bool RequiresAuthoredOpenAreaAccess(
             CitySurfaceDescriptor surface)
         {
-            return surface.Kind == CitySurfaceKind.Beach ||
-                   surface.Kind == CitySurfaceKind.CemeteryGround ||
+            // Beach frontage opened along its whole street boundary
+            // (the mountain belt's rule): safe beach spans no longer
+            // need an authored access behind them.
+            return surface.Kind == CitySurfaceKind.CemeteryGround ||
                    (surface.Kind == CitySurfaceKind.OpenGround &&
                     !CityMountainBoundaryDefinition.IsMountainFacingAreaId(
                         surface.AreaId));
