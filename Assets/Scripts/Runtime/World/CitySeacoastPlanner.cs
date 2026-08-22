@@ -8,8 +8,8 @@ namespace BarPromenade
     /// Plans the north seacoast — the place where the city runs out.
     /// One strip of sand, one strip of water, fog instead of a horizon,
     /// and three moods along it: the dead port west of the river mouth
-    /// (a concrete mol walking into the sea, a beacon still burning on
-    /// its head, a derrick crane nobody swings), the quiet granite
+    /// (a concrete mol walking into the sea, a derrick crane nobody
+    /// swings), the quiet granite
     /// esplanade east of the mouth with the municipal boat station
     /// that moved here from the drained lake — hut, hire sign, pier,
     /// slipway, hauled hulls and all — and the wild shore beyond it:
@@ -210,7 +210,7 @@ namespace BarPromenade
             AddBoats(parts, layout, frame, pierLateral, layout.Seed,
                 hasHut, reserved, access);
             Rect molRect = AddMol(
-                parts, lamps, layout, frame, reserved);
+                parts, layout, frame, reserved);
             AddMouthBanks(parts, layout, frame);
             AddDerrick(parts, layout, frame, molRect, reserved);
             AddPortRuins(parts, layout, frame, layout.Seed, reserved,
@@ -662,7 +662,6 @@ namespace BarPromenade
                 case CitySeacoastPartKind.MolDeck:
                 case CitySeacoastPartKind.MolParapet:
                 case CitySeacoastPartKind.MolStair:
-                case CitySeacoastPartKind.BeaconTower:
                 case CitySeacoastPartKind.DerrickCrane:
                 case CitySeacoastPartKind.PortRuin:
                     RequireZone(part, center, frame.WestZone, "west");
@@ -837,8 +836,8 @@ namespace BarPromenade
 
         /// <summary>
         /// Nothing solid stands across a deck a person walks: the
-        /// pier, the mol (short of its beacon pocket at the head) and
-        /// the footbridge. A wall the walkable mask cannot see is the
+        /// pier, the mol and the footbridge. A wall the walkable mask
+        /// cannot see is the
         /// invisible stop this precinct exists to refuse.
         /// </summary>
         private static void ValidateWalkwaysAreClear(
@@ -950,8 +949,7 @@ namespace BarPromenade
             }
 
             // The pier still carries the hand lamp somebody stood on
-            // its rail years ago; the mol head carries the beacon.
-            // One implies the other, both ways.
+            // its rail years ago. One implies the other, both ways.
             bool hasPier =
                 plan.GetCount(CitySeacoastPartKind.PierDeck) > 0;
             if (hasPier !=
@@ -959,15 +957,6 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "A pier carries exactly one head lamp.");
-            }
-
-            bool hasMol =
-                plan.GetCount(CitySeacoastPartKind.MolDeck) > 0;
-            if (hasMol !=
-                (plan.GetLampCount(CitySeacoastLampKind.Beacon) == 1))
-            {
-                throw new InvalidOperationException(
-                    "The mol and its beacon stand or fall together.");
             }
 
             int esplanadeLamps =
@@ -1936,7 +1925,6 @@ namespace BarPromenade
 
         private static Rect AddMol(
             ICollection<CitySeacoastPartDescriptor> parts,
-            ICollection<CitySeacoastLampDescriptor> lamps,
             CityLayout layout,
             in CitySeacoastFrame frame,
             ICollection<Rect> reserved)
@@ -2004,8 +1992,7 @@ namespace BarPromenade
             }
 
             // Parapets: both long edges full length, and across the
-            // head behind the beacon. The root end stays open to its
-            // own stair.
+            // head. The root end stays open to its own stair.
             float parapetCenterY = deckTop + MolParapetHeight * 0.5f;
             for (int side = 0; side < 2; side++)
             {
@@ -2070,8 +2057,6 @@ namespace BarPromenade
                         StairTread + 0.06f)));
             }
 
-            AddBeacon(parts, lamps, molX, headZ, deckTop);
-
             Rect molRect = Rect.MinMaxRect(
                 molX - MolWidth * 0.5f,
                 rootZ - stepCount * StairTread - 0.6f,
@@ -2079,69 +2064,6 @@ namespace BarPromenade
                 headZ);
             reserved.Add(Expand(molRect, 1.0f));
             return molRect;
-        }
-
-        private static void AddBeacon(
-            ICollection<CitySeacoastPartDescriptor> parts,
-            ICollection<CitySeacoastLampDescriptor> lamps,
-            float molX,
-            float headZ,
-            float deckTop)
-        {
-            float beaconZ = headZ - 1.0f;
-            parts.Add(Part(
-                "seacoast-beacon-pedestal",
-                CitySeacoastPartKind.BeaconTower,
-                CitySeacoastStyle.Concrete,
-                new Vector3(molX, deckTop + 0.225f, beaconZ),
-                Quaternion.identity,
-                new Vector3(1.35f, 0.45f, 1.35f)));
-            parts.Add(Part(
-                "seacoast-beacon-shaft",
-                CitySeacoastPartKind.BeaconTower,
-                CitySeacoastStyle.Concrete,
-                new Vector3(molX, deckTop + 1.75f, beaconZ),
-                Quaternion.identity,
-                new Vector3(0.95f, 2.6f, 0.95f)));
-            parts.Add(Part(
-                "seacoast-beacon-gallery",
-                CitySeacoastPartKind.BeaconTower,
-                CitySeacoastStyle.Concrete,
-                new Vector3(molX, deckTop + 3.225f, beaconZ),
-                Quaternion.identity,
-                new Vector3(1.30f, 0.35f, 1.30f)));
-            float galleryTop = deckTop + 3.40f;
-            for (int corner = 0; corner < 4; corner++)
-            {
-                float signX = (corner & 1) == 0 ? -1f : 1f;
-                float signZ = (corner & 2) == 0 ? -1f : 1f;
-                parts.Add(Part(
-                    $"seacoast-beacon-post-{corner}",
-                    CitySeacoastPartKind.BeaconTower,
-                    CitySeacoastStyle.Iron,
-                    new Vector3(
-                        molX + signX * 0.52f,
-                        galleryTop + 0.31f,
-                        beaconZ + signZ * 0.52f),
-                    Quaternion.identity,
-                    new Vector3(0.08f, 0.62f, 0.08f)));
-            }
-
-            parts.Add(Part(
-                "seacoast-beacon-roof",
-                CitySeacoastPartKind.BeaconTower,
-                CitySeacoastStyle.Iron,
-                new Vector3(molX, galleryTop + 0.68f, beaconZ),
-                Quaternion.identity,
-                new Vector3(0.95f, 0.13f, 0.95f)));
-
-            // The lens itself is the fixture the builder raises; this
-            // is the shelf it stands on.
-            lamps.Add(new CitySeacoastLampDescriptor(
-                "seacoast-lamp-beacon",
-                CitySeacoastLampKind.Beacon,
-                new Vector3(molX, galleryTop, beaconZ),
-                0f));
         }
 
         /// <summary>
@@ -3015,7 +2937,6 @@ namespace BarPromenade
                 case CitySeacoastPartKind.MolBlock:
                 case CitySeacoastPartKind.MolDeck:
                 case CitySeacoastPartKind.MolParapet:
-                case CitySeacoastPartKind.BeaconTower:
                 // The derrick's jib froze where its last load left
                 // it: out over the water, metres above it.
                 case CitySeacoastPartKind.DerrickCrane:

@@ -123,10 +123,10 @@ namespace BarPromenade
         private static readonly Color BoatHut =
             new Color32(163, 134, 92, 255);
         // The seacoast landmarks: pale concrete for the mol, the
-        // beacon's navigation white, rust for the stranded barge.
+        // lighthouse's navigation white, rust for the stranded barge.
         private static readonly Color MolConcrete =
             new Color32(132, 133, 126, 255);
-        private static readonly Color BeaconLight =
+        private static readonly Color LighthouseLight =
             new Color32(242, 230, 199, 255);
         private static readonly Color BargeRust =
             new Color32(112, 66, 47, 255);
@@ -1460,12 +1460,14 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The seacoast's five anchors, straight from the coast plan:
-        /// the mol with its beacon dot, the boat station's sea pier
-        /// and hut, the mouth footbridge, the sea wall line, the
-        /// rotten pile row and the stranded barge. Projected part
-        /// unions over an ink backing, so the map and the world
-        /// cannot disagree.
+        /// The seacoast's anchors, straight from the coast plan: the
+        /// mol, the boat station's sea pier and hut, the mouth
+        /// footbridge, the sea wall line, the rotten pile row and the
+        /// stranded barge. Projected part unions over an ink backing,
+        /// so the map and the world cannot disagree. The lighthouse
+        /// island stands past the chart's north edge, so its dot pins
+        /// to the border at the island's true easting — off the map,
+        /// the way it is off the shore.
         /// </summary>
         private void DrawSeacoastLandmarks(MapProjection projection)
         {
@@ -1504,24 +1506,20 @@ namespace BarPromenade
                 DrawSolidRect(mol, MolConcrete);
             }
 
-            for (int index = 0; index < coast.Lamps.Count; index++)
+            if (CityLighthouseIslandPlanner.TryResolveLanternPosition(
+                    coast,
+                    out Vector3 lantern))
             {
-                CitySeacoastLampDescriptor lamp = coast.Lamps[index];
-                if (lamp.Kind != CitySeacoastLampKind.Beacon)
-                {
-                    continue;
-                }
-
-                Vector2 beacon = projection.WorldToScreen(new Vector3(
-                    lamp.GroundPosition.x,
+                Vector2 island = projection.WorldToScreen(new Vector3(
+                    lantern.x,
                     0f,
-                    lamp.GroundPosition.z));
+                    lantern.z));
                 DrawSolidRect(
-                    new Rect(beacon.x - 2f, beacon.y - 2f, 4f, 4f),
+                    new Rect(island.x - 2f, island.y - 2f, 4f, 4f),
                     RetroUiTheme.Ink);
                 DrawSolidRect(
-                    new Rect(beacon.x - 1f, beacon.y - 1f, 2f, 2f),
-                    BeaconLight);
+                    new Rect(island.x - 1f, island.y - 1f, 2f, 2f),
+                    LighthouseLight);
             }
 
             for (int index = 0; index < coast.Parts.Count; index++)

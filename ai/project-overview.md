@@ -544,7 +544,7 @@ The vertical slice contains:
   the shared water shader over chunked sheets and a shelving silt bed whose
   foam line draws the surf) and stays excluded from player navigation and
   night-fixture placement. The shore is zoned around the river mouth — a
-  dead port with a concrete mol, an occulting beacon and a frozen derrick
+  dead port with a concrete mol and a frozen derrick
   to the west; a granite esplanade with sparse glow lamps, benches and the
   abandoned municipal boat station (hut, «ПРОКАТ ЛОДОК» board, sea pier
   with the fisherman, chained slipway, hauled hulls) at the centre; rotten
@@ -552,7 +552,14 @@ The vertical slice contains:
   east — with a timber footbridge over the mouth, quay stairs adopting the
   river promenades' north ends, a coast pedestrian lane in the walker
   graph, seacoast texture sheets, map landmarks and a synthesized surf
-  ambience bed;
+  ambience bed. Offshore, at the edge of visibility in the fog, stands
+  the abandoned lighthouse island (`CityLighthouseIslandPlanner`): a
+  fixed presentation-only rock mound with ruined fishermen's shacks, a
+  wrecked hull and a ~15 m banded lighthouse whose lantern genuinely
+  rotates (two opposed additive beams, pure seed+minute rules,
+  night-gated), rendered on its own no-fog shaders with a
+  camera-distance self-fade inside the 48 m far plane — visible from
+  the esplanade, sand and pier head, gone from every street;
 - a reusable Cemetery non-urban profile on the default city's eastern edge
   (the former lake block above it is a plain `4 x 4` north-east yard now),
   where the `3 x 2` cemetery is walkable ground;
@@ -794,7 +801,9 @@ The vertical slice contains:
   blueprint's centered map bounds,
   with area colors and labels anchored on real active cells, distinct park,
   beach, sea, river, promenade and cemetery surfaces and paths, the
-  seacoast's landmarks (mol, beacon, pier, hut, piles, barge),
+  seacoast's landmarks (mol, pier, hut, piles, barge, and the
+  lighthouse island's dot pinned to the chart's north border at its
+  true easting),
   plus separate map treatments for the Works, Mouth and timber bridges,
   player/bar markers,
   a dedicated labeled home icon, a distinct

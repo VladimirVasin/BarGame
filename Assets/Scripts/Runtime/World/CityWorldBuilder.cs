@@ -139,6 +139,20 @@ namespace BarPromenade
             if (seacoastPlan != null)
             {
                 CitySeacoastWorldBuilder.Build(world, seacoastPlan);
+                // The lighthouse island stands off the dressed shore
+                // only: presentation scenery at the edge of the fog,
+                // fixed in world space, contributing nothing to
+                // bounds, walkability or collision.
+                CityLighthouseIslandPlan lighthouseIslandPlan =
+                    CityLighthouseIslandPlanner.Create(
+                        layout.Seed,
+                        seacoastPlan);
+                if (lighthouseIslandPlan != null)
+                {
+                    CityLighthouseIslandWorldBuilder.Build(
+                        world,
+                        lighthouseIslandPlan);
+                }
             }
 
             var bars = new List<BarEntrance>(settings.BarCount);

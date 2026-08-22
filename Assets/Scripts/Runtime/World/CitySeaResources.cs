@@ -15,7 +15,7 @@ namespace BarPromenade
     /// supposed to visibly move on its own. The fog is the horizon,
     /// so the sheet's job is done within twenty metres of the sand —
     /// motion, a foam line on the shore shelf, and glitter under the
-    /// beacon.
+    /// pier's hand lamp.
     ///
     /// The ripple sheet is the sea's own — the isotropic ring-and-chop
     /// recipe the lake proved out, rebuilt at a coarser pitch by
@@ -88,9 +88,9 @@ namespace BarPromenade
         // grazing angle, but the whole sea is seen at a grazing angle.
         private const float FresnelStrength = 0.30f;
 
-        // The beacon's glitter path is the whole point of the lamp on
-        // the mol head, exactly as the shore lamps are the point of
-        // the pond's.
+        // The glitter path under the pier's hand lamp, exactly as the
+        // shore lamps are the point of the pond's. (The lighthouse
+        // offshore is presentation-only and casts no real light.)
         private const float AdditionalSpecular = 2.0f;
 
         // Between the river's tight 48 and the pond's broad 16: the

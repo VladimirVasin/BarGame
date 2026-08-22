@@ -45,6 +45,8 @@ Assets/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
       CityAtmosphereParticle.shader
+      CityLighthouseBeam.shader   additive no-fog lantern beam/lens, distance self-fade
+      CityLighthouseIsland.shader fixed-haze island silhouette, distance self-fade before the far plane
       CityMountainBackdrop.shader camera-relative west/south silhouette inside the 48 m cap
       CityMountainPhysical.shader shared opaque ridge handoff, fog floor + matching depth passes
       CityRiverWater.shader      quantized animated river flow with night/rain response
@@ -250,8 +252,13 @@ Assets/
         CitySeacoastPlanner.cs   zoned shore (port/esplanade/wild), mol, boat station, footbridge, mouth banks + validation
         CitySeacoastWorldBuilder.cs  chunked oriented batches with coast sheets, sea sheets/shelf + fixtures
         CitySeacoastSurfaceAppearance.cs  five coast albedos (sand/concrete/granite/plank/hull) via MPBs
-        CitySeacoastBeaconController.cs  the occulting beacon pulse: pure rules + a self-driven light
-        CitySeaResources.cs      the sea material: zero flow, long swell, isotropic ripple, beacon glint
+        CityLighthouseIslandPlan.cs      island part kinds/descriptors, budget, lantern position
+        CityLighthouseIslandPlanner.cs   the offshore island: mound, ruined shacks, wreck, banded tower + validation
+        CityLighthouseIslandMeshFactory.cs  one baked vertex-coloured mesh (24 verts/box) + the beam cone
+        CityLighthouseIslandWorldBuilder.cs  silhouette mesh + un-batched lantern (lens, two beam cones)
+        CityLighthouseIslandResources.cs  the two shared no-fog materials (silhouette haze, additive beam)
+        CityLighthouseLanternController.cs  the rotating lantern: pure azimuth/flash rules + night gating
+        CitySeaResources.cs      the sea material: zero flow, long swell, isotropic ripple, pier-lamp glint
         CityWaterResources.cs    the one night/rain drive shared by every water material
         CityParkSurfaceAppearance.cs  eight park albedos (lawn/path/plaza/bark/foliage/timber/stone/painted metal) via MPBs
         CityDistrict.cs          area IDs, district/path/land-use enums and park data

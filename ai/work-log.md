@@ -6,6 +6,54 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-23 — The light left the mol: the lighthouse island
+
+- **The mol beacon is gone entirely** — `AddBeacon`, the `BeaconTower`
+  part kind and `Beacon` lamp kind (both left as deliberate enum
+  holes), `BuildBeaconLens`, the whole
+  `CitySeacoastBeaconController.cs` file, the map's beacon dot and the
+  mol↔beacon validator clause. The mol keeps its deck, parapets and
+  stair; the sea keeps `_AdditionalSpecular` for the pier hand lamp.
+- **A new `CityLighthouseIsland*` family** (plan/planner/mesh
+  factory/world builder/resources + `CityLighthouseLanternController`)
+  plans an abandoned fishing island `31 m` past the waterline, north
+  of the pier head's easting: a two-tier rock mound, two ruined shacks
+  (one roofless), leaning poles, a fallen jetty, a heeled wreck, and a
+  `~15 m` banded lighthouse — exactly one lamp room, lantern height
+  ≥ 12 m over the sea, all parts held to the offshore band clear of
+  every walkable deck (validator + tests). Null seacoast → null island.
+- **Fog physics dictated the rendering**: at 35-45 m the city's Exp2
+  0.070 leaves nothing, so the island is one baked vertex-coloured
+  mesh (24 verts/box, faces pre-lit top/south) on
+  `CityLighthouseIsland.shader` — no engine fog, a fixed `0.62` haze
+  mix toward `CityFogColor`, and a `43-47 m` per-fragment self-fade
+  that dissolves it before the 48 m far plane can clip (the mountain
+  backdrop's trick with distance made explicit). Queue Transparent-90
+  ZWrite On composes over the 2900 water. The lantern is additive
+  geometry on `CityLighthouseBeam.shader` (no real Light — 16 m range
+  cannot reach shore, halos are fog-eaten): a lens core (`_Uniform 1`)
+  and two opposed beam cones, HDR lens ×4 over the 0.60 bloom
+  threshold.
+- **The rotation is pure data**: `CityLighthouseLanternRules` —
+  azimuth = seed-phased `9°`/game-minute (40 s revolution, flash every
+  20 s through two opposed beams, `±14°` smoothstep flash window) —
+  applied absolutely each frame; the controller hand-honours the site
+  registry contract (× night factor, off below 0.02) and surges the
+  lens when a beam sweeps the camera bearing.
+- **Tuned farther out on user review**: offshore anchor `31 → 35 m`
+  past the waterline (the sheets' 18 m apron caps it — the validator
+  margin is now under a metre), and the flat `0.62` haze became a
+  distance-graded mix (`0.75` at ≤20 m → `0.92` at ≥38 m), so from
+  the ordinary shore only the outlines survive while the pier head
+  genuinely brings the island a step out of the fog.
+- Verification: focused `CitySeacoastPlannerTests|CityLighthouseIslandTests`
+  18/18 green, then the full EditMode suite; both new shaders pinned
+  clean via `ShaderUtil.ShaderHasError` in a throwaway editor capture
+  that also rendered the island from esplanade/waterline/pier-head/
+  inland/close poses — silhouette scale, banding, fade band and sea
+  compositing all read correctly (beam brightness and bloom are
+  play-mode-only and expect one live tuning pass).
+
 ## 2026-08-22 — Atmosphere pass: DOF, drunk lens, PS1 film layers, Options
 
 - **Depth of field in two tiers.** Every scene grade (city noir asset +

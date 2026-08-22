@@ -9,9 +9,10 @@ namespace BarPromenade
     /// batches into one combined oriented-box mesh per 48 m chunk and
     /// style, and each lamp descriptor becomes a real fixture — the
     /// rental hut's hooded door bulb and the pier's kerosene hand lamp
-    /// exactly as they were at the lake, the esplanade's cast-iron
+    /// exactly as they were at the lake, and the esplanade's cast-iron
     /// posts as glow-only fixtures one shade dimmer than the river
-    /// embankment's, and the beacon's lens burning on the mol head.
+    /// embankment's. The navigation light burns offshore now, raised
+    /// by the lighthouse island's own builder.
     ///
     /// The sea itself is built here too: chunked animated sheets of
     /// the shared water shader where the flat municipal slab used to
@@ -76,15 +77,6 @@ namespace BarPromenade
         // recipe gone older and dimmer — these were here first.
         internal static readonly Color EsplanadeLampGlow =
             new Color(1.08f, 0.62f, 0.28f);
-
-        // The beacon's lens. Pale warm white, unlike every tungsten
-        // bulb in the city: it is navigation light, not domestic.
-        // Floodlight class on the documented intensity ladder — it is
-        // infrastructure, unlike the hand lamp on the pier.
-        internal static readonly Color BeaconLensColor =
-            new Color(0.95f, 0.90f, 0.78f);
-        internal const float BeaconNightIntensity = 150f;
-        internal const float BeaconRange = 16f;
 
         private static readonly Color LampIronColor =
             new Color(0.070f, 0.075f, 0.075f);
@@ -270,9 +262,6 @@ namespace BarPromenade
                             lamp.GroundPosition,
                             lamp.YawDegrees);
                         break;
-                    case CitySeacoastLampKind.Beacon:
-                        BuildBeaconLens(root, lamp);
-                        break;
                     default:
                         esplanadePosts.Add(new Bounds(
                             lamp.GroundPosition + Vector3.up * 1.25f,
@@ -384,68 +373,6 @@ namespace BarPromenade
                 HutBulbNightIntensity,
                 HutBulbDayIntensity,
                 halo);
-        }
-
-        /// <summary>
-        /// The beacon on the mol-head gallery: an emissive glass block
-        /// between the gallery posts on the glow registry (steady — a
-        /// lamp room reads lit even mid-occultation), and the real
-        /// pulsing light behind it. Floodlight class, ForcePixel so
-        /// the water shader's additional-light loop lays its glitter
-        /// road, and driven by its own controller rather than the
-        /// site registry: the pulse is the point.
-        /// </summary>
-        private static void BuildBeaconLens(
-            Transform parent,
-            CitySeacoastLampDescriptor descriptor)
-        {
-            Transform assembly = new GameObject(
-                "Seacoast Beacon Lamp").transform;
-            assembly.SetParent(parent, false);
-            assembly.SetPositionAndRotation(
-                descriptor.GroundPosition,
-                Quaternion.Euler(0f, descriptor.YawDegrees, 0f));
-
-            Color glow = MultiplyRgb(BeaconLensColor, 5.2f, 1f);
-            GameObject lens = RuntimePrimitiveFactory.CreateBox(
-                "Beacon Lens",
-                assembly,
-                new Vector3(0f, 0.30f, 0f),
-                new Vector3(0.46f, 0.54f, 0.46f),
-                glow,
-                CityNightResources.EmissiveMaterial,
-                false);
-            CityNightGlowRegistry.Register(
-                lens.GetComponent<Renderer>(),
-                glow);
-
-            GameObject emitter = new GameObject("Beacon Light");
-            emitter.transform.SetParent(assembly, false);
-            emitter.transform.localPosition = new Vector3(0f, 0.32f, 0f);
-            Light light = emitter.AddComponent<Light>();
-            light.type = LightType.Point;
-            light.color = BeaconLensColor;
-            light.intensity = BeaconNightIntensity;
-            light.range = BeaconRange;
-            light.shadows = LightShadows.None;
-            light.renderMode = LightRenderMode.ForcePixel;
-            light.lightmapBakeType = LightmapBakeType.Realtime;
-
-            GameObject haloObject = new GameObject("Beacon Halo");
-            haloObject.transform.SetParent(emitter.transform, false);
-            CityLightHalo halo =
-                haloObject.AddComponent<CityLightHalo>();
-            halo.Initialize(
-                CityNightResources.AtmosphereMaterial,
-                0.60f,
-                1.60f,
-                MultiplyRgb(BeaconLensColor, 4.0f, 0.20f),
-                MultiplyRgb(BeaconLensColor, 2.0f, 0.06f));
-
-            CitySeacoastBeaconController controller =
-                assembly.gameObject
-                    .AddComponent<CitySeacoastBeaconController>();
-            controller.Initialize(light, halo, BeaconNightIntensity);
         }
 
         private static Color MultiplyRgb(

@@ -32,17 +32,15 @@ namespace BarPromenade.Tests.EditMode
                 first.Count,
                 Is.LessThanOrEqualTo(CitySeacoastPlan.MaximumPartCount));
 
-            // The silhouette anchors the concept is built on: the mol
-            // with its beacon, the transplanted boat station, the
-            // footbridge over the mouth, and the wild shore's piles
-            // and barge. Without them this is a sand strip, not a
-            // coast.
+            // The silhouette anchors the concept is built on: the
+            // mol, the transplanted boat station, the footbridge
+            // over the mouth, and the wild shore's piles and barge.
+            // Without them this is a sand strip, not a coast. (The
+            // navigation light moved offshore: the lighthouse island
+            // pins its own silhouette in its own tests.)
             Assert.That(
                 first.GetCount(CitySeacoastPartKind.MolDeck),
                 Is.GreaterThan(10));
-            Assert.That(
-                first.GetCount(CitySeacoastPartKind.BeaconTower),
-                Is.GreaterThan(3));
             Assert.That(
                 first.GetCount(CitySeacoastPartKind.PierDeck),
                 Is.GreaterThan(8));
@@ -294,12 +292,9 @@ namespace BarPromenade.Tests.EditMode
             CitySeacoastPlan plan = CitySeacoastPlanner.Create(layout);
             CitySeacoastFrame frame = plan.Frame;
 
-            // One beacon on the mol head, one hand lamp on the pier,
-            // the hut bulb with its hut, and a sparse esplanade string:
-            // enough to walk by, too few to call the place maintained.
-            Assert.That(
-                plan.GetLampCount(CitySeacoastLampKind.Beacon),
-                Is.EqualTo(1));
+            // One hand lamp on the pier, the hut bulb with its hut,
+            // and a sparse esplanade string: enough to walk by, too
+            // few to call the place maintained.
             Assert.That(
                 plan.GetLampCount(CitySeacoastLampKind.PierHead),
                 Is.EqualTo(1));
@@ -312,14 +307,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.GetLampCount(CitySeacoastLampKind.Esplanade),
                 Is.InRange(3, 8));
-
-            // The beacon stands out over the sea on the mol head — it
-            // is navigation light, and the water is what it is for.
-            CitySeacoastLampDescriptor beacon = plan.Lamps.First(
-                lamp => lamp.Kind == CitySeacoastLampKind.Beacon);
-            Assert.That(
-                beacon.GroundPosition.z,
-                Is.GreaterThan(frame.WaterlineZ + 8f));
 
             CityOpenAreaAccessDescriptor access = layout
                 .OpenAreaAccesses
@@ -714,81 +701,6 @@ namespace BarPromenade.Tests.EditMode
                         "The surf line lost its shelf.");
                 }
             }
-        }
-
-        [Test]
-        public void Beacon_PulsesDeterministicallyWithOneDarkBreak()
-        {
-            const int seed = 40213;
-            const double step = 0.02;
-            int samples = (int)Math.Round(
-                CitySeacoastBeaconRules.PeriodMinutes / step);
-
-            float previous = CitySeacoastBeaconRules.EvaluateIntensity(
-                seed,
-                -step);
-            int litCount = 0;
-            int darkCount = 0;
-            bool sawFull = false;
-            for (int index = 0; index < samples; index++)
-            {
-                double minute = index * step;
-                float value = CitySeacoastBeaconRules.EvaluateIntensity(
-                    seed,
-                    minute);
-
-                // Deterministic, bounded, and periodic.
-                Assert.That(
-                    CitySeacoastBeaconRules.EvaluateIntensity(
-                        seed,
-                        minute),
-                    Is.EqualTo(value));
-                Assert.That(value, Is.InRange(0f, 1f));
-                Assert.That(
-                    CitySeacoastBeaconRules.EvaluateIntensity(
-                        seed,
-                        minute +
-                        CitySeacoastBeaconRules.PeriodMinutes * 3d),
-                    Is.EqualTo(value).Within(0.0001f));
-
-                // The trapezoid shoulders keep the cut from reading
-                // as flicker: no sample-to-sample jump bigger than a
-                // shoulder step.
-                Assert.That(
-                    Mathf.Abs(value - previous),
-                    Is.LessThan(0.12f),
-                    $"The beacon snaps at minute {minute:F2}.");
-                previous = value;
-
-                if (value >= 0.999f)
-                {
-                    sawFull = true;
-                }
-
-                if (value > 0.5f)
-                {
-                    litCount++;
-                }
-                else if (value <= 0f)
-                {
-                    darkCount++;
-                }
-            }
-
-            Assert.That(sawFull, Is.True, "The beacon never reaches full.");
-
-            // Occulting: lit most of the period, dark for its
-            // authored break.
-            double litFraction = litCount / (double)samples;
-            double darkFraction = darkCount / (double)samples;
-            Assert.That(litFraction, Is.InRange(0.65, 0.85));
-            Assert.That(
-                darkFraction,
-                Is.InRange(
-                    CitySeacoastBeaconRules.DarkMinutes /
-                    CitySeacoastBeaconRules.PeriodMinutes - 0.05,
-                    CitySeacoastBeaconRules.DarkMinutes /
-                    CitySeacoastBeaconRules.PeriodMinutes + 0.05));
         }
 
         [Test]

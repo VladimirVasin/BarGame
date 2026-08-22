@@ -11,7 +11,9 @@ namespace BarPromenade
         MolDeck = 1,
         MolParapet = 2,
         MolStair = 3,
-        BeaconTower = 4,
+        // 4 was BeaconTower: the light left the mol head for the
+        // lighthouse island offshore. A deliberate hole, like the
+        // lake's — do not renumber or reuse.
         DerrickCrane = 5,
         PortRuin = 6,
         MouthBank = 7,
@@ -160,13 +162,14 @@ namespace BarPromenade
     /// The fixtures the coast lights itself with. The hut bulb and the
     /// pier hand lamp arrived with the boat station; the esplanade
     /// lamps are the embankment's cast-iron family gone one shade
-    /// dimmer; the beacon on the mol head is the coast's own — the one
-    /// light on the whole shore that is still municipal and still
-    /// tended.
+    /// dimmer. The navigation light is no longer the coast's: it
+    /// stands on the lighthouse island offshore, planned by its own
+    /// module.
     /// </summary>
     public enum CitySeacoastLampKind
     {
-        Beacon = 0,
+        // 0 was Beacon: moved to the lighthouse island. A deliberate
+        // hole — do not renumber or reuse.
         PierHead = 1,
         HutDoor = 2,
         Esplanade = 3
@@ -310,10 +313,10 @@ namespace BarPromenade
     {
         /// <summary>
         /// Hard budget for combined-mesh parts. Sized from the default
-        /// city's measured dressing (~380 parts: the mol and its
-        /// beacon, the port ruins, the mouth banks, the esplanade with
-        /// its sea wall, the transplanted boat station, the footbridge,
-        /// and the wild shore's piles, barge and scatter) plus
+        /// city's measured dressing (~380 parts: the mol, the port
+        /// ruins, the mouth banks, the esplanade with its sea wall,
+        /// the transplanted boat station, the footbridge, and the
+        /// wild shore's piles, barge and scatter) plus
         /// headroom for seed variation. Lamps are fixtures and do not
         /// count against it.
         /// </summary>
