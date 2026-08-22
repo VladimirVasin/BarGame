@@ -249,6 +249,9 @@ namespace BarPromenade
                 depthOffset,
                 rotation,
                 facadeDepth);
+            // Recessed 3 cm behind the flanks: the crown overlaps them
+            // by 0.12 m so the joint never cracks, and coplanar front
+            // faces on those strips z-fight right beside the arch.
             AddFacadeBox(
                 rock,
                 leftInner,
@@ -256,7 +259,7 @@ namespace BarPromenade
                 crownBottomY,
                 facadeTopY,
                 mouthZ,
-                depthOffset,
+                depthOffset + (Flatten(cave.Axis) * 0.03f),
                 rotation,
                 facadeDepth);
             GameObject stop =
@@ -268,12 +271,12 @@ namespace BarPromenade
                     true,
                     CityMountainSurfaceAppearance.MetersPerTile,
                     RuntimeWorldUvMode.BoxProjected);
-            // The same fog-safe dither the physical ridges wear: the
-            // facade fills the notch the ridges leave, and a facade that
-            // stays opaque while the rock beside it dissolves into the
-            // night fog splits the massif's silhouette at the seam - a
-            // bright hole in the mountain right over the cave mouth.
-            CityMountainSurfaceAppearance.ApplyPhysicalRidge(
+            // Deliberately the ordinary opaque rock, NOT the ridges'
+            // fog-handoff dither: the facade has the cave void and the
+            // portal behind it rather than the backdrop shell, so a
+            // dithered facade dissolves in night fog into a glowing
+            // hole with a floating arch (verified in play).
+            CityMountainSurfaceAppearance.ApplyCombined(
                 stop.GetComponent<Renderer>(),
                 MidRock);
         }

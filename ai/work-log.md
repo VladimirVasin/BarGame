@@ -36,6 +36,21 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 - **Verification:** before/after captures from four promenade poses
   (probe deleted after use), the fact probe re-run showing the shoulder
   samples flip to True, and the full EditMode suite.
+- **Round two, after the user played it:** the facade material change
+  was WRONG and is reverted — the fog-handoff dither shows whatever is
+  behind, and behind the facade is the cave void and portal, not the
+  backdrop ring, so at night the plate dissolved into a glowing hole
+  with a floating arch. The real remaining mechanism was the handoff
+  band itself: far clip is 48 m, the near backdrop ring rides at
+  39.4 m, and the physical rock dissolved across 31-43 m — but at fog
+  density 0.07 the rock's 10%-dot silhouette is still faintly readable
+  at 31 m, so a player standing AT the rim (only possible on the cave
+  promenade) watched the crest dissolve mid-air. The band now hugs the
+  clip (39-47.5 m, still straddling the ring as the swap contract and
+  its tests require); by 39 m the dots are haze-coloured and the same
+  handoff is invisible. The reported texture flicker: the crown facade
+  overlaps the flanks by 0.12 m with coplanar front faces - z-fighting
+  strips right beside the arch - so the crown is recessed 3 cm.
 
 ## 2026-08-22 — The audit's three deferred design calls, decided
 

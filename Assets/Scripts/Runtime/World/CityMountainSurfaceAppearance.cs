@@ -24,8 +24,16 @@ namespace BarPromenade
         public const float PhysicalVisibilityFloor = 0.10f;
         public const float NativeFogNearDistance = 9f;
         public const float NativeFogFarDistance = 12f;
-        public const float PhysicalHandoffNearDistance = 31f;
-        public const float PhysicalHandoffFarDistance = 43f;
+        // The handoff band hugs the far clip (48 m), straddling the
+        // near backdrop ring (39.4 m) as the ring swap requires. It
+        // used to run 31-43 m, but at fog density 0.07 the rock's
+        // 10%-dot silhouette is still faintly readable at 31 m - so a
+        // player standing at the south rim (the cave promenade) watched
+        // the ridge crest dissolve mid-air into a bright hole. By 39 m
+        // the dots are haze-coloured and indistinguishable from fog, so
+        // the same handoff becomes invisible.
+        public const float PhysicalHandoffNearDistance = 39f;
+        public const float PhysicalHandoffFarDistance = 47.5f;
         private const float MinimumUvScale = 0.35f;
         private const int HashSalt = 7000;
 
