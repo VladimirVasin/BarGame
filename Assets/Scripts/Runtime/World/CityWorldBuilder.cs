@@ -136,6 +136,13 @@ namespace BarPromenade
                 CityLakeWorldBuilder.Build(world, lakePlan);
             }
 
+            CitySeacoastPlan seacoastPlan =
+                CitySeacoastPlanner.Create(layout);
+            if (seacoastPlan != null)
+            {
+                CitySeacoastWorldBuilder.Build(world, seacoastPlan);
+            }
+
             var bars = new List<BarEntrance>(settings.BarCount);
             HomeEntrance playerHome = null;
             SupermarketEntrance supermarket = null;
@@ -182,6 +189,7 @@ namespace BarPromenade
                 cemeteryPlan,
                 cemeteryExcavation,
                 lakePlan,
+                seacoastPlan,
                 decorationPlan,
                 decorationRoot,
                 riverRoot,

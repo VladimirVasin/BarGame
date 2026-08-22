@@ -23,6 +23,7 @@ namespace BarPromenade
             CityCemeteryPlan cemeteryPlan,
             CityCemeteryGroundExcavation cemeteryGroundExcavation,
             CityLakePlan lakePlan,
+            CitySeacoastPlan seacoastPlan,
             CityDecorationPlan decorationPlan,
             GameObject decorationRoot,
             GameObject riverRoot,
@@ -60,6 +61,8 @@ namespace BarPromenade
             CemeteryGroundExcavation = cemeteryGroundExcavation;
             // Null when the blueprint carries no dressable lake.
             LakePlan = lakePlan;
+            // Null when the blueprint carries no dressable seacoast.
+            SeacoastPlan = seacoastPlan;
             DecorationPlan = decorationPlan ??
                 throw new ArgumentNullException(nameof(decorationPlan));
             DecorationRoot = decorationRoot != null
@@ -107,6 +110,7 @@ namespace BarPromenade
         }
 
         public CityLakePlan LakePlan { get; }
+        public CitySeacoastPlan SeacoastPlan { get; }
         public CityDecorationPlan DecorationPlan { get; }
         public GameObject DecorationRoot { get; }
         public GameObject RiverRoot { get; }

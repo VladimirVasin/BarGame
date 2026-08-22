@@ -61,6 +61,13 @@ namespace BarPromenade
             // behind an invisible box. The pond itself stays out.
             CityLakePlanner.AppendWalkableFootprints(layout, ground);
 
+            // The seacoast builds the same kind of ground over water
+            // cells the lake does — the mol, the pier and the mouth
+            // footbridge all carry a person out where the blueprint
+            // says Water — so it contributes its deck rectangles the
+            // same way. The open sea stays out.
+            CitySeacoastPlanner.AppendWalkableFootprints(layout, ground);
+
             var connectors = new List<Rect>();
             CityRoadGroundBoundaryPlan roadGroundBoundaries =
                 CityRoadGroundBoundaryPlanner.Create(layout);
