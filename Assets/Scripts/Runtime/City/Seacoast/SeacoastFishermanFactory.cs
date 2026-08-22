@@ -4,7 +4,7 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Instantiates the one authored lake fisherman. There is no pool,
+    /// Instantiates the one authored seacoast fisherman. There is no pool,
     /// no director and no spawn band: he keeps the end of the pier for
     /// as long as the City lives — the watchman pattern applied to the
     /// boat station, plus the same separate talk trigger carrying his
@@ -17,9 +17,9 @@ namespace BarPromenade
     /// each a separate object hung off this root, so the art stays art
     /// and the guard keeps working.
     /// </summary>
-    public static class LakeFishermanFactory
+    public static class SeacoastFishermanFactory
     {
-        public const string RuntimeRootName = "Lake Fisherman";
+        public const string RuntimeRootName = "Seacoast Fisherman";
 
         /// <summary>Trigger box dimensions mirrored from the watchman's
         /// talk stub.</summary>
@@ -32,23 +32,23 @@ namespace BarPromenade
         /// out over the pond where nobody can reach it.</summary>
         public const float TriggerBackOffMeters = 0.55f;
 
-        public static LakeFishermanPresentation Create(
+        public static SeacoastFishermanPresentation Create(
             Transform parent,
-            LakeFishermanPlan plan,
+            SeacoastFishermanPlan plan,
             int citySeed)
         {
             return Create(
                 parent,
                 plan,
                 citySeed,
-                LakeFishermanProvider.Load());
+                SeacoastFishermanProvider.Load());
         }
 
-        public static LakeFishermanPresentation Create(
+        public static SeacoastFishermanPresentation Create(
             Transform parent,
-            LakeFishermanPlan plan,
+            SeacoastFishermanPlan plan,
             int citySeed,
-            LakeFishermanProvider provider)
+            SeacoastFishermanProvider provider)
         {
             if (parent == null)
             {
@@ -69,14 +69,14 @@ namespace BarPromenade
             {
                 GameLog.Warning(
                     "city",
-                    "lake_fisherman_provider_missing");
+                    "seacoast_fisherman_provider_missing");
                 return null;
             }
 
             Transform root = new GameObject(RuntimeRootName).transform;
             root.SetParent(parent, false);
 
-            LakeFishermanStance stance = plan.Stance;
+            SeacoastFishermanStance stance = plan.Stance;
             GameObject instance = UnityEngine.Object.Instantiate(
                 provider.StagedPrefab,
                 root);
@@ -97,7 +97,7 @@ namespace BarPromenade
             }
 
             var anchors = instance
-                .GetComponentInChildren<LakeFishermanRigAnchors>(true);
+                .GetComponentInChildren<SeacoastFishermanRigAnchors>(true);
             if (anchors == null ||
                 anchors.PipeEmberAnchor == null ||
                 anchors.RodTipAnchor == null)
@@ -105,14 +105,14 @@ namespace BarPromenade
                 UnityEngine.Object.Destroy(root.gameObject);
                 throw new InvalidOperationException(
                     "The staged fisherman prefab requires bound " +
-                    nameof(LakeFishermanRigAnchors) + " for its pipe " +
+                    nameof(SeacoastFishermanRigAnchors) + " for its pipe " +
                     "and rod tip.");
             }
 
             ValidatePassivePresentation(instance);
 
             var presentation = instance
-                .AddComponent<LakeFishermanPresentation>();
+                .AddComponent<SeacoastFishermanPresentation>();
             presentation.Initialize(registry, stance);
 
             // The pipe. The prefab is validated to carry no light, so
@@ -120,7 +120,7 @@ namespace BarPromenade
             // driven from the loop the presentation is already running.
             var pipe = new GameObject("Fisherman Pipe");
             pipe.transform.SetParent(root, false);
-            pipe.AddComponent<LakeFishermanPipeEffect>().Initialize(
+            pipe.AddComponent<SeacoastFishermanPipeEffect>().Initialize(
                 presentation,
                 anchors.PipeEmberAnchor,
                 anchors.PipeEmberRenderer);
@@ -129,7 +129,7 @@ namespace BarPromenade
             // lake plan measured.
             var line = new GameObject("Fisherman Line");
             line.transform.SetParent(root, false);
-            line.AddComponent<LakeFishermanLine>().Initialize(
+            line.AddComponent<SeacoastFishermanLine>().Initialize(
                 anchors.RodTipAnchor,
                 plan.WaterTopY);
 
@@ -157,12 +157,12 @@ namespace BarPromenade
                 TriggerHeight,
                 TriggerReach);
             var interaction = trigger
-                .AddComponent<LakeFishermanInteraction>();
+                .AddComponent<SeacoastFishermanInteraction>();
             interaction.Initialize(stance.Position, citySeed);
 
             GameLog.Info(
                 "city",
-                "lake_fisherman_spawned",
+                "seacoast_fisherman_spawned",
                 GameLog.Field("position_x", stance.Position.x),
                 GameLog.Field("position_z", stance.Position.z));
             return presentation;

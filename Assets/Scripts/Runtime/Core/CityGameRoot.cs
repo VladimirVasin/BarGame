@@ -71,7 +71,7 @@ namespace BarPromenade
             get;
             private set;
         }
-        public LakeFishermanPresentation LakeFisherman
+        public SeacoastFishermanPresentation SeacoastFisherman
         {
             get;
             private set;
@@ -494,9 +494,9 @@ namespace BarPromenade
             // The boat station is not abandoned by everybody: one man
             // sits on the end of the мостки with his back to the shore
             // and answers about the water whether or not he was asked.
-            LakeFisherman = LakeFishermanFactory.Create(
+            SeacoastFisherman = SeacoastFishermanFactory.Create(
                 transform,
-                LakeFishermanPlan.Create(World.LakePlan),
+                SeacoastFishermanPlan.Create(World.SeacoastPlan),
                 GameSessionState.CitySeed);
             // The park kept a place for company and two men still keep
             // it: an old player at each of the two chess tables, on

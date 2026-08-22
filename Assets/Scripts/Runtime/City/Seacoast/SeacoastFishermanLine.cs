@@ -20,7 +20,7 @@ namespace BarPromenade
     /// </summary>
     [DefaultExecutionOrder(300)]
     [DisallowMultipleComponent]
-    public sealed class LakeFishermanLine : MonoBehaviour
+    public sealed class SeacoastFishermanLine : MonoBehaviour
     {
         public const float LineThicknessMeters = 0.012f;
 

@@ -4,14 +4,15 @@ namespace BarPromenade
 {
     /// <summary>
     /// Where the fisherman stands and which way he looks: derived
-    /// entirely from the lake plan's own pier parts, so the drawn boards
-    /// and the man on them can never disagree. He keeps the end of the
-    /// мостки, on the side without a rail, with his back to the shore
-    /// and his weight tipped out over the end board.
+    /// entirely from the coast plan's own pier parts, so the drawn
+    /// boards and the man on them can never disagree. He keeps the end
+    /// of the мостки, on the side without a rail, with his back to the
+    /// shore and his weight tipped out over the end board — the same
+    /// lean he kept over the pond, over open sea now.
     /// </summary>
-    public readonly struct LakeFishermanStance
+    public readonly struct SeacoastFishermanStance
     {
-        public LakeFishermanStance(
+        public SeacoastFishermanStance(
             Vector3 position,
             Vector3 facing,
             int paletteVariant,
@@ -34,10 +35,12 @@ namespace BarPromenade
 
     /// <summary>
     /// The authored population of the boat station: one man on the end
-    /// of the pier who has not turned round in some time. Absent when
-    /// the blueprint has no lake or the lake plan carries no pier.
+    /// of the pier who has not turned round in some time. He moved to
+    /// the seacoast with the station and fishes the sea now. Absent
+    /// when the blueprint has no coast or the coast plan carries no
+    /// pier.
     /// </summary>
-    public sealed class LakeFishermanPlan
+    public sealed class SeacoastFishermanPlan
     {
         /// <summary>How far back from the head of the deck he stands.
         /// Small on purpose: he is leaning on the end board, and a man
@@ -50,11 +53,11 @@ namespace BarPromenade
         /// their elbows onto.</summary>
         public const float SideOffsetMeters = 0.28f;
 
-        private static readonly LakeFishermanPlan AbsentPlan =
-            new LakeFishermanPlan(default, 0f, false);
+        private static readonly SeacoastFishermanPlan AbsentPlan =
+            new SeacoastFishermanPlan(default, 0f, false);
 
-        private LakeFishermanPlan(
-            LakeFishermanStance stance,
+        private SeacoastFishermanPlan(
+            SeacoastFishermanStance stance,
             float waterTopY,
             bool isPresent)
         {
@@ -63,32 +66,31 @@ namespace BarPromenade
             IsPresent = isPresent;
         }
 
-        public LakeFishermanStance Stance { get; }
+        public SeacoastFishermanStance Stance { get; }
 
         /// <summary>
-        /// The waterline his float sits on, read straight off the lake's
-        /// own basin. The line has to end in the water rather than at a
-        /// guessed depth: the basin insets its waterline inside the
-        /// blueprint cells, so nothing outside the plan knows where the
-        /// surface is.
+        /// The waterline his float sits on, read straight off the
+        /// coast frame's sea top. The line has to end in the water
+        /// rather than at a guessed depth, and the sea's top is plan
+        /// data nothing outside the frame should re-derive.
         /// </summary>
         public float WaterTopY { get; }
 
         public bool IsPresent { get; }
 
-        public static LakeFishermanPlan Create(CityLakePlan lakePlan)
+        public static SeacoastFishermanPlan Create(CitySeacoastPlan seacoastPlan)
         {
-            if (lakePlan == null)
+            if (seacoastPlan == null)
             {
                 return AbsentPlan;
             }
 
-            if (!lakePlan.TryGetPart(
-                    CityLakePlanner.PierDeckHeadId,
-                    out CityLakePartDescriptor head) ||
-                !lakePlan.TryGetPart(
-                    CityLakePlanner.PierDeckRootId,
-                    out CityLakePartDescriptor root))
+            if (!seacoastPlan.TryGetPart(
+                    CitySeacoastPlanner.PierDeckHeadId,
+                    out CitySeacoastPartDescriptor head) ||
+                !seacoastPlan.TryGetPart(
+                    CitySeacoastPlanner.PierDeckRootId,
+                    out CitySeacoastPartDescriptor root))
             {
                 return AbsentPlan;
             }
@@ -116,14 +118,14 @@ namespace BarPromenade
 
             // Facing the water. This is the whole character: the player
             // arrives behind him and he does not turn round.
-            return new LakeFishermanPlan(
-                new LakeFishermanStance(
+            return new SeacoastFishermanPlan(
+                new SeacoastFishermanStance(
                     position,
                     outward,
                     2,
                     1f,
                     0f),
-                lakePlan.Basin.WaterTopY,
+                seacoastPlan.Frame.SeaTopY,
                 true);
         }
     }

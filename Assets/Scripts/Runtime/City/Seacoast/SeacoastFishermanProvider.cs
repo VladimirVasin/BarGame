@@ -8,21 +8,21 @@ namespace BarPromenade
     /// pattern. The prefab itself deliberately lives outside Resources.
     /// </summary>
     [CreateAssetMenu(
-        fileName = "LakeFishermanProvider",
-        menuName = "Bar Promenade/Lake Fisherman Provider")]
-    public sealed class LakeFishermanProvider : ScriptableObject
+        fileName = "SeacoastFishermanProvider",
+        menuName = "Bar Promenade/Seacoast Fisherman Provider")]
+    public sealed class SeacoastFishermanProvider : ScriptableObject
     {
         public const string ResourcePath =
-            "City/LakeFishermanProvider";
+            "City/SeacoastFishermanProvider";
         public const string DesignId = "lake_fisherman_v1";
 
         [SerializeField] private GameObject stagedPrefab;
 
         public GameObject StagedPrefab => stagedPrefab;
 
-        public static LakeFishermanProvider Load()
+        public static SeacoastFishermanProvider Load()
         {
-            return Resources.Load<LakeFishermanProvider>(ResourcePath);
+            return Resources.Load<SeacoastFishermanProvider>(ResourcePath);
         }
     }
 }

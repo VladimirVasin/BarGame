@@ -10,7 +10,7 @@ namespace BarPromenade
     /// turning round.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class LakeFishermanInteraction :
+    public sealed class SeacoastFishermanInteraction :
         MonoBehaviour,
         IInteractable
     {
@@ -38,7 +38,7 @@ namespace BarPromenade
             int citySeed)
         {
             standPosition = configuredStandPosition;
-            quipState = LakeFishermanQuips.CreateState(citySeed);
+            quipState = SeacoastFishermanQuips.CreateState(citySeed);
             lastLineIndex = -1;
             isInitialized = true;
         }
@@ -60,11 +60,11 @@ namespace BarPromenade
                 return;
             }
 
-            lastLineIndex = LakeFishermanQuips.NextIndex(
+            lastLineIndex = SeacoastFishermanQuips.NextIndex(
                 ref quipState,
                 lastLineIndex);
             interactor.ShowFeedback(
-                LakeFishermanQuips.LineKeys[lastLineIndex],
+                SeacoastFishermanQuips.LineKeys[lastLineIndex],
                 ResponseDurationSeconds);
         }
     }

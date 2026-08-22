@@ -104,8 +104,8 @@ namespace BarPromenade.Editor
             "Assets/Resources/City/CemeteryWatchmanProvider.asset";
         public const string LakeFishermanPrefabPath =
             "Assets/Pedestrians/Staged/Prefabs/LakeFisherman3D.prefab";
-        public const string LakeFishermanProviderPath =
-            "Assets/Resources/City/LakeFishermanProvider.asset";
+        public const string SeacoastFishermanProviderPath =
+            "Assets/Resources/City/SeacoastFishermanProvider.asset";
         public const string ParkChessPlayerPrefabPath =
             "Assets/Pedestrians/Staged/Prefabs/ParkChessPlayer3D.prefab";
         public const string ParkChessPlayerProviderPath =
@@ -1016,10 +1016,10 @@ namespace BarPromenade.Editor
                         candidate.DesignId,
                         ParkCheckersPlayerProvider.DesignId,
                         StringComparison.Ordinal)));
-                BindLakeFishermanProvider(Descriptors.Single(candidate =>
+                BindSeacoastFishermanProvider(Descriptors.Single(candidate =>
                     string.Equals(
                         candidate.DesignId,
-                        LakeFishermanProvider.DesignId,
+                        SeacoastFishermanProvider.DesignId,
                         StringComparison.Ordinal)));
                 AssetDatabase.SaveAssets();
                 ValidateOrThrow();
@@ -1402,7 +1402,7 @@ namespace BarPromenade.Editor
             PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
                 string.Equals(
                     candidate.DesignId,
-                    LakeFishermanProvider.DesignId,
+                    SeacoastFishermanProvider.DesignId,
                     StringComparison.Ordinal));
             isBuilding = true;
             try
@@ -1445,7 +1445,7 @@ namespace BarPromenade.Editor
                     descriptor,
                     animationManifest,
                     sharedMaterial);
-                BindLakeFishermanProvider(descriptor);
+                BindSeacoastFishermanProvider(descriptor);
                 AssetDatabase.SaveAssets();
                 ValidateDescriptor(descriptor, animationManifest);
             }
@@ -1694,7 +1694,7 @@ namespace BarPromenade.Editor
         /// carries the staged lake fisherman prefab into a build — the
         /// automated binding the babushka pass established.
         /// </summary>
-        private static void BindLakeFishermanProvider(
+        private static void BindSeacoastFishermanProvider(
             PedestrianDescriptor descriptor)
         {
             GameObject prefab =
@@ -1707,17 +1707,17 @@ namespace BarPromenade.Editor
                     "its prefab exists.");
             }
 
-            LakeFishermanProvider provider =
-                AssetDatabase.LoadAssetAtPath<LakeFishermanProvider>(
-                    LakeFishermanProviderPath);
+            SeacoastFishermanProvider provider =
+                AssetDatabase.LoadAssetAtPath<SeacoastFishermanProvider>(
+                    SeacoastFishermanProviderPath);
             if (provider == null)
             {
-                EnsureFolderForAsset(LakeFishermanProviderPath);
+                EnsureFolderForAsset(SeacoastFishermanProviderPath);
                 provider = ScriptableObject
-                    .CreateInstance<LakeFishermanProvider>();
+                    .CreateInstance<SeacoastFishermanProvider>();
                 AssetDatabase.CreateAsset(
                     provider,
-                    LakeFishermanProviderPath);
+                    SeacoastFishermanProviderPath);
             }
 
             var serialized = new SerializedObject(provider);
@@ -1726,7 +1726,7 @@ namespace BarPromenade.Editor
             if (prefabProperty == null)
             {
                 throw new InvalidOperationException(
-                    "LakeFishermanProvider has no serialized " +
+                    "SeacoastFishermanProvider has no serialized " +
                     "'stagedPrefab' field.");
             }
 
@@ -2150,7 +2150,7 @@ namespace BarPromenade.Editor
                     behaviour != null &&
                     !(behaviour is CityPedestrianAssetRegistry) &&
                     !(behaviour is CityWheelchairNpcAssetRegistry) &&
-                    !(behaviour is LakeFishermanRigAnchors)))
+                    !(behaviour is SeacoastFishermanRigAnchors)))
             {
                 throw new InvalidOperationException(
                     "A staged pedestrian prefab may carry only its passive " +
@@ -2997,22 +2997,22 @@ namespace BarPromenade.Editor
                         "fisherman prefab");
                     Renderer emberRenderer = RequireRenderer(
                         renderersByName,
-                        LakeFishermanRigAnchors.PipeEmberRendererName);
+                        SeacoastFishermanRigAnchors.PipeEmberRendererName);
                     Renderer rodTipRenderer = RequireRenderer(
                         renderersByName,
-                        LakeFishermanRigAnchors.RodTipRendererName);
+                        SeacoastFishermanRigAnchors.RodTipRendererName);
                     Transform emberAnchor = CreateBoneAnchor(
                         head,
-                        LakeFishermanRigAnchors.PipeEmberAnchorName,
+                        SeacoastFishermanRigAnchors.PipeEmberAnchorName,
                         BindPoseCenter(emberRenderer));
                     Transform rodTipAnchor = CreateBoneAnchor(
                         rightHand,
-                        LakeFishermanRigAnchors.RodTipAnchorName,
+                        SeacoastFishermanRigAnchors.RodTipAnchorName,
                         BindPoseFarthestPoint(
                             rodTipRenderer,
                             rightHand.position));
                     prefabRoot
-                        .AddComponent<LakeFishermanRigAnchors>()
+                        .AddComponent<SeacoastFishermanRigAnchors>()
                         .Configure(
                             registry,
                             emberAnchor,
@@ -3181,8 +3181,8 @@ namespace BarPromenade.Editor
             CityPedestrianAssetRegistry registry,
             PedestrianDescriptor descriptor)
         {
-            LakeFishermanRigAnchors anchors =
-                prefab.GetComponentInChildren<LakeFishermanRigAnchors>(true);
+            SeacoastFishermanRigAnchors anchors =
+                prefab.GetComponentInChildren<SeacoastFishermanRigAnchors>(true);
             if (!descriptor.CarriesFishingRig)
             {
                 if (anchors != null)

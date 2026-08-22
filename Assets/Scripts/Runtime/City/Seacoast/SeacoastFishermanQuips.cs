@@ -22,25 +22,25 @@ namespace BarPromenade
     /// The joke is that the player is being answered, at length, by a
     /// man who has not looked round.
     /// </summary>
-    public static class LakeFishermanQuips
+    public static class SeacoastFishermanQuips
     {
         public static readonly string[] LineKeys =
         {
-            "lake.fisherman.line.01",
-            "lake.fisherman.line.02",
-            "lake.fisherman.line.03",
-            "lake.fisherman.line.04",
-            "lake.fisherman.line.05",
-            "lake.fisherman.line.06",
-            "lake.fisherman.line.07",
-            "lake.fisherman.line.08",
-            "lake.fisherman.line.09",
-            "lake.fisherman.line.10",
-            "lake.fisherman.line.11",
-            "lake.fisherman.line.12",
-            "lake.fisherman.line.13",
-            "lake.fisherman.line.14",
-            "lake.fisherman.line.15"
+            "seacoast.fisherman.line.01",
+            "seacoast.fisherman.line.02",
+            "seacoast.fisherman.line.03",
+            "seacoast.fisherman.line.04",
+            "seacoast.fisherman.line.05",
+            "seacoast.fisherman.line.06",
+            "seacoast.fisherman.line.07",
+            "seacoast.fisherman.line.08",
+            "seacoast.fisherman.line.09",
+            "seacoast.fisherman.line.10",
+            "seacoast.fisherman.line.11",
+            "seacoast.fisherman.line.12",
+            "seacoast.fisherman.line.13",
+            "seacoast.fisherman.line.14",
+            "seacoast.fisherman.line.15"
         };
 
         /// <summary>Seed stream from the city seed — the watchman's

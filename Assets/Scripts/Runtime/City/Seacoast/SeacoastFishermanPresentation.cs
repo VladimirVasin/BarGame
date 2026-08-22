@@ -6,7 +6,7 @@ using UnityEngine.Playables;
 namespace BarPromenade
 {
     /// <summary>
-    /// Drives the lake fisherman: one authored leaning loop — four slow
+    /// Drives the seacoast fisherman: one authored leaning loop — four slow
     /// breaths, one rod correction and a look down the line — through a
     /// small manual PlayableGraph, exactly like the watchman on his
     /// doorstep. He never leaves the end of the pier; the authored
@@ -21,7 +21,7 @@ namespace BarPromenade
     /// read them off the clip that is moving it.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class LakeFishermanPresentation : MonoBehaviour
+    public sealed class SeacoastFishermanPresentation : MonoBehaviour
     {
         /// <summary>A hitch longer than this advances the loop by a
         /// bounded step instead of teleporting mid-cast.</summary>
@@ -103,7 +103,7 @@ namespace BarPromenade
 
         public void Initialize(
             CityPedestrianAssetRegistry registry,
-            LakeFishermanStance stance)
+            SeacoastFishermanStance stance)
         {
             if (registry == null)
             {
@@ -131,7 +131,7 @@ namespace BarPromenade
             playbackSpeed = Mathf.Max(0.05f, stance.PlaybackSpeed);
             registry.ApplyPaletteVariant(stance.PaletteVariant);
 
-            graph = PlayableGraph.Create("Lake Fisherman");
+            graph = PlayableGraph.Create("Seacoast Fisherman");
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
             playable = AnimationClipPlayable.Create(graph, clip);
             playable.SetApplyFootIK(false);
@@ -140,7 +140,7 @@ namespace BarPromenade
                 stance.PhaseOffsetSeconds,
                 clip.length));
             AnimationPlayableOutput
-                .Create(graph, "Lake Fisherman Pose", registry.Animator)
+                .Create(graph, "Seacoast Fisherman Pose", registry.Animator)
                 .SetSourcePlayable(playable);
             graph.Play();
             graph.Evaluate(0f);

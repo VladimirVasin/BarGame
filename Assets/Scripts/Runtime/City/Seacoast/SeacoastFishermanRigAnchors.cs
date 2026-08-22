@@ -23,7 +23,7 @@ namespace BarPromenade
     /// behaviour of its own.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class LakeFishermanRigAnchors : MonoBehaviour
+    public sealed class SeacoastFishermanRigAnchors : MonoBehaviour
     {
         public const string PipeEmberRendererName = "ACC_PipeEmber";
         public const string RodTipRendererName = "ACC_RodTip";

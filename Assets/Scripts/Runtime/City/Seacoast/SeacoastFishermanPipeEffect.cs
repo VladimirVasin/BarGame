@@ -20,14 +20,14 @@ namespace BarPromenade
     /// draw, and falls back as he lets it go, and the plume is emitted
     /// on the same curve one beat behind it.
     ///
-    /// Built at runtime by <see cref="LakeFishermanFactory"/>, never
+    /// Built at runtime by <see cref="SeacoastFishermanFactory"/>, never
     /// authored into the staged prefab: that prefab is validated to
     /// carry no light and no audio, which is exactly the guard that
     /// keeps effects like this one from being smuggled into the art.
     /// </summary>
     [DefaultExecutionOrder(300)]
     [DisallowMultipleComponent]
-    public sealed class LakeFishermanPipeEffect : MonoBehaviour
+    public sealed class SeacoastFishermanPipeEffect : MonoBehaviour
     {
         /// <summary>The ember's colour at rest. Deliberately deep — a
         /// pipe between draws is dull red under ash, not orange.</summary>
@@ -80,7 +80,7 @@ namespace BarPromenade
         private static readonly int SoftParticleDistanceId =
             Shader.PropertyToID("_SoftParticleDistance");
 
-        private LakeFishermanPresentation presentation;
+        private SeacoastFishermanPresentation presentation;
         private Transform emberAnchor;
         private Renderer emberRenderer;
         private Light emberLight;
@@ -101,7 +101,7 @@ namespace BarPromenade
         public ParticleSystem Plume => plume;
 
         public void Initialize(
-            LakeFishermanPresentation configuredPresentation,
+            SeacoastFishermanPresentation configuredPresentation,
             Transform configuredEmberAnchor,
             Renderer configuredEmberRenderer)
         {
@@ -141,7 +141,7 @@ namespace BarPromenade
         /// </summary>
         public static float PlumeRateAt(float breathPhase)
         {
-            float lagged = LakeFishermanPresentation.BreathAmountAt(
+            float lagged = SeacoastFishermanPresentation.BreathAmountAt(
                 breathPhase - PlumeBreathLag);
             return Mathf.Lerp(PlumeRestRate, PlumeDrawRate, lagged);
         }
@@ -158,7 +158,7 @@ namespace BarPromenade
 
         private void Apply(float breathPhase)
         {
-            BreathAmount = LakeFishermanPresentation.BreathAmountAt(
+            BreathAmount = SeacoastFishermanPresentation.BreathAmountAt(
                 breathPhase);
             PlumeRate = PlumeRateAt(breathPhase);
 

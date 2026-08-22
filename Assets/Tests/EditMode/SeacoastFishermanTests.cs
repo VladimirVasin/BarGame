@@ -5,45 +5,45 @@ using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
 {
-    public sealed class LakeFishermanTests
+    public sealed class SeacoastFishermanTests
     {
         private const int Seed = 20260818;
 
-        private static CityLakePlan GenerateLake()
+        private static CitySeacoastPlan GenerateCoast()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
                 CityGenerationSettings.Default,
                 Seed);
-            CityLakePlan plan = CityLakePlanner.Create(layout);
+            CitySeacoastPlan plan = CitySeacoastPlanner.Create(layout);
             Assert.That(plan, Is.Not.Null,
-                "The default city must carry a dressable lake.");
+                "The default city must carry a dressable coast.");
             return plan;
         }
 
         [Test]
-        public void Plan_AbsentWithoutALakeOrAPier()
+        public void Plan_AbsentWithoutACoastOrAPier()
         {
             Assert.That(
-                LakeFishermanPlan.Create(null).IsPresent,
+                SeacoastFishermanPlan.Create(null).IsPresent,
                 Is.False);
         }
 
         [Test]
         public void Plan_StandsHimAtTheEndBoardWithHisBackToTheShore()
         {
-            CityLakePlan lake = GenerateLake();
-            LakeFishermanPlan plan = LakeFishermanPlan.Create(lake);
+            CitySeacoastPlan coast = GenerateCoast();
+            SeacoastFishermanPlan plan = SeacoastFishermanPlan.Create(coast);
 
             Assert.That(plan.IsPresent, Is.True);
-            LakeFishermanStance stance = plan.Stance;
+            SeacoastFishermanStance stance = plan.Stance;
 
             // He stands on boards, not on water: his stance has to fall
             // inside a deck footprint, so a plan that moved the pier
             // can never leave him out over the pond.
             var footing = new Vector2(stance.Position.x, stance.Position.z);
-            bool onDeck = lake.Parts
-                .Where(part => part.Kind == CityLakePartKind.PierDeck)
+            bool onDeck = coast.Parts
+                .Where(part => part.Kind == CitySeacoastPartKind.PierDeck)
                 .Any(part => new Rect(
                         part.Center.x - (part.Size.x + part.Size.z) * 0.5f,
                         part.Center.z - (part.Size.x + part.Size.z) * 0.5f,
@@ -54,17 +54,17 @@ namespace BarPromenade.Tests.EditMode
                 "The fisherman must stand on the pier deck.");
             Assert.That(
                 stance.Position.y,
-                Is.GreaterThan(lake.Basin.WaterTopY + 0.4f),
+                Is.GreaterThan(coast.Frame.SeaTopY + 0.4f),
                 "He must stand above the water, not in it.");
 
             // Facing out along the pier, away from the bank: the whole
             // character is that the player arrives behind him.
-            lake.TryGetPart(
-                CityLakePlanner.PierDeckHeadId,
-                out CityLakePartDescriptor head);
-            lake.TryGetPart(
-                CityLakePlanner.PierDeckRootId,
-                out CityLakePartDescriptor root);
+            coast.TryGetPart(
+                CitySeacoastPlanner.PierDeckHeadId,
+                out CitySeacoastPartDescriptor head);
+            coast.TryGetPart(
+                CitySeacoastPlanner.PierDeckRootId,
+                out CitySeacoastPartDescriptor root);
             Vector3 outward = head.Center - root.Center;
             outward.y = 0f;
             outward.Normalize();
@@ -78,9 +78,9 @@ namespace BarPromenade.Tests.EditMode
             // short of a parapet is not leaning on anything, and one
             // past it is standing in the pond.
             Assert.That(
-                lake.TryGetPart(
-                    CityLakePlanner.PierHeadBoardId,
-                    out CityLakePartDescriptor board),
+                coast.TryGetPart(
+                    CitySeacoastPlanner.PierHeadBoardId,
+                    out CitySeacoastPartDescriptor board),
                 Is.True);
             float reach = Vector3.Dot(
                 board.Center - stance.Position,
@@ -94,18 +94,18 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void Quips_AreDeterministicAndNeverRepeatBackToBack()
         {
-            uint firstState = LakeFishermanQuips.CreateState(Seed);
-            uint secondState = LakeFishermanQuips.CreateState(Seed);
+            uint firstState = SeacoastFishermanQuips.CreateState(Seed);
+            uint secondState = SeacoastFishermanQuips.CreateState(Seed);
             int previousFirst = -1;
             int previousSecond = -1;
             var seen = new HashSet<int>();
             int drawsUntilFullCoverage = -1;
             for (int draw = 0; draw < 200; draw++)
             {
-                int first = LakeFishermanQuips.NextIndex(
+                int first = SeacoastFishermanQuips.NextIndex(
                     ref firstState,
                     previousFirst);
-                int second = LakeFishermanQuips.NextIndex(
+                int second = SeacoastFishermanQuips.NextIndex(
                     ref secondState,
                     previousSecond);
                 Assert.That(first, Is.EqualTo(second),
@@ -116,12 +116,12 @@ namespace BarPromenade.Tests.EditMode
                     first,
                     Is.InRange(
                         0,
-                        LakeFishermanQuips.LineKeys.Length - 1));
+                        SeacoastFishermanQuips.LineKeys.Length - 1));
                 previousFirst = first;
                 previousSecond = second;
                 seen.Add(first);
                 if (drawsUntilFullCoverage < 0 &&
-                    seen.Count == LakeFishermanQuips.LineKeys.Length)
+                    seen.Count == SeacoastFishermanQuips.LineKeys.Length)
                 {
                     drawsUntilFullCoverage = draw + 1;
                 }
@@ -130,8 +130,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(drawsUntilFullCoverage, Is.InRange(1, 200),
                 "The whole repertoire comes up in ordinary play.");
             Assert.That(
-                LakeFishermanQuips.LineKeys.Distinct().Count(),
-                Is.EqualTo(LakeFishermanQuips.LineKeys.Length));
+                SeacoastFishermanQuips.LineKeys.Distinct().Count(),
+                Is.EqualTo(SeacoastFishermanQuips.LineKeys.Length));
         }
 
         [Test]
@@ -142,7 +142,7 @@ namespace BarPromenade.Tests.EditMode
                 TextAsset catalog = Resources.Load<TextAsset>(
                     $"Localization/{language}");
                 Assert.That(catalog, Is.Not.Null);
-                foreach (string key in LakeFishermanQuips.LineKeys)
+                foreach (string key in SeacoastFishermanQuips.LineKeys)
                 {
                     Assert.That(
                         catalog.text.Contains($"\"{key}\""),
@@ -152,7 +152,7 @@ namespace BarPromenade.Tests.EditMode
 
                 Assert.That(
                     catalog.text.Contains(
-                        $"\"{LakeFishermanInteraction.TalkPromptKey}\""),
+                        $"\"{SeacoastFishermanInteraction.TalkPromptKey}\""),
                     Is.True,
                     $"{language}.json is missing the talk prompt.");
             }
@@ -160,27 +160,27 @@ namespace BarPromenade.Tests.EditMode
 
 
         /// <summary>
-        /// The line has to end in the water, and only the lake knows
-        /// where the water is: the basin insets its own waterline
-        /// inside the blueprint cells, so a depth guessed anywhere else
-        /// would be a depth for a pond that is not there.
+        /// The line has to end in the water, and only the coast frame
+        /// knows where the water is: the sea's top is plan data, so a
+        /// depth guessed anywhere else would be a depth for a sea that
+        /// is not there.
         /// </summary>
         [Test]
-        public void Plan_ReadsTheWaterlineOffTheLakeItSitsOn()
+        public void Plan_ReadsTheWaterlineOffTheCoastItSitsOn()
         {
-            CityLakePlan lake = GenerateLake();
-            LakeFishermanPlan plan = LakeFishermanPlan.Create(lake);
+            CitySeacoastPlan coast = GenerateCoast();
+            SeacoastFishermanPlan plan = SeacoastFishermanPlan.Create(coast);
 
             Assert.That(plan.IsPresent, Is.True);
             Assert.That(
                 plan.WaterTopY,
-                Is.EqualTo(lake.Basin.WaterTopY).Within(0.0001f));
+                Is.EqualTo(coast.Frame.SeaTopY).Within(0.0001f));
             Assert.That(
                 plan.Stance.Position.y,
                 Is.GreaterThan(plan.WaterTopY),
                 "He sits on boards over the water, not in it.");
             Assert.That(
-                LakeFishermanPlan.Create(null).WaterTopY,
+                SeacoastFishermanPlan.Create(null).WaterTopY,
                 Is.EqualTo(0f));
         }
 
@@ -194,7 +194,7 @@ namespace BarPromenade.Tests.EditMode
         public void Breath_RunsFourClosedCyclesPerLoopAndPeaksMidBreath()
         {
             Assert.That(
-                LakeFishermanPresentation.BreathsPerLoop,
+                SeacoastFishermanPresentation.BreathsPerLoop,
                 Is.EqualTo(4));
 
             // Exhaled at every quarter of the loop, full at every eighth
@@ -204,13 +204,13 @@ namespace BarPromenade.Tests.EditMode
                 float rest = quarter / 4f;
                 float draw = rest + 0.125f;
                 Assert.That(
-                    LakeFishermanPresentation.BreathAmountAt(
-                        LakeFishermanPresentation.BreathPhaseAt(rest)),
+                    SeacoastFishermanPresentation.BreathAmountAt(
+                        SeacoastFishermanPresentation.BreathPhaseAt(rest)),
                     Is.EqualTo(0f).Within(0.0001f),
                     $"The chest must be closed at {rest:0.###}.");
                 Assert.That(
-                    LakeFishermanPresentation.BreathAmountAt(
-                        LakeFishermanPresentation.BreathPhaseAt(draw)),
+                    SeacoastFishermanPresentation.BreathAmountAt(
+                        SeacoastFishermanPresentation.BreathPhaseAt(draw)),
                     Is.EqualTo(1f).Within(0.0001f),
                     $"The chest must be open at {draw:0.###}.");
             }
@@ -218,18 +218,18 @@ namespace BarPromenade.Tests.EditMode
             // And it closes on itself: a loop that ended mid-breath
             // would jerk the ember once per lap.
             Assert.That(
-                LakeFishermanPresentation.BreathPhaseAt(1f),
-                Is.EqualTo(LakeFishermanPresentation.BreathPhaseAt(0f))
+                SeacoastFishermanPresentation.BreathPhaseAt(1f),
+                Is.EqualTo(SeacoastFishermanPresentation.BreathPhaseAt(0f))
                     .Within(0.0001f));
 
             int rises = 0;
-            float previous = LakeFishermanPresentation.BreathAmountAt(
-                LakeFishermanPresentation.BreathPhaseAt(0f));
+            float previous = SeacoastFishermanPresentation.BreathAmountAt(
+                SeacoastFishermanPresentation.BreathPhaseAt(0f));
             bool climbing = false;
             for (int step = 1; step <= 960; step++)
             {
-                float amount = LakeFishermanPresentation.BreathAmountAt(
-                    LakeFishermanPresentation.BreathPhaseAt(step / 960f));
+                float amount = SeacoastFishermanPresentation.BreathAmountAt(
+                    SeacoastFishermanPresentation.BreathPhaseAt(step / 960f));
                 if (amount > previous && !climbing)
                 {
                     climbing = true;
@@ -246,7 +246,7 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 rises,
-                Is.EqualTo(LakeFishermanPresentation.BreathsPerLoop),
+                Is.EqualTo(SeacoastFishermanPresentation.BreathsPerLoop),
                 "One lap of the loop is four draws on the pipe.");
         }
 
@@ -260,7 +260,7 @@ namespace BarPromenade.Tests.EditMode
         public void Plume_FollowsTheBreathButLagsBehindIt()
         {
             Assert.That(
-                LakeFishermanPipeEffect.PlumeBreathLag,
+                SeacoastFishermanPipeEffect.PlumeBreathLag,
                 Is.GreaterThan(0f));
 
             float peakPhase = 0f;
@@ -268,12 +268,12 @@ namespace BarPromenade.Tests.EditMode
             for (int step = 0; step < 720; step++)
             {
                 float phase = step / 720f;
-                float rate = LakeFishermanPipeEffect.PlumeRateAt(phase);
+                float rate = SeacoastFishermanPipeEffect.PlumeRateAt(phase);
                 Assert.That(
                     rate,
                     Is.InRange(
-                        LakeFishermanPipeEffect.PlumeRestRate,
-                        LakeFishermanPipeEffect.PlumeDrawRate));
+                        SeacoastFishermanPipeEffect.PlumeRestRate,
+                        SeacoastFishermanPipeEffect.PlumeDrawRate));
                 if (rate > peakRate)
                 {
                     peakRate = rate;
@@ -282,12 +282,12 @@ namespace BarPromenade.Tests.EditMode
             }
 
             float expected =
-                LakeFishermanPresentation.InhalePeakPhase +
-                LakeFishermanPipeEffect.PlumeBreathLag;
+                SeacoastFishermanPresentation.InhalePeakPhase +
+                SeacoastFishermanPipeEffect.PlumeBreathLag;
             Assert.That(peakPhase, Is.EqualTo(expected).Within(0.01f));
             Assert.That(
-                LakeFishermanPipeEffect.PlumeRateAt(
-                    LakeFishermanPresentation.InhalePeakPhase),
+                SeacoastFishermanPipeEffect.PlumeRateAt(
+                    SeacoastFishermanPresentation.InhalePeakPhase),
                 Is.LessThan(peakRate),
                 "The plume must still be rising when the chest is full.");
         }
@@ -302,12 +302,12 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void StagedPrefab_IsBoundPassiveAndCarriesItsPipeAndRodAnchors()
         {
-            LakeFishermanProvider provider = LakeFishermanProvider.Load();
+            SeacoastFishermanProvider provider = SeacoastFishermanProvider.Load();
             Assert.That(
                 provider,
                 Is.Not.Null,
                 $"Missing provider at Resources/" +
-                $"{LakeFishermanProvider.ResourcePath}.");
+                $"{SeacoastFishermanProvider.ResourcePath}.");
             GameObject prefab = provider.StagedPrefab;
             Assert.That(prefab, Is.Not.Null);
 
@@ -317,7 +317,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(registry, Is.Not.Null);
             Assert.That(
                 registry.DesignId,
-                Is.EqualTo(LakeFishermanProvider.DesignId));
+                Is.EqualTo(SeacoastFishermanProvider.DesignId));
             Assert.That(registry.IdleClip, Is.Not.Null);
             Assert.That(registry.IdleClip.name, Does.Contain("FishermanLean"));
             Assert.That(registry.IdleClip.isLooping, Is.True);
@@ -347,13 +347,13 @@ namespace BarPromenade.Tests.EditMode
                 Is.Empty);
 
             var anchors =
-                prefab.GetComponentInChildren<LakeFishermanRigAnchors>(true);
+                prefab.GetComponentInChildren<SeacoastFishermanRigAnchors>(true);
             Assert.That(anchors, Is.Not.Null);
             Assert.That(anchors.PedestrianRegistry, Is.EqualTo(registry));
             Assert.That(anchors.PipeEmberRenderer, Is.Not.Null);
             Assert.That(
                 anchors.PipeEmberRenderer.name,
-                Is.EqualTo(LakeFishermanRigAnchors.PipeEmberRendererName));
+                Is.EqualTo(SeacoastFishermanRigAnchors.PipeEmberRendererName));
 
             Transform ember = anchors.PipeEmberAnchor;
             Transform rodTip = anchors.RodTipAnchor;
@@ -388,7 +388,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(catalog, Is.Not.Null);
 
             string[] forbidden = { " ты ", " тебе ", " тебя ", " твой " };
-            foreach (string key in LakeFishermanQuips.LineKeys)
+            foreach (string key in SeacoastFishermanQuips.LineKeys)
             {
                 int at = catalog.text.IndexOf($"\"{key}\"");
                 Assert.That(at, Is.GreaterThanOrEqualTo(0));
