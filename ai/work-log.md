@@ -51,6 +51,21 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   handoff is invisible. The reported texture flicker: the crown facade
   overlaps the flanks by 0.12 m with coplanar front faces - z-fighting
   strips right beside the arch - so the crown is recessed 3 cm.
+- **Round four - the sealed tunnel had the identical hole, and the
+  mouth got its lamp.** The head-on probe render showed the road
+  tunnel's ridge gap wide open: wedges of sky between the two tapering
+  ridge ends above the arch, plus the same spandrel corners. The
+  facade+spandrel construction is now a shared `AddPortalBackstop`
+  (flanks, crown, arc-hugging stepped spandrels with radius-generic
+  inset math and an inner-arc clamp; depth staggers 0/0.03/0.06
+  against coplanar z-fights) used by both portals - the tunnel's
+  backstop tops at the taller adjoining south station and sits 0.45 m
+  behind the mouth-plane furniture. The river mouth also gained its
+  requested lamp: an iron-hooded, kerosene-warm lens on the arch crown
+  (120 night / 26 day floor / 15 m range, between the door bulbs and
+  the yard floodlight), wired like the lake hut bulb - glow registry,
+  point light, halo, site-light day dimming. Verified by after-fix
+  renders of both mouths; probes deleted.
 - **Round three - the user named the actual geometry.** The mouth is a
   RECTANGULAR facade opening with a SEMICIRCULAR portal ring inside
   it, and the two upper corners of the rectangle - the spandrels

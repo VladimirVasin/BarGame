@@ -32,6 +32,16 @@ namespace BarPromenade
             new Color(0.155f, 0.185f, 0.175f, 1f);
         private static readonly Color GateBrace =
             new Color(0.105f, 0.125f, 0.120f, 1f);
+
+        // The water mouth's one lamp: hand-lamp kerosene warmth, sized
+        // between the door bulbs (64-110 @ 7-8 m) and the yard
+        // floodlight (150 @ 16 m) so it carries the whole 10 m mouth,
+        // with the hand lamp's "still burning at noon" day floor.
+        private const float CaveLampNightIntensity = 120f;
+        private const float CaveLampDayIntensity = 26f;
+        private const float CaveLampRange = 15f;
+        private static readonly Color CaveLampColor =
+            new Color(1.00f, 0.74f, 0.42f);
         internal static GameObject Build(
             Transform parent,
             CityLayout layout,
@@ -78,7 +88,7 @@ namespace BarPromenade
 
             if (plan.HasTunnel)
             {
-                BuildTunnel(root.transform, plan.Tunnel);
+                BuildTunnel(root.transform, plan.Tunnel, plan);
             }
 
             if (plan.HasRiverCave)
@@ -98,6 +108,7 @@ namespace BarPromenade
             BuildRiverCaveForefield(root.transform, cave);
             BuildRiverCaveRockStop(root.transform, cave);
             BuildRiverCaveLining(root.transform, cave);
+            BuildRiverCaveLamp(root.transform, cave);
         }
 
         private static void BuildRiverCaveForefield(
@@ -180,8 +191,6 @@ namespace BarPromenade
             Transform parent,
             CityMountainRiverNotchDescriptor cave)
         {
-            const float ringThickness = 1.15f;
-            const float facadeDepth = 4f;
             const float overlap = 0.12f;
             float portalBaseY = cave.BaseY +
                                 CitySurfaceDescriptor.WaterTopOffset -
@@ -209,81 +218,27 @@ namespace BarPromenade
                     portalDescriptor);
             portal.name = "River Cave Portal";
 
-            float leftInner =
-                cave.WaterApproachBounds.xMin - ringThickness;
-            float rightInner =
-                cave.WaterApproachBounds.xMax + ringThickness;
-            float crownBottomY = portalBaseY + cave.OpeningHeight - overlap;
             // One flat-topped massif at the HIGHER of the two adjoining
             // ridge peaks. The notch splits the ridge line, so there is
             // no rock behind the facade: with the crown at the LOWER
             // peak, the taller side stood 4+ m above it and the gap
             // between them read as a bright hole in the mountain.
             float facadeTopY = Mathf.Max(
-                crownBottomY + 4f,
+                portalBaseY + cave.OpeningHeight - overlap + 4f,
                 Mathf.Max(cave.WestPeakY, cave.EastPeakY));
-            float facadeBottomY = portalBaseY - 0.45f;
-            Quaternion rotation = Quaternion.LookRotation(
-                Flatten(cave.Axis),
-                Vector3.up);
-            Vector3 depthOffset = Flatten(cave.Axis) *
-                                  (facadeDepth * 0.5f);
-            var rock = new List<RuntimeOrientedBox>(3);
-            AddFacadeBox(
+            var rock = new List<RuntimeOrientedBox>(7);
+            AddPortalBackstop(
                 rock,
-                cave.ApproachBounds.xMin,
-                leftInner + overlap,
-                facadeBottomY,
-                facadeTopY,
-                mouthZ,
-                depthOffset,
-                rotation,
-                facadeDepth);
-            AddFacadeBox(
-                rock,
-                rightInner - overlap,
-                cave.ApproachBounds.xMax,
-                facadeBottomY,
-                facadeTopY,
-                mouthZ,
-                depthOffset,
-                rotation,
-                facadeDepth);
-            // Recessed 3 cm behind the flanks: the crown overlaps them
-            // by 0.12 m so the joint never cracks, and coplanar front
-            // faces on those strips z-fight right beside the arch.
-            AddFacadeBox(
-                rock,
-                leftInner,
-                rightInner,
-                crownBottomY,
-                facadeTopY,
-                mouthZ,
-                depthOffset + (Flatten(cave.Axis) * 0.03f),
-                rotation,
-                facadeDepth);
-
-            // The spandrels. The facade leaves a RECTANGULAR opening
-            // between the flanks and the crown, while the portal ring is
-            // a SEMICIRCLE inside it - the two upper corners of that
-            // rectangle, outside the ring's outer arc, were open, and a
-            // sightline through them runs down the throat past the far
-            // clip: a fog-bright gap in each corner. Two stepped blocks
-            // per side hug the outer arc (stepped, never diagonal), each
-            // inner-bottom corner kept outside the ring's inner radius so
-            // the arch opening itself stays whole. Recessed 6 cm - behind
-            // both the flanks (0) and the crown (3 cm) - so their overlap
-            // strips never share a front plane with either.
-            AddSpandrelBoxes(
-                rock,
-                cave,
+                cave.WaterApproachBounds.center.x,
+                cave.WaterApproachBounds.width * 0.5f,
                 portalBaseY,
-                ringThickness,
-                crownBottomY,
+                cave.OpeningHeight,
+                cave.ApproachBounds.xMin,
+                cave.ApproachBounds.xMax,
+                facadeTopY,
                 mouthZ,
-                depthOffset + (Flatten(cave.Axis) * 0.06f),
-                rotation,
-                facadeDepth);
+                Flatten(cave.Axis),
+                0f);
             GameObject stop =
                 RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
                     "River Cave Rock Stop",
@@ -303,36 +258,108 @@ namespace BarPromenade
                 MidRock);
         }
 
-        private static void AddSpandrelBoxes(
+        /// <summary>
+        /// The rock face a portal stands in: flat flanks beside the ring,
+        /// a crown above it, and the SPANDRELS - the portal ring is a
+        /// semicircle inside a rectangular opening, and without stepped
+        /// blocks hugging its outer arc the two upper corners of that
+        /// rectangle stay open, with a sightline down the throat past the
+        /// far clip: a fog-bright gap in each corner. Shared by the river
+        /// cave and the sealed tunnel, which had the identical hole.
+        /// Depth staggers (flanks 0, crown +0.03, spandrels +0.06) keep
+        /// every overlap strip off a shared front plane, so nothing
+        /// z-fights beside the arch.
+        /// </summary>
+        private static void AddPortalBackstop(
             ICollection<RuntimeOrientedBox> target,
-            CityMountainRiverNotchDescriptor cave,
-            float portalBaseY,
-            float ringThickness,
-            float crownBottomY,
+            float centreX,
+            float innerRadius,
+            float baseY,
+            float openingHeight,
+            float approachXMin,
+            float approachXMax,
+            float facadeTopY,
             float mouthZ,
-            Vector3 depthOffset,
-            Quaternion rotation,
-            float depth)
+            Vector3 axisFlat,
+            float setback)
         {
-            float centreX = cave.WaterApproachBounds.center.x;
-            float innerRadius = cave.WaterApproachBounds.width * 0.5f;
+            const float ringThickness = 1.15f;
+            const float overlap = 0.12f;
+            const float facadeDepth = 4f;
             float outerRadius = innerRadius + ringThickness;
-            // The arch springs where the vertical jambs meet the arc,
-            // mirroring the portal-frame construction.
-            float springY = portalBaseY +
-                            cave.OpeningHeight -
-                            innerRadius;
-            float topY = crownBottomY + 0.05f;
+            float leftInner = centreX - outerRadius;
+            float rightInner = centreX + outerRadius;
+            float crownBottomY = baseY + openingHeight - overlap;
+            float facadeBottomY = baseY - 0.45f;
+            Quaternion rotation = Quaternion.LookRotation(
+                axisFlat,
+                Vector3.up);
+            Vector3 depthOffset = axisFlat *
+                                  ((facadeDepth * 0.5f) + setback);
 
-            // Step edges chosen against the ring radii (inner 5.0,
-            // outer 6.15 for the authored 10 m mouth): the tall step's
-            // inner edge sits 0.1 outside the inner radius at spring
-            // level, and the short step's inner-bottom corner clears
-            // the inner radius, so neither block clips the opening
-            // while together with the ring band they close the corner.
+            AddFacadeBox(
+                target,
+                approachXMin,
+                leftInner + overlap,
+                facadeBottomY,
+                facadeTopY,
+                mouthZ,
+                depthOffset,
+                rotation,
+                facadeDepth);
+            AddFacadeBox(
+                target,
+                rightInner - overlap,
+                approachXMax,
+                facadeBottomY,
+                facadeTopY,
+                mouthZ,
+                depthOffset,
+                rotation,
+                facadeDepth);
+            AddFacadeBox(
+                target,
+                leftInner,
+                rightInner,
+                crownBottomY,
+                facadeTopY,
+                mouthZ,
+                depthOffset + (axisFlat * 0.03f),
+                rotation,
+                facadeDepth);
+
+            // The spandrel steps, derived from the ring radii so any
+            // authored mouth works: the tall step's inner edge sits just
+            // outside the inner radius at spring level; the short step
+            // rises from where the outer arc crosses the tall step's
+            // edge, its inner-bottom corner clamped outside the inner
+            // arc; past the point where the outer arc reaches the crown
+            // the ring band itself closes the corner.
+            float springY = baseY + openingHeight - innerRadius;
+            float crownRelative = innerRadius - overlap;
+            float topY = crownBottomY + 0.05f;
             float tallInset = innerRadius + 0.10f;
-            float shortInset = innerRadius - 1.30f;
-            float shortBottomY = springY + 3.40f;
+            float dxCrown = Mathf.Sqrt(Mathf.Max(
+                0.01f,
+                (outerRadius * outerRadius) -
+                (crownRelative * crownRelative)));
+            float shortInset = dxCrown - 0.04f;
+            float shortBottomRelative = Mathf.Sqrt(Mathf.Max(
+                0f,
+                (outerRadius * outerRadius) -
+                (tallInset * tallInset))) - 0.05f;
+            if (shortInset < innerRadius)
+            {
+                shortBottomRelative = Mathf.Max(
+                    shortBottomRelative,
+                    Mathf.Sqrt(
+                        (innerRadius * innerRadius) -
+                        (shortInset * shortInset)) + 0.05f);
+            }
+
+            float shortBottomY = springY + shortBottomRelative;
+            Vector3 spandrelOffset =
+                depthOffset + (axisFlat * 0.06f);
             for (int side = -1; side <= 1; side += 2)
             {
                 float outerX = centreX + (side * outerRadius);
@@ -345,19 +372,23 @@ namespace BarPromenade
                     springY,
                     topY,
                     mouthZ,
-                    depthOffset,
+                    spandrelOffset,
                     rotation,
-                    depth);
-                AddFacadeBox(
-                    target,
-                    Mathf.Min(tallX, shortX),
-                    Mathf.Max(tallX, shortX),
-                    shortBottomY,
-                    topY,
-                    mouthZ,
-                    depthOffset,
-                    rotation,
-                    depth);
+                    facadeDepth);
+                if (shortBottomY < topY - 0.01f &&
+                    shortInset < tallInset)
+                {
+                    AddFacadeBox(
+                        target,
+                        Mathf.Min(tallX, shortX),
+                        Mathf.Max(tallX, shortX),
+                        shortBottomY,
+                        topY,
+                        mouthZ,
+                        spandrelOffset,
+                        rotation,
+                        facadeDepth);
+                }
             }
         }
 
@@ -386,6 +417,99 @@ namespace BarPromenade
                     mouthZ) + depthOffset,
                 rotation,
                 new Vector3(width, height, depth)));
+        }
+
+        /// <summary>
+        /// The noticeable light the user asked the water mouth to own:
+        /// an iron-hooded lamp on the arch crown, registered like the
+        /// lake hut bulb - a glow lens, a real point light with a halo,
+        /// and the site registry dimming it to a day floor so "still
+        /// burning" reads at noon too.
+        /// </summary>
+        private static void BuildRiverCaveLamp(
+            Transform parent,
+            CityMountainRiverNotchDescriptor cave)
+        {
+            float portalBaseY = cave.BaseY +
+                                CitySurfaceDescriptor.WaterTopOffset -
+                                CityRiverWorldBuilder.RiverBedDepth;
+            Vector3 axis = Flatten(cave.Axis);
+            var assembly = new GameObject("River Cave Portal Lamp");
+            assembly.transform.SetParent(parent, false);
+            assembly.transform.SetPositionAndRotation(
+                new Vector3(
+                    cave.WaterApproachBounds.center.x,
+                    portalBaseY + cave.OpeningHeight + 0.85f,
+                    cave.ApproachBounds.yMin) - (axis * 0.55f),
+                Quaternion.LookRotation(axis, Vector3.up));
+
+            RuntimePrimitiveFactory.CreateBox(
+                "Cave Lamp Bracket",
+                assembly.transform,
+                new Vector3(0f, 0.28f, 0.30f),
+                new Vector3(0.16f, 0.20f, 0.75f),
+                GateBrace,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Cave Lamp Hood",
+                assembly.transform,
+                new Vector3(0f, 0.12f, 0f),
+                new Vector3(0.66f, 0.16f, 0.52f),
+                GateMetal,
+                false);
+            Color glow = MultiplyRgb(CaveLampColor, 4.6f, 1f);
+            GameObject lens = RuntimePrimitiveFactory.CreateBox(
+                "Cave Lamp Lens",
+                assembly.transform,
+                Vector3.zero,
+                new Vector3(0.40f, 0.14f, 0.30f),
+                glow,
+                CityNightResources.EmissiveMaterial,
+                false);
+            CityNightGlowRegistry.Register(
+                lens.GetComponent<Renderer>(),
+                glow);
+
+            var emitter = new GameObject("Cave Lamp Light");
+            emitter.transform.SetParent(assembly.transform, false);
+            emitter.transform.localPosition =
+                new Vector3(0f, -0.18f, 0f);
+            Light light = emitter.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = CaveLampColor;
+            light.intensity = CaveLampNightIntensity;
+            light.range = CaveLampRange;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
+
+            var haloObject = new GameObject("Cave Lamp Halo");
+            haloObject.transform.SetParent(emitter.transform, false);
+            CityLightHalo halo =
+                haloObject.AddComponent<CityLightHalo>();
+            halo.Initialize(
+                CityNightResources.AtmosphereMaterial,
+                0.55f,
+                1.60f,
+                MultiplyRgb(CaveLampColor, 4.2f, 0.18f),
+                MultiplyRgb(CaveLampColor, 2.1f, 0.05f));
+            CityNightSiteLightRegistry.Register(
+                light,
+                CaveLampNightIntensity,
+                CaveLampDayIntensity,
+                halo);
+        }
+
+        private static Color MultiplyRgb(
+            Color color,
+            float multiplier,
+            float alpha)
+        {
+            return new Color(
+                color.r * multiplier,
+                color.g * multiplier,
+                color.b * multiplier,
+                alpha);
         }
 
         private static void BuildRiverCaveLining(
@@ -464,7 +588,8 @@ namespace BarPromenade
 
         private static void BuildTunnel(
             Transform parent,
-            CityMountainTunnelDescriptor tunnel)
+            CityMountainTunnelDescriptor tunnel,
+            CityMountainBoundaryPlan plan)
         {
             var root = new GameObject("Sealed South Tunnel");
             root.transform.SetParent(parent, false);
@@ -474,6 +599,78 @@ namespace BarPromenade
                 tunnel);
             BuildThroat(root.transform, tunnel);
             BuildSealedGate(root.transform, tunnel);
+            BuildTunnelBackstop(root.transform, tunnel, plan);
+        }
+
+        /// <summary>
+        /// The ridge line breaks for the tunnel exactly like it does for
+        /// the river notch, and nothing stood in the gap above the arch:
+        /// wedges of open sky between the tapering ridge ends, plus the
+        /// same spandrel corners the river mouth had. The shared portal
+        /// backstop closes it, topped at the taller adjoining station.
+        /// </summary>
+        private static void BuildTunnelBackstop(
+            Transform parent,
+            CityMountainTunnelDescriptor tunnel,
+            CityMountainBoundaryPlan plan)
+        {
+            float top = tunnel.PortalGroundCenter.y +
+                        tunnel.OpeningHeight + 4f;
+            for (int ridgeIndex = 0;
+                 ridgeIndex < plan.Ridges.Count;
+                 ridgeIndex++)
+            {
+                CityMountainRidgeDescriptor ridge =
+                    plan.Ridges[ridgeIndex];
+                if (ridge.Side != CityMountainBoundarySide.South)
+                {
+                    continue;
+                }
+
+                for (int stationIndex = 0;
+                     stationIndex < ridge.Stations.Count;
+                     stationIndex++)
+                {
+                    CityMountainRidgeStation station =
+                        ridge.Stations[stationIndex];
+                    float x = station.WorldXZ.x;
+                    if (x >= tunnel.ApproachBounds.xMin - 1.5f &&
+                        x <= tunnel.ApproachBounds.xMax + 1.5f)
+                    {
+                        top = Mathf.Max(top, station.PeakY);
+                    }
+                }
+            }
+
+            var rock = new List<RuntimeOrientedBox>(7);
+            AddPortalBackstop(
+                rock,
+                tunnel.PortalGroundCenter.x,
+                tunnel.OpeningWidth * 0.5f,
+                tunnel.PortalGroundCenter.y,
+                tunnel.OpeningHeight,
+                tunnel.ApproachBounds.xMin,
+                tunnel.ApproachBounds.xMax,
+                top,
+                tunnel.PortalGroundCenter.z,
+                Flatten(tunnel.Axis),
+                // Set back behind the mouth-plane furniture (pediment,
+                // portal lamp housing) so nothing shares a front plane.
+                0.45f);
+            GameObject stop =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "Tunnel Rock Stop",
+                    parent,
+                    rock,
+                    MidRock,
+                    true,
+                    CityMountainSurfaceAppearance.MetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            // Ordinary opaque rock, same reasoning as the river cave
+            // facade: the throat sits behind it, not the backdrop ring.
+            CityMountainSurfaceAppearance.ApplyCombined(
+                stop.GetComponent<Renderer>(),
+                MidRock);
         }
 
         private static void BuildThroat(

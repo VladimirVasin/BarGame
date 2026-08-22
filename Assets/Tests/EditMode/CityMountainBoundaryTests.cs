@@ -1095,9 +1095,18 @@ namespace BarPromenade.Tests.EditMode
                     throatVertices.Any(vertex =>
                         Mathf.Abs(vertex.y - ceilingBottom) < 0.001f),
                     Is.True);
+                // The one deliberate exception to the otherwise
+                // presentation-only closure: the river mouth's portal
+                // lamp on the arch crown.
+                Light[] boundaryLights =
+                    physical.GetComponentsInChildren<Light>(true);
+                Assert.That(boundaryLights, Has.Length.EqualTo(1));
                 Assert.That(
-                    physical.GetComponentsInChildren<Light>(true),
-                    Is.Empty);
+                    boundaryLights[0].gameObject.name,
+                    Is.EqualTo("Cave Lamp Light"));
+                Assert.That(
+                    boundaryLights[0].type,
+                    Is.EqualTo(LightType.Point));
                 Assert.That(
                     physical.GetComponentsInChildren<MonoBehaviour>(true)
                         .Any(item =>
