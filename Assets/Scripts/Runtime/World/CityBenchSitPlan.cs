@@ -432,7 +432,8 @@ namespace BarPromenade
             CityCemeteryPlan cemeteryPlan,
             CityBusPlan busPlan,
             CityDecorationPlan streetDecorations,
-            CityStreetSurfacePlan streetSurfacePlan)
+            CityStreetSurfacePlan streetSurfacePlan,
+            CitySeacoastPlan seacoastPlan = null)
         {
             if (layout == null)
             {
@@ -476,6 +477,7 @@ namespace BarPromenade
                 layout,
                 streetSurfacePlan,
                 cemeteryPlan);
+            AddSeacoastSeats(plans, seacoastPlan);
             for (int index = 0;
                  index < layout.DistrictPointsOfInterest.Count;
                  index++)
@@ -524,6 +526,51 @@ namespace BarPromenade
             }
 
             return plans;
+        }
+
+        /// <summary>
+        /// The esplanade benches on the seacoast, read back from the
+        /// coast plan's seat parts by their stable ids so the offer
+        /// and the timber can never disagree. Every one of them faces
+        /// north, at the water — that is what they are for.
+        /// </summary>
+        private static void AddSeacoastSeats(
+            List<CityBenchSitPlan> plans,
+            CitySeacoastPlan seacoastPlan)
+        {
+            if (seacoastPlan == null)
+            {
+                return;
+            }
+
+            for (int index = 0;
+                 index < seacoastPlan.Parts.Count;
+                 index++)
+            {
+                CitySeacoastPartDescriptor part =
+                    seacoastPlan.Parts[index];
+                if (part.Kind != CitySeacoastPartKind.Bench ||
+                    !part.StableId.EndsWith(
+                        "-seat",
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                float seatTop = part.Center.y + part.Size.y * 0.5f;
+                Add(plans, new CityBenchSeat(
+                    part.StableId.Substring(
+                        0,
+                        part.StableId.Length - "-seat".Length),
+                    new Vector3(
+                        part.Center.x,
+                        seatTop,
+                        part.Center.z),
+                    part.Size.x,
+                    part.Size.z,
+                    seatTop - part.Size.y - 0.42f,
+                    Vector3.forward));
+            }
         }
 
         /// <summary>

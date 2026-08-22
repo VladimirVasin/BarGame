@@ -540,7 +540,8 @@ namespace BarPromenade
                     World.CemeteryPlan,
                     BusPlan,
                     World.DecorationPlan,
-                    pedestrianStreetSurfacePlan);
+                    pedestrianStreetSurfacePlan,
+                    World.SeacoastPlan);
             BenchSits = CityBenchSitWorldBuilder.Build(
                 transform,
                 benchPlans,

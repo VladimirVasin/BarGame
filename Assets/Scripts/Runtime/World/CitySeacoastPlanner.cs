@@ -148,6 +148,15 @@ namespace BarPromenade
             "seacoast-footbridge-deck-east";
         internal const string HutDoorId = "seacoast-hut-door";
         internal const string BenchIdPrefix = "seacoast-bench-";
+        internal const string PromenadeStairWestId =
+            "seacoast-promenade-stair-west";
+        internal const string PromenadeStairEastId =
+            "seacoast-promenade-stair-east";
+
+        // The pedestrian lane's inset from a promenade edge, kept
+        // equal to the pedestrian planner's AgentRadius + 0.1 so the
+        // quay stairs land exactly under the lane that descends them.
+        internal const float PromenadeLaneInset = 0.45f;
 
         /// <summary>
         /// Returns null when the layout carries no dressable seacoast:
@@ -200,6 +209,7 @@ namespace BarPromenade
             AddPortRuins(parts, layout, frame, layout.Seed, reserved,
                 access);
             AddFootbridge(parts, layout, frame);
+            AddPromenadeStairs(parts, layout, frame);
             AddWildShore(parts, layout, frame, layout.Seed, reserved);
 
             var plan = new CitySeacoastPlan(parts, lamps, grounds, frame);
@@ -263,6 +273,73 @@ namespace BarPromenade
                 waterline - FootbridgeZOffset - FootbridgeWidth * 0.5f,
                 frame.ChannelXMax + FootbridgeOverhang + SeamReach,
                 waterline - FootbridgeZOffset + FootbridgeWidth * 0.5f));
+
+            // The quay junctions. The promenade rectangles and the
+            // sand row merely abut at the waterfront boundary, and
+            // abutting rectangles leave a dead band two agent radii
+            // wide — so each junction gets a bridging strip across
+            // the seam, under the stair that walks it.
+            for (int index = 0;
+                 index < layout.River.Promenades.Count;
+                 index++)
+            {
+                CityRiverPromenadeDescriptor promenade =
+                    layout.River.Promenades[index];
+                float laneX = promenade.WestBank
+                    ? promenade.Bounds.xMin + PromenadeLaneInset
+                    : promenade.Bounds.xMax - PromenadeLaneInset;
+                destination.Add(Rect.MinMaxRect(
+                    laneX - 1.1f,
+                    promenade.Bounds.yMax - SeamReach,
+                    laneX + 1.1f,
+                    promenade.Bounds.yMax + SeamReach));
+            }
+        }
+
+        /// <summary>
+        /// Whether the layout carries a dressable seacoast at all —
+        /// the cheap question the river's rail pass asks before it
+        /// seals the promenades' north ends: when the coast joins
+        /// them, the seal comes off and the quay stairs bridge the
+        /// step instead.
+        /// </summary>
+        internal static bool HasDressableSeacoast(CityLayout layout)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            return TryCreateSetup(
+                layout,
+                out CitySeacoastFrame _,
+                out Rect _,
+                out CityOpenAreaAccessDescriptor _);
+        }
+
+        /// <summary>
+        /// The height a person walks at on the shore: the sand's own
+        /// top, lifted by the slab where the esplanade band covers it.
+        /// The pedestrian lane samples its node heights here so the
+        /// walkers stand on what the builder drew.
+        /// </summary>
+        internal static float SampleShoreWalkTop(
+            CityLayout layout,
+            in CitySeacoastFrame frame,
+            float x,
+            float z)
+        {
+            float top = SampleSandTop(layout, x, z);
+            float bandNorth = frame.WaterlineZ - EsplanadeSetback;
+            if (x >= frame.CenterZone.xMin + 0.4f &&
+                x <= frame.CenterZone.xMax - 0.4f &&
+                z <= bandNorth &&
+                z >= bandNorth - EsplanadeDepth)
+            {
+                top += EsplanadeSlabLift;
+            }
+
+            return top;
         }
 
         /// <summary>
@@ -2180,8 +2257,11 @@ namespace BarPromenade
                               to,
                               (index + 0.5f) / stations) +
                           ((hash & 0xFFu) / 255f - 0.5f) * 4f;
+                // The band hugs the old quay line north of the shore
+                // lane, so what the port dropped never blocks the walk
+                // the pedestrians take along the esplanade axis.
                 float z = frame.WaterlineZ -
-                          (2.2f + (((hash >> 8) & 0xFFu) / 255f) * 6.5f);
+                          (2.2f + (((hash >> 8) & 0xFFu) / 255f) * 3.0f);
                 Rect footprint = Rect.MinMaxRect(
                     x - 1.2f, z - 1.2f, x + 1.2f, z + 1.2f);
                 if (OverlapsAny(footprint, reserved, 0f) ||
@@ -2401,6 +2481,68 @@ namespace BarPromenade
                         railZ),
                     rotation,
                     new Vector3(span, 0.10f, 0.08f)));
+            }
+        }
+
+        /// <summary>
+        /// The quay stairs: where each river promenade's north end
+        /// used to be sealed by a transverse rail, a short granite
+        /// stair now walks the small step down onto the sand. The
+        /// river's rail pass skips those two seals whenever the coast
+        /// exists, so every metre of the hand-off stays visible
+        /// geometry.
+        /// </summary>
+        private static void AddPromenadeStairs(
+            ICollection<CitySeacoastPartDescriptor> parts,
+            CityLayout layout,
+            in CitySeacoastFrame frame)
+        {
+            for (int index = 0;
+                 index < layout.River.Promenades.Count;
+                 index++)
+            {
+                CityRiverPromenadeDescriptor promenade =
+                    layout.River.Promenades[index];
+                float laneX = promenade.WestBank
+                    ? promenade.Bounds.xMin + PromenadeLaneInset
+                    : promenade.Bounds.xMax - PromenadeLaneInset;
+                float joinZ = promenade.Bounds.yMax;
+                float sand = SampleSandTop(
+                    layout,
+                    laneX,
+                    joinZ + 4.3f);
+                float drop = promenade.NorthY - sand;
+                string baseId = promenade.WestBank
+                    ? PromenadeStairWestId
+                    : PromenadeStairEastId;
+                int stepCount = Mathf.Clamp(
+                    Mathf.CeilToInt(Mathf.Abs(drop) / StairMaximumRise),
+                    1,
+                    6);
+                float stepRise = drop / stepCount;
+                for (int step = 0; step < stepCount; step++)
+                {
+                    // Step tops walk from just under the promenade's
+                    // datum down to the sand; the last one lands
+                    // flush, a threshold slab across the seam itself.
+                    float top = promenade.NorthY -
+                                (step + 1) * stepRise;
+                    parts.Add(Part(
+                        step == 0
+                            ? baseId
+                            : $"{baseId}-{step}",
+                        CitySeacoastPartKind.EsplanadeStair,
+                        CitySeacoastStyle.Granite,
+                        new Vector3(
+                            laneX,
+                            top - 0.15f,
+                            joinZ + 0.28f + step * StairTread),
+                        Quaternion.identity,
+                        new Vector3(
+                            2.0f,
+                            0.30f,
+                            StairTread + 0.08f)));
+                }
             }
         }
 

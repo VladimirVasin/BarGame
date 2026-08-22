@@ -503,12 +503,16 @@ namespace BarPromenade.Tests
                 Assert.That(
                     rails.Find("East Quay South End Rail"),
                     Is.Null);
+                // The north seals came off when the seacoast arrived:
+                // its quay stairs bridge the step onto the sand, so a
+                // rail there would wall off a walk that now exists —
+                // the same rule the river cave applies at the south.
                 Assert.That(
                     rails.Find("West Quay North End Rail"),
-                    Is.Not.Null);
+                    Is.Null);
                 Assert.That(
                     rails.Find("East Quay North End Rail"),
-                    Is.Not.Null);
+                    Is.Null);
                 Collider[] railColliders =
                     rails.GetComponentsInChildren<Collider>();
                 foreach (CityRiverBridgeDescriptor bridge in

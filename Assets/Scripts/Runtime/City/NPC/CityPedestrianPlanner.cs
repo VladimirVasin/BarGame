@@ -123,6 +123,10 @@ namespace BarPromenade
                 layout,
                 endpointsByNode,
                 graph);
+            BuildSeacoastPaths(
+                layout,
+                endpointsByNode,
+                graph);
             return graph.CreatePlan(
                 layout.Seed,
                 populationSeed,

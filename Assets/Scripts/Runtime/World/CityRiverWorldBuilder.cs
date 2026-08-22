@@ -462,14 +462,22 @@ namespace BarPromenade
                             promenade,
                             physicalBounds.yMin));
                 }
-                BuildTransverseQuayRail(
-                    rails,
-                    $"{(promenade.WestBank ? "West" : "East")} " +
-                    "Quay North End Rail",
-                    physicalBounds.xMin,
-                    physicalBounds.xMax,
-                    physicalBounds.yMax,
-                    SamplePromenadeY(promenade, physicalBounds.yMax));
+                // When the seacoast exists, the promenade's north end
+                // is not an edge any more: the coast's quay stair
+                // bridges the step onto the sand, so the seal comes
+                // off — the river-cave rule at the south end, applied
+                // at the mouth.
+                if (!CitySeacoastPlanner.HasDressableSeacoast(layout))
+                {
+                    BuildTransverseQuayRail(
+                        rails,
+                        $"{(promenade.WestBank ? "West" : "East")} " +
+                        "Quay North End Rail",
+                        physicalBounds.xMin,
+                        physicalBounds.xMax,
+                        physicalBounds.yMax,
+                        SamplePromenadeY(promenade, physicalBounds.yMax));
+                }
             }
         }
 
