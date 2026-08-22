@@ -147,25 +147,22 @@ namespace BarPromenade.Tests.EditMode
                 Is.True,
                 "The barge strands off the wild east shore.");
 
-            // The training sill spans the mouth itself, crest above
-            // both waters, so the river sheet and the sea sheet never
-            // touch.
-            CitySeacoastPartDescriptor sill = plan.Parts.First(part =>
-                part.StableId == "seacoast-mouth-sill");
-            Assert.That(
-                sill.Center.x,
-                Is.EqualTo(
-                    (frame.ChannelXMin + frame.ChannelXMax) * 0.5f)
-                    .Within(1.5f));
-            float sillCrest = sill.Center.y + sill.Size.y * 0.5f;
-            Assert.That(
-                sillCrest,
-                Is.GreaterThan(frame.SeaTopY + 0.25f),
-                "The sill crest must clear the sea's highest swell.");
-            Assert.That(
-                sillCrest,
-                Is.GreaterThan(0.15f),
-                "The sill crest must clear the river's mouth water.");
+            // The mouth banks close the channel's cut through the
+            // sand row on both sides — the granite quay walls end at
+            // the promenade, and without the banks the bare terrain
+            // edge is a hole in the world.
+            foreach (int side in new[] { 0, 1 })
+            {
+                float edgeX = side == 0
+                    ? frame.ChannelXMin
+                    : frame.ChannelXMax;
+                Assert.That(
+                    plan.Parts.Any(part =>
+                        part.Kind == CitySeacoastPartKind.MouthBank &&
+                        Mathf.Abs(part.Center.x - edgeX) < 1f),
+                    Is.True,
+                    $"The mouth's side {side} has no sand bank.");
+            }
         }
 
         [Test]
@@ -560,53 +557,92 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void DefaultCity_KeepsRiverAndSeaSheetsApartAtTheMouth()
+        public void DefaultCity_PoursTheRiverIntoTheSea()
         {
             CityLayout layout = CreateDefaultLayout();
             CitySeacoastPlan plan = CitySeacoastPlanner.Create(layout);
             CitySeacoastFrame frame = plan.Frame;
 
-            CitySeacoastPartDescriptor sill = plan.Parts.First(part =>
-                part.StableId == "seacoast-mouth-sill");
-            float sillCrest = sill.Center.y + sill.Size.y * 0.5f;
-
-            // The sea's highest possible crest.
-            float seaCrest = frame.SeaTopY +
-                             CitySeaResources.WaveHeight *
-                             CitySeaResources.CrestFactor;
-            Assert.That(
-                sillCrest,
-                Is.GreaterThan(seaCrest + 0.02f),
-                "The sea can wash over the sill.");
-
-            // The river's, at the mouth. Its material leaves the wave
-            // height at the shader's default, so read it back rather
-            // than assume it.
+            // The frame carries the river's own surface height at the
+            // waterline, and it is the real one: the north edge of
+            // the mouth segment's sheet.
             CityRiverSegmentDescriptor mouth = layout.River.Segments
                 .OrderBy(segment => segment.Cell.y)
                 .Last();
-            float riverWave = CityRiverResources.WaterMaterial
-                .GetFloat("_WaveHeight");
-            float riverCrest = mouth.NorthWaterY +
-                               riverWave *
-                               CitySeaResources.CrestFactor;
             Assert.That(
-                sillCrest,
-                Is.GreaterThan(riverCrest + 0.02f),
-                "The river can wash over the sill.");
+                frame.MouthWaterY,
+                Is.EqualTo(mouth.NorthWaterY).Within(0.001f));
 
-            // And the sill spans the whole channel, banks included.
-            Rect footprint = new Rect(
-                sill.Center.x - sill.Size.x * 0.5f,
-                sill.Center.z - sill.Size.z * 0.5f,
-                sill.Size.x,
-                sill.Size.z);
+            // The spill continues that sheet: same start height (the
+            // same material carries the same world-driven waves, so
+            // the joint is invisible), the exact channel width, and a
+            // far edge that dives under the sea's datum so the sea
+            // sheet always covers its end.
+            Rect spill =
+                CitySeacoastSeaLayout.CreateMouthSpillRect(frame);
             Assert.That(
-                footprint.xMin,
-                Is.LessThanOrEqualTo(frame.ChannelXMin + 0.01f));
+                spill.xMin,
+                Is.EqualTo(frame.ChannelXMin).Within(0.001f));
             Assert.That(
-                footprint.xMax,
-                Is.GreaterThanOrEqualTo(frame.ChannelXMax - 0.01f));
+                spill.xMax,
+                Is.EqualTo(frame.ChannelXMax).Within(0.001f));
+            Assert.That(
+                spill.yMin,
+                Is.EqualTo(frame.WaterlineZ).Within(0.001f));
+            Assert.That(spill.height, Is.GreaterThan(2f));
+            Assert.That(
+                frame.SeaTopY - CitySeacoastSeaLayout.SpillDip,
+                Is.LessThan(frame.SeaTopY));
+            Assert.That(
+                frame.MouthWaterY,
+                Is.GreaterThanOrEqualTo(frame.SeaTopY),
+                "The river must arrive at or above the sea, " +
+                "or the spill would climb.");
+
+            // The banks close the cut continuously on both sides,
+            // from the promenade's last quay wall to the waterline,
+            // feet buried below the river's surface.
+            for (int side = 0; side < 2; side++)
+            {
+                float edgeX = side == 0
+                    ? frame.ChannelXMin
+                    : frame.ChannelXMax;
+                var banks = plan.Parts
+                    .Where(part =>
+                        part.Kind ==
+                            CitySeacoastPartKind.MouthBank &&
+                        Mathf.Abs(part.Center.x - edgeX) < 1f)
+                    .OrderBy(part => part.Center.z)
+                    .ToList();
+                Assert.That(banks.Count, Is.GreaterThanOrEqualTo(4));
+
+                float reach = frame.BeachRowBounds.yMin + 0.05f;
+                foreach (CitySeacoastPartDescriptor bank in banks)
+                {
+                    float z0 = bank.Center.z - bank.Size.z * 0.5f;
+                    float z1 = bank.Center.z + bank.Size.z * 0.5f;
+                    Assert.That(
+                        z0,
+                        Is.LessThanOrEqualTo(reach),
+                        $"Gap in the mouth bank before '{bank.StableId}'.");
+                    reach = Mathf.Max(reach, z1 + 0.05f);
+
+                    Assert.That(
+                        bank.Center.y - bank.Size.y * 0.5f,
+                        Is.LessThan(frame.MouthWaterY - 0.5f),
+                        $"'{bank.StableId}' floats above the bed.");
+                    Assert.That(
+                        bank.Center.y + bank.Size.y * 0.5f,
+                        Is.LessThanOrEqualTo(
+                            frame.BeachEdgeTopY + 2.5f),
+                        $"'{bank.StableId}' towers over the sand.");
+                }
+
+                Assert.That(
+                    reach,
+                    Is.GreaterThanOrEqualTo(frame.WaterlineZ - 0.1f),
+                    $"The side {side} bank stops short of the sea.");
+            }
         }
 
         [Test]

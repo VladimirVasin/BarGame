@@ -14,7 +14,7 @@ namespace BarPromenade
         BeaconTower = 4,
         DerrickCrane = 5,
         PortRuin = 6,
-        MouthSill = 7,
+        MouthBank = 7,
         EsplanadeSlab = 8,
         EsplanadeParapet = 9,
         EsplanadeStair = 10,
@@ -60,7 +60,8 @@ namespace BarPromenade
         RustIron = 7,
         Grass = 8,
         PaintAccent = 9,
-        Litter = 10
+        Litter = 10,
+        Sand = 11
     }
 
     /// <summary>
@@ -251,6 +252,7 @@ namespace BarPromenade
             float beachEdgeTopY,
             float channelXMin,
             float channelXMax,
+            float mouthWaterY,
             Rect westZone,
             Rect centerZone,
             Rect eastZone)
@@ -262,6 +264,7 @@ namespace BarPromenade
             BeachEdgeTopY = beachEdgeTopY;
             ChannelXMin = channelXMin;
             ChannelXMax = channelXMax;
+            MouthWaterY = mouthWaterY;
             WestZone = westZone;
             CenterZone = centerZone;
             EastZone = eastZone;
@@ -286,6 +289,13 @@ namespace BarPromenade
         public float ChannelXMin { get; }
         public float ChannelXMax { get; }
 
+        /// <summary>
+        /// The river's own surface at the waterline — the north edge
+        /// of its final sheet. The mouth spill continues from exactly
+        /// this height so the two sheets read as one water.
+        /// </summary>
+        public float MouthWaterY { get; }
+
         /// <summary>Dead port and mol, west of the river mouth.</summary>
         public Rect WestZone { get; }
 
@@ -300,8 +310,8 @@ namespace BarPromenade
     {
         /// <summary>
         /// Hard budget for combined-mesh parts. Sized from the default
-        /// city's measured dressing (~370 parts: the mol and its
-        /// beacon, the port ruins, the mouth sill, the esplanade with
+        /// city's measured dressing (~380 parts: the mol and its
+        /// beacon, the port ruins, the mouth banks, the esplanade with
         /// its sea wall, the transplanted boat station, the footbridge,
         /// and the wild shore's piles, barge and scatter) plus
         /// headroom for seed variation. Lamps are fixtures and do not

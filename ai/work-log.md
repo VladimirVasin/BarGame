@@ -6,6 +6,29 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-22 — The mouth opened (playtest fixes)
+
+- First playtest of the coast surfaced two honest holes at the river
+  mouth, both fixed. **The river now pours into the sea** instead of
+  dying against the training sill: the sill is gone (the `MouthSill`
+  part kind became `MouthBank`), replaced by a mouth spill — a sloped
+  sheet of the river's own material carried from the exact height of
+  its last sheet's north edge (`CitySeacoastFrame.MouthWaterY`, read
+  from the mouth segment) down under the sea's datum, so the same
+  world-driven waves make the joint invisible and the two swells
+  interleave into churn where the sheets cross. **The channel's cut
+  through the sand row is closed**: the granite quay walls end at the
+  promenade and the terrain skin has no underside, so the player saw
+  through the world along both sides of the mouth — stepped sand-faced
+  banks (`Sand` style, the terrain's own `BeachSand` colour and sheet)
+  now follow the shore height contract from the last quay wall to the
+  waterline, feet buried below the river bed, faces lapping into the
+  water so the river's foam draws against them.
+- Verification: `DefaultCity_KeepsRiverAndSeaSheetsApartAtTheMouth`
+  replaced by `DefaultCity_PoursTheRiverIntoTheSea` (spill continuity
+  with the river sheet, dive under the sea, gap-free bank coverage on
+  both sides); full EditMode suite green.
+
 ## 2026-08-22 — The north seacoast, and the lake that moved to it
 
 - **The north shore stopped being a stub.** A new `CitySeacoast`

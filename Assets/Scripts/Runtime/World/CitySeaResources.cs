@@ -46,7 +46,7 @@ namespace BarPromenade
         /// The swell. The shader sums three trains at 1.0, 0.42 and
         /// 0.31 of this, so the highest possible crest is 1.73 times
         /// it — kept well under the surface factory's crest allowance,
-        /// and under the mouth sill's crest, both of which tests pin.
+        /// which a test pins.
         /// </summary>
         internal const float WaveHeight = 0.09f;
         internal const float CrestFactor = 1.73f;

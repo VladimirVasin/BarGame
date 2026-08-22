@@ -247,7 +247,7 @@ Assets/
         CityCemeteryCoffinWorldBuilder.cs  six-sided turned-board coffin, overhanging lid, cross
         CityCemeterySealedGraveWorldBuilder.cs  turned mound courses + one planner monument, slab omitted
         CitySeacoastPlan.cs      oriented coast part/lamp descriptors, four hull variants, frame + budget
-        CitySeacoastPlanner.cs   zoned shore (port/esplanade/wild), mol, boat station, footbridge, sill + validation
+        CitySeacoastPlanner.cs   zoned shore (port/esplanade/wild), mol, boat station, footbridge, mouth banks + validation
         CitySeacoastWorldBuilder.cs  chunked oriented batches with coast sheets, sea sheets/shelf + fixtures
         CitySeacoastSurfaceAppearance.cs  five coast albedos (sand/concrete/granite/plank/hull) via MPBs
         CitySeacoastBeaconController.cs  the occulting beacon pulse: pure rules + a self-driven light

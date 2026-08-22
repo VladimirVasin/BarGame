@@ -114,6 +114,13 @@ namespace BarPromenade
         private const float FootbridgeRailHeight = 0.95f;
         private const float FootbridgeOverhang = 1.3f;
 
+        // The sand banks that close the channel's cut through the
+        // shore: buried well under the terrain edge, lapping a hand's
+        // width into the water so the seam is never visible from
+        // either side.
+        private const float MouthBankThickness = 0.62f;
+        private const float MouthBankWaterLap = 0.06f;
+
         // Steps never rise more than the safe step, less a margin.
         private const float StairMaximumRise = 0.24f;
         private const float StairTread = 0.55f;
@@ -204,7 +211,7 @@ namespace BarPromenade
                 hasHut, reserved, access);
             Rect molRect = AddMol(
                 parts, lamps, layout, frame, reserved);
-            AddMouthSill(parts, frame);
+            AddMouthBanks(parts, layout, frame);
             AddDerrick(parts, layout, frame, molRect, reserved);
             AddPortRuins(parts, layout, frame, layout.Seed, reserved,
                 access);
@@ -434,6 +441,7 @@ namespace BarPromenade
                 beachEdgeTop,
                 channelXMin,
                 channelXMax,
+                mouth.NorthWaterY,
                 Rect.MinMaxRect(
                     beachRow.xMin, beachRow.yMin,
                     channelXMin, seaRow.yMax),
@@ -677,7 +685,7 @@ namespace BarPromenade
                 case CitySeacoastPartKind.BluffStair:
                     RequireZone(part, center, frame.EastZone, "east");
                     break;
-                case CitySeacoastPartKind.MouthSill:
+                case CitySeacoastPartKind.MouthBank:
                 case CitySeacoastPartKind.FootbridgeDeck:
                 case CitySeacoastPartKind.FootbridgePile:
                 case CitySeacoastPartKind.FootbridgeRail:
@@ -2136,41 +2144,65 @@ namespace BarPromenade
                 0f));
         }
 
-        private static void AddMouthSill(
+        /// <summary>
+        /// The channel's cut through the sand row is bare terrain edge:
+        /// the granite quay walls end where the promenade does, and the
+        /// terrain skin has no underside, so without these the player
+        /// sees straight through the world along both sides of the
+        /// mouth. Each side gets a stepped run of sand-faced banks
+        /// following the shore's own height contract, feet buried below
+        /// the river bed, faces lapping a hand's width into the water
+        /// so the river's foam draws against them.
+        /// </summary>
+        private static void AddMouthBanks(
             ICollection<CitySeacoastPartDescriptor> parts,
+            CityLayout layout,
             in CitySeacoastFrame frame)
         {
-            // The training wall across the mouth: the river dies
-            // against its south face with an honest twelve-centimetre
-            // spill, the sea laps its north face, and the two water
-            // sheets never touch. Its crest is the beach-edge datum,
-            // above both waters' highest swell.
-            float crest = frame.BeachEdgeTopY;
-            float bottom = frame.SeaTopY - AssumedSeaBedDepth - 0.1f;
-            float width = frame.ChannelXMax - frame.ChannelXMin + 0.6f;
-            parts.Add(Part(
-                "seacoast-mouth-sill",
-                CitySeacoastPartKind.MouthSill,
-                CitySeacoastStyle.Concrete,
-                new Vector3(
-                    (frame.ChannelXMin + frame.ChannelXMax) * 0.5f,
-                    (crest + bottom) * 0.5f,
-                    frame.WaterlineZ),
-                Quaternion.identity,
-                new Vector3(width, crest - bottom, 1.2f)));
-            parts.Add(Part(
-                "seacoast-mouth-sill-apron",
-                CitySeacoastPartKind.MouthSill,
-                CitySeacoastStyle.Concrete,
-                new Vector3(
-                    (frame.ChannelXMin + frame.ChannelXMax) * 0.5f,
-                    (frame.SeaTopY - 0.02f + bottom) * 0.5f,
-                    frame.WaterlineZ + 1.0f),
-                Quaternion.identity,
-                new Vector3(
-                    width,
-                    frame.SeaTopY - 0.02f - bottom,
-                    0.8f)));
+            float zStart = frame.BeachRowBounds.yMin;
+            float zEnd = frame.WaterlineZ - 0.02f;
+            float span = zEnd - zStart;
+            if (span < 1f)
+            {
+                return;
+            }
+
+            int segments = Mathf.Max(4, Mathf.CeilToInt(span / 3.3f));
+            float step = span / segments;
+            float bottom = frame.MouthWaterY - 1.35f;
+            for (int side = 0; side < 2; side++)
+            {
+                float edgeX = side == 0
+                    ? frame.ChannelXMin
+                    : frame.ChannelXMax;
+                float sign = side == 0 ? -1f : 1f;
+                float centerX = edgeX + sign * (MouthBankThickness *
+                    0.5f - MouthBankWaterLap);
+                for (int index = 0; index < segments; index++)
+                {
+                    float z0 = zStart + step * index;
+                    float z1 = index == segments - 1
+                        ? zEnd
+                        : z0 + step + 0.05f;
+                    float top = SampleSandTop(
+                        layout,
+                        edgeX + sign * 0.4f,
+                        (z0 + z1) * 0.5f) - 0.04f;
+                    parts.Add(Part(
+                        $"seacoast-mouth-bank-{side}-{index:D2}",
+                        CitySeacoastPartKind.MouthBank,
+                        CitySeacoastStyle.Sand,
+                        new Vector3(
+                            centerX,
+                            (top + bottom) * 0.5f,
+                            (z0 + z1) * 0.5f),
+                        Quaternion.identity,
+                        new Vector3(
+                            MouthBankThickness,
+                            top - bottom,
+                            z1 - z0)));
+                }
+            }
         }
 
         private static void AddDerrick(
@@ -2413,8 +2445,7 @@ namespace BarPromenade
             }
 
             // Piles into the channel, feet below the river bed.
-            float riverWater = ResolveMouthWaterY(layout, frame);
-            float pileBottom = riverWater - 1.35f;
+            float pileBottom = frame.MouthWaterY - 1.35f;
             float pileHeight = deckTop - 0.12f - pileBottom;
             for (int pair = 0; pair < 2; pair++)
             {
@@ -2844,21 +2875,6 @@ namespace BarPromenade
         // helpers
         // ------------------------------------------------------------------
 
-        private static float ResolveMouthWaterY(
-            CityLayout layout,
-            in CitySeacoastFrame frame)
-        {
-            if (TryGetMouthSegment(
-                    layout,
-                    frame.BeachRowBounds,
-                    out CityRiverSegmentDescriptor mouth))
-            {
-                return mouth.NorthWaterY;
-            }
-
-            return frame.SeaTopY;
-        }
-
         private static bool TryGetMouthSegment(
             CityLayout layout,
             Rect beachRow,
@@ -3003,7 +3019,6 @@ namespace BarPromenade
                 // The derrick's jib froze where its last load left
                 // it: out over the water, metres above it.
                 case CitySeacoastPartKind.DerrickCrane:
-                case CitySeacoastPartKind.MouthSill:
                 case CitySeacoastPartKind.PierPile:
                 case CitySeacoastPartKind.PierBeam:
                 case CitySeacoastPartKind.PierDeck:

@@ -139,6 +139,22 @@ namespace BarPromenade
                     CitySeaResources.WaterMaterial);
             }
 
+            // The river pours in: its own material continued past the
+            // waterline on a shallow downhill sheet, so the mouth
+            // reads as water flowing into water. The south edge sits
+            // at the river sheet's exact height and the same material
+            // carries the same world-driven waves, so the joint is
+            // invisible; the far end dives under the sea's datum and
+            // the two swells interleave into the churn a river mouth
+            // owes the eye.
+            CityWaterSurfaceFactory.CreateSlopedSurface(
+                "Mouth Spill",
+                sea,
+                CitySeacoastSeaLayout.CreateMouthSpillRect(frame),
+                frame.MouthWaterY,
+                frame.SeaTopY - CitySeacoastSeaLayout.SpillDip,
+                CityRiverResources.WaterMaterial);
+
             var shelves = new List<Bounds>();
             CitySeacoastSeaLayout.CreateShelfBoxes(frame, shelves);
             if (shelves.Count > 0)
@@ -223,6 +239,8 @@ namespace BarPromenade
                 case CitySeacoastStyle.HullPaint:
                 case CitySeacoastStyle.HullTar:
                     return CitySeacoastSurfaceKind.Hull;
+                case CitySeacoastStyle.Sand:
+                    return CitySeacoastSurfaceKind.Sand;
                 default:
                     // Iron, rust, grass, sign paint and litter stay
                     // flat colour: their members are too thin for a
@@ -468,6 +486,10 @@ namespace BarPromenade
                     return PaintAccent;
                 case CitySeacoastStyle.Litter:
                     return Litter;
+                // The mouth banks are the terrain skin's own colour,
+                // so the cut and the shore it closes read as one sand.
+                case CitySeacoastStyle.Sand:
+                    return CityExteriorAppearance.BeachSand;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(style));
             }
@@ -554,6 +576,25 @@ namespace BarPromenade
         private const float OuterShelfDepth = 0.62f;
         private const float ShelfRunLength = 10f;
         private const float ShelfBottomDrop = 1.9f;
+
+        /// <summary>
+        /// How far the mouth spill carries the river's surface past
+        /// the waterline before it slides under the sea sheet, and
+        /// how far under the sea's datum its far edge dives so the
+        /// sea always covers its end.
+        /// </summary>
+        internal const float SpillReach = 5.5f;
+        internal const float SpillDip = 0.03f;
+
+        internal static Rect CreateMouthSpillRect(
+            in CitySeacoastFrame frame)
+        {
+            return Rect.MinMaxRect(
+                frame.ChannelXMin,
+                frame.WaterlineZ,
+                frame.ChannelXMax,
+                frame.WaterlineZ + SpillReach);
+        }
 
         internal static void CreateSheetRects(
             in CitySeacoastFrame frame,
