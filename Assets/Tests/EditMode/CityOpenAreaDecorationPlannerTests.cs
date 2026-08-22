@@ -11,11 +11,12 @@ namespace BarPromenade.Tests.EditMode
     public sealed class CityOpenAreaDecorationPlannerTests
     {
         /// <summary>
-        /// The pass-wide contract, now that the lake has moved out to
-        /// <see cref="CityLakePlanner"/> the way the cemetery did before
-        /// it: this plan is deterministic, inside its budget, valid, and
-        /// never stands anything in a street approach. The lake's own
-        /// version of the same guarantees lives in CityLakePlannerTests.
+        /// The pass-wide contract, now that every dressed precinct has
+        /// moved out to its own planner the way the cemetery and the
+        /// seacoast did: this plan is deterministic, inside its budget,
+        /// valid, and never stands anything in a street approach. The
+        /// seacoast's own version of the same guarantees lives in
+        /// CitySeacoastPlannerTests.
         /// </summary>
         [Test]
         public void DefaultCity_CreatesDeterministicClearYardDressing()
@@ -39,12 +40,13 @@ namespace BarPromenade.Tests.EditMode
                 Is.LessThanOrEqualTo(
                     CityOpenAreaDecorationPlan.MaximumPartCount));
 
-            // Nothing lake-shaped survives in this pass.
+            // Nothing coast-shaped survives in this pass.
             Assert.That(
                 first.Descriptors.Any(item =>
-                    item.Feature == CityAreaFeatureKind.Lake),
+                    item.Feature ==
+                    CityAreaFeatureKind.NorthWaterfront),
                 Is.False,
-                "The lake dresses itself now.");
+                "The seacoast dresses itself.");
 
             CityOpenAreaDecorationPlanner.ValidateOrThrow(layout, first);
             foreach (CityOpenAreaDecorationDescriptor descriptor in

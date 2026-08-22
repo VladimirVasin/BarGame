@@ -176,7 +176,6 @@ namespace BarPromenade
         /// The map borrows the world's own plan so the pier and the hut it
         /// draws stand exactly where the player will find them.
         /// </summary>
-        public CityLakePlan LakePlan { get; private set; }
         public CitySeacoastPlan SeacoastPlan { get; private set; }
         public CityMountainBoundaryPlan MountainBoundaryPlan
         {
@@ -228,7 +227,6 @@ namespace BarPromenade
             PlayerCameraFollow follow,
             IntoxicationHudView hud,
             CityBusPlan busPlan,
-            CityLakePlan lakePlan = null,
             CityMountainBoundaryPlan mountainBoundaryPlan = null,
             CitySeacoastPlan seacoastPlan = null)
         {
@@ -239,7 +237,6 @@ namespace BarPromenade
             BusOverlay = CityMapBusOverlayBuilder.Create(busPlan);
             areaRegions = CityMapAreaOverlayBuilder.Create(Layout);
             CollectMapAreaTargets();
-            LakePlan = lakePlan;
             SeacoastPlan = seacoastPlan;
             MountainBoundaryPlan = mountainBoundaryPlan ??
                                    CityMountainBoundaryPlan.Empty;

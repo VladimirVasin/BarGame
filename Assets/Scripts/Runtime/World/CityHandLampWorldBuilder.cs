@@ -7,7 +7,7 @@ namespace BarPromenade
     /// The kerosene hand lamp: a small tin body, a warm glass, a wire
     /// bail over the top and the point light that is the whole reason
     /// it exists. It is the lamp standing on the rail cap at the end
-    /// of the lake pier, and it is the same lamp the gravedigger sets
+    /// of the seacoast pier, and it is the same lamp the gravedigger sets
     /// down beside an open grave — one fixture, built once, so the two
     /// can never drift apart.
     ///

@@ -40,9 +40,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   park becomes two `2 x 4` regions joined by its own footbridge. A full-width
   walkable northern beach and continuous non-walkable water row remain. The
   playable default also extends east
-  with a `4 x 4` lake (walkable shore around blocked water) and a `3 x 2`
-  cemetery; both use the shared open-area street-access contract and own
-  deterministic runtime-composed landmarks. Roads, ground, navigation and map
+  with a plain `4 x 4` north-east yard (the drained former lake block)
+  and a `3 x 2`
+  cemetery; both use the shared open-area street-access contract, and
+  the cemetery owns deterministic runtime-composed landmarks. Roads, ground, navigation and map
   drawing consume only active cells, so connected holes and non-rectangular
   outlines remain real voids.
 - **Accepted — The coastal basin closes only west and south:**
@@ -107,7 +108,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `Assets/Resources/Shaders/CityRiverWater.shader` is therefore hand-written
   HLSL like the project's seven others, and is written as *the* water shader
   rather than the river's: every quantity is derived from world position, and
-  `_FlowDirection` is a parameter, so the sea and the lake can adopt it
+  `_FlowDirection` is a parameter, so the sea adopted it
   without a second shader. Deriving from world position rather than UV is
   also what makes a segment boundary invisible — two adjacent sheets agree on
   the wave and the ripple because both are functions of where they are.
@@ -127,8 +128,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   than being lit, `_BaseColor` and `_DeepColor` are **rendered tones, not
   albedos**. Reusing a flat surface's authored albedo here emits at full
   value what that surface reaches the screen at a fraction of, and the water
-  ends up the brightest thing in the city. The same correction is owed to the
-  sea and the lake when they adopt this shader.
+  ends up the brightest thing in the city. The same correction is honoured by the
+  sea's material, which adopted this shader.
 - **Accepted — The channel has a floor:** The city deliberately emits no
   terrain under a river cell, so while the water was an opaque lid the
   channel was a hole with a lid on it. `CityRiverWorldBuilder.BuildRiverbed`
@@ -270,7 +271,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   edge-distance sampler cannot see the cap corner, so the rails stay at road
   height instead of diving toward world zero. The default coastal blueprint
   also authors two `4 m` `CornerGuard` legs at the north-east urban-core road
-  cap beside lot `[12,11]`. Their separate purpose is deliberate: active lake
+  cap beside lot `[12,11]`. Their separate purpose is deliberate: active yard
   and waterfront ground lies outside that cap, so generic unsupported-boundary
   subtraction would otherwise remove the local L; the guard does not continue
   along either shore or change navigation. Render and collision
@@ -332,9 +333,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   bank starts `1.8 m` above the local water and terrain rises `0.98 m` per
   node away from the channel. Default road nodes therefore span about
   `8.1 m`, peak near `10.08 m`, and retain at least `1.5 m` within every urban
-  district. Sea water stays at datum `0`; the lake is one local elevated basin
-  set from its access rather than from a global datum, with an intentionally
-  blocked physical shore-to-water drop of about `0.4 m`. The river descends
+  district. Sea water stays at datum `0`. The river descends
   monotonically from `2.4 m` in the south to the sea datum. Legacy/custom
   blueprints retain the exact flat fallback.
   `CityTerrainSurfacePlan` is the authoritative top sampler for
@@ -691,8 +690,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   runtime and reconstructs the nearby Home stop as a static collider-free pole,
   but composes no bus actor or director.
 - **Accepted — a contextual effect reads its host clip's phase, never its own
-  timer:** the lake fisherman's pipe ember, its point light and its plume are
-  all functions of `LakeFishermanPresentation.BreathPhase`, derived from the
+  timer:** the seacoast fisherman's pipe ember, its point light and its plume
+  are all functions of `SeacoastFishermanPresentation.BreathPhase`, derived from the
   leaning clip's normalized time against a constant that mirrors the authored
   key grid. A second free-running timer would be simpler and is wrong within a
   second of watching him: smoke that swells while the ribs are still filling
@@ -2324,7 +2323,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   normal interval. Dropping intoxication to `60` or below safely cancels the
   challenge and clears its delay.
 
-- **Accepted — One drive for every body of water:** The river and the lake are
+- **Accepted — One drive for every body of water:** The river and the sea are
   two materials of one shader, and water carries no per-renderer variation at
   all — no property blocks anywhere — so night factor and rain intensity have
   to be written on the material itself. With one body that could live in
@@ -2332,35 +2331,36 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   those values (`CityNightGlowRegistry`, `CityWeatherController`) have no
   business knowing how many bodies exist. `CityWaterResources` owns the drive
   and nothing else: each body registers its own material and is brought up to
-  the last pushed values on the spot, which is what lets a lake built halfway
+  the last pushed values on the spot, which is what lets a sea built halfway
   through a rain slot arrive already wet. They are not merged into one material
   because the difference is structural, not cosmetic — zero flow changes what
-  the vertex stage computes, and the lake's ripple sheet is isotropic where the
-  river's is deliberately smeared along its flow.
-- **Accepted — The lake's edge is authored, and its bank is off the nav graph:**
-  The `0.40 m` shore-to-water drop exceeds `CityRoadGroundBoundaryPlanner.MaximumSafeStep`,
-  so `CityTerrainSafetyWorldBuilder` used to ring the whole lake with a generic
-  `1.05 m` guard rail. Once `CityLakeWorldBuilder` authors a walkable bank down
-  to an inset waterline, that rail stands on ground which visibly continues
-  past it — the invisible perimeter this project does not build, and the exact
-  failure the park fix removed. The skip that already existed for `RiverWater`
-  is therefore widened to authored water edges, and the precinct owes a visible
-  barrier in its place: a continuous timber revetment standing clear of the
-  safe step, cut only where the pier deck bridges it or the chained slipway
-  closes it, under a `ValidateOrThrow` contract that checks the whole perimeter
-  is boarded or bridged to within `0.05 m`.
-- **Corrected — the lake bank is in the walkable mask, and has to be:** this
-  entry previously recorded the opposite as an accepted asymmetry — that the
-  bank was physically walkable but deliberately absent from the nav graph
-  because it sits on `Water` cells, so pedestrians would never stray onto it.
-  That reasoning weighed only pedestrians. `PlayerMotor` clamps against the
-  same mask, so the effect was a `52 x 52 m` invisible box sealing the player
-  out of the entire precinct. `CityLakePlanner.AppendWalkableFootprints` now
-  contributes the bank ring and the pier deck to the mask — never the pond —
-  and a shared `TryCreateSetup` guarantees the ground the world builder draws
-  and the ground the mask admits are derived from one basin. Pedestrians are
-  unaffected in practice: they consume the mask only as a clamp, not as a
-  source of destinations.
+  the vertex stage computes, and the sea's ripple sheet is isotropic where the
+  river's is deliberately smeared along its flow. (The drained lake's still
+  water proved out both halves of this decision first.)
+- **Accepted — A precinct's water edge is authored, or the rail stays:**
+  `CityTerrainSafetyWorldBuilder` rails any drop past
+  `CityRoadGroundBoundaryPlanner.MaximumSafeStep`; the skip that exists for
+  `RiverWater` extends only to edges a precinct physically authors, because a
+  generic rail on such an edge stands on ground that visibly continues past
+  it — the invisible perimeter this project does not build. The seacoast pays
+  the contract on every raised deck: mol parapets bridged only by the root
+  stair, an esplanade sea wall cut exactly for the pier and the chained
+  slipway, footbridge rails both sides, each under a `ValidateOrThrow`
+  perimeter-continuity check to within `0.05 m`. The beach-to-sea step itself
+  sits inside the safe-step budget, so the open waterline is honestly
+  rail-free. (The lake's revetment proved this contract before the coast
+  inherited it.)
+- **Corrected — precinct ground over `Water` cells is in the walkable mask,
+  and has to be:** an earlier entry recorded the opposite as an accepted
+  asymmetry — that such ground was physically walkable but deliberately
+  absent from the nav graph, so pedestrians would never stray onto it. That
+  reasoning weighed only pedestrians. `PlayerMotor` clamps against the same
+  mask, so the effect was an invisible box sealing the player out of an
+  entire precinct. `CitySeacoastPlanner.AppendWalkableFootprints` contributes
+  the mol, pier and footbridge decks to the mask — never the open sea — and
+  the same setup feeds both the mask and the geometry so they cannot drift.
+  Pedestrians are unaffected in practice: they consume the mask only as a
+  clamp, not as a source of destinations.
 - **Accepted — the park boards are played by a pure engine the presentation
   never argues with:** the two games live under `Assets/Scripts/Runtime/Games/`
   as plain C# — position, legal moves, apply, search — and the scene layer

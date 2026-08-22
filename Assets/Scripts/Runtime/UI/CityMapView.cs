@@ -112,23 +112,12 @@ namespace BarPromenade
             new Color32(54, 83, 60, 255);
         private static readonly Color WaterfrontLand =
             new Color32(147, 124, 77, 255);
-        private static readonly Color LakeLand =
-            new Color32(50, 91, 101, 255);
         private static readonly Color CemeteryLand =
             new Color32(66, 77, 65, 255);
         private static readonly Color YardLand =
             new Color32(94, 84, 63, 255);
         private static readonly Color WaterLand =
             new Color32(35, 91, 119, 255);
-        // The lake is still water behind a bank, not open sea: a greener,
-        // quieter blue keeps the two bodies apart at a glance, and the
-        // shore around it is clay rather than more water.
-        private static readonly Color LakeWater =
-            new Color32(41, 84, 92, 255);
-        private static readonly Color LakeShoreLand =
-            new Color32(92, 97, 76, 255);
-        private static readonly Color LakeBank =
-            new Color32(76, 82, 66, 255);
         private static readonly Color PierTimber =
             new Color32(141, 116, 84, 255);
         private static readonly Color BoatHut =
@@ -407,7 +396,6 @@ namespace BarPromenade
             DrawRiverBridges(projection);
             DrawAreaOutlines(projection);
             DrawMountainTunnel(projection);
-            DrawLakeStation(projection);
             DrawSeacoastLandmarks(projection);
             DrawBusRoute(projection);
             DrawRoute(projection);
@@ -1291,7 +1279,6 @@ namespace BarPromenade
                     continue;
                 }
 
-                DrawAreaWater(projection, region);
                 DrawAreaTexture(projection, region);
             }
         }
@@ -1319,98 +1306,6 @@ namespace BarPromenade
                     cell.center,
                     label,
                     AreaHoverPriority);
-            }
-        }
-
-        private void DrawAreaWater(
-            MapProjection projection,
-            CityMapAreaRegion region)
-        {
-            if (region.Feature != CityAreaFeatureKind.Lake)
-            {
-                return;
-            }
-
-            // The lake is a basin, not a blue square: the surface pass
-            // leaves its cells as bank, and the water is only the
-            // authored waterline, whose corners are cut off.
-            CityLakePlan lake = controller.LakePlan;
-            if (lake != null)
-            {
-                FillWaterline(projection, lake.Basin);
-                return;
-            }
-
-            for (int index = 0;
-                 index < region.WaterBounds.Count;
-                 index++)
-            {
-                DrawSolidRect(
-                    ProjectWorldRect(
-                        projection,
-                        region.WaterBounds[index]),
-                    LakeWater);
-            }
-        }
-
-        /// <summary>
-        /// Fills the waterline octagon by scanning it in rows. IMGUI can
-        /// only fill rectangles, so the cut corners are drawn as a stack
-        /// of shortening rows rather than as a polygon.
-        /// </summary>
-        private void FillWaterline(
-            MapProjection projection,
-            CityLakeBasin basin)
-        {
-            Rect water = ProjectWorldRect(
-                projection,
-                basin.WaterlineBounds);
-            float bevel = Mathf.Min(
-                basin.BevelMeters,
-                Mathf.Min(
-                    basin.WaterlineBounds.width,
-                    basin.WaterlineBounds.height) * 0.5f);
-            float bevelPixels = water.height <= 0f
-                ? 0f
-                : bevel / Mathf.Max(0.01f, basin.WaterlineBounds.height) *
-                  water.height;
-            if (bevelPixels < 1f)
-            {
-                DrawSolidRect(water, LakeWater);
-                return;
-            }
-
-            int rows = Mathf.Clamp(
-                Mathf.CeilToInt(bevelPixels),
-                1,
-                24);
-            float rowHeight = bevelPixels / rows;
-            DrawSolidRect(
-                new Rect(
-                    water.x,
-                    water.y + bevelPixels,
-                    water.width,
-                    Mathf.Max(0f, water.height - bevelPixels * 2f)),
-                LakeWater);
-            for (int index = 0; index < rows; index++)
-            {
-                float inset =
-                    bevelPixels * (1f - (index + 0.5f) / rows);
-                float width = Mathf.Max(1f, water.width - inset * 2f);
-                DrawSolidRect(
-                    new Rect(
-                        water.x + inset,
-                        water.y + index * rowHeight,
-                        width,
-                        rowHeight + 1f),
-                    LakeWater);
-                DrawSolidRect(
-                    new Rect(
-                        water.x + inset,
-                        water.yMax - (index + 1f) * rowHeight - 1f,
-                        width,
-                        rowHeight + 1f),
-                    LakeWater);
             }
         }
 
@@ -1445,9 +1340,6 @@ namespace BarPromenade
                         break;
                     case CityAreaFeatureKind.Yard:
                         DrawYardLines(cell);
-                        break;
-                    case CityAreaFeatureKind.Lake:
-                        DrawLakeReeds(cell);
                         break;
                 }
             }
@@ -1511,22 +1403,6 @@ namespace BarPromenade
             }
         }
 
-        private void DrawLakeReeds(Rect cell)
-        {
-            for (int index = 0; index < 3; index++)
-            {
-                float x = Mathf.Round(
-                    cell.x + cell.width * (index + 0.5f) / 3f);
-                DrawSolidRect(
-                    new Rect(
-                        x,
-                        Mathf.Round(cell.y + cell.height * 0.5f - 1.5f),
-                        1f,
-                        3f),
-                    LakeBank);
-            }
-        }
-
         /// <summary>
         /// The edge of every non-urban precinct, plus the street openings
         /// that are the only way into it.
@@ -1584,54 +1460,12 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The boat station: the pier the fisherman sits on and the hire
-        /// hut behind it, both taken from the plan the world was built
-        /// from rather than guessed at map scale.
-        /// </summary>
-        private void DrawLakeStation(MapProjection projection)
-        {
-            CityLakePlan lake = controller.LakePlan;
-            if (lake == null)
-            {
-                return;
-            }
-
-            if (TryProjectParts(
-                    projection,
-                    lake,
-                    CityLakePartKind.PierDeck,
-                    out Rect pier))
-            {
-                DrawSolidRect(Expand(pier, 1f), RetroUiTheme.Ink);
-                DrawSolidRect(pier, PierTimber);
-            }
-
-            if (!TryProjectParts(
-                    projection,
-                    lake,
-                    CityLakePartKind.Hut,
-                    out Rect hut))
-            {
-                return;
-            }
-
-            Rect marker = Expand(hut, 1f);
-            DrawSolidRect(marker, RetroUiTheme.Ink);
-            DrawSolidRect(hut, BoatHut);
-            RegisterHoverTarget(
-                Expand(marker, 3f),
-                marker.center,
-                LocalizationService.Get("map.lake.boat_station"),
-                LandmarkHoverPriority);
-        }
-
-        /// <summary>
         /// The seacoast's five anchors, straight from the coast plan:
         /// the mol with its beacon dot, the boat station's sea pier
         /// and hut, the mouth footbridge, the sea wall line, the
-        /// rotten pile row and the stranded barge. Drawn the way the
-        /// lake station is drawn — projected part unions over an ink
-        /// backing — so the map and the world cannot disagree.
+        /// rotten pile row and the stranded barge. Projected part
+        /// unions over an ink backing, so the map and the world
+        /// cannot disagree.
         /// </summary>
         private void DrawSeacoastLandmarks(MapProjection projection)
         {
@@ -1764,52 +1598,6 @@ namespace BarPromenade
                     continue;
                 }
 
-                Vector3 extents = part.Rotation * part.Size;
-                float halfX = Mathf.Abs(extents.x) * 0.5f;
-                float halfZ = Mathf.Abs(extents.z) * 0.5f;
-                minimumX = Mathf.Min(minimumX, part.Center.x - halfX);
-                maximumX = Mathf.Max(maximumX, part.Center.x + halfX);
-                minimumZ = Mathf.Min(minimumZ, part.Center.z - halfZ);
-                maximumZ = Mathf.Max(maximumZ, part.Center.z + halfZ);
-            }
-
-            if (minimumX > maximumX || minimumZ > maximumZ)
-            {
-                screenRect = default;
-                return false;
-            }
-
-            Rect projected = ProjectWorldRect(
-                projection,
-                Rect.MinMaxRect(minimumX, minimumZ, maximumX, maximumZ));
-            screenRect = new Rect(
-                projected.x,
-                projected.y,
-                Mathf.Max(2f, projected.width),
-                Mathf.Max(2f, projected.height));
-            return true;
-        }
-
-        private static bool TryProjectParts(
-            MapProjection projection,
-            CityLakePlan lake,
-            CityLakePartKind kind,
-            out Rect screenRect)
-        {
-            float minimumX = float.PositiveInfinity;
-            float maximumX = float.NegativeInfinity;
-            float minimumZ = float.PositiveInfinity;
-            float maximumZ = float.NegativeInfinity;
-            for (int index = 0; index < lake.Parts.Count; index++)
-            {
-                CityLakePartDescriptor part = lake.Parts[index];
-                if (part.Kind != kind)
-                {
-                    continue;
-                }
-
-                // The parts are axis-aligned in the default plan; the
-                // half extents of the rotated size still bound them.
                 Vector3 extents = part.Rotation * part.Size;
                 float halfX = Mathf.Abs(extents.x) * 0.5f;
                 float halfZ = Mathf.Abs(extents.z) * 0.5f;
@@ -3257,8 +3045,6 @@ namespace BarPromenade
                     return ParkLand;
                 case CityDistrictKind.NorthWaterfront:
                     return WaterfrontLand;
-                case CityDistrictKind.Lake:
-                    return LakeLand;
                 case CityDistrictKind.Cemetery:
                     return CemeteryLand;
                 case CityDistrictKind.Yard:
@@ -3274,17 +3060,11 @@ namespace BarPromenade
             switch (surface.Kind)
             {
                 case CitySurfaceKind.Water:
-                    // A lake cell is bank until the authored waterline is
-                    // laid over it; only the sea is water edge to edge.
-                    return surface.Feature == CityAreaFeatureKind.Lake
-                        ? LakeBank
-                        : WaterLand;
+                    return WaterLand;
                 case CitySurfaceKind.RiverWater:
                     return RiverWater;
                 case CitySurfaceKind.Beach:
                     return WaterfrontLand;
-                case CitySurfaceKind.LakeShore:
-                    return LakeShoreLand;
                 case CitySurfaceKind.CemeteryGround:
                     return CemeteryLand;
                 case CitySurfaceKind.OpenGround:
@@ -3339,8 +3119,6 @@ namespace BarPromenade
                     return "map.district.central_park";
                 case CityDistrictKind.NorthWaterfront:
                     return "map.district.north_waterfront";
-                case CityDistrictKind.Lake:
-                    return "map.district.lake";
                 case CityDistrictKind.Cemetery:
                     return "map.district.cemetery";
                 case CityDistrictKind.Yard:

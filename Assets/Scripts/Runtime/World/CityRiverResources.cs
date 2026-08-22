@@ -43,7 +43,7 @@ namespace BarPromenade
         /// The river runs south to north, into the sea. A still body
         /// passes <see cref="Vector2.zero"/>, which the shader reads as
         /// "no current" rather than as a direction - see
-        /// <see cref="CityLakeResources"/>.
+        /// <see cref="CitySeaResources"/>.
         /// </summary>
         public static readonly Vector2 RiverFlowDirection =
             new Vector2(0f, 1f);
@@ -90,8 +90,8 @@ namespace BarPromenade
                             0f,
                             0f));
 
-                    // The lake's addition stays off here, so the river
-                    // renders exactly as it did before it existed. Its
+                    // The sea's additional-specular stays off here, so
+                    // the river renders exactly as it always did. Its
                     // foam colour keeps the shader's white default:
                     // white water is what a current makes.
                     waterMaterial.SetFloat(AdditionalSpecularId, 0f);

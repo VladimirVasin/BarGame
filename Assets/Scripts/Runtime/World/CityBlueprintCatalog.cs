@@ -10,7 +10,12 @@ namespace BarPromenade
         public const string LegacyBlueprintId = "legacy-rectangular";
 
         private const int EasternOpenAreaWidth = 4;
-        private const int DefaultLakeSize = 4;
+
+        // The block the lake used to hold, before its boat station
+        // moved to the seacoast and the water was let go: a plain
+        // north-east yard now, the same four-by-four footprint so
+        // nothing south of it shifts.
+        private const int NorthEastYardSize = 4;
         private const int DefaultCemeteryWidth = 3;
         private const int DefaultCemeteryDepth = 2;
 
@@ -26,8 +31,6 @@ namespace BarPromenade
             new Color32(70, 105, 72, 255);
         private static readonly Color WaterfrontMapColor =
             new Color32(112, 119, 103, 255);
-        private static readonly Color LakeMapColor =
-            new Color32(66, 91, 99, 255);
         private static readonly Color CemeteryMapColor =
             new Color32(82, 91, 78, 255);
         private static readonly Color YardMapColor =
@@ -116,17 +119,19 @@ namespace BarPromenade
                     urbanWidth + EasternOpenAreaWidth,
                     1),
                 CityCellTopologyKind.Water);
-            // The east yard fills the former void between the cemetery and
-            // the lake, one solid rectangle bordering the eastern boundary
-            // street. Appended last so every existing area (and therefore
-            // every existing access descriptor id and order) is unchanged.
+            // The east yard fills the void between the cemetery and the
+            // north-east yard, one solid rectangle bordering the eastern
+            // boundary street. Appended last so every existing area (and
+            // therefore every existing access descriptor id and order) is
+            // unchanged.
             builder.AddRectangle(
                 CreateYard("yard-east"),
                 new RectInt(
                     urbanWidth,
                     DefaultCemeteryDepth,
                     EasternOpenAreaWidth,
-                    settings.BlocksZ - DefaultLakeSize - DefaultCemeteryDepth),
+                    settings.BlocksZ - NorthEastYardSize -
+                    DefaultCemeteryDepth),
                 CityCellTopologyKind.OpenLand);
             // The south and west fringes: one open row/column beyond the
             // boundary streets, split in halves so each yard aligns to its
@@ -187,7 +192,6 @@ namespace BarPromenade
         {
             if (archetype == CityDistrictKind.CentralPark ||
                 archetype == CityDistrictKind.NorthWaterfront ||
-                archetype == CityDistrictKind.Lake ||
                 archetype == CityDistrictKind.Cemetery ||
                 archetype == CityDistrictKind.Yard)
             {
@@ -203,20 +207,6 @@ namespace BarPromenade
                 localizationKey,
                 mapColor,
                 requiresBar);
-        }
-
-        public static CityAreaDefinition CreateLake(
-            string id = "lake",
-            string localizationKey = "map.district.lake")
-        {
-            return new CityAreaDefinition(
-                id,
-                CityDistrictKind.Lake,
-                CityAreaCategory.NonUrbanOpen,
-                CityAreaFeatureKind.Lake,
-                CityAreaPlacementPolicy.Movable,
-                localizationKey,
-                LakeMapColor);
         }
 
         public static CityAreaDefinition CreateCemetery(
@@ -391,40 +381,17 @@ namespace BarPromenade
                     DefaultCemeteryDepth),
                 CityCellTopologyKind.OpenLand);
 
-            CityAreaDefinition lake = CreateLake();
-            int lakeMinimumX = settings.BlocksX + 1;
-            int lakeMinimumZ = settings.BlocksZ - DefaultLakeSize;
-            var shoreCells = new List<Vector2Int>();
-            for (int z = 0; z < DefaultLakeSize; z++)
-            {
-                for (int x = 0; x < DefaultLakeSize; x++)
-                {
-                    bool isShore =
-                        x == 0 ||
-                        x == DefaultLakeSize - 1 ||
-                        z == 0 ||
-                        z == DefaultLakeSize - 1;
-                    if (isShore)
-                    {
-                        shoreCells.Add(new Vector2Int(
-                            lakeMinimumX + x,
-                            lakeMinimumZ + z));
-                    }
-                }
-            }
-
-            builder.AddCells(
-                lake,
-                shoreCells,
-                CityCellTopologyKind.OpenLand);
+            // The vacated lake block: a plain yard against the eastern
+            // boundary street, grown over. The station that made the
+            // water worth keeping stands on the seacoast now.
             builder.AddRectangle(
-                lake,
+                CreateYard("yard-north-east"),
                 new RectInt(
-                    lakeMinimumX + 1,
-                    lakeMinimumZ + 1,
-                    DefaultLakeSize - 2,
-                    DefaultLakeSize - 2),
-                CityCellTopologyKind.Water);
+                    settings.BlocksX + 1,
+                    settings.BlocksZ - NorthEastYardSize,
+                    NorthEastYardSize,
+                    NorthEastYardSize),
+                CityCellTopologyKind.OpenLand);
         }
 
         private static CityAreaDefinition CreateCentralPark()

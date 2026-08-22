@@ -27,7 +27,6 @@ namespace BarPromenade.Tests.EditMode
                     null,
                     null,
                     null,
-                    null,
                     plan);
 
                 Assert.That(

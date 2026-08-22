@@ -11,14 +11,14 @@ namespace BarPromenade
     /// blocks anywhere - so night factor and rain intensity have to
     /// reach a whole body at once, by being written on its material.
     /// With one body that could live in <see cref="CityRiverResources"/>;
-    /// with two it cannot, because the river and the lake are two
+    /// with two it cannot, because the river and the sea are two
     /// materials of the same shader and the registries that push those
     /// values have no business knowing how many bodies exist.
     ///
     /// So each body owns its own material and registers it here, and the
     /// weather and night paths address this class alone. A material
     /// registered after the last push is brought up to date on the spot,
-    /// which is what lets a lake built halfway through a rain slot
+    /// which is what lets a sea built halfway through a rain slot
     /// arrive already wet.
     /// </summary>
     internal static class CityWaterResources

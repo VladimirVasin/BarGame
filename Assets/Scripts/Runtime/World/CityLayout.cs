@@ -1188,7 +1188,6 @@ namespace BarPromenade
                 CityAreaPlacement area = Blueprint.Areas[index];
                 CityAreaFeatureKind feature = area.Definition.Feature;
                 if ((feature == CityAreaFeatureKind.NorthWaterfront ||
-                     feature == CityAreaFeatureKind.Lake ||
                      feature == CityAreaFeatureKind.Cemetery ||
                      feature == CityAreaFeatureKind.Yard) &&
                     !areasWithAccess.Contains(area.Id))

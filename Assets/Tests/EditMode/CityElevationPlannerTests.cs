@@ -124,13 +124,14 @@ namespace BarPromenade.Tests
 
         [Test]
         [Category("CityTraversal")]
-        public void DefaultCity_KeepsSeaGlobalAndLakeInLocalBasin()
+        public void DefaultCity_KeepsAllWaterOnTheGlobalCoastalDatum()
         {
+            // The lake and its elevated basin are gone; every water
+            // cell left in the city is the sea, and the sea stays on
+            // the global coastal datum whatever its access does.
             CityElevationPlan plan = defaultLayout.ElevationPlan;
             CityBlueprintCell[] seaCells = defaultLayout.Blueprint.Cells
-                .Where(cell =>
-                    cell.IsWater &&
-                    cell.Area.Feature != CityAreaFeatureKind.Lake)
+                .Where(cell => cell.IsWater)
                 .ToArray();
             Assert.That(seaCells, Is.Not.Empty);
             foreach (CityBlueprintCell cell in seaCells)
@@ -140,32 +141,6 @@ namespace BarPromenade.Tests
                     Is.EqualTo(0f).Within(Tolerance),
                     $"{cell.Area.Feature} water at {cell.Cell}");
             }
-
-            CitySurfaceDescriptor[] lakeWater = defaultLayout.Surfaces
-                .Where(surface =>
-                    surface.Feature == CityAreaFeatureKind.Lake &&
-                    surface.IsWater)
-                .ToArray();
-            CitySurfaceDescriptor[] lakeShore = defaultLayout.Surfaces
-                .Where(surface =>
-                    surface.Kind == CitySurfaceKind.LakeShore)
-                .ToArray();
-            Assert.That(lakeWater, Is.Not.Empty);
-            Assert.That(lakeShore, Is.Not.Empty);
-            Assert.That(
-                lakeWater.Select(surface => surface.DatumY)
-                    .Distinct()
-                    .Count(),
-                Is.EqualTo(1));
-
-            float physicalDrop = lakeShore.Min(surface =>
-                                     surface.PhysicalTopY) -
-                                 lakeWater[0].PhysicalTopY;
-            Assert.That(
-                physicalDrop,
-                Is.InRange(0.30f, 0.60f),
-                "The elevated lake should read as a shallow guarded basin, " +
-                "not a multi-metre pit below its only access.");
         }
 
         [Test]
@@ -917,7 +892,6 @@ namespace BarPromenade.Tests
             CitySurfaceDescriptor surface)
         {
             return surface.Kind == CitySurfaceKind.Beach ||
-                   surface.Kind == CitySurfaceKind.LakeShore ||
                    surface.Kind == CitySurfaceKind.CemeteryGround ||
                    (surface.Kind == CitySurfaceKind.OpenGround &&
                     !CityMountainBoundaryDefinition.IsMountainFacingAreaId(

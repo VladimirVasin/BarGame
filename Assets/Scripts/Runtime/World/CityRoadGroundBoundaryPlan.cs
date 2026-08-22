@@ -413,7 +413,6 @@ namespace BarPromenade
             }
 
             return surface.Kind == CitySurfaceKind.Beach ||
-                   surface.Kind == CitySurfaceKind.LakeShore ||
                    surface.Kind == CitySurfaceKind.CemeteryGround ||
                    surface.Kind == CitySurfaceKind.OpenGround;
         }

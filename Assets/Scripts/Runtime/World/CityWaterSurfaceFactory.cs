@@ -22,8 +22,8 @@ namespace BarPromenade
     /// position, which is what keeps a segment boundary invisible: two
     /// adjacent sheets agree on the wave and on the ripple because both
     /// are functions of where they are, not of how they were cut. It is
-    /// also why this factory can serve the sea and the lake, whose
-    /// footprints are nothing like a channel.
+    /// also why this factory serves the sea as well as the river,
+    /// though their footprints are nothing alike.
     ///
     /// No property block is written, for the same reason
     /// <see cref="RuntimePrimitiveFactory.CreateMaterialBox"/> writes
@@ -114,122 +114,6 @@ namespace BarPromenade
                     // normal; what matters here is only that the sheet
                     // faces the sky, and a fall of a couple of metres
                     // over the whole river is not a tilt anybody sees.
-                    normals[index] = Vector3.up;
-                }
-            }
-
-            int triangle = 0;
-            for (int row = 0; row < rows; row++)
-            {
-                for (int column = 0; column < columns; column++)
-                {
-                    int southWest = row * (columns + 1) + column;
-                    int southEast = southWest + 1;
-                    int northWest = southWest + columns + 1;
-                    int northEast = northWest + 1;
-                    triangles[triangle++] = southWest;
-                    triangles[triangle++] = northWest;
-                    triangles[triangle++] = southEast;
-                    triangles[triangle++] = southEast;
-                    triangles[triangle++] = northWest;
-                    triangles[triangle++] = northEast;
-                }
-            }
-
-            return CreateSheet(
-                name,
-                parent,
-                origin,
-                vertices,
-                normals,
-                triangles,
-                sharedMaterial);
-        }
-
-        /// <summary>
-        /// One level water sheet over an axis-aligned rect with its four
-        /// corners cut at 45 degrees.
-        ///
-        /// Rows run at <see cref="SurfacePitch"/> as in the sloped sheet
-        /// and every row keeps the same column count, but each row lerps
-        /// its columns between that row's own span across the octagon.
-        /// The boundary is therefore exact, the stitching stays the
-        /// trivial two triangles per quad, and no triangle is
-        /// degenerate. Column spacing is uneven near the bevels, which
-        /// costs nothing: the shader derives wave, ripple and foam from
-        /// world position, never from UV.
-        /// </summary>
-        internal static GameObject CreateBevelledSurface(
-            string name,
-            Transform parent,
-            Rect bounds,
-            float bevel,
-            float topY,
-            Material sharedMaterial)
-        {
-            if (parent == null)
-            {
-                throw new ArgumentNullException(nameof(parent));
-            }
-
-            if (sharedMaterial == null)
-            {
-                throw new ArgumentNullException(nameof(sharedMaterial));
-            }
-
-            if (!(bounds.width > 0f) || !(bounds.height > 0f))
-            {
-                throw new ArgumentException(
-                    "A water surface needs a positive footprint.",
-                    nameof(bounds));
-            }
-
-            float maximumBevel = Mathf.Min(
-                bounds.width,
-                bounds.height) * 0.5f;
-            if (!(bevel >= 0f) || bevel >= maximumBevel)
-            {
-                throw new ArgumentException(
-                    "A bevel must be non-negative and smaller than half " +
-                    "the shorter span, or the corners meet.",
-                    nameof(bevel));
-            }
-
-            int columns = ResolveSpans(bounds.width);
-            int rows = ResolveSpans(bounds.height);
-            var vertices = new Vector3[(columns + 1) * (rows + 1)];
-            var normals = new Vector3[vertices.Length];
-            var triangles = new int[columns * rows * 6];
-
-            Vector3 origin = new Vector3(
-                bounds.center.x,
-                topY,
-                bounds.center.y);
-            for (int row = 0; row <= rows; row++)
-            {
-                float z = Mathf.Lerp(
-                    bounds.yMin,
-                    bounds.yMax,
-                    (float)row / rows);
-
-                // How far this row has to pull its ends in to ride the
-                // cut corner. Zero along the straight middle of the
-                // footprint, the full bevel at the very top and bottom.
-                float intoEdge = Mathf.Min(z - bounds.yMin, bounds.yMax - z);
-                float inset = Mathf.Max(0f, bevel - intoEdge);
-                float rowMinimumX = bounds.xMin + inset;
-                float rowMaximumX = bounds.xMax - inset;
-                for (int column = 0; column <= columns; column++)
-                {
-                    float x = Mathf.Lerp(
-                        rowMinimumX,
-                        rowMaximumX,
-                        (float)column / columns);
-                    int index = row * (columns + 1) + column;
-                    vertices[index] = new Vector3(x, topY, z) - origin;
-
-                    // Flat up. The shader replaces this wholesale with
-                    // the analytic wave normal.
                     normals[index] = Vector3.up;
                 }
             }

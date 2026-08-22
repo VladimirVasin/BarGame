@@ -136,12 +136,6 @@ namespace BarPromenade
                 CityCemeteryWorldBuilder.Build(world, cemeteryPlan);
             }
 
-            CityLakePlan lakePlan = CityLakePlanner.Create(layout);
-            if (lakePlan != null)
-            {
-                CityLakeWorldBuilder.Build(world, lakePlan);
-            }
-
             if (seacoastPlan != null)
             {
                 CitySeacoastWorldBuilder.Build(world, seacoastPlan);
@@ -192,7 +186,6 @@ namespace BarPromenade
                 openAreaDecorationRoot,
                 cemeteryPlan,
                 cemeteryExcavation,
-                lakePlan,
                 seacoastPlan,
                 decorationPlan,
                 decorationRoot,
@@ -216,7 +209,6 @@ namespace BarPromenade
         {
             Transform surfaces = new GameObject("City Surfaces").transform;
             surfaces.SetParent(parent, false);
-            var lakeShore = new List<Bounds>();
             var water = new List<Bounds>();
             float terrainBottom =
                 layout.ElevationPlan.MinimumElevation - 0.32f;
@@ -255,22 +247,14 @@ namespace BarPromenade
                             patch.height));
                     switch (surface.Kind)
                     {
-                        case CitySurfaceKind.LakeShore:
-                            lakeShore.Add(bounds);
-                            break;
                         case CitySurfaceKind.Water:
-                            // The lake's water is drawn by
-                            // CityLakeWorldBuilder, which insets it to
-                            // a cut-cornered waterline and gives it a
-                            // bank and a bed, and the sea's by
+                            // The sea is drawn by
                             // CitySeacoastWorldBuilder, which gives it
                             // swell, a shore shelf and a foam line -
                             // the same hand-off the river already
                             // gets. The flat slab survives only where
                             // no precinct claims the water.
-                            if (surface.Feature !=
-                                    CityAreaFeatureKind.Lake &&
-                                !(seacoastBuildsTheSea &&
+                            if (!(seacoastBuildsTheSea &&
                                   surface.Feature ==
                                   CityAreaFeatureKind.NorthWaterfront))
                             {
@@ -314,26 +298,6 @@ namespace BarPromenade
                     beach.GetComponent<Renderer>(),
                     CitySeacoastSurfaceKind.Sand,
                     CityExteriorAppearance.BeachSand);
-            }
-            if (lakeShore.Count > 0)
-            {
-                // The shore ring takes the same trodden-clay sheet the
-                // authored bank inside it carries, so the walk from the
-                // street to the water crosses one ground rather than a
-                // lawn meeting a ramp.
-                GameObject lakeShoreGround =
-                    RuntimePrimitiveFactory.CreateCombinedBoxes(
-                        "Lake Shore",
-                        surfaces,
-                        lakeShore,
-                        CityExteriorAppearance.LakeShore,
-                        true,
-                        CityLakeSurfaceAppearance.GetRecipe(
-                            CityLakeSurfaceKind.Bank).MetersPerTile);
-                CityLakeSurfaceAppearance.ApplyCombined(
-                    lakeShoreGround.GetComponent<Renderer>(),
-                    CityLakeSurfaceKind.Bank,
-                    CityExteriorAppearance.LakeShore);
             }
             // The cemetery slab is built apart from the other
             // surfaces because it is the one ground in the city that

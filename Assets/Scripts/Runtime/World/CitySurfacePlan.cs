@@ -10,7 +10,8 @@ namespace BarPromenade
         ParkGround = 1,
         OpenGround = 2,
         Beach = 3,
-        LakeShore = 4,
+        // 4 was the lake shore, drained with the lake. The value
+        // stays a hole so nothing renumbers.
         CemeteryGround = 5,
         Water = 6,
         RiverWater = 7
@@ -446,7 +447,6 @@ namespace BarPromenade
         {
             CityAreaFeatureKind feature = area.Definition.Feature;
             if (feature != CityAreaFeatureKind.NorthWaterfront &&
-                feature != CityAreaFeatureKind.Lake &&
                 feature != CityAreaFeatureKind.Cemetery &&
                 feature != CityAreaFeatureKind.Yard)
             {
@@ -721,8 +721,6 @@ namespace BarPromenade
                     {
                         case CityAreaFeatureKind.NorthWaterfront:
                             return CitySurfaceKind.Beach;
-                        case CityAreaFeatureKind.Lake:
-                            return CitySurfaceKind.LakeShore;
                         case CityAreaFeatureKind.Cemetery:
                             return CitySurfaceKind.CemeteryGround;
                         case CityAreaFeatureKind.Yard:

@@ -51,8 +51,6 @@ namespace BarPromenade
             new Color(0.52f, 0.45f, 0.30f);
         public static readonly Color Water =
             new Color(0.10f, 0.29f, 0.38f);
-        public static readonly Color LakeShore =
-            new Color(0.25f, 0.34f, 0.25f);
         public static readonly Color CemeteryGround =
             new Color(0.15f, 0.20f, 0.16f);
         public static readonly Color YardGround =

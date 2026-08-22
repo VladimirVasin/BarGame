@@ -84,7 +84,7 @@ namespace BarPromenade
 
     public sealed class CityOpenAreaDecorationPlan
     {
-        // The cemetery and the lake both budget their own dedicated
+        // The cemetery and the seacoast both budget their own dedicated
         // plans now; this covers the authored bar-side yard only.
         public const int MaximumPartCount = 180;
 

@@ -30,7 +30,7 @@ namespace BarPromenade
 
         /// <summary>
         /// The lamp the gravedigger works by: the same kerosene hand
-        /// lamp that stands at the end of the lake pier, set down at
+        /// lamp that stands at the end of the seacoast pier, set down at
         /// the head-end corner of the plot. It arrives with the job
         /// and stays until the earth is back — every act is worked by
         /// its light, and the first of them most of all. It is turned

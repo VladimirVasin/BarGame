@@ -14,10 +14,12 @@ and water edge and four urban districts with four graph-separated bars. The
 default road footprint now has a mandatory uninterrupted outer Street circuit:
 the two road bridges and their continuous bank roads close it across the river,
 while only the interior street loops remain seed-optional. The
-default footprint also extends east to a
-reachable `4 x 4` lake with a walkable shore and blocked water plus a reachable
-`3 x 2` cemetery; both have deterministic physical landmarks and street
-access. The default city now reads as a coastal basin: physical flat-shaded
+default footprint also extends east to a plain `4 x 4` north-east
+yard (the drained former lake block) plus a reachable `3 x 2`
+cemetery with deterministic physical landmarks and street access;
+the north edge carries the dressed seacoast precinct — mol, beacon,
+the transplanted boat station with its fisherman, footbridge over
+the river mouth, animated sea and wild east shore. The default city now reads as a coastal basin: physical flat-shaded
 mountain ridges close only its western and southern edges. At the river axis
 the southern skyline stays closed above one low, dark `10 m`-wide water mouth
 instead of opening into an empty gorge. Water and its bed continue more than
@@ -64,7 +66,7 @@ from west to south, so both endpoint profiles and the overhead silhouette are
 welded rather than touching at one toe point.
 The north-east urban-core road cap beside lot `[12,11]` has a separate local
 `4 m + 4 m` physical `CornerGuard` pair meeting in the same ordinary right
-angle. It guards only that cap; the northern waterfront, eastern lake ground
+angle. It guards only that cap; the northern waterfront, eastern yard ground
 and their authored approaches remain open.
 Each anchor owns one emissive practical; at night the nearest one may lease the
 last of the existing eight street Spot slots, so `CityNightAtmosphere` still

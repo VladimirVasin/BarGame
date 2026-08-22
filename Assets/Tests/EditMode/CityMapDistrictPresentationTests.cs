@@ -48,9 +48,6 @@ namespace BarPromenade.Tests.EditMode
             CityDistrictKind.NorthWaterfront,
             "map.district.north_waterfront")]
         [TestCase(
-            CityDistrictKind.Lake,
-            "map.district.lake")]
-        [TestCase(
             CityDistrictKind.Cemetery,
             "map.district.cemetery")]
         [TestCase(
@@ -250,18 +247,19 @@ namespace BarPromenade.Tests.EditMode
                     CityAreaFeatureKind.UrbanDistrict,
                     CityAreaFeatureKind.CentralPark,
                     CityAreaFeatureKind.NorthWaterfront,
-                    CityAreaFeatureKind.Lake,
                     CityAreaFeatureKind.Cemetery,
                     CityAreaFeatureKind.Yard
                 }));
 
-            // The lake is the one precinct that carries open water, and
-            // an open precinct is only enterable through its gates.
+            // The waterfront is the one precinct that carries open
+            // water now that the lake is drained, and an open precinct
+            // is only enterable through its gates.
             Assert.That(
-                byFeature[CityAreaFeatureKind.Lake].WaterBounds,
+                byFeature[CityAreaFeatureKind.NorthWaterfront]
+                    .WaterBounds,
                 Is.Not.Empty);
             Assert.That(
-                byFeature[CityAreaFeatureKind.Lake].Gates,
+                byFeature[CityAreaFeatureKind.NorthWaterfront].Gates,
                 Is.Not.Empty);
             Assert.That(
                 byFeature[CityAreaFeatureKind.Cemetery].Gates,

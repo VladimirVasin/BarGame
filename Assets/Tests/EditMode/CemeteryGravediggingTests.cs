@@ -408,7 +408,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.False);
 
             // The lamp is not a lamp of its own: it is the fixture
-            // the lake pier stands at the end of, set down here.
+            // the seacoast pier stands at the end of, set down here.
             Transform lampObject = controller.transform.Find(
                 CemeteryGravediggingController.LampName);
             Assert.That(lampObject, Is.Not.Null);

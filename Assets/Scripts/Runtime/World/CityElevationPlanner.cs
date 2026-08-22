@@ -13,7 +13,6 @@ namespace BarPromenade
         private const float SignatureStairLanding = 1.5f;
         private const float RiverBankHeightAboveWater = 1.8f;
         private const float RiverValleyRisePerNode = 0.98f;
-        private const float LakeWaterDatumBelowAccess = 0.36f;
 
         private static readonly float[] DefaultNorthProfile =
         {
@@ -205,19 +204,13 @@ namespace BarPromenade
         {
             if (cell.IsWater)
             {
-                return cell.Area.Feature == CityAreaFeatureKind.Lake
-                    ? 1f
-                    : 0f;
+                // Sea water stays on the global coastal datum.
+                return 0f;
             }
 
             if (cell.Area.Feature == CityAreaFeatureKind.NorthWaterfront)
             {
                 return 0.6f;
-            }
-
-            if (cell.Area.Feature == CityAreaFeatureKind.Lake)
-            {
-                return 1.7f + StableSignedStep(seed, cell.Cell, 0.15f);
             }
 
             if (cell.Area.Feature == CityAreaFeatureKind.Cemetery)
@@ -299,17 +292,8 @@ namespace BarPromenade
 
                     if (cell.IsWater)
                     {
-                        // The lake is an elevated local basin. Leaving its
-                        // water at a global Y=1 while the only approach is
-                        // eight metres higher creates a sheer artificial pit.
-                        // Keep a small blocked shoreline drop instead; sea
-                        // water remains on the global coastal datum.
-                        if (access.Feature == CityAreaFeatureKind.Lake)
-                        {
-                            cellElevations[cell.Cell] =
-                                accessDatum - LakeWaterDatumBelowAccess;
-                        }
-
+                        // Sea water remains on the global coastal
+                        // datum whatever its access terrace does.
                         continue;
                     }
 
@@ -597,7 +581,6 @@ namespace BarPromenade
                 case CityDistrictKind.Residential:
                 case CityDistrictKind.Industrial:
                 case CityDistrictKind.Nightlife:
-                case CityDistrictKind.Lake:
                     return 1;
                 case CityDistrictKind.CentralPark:
                     return 4;

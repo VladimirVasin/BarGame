@@ -10,8 +10,8 @@ namespace BarPromenade
     /// It exists because a rod without one is a stick. It is built by the
     /// runtime rather than drawn into the model for a reason the source
     /// records: the only thing that knows how far it is from the rod tip
-    /// down to the water is the lake plan, which measured the waterline
-    /// after insetting it inside the blueprint's own cells.
+    /// down to the water is the coast plan, whose frame carries the
+    /// sea's own top.
     ///
     /// The float is set once and stays: it is sitting on still water and
     /// a bobber that slides around with a breathing man's hands reads as

@@ -580,7 +580,7 @@ namespace BarPromenade
             float groundTopY = frame.GroundTopY;
             // Despite its name, the access normal points from the
             // street into the grounds (the original cemetery pass and
-            // the lake shore both read it that way).
+            // the seacoast both read it that way).
             Vector3 inward = access.OutwardNormal.normalized;
             bool gateOnWest = inward.x > 0.5f;
             bool gateOnEast = inward.x < -0.5f;

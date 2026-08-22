@@ -13,7 +13,8 @@ namespace BarPromenade
         Nightlife = 3,
         CentralPark = 4,
         NorthWaterfront = 5,
-        Lake = 6,
+        // 6 was the lake, drained when its boat station moved to the
+        // seacoast. The value stays a hole so nothing renumbers.
         Cemetery = 7,
         Yard = 8
     }

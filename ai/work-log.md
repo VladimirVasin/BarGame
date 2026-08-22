@@ -6,6 +6,50 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-22 — The north seacoast, and the lake that moved to it
+
+- **The north shore stopped being a stub.** A new `CitySeacoast`
+  precinct (planner/plan/world builder/appearance, the lake recipe
+  transplanted 1:1) zones the waterfront around the river mouth: dead
+  port with a concrete mol, occulting beacon and frozen derrick to the
+  west; granite esplanade with glow lamps, benches and the boat
+  station at the centre; rotten pile row, driftwood, dune grass, a
+  lone wreck and a stranded barge on the wild east. A timber
+  footbridge crosses the mouth as precinct geometry (the river's
+  2-road+1-foot bridge contract is untouched), and a concrete
+  training sill under the waterline keeps the river and sea sheets
+  apart — its crest is test-pinned above both waters' highest crests.
+- **The sea is real water now.** `CitySeaResources` is the third
+  material of the shared water shader (zero flow, long low swell,
+  additional-specular for the beacon's glitter road) on chunked
+  sheets over a jittered silt shelf whose depth sits inside the foam
+  distance, so the surf line draws itself; the flat municipal slab is
+  suppressed when the coast plan exists. The beacon pulses a pure
+  deterministic occulting characteristic driven off game minutes.
+- **People reach the shore.** A coast lane joins the pedestrian
+  2-core graph (street spur through the rail opening, quay junctions
+  that un-prune both `river:{bank}:north` stubs down new quay stairs,
+  the footbridge link, an east terminal ring); the quay seal rails are
+  skipped when the coast exists; esplanade benches join the shared
+  bench-sit pass; a synthesized nine-second surf bed follows the
+  hero's distance to the waterline and the deterministic wind.
+- **The fisherman moved with his station** — nine runtime files
+  renamed `Lake*` → `Seacoast*` with meta GUIDs preserved, stance
+  reading the coast pier's named boards, line ending at the sea's own
+  top, quips re-keyed `seacoast.fisherman.*` (the crucian became
+  flounder). The 3D asset chain keeps its lake-era names on purpose.
+- **The lake itself is gone**: blueprint block replaced by a plain
+  `yard-north-east`, six world files, its tests, five texture sheets
+  and the generator deleted, three enum values left as holes so
+  nothing renumbers, the elevated-basin elevation contracts removed,
+  and every switch, map draw, colour and localization entry swept.
+- **Verification:** staged over seven commits, each compiled headless
+  and ran green; the full EditMode suite finishes 1368/1368 (the 17
+  lake tests retired, 28 seacoast/pedestrian/appearance/fisherman
+  tests added). Textures regenerated via
+  `tools/build-city-seacoast-textures.py` with solved compensations
+  transcribed and pinned.
+
 ## 2026-08-22 — The cave gap and the embankment's invisible wall
 
 - **The user walked the new south embankment and found both bugs in

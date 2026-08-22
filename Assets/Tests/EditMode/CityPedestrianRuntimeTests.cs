@@ -28,7 +28,7 @@ namespace BarPromenade.Tests.EditMode
         private const string PipebackRollerDesignId =
             "pipeback_roller_v1";
         // The Pipeback Roller, the Yard Babushka, the Weigh Attendant,
-        // the Cemetery Mourner, the Cemetery Watchman and the Lake
+        // the Cemetery Mourner, the Cemetery Watchman and the Seacoast
         // Fisherman contribute two staged loops each. The two park
         // players carry three: an idle, a trudge held for a later pass,
         // and the authored shout they throw at each other.

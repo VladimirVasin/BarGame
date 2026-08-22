@@ -422,7 +422,7 @@ namespace BarPromenade
         /// <summary>
         /// The noticeable light the user asked the water mouth to own:
         /// an iron-hooded lamp on the arch crown, registered like the
-        /// lake hut bulb - a glow lens, a real point light with a halo,
+        /// boat-station hut bulb - a glow lens, a real point light with a halo,
         /// and the site registry dimming it to a day floor so "still
         /// burning" reads at noon too.
         /// </summary>

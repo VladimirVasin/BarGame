@@ -193,12 +193,12 @@ Assets/
       Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home/supermarket plans and builders
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
-        CityBlueprintCatalog.cs  default 13x12 river city with eastern Lake/Cemetery, five Yards + legacy blueprint
+        CityBlueprintCatalog.cs  default 13x12 river city with eastern Cemetery, six Yards + legacy blueprint
         CityRiverPlan.cs         10 m channel, dual core promenades, three typed bridges + four lower landings
         CityRiverResources.cs    shared animated water material and night/rain factors
         CityRiverWorldBuilder.cs core river + mountain-plan cave water/bed/banks/rails
         CityElevationPlan.cs     node/cell datums, classified grades + authoritative height sampler
-        CityElevationPlanner.cs  river-valley node profile, local lake basin + flat custom fallback
+        CityElevationPlanner.cs  river-valley node profile + flat custom fallback
         CityElevationValidator.cs coverage, water, grade + four-district stair invariants
         CityElevationRebaser.cs  canonical lots, park, POIs, surfaces + access anchors
         CityTerrainSurfacePlan.cs continuous Buildable/Park/Open/Beach top and normal sampler
@@ -234,7 +234,7 @@ Assets/
         CityStreetSurfacePlanner.cs  graded strips, level pads, stair cuts, dashes + zebras
         CityWorldBuilder.cs      continuous terrain, fenced corner infill, river/bridges, graded streets, stairs + guarded drops
         HomeYardSitePlan.cs      shared roadless-gap, rider-ring, neighbour-light + leaning-utility geometry
-        CityOpenAreaDecorationPlan.cs  deterministic Lake + inter-building bar-side yard/light descriptors
+        CityOpenAreaDecorationPlan.cs  deterministic inter-building bar-side yard/light descriptors
         CityOpenAreaWorldBuilder.cs    chunked landmarks + fixed always-on neighbour-wall yard Spot
         CityCemeteryPlan.cs      oriented cemetery part/lamp descriptors, six grave variants + bounded budget
         CityCemeteryPlanner.cs   gate-framed alleys, hash-varied graves/оградки, trees, lamps + validation
@@ -246,12 +246,12 @@ Assets/
         CityHandLampWorldBuilder.cs      the shared kerosene hand lamp: pier head and graveside, one fixture
         CityCemeteryCoffinWorldBuilder.cs  six-sided turned-board coffin, overhanging lid, cross
         CityCemeterySealedGraveWorldBuilder.cs  turned mound courses + one planner monument, slab omitted
-        CityLakePlan.cs          oriented lake part/lamp descriptors, four hull variants, basin + budget
-        CityLakePlanner.cs       inset cut-cornered waterline, revetment ring, pier, hulls, hut + validation
-        CityLakeWorldBuilder.cs  chunked oriented batches with lake sheets + night-scaled shore lamps
-        CityLakeSurfaceAppearance.cs  three lake albedos (plank/bank/hull) via MPBs
-        CityLakeBankMeshFactory.cs  walkable collidered bank ring + colliderless silt bed cap
-        CityLakeResources.cs     the still-water material: zero flow, isotropic ripple, lamp glint
+        CitySeacoastPlan.cs      oriented coast part/lamp descriptors, four hull variants, frame + budget
+        CitySeacoastPlanner.cs   zoned shore (port/esplanade/wild), mol, boat station, footbridge, sill + validation
+        CitySeacoastWorldBuilder.cs  chunked oriented batches with coast sheets, sea sheets/shelf + fixtures
+        CitySeacoastSurfaceAppearance.cs  five coast albedos (sand/concrete/granite/plank/hull) via MPBs
+        CitySeacoastBeaconController.cs  the occulting beacon pulse: pure rules + a self-driven light
+        CitySeaResources.cs      the sea material: zero flow, long swell, isotropic ripple, beacon glint
         CityWaterResources.cs    the one night/rain drive shared by every water material
         CityParkSurfaceAppearance.cs  eight park albedos (lawn/path/plaza/bark/foliage/timber/stone/painted metal) via MPBs
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
@@ -350,16 +350,16 @@ Assets/
         WeighbridgeAttendantFactory.cs two instances, passivity re-checked at instantiation
         WeighbridgeAttendantProvider.cs  the only serialized reference to the staged prefab
         CityWeighbridgeNeedleController.cs  City-root needle deflection under NPC pause or hero weight
-      Lake/          the boat station's one permanent inhabitant
-        LakeFishermanProvider.cs  the only serialized reference to the staged prefab
-        LakeFishermanPlan.cs     stance, facing and waterline read back from the lake plan itself
-        LakeFishermanQuips.cs    15-line seeded repertoire, never twice running, never second person
-        LakeFishermanInteraction.cs  talk stub on a trigger docked behind him, not in front
-        LakeFishermanPresentation.cs  single-clip manual PlayableGraph; publishes the loop's breath phase
-        LakeFishermanRigAnchors.cs  bind-pose anchors for the pipe bowl and the rod point
-        LakeFishermanPipeEffect.cs  ember, its point light and the plume, all on the breath phase
-        LakeFishermanLine.cs     line struck from the live rod tip to the measured waterline
-        LakeFishermanFactory.cs  one staged instance, passivity validated, magnet + talk trigger + pipe + line
+      Seacoast/      the boat station's one permanent inhabitant
+        SeacoastFishermanProvider.cs  the only serialized reference to the staged prefab
+        SeacoastFishermanPlan.cs  stance, facing and waterline read back from the coast plan itself
+        SeacoastFishermanQuips.cs  15-line seeded repertoire, never twice running, never second person
+        SeacoastFishermanInteraction.cs  talk stub on a trigger docked behind him, not in front
+        SeacoastFishermanPresentation.cs  single-clip manual PlayableGraph; publishes the loop's breath phase
+        SeacoastFishermanRigAnchors.cs  bind-pose anchors for the pipe bowl and the rod point
+        SeacoastFishermanPipeEffect.cs  ember, its point light and the plume, all on the breath phase
+        SeacoastFishermanLine.cs  line struck from the live rod tip to the sea's own top
+        SeacoastFishermanFactory.cs  one staged instance, passivity validated, magnet + talk trigger + pipe + line
       Cemetery/      the scripted graveside visitor summoned by the hero's presence
         CemeteryMournerPlan.cs   pure grave candidates, foot-side stand, gate route, unseen spawn + trigger band
         CemeteryMournerTimeline.cs  approach/lay/cry(30 s)/wipe/depart clock with the one-shot lay cue
@@ -551,7 +551,7 @@ Assets/
       CityNightAtmosphereTests.cs         nearest fringe practical leases one existing street Spot
       HomeBalconyLayoutTests.cs         Home exterior layout/pedestrians + static stop pole
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
-      CityOpenAreaDecorationPlannerTests.cs  Lake identity, clearance and determinism
+      CityOpenAreaDecorationPlannerTests.cs  yard identity, clearance and determinism
       CityCemeteryPlannerTests.cs         cemetery variety/clearance/determinism, textured build, night lamps + sittable benches
       CityMapViewportTests.cs             independent overflow axes, focus and clamping
       SupermarketInteriorLayoutTests.cs   room, paths, fixtures and finite slots
@@ -667,7 +667,7 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                              -> two promenades + four lower landings
                                           -> split 16-cell centered park
                                           -> north-edge beach + water
-                                          -> default eastern Lake/Cemetery areas
+                                          -> default eastern Cemetery/yard areas
                                           -> default mountain boundary plan
                                              -> physical west/south ridges
                                                 -> shared opaque physical shader

@@ -163,25 +163,24 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Water whose edge a precinct builder authors physically: the
-        /// river's quay walls, and the lake's bank and revetment.
+        /// Water whose edge a precinct builder authors physically:
+        /// the river's quay walls.
         ///
         /// A generic rail on one of these boundaries stands on ground
         /// that visibly continues past it, which is the invisible
         /// perimeter this project does not build. The precinct owes a
-        /// visible barrier in its place, and both of them pay it - the
-        /// lake under a validated continuity and height contract in
-        /// <see cref="CityLakePlanner"/>.
+        /// visible barrier in its place, and the river pays it.
         ///
-        /// The sea's waterfront row is deliberately not included: no
-        /// builder authors an edge for it, so it keeps its rail.
+        /// The sea's waterfront row is deliberately not included: the
+        /// beach-to-sea step sits inside the safe-step budget, so the
+        /// generic pass never rails the waterline, and the seacoast's
+        /// own raised decks carry their parapets under the coast
+        /// planner's validated continuity contracts.
         /// </summary>
         private static bool IsAuthoredWaterEdge(
             CitySurfaceDescriptor surface)
         {
-            return surface.Kind == CitySurfaceKind.RiverWater ||
-                   (surface.Kind == CitySurfaceKind.Water &&
-                    surface.Feature == CityAreaFeatureKind.Lake);
+            return surface.Kind == CitySurfaceKind.RiverWater;
         }
 
         private static void AddBoundaryIfRequired(

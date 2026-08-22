@@ -279,7 +279,6 @@ namespace BarPromenade.Tests.EditMode
             "map.district.nightlife",
             "map.district.central_park",
             "map.district.north_waterfront",
-            "map.district.lake",
             "map.district.cemetery",
             "map.district.yard",
             "debug.minigames.title",

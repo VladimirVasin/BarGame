@@ -521,10 +521,6 @@
       "value": "Bus stop"
     },
     {
-      "key": "map.lake.boat_station",
-      "value": "Boat station"
-    },
-    {
       "key": "map.seacoast.boat_station",
       "value": "Boat station"
     },
@@ -623,10 +619,6 @@
     {
       "key": "map.district.north_waterfront",
       "value": "North Waterfront"
-    },
-    {
-      "key": "map.district.lake",
-      "value": "Lake"
     },
     {
       "key": "map.district.cemetery",

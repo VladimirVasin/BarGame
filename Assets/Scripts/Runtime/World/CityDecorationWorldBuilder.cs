@@ -1207,8 +1207,8 @@ namespace BarPromenade
                 -radius + 0.20f, radius * 2f, 0.68f, 0.40f);
             Add(parts, c, BatchStyle.Masonry, stone, 0f, 0.48f,
                 radius - 0.20f, radius * 2f, 0.68f, 0.40f);
-            // The standing water stays a flat plane, like the river,
-            // the lake and the sea: a texture here would read as silt
+            // The standing water stays a flat plane, like the river
+            // and the sea: a texture here would read as silt
             // on glass rather than a weak fountain still running.
             Add(parts, c, BatchStyle.Residential, 0f, 0.32f, 0f,
                 radius * 1.62f, 0.08f, radius * 1.62f);

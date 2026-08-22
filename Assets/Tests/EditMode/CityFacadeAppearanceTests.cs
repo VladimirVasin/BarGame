@@ -127,7 +127,6 @@ namespace BarPromenade.Tests.EditMode
                      {
                          CityDistrictKind.CentralPark,
                          CityDistrictKind.NorthWaterfront,
-                         CityDistrictKind.Lake,
                          CityDistrictKind.Cemetery,
                      })
             {

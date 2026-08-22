@@ -16,7 +16,8 @@ namespace BarPromenade
         UrbanDistrict = 0,
         CentralPark = 1,
         NorthWaterfront = 2,
-        Lake = 3,
+        // 3 was the lake, drained when its boat station moved to the
+        // seacoast. The value stays a hole so nothing renumbers.
         Cemetery = 4,
         Yard = 5
     }
@@ -143,12 +144,6 @@ namespace BarPromenade
                         CityAreaPlacementPolicy.NorthEdge,
                         "north waterfront");
                     break;
-                case CityAreaFeatureKind.Lake:
-                    ValidateSpecialCombination(
-                        CityDistrictKind.Lake,
-                        CityAreaPlacementPolicy.Movable,
-                        "lake");
-                    break;
                 case CityAreaFeatureKind.Cemetery:
                     ValidateSpecialCombination(
                         CityDistrictKind.Cemetery,
@@ -189,7 +184,6 @@ namespace BarPromenade
             {
                 case CityDistrictKind.CentralPark:
                 case CityDistrictKind.NorthWaterfront:
-                case CityDistrictKind.Lake:
                 case CityDistrictKind.Cemetery:
                 case CityDistrictKind.Yard:
                     return true;
@@ -614,16 +608,6 @@ namespace BarPromenade
                     }
 
                     break;
-                case CityAreaFeatureKind.Lake:
-                    if (topology != CityCellTopologyKind.OpenLand &&
-                        topology != CityCellTopologyKind.Water)
-                    {
-                        throw new InvalidOperationException(
-                            "A lake area can contain only shoreline and " +
-                            "water cells.");
-                    }
-
-                    break;
                 case CityAreaFeatureKind.NorthWaterfront:
                     if (topology != CityCellTopologyKind.OpenLand &&
                         topology != CityCellTopologyKind.Water)
@@ -729,9 +713,6 @@ namespace BarPromenade
                         }
 
                         NorthWaterfront = area;
-                        break;
-                    case CityAreaFeatureKind.Lake:
-                        ValidateMixedOpenWaterArea(area, "lake");
                         break;
                     case CityAreaFeatureKind.Cemetery:
                         break;

@@ -178,8 +178,8 @@ namespace BarPromenade
     /// dent. The outermost top ring never moves, so the single-quad sides
     /// and bottom stay welded to it and the rest silhouette is exactly the
     /// old primitive box. This is the project's first per-frame-written
-    /// mesh; the build idioms follow CityWaterSurfaceFactory (grid, manual
-    /// bounds allowance) and CityLakeBankMeshFactory (renderer wiring).
+    /// mesh; the build idioms follow CityWaterSurfaceFactory (grid,
+    /// manual bounds allowance, renderer wiring).
     /// </summary>
     internal static class HomeBedDeformableSurfaceFactory
     {
