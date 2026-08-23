@@ -17,8 +17,12 @@ namespace BarPromenade
 
         internal static readonly Vector3 GroundEmitterPosition =
             new Vector3(-1.45f, 2.70f, -3.40f);
+        // The middle pendant must hang low over the middle landing
+        // (elevation 1.6) and lean toward the back rail, or the cat
+        // perch reads as pure black: at the old ceiling height the
+        // inverse-square falloff left the landing unlit.
         internal static readonly Vector3 MiddleEmitterPosition =
-            new Vector3(0f, 5.25f, 1.48f);
+            new Vector3(-0.45f, 4.15f, 1.62f);
         internal static readonly Vector3 ApartmentEmitterPosition =
             new Vector3(2.48f, 5.78f, -3.20f);
 
@@ -51,8 +55,8 @@ namespace BarPromenade
                     "Ground Entrance Light",
                     GroundEmitterPosition + Vector3.down * 0.16f,
                     new Color(0.50f, 0.70f, 0.55f),
-                    4.80f,
-                    6.2f,
+                    6.00f,
+                    7.0f,
                     0.2f,
                     false));
             practicalLights.Add(
@@ -60,8 +64,8 @@ namespace BarPromenade
                     "Middle Flickering Light",
                     MiddleEmitterPosition + Vector3.down * 0.16f,
                     new Color(0.46f, 0.67f, 0.59f),
-                    7.40f,
-                    8.4f,
+                    10.00f,
+                    9.5f,
                     1.7f,
                     true));
             practicalLights.Add(
@@ -69,8 +73,8 @@ namespace BarPromenade
                     "Apartment Landing Light",
                     ApartmentEmitterPosition + Vector3.down * 0.16f,
                     new Color(0.82f, 0.58f, 0.29f),
-                    4.60f,
-                    6.0f,
+                    6.00f,
+                    7.0f,
                     3.1f,
                     false));
             CreatePostProcessVolume();

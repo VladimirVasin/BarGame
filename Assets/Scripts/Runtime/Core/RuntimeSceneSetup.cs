@@ -276,7 +276,7 @@ namespace BarPromenade
             ConfigureDirectionalLighting(
                 new Color(0.50f, 0.62f, 0.55f),
                 0.34f,
-                new Color(0.040f, 0.055f, 0.046f),
+                new Color(0.085f, 0.105f, 0.090f),
                 0.72f);
 
             RenderSettings.fog = false;
