@@ -301,6 +301,11 @@ Assets/
         CityWeatherController.cs    per-frame weather sample -> rain, flash, thunder
         CityRainField.cs            seeded player-following stretched rain streaks
         CityLightningFlashLight.cs  transient shadowless directional storm flash
+        CityRopeSpanGeometry.cs     shared parabolic rope sag: curve samples + chord-chain boxes
+        CityWindDressingPlan.cs     cloth/rope prop descriptors, per-zone budgets, 32-piece cap
+        CityWindDressingPlanner.cs  cross-zone pass hanging cloth off other plans' drawn anchors
+        CityWindDressingValidator.cs  budgets, unique ids, water/approach clearance for poles
+        CityWindDressingWorldBuilder.cs  batched poles/rope chords + per-piece wind-registered cloth
         RoadWalkableArea.cs      ground/road/promenade union + mountain-plan cave-bank extensions
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
@@ -448,7 +453,7 @@ Assets/
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
         PlayerFactory.cs           shared prefab spawn in all five gameplay roots
         PlayerAttention.cs         Silent Hill head: notice cone rules, target picker + magnets
-        PlayerCameraFollow.cs      bounded yaw/pitch chase, fixed pose + shared orbit sampling
+        PlayerCameraFollow.cs      bounded yaw/pitch chase, fixed pose + shared mouse/stick/arrow orbit sampling
         PlayerContactShadow.cs     slope-aligned planted/fall-aware analytic ground patch
         PlayerNeedsProgressionState.cs  fractional clock-driven hunger/fatigue
         PlayerNeedsRules.cs        shared 0-100 need bounds + hunger/stress relief

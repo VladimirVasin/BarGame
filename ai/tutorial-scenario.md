@@ -31,7 +31,8 @@ This is the first manual acceptance path for the vertical slice.
 8. Open the map and confirm that district labels, green park land, sand-colored
    park paths, four widely separated bars and the labeled house icon are all
    visible.
-9. Move with `WASD`/arrows along streets, enter any park gate and cross the
+9. Move with `WASD` along streets (the arrows orbit the camera), enter any
+   park gate and cross the
    lawn on foot to another side without leaving walkable space.
 10. Confirm that every bar approach, the home approach and each park gate has a
    clear break in the low ochre rails.

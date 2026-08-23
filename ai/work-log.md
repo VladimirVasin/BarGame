@@ -6,6 +6,114 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-23 — Wind dressing scaled to be met on a walk
+
+- A gameplay test reported the wind dressing invisible: walking the city
+  showed practically no cloth. A diagnostic dump of the default seed
+  explained it — 29 pieces over a ~390×335 m city, because every pass
+  took only the first 1-2 anchors of its kind while the city actually
+  plans 12 markets, 20 scaffoldings, 18 furniture frontages, 18 pipe
+  racks and 19 fire escapes; worse, the industrial pieces hung from the
+  landmark tower's rooftop gantry at 45 m and both billboard skirts at
+  ~50 m — invisible in principle (all ten nightlife billboards ride
+  towers).
+- Fixes in `CityWindDressingPlanner`: anchors are now picked by stride
+  across each kind's whole sorted list (markets ×4 with two rags each,
+  scaffolds ×3 with the shroud moved from the inner top ledger to the
+  outer level-3 guard rail where it reads from the street, fire escapes
+  ×8, pipe racks ×4 with a street-side tarp + sling pair at 2.85 m);
+  residential courtyard lines went from a head-of-list 2 to up to 6,
+  thinned by an 18 m spacing rule instead of a fixed pick. The rooftop
+  gantry pieces were removed (`GantryTarp` became `RackTarp`) and the
+  billboard skirts deleted outright (`BillboardSkirt` is now a
+  documented enum hole). Budgets: city cap `32 → 64`, supports `48 →
+  96`, per-zone Old Town 12 / Residential 14 / Industrial 8 /
+  Nightlife 10. Default seed now plans 56 pieces, all urban ones at
+  1.9-6 m above ground.
+- New EditMode contract for exactly this regression:
+  `DefaultCity_HangsStreetLevelClothInEveryUrbanDistrict` pins a
+  street-level (≤ 8 m above ground) floor per urban district
+  (8/10/6/6); the determinism floor rose to ≥ 40 pieces. Verified with
+  the wind-dressing EditMode fixtures plus a temporary diagnostic dump
+  test (deleted after use).
+
+## 2026-08-23 — Arrow keys move to the camera orbit
+
+- The arrow keys no longer walk the hero; they orbit the chase camera like
+  the gamepad right stick. `PlayerMotor.ReadMovement` drops its four
+  `*ArrowKey` terms (WASD + left stick remain), and
+  `PlayerCameraFollow.SampleOrbitInputDegrees` gains a keyboard branch on
+  the stick's per-second scaling (`keyboardYawSpeed = 150`,
+  `keyboardPitchSpeed = 120`, serialized next to the gamepad speeds; up
+  looks up, matching stick-up). The sample stays additive across devices
+  and keeps the existing `SmoothDamp` targets, so keyboard look needs no
+  extra smoothing.
+- The one real conflict was the seated park board game: its cursor owns
+  the arrows and it consumes the same shared orbit sample. The sample
+  gained an `includeKeyboard` parameter (default true) and
+  `CityBoardGameController.ReadLookInput` opts out. Every other arrow
+  consumer (map, pause menu, inventory, shops, balance check, debug
+  window, grave work, refrigerator inspection) sits behind
+  `BarMinigameModalLock`, which already disables orbit input
+  unconditionally — verified by call-site sweep. The bus ride keeps
+  keyboard look through the default.
+- Tests: `PlayerMotorHeadingPlayModeTests.ArrowKeys_NoLongerMoveTheHero`
+  (held arrows leave `PlanarVelocity` at zero) and
+  `PlayerCameraPresentationPlayModeTests
+  .ExteriorCamera_ArrowKeysOrbitAndRespectModalLock` (modal lock
+  suppresses arrows; up arrow raises the view without touching yaw; right
+  arrow orbits yaw without touching pitch). The arrow axis scales by
+  unscaled delta time, so the test holds keys against realtime deadlines —
+  a fixed frame count means nothing in batch mode's sub-millisecond
+  frames. The run also surfaced
+  `CameraCutDuringHeldInput_KeepsPreCutFrameUntilRelease` failing at
+  ~1.6-2.0° against its 0.5° re-aim threshold — stash-verified to fail
+  identically on the untouched baseline in batchmode, so it is recorded
+  here and left alone. Docs: README controls, project-overview,
+  architecture-notes, systems-map, system-tree, tutorial-scenario.
+
+## 2026-08-23 — Wind dressing: cloth and rope misc across every zone
+
+- Added the city-wide wind dressing: one cross-zone
+  `CityWindDressing{Plan,Planner,Validator,WorldBuilder}` quartet plus the
+  shared `CityRopeSpanGeometry` parabola (the chess-lamp sag extracted as a
+  reusable curve + chord-chain helper; the lamp itself deliberately keeps its
+  own copy for now). The planner is pure and seeded and hangs up to `32`
+  simulated `ClothPanelFactory` panels off structures other plans already
+  draw: market awning rags and a scaffolding shroud/rope end (Old Town), two
+  courtyard drying lines on their own drawn poles and sagging rope with
+  body-registered walk-through wash held `>= 25 m` off the drying-yard POI
+  (Residential), gantry tarps and sling ends (Industrial), fire-escape
+  banners and a billboard skirt (Nightlife), one bandstand pennant (Park —
+  §10's emptiness), pier-rail net rags and slipway-chain mooring ends with
+  the fisherman's pier head kept clear (Seacoast), wreath ribbons on
+  enclosure posts preferring offering graves (Cemetery), and service tarps
+  plus dead cable tails on the service fringe yards. The bar-side yard,
+  lighthouse island, drained-lake block, tunnel forecourt, flood works and
+  stone terraces hang nothing by authored rule (user-confirmed zeroes).
+- Anchor geometry was rederived from the recipes, not guessed: the
+  decoration builder's cardinal-snapped forward and lot-width clamps
+  reproduce the valance/ledger/beam/rail positions the builders actually
+  draw, and precinct parts (pier rail, slipway chain, enclosure posts,
+  crossarms, sheds) are found by kind/size in their plans' public part
+  lists. Rope-width strips (`columns=1`) needed no factory change — the
+  panel factory already accepts a `1x2` grid and pins exactly the top row.
+- Wired after `CityFountainWaterBuilder` in `CityWorldBuilder.Build` (cloth
+  can't batch; the swing/fountain precedent), returned on `CityWorldResult`
+  as `WindDressingPlan`/`WindDressingRoot`. The home-exterior vista is
+  untouched — all pieces are street-scale details below its resolution.
+- Verification: bundled-dotnet compile plus one filtered EditMode run —
+  `CityRopeSpanGeometryTests` (curve + chord chain),
+  `CityWindDressingPlannerTests` (determinism, zone budgets, body-registry
+  restraint, drying-yard clearance, bar-side-yard emptiness, per-zone
+  containment against the cemetery/seacoast plan grounds — the district
+  descriptor list does not carry those precincts' dressed ground),
+  `CityWindDressingWorldBuilderTests` (cloth count == plan, wind-registry
+  delta == cloth count, body delta == planned wash, no colliders on cloth,
+  pole batch carries the collider). `LastRouteCanopyRagTests` still scopes
+  to the POI builder root and stays green; only its stale comment was
+  refreshed. Full suites deliberately not run (fast mode).
+
 ## 2026-08-23 — The feeding scene finally reads: the tin meets the muzzle
 
 - The composed cat-feeding scene had been silently broken since the

@@ -571,9 +571,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   rotation blends interpolate look directions and reconstruct against world up,
   avoiding transient quaternion roll. While riding, the controller consumes
   the shared orbit sample: RMB
-  mouse movement and the gamepad right stick rotate bounded yaw and pitch in
-  place, while the existing orbit-input flag remains a modal-lock gate rather
-  than bus ownership. Entry/exit blends and exact ordinary-camera restoration
+  mouse movement, the gamepad right stick and the arrow keys rotate bounded
+  yaw and pitch in place, while the existing orbit-input flag remains a
+  modal-lock gate rather than bus ownership. Entry/exit blends and exact ordinary-camera restoration
   remain fixed-pose transactions.
   The actor records one passenger owner and cannot be pooled or released while
   that owner remains. The director owns a passenger-cleanup callback for forced
@@ -1715,9 +1715,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   immediately.
 - **Accepted — Bounded cinematic chase camera:** Exterior/interior framing uses
   `2.6 m / 53°` and `2.2 m / 57°` profiles with `1.4 m / 1.3 m` raised focus
-  points that compose the hero below frame center. RMB mouse motion and the
-  gamepad right stick drive independent yaw and pitch in ordinary City, Bar
-  and Supermarket follow; pitch is clamped to `-20°..55°`. Orbit yaw, pitch and
+  points that compose the hero below frame center. RMB mouse motion, the
+  gamepad right stick and the arrow keys drive independent yaw and pitch in
+  ordinary City, Bar and Supermarket follow; pitch is clamped to `-20°..55°`.
+  The arrows are a stick-style per-second axis (`150°/120°` per second) and
+  no longer walk the hero — movement is WASD-only — and the seated park
+  board game opts the keyboard out of its orbit sample because the arrows
+  own its board cursor. Orbit yaw, pitch and
   target focus use deliberately weighty `0.20 s`, `0.18 s` and `0.18 s`
   damping; focus stays within `0.45 m` and snaps on jumps beyond `1.75 m`.
   Deterministic low-frequency idle drift and speed-driven bob affect only
@@ -2456,3 +2460,24 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   blend at unchanged screen positions, which the pillarbox PlayMode test
   exploits). On displays at or narrower than 4:3 the fraction clamps to 1. The
   IMGUI retro overlay deliberately stays full-screen above the bars.
+- **Accepted — Cross-zone anchor-consumer dressing:** `CityWindDressingPlanner`
+  is the first planner that consumes other plans' public descriptors instead
+  of the layout alone: it reads decoration, seacoast, cemetery and fringe-yard
+  descriptors (kinds, positions, rotations, sizes) and rederives each recipe's
+  drawn geometry (the decoration builder's cardinal-snapped forward, lot-width
+  clamps and part offsets) to compute hang points on members that exist in the
+  render. The coupling is deliberate and bounded: only public descriptor data,
+  null/empty anchor sets degrade to fewer props (budgets are maxima, not
+  guarantees), and the physics cap and the art-restraint cap are one number in
+  one validator (`64` cloths city-wide plus per-zone maxima, zero-zones by
+  rule). Anchors are picked by stride across each district's whole anchor
+  list — a head-of-list pick planned one market in twelve and read as an
+  empty city — and roof-landmark anchors are skipped where the piece would
+  hang tens of metres up (the industrial gantry, the tower billboard):
+  street-level presence per urban district is pinned by an EditMode floor. Simulated cloth cannot join combined batches, so the world builder
+  lives with the swing seats and fountain water after every static dresser;
+  its static supports (line poles, parabolic rope chords via
+  `CityRopeSpanGeometry`, pin battens) do batch, and only line poles carry the
+  batch collider. Cloth at rope width (`<= 0.12 m`) keeps the factory's flat
+  colour — the weave is sub-pixel — while wider panels ride the shared POI
+  cloth sheet through `ApplyClothPanel`.

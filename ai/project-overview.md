@@ -433,8 +433,8 @@ The vertical slice contains:
   Its position follows suspension, but its world-level horizon and independent
   yaw/pitch axes do not inherit body roll. The default aisle-side pose looks
   through the nearest window, while
-  the same RMB mouse input and gamepad right stick as ordinary orbit control
-  rotate a bounded yaw/pitch view in place inside the cabin. The exit prompt is
+  the same RMB mouse input, gamepad right stick and arrow keys as ordinary
+  orbit control rotate a bounded yaw/pitch view in place inside the cabin. The exit prompt is
   withheld until
   `ServiceOrdinal` exceeds the boarding value, so it is available at the next
   or any later stop. A second service hold keeps the doors open while the
@@ -650,6 +650,33 @@ The vertical slice contains:
   lot dimensions to meet
   `CityLayoutGenerator.MinimumDistrictPointLotDimension` (`18 m`); smaller
   custom blocks omit the district POIs safely;
+- city-wide wind dressing: one cross-zone plan
+  (`CityWindDressing{Plan,Planner,Validator,WorldBuilder}`) hangs up to `64`
+  simulated cloth and rope pieces off structures the other dressers already
+  draw — torn awning rags on up to four of Old Town's market valances (two
+  per stall), grey shrouds on up to three scaffoldings' outer guard rails,
+  up to six residential courtyard drying lines on their own drawn poles and
+  parabola-sagged rope (`CityRopeSpanGeometry`, walk-through wash in the
+  cloth body registry, lines 18 m apart), dark tarpaulin curtains and sling
+  ends on up to four industrial pipe racks' street-side ties (the rooftop
+  gantry is skipped — its beam runs tens of metres up the landmark tower,
+  where cloth is sub-pixel), eight faded fire-escape banners and two rope
+  ends in Nightlife (no billboard skirts — every nightlife billboard rides
+  a ~50 m tower), exactly one
+  remnant pennant on the park bandstand, net rags on the pier rail and
+  tarred mooring ends on the slipway chain (the pier head's fisherman
+  composition stays clear), two dark wreath ribbons on cemetery enclosure
+  posts (offering graves first), service tarps on the fringe repair gantry
+  and utility shed plus dead cable tails off the crossarms. Anchors are
+  picked by stride across each district's full anchor list, and a
+  street-level per-district floor is test-pinned so the dressing meets an
+  ordinary walk instead of clustering once per city. Every piece is
+  a `ClothPanelFactory` panel on the weather-wind registry; rope-width
+  strips (`<= 0.12 m`) keep the factory's flat colour while wider pieces
+  ride the shared POI cloth sheet; only line poles collide (batched
+  collider), and the bar-side yard, lighthouse island, drained-lake block,
+  tunnel forecourt, flood works and stone terraces hang nothing by
+  authored rule;
 - frontage-aware windows and facade details now face each lot's actual road.
   Decoration geometry is shadowless, reuses the two packaged shared materials
   and combines at most six style batches per `48 m` chunk. A deterministic
@@ -747,8 +774,11 @@ The vertical slice contains:
   weighty yaw/pitch/focus damping, a player-controlled vertical orbit bounded
   to `-20°..55°`, bounded focus lag, teleport snapping, subtle deterministic
   idle/walk motion and smoothly recovering obstacle-aware distance. RMB mouse
-  motion and the gamepad right stick drive both orbit axes in City, Bar and
-  ordinary Supermarket play; cinematic motion fades out for fullscreen modals,
+  motion, the gamepad right stick and the arrow keys (a stick-style
+  per-second axis; walking is WASD-only) drive both orbit axes in City, Bar
+  and ordinary Supermarket play; the seated park board game opts the arrows
+  out of its camera sample because they own the board cursor there;
+  cinematic motion fades out for fullscreen modals,
   while the balance-specific lock keeps its intoxication and fall reactions
   visible;
 - Home keeps its three authored fixed shots and now protects the player from
