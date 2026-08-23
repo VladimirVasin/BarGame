@@ -195,6 +195,22 @@ namespace BarPromenade
                 layout,
                 decorationPlan);
 
+            // Cloth is a live skinned sim and can never join a
+            // combined batch, so the wind dressing builds with the
+            // swing seats and the fountain water — after every static
+            // dresser whose structures it hangs from.
+            CityWindDressingPlan windDressingPlan =
+                CityWindDressingPlanner.Create(
+                    layout,
+                    decorationPlan,
+                    seacoastPlan,
+                    cemeteryPlan,
+                    fringeYardPlan);
+            GameObject windDressingRoot =
+                CityWindDressingWorldBuilder.Build(
+                    world,
+                    windDressingPlan);
+
             return new CityWorldResult(
                 world.gameObject,
                 walkableArea,
@@ -217,6 +233,8 @@ namespace BarPromenade
                 fringeYardPlan,
                 fringeYard,
                 mountainBackdrop,
+                windDressingPlan,
+                windDressingRoot,
                 bounds);
         }
 

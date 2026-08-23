@@ -32,9 +32,11 @@ namespace BarPromenade.Tests.EditMode
                         cloths[index]
                             .GetComponent<SkinnedMeshRenderer>(),
                         Is.Not.Null);
-                    // The city hangs two cloth families: the island's
-                    // torn canopy rags and the drying yard's pinned
-                    // laundry.
+                    // This builder hangs two cloth families: the
+                    // island's torn canopy rags and the drying yard's
+                    // pinned laundry. The city-wide wind dressing hangs
+                    // its own cloth under a separate root and never
+                    // routes through this builder.
                     bool isCanopyRag =
                         cloths[index].name.Contains(
                             "Broken Canopy Segment") &&

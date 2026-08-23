@@ -31,6 +31,8 @@ namespace BarPromenade
             CityFringeYardPlan fringeYardPlan,
             CityFringeYardWorldResult fringeYard,
             CityMountainBackdropWorldResult mountainBackdrop,
+            CityWindDressingPlan windDressingPlan,
+            GameObject windDressingRoot,
             Bounds bounds)
         {
             Root = root;
@@ -74,6 +76,13 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(fringeYardPlan));
             FringeYard = fringeYard;
             MountainBackdrop = mountainBackdrop;
+            WindDressingPlan = windDressingPlan ??
+                throw new ArgumentNullException(
+                    nameof(windDressingPlan));
+            WindDressingRoot = windDressingRoot != null
+                ? windDressingRoot
+                : throw new ArgumentNullException(
+                    nameof(windDressingRoot));
             Bounds = bounds;
             barsById = new Dictionary<string, BarEntrance>(
                 StringComparer.Ordinal);
@@ -120,6 +129,8 @@ namespace BarPromenade
                 ? FringeYard.PracticalAnchors
                 : Array.Empty<CityFringePracticalAnchor>();
         public CityMountainBackdropWorldResult MountainBackdrop { get; }
+        public CityWindDressingPlan WindDressingPlan { get; }
+        public GameObject WindDressingRoot { get; }
         public Bounds Bounds { get; }
 
         public bool TryGetBar(string barId, out BarEntrance entrance)
