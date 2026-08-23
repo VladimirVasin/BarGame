@@ -36,6 +36,26 @@ namespace BarPromenade
         /// drawn in, for the swing ropes.</summary>
         internal static Color StreetBatchColor => StreetColor;
 
+        /// <summary>
+        /// The recipe frame a descriptor's parts are laid out in, for
+        /// the builders that stand live pieces inside a batched
+        /// recipe - the fountain's water stands in the same frame as
+        /// its batched stone, so the two can never drift apart.
+        /// </summary>
+        internal static void GetDecorationFrame(
+            CityLayout layout,
+            CityDecorationDescriptor descriptor,
+            out Vector3 origin,
+            out Vector3 tangent,
+            out Vector3 forward)
+        {
+            descriptor.TryResolveLot(layout, out BuildingLot lot);
+            var context = new RecipeContext(layout, descriptor, lot);
+            origin = context.Origin;
+            tangent = context.Tangent;
+            forward = context.Forward;
+        }
+
         public static GameObject Build(
             Transform parent,
             CityLayout layout,
@@ -1207,11 +1227,10 @@ namespace BarPromenade
                 -radius + 0.20f, radius * 2f, 0.68f, 0.40f);
             Add(parts, c, BatchStyle.Masonry, stone, 0f, 0.48f,
                 radius - 0.20f, radius * 2f, 0.68f, 0.40f);
-            // The standing water stays a flat plane, like the river
-            // and the sea: a texture here would read as silt
-            // on glass rather than a weak fountain still running.
-            Add(parts, c, BatchStyle.Residential, 0f, 0.32f, 0f,
-                radius * 1.62f, 0.08f, radius * 1.62f);
+            // The standing water is no longer batched stone-grey: a
+            // real animated sheet stands in its place, built by
+            // CityFountainWaterBuilder in this same recipe frame
+            // together with the two spout streams. Only stone here.
             Add(parts, c, BatchStyle.Masonry, stone, 0f, 0.88f, 0f,
                 1.35f, 1.12f, 1.35f);
             Add(parts, c, BatchStyle.Masonry, stone, 0f, 1.74f, 0f,

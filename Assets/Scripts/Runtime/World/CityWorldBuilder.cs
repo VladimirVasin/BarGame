@@ -187,6 +187,14 @@ namespace BarPromenade
                 CityDecorationWorldBuilder.MasonryBatchColor,
                 CityDecorationWorldBuilder.StreetBatchColor);
 
+            // The fountain's water lives outside the batch for the
+            // swing's reason: animated sheets and scrolling streams
+            // are neither one static mesh nor one batch material.
+            CityFountainWaterBuilder.Build(
+                world,
+                layout,
+                decorationPlan);
+
             return new CityWorldResult(
                 world.gameObject,
                 walkableArea,

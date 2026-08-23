@@ -60,6 +60,17 @@ Shader "Bar Promenade/City River Water"
         // edge foam is white water rather than anything growing.
         _AdditionalSpecular("Additional Light Specular", Range(0, 2)) = 0
         _FoamColor("Foam Colour", Color) = (1, 1, 1, 1)
+
+        // The Morrowind mirror: an environment cubemap reflected
+        // about the rippled normal. Black and zero by default, which
+        // is what the river and the sea keep - only the fountain
+        // binds a cube and turns the strength up. The distortion is
+        // how much of the ripple bends the mirror: at 1 the full
+        // shading normal scatters the cube into metallic noise, at
+        // this default the mirrored world stays legible and swims.
+        _ReflectionCube("Reflection Cubemap", Cube) = "black" {}
+        _ReflectionStrength("Reflection Strength", Range(0, 2)) = 0
+        _ReflectionDistortion("Reflection Distortion", Range(0, 1)) = 0.30
     }
 
     SubShader
@@ -103,6 +114,8 @@ Shader "Bar Promenade/City River Water"
             SAMPLER(sampler_RippleMap);
             TEXTURE2D(_FoamMap);
             SAMPLER(sampler_FoamMap);
+            TEXTURECUBE(_ReflectionCube);
+            SAMPLER(sampler_ReflectionCube);
 
             CBUFFER_START(UnityPerMaterial)
                 half4 _BaseColor;
@@ -126,6 +139,8 @@ Shader "Bar Promenade/City River Water"
                 float _BandSteps;
                 half _AdditionalSpecular;
                 half4 _FoamColor;
+                half _ReflectionStrength;
+                half _ReflectionDistortion;
             CBUFFER_END
 
             struct Attributes
@@ -339,13 +354,48 @@ Shader "Bar Promenade/City River Water"
                     absorption);
                 half3 color = lerp(background, body, absorption);
 
+                float3 viewDirWS = normalize(
+                    GetWorldSpaceViewDir(input.positionWS));
+
+                // The Morrowind mirror. The environment cube is
+                // reflected about the rippled normal, so the mirrored
+                // world swims with the water instead of lying on it
+                // like a decal. The weight rides fresnel but keeps a
+                // floor: a fountain is looked INTO from above, and a
+                // mirror that only works at grazing angles is no
+                // mirror at all. Night lives in the cube itself - the
+                // controller re-renders it as the lamps come on -
+                // and the glints, foam and fog stay on top.
+                if (_ReflectionStrength > 0.0h)
+                {
+                    // The mirror bends by only a fraction of the
+                    // shading normal: the full ripple is right for
+                    // light but scatters a mirrored tree into noise.
+                    float3 mirrorNormal = normalize(lerp(
+                        float3(0.0, 1.0, 0.0),
+                        normalWS,
+                        _ReflectionDistortion));
+                    float3 reflectDir = reflect(
+                        -viewDirWS,
+                        mirrorNormal);
+                    half3 environment = SAMPLE_TEXTURECUBE(
+                        _ReflectionCube,
+                        sampler_ReflectionCube,
+                        reflectDir).rgb;
+                    half grazing = (half)pow(
+                        1.0 - saturate(dot(normalWS, viewDirWS)),
+                        2.0);
+                    half weight = saturate(
+                        _ReflectionStrength *
+                        (0.30h + 0.70h * grazing));
+                    color = lerp(color, environment, weight);
+                }
+
                 // Sun and lamp glint. Banded, because everything else in
                 // this city is: a smooth specular falloff on the one
                 // surface with a real highlight would read as a shinier
                 // engine rather than as water.
                 Light mainLight = GetMainLight();
-                float3 viewDirWS = normalize(
-                    GetWorldSpaceViewDir(input.positionWS));
                 float3 halfWS = normalize(mainLight.direction + viewDirWS);
                 float specular = pow(
                     saturate(dot(normalWS, halfWS)),
