@@ -118,6 +118,15 @@ namespace BarPromenade
             Transform sea = new GameObject("Sea").transform;
             sea.SetParent(root, false);
 
+            // The swell dies on the sand: the shader's shore fade
+            // ramps up from the inner shelf's seaward edge, which only
+            // this builder knows. Anchoring it here keeps the trough
+            // off the silt without the material ever learning the
+            // layout.
+            CitySeaResources.ConfigureShoreFade(
+                frame.WaterlineZ +
+                CitySeacoastSeaLayout.InnerShelfReach);
+
             var sheets = new List<Rect>();
             CitySeacoastSeaLayout.CreateSheetRects(frame, sheets);
             for (int index = 0; index < sheets.Count; index++)

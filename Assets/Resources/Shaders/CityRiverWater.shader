@@ -43,8 +43,30 @@ Shader "Bar Promenade/City River Water"
         _FoamTiling("Foam Metres Per Tile", Float) = 3.0
         _NormalStrength("Normal Strength", Range(0, 4)) = 1.6
 
-        _WaveHeight("Wave Height", Range(0, 0.25)) = 0.05
-        _WaveLength("Wave Length", Float) = 3.4
+        _WaveHeight("Wave Height", Range(0, 0.35)) = 0.08
+        _WaveLength("Wave Length", Float) = 4.8
+
+        // The mattress's lessons, carried to a surface too big to write
+        // on the CPU. The bed reads because its geometry is honest and
+        // its shading lies louder than the geometry: lateral normals
+        // steepened past their true tilt, light caught facet by facet.
+        // The same two cheats live here as `_SlopeGain` (the analytic
+        // slope amplified before the normal is built) and
+        // `_FacetStrength` (the displaced triangle's own flat normal
+        // blended in from screen-space derivatives). `_CrestShading`
+        // lets the swell reach the body colour - lifted water toward
+        // the shallow tone, troughs toward the deep - and
+        // `_CrestFoamStrength` breaks the tallest crests white.
+        _SlopeGain("Wave Slope Gain", Range(1, 6)) = 2.3
+        _FacetStrength("Wave Facet Strength", Range(0, 1)) = 0.4
+        _CrestShading("Crest Shading", Range(0, 1)) = 0.4
+        _CrestFoamStrength("Crest Foam Strength", Range(0, 1)) = 0.35
+        _CrestFoamThreshold("Crest Foam Threshold", Range(0, 1)) = 0.6
+
+        // x: south Z where the ramp starts, y: 1/ramp length,
+        // z: amplitude floor, w: enabled. Off by default - only the
+        // sea dies on a shore.
+        _ShoreFadeParams("Shore Fade (SouthZ, 1/Len, Floor, On)", Vector) = (0, 0, 1, 0)
 
         _DepthFadeDistance("Depth Fade Distance", Float) = 0.9
         _FoamDistance("Foam Distance", Float) = 0.42
@@ -130,6 +152,12 @@ Shader "Bar Promenade/City River Water"
                 half _NormalStrength;
                 float _WaveHeight;
                 float _WaveLength;
+                half _SlopeGain;
+                half _FacetStrength;
+                half _CrestShading;
+                half _CrestFoamStrength;
+                half _CrestFoamThreshold;
+                float4 _ShoreFadeParams;
                 float _DepthFadeDistance;
                 float _FoamDistance;
                 half _RefractionStrength;
@@ -156,6 +184,7 @@ Shader "Bar Promenade/City River Water"
                 float3 waveNormalWS : TEXCOORD1;
                 float4 screenPos : TEXCOORD2;
                 float viewZ : TEXCOORD3;
+                float crest : TEXCOORD4;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -176,6 +205,30 @@ Shader "Bar Promenade/City River Water"
                 return magnitude > 1e-4 ? axis / magnitude : float2(0.0, 1.0);
             }
 
+            // The swell dies on the sand. Amplitude ramps from a floor
+            // at the ramp's south edge up to full further out, so the
+            // trough never undercuts the shore shelf while the deep
+            // water heaves at full height.
+            //
+            // The envelope multiplies the height, so the slope needs
+            // the product rule: d(e*w)/dz = e*dw/dz + de/dz*w. Dropping
+            // the second term would detach the normal from the surface
+            // it shades - the normal must stay the exact derivative of
+            // what is actually drawn, for the same reason the wave
+            // itself is analytic.
+            float ShoreEnvelope(float z, out float slopeZ)
+            {
+                float t = saturate(
+                    (z - _ShoreFadeParams.x) * _ShoreFadeParams.y);
+                float eased = t * t * (3.0 - 2.0 * t);
+                float envelope = _ShoreFadeParams.z +
+                    (1.0 - _ShoreFadeParams.z) * eased;
+                slopeZ = (1.0 - _ShoreFadeParams.z) *
+                    6.0 * t * (1.0 - t) * _ShoreFadeParams.y *
+                    _ShoreFadeParams.w;
+                return lerp(1.0, envelope, _ShoreFadeParams.w);
+            }
+
             // Two trains running downstream at different rates plus one
             // lying across them. Summing three keeps the crest line from
             // repeating on any axis, which one train cannot do and four
@@ -186,7 +239,19 @@ Shader "Bar Promenade/City River Water"
             // derivative rather than recomputing normals from the mesh is
             // the whole reason the segments meet cleanly: it depends only
             // on where the vertex is, never on which sheet it belongs to.
-            float WaveHeight(float2 positionXZ, float time, out float2 slope)
+            //
+            // `crest01` is how near the summed trains ride to their own
+            // ceiling, before the shore envelope - relative, so a wave
+            // breaks white on the shelf exactly as it does out deep.
+            //
+            // CityWaterWaveModel.cs is this function's CPU mirror - the
+            // fisherman's float rides it - and a test holds the two to
+            // the same constants. Change a number here, change it there.
+            float WaveField(
+                float2 positionXZ,
+                float time,
+                out float2 slope,
+                out float crest01)
             {
                 float flowing;
                 float2 downstream = FlowAxis(flowing);
@@ -228,10 +293,18 @@ Shader "Bar Promenade/City River Water"
                 float a1 = _WaveHeight * 0.42 * b1;
                 float a2 = _WaveHeight * 0.31 * b2;
 
-                slope = downstream * (a0 * k0 * cos(p0)) +
-                        secondAxis * (a1 * k1 * cos(p1)) +
-                        across * (a2 * k2 * cos(p2));
-                return a0 * sin(p0) + a1 * sin(p1) + a2 * sin(p2);
+                float2 rawSlope = downstream * (a0 * k0 * cos(p0)) +
+                                  secondAxis * (a1 * k1 * cos(p1)) +
+                                  across * (a2 * k2 * cos(p2));
+                float raw = a0 * sin(p0) + a1 * sin(p1) + a2 * sin(p2);
+
+                float envelopeSlopeZ;
+                float envelope = ShoreEnvelope(
+                    positionXZ.y, envelopeSlopeZ);
+                crest01 = raw / max(1e-4, _WaveHeight * 1.73);
+                slope = envelope * rawSlope +
+                        float2(0.0, envelopeSlopeZ * raw);
+                return envelope * raw;
             }
 
             Varyings RiverVertex(Attributes input)
@@ -244,11 +317,23 @@ Shader "Bar Promenade/City River Water"
                     input.positionOS.xyz);
                 float time = _Time.y * _FlowSpeed;
                 float2 slope;
-                positionWS.y += WaveHeight(positionWS.xz, time, slope);
+                float crest01;
+                positionWS.y += WaveField(
+                    positionWS.xz, time, slope, crest01);
 
                 output.positionWS = positionWS;
-                output.waveNormalWS = normalize(
-                    float3(-slope.x, 1.0, -slope.y));
+
+                // The bed's ExaggerateDentShading, in shader form: the
+                // geometry keeps its honest height while the lateral
+                // normal is steepened, so the light answers the swell
+                // several times louder than its true tilt. A wave of
+                // tens of centimetres over tens of metres is only a few
+                // degrees of surface - invisible at 640x360 without it.
+                output.waveNormalWS = normalize(float3(
+                    -slope.x * _SlopeGain,
+                    1.0,
+                    -slope.y * _SlopeGain));
+                output.crest = crest01;
                 output.positionCS = TransformWorldToHClip(positionWS);
                 output.screenPos = ComputeScreenPos(output.positionCS);
 
@@ -311,8 +396,35 @@ Shader "Bar Promenade/City River Water"
                 float2 screenUV = input.screenPos.xy / input.screenPos.w;
 
                 float3 rippleNormal = SampleRipple(input.positionWS.xz, time);
+                float3 waveNormalWS = normalize(input.waveNormalWS);
+
+                // The bed's other lesson: its dent reads because the
+                // top is independent per-cell quads and every facet
+                // catches its own light. Splitting the water's vertices
+                // would break the welded grid its tests pin, so the
+                // facet normal comes from the screen-space derivatives
+                // of the displaced surface instead - flat per triangle,
+                // which is the same thing seen from the light's side.
+                if (_FacetStrength > 0.0h)
+                {
+                    float3 facet = cross(
+                        ddy(input.positionWS),
+                        ddx(input.positionWS));
+                    facet = facet.y < 0.0 ? -facet : facet;
+                    float facetLength = length(facet);
+                    if (facetLength > 1e-5)
+                    {
+                        facet /= facetLength;
+                        facet.xz *= _SlopeGain;
+                        waveNormalWS = normalize(lerp(
+                            waveNormalWS,
+                            normalize(facet),
+                            _FacetStrength));
+                    }
+                }
+
                 float3 normalWS = normalize(
-                    input.waveNormalWS + float3(
+                    waveNormalWS + float3(
                         rippleNormal.x, 0.0, rippleNormal.z));
 
                 // `ComputeScreenPos` leaves clip w in .w, which for this
@@ -352,6 +464,23 @@ Shader "Bar Promenade/City River Water"
                     _BaseColor.rgb,
                     _DeepColor.rgb,
                     absorption);
+
+                // The swell reaches the colour itself: lifted water
+                // leans toward the shallow tone, a trough toward the
+                // deep. Fresnel and a banded glint alone cannot carry a
+                // wave through the 640x360 composite - value change
+                // can, which is why the bed exaggerates its normals
+                // instead of trusting ten honest degrees.
+                half lift = (half)saturate(input.crest);
+                half sink = (half)saturate(-input.crest);
+                body = lerp(
+                    body,
+                    _BaseColor.rgb * 1.18h,
+                    lift * _CrestShading * 0.6h);
+                body = lerp(
+                    body,
+                    _DeepColor.rgb * 0.72h,
+                    sink * _CrestShading);
                 half3 color = lerp(background, body, absorption);
 
                 float3 viewDirWS = normalize(
@@ -477,6 +606,26 @@ Shader "Bar Promenade/City River Water"
                     color,
                     _FoamColor.rgb * foamTone,
                     foam * 0.8h);
+
+                // Whitecaps: where the summed trains ride near their
+                // own ceiling, the crest breaks white. Same mask and
+                // the same banding as the edge foam, so a cap and the
+                // surf it rolls into are one white; the crest measure
+                // is relative, so the caps keep breaking over the
+                // shore shelf where the envelope has taken the height.
+                half whitecap = saturate(
+                    smoothstep(
+                        _CrestFoamThreshold,
+                        1.0h,
+                        (half)input.crest) *
+                    (foamMask * 1.2h + 0.3h) *
+                    _CrestFoamStrength *
+                    (0.9h + 0.35h * _RainIntensity));
+                whitecap = floor(whitecap * steps) / steps;
+                color = lerp(
+                    color,
+                    _FoamColor.rgb * foamTone,
+                    whitecap * 0.85h);
 
                 // Rain chop: the high-frequency break-up the old shader
                 // carried, kept because it is what the weather controller

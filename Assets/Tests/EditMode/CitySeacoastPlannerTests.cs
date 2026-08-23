@@ -514,19 +514,23 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void SeaMaterial_StandsStillGlintsAndFitsTheCrestRoom()
+        public void SeaMaterial_RollsShorewardGlintsAndFitsTheCrestRoom()
         {
             Material sea = CitySeaResources.WaterMaterial;
 
-            // Structural, not art direction: zero flow makes the
-            // trains stand and breathe, the additional-specular path
-            // is what carries the beacon's glitter, and the summed
-            // crest stays inside the surface factory's culling
-            // headroom so retuning the swell can never reintroduce
-            // pops.
+            // Structural, not art direction: the swell travels
+            // shoreward (negative Z - the waterline is the sea row's
+            // south edge) so the rollers come in instead of standing
+            // and breathing, the additional-specular path is what
+            // carries the beacon's glitter, and the summed crest stays
+            // inside the surface factory's culling headroom so
+            // retuning the swell can never reintroduce pops.
             Vector4 flow = sea.GetVector("_FlowDirection");
             Assert.That(flow.x, Is.Zero);
-            Assert.That(flow.y, Is.Zero);
+            Assert.That(
+                flow.y,
+                Is.LessThan(0f),
+                "The sea's swell must travel toward the shore.");
             Assert.That(
                 sea.GetFloat("_AdditionalSpecular"),
                 Is.GreaterThan(0f));
@@ -534,6 +538,16 @@ namespace BarPromenade.Tests.EditMode
                 CitySeaResources.WaveHeight *
                 CitySeaResources.CrestFactor,
                 Is.LessThan(CityWaterSurfaceFactory.CrestAllowance));
+
+            // The tallest crest must also pass under the lowest deck
+            // the planner will validate: pier decks are held at least
+            // 0.40 m over the sea, and a crest above that would break
+            // through the boards.
+            Assert.That(
+                CitySeaResources.WaveHeight *
+                CitySeaResources.CrestFactor,
+                Is.LessThan(0.40f),
+                "The swell reaches the pier deck's validated floor.");
 
             // The shore shelf must be legible through the water and
             // foamed over: shallower than the depth fade, its inner

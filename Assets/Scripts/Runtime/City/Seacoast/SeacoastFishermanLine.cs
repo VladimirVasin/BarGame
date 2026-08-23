@@ -13,10 +13,15 @@ namespace BarPromenade
     /// down to the water is the coast plan, whose frame carries the
     /// sea's own top.
     ///
-    /// The float is set once and stays: it is sitting on still water and
-    /// a bobber that slides around with a breathing man's hands reads as
-    /// a bug. The line is re-struck from the live rod tip every frame,
-    /// so the tip lift authored into the loop actually pulls on it.
+    /// The float's XZ is set once and stays — a bobber that slides
+    /// around with a breathing man's hands reads as a bug. Its Y rides
+    /// the swell: the sea visibly heaves now, and a bobber pinned to
+    /// the datum would hang in the air over every trough. It asks
+    /// <see cref="CityWaterWaveModel"/> — the shader's CPU mirror —
+    /// where the drawn surface actually is, so the ride and the water
+    /// can never disagree. The line is re-struck from the live rod tip
+    /// every frame, so the tip lift authored into the loop actually
+    /// pulls on it.
     /// </summary>
     [DefaultExecutionOrder(300)]
     [DisallowMultipleComponent]
@@ -44,11 +49,15 @@ namespace BarPromenade
 
         private Transform rodTip;
         private Transform line;
+        private Transform floatBody;
         private Vector3 floatPoint;
+        private float restWaterTopY;
+        private CityWaterWaveProfile waveProfile;
 
         public bool IsInitialized { get; private set; }
 
-        /// <summary>Where the float sits, on the waterline.</summary>
+        /// <summary>Where the float sits: the waterline XZ it was cast
+        /// to, at the swell's current height there.</summary>
         public Vector3 FloatPosition => floatPoint;
 
         /// <summary>Current strung length, in metres.</summary>
@@ -56,11 +65,14 @@ namespace BarPromenade
 
         public void Initialize(
             Transform configuredRodTip,
-            float waterTopY)
+            float waterTopY,
+            in CityWaterWaveProfile swellProfile)
         {
             rodTip = configuredRodTip != null
                 ? configuredRodTip
                 : throw new ArgumentNullException(nameof(configuredRodTip));
+            restWaterTopY = waterTopY;
+            waveProfile = swellProfile;
 
             Vector3 tip = rodTip.position;
             floatPoint = new Vector3(tip.x, waterTopY, tip.z);
@@ -91,6 +103,7 @@ namespace BarPromenade
                     FloatWidthMeters),
                 FloatBodyColor,
                 false);
+            floatBody = body.transform;
             // The painted cap, in the float's own unit-cube space: the
             // one red mark on a precinct whose whole palette is wet grey.
             RuntimePrimitiveFactory.CreateBox(
@@ -107,10 +120,27 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
-            if (IsInitialized)
+            if (!IsInitialized)
             {
-                Strike();
+                return;
             }
+
+            if (floatBody != null)
+            {
+                // The same wave the shader is drawing this frame, from
+                // its CPU mirror. Near the shore the fade has taken
+                // most of the height, so the ride is a bob and not a
+                // heave — which is what a bobber in the shallows does.
+                floatPoint.y = restWaterTopY +
+                    CityWaterWaveModel.SampleHeight(
+                        waveProfile,
+                        floatPoint.x,
+                        floatPoint.z,
+                        Time.timeSinceLevelLoad);
+                floatBody.position = floatPoint;
+            }
+
+            Strike();
         }
 
         private void Strike()

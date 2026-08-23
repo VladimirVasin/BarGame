@@ -6,6 +6,49 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-23 — The water learns what the mattress knew
+
+- Asked for water "on the mattress's principle" — real waves, not a flat
+  sheet. Measured why the existing water read flat despite already being
+  displaced geometry: amplitudes of 5–9 cm across 44 m sheets (under a
+  640×360 pixel of silhouette), smooth interpolated normals drowned by
+  the ripple map, the wave normal reaching the screen only through
+  fresnel and a banded glint (sea/basin refraction is 0), and the
+  river's second train at 1.80 m wavelength on a 1 m grid — below
+  Nyquist, aliasing into vertex noise.
+- The mattress mechanism (CPU `SetVertices`) would cost ~22.5k sea
+  vertices per frame and break the world-XZ seam invariant, so its
+  *lessons* moved into the shader instead: `_SlopeGain` (the bed's
+  `ExaggerateDentShading` — lateral normal steepened past the honest
+  tilt), `_FacetStrength` (the bed's per-cell-quad faceting, taken from
+  screen-space derivatives of the displaced surface so the welded grid
+  its tests pin survives), `_CrestShading` (crests toward the shallow
+  tone, troughs toward the deep — value change is what survives the
+  composite), and relative-crest whitecaps banded with the edge foam.
+- The sea got a real swell: `0.09 → 0.20` wave height, flow
+  `(0, -1)` shoreward at `_FlowSpeed 0.38` so the rollers travel
+  (~0.85 m/s) instead of standing and breathing, and a shore fade —
+  amplitude enveloped by world Z from a 0.35 floor at the inner shelf's
+  seaward edge to full 12 m out, with the envelope's derivative folded
+  into the analytic slope by the product rule so the normal never
+  detaches from the surface and sheet seams stay invisible. Clearances
+  that size the swell: crest 0.346 m vs pier deck underside +0.60
+  (validator floor +0.40), faded trough 0.121 m vs the inner shelf's
+  0.15 m; the barge sits on the bed so a trough shows wet hull, not
+  air. River: defaults now `0.08 / 4.8 m` (Nyquist fixed), basin stays
+  pond-calm with facets off — a faceted normal would shatter the
+  Morrowind mirror. `CrestAllowance 0.25 → 0.45`.
+- `CityWaterWaveModel` + `CityWaterWaveProfile`: a pure C# mirror of
+  the shader's displacement (trains, breathing, shore envelope), the
+  bed-model pattern of physics living where they can be asserted. The
+  fisherman's float now rides it in `LateUpdate` — XZ still pinned,
+  Y on the drawn swell. `CityWaterWaveModelTests` holds the mirror to
+  the shader source literal by literal, the analytic slope to the
+  finite difference across the shore ramp, the crest to its ceiling
+  and the faded trough to the shelf; the planner test that pinned
+  "stands still" now pins "rolls shoreward".
+
+
 ## 2026-08-23 — Wind dressing scaled to be met on a walk
 
 - A gameplay test reported the wind dressing invisible: walking the city

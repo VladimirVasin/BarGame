@@ -44,9 +44,14 @@ namespace BarPromenade
         /// Headroom the renderer bounds reserve above and below the flat
         /// sheet for the shader's vertical displacement. Kept a good
         /// margin above the shader's authored wave height so tuning the
-        /// wave never silently reintroduces culling pops.
+        /// wave never silently reintroduces culling pops. Raised from
+        /// `0.25` when the sea got its real swell: the tallest summed
+        /// crest is now `0.20 * 1.73 = 0.346 m`, and the clearances
+        /// that actually cap it are the pier deck's underside
+        /// (`SeaTopY + 0.60`) above and the shore shelf (`0.15` under
+        /// the surface, protected by the shader's shore fade) below.
         /// </summary>
-        internal const float CrestAllowance = 0.25f;
+        internal const float CrestAllowance = 0.45f;
 
         private const int MinimumSpans = 1;
 

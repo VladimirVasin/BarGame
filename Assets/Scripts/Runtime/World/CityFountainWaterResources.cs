@@ -28,9 +28,20 @@ namespace BarPromenade
 
         // The basin: pond-calm numbers. A five-metre bowl cannot
         // carry the sea's swell or the river's run; it breathes.
-        private const float WaveHeight = 0.015f;
+        private const float WaveHeight = 0.02f;
         private const float WaveLength = 2.4f;
         private const float FlowSpeed = 0.16f;
+
+        // The shader's new wave-shading defaults are the river's tune
+        // and would be far too loud for a stone bowl, so the basin
+        // sets its own: a gentle slope gain, no facets (a faceted
+        // normal would shatter the Morrowind mirror into per-triangle
+        // jumps), a whisper of crest shading, no whitecaps — a basin
+        // has no fetch for a wave to break over.
+        private const float SlopeGain = 1.7f;
+        private const float FacetStrength = 0f;
+        private const float CrestShading = 0.25f;
+        private const float CrestFoamStrength = 0f;
         private const float DepthFadeDistance = 0.35f;
         private const float FoamDistance = 0.12f;
         private const float FresnelStrength = 0.30f;
@@ -94,6 +105,14 @@ namespace BarPromenade
             Shader.PropertyToID("_RefractionStrength");
         private static readonly int BandStepsId =
             Shader.PropertyToID("_BandSteps");
+        private static readonly int SlopeGainId =
+            Shader.PropertyToID("_SlopeGain");
+        private static readonly int FacetStrengthId =
+            Shader.PropertyToID("_FacetStrength");
+        private static readonly int CrestShadingId =
+            Shader.PropertyToID("_CrestShading");
+        private static readonly int CrestFoamStrengthId =
+            Shader.PropertyToID("_CrestFoamStrength");
         private static readonly int PlanarScrollId =
             Shader.PropertyToID("_PlanarScroll");
         private static readonly int ScrollSpeedId =
@@ -189,6 +208,11 @@ namespace BarPromenade
                 RefractionStrengthId,
                 RefractionStrength);
             material.SetFloat(BandStepsId, BandSteps);
+            material.SetFloat(SlopeGainId, SlopeGain);
+            material.SetFloat(FacetStrengthId, FacetStrength);
+            material.SetFloat(CrestShadingId, CrestShading);
+            material.SetFloat(
+                CrestFoamStrengthId, CrestFoamStrength);
             material.SetFloat(
                 ReflectionStrengthId,
                 ReflectionStrength);

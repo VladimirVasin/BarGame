@@ -130,6 +130,26 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   value what that surface reaches the screen at a fraction of, and the water
   ends up the brightest thing in the city. The same correction is honoured by the
   sea's material, which adopted this shader.
+- **Accepted — The wave shades like the mattress, not like water:** The
+  displaced grid was invisible because it was honest: 5–9 cm of swell across
+  44 m sheets tilts a surface a few degrees, which is nothing at 640×360
+  behind a ripple map. The bed's deformable surface solved the same problem
+  with `ExaggerateDentShading` (lateral normals ×3.25) and per-cell-quad
+  faceting, so the water adopted both in shader form: `_SlopeGain` amplifies
+  the analytic slope before the normal is built, and `_FacetStrength` blends
+  in the displaced triangle's own flat normal from `ddx/ddy` — the geometry
+  stays honest, the light lies louder. CPU deformation itself was rejected:
+  the sea is ~22.5k vertices against the mattress's 768, its sheets are
+  `UploadMeshData(true)` static, and a mesh-local write would break the
+  world-XZ purity that keeps sheet seams and the river mouth invisible.
+  The sea's shore fade multiplies the wave by an envelope of world Z, so
+  the slope carries the product-rule term `de/dz·w`; dropping it detaches
+  the normal from the surface exactly where the surf line is. The
+  displacement now lives twice — HLSL and `CityWaterWaveModel` (the bed's
+  model-you-can-assert pattern; also what the fisherman's float rides) —
+  held identical by a contract test that reads the shader source for the
+  shared literals. The basin keeps `_FacetStrength 0`: a faceted normal
+  shatters the Morrowind mirror into per-triangle jumps.
 - **Accepted — The channel has a floor:** The city deliberately emits no
   terrain under a river cell, so while the water was an opaque lid the
   channel was a hole with a lid on it. `CityRiverWorldBuilder.BuildRiverbed`

@@ -126,12 +126,16 @@ namespace BarPromenade
                 anchors.PipeEmberRenderer);
 
             // And the line, from the live rod tip down to the water the
-            // lake plan measured.
+            // coast plan measured. The float rides the sea's swell -
+            // the world build has already anchored the shore fade, so
+            // the profile it hands over matches the sheets drawn a few
+            // metres past his boots.
             var line = new GameObject("Fisherman Line");
             line.transform.SetParent(root, false);
             line.AddComponent<SeacoastFishermanLine>().Initialize(
                 anchors.RodTipAnchor,
-                plan.WaterTopY);
+                plan.WaterTopY,
+                CitySeaResources.CreateWaveProfile());
 
             // Colliderless like every staged NPC. The focus height is
             // measured off the authored lean rather than guessed: tipped
