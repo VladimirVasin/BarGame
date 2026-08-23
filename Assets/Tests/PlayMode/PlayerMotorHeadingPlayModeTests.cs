@@ -84,6 +84,36 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator ArrowKeys_NoLongerMoveTheHero()
+        {
+            inputFixture.Press(
+                keyboard.upArrowKey,
+                queueEventOnly: true);
+            inputFixture.Press(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+
+            float deadline = Time.realtimeSinceStartup + 0.6f;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                Assert.That(
+                    motor.PlanarVelocity.magnitude,
+                    Is.LessThan(0.001f),
+                    "The arrow keys belong to the camera orbit and " +
+                    "must not walk the hero.");
+            }
+
+            inputFixture.Release(
+                keyboard.upArrowKey,
+                queueEventOnly: true);
+            inputFixture.Release(
+                keyboard.rightArrowKey,
+                queueEventOnly: true);
+            yield return null;
+        }
+
+        [UnityTest]
         public IEnumerator ForwardInput_MovesCameraRelativeAndFacesActualVelocity()
         {
             movementCamera.transform.rotation =

@@ -36,6 +36,8 @@ namespace BarPromenade
         [SerializeField, Min(0f)] private float mousePitchSensitivity = 0.14f;
         [SerializeField, Min(0f)] private float gamepadYawSpeed = 150f;
         [SerializeField, Min(0f)] private float gamepadPitchSpeed = 120f;
+        [SerializeField, Min(0f)] private float keyboardYawSpeed = 150f;
+        [SerializeField, Min(0f)] private float keyboardPitchSpeed = 120f;
 
         [Header("Cinematic Motion")]
         [SerializeField, Range(0f, 1f)] private float cinematicMotionAmount = 1f;
@@ -272,9 +274,13 @@ namespace BarPromenade
         /// Samples the same orbit controls used by the ordinary chase camera.
         /// A camera owner can consume both axes while a fixed pose is active;
         /// modal UI continues to suppress the sample through
-        /// <see cref="OrbitInputEnabled"/>.
+        /// <see cref="OrbitInputEnabled"/>. A caller whose own controls
+        /// live on the arrow keys (the park board cursor) opts out of
+        /// the keyboard branch.
         /// </summary>
-        public Vector2 SampleOrbitInputDegrees(float unscaledDeltaTime)
+        public Vector2 SampleOrbitInputDegrees(
+            float unscaledDeltaTime,
+            bool includeKeyboard = true)
         {
             if (!OrbitInputEnabled)
             {
@@ -297,6 +303,27 @@ namespace BarPromenade
                 float deltaTime = Mathf.Max(0f, unscaledDeltaTime);
                 degrees.x += stick.x * gamepadYawSpeed * deltaTime;
                 degrees.y -= stick.y * gamepadPitchSpeed * deltaTime;
+            }
+
+            // The arrow keys are a normalized axis like the stick, so
+            // they take the stick's per-second scaling, not the mouse's
+            // per-pixel one. Up looks up, matching stick-up.
+            Keyboard keyboard = Keyboard.current;
+            if (includeKeyboard && keyboard != null)
+            {
+                float yawAxis =
+                    (keyboard.rightArrowKey.isPressed ? 1f : 0f) -
+                    (keyboard.leftArrowKey.isPressed ? 1f : 0f);
+                float pitchAxis =
+                    (keyboard.upArrowKey.isPressed ? 1f : 0f) -
+                    (keyboard.downArrowKey.isPressed ? 1f : 0f);
+                if (yawAxis != 0f || pitchAxis != 0f)
+                {
+                    float deltaTime = Mathf.Max(0f, unscaledDeltaTime);
+                    degrees.x += yawAxis * keyboardYawSpeed * deltaTime;
+                    degrees.y -=
+                        pitchAxis * keyboardPitchSpeed * deltaTime;
+                }
             }
 
             return degrees;

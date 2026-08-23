@@ -501,8 +501,12 @@ namespace BarPromenade
                 return;
             }
 
+            // The board cursor owns the arrow keys while seated, so
+            // the seated camera takes only mouse and stick look.
             Vector2 look =
-                cameraFollow.SampleOrbitInputDegrees(deltaTime);
+                cameraFollow.SampleOrbitInputDegrees(
+                    deltaTime,
+                    includeKeyboard: false);
             cameraYawOffset = Mathf.Clamp(
                 cameraYawOffset + look.x,
                 -CityBoardGamePlan.MaximumYawOffsetDegrees,

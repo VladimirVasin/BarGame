@@ -196,6 +196,120 @@ namespace BarPromenade.Tests
 
 
         [UnityTest]
+        public IEnumerator ExteriorCamera_ArrowKeysOrbitAndRespectModalLock()
+        {
+            InputTestFixture inputFixture = null;
+            Keyboard keyboard = null;
+            try
+            {
+                inputFixture = new InputTestFixture();
+                inputFixture.Setup();
+                keyboard = InputSystem.AddDevice<Keyboard>();
+
+                Camera camera = CreateCamera(Vector3.zero);
+                GameObject player = CreateObject(
+                    "Arrow Orbit Camera Target");
+                player.transform.position = new Vector3(0f, 100f, 0f);
+
+                PlayerCameraFollow follow =
+                    camera.gameObject.AddComponent<PlayerCameraFollow>();
+                follow.Initialize(camera, player.transform, false);
+                follow.SetCinematicMotionEnabled(false);
+                follow.Snap();
+                yield return null;
+
+                float initialPitch = follow.TargetOrbitPitch;
+                Vector3 initialPlanarForward = Vector3.ProjectOnPlane(
+                    camera.transform.forward,
+                    Vector3.up).normalized;
+
+                follow.SetOrbitInputEnabled(false);
+                inputFixture.Press(
+                    keyboard.upArrowKey,
+                    queueEventOnly: true);
+                yield return null;
+                yield return null;
+
+                Assert.That(
+                    follow.TargetOrbitPitch,
+                    Is.EqualTo(initialPitch).Within(0.001f),
+                    "A modal orbit lock must suppress arrow-key look.");
+
+                follow.SetOrbitInputEnabled(true);
+                // The arrow axis is scaled by unscaled delta time, so
+                // a fixed frame count means nothing in batch mode —
+                // hold the key against a realtime deadline instead.
+                float pitchDeadline = Time.realtimeSinceStartup + 1.5f;
+                while (Time.realtimeSinceStartup < pitchDeadline &&
+                       follow.TargetOrbitPitch > initialPitch - 0.2f)
+                {
+                    yield return null;
+                }
+
+                Assert.That(
+                    follow.TargetOrbitPitch,
+                    Is.LessThan(initialPitch - 0.19f),
+                    "The up arrow must raise the view like stick-up.");
+
+                follow.Snap();
+                Assert.That(
+                    Vector3.Angle(
+                        initialPlanarForward,
+                        Vector3.ProjectOnPlane(
+                            camera.transform.forward,
+                            Vector3.up).normalized),
+                    Is.LessThan(0.1f),
+                    "A pure vertical arrow must not change orbit yaw.");
+
+                inputFixture.Release(
+                    keyboard.upArrowKey,
+                    queueEventOnly: true);
+                yield return null;
+
+                float pitchAfterVertical = follow.TargetOrbitPitch;
+                inputFixture.Press(
+                    keyboard.rightArrowKey,
+                    queueEventOnly: true);
+                float yawDeadline = Time.realtimeSinceStartup + 1.5f;
+                float yawTravel = 0f;
+                while (Time.realtimeSinceStartup < yawDeadline &&
+                       yawTravel < 0.5f)
+                {
+                    yield return null;
+                    follow.Snap();
+                    yawTravel = Vector3.Angle(
+                        initialPlanarForward,
+                        Vector3.ProjectOnPlane(
+                            camera.transform.forward,
+                            Vector3.up).normalized);
+                }
+
+                Assert.That(
+                    yawTravel,
+                    Is.GreaterThanOrEqualTo(0.5f),
+                    "The right arrow must orbit the camera's yaw.");
+                Assert.That(
+                    follow.TargetOrbitPitch,
+                    Is.EqualTo(pitchAfterVertical).Within(0.001f),
+                    "A pure horizontal arrow must not change pitch.");
+
+                inputFixture.Release(
+                    keyboard.rightArrowKey,
+                    queueEventOnly: true);
+                yield return null;
+            }
+            finally
+            {
+                if (keyboard != null && keyboard.added)
+                {
+                    InputSystem.RemoveDevice(keyboard);
+                }
+
+                inputFixture?.TearDown();
+            }
+        }
+
+        [UnityTest]
         public IEnumerator ExteriorCamera_OrbitYawHasHeavySmoothConvergence()
         {
             Camera camera = CreateCamera(Vector3.zero);

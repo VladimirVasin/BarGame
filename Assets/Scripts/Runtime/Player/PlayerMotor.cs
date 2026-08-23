@@ -597,12 +597,14 @@ namespace BarPromenade
             Keyboard keyboard = Keyboard.current;
             if (keyboard != null)
             {
+                // WASD only: the arrow keys belong to the camera
+                // orbit (PlayerCameraFollow), not to walking.
                 movement.x =
-                    (keyboard.dKey.isPressed || keyboard.rightArrowKey.isPressed ? 1f : 0f) -
-                    (keyboard.aKey.isPressed || keyboard.leftArrowKey.isPressed ? 1f : 0f);
+                    (keyboard.dKey.isPressed ? 1f : 0f) -
+                    (keyboard.aKey.isPressed ? 1f : 0f);
                 movement.y =
-                    (keyboard.wKey.isPressed || keyboard.upArrowKey.isPressed ? 1f : 0f) -
-                    (keyboard.sKey.isPressed || keyboard.downArrowKey.isPressed ? 1f : 0f);
+                    (keyboard.wKey.isPressed ? 1f : 0f) -
+                    (keyboard.sKey.isPressed ? 1f : 0f);
             }
 
             Gamepad gamepad = Gamepad.current;
