@@ -6,6 +6,62 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-23 — The feeding scene finally reads: the tin meets the muzzle
+
+- The composed cat-feeding scene had been silently broken since the
+  player's 3D migration, in three independent ways no test could see:
+  1. **The hero fed the cat backwards.** `feed_pose` in
+     `tools/build-player-3d-model.py` used negative-X pelvis/spine/chest
+     pitches; on this rig +X bows FORWARD (probe-measured: +25° spine
+     moves the head 0.37 m forward, the shipped pose threw it 0.53 m
+     back), so through the whole loop the hero arched ~40° away from
+     the cat like a limbo dancer.
+  2. **The tin was twelve metres long.** `RebuildFeedingCanProp`
+     parented the factory can under `SOCKET_Grip.L` without cancelling
+     the FBX bone hierarchy's 100x scale (grip `lossyScale` measured
+     exactly (100,100,100)); the 0.12 m tin rendered ~12-14 m of pale
+     slabs across the shot. The cigarette knew this all along
+     (`InverseScale` in `HomeBalconySmokingInteraction`) — the tin now
+     does the same at its prop root.
+  3. **The cat chewed bare air.** Nothing ever staged food near the
+     cat. Geometry rules out a rail-standing tin: `PIVOT_Head` sits
+     0.38 m over the perch with `ANCHOR_Muzzle` only 0.112 m away, so
+     a pure head pitch bottoms out ~0.27 m above the rail (verified:
+     rest muzzle (0.44, 0.13 fwd) rotated 36° lands exactly at the
+     measured (0.373, 0.147)). The fix is staging, not cat surgery.
+- **New choreography** (`CatFeedEnter/Loop/Exit` re-authored; frame
+  counts, fps, durations and clip names untouched): the hero carries
+  the tin two-handed at the belly, raises it to the dipped muzzle
+  (grip probe-solved via `armature_direction` on both arm bones to
+  0.35 m forward / 1.32 m up at the dock — Unity landed within 2 cm
+  of the Blender solve), HOLDS the offer for the cat's whole 16-step
+  timeline with a breathing settle, and lowers it back through the
+  carry. Both loop endpoints key the offer pose, so enter→loop→exit
+  seams are exact and the untouched cat contract chews mid-loop with
+  its muzzle ~0.14 m over the held rim, wobbling into it.
+- **Probe-driven, not guessed**: eight Blender rounds measured the
+  standing sign conventions and hand positions (naive two-link solves
+  land ~0.1 m off on this rig); the BAKED actions were re-sampled and
+  re-rendered separately from `_apply_pose`; a throwaway editor
+  capture probe rendered the composed stairwell from the real
+  MiddleFlight shot with numeric muzzle/grip/tin logs. Probe lesson
+  recorded: after `clip.SampleAnimation` in edit mode the BONES and
+  bone-parented props move but `Camera.Render()` still draws
+  SkinnedMeshRenderers in bind pose — skinned poses verify only in
+  PlayMode (the visual-capture contact sheet shows the offer).
+- **New regression pins** in the paired PlayMode feeding test: held-tin
+  renderer bounds < 0.30 m (kills any 100x return) and tin center
+  within 0.40 m of `ANCHOR_Muzzle` during Looping (kills any future
+  drift of the composition).
+- **Verification**: Blender generator validators green (full rebuild);
+  EditMode `StairwellCatRuntime` 16/16, `StairwellCatInteraction` 8/8,
+  `InventoryTargetInteractionModel` 7/7, `Player3D` import contracts
+  green; PlayMode `StairwellInteriorPresentation` 5/7 with the two
+  stash-proven batchmode-environment reds unchanged
+  (`…WithoutStewShowsMissingMessage`, `…DescendsLowerFlight…`) and
+  `Scene_FeedingConsumesOneStewAndCompletesPairedAnimation` green
+  including the new pins; `Player3DVisualCapture` contact sheet green.
+
 ## 2026-08-23 — The last sprite: the stairwell cat goes 3D, Cheshire inside
 
 - **The conversion**: `StairwellCatActor` no longer builds a

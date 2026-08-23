@@ -823,6 +823,19 @@ namespace BarPromenade.Tests.PlayMode
                     0,
                     StairwellCatFeedingTimeline
                         .FrameCount - 1));
+            Bounds heldCanBounds = ComputeRendererBounds(
+                root.CatInteraction.FeedingCanProp);
+            Assert.That(
+                heldCanBounds.size.magnitude,
+                Is.LessThan(0.30f),
+                "The held tin must stay tin-sized: the grip bone " +
+                "carries a 100x FBX scale the prop root must cancel.");
+            Assert.That(
+                Vector3.Distance(
+                    heldCanBounds.center,
+                    root.Cat.Anchors.MuzzleAnchor.position),
+                Is.LessThan(0.40f),
+                "The offered tin must sit at the feeding cat's muzzle.");
             AssertCatVisible(Camera.main, root.Cat);
             Vector3 playerViewport =
                 Camera.main.WorldToViewportPoint(
@@ -869,6 +882,23 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 root.CatInteraction.FeedingCanProp.gameObject.activeSelf,
                 Is.False);
+        }
+
+        private static Bounds ComputeRendererBounds(Transform root)
+        {
+            Renderer[] renderers =
+                root.GetComponentsInChildren<Renderer>(true);
+            Assert.That(
+                renderers,
+                Is.Not.Empty,
+                "The feeding can prop must have renderers.");
+            Bounds bounds = renderers[0].bounds;
+            for (int index = 1; index < renderers.Length; index++)
+            {
+                bounds.Encapsulate(renderers[index].bounds);
+            }
+
+            return bounds;
         }
 
         private static void AssertPracticalSources(

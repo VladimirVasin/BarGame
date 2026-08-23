@@ -1008,7 +1008,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 2.8.0
   sourcePose: apose
   sourceTriangleCount: 1534
-  buildSignature: 078299e0dfeda032d2544ee7c165dd9c
+  buildSignature: a2590937cc4e8f27ad53dfa77a600176
   applyPaletteOnEnable: 1
 --- !u!1001 &6417608413615941791
 PrefabInstance:

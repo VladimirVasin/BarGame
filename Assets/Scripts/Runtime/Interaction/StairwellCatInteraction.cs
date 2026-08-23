@@ -486,7 +486,30 @@ namespace BarPromenade
             feedingCanProp.name = "Player Cat Feeding Can";
             feedingCanProp.localPosition = Vector3.zero;
             feedingCanProp.localRotation = Quaternion.identity;
+            feedingCanProp.localScale = InverseScale(grip.lossyScale);
             feedingCanProp.gameObject.SetActive(false);
+        }
+
+        private static Vector3 InverseScale(Vector3 scale)
+        {
+            const float minimumAxis = 0.0001f;
+            if (Mathf.Abs(scale.x) < minimumAxis ||
+                Mathf.Abs(scale.y) < minimumAxis ||
+                Mathf.Abs(scale.z) < minimumAxis)
+            {
+                throw new InvalidOperationException(
+                    "The feeding-can grip must have a non-zero world " +
+                    "scale.");
+            }
+
+            // Unity's Blender/FBX bone hierarchy carries a 100x transform
+            // scale even though the skinned character renders in metres.
+            // Cancel it at the prop root so the authored tin stays
+            // tin-sized in the scene.
+            return new Vector3(
+                1f / scale.x,
+                1f / scale.y,
+                1f / scale.z);
         }
 
         private void SetFeedingCanVisible(bool visible)

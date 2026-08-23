@@ -4052,41 +4052,93 @@ class CharacterBuilder:
             ),
         )
 
-        feed_pose = self.merge_pose(
+        # Cat feeding is staged against the MiddleFlight rail cat, whose
+        # authored feeding dip bottoms the muzzle out ~0.29 m above its
+        # rail perch (head pivot 0.38 up, muzzle only 0.112 m from it),
+        # so the tin can never rest on the rail itself: the hero HOLDS
+        # it up to the cat for the whole loop. Torso pitch is
+        # POSITIVE-X forward on this rig (probe-measured 2026-08-23;
+        # the previous negative values arched the hero backward). The
+        # offer pose solves both arm bones in absolute armature space
+        # so the grip presents the tin at the dipped muzzle: ~0.36 m
+        # forward, ~1.39 m up.
+        feed_carry = self.merge_pose(
             relaxed,
             {
-                "pelvis": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
-                "spine": BonePose(rotation_degrees=(-24.0, 0.0, 0.0)),
-                "chest": BonePose(rotation_degrees=(-18.0, 0.0, 0.0)),
-                "head": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
-                "upper_arm.L": BonePose(target_direction=(0.08, -0.16, -0.28)),
-                "upper_arm.R": BonePose(target_direction=(-0.08, -0.16, -0.28)),
-                "forearm.L": BonePose(rotation_degrees=(-28.0, 0.0, 12.0)),
-                "forearm.R": BonePose(rotation_degrees=(-28.0, 0.0, -12.0)),
-                "thigh.L": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
-                "thigh.R": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
-                "shin.L": BonePose(rotation_degrees=(26.0, 0.0, 0.0)),
-                "shin.R": BonePose(rotation_degrees=(26.0, 0.0, 0.0)),
+                "pelvis": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+                "upper_arm.L": BonePose(target_direction=(-0.04, -0.45, -0.78)),
+                "upper_arm.R": BonePose(target_direction=(0.04, -0.45, -0.78)),
+                "forearm.L": BonePose(rotation_degrees=(-34.0, 0.0, 6.0)),
+                "forearm.R": BonePose(rotation_degrees=(-34.0, 0.0, -6.0)),
             },
         )
         feed_offer = self.merge_pose(
-            feed_pose,
+            relaxed,
             {
-                "forearm.L": BonePose(rotation_degrees=(-36.0, 0.0, 8.0)),
-                "forearm.R": BonePose(rotation_degrees=(-36.0, 0.0, -8.0)),
+                "pelvis": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+                "upper_arm.L": BonePose(
+                    armature_direction=(0.03, -0.58, -0.81)
+                ),
+                "upper_arm.R": BonePose(
+                    armature_direction=(-0.03, -0.58, -0.81)
+                ),
+                "forearm.L": BonePose(
+                    armature_direction=(-0.26, -0.34, 0.90)
+                ),
+                "forearm.R": BonePose(
+                    armature_direction=(0.26, -0.34, 0.90)
+                ),
+            },
+        )
+        # The held tin breathes with the hero: a few millimetres of
+        # forearm settle, nothing that would pull the rim off the
+        # chewing muzzle.
+        feed_offer_settle = self.merge_pose(
+            feed_offer,
+            {
+                "chest": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+                "head": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+                "forearm.L": BonePose(
+                    armature_direction=(-0.26, -0.36, 0.88)
+                ),
+                "forearm.R": BonePose(
+                    armature_direction=(0.26, -0.36, 0.88)
+                ),
             },
         )
         self._create_action(
             "CatFeedEnter", "cat_feeding", 2.0, False, 24, 12,
-            ((0.0, relaxed), (1.0, feed_pose)),
+            (
+                (0.0, relaxed),
+                (0.35, feed_carry),
+                (0.8, feed_offer),
+                (1.0, feed_offer),
+            ),
         )
+        # Both loop endpoints hold the offer: the exit clip starts from
+        # the same raised tin the enter clip delivered, and the cat's
+        # 16-step timeline chews through the middle.
         self._create_action(
             "CatFeedLoop", "cat_feeding", 16.0 / 6.0, True, 16, 6,
-            ((0.0, feed_pose), (0.5, feed_offer), (1.0, feed_pose)),
+            (
+                (0.0, feed_offer),
+                (0.5, feed_offer_settle),
+                (1.0, feed_offer),
+            ),
         )
         self._create_action(
             "CatFeedExit", "cat_feeding", 2.0, False, 24, 12,
-            ((0.0, feed_pose), (1.0, relaxed)),
+            (
+                (0.0, feed_offer),
+                (0.45, feed_carry),
+                (1.0, relaxed),
+            ),
         )
 
         # A compact standing door gesture. The feet and pelvis stay on the
