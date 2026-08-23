@@ -6,7 +6,68 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
-## 2026-08-23 — The light left the mol: the lighthouse island
+## 2026-08-23 — The last sprite: the stairwell cat goes 3D, Cheshire inside
+
+- **The conversion**: `StairwellCatActor` no longer builds a
+  `SpriteRenderer` + `BillboardSprite` — it adopts and articulates a
+  passive authored prefab. New one-off Blender generator
+  `tools/build-stairwell-cat-3d-model.py` (Blender 5 headless,
+  deterministic, ~908 tris, validators for perch footprint, grin
+  width > head width and the grin UV contract) → FBX + manifest under
+  `Assets/Stairwell/Cat/Models/`, editor `StairwellCatAssetSetup` +
+  `StairwellCatModelImporter` build
+  `Assets/Stairwell/Cat/Prefabs/StairwellCat.prefab` and bind
+  `Resources/Stairwell/StairwellCatProvider.asset` (cashier pipeline
+  shape, no avatar work). First character with **no armature**: pivot
+  empties only (`PIVOT_Chest/Head/Ear.L/R/Tail.01..03`), exported flat
+  with mesh origins on their pivots; the actor reparents at Initialize
+  (wheelchair adopt) and writes pose deltas about the model's world
+  axes over cached rest poses.
+- **Kept without a byte of change**: `StairwellCatIdleModel` (its
+  timings now drive chest-scale breathing, tail-pivot flicks, ear
+  twitches and a head-down groom), `StairwellCatFeedingTimeline`'s
+  16-step 6 fps contract (now a head-dip eating pose), and the entire
+  `StairwellCatInteraction` — the actor's feeding API survived
+  verbatim, so the quest, the descent blocker and the paired player
+  clips never noticed.
+- **The Cheshire grin**: `ACC_Grin`, a tooth crescent wider than the
+  head on its own `StairwellCatGrin.shader` — arc-length u baked into
+  UVs, fragment clip on `abs(u-0.5) > 0.5*_GrinProgress` with a
+  feathered glowing frontier and shader-side tooth seams. Pure
+  `StairwellCatGrinTimeline` (appear 0.4 s / vanish 1.2 s, vanish
+  scales with start progress); `StairwellCatGrinController` is the
+  deliberately schedule-free public API
+  (`BeginGrin/EndGrin/SetGrinProgress`, `StairwellInteriorRoot.CatGrin`)
+  for a future trickster script. The committed grin swings the head
+  over the shoulder toward the live camera (cap 150°; ordinary
+  tracking clamps at 65°). Hidden by default: renderer disabled at
+  progress 0 and every fragment discarded on top.
+- **Axis lesson (probe-caught)**: the live geometry faces the
+  NEGATION of the inner model root's axes (FBX -Z under the prefab's
+  inner half turn under the factory's instance half turn) — the first
+  build tracked and grinned 180° backwards. Caught by a throwaway
+  editor capture probe rendering the imported prefab from the
+  MiddleFlight-relative pose with an `ANCHOR_Muzzle` direction log,
+  not by tests (the fake-rig tests only asserted magnitudes); the fake
+  test rig now mirrors the real double-flip chain exactly.
+- **Deleted**: both cat atlases and their Resources folder, both
+  atlas build tools, the sprite sources,
+  `StairwellCat{,Feeding}SpriteLibrary`, `StairwellCatLook{,Selector}`
+  and `BillboardSprite` itself (the cat was its last consumer) — the
+  runtime draws no world-space gameplay sprites any more, closing the
+  standing architecture-notes exception.
+- **Verification**: generator validators green; prefab
+  Build/Validate menu methods green headless; EditMode
+  `-testFilter StairwellCat` 29/29 (grin timeline phases/asymmetry,
+  yaw hysteresis/rate/clamp, pose rules per kind, adopt hierarchy,
+  feeding API, default-hidden grin, prefab/manifest/provider contract,
+  `ShaderHasError` pin); PlayMode `StairwellInteriorPresentation` 5/7
+  — the two failures (`…WithoutStewShowsMissingMessage` at the IMGUI
+  `HasRenderedLayout` assert, `…DescendsLowerFlight…` stall) were
+  **stash-proven pre-existing**: identical failures on the pre-change
+  baseline in batchmode. Visual captures of the imported prefab:
+  idle perch, feeding dip, half-grin mid-turn and the full
+  green-eyed over-shoulder grin all read correctly.
 
 - **The mol beacon is gone entirely** — `AddBeacon`, the `BeaconTower`
   part kind and `Beacon` lamp kind (both left as deliberate enum

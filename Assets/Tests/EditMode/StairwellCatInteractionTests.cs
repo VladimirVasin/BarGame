@@ -8,8 +8,6 @@ namespace BarPromenade.Tests.EditMode
     public sealed class StairwellCatInteractionTests
     {
         private GameObject rootObject;
-        private Texture2D idleAtlas;
-        private Texture2D feedingAtlas;
         private StairwellCatInteraction catInteraction;
         private StairwellCatActor catActor;
         private PlayerAnimatedInteractionController animation;
@@ -68,26 +66,17 @@ namespace BarPromenade.Tests.EditMode
             catObject.transform.SetParent(rootObject.transform, false);
             catObject.transform.localPosition =
                 catPlan.VisualLocalPosition;
-            idleAtlas = new Texture2D(
-                StairwellCatSpriteLibrary.Columns *
-                    StairwellCatSpriteLibrary.FrameWidth,
-                StairwellCatSpriteLibrary.Rows *
-                    StairwellCatSpriteLibrary.FrameHeight,
-                TextureFormat.RGBA32,
-                false);
-            feedingAtlas = new Texture2D(
-                StairwellCatFeedingSpriteLibrary.Columns *
-                    StairwellCatFeedingSpriteLibrary.FrameWidth,
-                StairwellCatFeedingSpriteLibrary.Rows *
-                    StairwellCatFeedingSpriteLibrary.FrameHeight,
-                TextureFormat.RGBA32,
-                false);
+            StairwellCatRigAnchors catAnchors =
+                StairwellCatTestRig.Create(catObject);
+            StairwellCatGrinController catGrin =
+                catObject.AddComponent<StairwellCatGrinController>();
+            catGrin.Initialize(catAnchors.GrinRenderer);
             catActor = catObject.AddComponent<StairwellCatActor>();
             catActor.Initialize(
                 camera,
                 playerObject.transform,
-                idleAtlas,
-                feedingAtlas);
+                catAnchors,
+                catGrin);
             catInteraction =
                 catObject.AddComponent<StairwellCatInteraction>();
             Vector3 interactionPosition =
@@ -109,8 +98,6 @@ namespace BarPromenade.Tests.EditMode
             SetTransitioning(false);
             controller?.CloseForHandler(catInteraction);
             Destroy(rootObject);
-            Destroy(idleAtlas);
-            Destroy(feedingAtlas);
             GameSessionState.BeginNewGame();
         }
 

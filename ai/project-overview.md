@@ -882,17 +882,21 @@ The vertical slice contains:
   bed, spatial ventilation and electrical layers, sparse positional industrial
   cues, a long dark reverb/moderate echo snapshot and the separate optional
   `stairwell_theme` music slot establish the atmosphere;
-- one clickable pixel-art cat sits with its back to the camera on the
-  `Middle Landing Back Rail`; a camera-plane billboard preserves that
-  composition through the stairwell's fixed shots while authored look
-  variants keep its head turned toward the player. The point-filtered
-  `512x256` `Resources/Stairwell/Cat/StairwellCatAtlas` supplies an `8x4`
-  grid for ordinary idle motion and a rare eight-frame grooming sequence
-  roughly every 36 seconds. Activating the shared `IInteractable` path now
-  opens a localized default-Talk `Talk`/`Interact` target menu: Talk preserves
-  the existing temporary cat response, while Interact checks the run inventory
-  for one open stew can and either shows a localized missing-item thought or
-  opens a default-No `Feed the cat?` confirmation;
+- one clickable 3D near-black cat — the game's last sprite conversion — sits
+  with its back to the camera on the `Middle Landing Back Rail`. It has no
+  armature: the actor articulates authored pivot empties, so the untouched
+  deterministic idle timeline still breathes, flicks the tail, twitches an
+  ear and grooms roughly every 36 seconds, while a continuous hysteresis
+  head-yaw model (65° clamp) tracks the player. A default-hidden Cheshire
+  grin — a tooth crescent wider than the head on an arc-length reveal
+  shader — can draw itself in from the center outward while the head turns
+  over the shoulder to the live camera; only a future script triggers it
+  through `StairwellInteriorRoot.CatGrin`. Activating the shared
+  `IInteractable` path opens a localized default-Talk `Talk`/`Interact`
+  target menu: Talk preserves the existing temporary cat response, while
+  Interact checks the run inventory for one open stew can and either shows a
+  localized missing-item thought or opens a default-No `Feed the cat?`
+  confirmation;
 - one reusable inventory-backed target-interaction model and controller own the
   pure item requirement, `Choice -> Confirmation -> Executing -> Closed`
   states, pointer/keyboard/gamepad choices, shared modal lock, temporary prompt
@@ -902,11 +906,11 @@ The vertical slice contains:
   cat is the first adapter: accepting the feed consumes exactly one
   `OpenStewCan`, visibly walks the ordinary 3D hero to an authored middle-shot
   entry pose and samples `CatFeedEnter`, `CatFeedLoop` and `CatFeedExit` on the
-  continuous world rig. The cat keeps its independent point-filtered
-  `512x128` `Resources/Stairwell/Cat/StairwellCatFeedingAtlas` (`8x2`, 16 frames
-  at `6 fps`). Its track starts with the player's loop, pauses ordinary cat
-  idle/look and restores the hero, cat, contact shadow, input, HUD, camera and
-  modal ownership after normal completion or abnormal cleanup;
+  continuous world rig. The cat keeps its independent 16-step `6 fps` feeding
+  timeline, now posed as a head-down eating dip with chew alternation. The
+  track starts with the player's loop, pauses ordinary cat idle/look and
+  restores the hero, cat, contact shadow, input, HUD, camera and modal
+  ownership after normal completion or abnormal cleanup;
 - one deterministic shared `22 x 16 x 4.8 m` bar interior with seven authored
   zones and four validated circulation paths; its long layered counter,
   bottle-backed mirrors, three booths, four high tables, stage, entrance

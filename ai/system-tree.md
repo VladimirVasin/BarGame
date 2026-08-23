@@ -52,6 +52,7 @@ Assets/
       CityRiverWater.shader      quantized animated river flow with night/rain response
       HomeOccluderDither.shader   Forward+ grouped cutaway with shadow/depth/normals
       HomeWindowGlass.shader      shared transparent Home window/door glass
+      StairwellCatGrin.shader     arc-length reveal of the Cheshire grin, shader teeth seams
       Ps1Composite.shader         average, RGB555, intoxication distortion, point upscale
     Audio/
       Mixers/
@@ -110,9 +111,7 @@ Assets/
         StairwellDamageAlbedo.png       damp, chips and puddle
         StairwellDirtyWoodAlbedo.png    wardrobe and debris planks
         StairwellDebrisAlbedo.png       paper, bottle, mattress and sacks
-      Cat/
-        StairwellCatAtlas.png           512x256, 8x4 seated/look/grooming atlas
-        StairwellCatFeedingAtlas.png    512x128, top-first 8x2 feeding atlas
+      StairwellCatProvider.asset      serialized link to the passive 3D cat prefab
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
     Localization/
@@ -160,6 +159,13 @@ Assets/
     Models/
       CityChessSet3D.fbx                six turned chessmen and a draught, board-scaled
       CityChessSet3D.json               deterministic heights/footprints manifest
+  Stairwell/
+    Cat/
+      Models/
+        StairwellCat3D.fbx              armature-free pivot-empty Cheshire cat
+        StairwellCat3D.json             deterministic parts/pivots/grin-UV manifest
+      Prefabs/
+        StairwellCat.prefab             passive asset outside Resources
   Scripts/
     Runtime/
       Core/          seven-scene bootstrap, city root, session, transitions
@@ -326,10 +332,19 @@ Assets/
         StairwellSurfaceAppearance.cs  cached recipes + projection-aware UV MPBs
         SurfaceAppearanceCore.cs  shared projection/tiling/hash/tint math for surface pipelines
         HomeSurfaceAppearance.cs  twelve cached home recipes + HomeSurfacePrimitives wrappers
-      Stairwell/Cat/ deterministic perch, idle/look and feeding presentation
+      Stairwell/Cat/ 3D Cheshire trickster: perch, pivot articulation, grin API
+        StairwellCatPlan.cs                 rail-contact perch + walkable approach
+        StairwellCatProvider.cs             one addressable link to the passive prefab
+        StairwellCatFactory.cs              instantiation + passive-presentation guard
+        StairwellCatRigAnchors.cs           pivot/renderer bindings; asset metadata only
+        StairwellCatActor.cs                adopts pivots, articulates idle/feeding/grin
+        StairwellCatIdleModel.cs            untouched deterministic idle timeline
+        StairwellCatHeadYawModel.cs         continuous hysteresis head tracking (65 cap)
+        StairwellCatPoseRules.cs            pure frame -> pivot-delta mapping
+        StairwellCatGrinTimeline.cs         pure appear/hold/vanish arc (0.4s/1.2s)
+        StairwellCatGrinController.cs       public BeginGrin/EndGrin API, MPB progress
         StairwellCatFeedingPlan.cs          safe middle-shot entry/action/exit poses
-        StairwellCatFeedingTimeline.cs      16-frame, 6 fps one-shot cat track
-        StairwellCatFeedingSpriteLibrary.cs top-first 8x2 point-sprite slicing
+        StairwellCatFeedingTimeline.cs      16-step, 6 fps one-shot feeding contract
       City/NPC/      local player-relative graph walkers with two reusable slots
         CityBenchRestPlan.cs           shared seat claims + reachable-bench rest points
         CityBenchNpcRestController.cs  sends nearby walkers to free benches for 15-30 s
@@ -566,7 +581,7 @@ Assets/
       CatFeedingAnimationAssetTests.cs    cat sprite-track import and timing contract
       StairwellSurfaceAppearanceTests.cs  8 imports, shared MPBs and renderer coverage
       HomeSurfaceAppearanceTests.cs  12 imports, linear tint rule, dither `_BaseMap` guard and walk coverage
-      StairwellCat{Interaction,Runtime}Tests.cs  branches, staging and feeding timeline
+      StairwellCat{Interaction,Runtime,Asset}Tests.cs  branches, staging, pose/grin models and prefab contract
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
       GameTimeStateTests.cs                 freeze/start/elapsed delta/day/midnight/reset
@@ -616,7 +631,7 @@ ArtSource/
     BalconySmoking/              retired player-sprite source history
     CatFeeding/                  retired player-sprite source history
   Stairwell/
-    Cat/Feeding/                 raw/keyed 4x4 cat source + top-first contract
+    Cat/Blender/                 generated 3D cat .blend + back-quarter and face previews
   City/
     mountain-contact-sheet.png    deterministic physical-ridge albedo review sheet
     mountain-textures.json        generated mountain texture manifest
@@ -637,7 +652,7 @@ tools/
   extract-player-balcony-smoking-frames.py retired player-sprite source tooling
   build-player-balcony-smoking-atlas.py   retired player-sprite source tooling
   build-player-cat-feeding-atlas.py       retired player-sprite source tooling
-  build-stairwell-cat-feeding-atlas.py  validate and pack the top-first 8x2 atlas
+  build-stairwell-cat-3d-model.py   armature-free pivot-empty cat + grin-UV validator
   build-city-facade-textures.py     deterministic district wall albedos + validator
   build-city-poi-textures.py        deterministic district POI surface albedos + validator
   build-cemetery-textures.py        deterministic cemetery surface albedos (granite/stone/gravel/soil) + validator
@@ -901,7 +916,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
        -> StairwellFixedCameraController -> lower/middle/apartment hard cuts
                                          -> same world-oriented 3D hero
        -> StairwellCatPlan -> Middle Landing Back Rail perch + walkable approach
-                           -> StairwellCatActor -> rear-view billboard
+                           -> StairwellCatActor -> 3D pivot articulation + grin
                                                    + player-tracking head
                                                    + ordinary idle
                                                    + rare 8-frame grooming (~36 s)

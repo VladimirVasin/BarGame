@@ -43,6 +43,14 @@ namespace BarPromenade
             private set;
         }
         public StairwellCatActor Cat { get; private set; }
+
+        /// <summary>The Cheshire grin's public trigger API, for the
+        /// future trickster script to drive.</summary>
+        public StairwellCatGrinController CatGrin
+        {
+            get;
+            private set;
+        }
         public StairwellCatInteraction CatInteraction
         {
             get;
@@ -267,10 +275,18 @@ namespace BarPromenade
             CatTrigger.center = CatPlan.TriggerLocalCenter;
             CatTrigger.size = StairwellCatPlan.TriggerSize;
 
+            StairwellCatRigAnchors catAnchors =
+                StairwellCatFactory.CreateVisual(
+                    catObject.transform);
+            CatGrin = catObject.AddComponent<
+                StairwellCatGrinController>();
+            CatGrin.Initialize(catAnchors.GrinRenderer);
             Cat = catObject.AddComponent<StairwellCatActor>();
             Cat.Initialize(
                 camera,
-                Player.GameObject.transform);
+                Player.GameObject.transform,
+                catAnchors,
+                CatGrin);
             CatInteraction =
                 catObject.AddComponent<
                     StairwellCatInteraction>();

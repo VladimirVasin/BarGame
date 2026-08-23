@@ -299,12 +299,6 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.Player.Visual,
                 Is.TypeOf<Player3DCharacterPresentation>());
-            Assert.That(
-                home.Player.Visual.VisualRoot
-                    .GetComponent<BillboardSprite>(),
-                Is.Null,
-                "The continuous 3D hero must keep actor-facing world " +
-                "orientation across fixed-camera cuts.");
 
             Vector3 mainPosition =
                 home.CameraFollow.FixedBasePosition;

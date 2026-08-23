@@ -8,8 +8,9 @@ namespace BarPromenade
     /// </summary>
     public sealed class StairwellCatFeedingTimeline
     {
-        public const int FrameCount =
-            StairwellCatFeedingSpriteLibrary.FrameCount;
+        // 16 steps at 6 fps: the retired feeding atlas's contract,
+        // kept because the player-side CatFeed clips are paired to it.
+        public const int FrameCount = 16;
         public const float FramesPerSecond = 6f;
         public const double DurationSeconds =
             FrameCount / (double)FramesPerSecond;

@@ -823,11 +823,6 @@ namespace BarPromenade.Tests.PlayMode
                     "on.");
             }
 
-            Assert.That(
-                cityRoot.World.Root.GetComponentsInChildren<BillboardSprite>(
-                    true),
-                Is.Empty,
-                "No part of a bar facade billboards any more.");
         }
 
         [UnityTest]

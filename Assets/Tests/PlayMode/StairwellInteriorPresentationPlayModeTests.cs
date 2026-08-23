@@ -178,11 +178,16 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Cat, Is.Not.Null);
             Assert.That(root.Cat.IsInitialized, Is.True);
             Assert.That(root.Cat.Renderer, Is.Not.Null);
-            Assert.That(root.Cat.Renderer.sprite, Is.Not.Null);
-            Assert.That(root.Cat.Billboard, Is.Not.Null);
+            Assert.That(root.Cat.Anchors, Is.Not.Null);
+            Assert.That(root.Cat.Anchors.IsBound, Is.True);
+            // The Cheshire grin exists in the scene but not on the
+            // screen: hidden by default until a script asks for it.
+            Assert.That(root.CatGrin, Is.Not.Null);
+            Assert.That(root.CatGrin.IsGrinVisible, Is.False);
+            Assert.That(root.CatGrin.GrinProgress, Is.Zero);
             Assert.That(
-                root.Cat.Billboard.CameraPlaneAlignmentEnabled,
-                Is.True);
+                root.Cat.Anchors.GrinRenderer.enabled,
+                Is.False);
             Assert.That(root.CatInteraction, Is.Not.Null);
             Assert.That(
                 root.CatInteraction.IsInitialized,
@@ -197,11 +202,6 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     root.transform.TransformPoint(
                         root.CatPlan.InteractionLocalPosition)));
-            Assert.That(
-                StairwellCatSpriteLibrary.DefaultResourcePath,
-                Is.EqualTo(
-                    "Stairwell/Cat/StairwellCatAtlas"));
-
             Assert.That(root.CameraFollow, Is.Not.Null);
             Assert.That(root.FixedCamera, Is.Not.Null);
             Assert.That(
@@ -821,7 +821,7 @@ namespace BarPromenade.Tests.PlayMode
                 root.Cat.CurrentFeedingFrame,
                 Is.InRange(
                     0,
-                    StairwellCatFeedingSpriteLibrary
+                    StairwellCatFeedingTimeline
                         .FrameCount - 1));
             AssertCatVisible(Camera.main, root.Cat);
             Vector3 playerViewport =

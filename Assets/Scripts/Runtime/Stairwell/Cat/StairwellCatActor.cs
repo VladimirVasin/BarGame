@@ -1,30 +1,69 @@
 using System;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
+    /// <summary>
+    /// The 3D stairwell cat: the last sprite conversion. The visual
+    /// is the passive authored prefab; this actor adopts its meshes
+    /// under the exported pivot empties (the wheelchair mechanism
+    /// pattern) and articulates them from the untouched pure
+    /// timelines - StairwellCatIdleModel keeps every second of the
+    /// old sprite's breathing, tail flicks, ear twitches and
+    /// grooming, and StairwellCatFeedingTimeline keeps the feeding
+    /// contract the player clips are paired to.
+    ///
+    /// All pose writes are deltas over rest poses cached at
+    /// initialization, about the model's own world axes - never
+    /// absolute local eulers, so the FBX axis conversion stays out of
+    /// the pose math.
+    /// </summary>
     [DisallowMultipleComponent]
     public sealed class StairwellCatActor : MonoBehaviour
     {
+        private struct RestPose
+        {
+            public Vector3 Position;
+            public Quaternion Rotation;
+            public Vector3 Scale;
+
+            public static RestPose Capture(Transform target)
+            {
+                return new RestPose
+                {
+                    Position = target.localPosition,
+                    Rotation = target.localRotation,
+                    Scale = target.localScale
+                };
+            }
+        }
+
         private Camera targetCamera;
         private Transform player;
-        private StairwellCatSpriteLibrary spriteLibrary;
-        private StairwellCatFeedingSpriteLibrary feedingSpriteLibrary;
+        private StairwellCatRigAnchors anchors;
         private StairwellCatIdleModel idleModel;
-        private StairwellCatLookSelector lookSelector;
+        private StairwellCatHeadYawModel headYawModel;
         private StairwellCatFeedingTimeline feedingTimeline;
-        private bool ownsSpriteLibrary;
-        private bool ownsFeedingSpriteLibrary;
         private bool feedingPrepared;
+        private RestPose chestRest;
+        private RestPose headRest;
+        private RestPose earLeftRest;
+        private RestPose earRightRest;
+        private readonly RestPose[] tailRest =
+            new RestPose[StairwellCatRigAnchors.TailPivotCount];
 
         public bool IsInitialized { get; private set; }
-        public SpriteRenderer Renderer { get; private set; }
-        public BillboardSprite Billboard { get; private set; }
-        public StairwellCatLook CurrentLook =>
-            lookSelector != null
-                ? lookSelector.Current
-                : StairwellCatLook.Center;
+
+        /// <summary>The haunches renderer - the cat's visibility
+        /// proxy, as the sprite renderer used to be.</summary>
+        public Renderer Renderer { get; private set; }
+
+        public StairwellCatRigAnchors Anchors => anchors;
+        public StairwellCatGrinController Grin { get; private set; }
+        public float HeadYawDegrees =>
+            headYawModel != null
+                ? headYawModel.CurrentYawDegrees
+                : 0f;
         public int CurrentFrame =>
             idleModel != null
                 ? idleModel.CurrentFrame
@@ -45,8 +84,8 @@ namespace BarPromenade
         public void Initialize(
             Camera camera,
             Transform playerTransform,
-            Texture2D atlas = null,
-            Texture2D feedingAtlas = null)
+            StairwellCatRigAnchors rigAnchors,
+            StairwellCatGrinController grinController)
         {
             if (IsInitialized)
             {
@@ -65,54 +104,37 @@ namespace BarPromenade
                     nameof(playerTransform));
             }
 
+            if (rigAnchors == null)
+            {
+                throw new ArgumentNullException(nameof(rigAnchors));
+            }
+
+            if (!rigAnchors.IsBound)
+            {
+                throw new ArgumentException(
+                    "The stairwell cat rig anchors are not fully " +
+                    "bound.",
+                    nameof(rigAnchors));
+            }
+
+            if (grinController == null)
+            {
+                throw new ArgumentNullException(
+                    nameof(grinController));
+            }
+
             targetCamera = camera;
             player = playerTransform;
-            if (atlas != null)
-            {
-                spriteLibrary =
-                    StairwellCatSpriteLibrary.Create(atlas);
-                ownsSpriteLibrary = true;
-            }
-            else
-            {
-                spriteLibrary =
-                    StairwellCatSpriteLibrary.LoadDefault();
-            }
+            anchors = rigAnchors;
+            Grin = grinController;
+            Renderer = anchors.BodyRenderer;
 
-            if (feedingAtlas != null)
-            {
-                feedingSpriteLibrary =
-                    StairwellCatFeedingSpriteLibrary.Create(
-                        feedingAtlas);
-                ownsFeedingSpriteLibrary = true;
-            }
-
-            GameObject visualObject =
-                new GameObject("Cat Billboard");
-            visualObject.transform.SetParent(transform, false);
-
-            Renderer =
-                visualObject.AddComponent<SpriteRenderer>();
-            Renderer.color = Color.white;
-            Renderer.sortingOrder = 0;
-            Renderer.shadowCastingMode =
-                ShadowCastingMode.Off;
-            Renderer.receiveShadows = false;
-            Renderer.lightProbeUsage = LightProbeUsage.Off;
-            Renderer.reflectionProbeUsage =
-                ReflectionProbeUsage.Off;
-            Renderer.motionVectorGenerationMode =
-                MotionVectorGenerationMode.ForceNoMotion;
-
-            Billboard =
-                visualObject.AddComponent<BillboardSprite>();
-            Billboard.Initialize(targetCamera);
-            Billboard.SetCameraPlaneAlignment(true);
+            BindArticulation();
+            CaptureRestPoses();
 
             idleModel = new StairwellCatIdleModel();
-            lookSelector = new StairwellCatLookSelector();
-            feedingTimeline =
-                new StairwellCatFeedingTimeline();
+            headYawModel = new StairwellCatHeadYawModel();
+            feedingTimeline = new StairwellCatFeedingTimeline();
             IsInitialized = true;
             AdvancePresentation(0f);
         }
@@ -142,14 +164,12 @@ namespace BarPromenade
                 return false;
             }
 
-            if (feedingPrepared)
-            {
-                return true;
-            }
-
-            feedingPrepared =
-                TryEnsureFeedingSpriteLibrary();
-            return feedingPrepared;
+            // The sprite cat loaded its feeding atlas here; the 3D
+            // cat has nothing to fetch, but the three-phase
+            // prepare/begin/cancel contract survives for the
+            // interaction's phase machine.
+            feedingPrepared = true;
+            return true;
         }
 
         public bool BeginPreparedFeeding()
@@ -158,15 +178,13 @@ namespace BarPromenade
                 !IsInitialized ||
                 !isActiveAndEnabled ||
                 IsFeeding ||
-                feedingSpriteLibrary == null ||
-                feedingSpriteLibrary.IsDisposed ||
                 !feedingTimeline.Begin())
             {
                 return false;
             }
 
             feedingPrepared = false;
-            ApplyFeedingPresentation();
+            ApplyCurrentPose();
             return true;
         }
 
@@ -189,7 +207,7 @@ namespace BarPromenade
                 return false;
             }
 
-            ApplyIdlePresentation();
+            ApplyCurrentPose();
             return true;
         }
 
@@ -201,7 +219,7 @@ namespace BarPromenade
                 return false;
             }
 
-            ApplyIdlePresentation();
+            ApplyCurrentPose();
             return true;
         }
 
@@ -212,77 +230,247 @@ namespace BarPromenade
                 return;
             }
 
+            Grin.Advance(deltaTime);
             if (IsFeeding)
             {
                 feedingTimeline.Advance(deltaTime);
-                if (IsFeeding)
+            }
+            else
+            {
+                idleModel.Advance(deltaTime);
+                bool tracking =
+                    idleModel.CurrentKind !=
+                    StairwellCatIdleKind.Groom;
+                if (tracking && player != null)
                 {
-                    ApplyFeedingPresentation();
+                    headYawModel.Update(
+                        ComputeYawToward(player.position),
+                        deltaTime);
                 }
-                else
+            }
+
+            ApplyCurrentPose();
+        }
+
+        /// <summary>
+        /// Adopts the flat-exported meshes and child empties under
+        /// their pivots. The FBX deliberately ships everything beside
+        /// the empties with each mesh's origin on its pivot, so this
+        /// runtime reparent is exact.
+        /// </summary>
+        private void BindArticulation()
+        {
+            Transform head = anchors.HeadPivot;
+            anchors.EarLeftPivot.SetParent(head, true);
+            anchors.EarRightPivot.SetParent(head, true);
+            anchors.MuzzleAnchor.SetParent(head, true);
+            anchors.TailPivots[1].SetParent(anchors.TailPivots[0], true);
+            anchors.TailPivots[2].SetParent(anchors.TailPivots[1], true);
+
+            for (int index = 0;
+                 index < anchors.RendererBindings.Count;
+                 index++)
+            {
+                StairwellCatRendererBinding binding =
+                    anchors.RendererBindings[index];
+                if (binding == null ||
+                    binding.Renderer == null ||
+                    string.IsNullOrEmpty(binding.PivotName))
                 {
-                    ApplyIdlePresentation();
+                    continue;
                 }
 
-                return;
-            }
+                Transform pivot = ResolvePivot(binding.PivotName);
+                if (pivot == null)
+                {
+                    throw new InvalidOperationException(
+                        $"The cat part '{binding.RendererName}' " +
+                        $"names unknown pivot '{binding.PivotName}'.");
+                }
 
-            idleModel.Advance(deltaTime);
-            if (targetCamera != null && player != null)
-            {
-                lookSelector.Update(
-                    transform.position,
-                    player.position,
-                    targetCamera.transform.right);
+                binding.Renderer.transform.SetParent(pivot, true);
             }
-
-            ApplyIdlePresentation();
         }
 
-        private bool TryEnsureFeedingSpriteLibrary()
+        private Transform ResolvePivot(string pivotName)
         {
-            if (feedingSpriteLibrary != null &&
-                !feedingSpriteLibrary.IsDisposed)
+            switch (pivotName)
             {
-                return true;
-            }
+                case StairwellCatRigAnchors.ChestPivotName:
+                    return anchors.ChestPivot;
+                case StairwellCatRigAnchors.HeadPivotName:
+                    return anchors.HeadPivot;
+                case StairwellCatRigAnchors.EarLeftPivotName:
+                    return anchors.EarLeftPivot;
+                case StairwellCatRigAnchors.EarRightPivotName:
+                    return anchors.EarRightPivot;
+                default:
+                    for (int index = 0;
+                         index <
+                         StairwellCatRigAnchors.TailPivotNames.Length;
+                         index++)
+                    {
+                        if (string.Equals(
+                                pivotName,
+                                StairwellCatRigAnchors
+                                    .TailPivotNames[index],
+                                StringComparison.Ordinal))
+                        {
+                            return anchors.TailPivots[index];
+                        }
+                    }
 
-            ownsFeedingSpriteLibrary = false;
-            return StairwellCatFeedingSpriteLibrary
-                .TryLoadDefault(out feedingSpriteLibrary);
+                    return null;
+            }
         }
 
-        private void ApplyFeedingPresentation()
+        private void CaptureRestPoses()
         {
-            if (Renderer == null ||
-                feedingSpriteLibrary == null ||
-                !IsFeeding)
+            chestRest = RestPose.Capture(anchors.ChestPivot);
+            headRest = RestPose.Capture(anchors.HeadPivot);
+            earLeftRest = RestPose.Capture(anchors.EarLeftPivot);
+            earRightRest = RestPose.Capture(anchors.EarRightPivot);
+            for (int index = 0; index < tailRest.Length; index++)
             {
-                return;
+                tailRest[index] =
+                    RestPose.Capture(anchors.TailPivots[index]);
             }
-
-            Renderer.sprite = feedingSpriteLibrary.GetSprite(
-                feedingTimeline.FrameIndex);
         }
 
-        private void ApplyIdlePresentation()
+        private void ApplyCurrentPose()
         {
-            if (Renderer == null ||
-                spriteLibrary == null ||
-                idleModel == null ||
-                lookSelector == null)
+            StairwellCatPose pose = IsFeeding
+                ? StairwellCatPoseRules.FeedingPose(
+                    feedingTimeline.FrameIndex)
+                : StairwellCatPoseRules.IdlePose(
+                    idleModel.CurrentKind,
+                    idleModel.CurrentFrame,
+                    headYawModel.CurrentYawDegrees);
+
+            float grinWeight = Grin != null ? Grin.HeadTurnWeight : 0f;
+            if (grinWeight > 0f && targetCamera != null)
             {
-                return;
+                pose = StairwellCatPoseRules.ComposeGrin(
+                    pose,
+                    grinWeight,
+                    ComputeYawToward(
+                        targetCamera.transform.position));
             }
 
-            Renderer.sprite =
-                idleModel.CurrentKind ==
-                StairwellCatIdleKind.Groom
-                    ? spriteLibrary.GetGroomSprite(
-                        idleModel.CurrentFrame)
-                    : spriteLibrary.GetSprite(
-                        lookSelector.Current,
-                        idleModel.CurrentFrame);
+            ApplyPose(pose);
+        }
+
+        /// <summary>
+        /// The direction the cat's muzzle faces at rest. The FBX
+        /// geometry faces model-local -Z (Blender -Y through the
+        /// axis bake) and the prefab's inner half turn aims the
+        /// PREFAB at +Z, so the live geometry always faces the
+        /// negation of the model root's axes.
+        /// </summary>
+        private Vector3 CatForward => -anchors.ModelRoot.forward;
+
+        private Vector3 CatRight => -anchors.ModelRoot.right;
+
+        private float ComputeYawToward(Vector3 worldTarget)
+        {
+            Vector3 forward = CatForward;
+            forward.y = 0f;
+            Vector3 toTarget =
+                worldTarget - anchors.HeadPivot.position;
+            toTarget.y = 0f;
+            if (forward.sqrMagnitude <= 0.000001f ||
+                toTarget.sqrMagnitude <= 0.000001f)
+            {
+                return 0f;
+            }
+
+            return Vector3.SignedAngle(
+                forward,
+                toTarget,
+                Vector3.up);
+        }
+
+        private void ApplyPose(in StairwellCatPose pose)
+        {
+            Vector3 catForward = CatForward;
+            Vector3 catRight = CatRight;
+
+            Transform chest = anchors.ChestPivot;
+            chest.localScale = chestRest.Scale * pose.ChestScale;
+
+            Transform head = anchors.HeadPivot;
+            Quaternion headDelta =
+                ParentSpaceRotation(
+                    head,
+                    pose.HeadYawDegrees,
+                    Vector3.up) *
+                ParentSpaceRotation(
+                    head,
+                    pose.HeadPitchDegrees,
+                    catRight) *
+                ParentSpaceRotation(
+                    head,
+                    pose.HeadRollDegrees,
+                    catForward);
+            head.localRotation = headDelta * headRest.Rotation;
+            head.localPosition =
+                headRest.Position +
+                ParentSpaceVector(
+                    head,
+                    Vector3.up * pose.HeadLiftMeters);
+
+            anchors.EarLeftPivot.localRotation =
+                ParentSpaceRotation(
+                    anchors.EarLeftPivot,
+                    pose.EarLeftTiltDegrees,
+                    catRight) *
+                earLeftRest.Rotation;
+            anchors.EarRightPivot.localRotation =
+                ParentSpaceRotation(
+                    anchors.EarRightPivot,
+                    pose.EarRightTiltDegrees,
+                    catRight) *
+                earRightRest.Rotation;
+
+            ApplyTailSwing(0, pose.TailSwing01Degrees, catForward);
+            ApplyTailSwing(1, pose.TailSwing02Degrees, catForward);
+            ApplyTailSwing(2, pose.TailSwing03Degrees, catForward);
+        }
+
+        private void ApplyTailSwing(
+            int index,
+            float swingDegrees,
+            Vector3 catForward)
+        {
+            Transform pivot = anchors.TailPivots[index];
+            pivot.localRotation =
+                ParentSpaceRotation(pivot, swingDegrees, catForward) *
+                tailRest[index].Rotation;
+        }
+
+        private static Quaternion ParentSpaceRotation(
+            Transform target,
+            float degrees,
+            Vector3 worldAxis)
+        {
+            if (degrees == 0f)
+            {
+                return Quaternion.identity;
+            }
+
+            Vector3 axis = target.parent != null
+                ? target.parent.InverseTransformDirection(worldAxis)
+                : worldAxis;
+            return Quaternion.AngleAxis(degrees, axis);
+        }
+
+        private static Vector3 ParentSpaceVector(
+            Transform target,
+            Vector3 worldVector)
+        {
+            return target.parent != null
+                ? target.parent.InverseTransformVector(worldVector)
+                : worldVector;
         }
 
         private void Update()
@@ -300,20 +488,6 @@ namespace BarPromenade
         {
             feedingPrepared = false;
             feedingTimeline?.Cancel();
-            if (ownsSpriteLibrary)
-            {
-                spriteLibrary?.Dispose();
-            }
-
-            if (ownsFeedingSpriteLibrary)
-            {
-                feedingSpriteLibrary?.Dispose();
-            }
-
-            spriteLibrary = null;
-            feedingSpriteLibrary = null;
-            ownsSpriteLibrary = false;
-            ownsFeedingSpriteLibrary = false;
             IsInitialized = false;
         }
     }

@@ -16,31 +16,6 @@ namespace BarPromenade.Tests
 
 
         [UnityTest]
-        public IEnumerator Billboard_FacesCameraAndKeepsWorldUp_AfterFrame()
-        {
-            Camera camera = CreateCamera(new Vector3(6f, 5f, -8f));
-            GameObject billboardObject = CreateObject("Billboard Test");
-            billboardObject.transform.position = new Vector3(-2f, 0.5f, 1f);
-            BillboardSprite billboard = billboardObject.AddComponent<BillboardSprite>();
-
-            billboard.Initialize(camera);
-            yield return null;
-
-            Vector3 expectedForward = Vector3.ProjectOnPlane(
-                camera.transform.position - billboardObject.transform.position,
-                Vector3.up).normalized;
-
-            Assert.That(
-                Vector3.Angle(billboardObject.transform.forward, expectedForward),
-                Is.LessThan(0.1f));
-            Assert.That(
-                Vector3.Angle(billboardObject.transform.up, Vector3.up),
-                Is.LessThan(0.1f));
-        }
-
-
-
-        [UnityTest]
         public IEnumerator ExteriorCamera_RotateYawPreservesPlayerHeadingAndAim()
         {
             Camera camera = CreateCamera(Vector3.zero);

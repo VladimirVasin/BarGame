@@ -1509,30 +1509,41 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   practicals, post-processing, bounded dust, ventilation/electrical/pipe
   ambience and an optional scene-local `stairwell_theme` slot remain
   scene-owned.
-- **Accepted — Perched interactive stairwell cat:** One seated pixel-art cat
-  owns a non-blocking authored perch on the upper bar of the
-  `Middle Landing Back Rail` and a separate walkable interaction point. Its
-  depth-tested `BillboardSprite` aligns to each fixed camera plane while the
-  artwork keeps the body turned away from the viewer and selects a head turn
-  toward the player. The point-filtered
-  `Resources/Stairwell/Cat/StairwellCatAtlas` is exactly `512x256`, an `8x4`
-  grid used for ordinary idle motion and a rare eight-frame grooming sequence
-  roughly every 36 seconds. `StairwellCatInteraction` remains the
-  `IInteractable` adapter but now opens the reusable inventory-target menu.
-  Talk closes the modal and emits the original localized response. Interact
-  requires `OpenStewCan x1`; absence emits bounded localized feedback, while
-  presence opens default-No confirmation. Yes uses the two-phase preparation
-  boundary before the controller atomically removes one can. The adapter
-  visibly guides the player to a grounded, validated middle-shot entry point,
-  settles the neutral 3D rig for one rendered frame and samples
-  `CatFeedEnter`, `CatFeedLoop` and `CatFeedExit` on that continuous rig. On the
-  player loop boundary it begins the cat's independent top-first `512x128`,
-  `8x2`, 16-frame sprite track at `6 fps`; ordinary cat idle/look is paused and
-  restored afterward. Player presentation/contact shadow, cat presentation,
-  modal ownership, camera, HUD and input restore on normal completion and every
-  lifecycle abort. The cat's keyed source and packing contract remain under
-  `ArtSource/Stairwell/Cat/Feeding` and
-  `tools/build-stairwell-cat-feeding-atlas.py`.
+- **Accepted — Perched interactive stairwell cat (3D Cheshire trickster):**
+  The last sprite conversion. One seated near-black low-poly 3D cat owns the
+  non-blocking authored perch on the top of the `Middle Landing Back Rail`
+  (its origin is the rail-contact point, `MiddleElevation + 1.16`) and the
+  same separate walkable interaction point. The model comes from the one-off
+  Blender generator `tools/build-stairwell-cat-3d-model.py` through the
+  cashier-shaped `StairwellCatAssetSetup` pipeline: passive prefab outside
+  Resources, one addressable `StairwellCatProvider`, and — a first — **no
+  armature at all**: articulation is pivot empties (`PIVOT_Chest`,
+  `PIVOT_Head`, `PIVOT_Ear.L/R`, `PIVOT_Tail.01..03`) exported flat beside
+  the meshes with every pivot-bound mesh's origin on its pivot; the actor
+  adopts and articulates them (the wheelchair mechanism pattern). The
+  untouched pure `StairwellCatIdleModel` timings drive breathing as chest
+  scale, tail flicks, ear twitches and grooming as pivot deltas; the discrete
+  look selector became the continuous hysteresis `StairwellCatHeadYawModel`
+  (`65°` tracking clamp). Pose deltas apply about the model's world axes over
+  rest poses cached at initialize; the geometry faces the negation of the
+  model root's axes (FBX `-Z` under the prefab's inner half turn).
+  Its trickster signature is `ACC_Grin`: a crescent of teeth wider than the
+  head, on its own `StairwellCatGrin.shader` material that reveals by arc
+  growth — the mesh bakes normalized arc length into UV x and the shader
+  clips on `abs(u-0.5) > 0.5 * _GrinProgress` with a feathered glowing
+  frontier, so the smile is drawn in from the center outward and un-drawn in
+  reverse (appear `0.4 s`, vanish `1.2 s`, pure `StairwellCatGrinTimeline`).
+  While the grin commits, the head swings over the shoulder toward the live
+  camera (up to `150°` — the MiddleFlight shot sits ~`137°` behind the
+  muzzle), one gesture with the reveal. **By default the grin does not
+  exist**: renderer disabled at progress zero and every fragment discarded.
+  There is deliberately no scheduler — `StairwellCatGrinController`
+  (`BeginGrin/EndGrin/SetGrinProgress`) is a public API for a future
+  trickster script, exposed as `StairwellInteriorRoot.CatGrin`.
+  `StairwellCatInteraction` is untouched: the actor kept its feeding API
+  verbatim, and the 16-step `6 fps` `StairwellCatFeedingTimeline` contract
+  the player `CatFeed*` clips pair to now poses a head-down eating dip with
+  chew alternation instead of an atlas swap.
 - **Accepted — Same-scene third-floor Home balcony:** The Home right wall owns
   a real window and open glazed door connected to a walkable balcony at
   `4.7 m` street elevation. The room threshold and deck extend the same
@@ -1757,9 +1768,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   unavailable and supplies the stable ambient-occlusion cue beneath the feet.
   Practical street/bar lights remain shadowless.
 - **Accepted — Runtime presentation:** City geometry, primitive colors and the
-  shared interior are built at runtime. The hero and ambient City pedestrians
-  load as low-poly 3D prefabs; the stairwell-cat bitmaps still load from
-  `Resources` and are sliced or drawn at runtime.
+  shared interior are built at runtime. The hero, ambient City pedestrians and
+  the stairwell cat all load as low-poly 3D prefabs; the runtime draws no
+  world-space gameplay sprites any more (`BillboardSprite` is deleted — the
+  cat was its last consumer).
 - **Accepted — Shared rendering state:** Primitive colors use
   `MaterialPropertyBlock`; every ordinary runtime primitive explicitly shares
   the serialized Resources `RuntimePrimitiveLit` URP material so Player builds

@@ -44,18 +44,23 @@ namespace BarPromenade
                 stairwell.MiddleLandingBounds.center.x - 1.55f;
             float railZ =
                 stairwell.MiddleLandingBounds.yMax + 0.07f;
+            // The 3D cat's origin is its rail-contact point, not the
+            // old sprite pivot that floated above the rail top: the
+            // back rail tops out 1.16 m over the landing.
             Vector3 visual = new Vector3(
                 perchX,
-                stairwell.MiddleElevation + 1.23f,
+                stairwell.MiddleElevation + 1.16f,
                 railZ);
             Vector3 interaction = new Vector3(
                 approachX,
                 stairwell.MiddleElevation +
                 PlayerFactory.GroundedRootOffset,
                 railZ - 0.54f);
+            // Compensates the 0.07 m visual-anchor drop so the world
+            // trigger volume stays where the sprite cat's was.
             Vector3 triggerCenter = new Vector3(
                 0f,
-                -0.55f,
+                -0.48f,
                 -0.27f);
             return new StairwellCatPlan(
                 visual,
