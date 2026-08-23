@@ -5,8 +5,8 @@ Shader "Bar Promenade/City Lighthouse Beam"
         [HDR] _BeamColor("Beam Color", Color) = (3.8, 3.6, 3.12, 1)
         _Intensity("Intensity", Range(0, 8)) = 1
         _Uniform("Uniform Glow", Range(0, 1)) = 0
-        _FadeStartDistance("Fade Start Distance", Float) = 44.5
-        _FadeEndDistance("Fade End Distance", Float) = 47.5
+        _FadeStartDistance("Fade Start Distance", Float) = 46.8
+        _FadeEndDistance("Fade End Distance", Float) = 47.8
     }
 
     SubShader
@@ -82,9 +82,10 @@ Shader "Bar Promenade/City Lighthouse Beam"
                 // along the beam from the lantern, so the light
                 // pours out of the lamp and thins toward the mouth;
                 // _Uniform = 1 turns the same material into the
-                // lens's steady core. The distance fade matches the
-                // island silhouette so beam and tower dissolve as
-                // one thing.
+                // lens's steady core. The distance fade runs LATER
+                // than the island silhouette's: in fog the light
+                // outlives the tower, and a lighthouse whose lamp
+                // dies with its stones is just a rock.
                 float dist = distance(
                     _WorldSpaceCameraPos,
                     input.positionWS);

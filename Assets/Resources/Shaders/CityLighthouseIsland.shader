@@ -3,10 +3,10 @@ Shader "Bar Promenade/City Lighthouse Island"
     Properties
     {
         _HazeColor("City Haze Color", Color) = (0.330, 0.380, 0.355, 1)
-        _HazeNear("Haze Near", Range(0, 1)) = 0.79
-        _HazeFar("Haze Far", Range(0, 1)) = 0.94
+        _HazeNear("Haze Near", Range(0, 1)) = 0.72
+        _HazeFar("Haze Far", Range(0, 1)) = 0.86
         _HazeNearDistance("Haze Near Distance", Float) = 20
-        _HazeFarDistance("Haze Far Distance", Float) = 38
+        _HazeFarDistance("Haze Far Distance", Float) = 41
         _FadeStartDistance("Fade Start Distance", Float) = 44.5
         _FadeEndDistance("Fade End Distance", Float) = 47.5
     }

@@ -121,15 +121,25 @@ namespace BarPromenade
     /// controller it deliberately registers with neither light
     /// registry — there is no real Light here at all (a 16 m point
     /// light cannot reach the shore, and the fog would eat its halo),
-    /// only additive geometry — but it honours the site registry's
-    /// contract by hand: scaled by the night factor, disabled below
-    /// the enable threshold. The rotation is read absolutely from
-    /// the pure rules every frame, so there is no drift and every
-    /// scene agrees on where the beam points.
+    /// only additive geometry. Unlike the city's lamps it is NOT
+    /// night-gated: a landfall light in permanent fog burns day and
+    /// night, so the renderers stay on and the night factor only
+    /// swings the intensity between a day floor and the full night
+    /// blaze. The rotation is read absolutely from the pure rules
+    /// every frame, so there is no drift and every scene agrees on
+    /// where the beam points.
     /// </summary>
     public sealed class CityLighthouseLanternController :
         MonoBehaviour
     {
+        /// <summary>
+        /// The lamp's daytime fraction of its night intensity. Under
+        /// the day sky the additive cones read softer against the
+        /// brighter fog, which is what a lighthouse by day looks
+        /// like: running, not blazing.
+        /// </summary>
+        private const float DayIntensity = 0.6f;
+
         private static readonly int IntensityId =
             Shader.PropertyToID("_Intensity");
         private static readonly int UniformId =
@@ -178,21 +188,18 @@ namespace BarPromenade
                     .CurrentBeamAzimuthDegrees(),
                 0f);
 
+            // Day and night both: the night factor only swings the
+            // intensity between the day floor and the full blaze.
             float night = CityNightSiteLightRegistry.NightFactor;
-            bool lit = night >
-                       CityNightSiteLightRegistry.EnableThreshold;
+            float intensity = Mathf.Lerp(DayIntensity, 1f, night);
             for (int index = 0;
                  index < beamRenderers.Length;
                  index++)
             {
-                beamRenderers[index].enabled = lit;
+                beamRenderers[index].enabled = true;
             }
 
-            lensRenderer.enabled = lit;
-            if (!lit)
-            {
-                return;
-            }
+            lensRenderer.enabled = true;
 
             // The classic sweep-past flash: when a beam crosses the
             // camera's bearing, the lens itself surges. This is the
@@ -212,7 +219,7 @@ namespace BarPromenade
             }
 
             propertyBlock.SetFloat(UniformId, 0f);
-            propertyBlock.SetFloat(IntensityId, night);
+            propertyBlock.SetFloat(IntensityId, intensity);
             for (int index = 0;
                  index < beamRenderers.Length;
                  index++)
@@ -223,7 +230,7 @@ namespace BarPromenade
             propertyBlock.SetFloat(UniformId, 1f);
             propertyBlock.SetFloat(
                 IntensityId,
-                night * (1f + 1.5f * flash));
+                intensity * (1f + 1.5f * flash));
             lensRenderer.SetPropertyBlock(propertyBlock);
         }
     }

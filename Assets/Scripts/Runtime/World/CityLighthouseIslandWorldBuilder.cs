@@ -44,15 +44,15 @@ namespace BarPromenade
         private static readonly Color Ironwork =
             new Color(0.10f, 0.11f, 0.11f);
 
-        // The lantern assembly shares the planner's forced-perspective
-        // factor: a shrunken tower with a full-size lens and beams
-        // would read as a near, small lighthouse instead of a far one.
-        private const float BeamLength =
-            12f * CityLighthouseIslandPlanner.VisualScale;
-        private const float BeamStartRadius =
-            0.18f * CityLighthouseIslandPlanner.VisualScale;
-        private const float BeamEndRadius =
-            1.6f * CityLighthouseIslandPlanner.VisualScale;
+        // The lantern's LIGHT does not shrink with the island's
+        // forced perspective: a far lighthouse is a smaller tower
+        // but not a shorter glare, and scaled-down beams at the
+        // far-plane-limited anchor died into invisibility. The beams
+        // keep their full throw; only the lens stays scaled, so it
+        // still fits inside the shrunken lamp room.
+        private const float BeamLength = 12f;
+        private const float BeamStartRadius = 0.18f;
+        private const float BeamEndRadius = 1.6f;
         private const int BeamSegments = 10;
         private const float BeamPitchDegrees = 2f;
         private const float LensSize =

@@ -20,19 +20,20 @@ namespace BarPromenade
             "Shaders/CityLighthouseBeam";
 
         /// <summary>
-        /// The distance-graded haze mix. From the waterline sand
-        /// (~36 m) the island sits at HazeFar — ~6 % contrast,
-        /// outlines only; from the pier head (~22 m) it eases toward
-        /// HazeNear — ~21 %, still ghostly but legible. Walking the
-        /// pier is what brings the island out of the fog, and only
-        /// a little. Deepened alongside the planner's forced-
-        /// perspective shrink so the smaller silhouette also sits
-        /// deeper in the air, and the two cues agree on "farther".
+        /// The distance-graded haze mix, retuned to the user's call:
+        /// the island must read from the SHORE, not only from the
+        /// pier. From the waterline sand (~40 m) it now sits at
+        /// HazeFar — ~14 % contrast, a legible silhouette with its
+        /// day-mark banding, not a hint; from the pier head (~27 m)
+        /// it eases toward HazeNear — ~28 %, the closest look the
+        /// city offers. The far plateau lands right at the sand's
+        /// own viewing distance, so the beach is where the island
+        /// finishes appearing.
         /// </summary>
-        public const float HazeNear = 0.79f;
-        public const float HazeFar = 0.94f;
+        public const float HazeNear = 0.72f;
+        public const float HazeFar = 0.86f;
         public const float HazeNearDistance = 20f;
-        public const float HazeFarDistance = 38f;
+        public const float HazeFarDistance = 41f;
 
         /// <summary>
         /// The self-fade band. With the island at its far-plane-
@@ -45,6 +46,17 @@ namespace BarPromenade
         /// </summary>
         public const float FadeStartDistance = 44.5f;
         public const float FadeEndDistance = 47.5f;
+
+        /// <summary>
+        /// The LIGHT outlives the tower: the beams and the lens fade
+        /// on their own later band, still closing inside the 48 m
+        /// far plane. From the esplanade (~46-47 m) the silhouette
+        /// has all but dissolved while the sweeping flash still
+        /// carries - which is exactly a lighthouse in fog: the light
+        /// first, the tower maybe.
+        /// </summary>
+        public const float BeamFadeStartDistance = 46.8f;
+        public const float BeamFadeEndDistance = 47.8f;
 
         /// <summary>
         /// The old mol beacon's lens colour, moved to the island with
@@ -132,10 +144,10 @@ namespace BarPromenade
                             1f));
                     beamMaterial.SetFloat(
                         FadeStartId,
-                        FadeStartDistance);
+                        BeamFadeStartDistance);
                     beamMaterial.SetFloat(
                         FadeEndId,
-                        FadeEndDistance);
+                        BeamFadeEndDistance);
                 }
 
                 return beamMaterial;

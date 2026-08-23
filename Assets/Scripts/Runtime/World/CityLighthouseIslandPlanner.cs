@@ -43,11 +43,12 @@ namespace BarPromenade
         /// anchor already stands as far out as the 48 m far plane
         /// permits, so the rest of "farther" is drawn — the whole
         /// silhouette at this fraction of its planned size around the
-        /// sea-level anchor. The lantern assembly (lens, beams)
-        /// scales by the same factor in the world builder so the
-        /// light agrees with the tower. The floor is the lantern
-        /// invariant: at 0.78 the lamp still clears its 12 m over
-        /// the sea.
+        /// sea-level anchor. The lantern's LIGHT deliberately does
+        /// not follow (only the lens does, to fit the lamp room):
+        /// beams at full throw and a later fade band are what keep
+        /// the flash visible from the shore. The floor is the
+        /// lantern invariant: at 0.78 the lamp still clears its
+        /// 12 m over the sea.
         /// </summary>
         internal const float VisualScale = 0.78f;
 
