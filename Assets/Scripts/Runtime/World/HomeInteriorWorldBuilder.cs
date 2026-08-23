@@ -404,13 +404,6 @@ namespace BarPromenade
                 HomeSurfaceKind.Rug,
                 SurfaceProjection.BoxXZ,
                 false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Entry Rug Stain",
-                room,
-                new Vector3(0.28f, 0.033f, -2.48f),
-                new Vector3(0.62f, 0.012f, 0.42f),
-                new Color(0.085f, 0.055f, 0.042f),
-                false);
             HomeSurfacePrimitives.CreateBox(
                 "Home Exit Door",
                 room,

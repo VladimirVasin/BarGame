@@ -236,22 +236,6 @@ namespace BarPromenade
                 return;
             }
 
-            Vector3 center = new Vector3(
-                bed.Bounds.center.x,
-                HomeInteriorWorldBuilder
-                    .BedMattressSurfaceHeight,
-                bed.Bounds.center.y);
-            GameObject shirt = RuntimePrimitiveFactory.CreateBox(
-                "Home Bed Crumpled Shirt",
-                room,
-                center + new Vector3(0.28f, 0.035f, 0.16f),
-                new Vector3(0.72f, 0.07f, 0.54f),
-                new Color(0.12f, 0.20f, 0.22f),
-                false);
-            AddToGroup(
-                occlusionRegistry,
-                HomeInteriorWorldBuilder.BedOccluderId,
-                new List<GameObject> { shirt });
             RuntimePrimitiveFactory.CreateBox(
                 "Home Worn Slipper Left",
                 room,
@@ -351,13 +335,6 @@ namespace BarPromenade
             Transform room,
             HomeOcclusionRegistry occlusionRegistry)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Folded Newspaper",
-                room,
-                new Vector3(-1.42f, 0.025f, -1.90f),
-                new Vector3(0.74f, 0.025f, 0.56f),
-                DirtyPaper,
-                false);
             GameObject cardboardBox =
                 RuntimePrimitiveFactory.CreateBox(
                 "Home Cardboard Box",

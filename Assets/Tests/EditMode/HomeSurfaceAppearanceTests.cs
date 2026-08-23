@@ -128,7 +128,6 @@ namespace BarPromenade.Tests.EditMode
         private static readonly HashSet<string> FlatTintExemptNames =
             new HashSet<string>(StringComparer.Ordinal)
             {
-                "Home Entry Rug Stain",
                 "Home Exit Door Patch",
                 "Home Main Lamp Shade",
                 "Home Main Lamp Socket",
@@ -161,16 +160,13 @@ namespace BarPromenade.Tests.EditMode
                 "Home Kitchen Dirty Dishes",
                 "Home Kitchen Wet Rag",
                 "Home Kitchen Tin",
-                "Home Bed Crumpled Shirt",
                 "Home Radio Dial",
                 "Home Faded Photograph",
                 "Home Old Calendar",
                 "Home Pill Blister",
-                "Home Folded Newspaper",
                 "Home Cardboard Box",
                 "Home Floor Can",
                 "Home Lower Facade Damp Stain",
-                "Home Balcony Deck Water Stain",
                 "Home Balcony Drain",
                 "Home Balcony Door Handle",
                 "Home Refrigerator Lower Rust Bloom",

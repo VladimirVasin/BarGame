@@ -256,16 +256,6 @@ namespace BarPromenade
                 HomeSurfaceKind.PlankFloor,
                 SurfaceProjection.BoxXZ);
 
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Balcony Deck Water Stain",
-                parent,
-                new Vector3(
-                    bounds.center.x + 0.34f,
-                    0.004f,
-                    bounds.center.y - 0.46f),
-                new Vector3(0.82f, 0.008f, 0.70f),
-                FacadeStain,
-                false);
             RuntimePrimitiveFactory.CreateCylinder(
                 "Home Balcony Drain",
                 parent,

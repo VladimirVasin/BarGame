@@ -757,13 +757,6 @@ namespace BarPromenade
             Transform room,
             BarInteriorLayoutPlan plan)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Entrance Rug",
-                room,
-                new Vector3(0f, 0.016f, -6.45f),
-                new Vector3(3.65f, 0.03f, 2.25f),
-                new Color(0.21f, 0.03f, 0.045f),
-                false);
             BarInteriorFurnitureFootprint coatRack =
                 RequireFurniture(
                     plan,

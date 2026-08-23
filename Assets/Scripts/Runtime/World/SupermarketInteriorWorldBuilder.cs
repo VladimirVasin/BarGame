@@ -239,13 +239,6 @@ namespace BarPromenade
         {
             float front = -plan.RoomSize.y * 0.5f + 0.13f;
             RuntimePrimitiveFactory.CreateBox(
-                "Supermarket Entrance Mat",
-                root,
-                new Vector3(0f, 0.012f, -4.72f),
-                new Vector3(2.15f, 0.025f, 0.72f),
-                new Color(0.11f, 0.17f, 0.13f),
-                false);
-            RuntimePrimitiveFactory.CreateBox(
                 "Supermarket Faded Products Sign",
                 root,
                 new Vector3(0f, 2.83f, front),
