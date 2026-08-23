@@ -182,11 +182,18 @@ namespace BarPromenade
                 return;
             }
 
+            float azimuth = CityLighthouseLanternRules
+                .CurrentBeamAzimuthDegrees();
             lanternPivot.localRotation = Quaternion.Euler(
                 0f,
-                CityLighthouseLanternRules
-                    .CurrentBeamAzimuthDegrees(),
+                azimuth,
                 0f);
+
+            // The sea lays this lantern's glitter itself — no Light
+            // to follow — so it is handed the same azimuth the pivot
+            // was just turned to; the cones and the water can never
+            // drift apart.
+            CitySeaResources.SetLanternBeamAzimuth(azimuth);
 
             // Day and night both: the night factor only swings the
             // intensity between the day floor and the full blaze.

@@ -132,8 +132,30 @@ namespace BarPromenade
 
         // The glitter path under the pier's hand lamp, exactly as the
         // shore lamps are the point of the pond's. (The lighthouse
-        // offshore is presentation-only and casts no real light.)
+        // offshore casts no real light; its glitter is the virtual
+        // lantern below.)
         private const float AdditionalSpecular = 2.0f;
+
+        /// <summary>
+        /// The lighthouse's virtual lamp on the water. The island
+        /// carries no real Light by design, so the island builder
+        /// hands the sea the lantern's position and colour once, and
+        /// the lantern controller keeps the beam azimuth current
+        /// every frame. Strength sits under the real fixtures' —
+        /// forty metres of fog stand between the lens and the shore —
+        /// and the range covers the whole visible sea: the far clip
+        /// is 48 m, so the fog closes before the window does.
+        /// </summary>
+        private const float LighthouseGlint = 1.6f;
+        private const float LighthouseGlintRange = 60f;
+
+        // cos(FlashHalfWidthDegrees), precomputed once: the shader
+        // folds the sweep in cosine space and the rules class stays
+        // the single source of truth for the fourteen degrees.
+        private static readonly float FlashHalfWidthCosine =
+            Mathf.Cos(
+                CityLighthouseLanternRules.FlashHalfWidthDegrees *
+                Mathf.Deg2Rad);
 
         // Between the river's tight 48 and the pond's broad 16: the
         // sea lays a glitter road, but a windier one than a pond's.
@@ -197,6 +219,14 @@ namespace BarPromenade
             Shader.PropertyToID("_CrestFoamThreshold");
         private static readonly int ShoreFadeParamsId =
             Shader.PropertyToID("_ShoreFadeParams");
+        private static readonly int LanternPositionId =
+            Shader.PropertyToID("_LanternPosition");
+        private static readonly int LanternColorId =
+            Shader.PropertyToID("_LanternColor");
+        private static readonly int LanternGlintId =
+            Shader.PropertyToID("_LanternGlint");
+        private static readonly int LanternBeamDirId =
+            Shader.PropertyToID("_LanternBeamDir");
 
         private static Material waterMaterial;
 
@@ -205,6 +235,12 @@ namespace BarPromenade
         // and read back by CreateWaveProfile so the float bobbing on
         // the CPU and the sheet drawn on the GPU agree near the sand.
         private static float shoreFadeSouthZ;
+
+        // Where the lantern stands, once the island builder has said.
+        // Kept here so Configure can re-lay the whole lantern block on
+        // a fresh material, whichever order the builders ran in.
+        private static Vector3 lanternPosition;
+        private static bool lanternConfigured;
 
         public static Material WaterMaterial
         {
@@ -276,6 +312,10 @@ namespace BarPromenade
             material.SetFloat(
                 NightFactorId,
                 CityWaterResources.NightFactor);
+            if (lanternConfigured)
+            {
+                ApplyLantern(material);
+            }
         }
 
         /// <summary>
@@ -291,6 +331,73 @@ namespace BarPromenade
             WaterMaterial.SetVector(
                 ShoreFadeParamsId,
                 ShoreFadeParams(southZ));
+        }
+
+        /// <summary>
+        /// Turns the lighthouse's virtual lamp on, at the lantern's
+        /// world position. Called by the island builder when the
+        /// lantern goes up — the sea material may already exist or
+        /// not; either way the values survive on this class and
+        /// re-apply through Configure. Only the sea gets this: the
+        /// river and the fountain keep the shader's zero.
+        /// </summary>
+        internal static void ConfigureLighthouse(Vector3 position)
+        {
+            lanternPosition = position;
+            lanternConfigured = true;
+            ApplyLantern(WaterMaterial);
+        }
+
+        /// <summary>
+        /// Keeps the glitter's sweep in step with the cones overhead.
+        /// Called from the lantern controller's per-frame Apply with
+        /// the same azimuth the pivot was just turned to. Writes to
+        /// the cached material only — a per-frame path must never
+        /// construct one.
+        /// </summary>
+        internal static void SetLanternBeamAzimuth(float azimuthDegrees)
+        {
+            if (!lanternConfigured || waterMaterial == null)
+            {
+                return;
+            }
+
+            waterMaterial.SetVector(
+                LanternBeamDirId,
+                LanternBeamDir(azimuthDegrees));
+        }
+
+        private static void ApplyLantern(Material material)
+        {
+            material.SetVector(
+                LanternPositionId,
+                new Vector4(
+                    lanternPosition.x,
+                    lanternPosition.y,
+                    lanternPosition.z,
+                    1f /
+                    (LighthouseGlintRange * LighthouseGlintRange)));
+            material.SetColor(
+                LanternColorId,
+                CityLighthouseIslandResources.LighthouseLensColor);
+            material.SetFloat(LanternGlintId, LighthouseGlint);
+            material.SetVector(
+                LanternBeamDirId,
+                LanternBeamDir(
+                    CityLighthouseLanternRules
+                        .CurrentBeamAzimuthDegrees()));
+        }
+
+        // (sin, cos) matches the project's azimuth = Atan2(x, z): a
+        // beam at azimuth θ points along world (sin θ, 0, cos θ).
+        private static Vector4 LanternBeamDir(float azimuthDegrees)
+        {
+            float radians = azimuthDegrees * Mathf.Deg2Rad;
+            return new Vector4(
+                Mathf.Sin(radians),
+                Mathf.Cos(radians),
+                FlashHalfWidthCosine,
+                0f);
         }
 
         /// <summary>
@@ -337,6 +444,8 @@ namespace BarPromenade
         private static void Reset()
         {
             shoreFadeSouthZ = 0f;
+            lanternPosition = default;
+            lanternConfigured = false;
             if (waterMaterial != null)
             {
                 CityWaterResources.Unregister(waterMaterial);

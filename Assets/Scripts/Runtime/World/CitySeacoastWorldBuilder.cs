@@ -78,6 +78,16 @@ namespace BarPromenade
         internal static readonly Color EsplanadeLampGlow =
             new Color(1.08f, 0.62f, 0.28f);
 
+        // Each lamp's always-on fog halo: warm HDR multiples of the
+        // plafond glow, the same recipe as the river's lanterns, so
+        // the row reads down the waterline instead of dissolving.
+        private const float EsplanadeHaloInnerSize = 0.85f;
+        private const float EsplanadeHaloOuterSize = 2.40f;
+        private static readonly Color EsplanadeHaloInner =
+            new Color(2.81f, 1.61f, 0.73f, 0.20f);
+        private static readonly Color EsplanadeHaloOuter =
+            new Color(1.62f, 0.93f, 0.42f, 0.055f);
+
         private static readonly Color LampIronColor =
             new Color(0.070f, 0.075f, 0.075f);
 
@@ -256,6 +266,7 @@ namespace BarPromenade
         {
             var esplanadePosts = new List<Bounds>();
             var esplanadeBulbs = new List<Bounds>();
+            var esplanadeHaloPositions = new List<Vector3>();
             for (int index = 0; index < plan.Lamps.Count; index++)
             {
                 CitySeacoastLampDescriptor lamp = plan.Lamps[index];
@@ -278,6 +289,8 @@ namespace BarPromenade
                         esplanadeBulbs.Add(new Bounds(
                             lamp.GroundPosition + Vector3.up * 2.62f,
                             new Vector3(0.42f, 0.24f, 0.42f)));
+                        esplanadeHaloPositions.Add(
+                            lamp.GroundPosition + Vector3.up * 2.62f);
                         break;
                 }
             }
@@ -290,6 +303,21 @@ namespace BarPromenade
             Transform lights = new GameObject(
                 "Esplanade Lamps").transform;
             lights.SetParent(root, false);
+            // The blurred ball each lamp is at a distance in fog: the
+            // waterline row stays legible from the pier and the dunes
+            // where the bare plafond dissolves by twenty metres.
+            for (int index = 0;
+                 index < esplanadeHaloPositions.Count;
+                 index++)
+            {
+                CityLightHalo.CreateNightRegistered(
+                    lights,
+                    esplanadeHaloPositions[index],
+                    EsplanadeHaloInnerSize,
+                    EsplanadeHaloOuterSize,
+                    EsplanadeHaloInner,
+                    EsplanadeHaloOuter);
+            }
             RuntimePrimitiveFactory.CreateCombinedBoxes(
                 "Esplanade Lamp Posts",
                 lights,

@@ -150,6 +150,59 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   held identical by a contract test that reads the shader source for the
   shared literals. The basin keeps `_FacetStrength 0`: a faceted normal
   shatters the Morrowind mirror into per-triangle jumps.
+- **Accepted — Water light loops must speak Forward+:** The renderer runs
+  Forward+ (`PC_Renderer.asset`, `m_RenderingMode: 2`), where URP forces the
+  classic `_ADDITIONAL_LIGHTS` keyword off and serves lights through the
+  cluster list — a shader that reads additional lights without
+  `#pragma multi_compile _ _CLUSTER_LIGHT_LOOP` and a `LIGHT_LOOP_BEGIN/END`
+  loop compiles into a variant that never runs (the water's lamp glints were
+  dead for exactly this). The cluster macro is textual and demands a local
+  literally named `inputData` carrying `positionWS` and
+  `normalizedScreenSpaceUV`. `HomeOccluderDither` and `CityRiverWater` are
+  the two shaders that do it right; any future lit shader copies them.
+- **Accepted — The lighthouse reflects as a virtual lamp:** The island's
+  "never a real Light" rule survived contact with reflections: a real point
+  light at the lantern would need a ~40 m range and would fight the city's
+  fixtures for the light budget. Instead the sea material alone carries the
+  lantern as data — position, colour, strength (`_LanternGlint`, zero by
+  default and kept there by the river and basin), and a per-frame
+  `(sin, cos)` beam azimuth plus the flash half-width cosine, pushed from
+  the lantern controller's own `Apply` so the water's sweeping streak and
+  the additive cones can never disagree. The shader folds the two opposed
+  beams with one `abs(dot)` — `FlashFactorAt`'s `min(Δ, 180°−Δ)` in cosine
+  space — and the C# rules class stays the single source of truth for the
+  rotation and the 14°.
+- **Accepted — The quay lanterns are pool anchors, not lights:** The river's
+  waterside lanterns (13 m pitch, both wall faces, lens riding the falling
+  water datum) would cost ~36 permanent `Light`s done naively. Instead each
+  plants an aimed anchor transform and the anchors join
+  `CityNightAtmosphere`'s nearest-first pool after the street masts,
+  distinguished **by index alone** (`quayAnchorStartIndex`): a slot assigned
+  past the boundary takes a low wide profile (6 / 10 m / 130° / 70° — the
+  lens hangs ~1 m over what it lights, not the mast's 4.7 m) and the
+  anchor's own authored rotation, the fringe practicals' convention. The
+  12-light budget and the pool of 8 are untouched; near the river the pool
+  drains to the lanterns and the adjacent streets go emissive-only, which is
+  the art bible's stated preference. With lamps at the water the river also
+  turned `_AdditionalSpecular` on (1.2, the fountain's value) — the shader's
+  old "lamps too far up the bank to glint" rationale is dead. Geometry note:
+  the appearance walk expects the **Quay** sheet from any renderer whose
+  name contains "Quay Wall"/"Quay Frontage", so the iron bracket batch is
+  named "Waterside Lantern Brackets", and the lenses ride in the existing
+  "Embankment Lamp Glow" batch — the walk's single emissive exemption.
+- **Accepted — Fixed lamps own their halos; pooled spots carry light
+  alone:** An emissive lens is a couple of pixels the ExpSquared fog
+  swallows by ~25-30 m, so every fixed lamp in the city (street masts,
+  esplanade posts, both kinds of river embankment lamp) now builds its
+  own always-on `CityLightHalo` via
+  `CityLightHalo.CreateNightRegistered`, registered with
+  `CityNightGlowRegistry`'s new halo list — dead by day, full at
+  night. The blurred ball is the fixture's own; the pooled realtime
+  spots therefore hide their travelling halos
+  (`CityNightAtmosphere.pooledHaloVisible`, true only for the leased
+  fringe practical, which has no static duplicate) so an arriving
+  spot never doubles the blob. Street-mast halos stand apart from the
+  lamp anchors — the night presentation test pins anchors bare.
 - **Accepted — The channel has a floor:** The city deliberately emits no
   terrain under a river cell, so while the water was an opaque lid the
   channel was a hole with a lid on it. `CityRiverWorldBuilder.BuildRiverbed`

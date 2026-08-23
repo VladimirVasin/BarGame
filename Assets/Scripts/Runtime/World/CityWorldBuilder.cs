@@ -112,7 +112,8 @@ namespace BarPromenade
             GameObject riverRoot = CityRiverWorldBuilder.Build(
                 world,
                 layout,
-                mountainBoundaryPlan);
+                mountainBoundaryPlan,
+                out IReadOnlyList<Transform> riverQuayLampAnchors);
             BuildElevationStructures(world, layout);
             RoadFenceWorldBuilder.Build(world, fencePlan);
             GameObject parkRoot = BuildPark(
@@ -228,6 +229,7 @@ namespace BarPromenade
                 decorationPlan,
                 decorationRoot,
                 riverRoot,
+                riverQuayLampAnchors,
                 mountainBoundaryPlan,
                 mountainBoundaryRoot,
                 fringeYardPlan,

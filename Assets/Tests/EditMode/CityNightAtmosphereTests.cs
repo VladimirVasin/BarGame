@@ -142,6 +142,110 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        public void QuayLampAnchors_TakeTheLowWideProfileWhenNearest()
+        {
+            var owner = new GameObject("Quay Lamp Pool Test");
+            try
+            {
+                Transform player = CreateAnchor(
+                    owner.transform,
+                    "Player",
+                    new Vector3(200f, 2f, 0f),
+                    Vector3.forward);
+                List<Transform> streetAnchors = CreateStreetAnchors(
+                    owner.transform);
+                List<Transform> quayAnchors = CreateQuayAnchors(
+                    owner.transform);
+                var nightRoot = new GameObject("Night With Quay Lamps");
+                nightRoot.transform.SetParent(owner.transform, false);
+                CityNightAtmosphere atmosphere =
+                    nightRoot.AddComponent<CityNightAtmosphere>();
+
+                atmosphere.Initialize(
+                    player,
+                    streetAnchors,
+                    CreateBarPositions(),
+                    null,
+                    quayAnchors);
+
+                // The pool itself does not grow: quay lanterns are
+                // anchors, never lights of their own.
+                Assert.That(
+                    atmosphere.StreetLightPool.Count,
+                    Is.EqualTo(8));
+                Assert.That(
+                    atmosphere.RealtimeLightCount,
+                    Is.EqualTo(
+                        CityNightAtmosphere.MaximumRealtimeLights));
+                Assert.That(
+                    nightRoot.GetComponentsInChildren<Light>(true),
+                    Has.Length.EqualTo(
+                        CityNightAtmosphere.MaximumRealtimeLights));
+                Assert.That(
+                    atmosphere.AssignedStreetLightCount,
+                    Is.EqualTo(8));
+
+                // Standing by the river: the six quay anchors win six
+                // of the eight slots and carry the low wide profile
+                // with the anchor's own authored aim.
+                int quayAssigned = 0;
+                foreach (Light light in atmosphere.StreetLightPool)
+                {
+                    Transform match = quayAnchors.Find(anchor =>
+                        Vector3.Distance(
+                            anchor.position,
+                            light.transform.position) < 0.001f);
+                    if (match == null)
+                    {
+                        AssertStreetProfile(light);
+                        continue;
+                    }
+
+                    quayAssigned++;
+                    Assert.That(
+                        light.type,
+                        Is.EqualTo(LightType.Spot));
+                    Assert.That(light.intensity, Is.EqualTo(6f));
+                    Assert.That(light.range, Is.EqualTo(10f));
+                    Assert.That(light.spotAngle, Is.EqualTo(130f));
+                    Assert.That(
+                        light.innerSpotAngle,
+                        Is.EqualTo(70f));
+                    Assert.That(
+                        light.shadows,
+                        Is.EqualTo(LightShadows.None));
+                    Assert.That(
+                        Vector3.Angle(
+                            light.transform.forward,
+                            match.forward),
+                        Is.LessThan(0.01f));
+                }
+
+                Assert.That(
+                    quayAssigned,
+                    Is.EqualTo(quayAnchors.Count));
+
+                // Back on the street: the same pool lights are
+                // re-stamped with the mast profile the moment the
+                // masts are nearest.
+                player.position = Vector3.zero;
+                atmosphere.RefreshImmediate();
+
+                Assert.That(
+                    atmosphere.AssignedStreetLightCount,
+                    Is.EqualTo(8));
+                foreach (Light light in atmosphere.StreetLightPool)
+                {
+                    AssertStreetProfile(light);
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(owner);
+            }
+        }
+
         private static void AssertDefaultStreetAssignment(
             CityNightAtmosphere atmosphere,
             GameObject nightRoot)
@@ -249,6 +353,22 @@ namespace BarPromenade.Tests.EditMode
                     $"Street Anchor {index + 1}",
                     new Vector3(index * 2f - 9f, 4.7f, index % 2),
                     Vector3.forward));
+            }
+
+            return result;
+        }
+
+        private static List<Transform> CreateQuayAnchors(
+            Transform parent)
+        {
+            var result = new List<Transform>();
+            for (int index = 0; index < 6; index++)
+            {
+                result.Add(CreateAnchor(
+                    parent,
+                    $"Quay Lamp Anchor {index + 1}",
+                    new Vector3(200f, 1.2f, index * 13f - 32.5f),
+                    new Vector3(0.78f, -0.63f, 0f)));
             }
 
             return result;

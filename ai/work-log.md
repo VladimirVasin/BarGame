@@ -6,6 +6,123 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-23 — Every fixed lamp gets the blurred ball it is in fog
+
+- Standing on a bridge, the new quay lanterns and their glints were
+  invisible: an emissive lens is a couple of pixels, and the
+  exponential-squared fog eats a warm point by ~25-30 m. The user
+  asked for lamps visible at that distance "but blurred" — and for
+  the principle to hold for every light source in the city, the
+  bridge being only the example.
+- The mechanism the city already had for this is `CityLightHalo` —
+  the soft two-particle billboard the pooled lights and the one-off
+  site lights carry. New static factory
+  `CityLightHalo.CreateNightRegistered` builds a halo with no Light
+  of its own and hands it to `CityNightGlowRegistry`, which grew a
+  halo list next to its renderers: dead by day, full at night, the
+  same night-factor path as every electric glow. Rolled out to every
+  fixed lamp that lacked one: the river's waterside lanterns AND its
+  upper embankment posts, every street mast (halo stands apart from
+  the anchor — the night presentation test pins anchors bare), and
+  the seacoast esplanade posts. The hut door lamp, hand lamp,
+  cemetery, park, bars and practicals already carried theirs.
+- With every fixture wearing its own halo, the pooled spots' 
+  travelling halos would double the blob on arrival — so the pool now
+  carries light alone: `pooledHaloVisible[]` keeps a slot's halo
+  hidden except for the leased fringe practical (which has no static
+  duplicate). `CityNightPresentationPlayModeTests` updated to match:
+  every realtime light still owns a halo on the atmosphere material,
+  but only the bar lights must show theirs.
+- The river's glints also came up to the fixtures now standing over
+  the water: `_AdditionalSpecular` 1.2 → 2.0 (the sea's value) and
+  `_SpecularPower` explicitly 24 (down from the inherited tight 48,
+  toward the sea's 20) so a lantern lays a glitter road the fog can
+  be seen eating rather than a pin-prick it swallows whole.
+- Verified: all three csproj compile clean; filtered EditMode green
+  40/40 (river planner incl. the halo-count contract for wall +
+  upper lamps, surface appearance with the "Fog Light Halo"
+  exemption, night atmosphere incl. the practical-only pooled-halo
+  visibility, river water, seacoast planner). Not run: the PlayMode
+  night presentation fixture (edited mechanically; scene-based run
+  is expensive) and full suites. Play-mode eyeball still owed.
+
+## 2026-08-23 — The quay wall hangs its lanterns over the river
+
+- Asked for lamps down on the concrete rise so the parapet view reads
+  a row. The wall had nothing: the upper embankment lamps stand 52 m
+  apart against a fog that kills a warm point by ~30 m, so the player
+  never saw a rhythm. New waterside lanterns hang on both quay wall
+  faces — back plate, arm, hood (iron batch "Waterside Lantern
+  Brackets", collider-free, the name deliberately avoiding the
+  appearance resolver's "Quay Wall" substring trap) and a lens riding
+  in the same "Embankment Lamp Glow" batch and registry entry as the
+  upper plafonds. `CreateQuayWallLampPositions`: 13 m pitch, lens at
+  the water datum + 1.02 (the datum falls 2.4 → 0 toward the sea, so
+  the row follows it), skipping the three bridges (6 m), the landing
+  frontages (1 m) and the south cave approach (first lamp z = −143,
+  the art bible keeps the plug dark) — 18 per bank.
+- The nearest fixtures burn with real light at no budget cost: each
+  lantern also plants a "Quay Lamp Anchor" aimed down-and-across the
+  channel, and the anchors join `CityNightAtmosphere`'s nearest-first
+  pool (12 lights total, 8 pooled — unchanged). The pool distinguishes
+  them by index alone: past `quayAnchorStartIndex` a slot takes the
+  low wide profile (6 / 10 m / 130° / 70° against the street 31 /
+  16.5 / 105° / 55° — the lens hangs ~1 m over what it lights, not
+  4.7) and the anchor's own authored aim, the practicals' convention.
+  Plumbing is the `FringePracticalAnchors` shape: river builder `out`s
+  the anchors → `CityWorldResult.RiverQuayLampAnchors` →
+  `CityGameRoot` → `InitializeLighting` → `Initialize`, all via
+  optional parameters so every existing call site compiles untouched.
+- The river now glints: `_AdditionalSpecular` 0 → 1.2 (the fountain's
+  value; the sea's 2.0 is too loud for a narrow channel seen from a
+  quay right above it). The old rationale — lamps too far up the bank
+  to glint — died the moment the lanterns came down to the water;
+  both stale comments (material and shader Properties) rewritten.
+- Verified: runtime + test csproj compile clean; filtered EditMode
+  green 18/18 (planner incl. the new pitch/skips/datum-height test,
+  atmosphere incl. the new pool-profile/re-stamp test, river water)
+  plus 10/10 appearance (the walk accepts both new batches). Not run:
+  full suites, play-mode eyeballing of the row and the glints.
+
+## 2026-08-23 — The water learns to catch the lamps and the lighthouse
+
+- Asked for light-source glints on the water, the lighthouse included.
+  Found the lamp glints already written and already dead: the renderer
+  runs Forward+ (`PC_Renderer.asset`, `m_RenderingMode: 2`), where URP
+  forces `_ADDITIONAL_LIGHTS` off and hands lights out through the
+  cluster list — `CityRiverWater.shader` never declared
+  `_CLUSTER_LIGHT_LOOP`, so its additional-light loop compiled into a
+  variant that never ran. Added the pragma and restructured the loop
+  through `LIGHT_LOOP_BEGIN/END` over a local literally named
+  `inputData` (the cluster macro is textual — `HomeOccluderDither` was
+  the in-repo precedent), keeping the classic pair as the plain-Forward
+  fallback. The pier hand lamp and the boat-hut bulb now lay their
+  glitter on the sea, as `_AdditionalSpecular 2.0` always intended.
+- The lighthouse got a virtual lamp instead of a real one — the island's
+  "never a real Light" stands. Four new tail properties in the water
+  CBUFFER (`_LanternPosition` xyz + 1/range², `_LanternColor`,
+  `_LanternGlint` defaulting 0 so river and basin stay dark,
+  `_LanternBeamDir` as sin/cos azimuth + cos of the flash half-width):
+  the same banded Blinn-Phong as the fixtures, windowed by a soft
+  distance falloff (range 60 — fog and the 48 m far clip close first),
+  swept by `abs(dot(bearing, beamDir))` folding the two opposed beams
+  into one line so the streak crosses the sea in step with the cones,
+  over a 0.15 constant shimmer, dimmed to the controller's 0.6 day
+  floor by `_NightFactor`. `CitySeaResources.ConfigureLighthouse` is
+  the `ConfigureShoreFade` shape (island builder pushes position once,
+  re-applied through `Configure` against build order);
+  `SetLanternBeamAzimuth` is fed per frame from the lantern
+  controller's `Apply` with the very azimuth the pivot was turned to,
+  and writes only the cached material.
+- Verified: runtime + test csproj compile clean; filtered EditMode run
+  green, 35/35 — the shader-compile gate, the wave-model contract
+  (`WaveField`/`ShoreEnvelope` untouched), the fountain/seacoast
+  material invariants, and two new tests: the island build lays the
+  glint on the sea alone (river and basin keep the shader's zero) and
+  the azimuth push mirrors the rules' `Atan2(x, z)` convention and
+  14° half-width cosine. Not run: full suites, play-mode eyeballing of
+  the sweep.
+
 ## 2026-08-23 — The water learns what the mattress knew
 
 - Asked for water "on the mattress's principle" — real waves, not a flat

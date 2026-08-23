@@ -76,10 +76,11 @@ Shader "Bar Promenade/City River Water"
         _FresnelStrength("Fresnel Strength", Range(0, 1)) = 0.30
         _BandSteps("Band Steps", Float) = 4
 
-        // Still-water additions, off by default, which is what the
-        // river keeps them at: a channel this narrow, seen from a quay
-        // above it, has its lamps too far up the bank to glint, and its
-        // edge foam is white water rather than anything growing.
+        // Still-water additions, off by default. Every body turns the
+        // lamp glint on now - the river at the sea's 2.0 since its
+        // waterside lanterns came down to hang a metre over the
+        // channel - but the edge-foam colour stays each body's own
+        // choice.
         _AdditionalSpecular("Additional Light Specular", Range(0, 2)) = 0
         _FoamColor("Foam Colour", Color) = (1, 1, 1, 1)
 
@@ -93,6 +94,18 @@ Shader "Bar Promenade/City River Water"
         _ReflectionCube("Reflection Cubemap", Cube) = "black" {}
         _ReflectionStrength("Reflection Strength", Range(0, 2)) = 0
         _ReflectionDistortion("Reflection Distortion", Range(0, 1)) = 0.30
+
+        // The lighthouse's virtual lamp. The island deliberately
+        // carries no real Light - a point light could never reach the
+        // shore across forty metres of sea - so the sea is told where
+        // the lantern stands and which way its beams point, and lays
+        // the glitter itself. Zero by default, which the river and
+        // the fountain keep: only the island builder turns it on, and
+        // only on the sea.
+        _LanternPosition("Lantern Position XYZ / InvRangeSq W", Vector) = (0, 0, 0, 0)
+        _LanternColor("Lantern Color", Color) = (0.95, 0.90, 0.78, 1)
+        _LanternGlint("Lantern Glint Strength", Range(0, 4)) = 0
+        _LanternBeamDir("Lantern Beam (Sin, Cos, CosHalfWidth)", Vector) = (0, 1, 1, 0)
     }
 
     SubShader
@@ -125,7 +138,14 @@ Shader "Bar Promenade/City River Water"
             #pragma multi_compile_fog
             #pragma multi_compile_instancing
             // The lamp glints on still water are URP additional lights.
+            // The renderer runs Forward+, where URP turns the classic
+            // _ADDITIONAL_LIGHTS keyword off and hands lights out through
+            // the cluster list instead - without the cluster keyword the
+            // glint loop below compiles into a variant that never runs.
+            // Both are kept: the cluster pair for the shipping renderer,
+            // the classic pair as the plain-Forward fallback.
             #pragma multi_compile_fragment _ _ADDITIONAL_LIGHTS
+            #pragma multi_compile _ _CLUSTER_LIGHT_LOOP
 
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Core.hlsl"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
@@ -169,6 +189,10 @@ Shader "Bar Promenade/City River Water"
                 half4 _FoamColor;
                 half _ReflectionStrength;
                 half _ReflectionDistortion;
+                float4 _LanternPosition;
+                half4 _LanternColor;
+                half _LanternGlint;
+                float4 _LanternBeamDir;
             CBUFFER_END
 
             struct Attributes
@@ -547,11 +571,20 @@ Shader "Bar Promenade/City River Water"
                 #ifdef _ADDITIONAL_LIGHTS
                 if (_AdditionalSpecular > 0.0h)
                 {
+                    // The cluster form of LIGHT_LOOP_BEGIN expands
+                    // ClusterInit over a local literally named
+                    // `inputData`, and reads only these two fields.
+                    InputData inputData = (InputData)0;
+                    inputData.positionWS = input.positionWS;
+                    inputData.normalizedScreenSpaceUV =
+                        GetNormalizedScreenSpaceUV(input.positionCS);
+
+                    // The clamp only reaches the plain-Forward
+                    // fallback: the cluster loop ignores its argument
+                    // and walks the tile's own list, which the lamps'
+                    // short ranges keep at boat-station size anyway.
                     uint lightCount = min(GetAdditionalLightsCount(), 4u);
-                    for (uint lightIndex = 0u;
-                         lightIndex < lightCount;
-                         lightIndex++)
-                    {
+                    LIGHT_LOOP_BEGIN(lightCount)
                         Light extra = GetAdditionalLight(
                             lightIndex, input.positionWS);
                         float3 halfExtra = normalize(
@@ -563,9 +596,66 @@ Shader "Bar Promenade/City River Water"
                         color += extra.color * extra.distanceAttenuation *
                                  glint * _SpecularStrength *
                                  _AdditionalSpecular;
-                    }
+                    LIGHT_LOOP_END
                 }
                 #endif
+
+                // The lighthouse. Its lantern is not a Light - the
+                // island runs on rules and additive cones - so its
+                // glitter is a virtual lamp: the same banded highlight
+                // as the fixtures above, windowed by distance and swept
+                // by the two opposed beams, so the streak crosses the
+                // sea in step with the cones overhead. A faint constant
+                // shimmer stays between passes: a lit lens on the water
+                // even when the beam faces elsewhere.
+                if (_LanternGlint > 0.0h)
+                {
+                    float3 toLantern =
+                        _LanternPosition.xyz - input.positionWS;
+                    float3 lanternDir = normalize(toLantern);
+                    float3 halfLantern =
+                        normalize(lanternDir + viewDirWS);
+                    float lanternGlint = pow(
+                        saturate(dot(normalWS, halfLantern)),
+                        max(1.0, _SpecularPower));
+                    lanternGlint =
+                        floor(lanternGlint * steps) / steps;
+
+                    // A soft window, not 1/d^2: at forty metres under
+                    // a 48 m far clip physical falloff leaves nothing,
+                    // and the fog already tells the distance story.
+                    // w is 1/range^2.
+                    float atten = saturate(
+                        1.0 -
+                        dot(toLantern, toLantern) * _LanternPosition.w);
+                    atten *= atten;
+
+                    // The sweep: bearing from lantern to pixel against
+                    // the beam axis (sin, cos). abs() folds the opposed
+                    // pair into one line - FlashFactorAt's
+                    // min(delta, 180 - delta) in cosine space - and z
+                    // carries cos(FlashHalfWidthDegrees) from the C#
+                    // rules. The length guard is real: the sea's apron
+                    // runs under the lantern itself.
+                    float2 offsetXZ =
+                        input.positionWS.xz - _LanternPosition.xz;
+                    float2 bearing =
+                        offsetXZ / max(length(offsetXZ), 1e-3);
+                    float alongBeam =
+                        abs(dot(bearing, _LanternBeamDir.xy));
+                    float sweepT = saturate(
+                        (alongBeam - _LanternBeamDir.z) /
+                        max(1e-4, 1.0 - _LanternBeamDir.z));
+                    float sweep = sweepT * sweepT * (3.0 - 2.0 * sweepT);
+
+                    // The day floor mirrors the lantern controller's
+                    // DayIntensity = 0.6: a landfall light burns
+                    // through the day haze too.
+                    float lit = 0.15 + 0.85 * sweep;
+                    color += _LanternColor.rgb * lanternGlint * atten *
+                             lit * _SpecularStrength * _LanternGlint *
+                             lerp(0.6h, 1.0h, _NightFactor);
+                }
 
                 // Fresnel: at a grazing angle a river stops being a
                 // window and starts being a mirror of the sky, which at

@@ -113,12 +113,14 @@ namespace BarPromenade
             Transform player,
             int citySeed,
             IReadOnlyList<CityFringePracticalAnchor>
-                fringePracticalAnchors = null)
+                fringePracticalAnchors = null,
+            IReadOnlyList<Transform> quayLampAnchors = null)
         {
             InitializeAtmosphere(
                 player,
                 barLightPositions,
-                fringePracticalAnchors);
+                fringePracticalAnchors,
+                quayLampAnchors);
             if (FogField != null)
             {
                 return;
@@ -135,7 +137,8 @@ namespace BarPromenade
             Transform player,
             IReadOnlyList<Vector3> lightPositions,
             IReadOnlyList<CityFringePracticalAnchor>
-                fringePracticalAnchors = null)
+                fringePracticalAnchors = null,
+            IReadOnlyList<Transform> quayLampAnchors = null)
         {
             if (Atmosphere != null)
             {
@@ -152,7 +155,8 @@ namespace BarPromenade
                 player,
                 LampAnchors,
                 lightPositions,
-                fringePracticalAnchors);
+                fringePracticalAnchors,
+                quayLampAnchors);
             Atmosphere.SetNightFactor(nightFactor);
         }
     }

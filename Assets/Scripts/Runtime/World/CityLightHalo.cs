@@ -38,6 +38,39 @@ namespace BarPromenade
             haloRenderer != null && haloRenderer.enabled;
         public float IntensityFactor => intensityFactor;
 
+        /// <summary>
+        /// Builds a fog halo with no Light of its own and hands it to
+        /// <see cref="CityNightGlowRegistry"/> so it follows the night
+        /// factor: dead by day, full at night. This is how every fixed
+        /// lamp in the city stays visible at a distance — the emissive
+        /// lens is a couple of pixels the fog swallows by twenty
+        /// metres, where the halo billboard is the blurred ball of
+        /// light a lamp actually is in fog. The pooled realtime lights
+        /// carry light only; the blurred presence is the fixture's own.
+        /// </summary>
+        public static CityLightHalo CreateNightRegistered(
+            Transform parent,
+            Vector3 localPosition,
+            float innerSize,
+            float outerSize,
+            Color innerColor,
+            Color outerColor)
+        {
+            var haloObject = new GameObject("Fog Light Halo");
+            haloObject.transform.SetParent(parent, false);
+            haloObject.transform.localPosition = localPosition;
+            CityLightHalo halo =
+                haloObject.AddComponent<CityLightHalo>();
+            halo.Initialize(
+                CityNightResources.AtmosphereMaterial,
+                innerSize,
+                outerSize,
+                innerColor,
+                outerColor);
+            CityNightGlowRegistry.RegisterHalo(halo);
+            return halo;
+        }
+
         public void Initialize(
             Material sharedMaterial,
             float innerSize,

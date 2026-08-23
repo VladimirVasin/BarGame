@@ -409,7 +409,8 @@ namespace BarPromenade
             Night.InitializeLighting(
                 Player.GameObject.transform,
                 Layout.Seed,
-                World.FringePracticalAnchors);
+                World.FringePracticalAnchors,
+                World.RiverQuayLampAnchors);
             DayNight = gameObject.AddComponent<CityDayNightController>();
             DayNight.Initialize(Night);
             BusPlan = CityBusPlanner.Create(

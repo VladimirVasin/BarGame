@@ -26,6 +26,7 @@ namespace BarPromenade
             CityDecorationPlan decorationPlan,
             GameObject decorationRoot,
             GameObject riverRoot,
+            IReadOnlyList<Transform> riverQuayLampAnchors,
             CityMountainBoundaryPlan mountainBoundaryPlan,
             GameObject mountainBoundaryRoot,
             CityFringeYardPlan fringeYardPlan,
@@ -68,6 +69,8 @@ namespace BarPromenade
                 ? decorationRoot
                 : throw new ArgumentNullException(nameof(decorationRoot));
             RiverRoot = riverRoot;
+            RiverQuayLampAnchors = riverQuayLampAnchors ??
+                Array.Empty<Transform>();
             MountainBoundaryPlan = mountainBoundaryPlan ??
                 throw new ArgumentNullException(
                     nameof(mountainBoundaryPlan));
@@ -119,6 +122,15 @@ namespace BarPromenade
         public CityDecorationPlan DecorationPlan { get; }
         public GameObject DecorationRoot { get; }
         public GameObject RiverRoot { get; }
+
+        /// <summary>
+        /// The waterside lantern anchors on the quay wall faces —
+        /// candidates for the night atmosphere's pooled lights, so
+        /// the fixtures nearest the player burn with real light.
+        /// Empty when the layout carries no river.
+        /// </summary>
+        public IReadOnlyList<Transform> RiverQuayLampAnchors { get; }
+
         public CityMountainBoundaryPlan MountainBoundaryPlan { get; }
         public GameObject MountainBoundaryRoot { get; }
         public CityFringeYardPlan FringeYardPlan { get; }

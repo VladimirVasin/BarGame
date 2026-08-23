@@ -194,7 +194,19 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     halo.HaloRenderer.sharedMaterial,
                     Is.SameAs(CityNightResources.AtmosphereMaterial));
-                Assert.That(halo.IsVisible, Is.True);
+            }
+
+            // Only the bar lights still show their own halos: the
+            // pooled spots bring light alone, because every fixed
+            // lamp now carries its own always-on halo and a pooled
+            // arrival must not double the blob.
+            for (int index = 0;
+                 index < atmosphere.BarLights.Count;
+                 index++)
+            {
+                CityLightHalo barHalo = atmosphere.BarLights[index]
+                    .GetComponentInChildren<CityLightHalo>(true);
+                Assert.That(barHalo.IsVisible, Is.True);
             }
 
             for (int index = 0;

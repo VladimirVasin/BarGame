@@ -276,6 +276,114 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void IslandBuild_LaysTheLanternGlintOnTheSeaAlone()
+        {
+            CityLayout layout = CreateDefaultLayout();
+            CityLighthouseIslandPlan plan = CreateDefaultPlan(
+                layout,
+                out _);
+
+            var parent =
+                new GameObject("Lighthouse Glint Test").transform;
+            try
+            {
+                CityLighthouseIslandWorldBuilder.Build(parent, plan);
+
+                // The lantern is not a Light; building the island is
+                // what tells the sea where it stands.
+                Material sea = CitySeaResources.WaterMaterial;
+                Assert.That(
+                    sea.GetFloat("_LanternGlint"),
+                    Is.GreaterThan(0f));
+
+                // The parent stands at the origin, so the pushed
+                // world position is the plan's own.
+                Vector4 position = sea.GetVector("_LanternPosition");
+                Assert.That(
+                    position.x,
+                    Is.EqualTo(plan.LanternPosition.x)
+                        .Within(1e-4f));
+                Assert.That(
+                    position.y,
+                    Is.EqualTo(plan.LanternPosition.y)
+                        .Within(1e-4f));
+                Assert.That(
+                    position.z,
+                    Is.EqualTo(plan.LanternPosition.z)
+                        .Within(1e-4f));
+                Assert.That(position.w, Is.GreaterThan(0f));
+
+                Assert.That(
+                    sea.GetColor("_LanternColor"),
+                    Is.EqualTo(
+                        CityLighthouseIslandResources
+                            .LighthouseLensColor));
+
+                // A unit azimuth plus the half-width cosine: the
+                // rules class stays the single source of truth for
+                // the fourteen degrees.
+                Vector4 beam = sea.GetVector("_LanternBeamDir");
+                Assert.That(
+                    new Vector2(beam.x, beam.y).magnitude,
+                    Is.EqualTo(1f).Within(1e-4f));
+                Assert.That(
+                    beam.z,
+                    Is.EqualTo(Mathf.Cos(
+                        CityLighthouseLanternRules
+                            .FlashHalfWidthDegrees *
+                        Mathf.Deg2Rad)).Within(1e-5f));
+
+                // The sea's alone: the river and the basin keep the
+                // shader's zero, the reflection cube's clause
+                // restated for the lantern.
+                Assert.That(
+                    CityRiverResources.WaterMaterial
+                        .GetFloat("_LanternGlint"),
+                    Is.Zero);
+                Assert.That(
+                    CityFountainWaterResources.BasinMaterial
+                        .GetFloat("_LanternGlint"),
+                    Is.Zero);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(
+                    parent.gameObject);
+            }
+        }
+
+        [Test]
+        public void LanternBeamAzimuthPush_MirrorsTheRules()
+        {
+            CitySeaResources.ConfigureLighthouse(
+                new Vector3(4f, 12f, 80f));
+            Material sea = CitySeaResources.WaterMaterial;
+
+            float halfWidthCosine = Mathf.Cos(
+                CityLighthouseLanternRules.FlashHalfWidthDegrees *
+                Mathf.Deg2Rad);
+
+            // The project's azimuth is Atan2(x, z): due east is 90,
+            // and a beam at azimuth theta points along
+            // (sin theta, cos theta) in world XZ.
+            CitySeaResources.SetLanternBeamAzimuth(90f);
+            Vector4 east = sea.GetVector("_LanternBeamDir");
+            Assert.That(east.x, Is.EqualTo(1f).Within(1e-5f));
+            Assert.That(east.y, Is.EqualTo(0f).Within(1e-5f));
+            Assert.That(
+                east.z,
+                Is.EqualTo(halfWidthCosine).Within(1e-5f));
+
+            CitySeaResources.SetLanternBeamAzimuth(0f);
+            Vector4 north = sea.GetVector("_LanternBeamDir");
+            Assert.That(north.x, Is.EqualTo(0f).Within(1e-5f));
+            Assert.That(north.y, Is.EqualTo(1f).Within(1e-5f));
+            Assert.That(
+                north.z,
+                Is.EqualTo(halfWidthCosine).Within(1e-5f));
+        }
+
+        [Test]
         public void NoSeacoast_PlansNoIsland()
         {
             // The legacy layouts without a dressed shore keep their

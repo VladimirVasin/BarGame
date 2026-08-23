@@ -179,6 +179,11 @@ namespace BarPromenade
                 lensRenderer,
                 beamRenderers,
                 assembly.position);
+
+            // The lantern casts no real light, but the sea is told
+            // where it stands so the water can lay its glitter — the
+            // controller keeps the beam azimuth current from here on.
+            CitySeaResources.ConfigureLighthouse(assembly.position);
         }
 
         private static void ConfigurePresentationRenderer(

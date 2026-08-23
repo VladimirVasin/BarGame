@@ -310,7 +310,8 @@ namespace BarPromenade.Tests.EditMode
         /// three, the channel floor and its submerged sides take the bed
         /// sheet, the park footbridge takes the park's timber, and only
         /// the water and the lamp glow stay flat. A new quay object or
-        /// bridge member that ships untextured fails here.
+        /// bridge member that ships untextured fails here. The lantern
+        /// fog halos are flat too: billboards, not surfaces.
         /// </summary>
         [Test]
         public void BuildRiver_TexturesEveryBankAndBridgeMember()
@@ -470,7 +471,8 @@ namespace BarPromenade.Tests.EditMode
             }
 
             string name = renderer.name;
-            if (name == "Embankment Lamp Glow")
+            if (name == "Embankment Lamp Glow" ||
+                name == "Fog Light Halo")
             {
                 return null;
             }

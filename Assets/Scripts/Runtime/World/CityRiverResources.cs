@@ -50,6 +50,8 @@ namespace BarPromenade
 
         private static readonly int AdditionalSpecularId =
             Shader.PropertyToID("_AdditionalSpecular");
+        private static readonly int SpecularPowerId =
+            Shader.PropertyToID("_SpecularPower");
         private static readonly int RippleMapId =
             Shader.PropertyToID("_RippleMap");
         private static readonly int FoamMapId =
@@ -90,11 +92,18 @@ namespace BarPromenade
                             0f,
                             0f));
 
-                    // The sea's additional-specular stays off here, so
-                    // the river renders exactly as it always did. Its
-                    // foam colour keeps the shader's white default:
-                    // white water is what a current makes.
-                    waterMaterial.SetFloat(AdditionalSpecularId, 0f);
+                    // The waterside lanterns hang about a metre over
+                    // the channel now, so the old rationale - lamps
+                    // too far up the bank to glint - is dead: the
+                    // river takes the sea's full 2.0, and widens its
+                    // highlight from the shader's tight 48 toward the
+                    // sea's 20 so a lantern lays a glitter road the
+                    // fog can be seen eating, not a pin-prick it
+                    // swallows whole. Foam colour keeps the shader's
+                    // white default: white water is what a current
+                    // makes.
+                    waterMaterial.SetFloat(AdditionalSpecularId, 2.0f);
+                    waterMaterial.SetFloat(SpecularPowerId, 24f);
                     CityWaterResources.Register(waterMaterial);
                 }
 

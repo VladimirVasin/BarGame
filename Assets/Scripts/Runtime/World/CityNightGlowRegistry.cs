@@ -27,6 +27,8 @@ namespace BarPromenade
             Shader.PropertyToID("_Color");
 
         private static readonly List<Entry> entries = new List<Entry>();
+        private static readonly List<CityLightHalo> halos =
+            new List<CityLightHalo>();
         private static readonly MaterialPropertyBlock properties =
             new MaterialPropertyBlock();
         private static float nightFactor = 1f;
@@ -44,6 +46,26 @@ namespace BarPromenade
             var entry = new Entry(renderer, litColor);
             entries.Add(entry);
             Apply(entry);
+        }
+
+        /// <summary>
+        /// A fog halo with no Light of its own — the river's waterside
+        /// lanterns burn this way: too many for the pooled budget, but
+        /// a bare emissive lens is a couple of pixels the fog swallows,
+        /// where the halo billboard is the blurred ball of light a
+        /// lamp actually is at a distance in fog. Follows the same
+        /// night factor as every electric glow: dead by day, full at
+        /// night.
+        /// </summary>
+        public static void RegisterHalo(CityLightHalo halo)
+        {
+            if (halo == null)
+            {
+                throw new ArgumentNullException(nameof(halo));
+            }
+
+            halos.Add(halo);
+            halo.SetIntensityFactor(nightFactor);
         }
 
         public static void SetNightFactor(float factor)
@@ -65,6 +87,17 @@ namespace BarPromenade
                 }
 
                 Apply(entries[index]);
+            }
+
+            for (int index = halos.Count - 1; index >= 0; index--)
+            {
+                if (halos[index] == null)
+                {
+                    halos.RemoveAt(index);
+                    continue;
+                }
+
+                halos[index].SetIntensityFactor(nightFactor);
             }
         }
 
@@ -88,6 +121,7 @@ namespace BarPromenade
         private static void ResetEntries()
         {
             entries.Clear();
+            halos.Clear();
             nightFactor = 1f;
         }
 

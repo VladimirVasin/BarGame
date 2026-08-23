@@ -339,6 +339,111 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void QuayWallLamps_HangLowOnBothWallFacesAtEvenPitch()
+        {
+            IReadOnlyList<Vector3> lamps =
+                CityRiverWorldBuilder.CreateQuayWallLampPositions(
+                    layout);
+            Rect waterBounds = layout.River.Segments[0].WaterBounds;
+
+            foreach (bool west in new[] { true, false })
+            {
+                float faceX = west
+                    ? waterBounds.xMin
+                    : waterBounds.xMax;
+                List<Vector3> bank = lamps
+                    .Where(lamp => west
+                        ? lamp.x < waterBounds.center.x
+                        : lamp.x > waterBounds.center.x)
+                    .OrderBy(lamp => lamp.z)
+                    .ToList();
+
+                // A rhythm the fog can carry: enough fixtures that
+                // two or three always burn inside its ~30 m of
+                // legibility.
+                Assert.That(
+                    bank,
+                    Has.Count.GreaterThanOrEqualTo(15),
+                    west ? "west" : "east");
+
+                for (int index = 0; index < bank.Count; index++)
+                {
+                    Vector3 lamp = bank[index];
+                    Assert.That(
+                        lamp.x,
+                        Is.EqualTo(faceX).Within(0.001f),
+                        lamp.ToString());
+
+                    // The south cave approach stays dark and the
+                    // north stair handoff stays clear.
+                    Assert.That(lamp.z, Is.InRange(-143f, 151f));
+
+                    foreach (CityRiverBridgeDescriptor bridge in
+                             layout.River.Bridges)
+                    {
+                        Assert.That(
+                            Mathf.Abs(
+                                bridge.DeckBounds.center.y - lamp.z),
+                            Is.GreaterThanOrEqualTo(6f),
+                            lamp.ToString());
+                    }
+
+                    Assert.That(
+                        layout.River.Landings.Any(landing =>
+                            ContainsWithClearance(
+                                landing.StairBounds, lamp, 1.0f) ||
+                            ContainsWithClearance(
+                                landing.PlatformBounds, lamp, 1.0f)),
+                        Is.False,
+                        lamp.ToString());
+
+                    // The lens rides the falling water datum: low on
+                    // the wall, above the visible surface, under the
+                    // parapet.
+                    float datum = SampleWaterDatum(
+                        layout.River,
+                        lamp.z);
+                    Assert.That(
+                        lamp.y - datum,
+                        Is.EqualTo(1.02f).Within(0.001f),
+                        lamp.ToString());
+                    Assert.That(
+                        lamp.y,
+                        Is.GreaterThan(datum - 0.12f));
+                    foreach (CityRiverPromenadeDescriptor promenade in
+                             layout.River.Promenades.Where(candidate =>
+                                 candidate.WestBank == west))
+                    {
+                        float promenadeY = Mathf.Lerp(
+                            promenade.SouthY,
+                            promenade.NorthY,
+                            Mathf.InverseLerp(
+                                promenade.Bounds.yMin,
+                                promenade.Bounds.yMax,
+                                lamp.z));
+                        Assert.That(
+                            lamp.y,
+                            Is.LessThan(promenadeY),
+                            lamp.ToString());
+                    }
+
+                    if (index > 0)
+                    {
+                        float step = lamp.z - bank[index - 1].z;
+                        float multiple = step / 13f;
+                        Assert.That(step, Is.GreaterThan(0f));
+                        Assert.That(step, Is.LessThanOrEqualTo(39f));
+                        Assert.That(
+                            multiple,
+                            Is.EqualTo(Mathf.Round(multiple))
+                                .Within(0.001f),
+                            lamp.ToString());
+                    }
+                }
+            }
+        }
+
+        [Test]
         public void TimberFootbridge_UsesItsAuthoredNarrowDeck()
         {
             CityRiverBridgeDescriptor footbridge = layout.River.Bridges
@@ -457,6 +562,20 @@ namespace BarPromenade.Tests
                     Is.EqualTo(layout.River.Segments.Count));
                 Assert.That(bridges, Is.Not.Null);
                 Assert.That(bridges.childCount, Is.EqualTo(3));
+                Transform lamps = river.transform.Find(
+                    "Embankment Lamps");
+                Assert.That(lamps, Is.Not.Null);
+                Assert.That(
+                    lamps.GetComponentsInChildren<CityLightHalo>(true),
+                    Has.Length.EqualTo(
+                        CityRiverWorldBuilder
+                            .CreateQuayWallLampPositions(layout)
+                            .Count +
+                        CityRiverWorldBuilder
+                            .CreatePromenadeLampPositions(layout)
+                            .Count),
+                    "Every embankment lamp, wall and post alike, " +
+                    "hangs its own fog halo.");
                 CityRiverBridgeDescriptor footbridge = layout.River.Bridges
                     .Single(bridge => bridge.Definition.Role ==
                         CityBridgeRole.ParkFootbridge);
@@ -697,5 +816,28 @@ namespace BarPromenade.Tests
             point.x <= bounds.xMax + clearance &&
             point.z >= bounds.yMin - clearance &&
             point.z <= bounds.yMax + clearance;
+
+        private static float SampleWaterDatum(
+            CityRiverPlan plan,
+            float z)
+        {
+            CityRiverSegmentDescriptor segment = plan.Segments[0];
+            for (int index = 0; index < plan.Segments.Count; index++)
+            {
+                segment = plan.Segments[index];
+                if (z <= segment.WaterBounds.yMax)
+                {
+                    break;
+                }
+            }
+
+            return Mathf.Lerp(
+                segment.SouthWaterY,
+                segment.NorthWaterY,
+                Mathf.InverseLerp(
+                    segment.WaterBounds.yMin,
+                    segment.WaterBounds.yMax,
+                    z));
+        }
     }
 }

@@ -12,6 +12,19 @@ namespace BarPromenade
             new Color(0.085f, 0.095f, 0.120f);
         private static readonly Color LampGlow =
             new Color(3.20f, 1.65f, 0.45f);
+
+        // Every mast carries its own always-on fog halo at the bulb —
+        // the pooled realtime lights bring light to the nearest few,
+        // but the blurred ball a lamp is at distance in fog belongs to
+        // the fixture itself, or the street reads dark past the pool's
+        // reach. The look is the pool's old travelling street halo,
+        // now standing still.
+        private const float LampHaloInnerSize = 1.15f;
+        private const float LampHaloOuterSize = 3.10f;
+        private static readonly Color LampHaloInner =
+            new Color(4.0f, 2.0f, 0.55f, 0.18f);
+        private static readonly Color LampHaloOuter =
+            new Color(2.2f, 1.25f, 0.42f, 0.045f);
         private static readonly Color SignalHousing =
             new Color(0.070f, 0.080f, 0.095f);
         private static readonly Color SignalRed =
@@ -62,6 +75,20 @@ namespace BarPromenade
                     descriptor,
                     index));
                 AddStreetLampGeometry(lampChunks, descriptor);
+                // Not a child of the anchor: the anchors stay bare
+                // teleport targets for the pool, a contract the night
+                // presentation test pins.
+                CityLightHalo.CreateNightRegistered(
+                    root,
+                    descriptor.Position +
+                    (Quaternion.LookRotation(
+                         descriptor.Forward,
+                         Vector3.up) *
+                     new Vector3(0f, 5.00f, 1.07f)),
+                    LampHaloInnerSize,
+                    LampHaloOuterSize,
+                    LampHaloInner,
+                    LampHaloOuter);
             }
 
             var streetLampBulbRenderers =

@@ -65,6 +65,31 @@ namespace BarPromenade
         private static readonly Color LampGlow =
             new Color(1.30f, 0.72f, 0.31f);
 
+        // The waterside lanterns hang low on the quay wall faces so
+        // the row reads from the parapet. At this pitch two or three
+        // burn inside the fog's ~30 m of legibility and the farther
+        // ones dissolve into it - a rhythm, where the old 52 m of the
+        // upper lamps only ever showed a lone dot. The lens rides the
+        // water datum, which falls toward the sea.
+        private const float QuayWallLampPitch = 13f;
+        private const float QuayWallLampHeightAboveWater = 1.02f;
+        private const float QuayWallLampBridgeClearance = 6f;
+        private const float QuayWallLampLandingClearance = 1.0f;
+
+        // Each lantern carries its own always-on fog halo: the lens
+        // alone is a couple of pixels the fog swallows by twenty
+        // metres, where the halo billboard is the blurred ball of
+        // light a lamp actually is at a distance in fog - the row
+        // stays legible from the bridges and the parapet. Warm HDR
+        // multiples of the lamp glow, sized past the pooled lights'
+        // halos because out there the halo IS the fixture.
+        private const float QuayWallLampHaloInnerSize = 0.85f;
+        private const float QuayWallLampHaloOuterSize = 2.40f;
+        private static readonly Color QuayWallLampHaloInner =
+            new Color(3.38f, 1.87f, 0.81f, 0.20f);
+        private static readonly Color QuayWallLampHaloOuter =
+            new Color(1.95f, 1.08f, 0.47f, 0.055f);
+
         internal static GameObject Build(
             Transform parent,
             CityLayout layout)
@@ -79,6 +104,15 @@ namespace BarPromenade
             Transform parent,
             CityLayout layout,
             CityMountainBoundaryPlan mountainPlan)
+        {
+            return Build(parent, layout, mountainPlan, out _);
+        }
+
+        internal static GameObject Build(
+            Transform parent,
+            CityLayout layout,
+            CityMountainBoundaryPlan mountainPlan,
+            out IReadOnlyList<Transform> quayLampAnchors)
         {
             if (parent == null)
             {
@@ -95,6 +129,8 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(mountainPlan));
             }
 
+            var anchors = new List<Transform>();
+            quayLampAnchors = anchors;
             if (!layout.River.IsEnabled)
             {
                 return null;
@@ -120,7 +156,7 @@ namespace BarPromenade
             }
             BuildBridges(root, layout);
             BuildLandings(root, layout);
-            BuildPromenadeLights(root, layout);
+            BuildPromenadeLights(root, layout, anchors);
             return root.gameObject;
         }
 
@@ -1312,13 +1348,15 @@ namespace BarPromenade
 
         private static void BuildPromenadeLights(
             Transform parent,
-            CityLayout layout)
+            CityLayout layout,
+            ICollection<Transform> quayLampAnchorSink)
         {
             Transform lights = new GameObject(
                 "Embankment Lamps").transform;
             lights.SetParent(parent, false);
             var posts = new List<Bounds>();
             var bulbs = new List<Bounds>();
+            var brackets = new List<Bounds>();
             IReadOnlyList<Vector3> positions = CreatePromenadeLampPositions(
                 layout);
             for (int index = 0; index < positions.Count; index++)
@@ -1330,37 +1368,134 @@ namespace BarPromenade
                 bulbs.Add(new Bounds(
                     position + Vector3.up * 2.62f,
                     new Vector3(0.42f, 0.24f, 0.42f)));
-            }
-
-            if (posts.Count == 0)
-            {
-                return;
-            }
-
-            GameObject lampPosts =
-                RuntimePrimitiveFactory.CreateCombinedBoxes(
-                    "Embankment Lamp Posts",
+                CityLightHalo.CreateNightRegistered(
                     lights,
-                    posts,
-                    Iron,
-                    true,
-                    CityRiverSurfaceAppearance
-                        .GetRecipe(CityRiverSurfaceKind.Iron)
-                        .MetersPerTile,
-                    RuntimeWorldUvMode.BoxProjected);
-            CityRiverSurfaceAppearance.ApplyCombined(
-                lampPosts.GetComponent<Renderer>(),
-                CityRiverSurfaceKind.Iron,
-                Iron);
-            GameObject glow = RuntimePrimitiveFactory.CreateCombinedBoxes(
-                "Embankment Lamp Glow",
-                lights,
-                bulbs,
-                LampGlow,
-                CityNightResources.EmissiveMaterial);
-            CityNightGlowRegistry.Register(
-                glow.GetComponent<Renderer>(),
-                LampGlow);
+                    position + Vector3.up * 2.62f,
+                    QuayWallLampHaloInnerSize,
+                    QuayWallLampHaloOuterSize,
+                    QuayWallLampHaloInner,
+                    QuayWallLampHaloOuter);
+            }
+
+            // The waterside lanterns: a back plate, an arm, a hood
+            // and a lens hung low on the wall face, plus a pool
+            // anchor apiece so the nearest few burn with real light.
+            // The wall is not walkable, so none of it carries a
+            // collider; the lenses ride in the same glow batch as
+            // the upper plafonds.
+            IReadOnlyList<Vector3> wallPositions =
+                CreateQuayWallLampPositions(layout);
+            float channelCenterX = layout.River.Segments.Count > 0
+                ? layout.River.Segments[0].WaterBounds.center.x
+                : 0f;
+            for (int index = 0; index < wallPositions.Count; index++)
+            {
+                Vector3 p = wallPositions[index];
+                float sign = p.x < channelCenterX ? 1f : -1f;
+                brackets.Add(new Bounds(
+                    new Vector3(
+                        p.x + sign * 0.03f, p.y + 0.08f, p.z),
+                    new Vector3(0.06f, 0.34f, 0.24f)));
+                brackets.Add(new Bounds(
+                    new Vector3(
+                        p.x + sign * 0.17f, p.y + 0.15f, p.z),
+                    new Vector3(0.34f, 0.08f, 0.08f)));
+                brackets.Add(new Bounds(
+                    new Vector3(
+                        p.x + sign * 0.30f, p.y + 0.15f, p.z),
+                    new Vector3(0.34f, 0.10f, 0.34f)));
+                bulbs.Add(new Bounds(
+                    new Vector3(p.x + sign * 0.30f, p.y, p.z),
+                    new Vector3(0.24f, 0.20f, 0.24f)));
+
+                // A step off the lens toward the water, so the soft
+                // particle's depth fade meets the channel behind it
+                // rather than the fixture it hangs on.
+                CityLightHalo.CreateNightRegistered(
+                    lights,
+                    new Vector3(
+                        p.x + sign * 0.55f,
+                        p.y,
+                        p.z),
+                    QuayWallLampHaloInnerSize,
+                    QuayWallLampHaloOuterSize,
+                    QuayWallLampHaloInner,
+                    QuayWallLampHaloOuter);
+
+                if (quayLampAnchorSink != null)
+                {
+                    Transform anchor = new GameObject(
+                        $"Quay Lamp Anchor {index + 1}").transform;
+                    anchor.SetParent(lights, false);
+                    // Just off the lens, aimed down-and-across the
+                    // channel so a pooled spot grazes the wall face
+                    // and lays its pool on the water.
+                    anchor.SetPositionAndRotation(
+                        new Vector3(
+                            p.x + sign * 0.45f,
+                            p.y + 0.20f,
+                            p.z),
+                        Quaternion.LookRotation(
+                            new Vector3(
+                                sign * 0.78f,
+                                -0.63f,
+                                0f).normalized,
+                            Vector3.up));
+                    quayLampAnchorSink.Add(anchor);
+                }
+            }
+
+            if (posts.Count > 0)
+            {
+                GameObject lampPosts =
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Embankment Lamp Posts",
+                        lights,
+                        posts,
+                        Iron,
+                        true,
+                        CityRiverSurfaceAppearance
+                            .GetRecipe(CityRiverSurfaceKind.Iron)
+                            .MetersPerTile,
+                        RuntimeWorldUvMode.BoxProjected);
+                CityRiverSurfaceAppearance.ApplyCombined(
+                    lampPosts.GetComponent<Renderer>(),
+                    CityRiverSurfaceKind.Iron,
+                    Iron);
+            }
+
+            if (brackets.Count > 0)
+            {
+                GameObject lanternBrackets =
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Waterside Lantern Brackets",
+                        lights,
+                        brackets,
+                        Iron,
+                        false,
+                        CityRiverSurfaceAppearance
+                            .GetRecipe(CityRiverSurfaceKind.Iron)
+                            .MetersPerTile,
+                        RuntimeWorldUvMode.BoxProjected);
+                CityRiverSurfaceAppearance.ApplyCombined(
+                    lanternBrackets.GetComponent<Renderer>(),
+                    CityRiverSurfaceKind.Iron,
+                    Iron);
+            }
+
+            if (bulbs.Count > 0)
+            {
+                GameObject glow =
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Embankment Lamp Glow",
+                        lights,
+                        bulbs,
+                        LampGlow,
+                        CityNightResources.EmissiveMaterial);
+                CityNightGlowRegistry.Register(
+                    glow.GetComponent<Renderer>(),
+                    LampGlow);
+            }
         }
 
         internal static IReadOnlyList<Vector3> CreatePromenadeLampPositions(CityLayout layout)
@@ -1396,6 +1531,90 @@ namespace BarPromenade
 
             return result.AsReadOnly();
         }
+
+        /// <summary>
+        /// Where the waterside lanterns hang: both quay wall faces at
+        /// an even pitch down the channel, lens height riding the
+        /// water datum as it falls toward the sea. Skips the bridge
+        /// openings, the landing frontages (people walk under the
+        /// wall there) and the south cave approach, which the art
+        /// bible keeps dark.
+        /// </summary>
+        internal static IReadOnlyList<Vector3> CreateQuayWallLampPositions(
+            CityLayout layout)
+        {
+            var result = new List<Vector3>();
+            CityRiverPlan plan = layout.River;
+            if (plan.Segments.Count == 0)
+            {
+                return result.AsReadOnly();
+            }
+
+            for (int bankIndex = 0;
+                 bankIndex < plan.Promenades.Count;
+                 bankIndex++)
+            {
+                CityRiverPromenadeDescriptor promenade =
+                    plan.Promenades[bankIndex];
+                float x = promenade.WestBank
+                    ? plan.Segments[0].WaterBounds.xMin
+                    : plan.Segments[0].WaterBounds.xMax;
+                for (float z = promenade.Bounds.yMin + QuayWallLampPitch;
+                     z < promenade.Bounds.yMax - 5f;
+                     z += QuayWallLampPitch)
+                {
+                    if (IsNearBridge(
+                            plan,
+                            z,
+                            QuayWallLampBridgeClearance) ||
+                        IsNearLanding(
+                            plan,
+                            promenade.WestBank,
+                            x,
+                            z,
+                            QuayWallLampLandingClearance))
+                    {
+                        continue;
+                    }
+
+                    result.Add(new Vector3(
+                        x,
+                        SampleWaterDatumY(plan, z) +
+                        QuayWallLampHeightAboveWater,
+                        z));
+                }
+            }
+
+            return result.AsReadOnly();
+        }
+
+        // The datum, not the visible top: the wall spans and the
+        // lantern row both hang off the plan's water elevation, which
+        // is globally linear, so the per-segment lerp is exact.
+        private static float SampleWaterDatumY(
+            CityRiverPlan plan,
+            float z)
+        {
+            CityRiverSegmentDescriptor segment = plan.Segments[0];
+            for (int index = 0; index < plan.Segments.Count; index++)
+            {
+                segment = plan.Segments[index];
+                if (z <= segment.WaterBounds.yMax)
+                {
+                    break;
+                }
+            }
+
+            float amount = Mathf.InverseLerp(
+                segment.WaterBounds.yMin,
+                segment.WaterBounds.yMax,
+                z);
+            return Mathf.Lerp(
+                segment.SouthWaterY,
+                segment.NorthWaterY,
+                amount);
+        }
+
         private static void BuildFullQuayWallSpan(
             Transform parent,
             string name,

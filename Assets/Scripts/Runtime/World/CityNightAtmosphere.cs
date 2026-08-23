@@ -22,6 +22,18 @@ namespace BarPromenade
         private const float BarLightIntensity = 8f;
         private const float VisibleFactorThreshold = 0.0001f;
 
+        // The river's waterside lanterns. Their lens hangs about a
+        // metre over the surface it lights where the street mast
+        // stands 4.7 m over its pavement, so the street's 31 would
+        // blow the granite out; the wide cone is what lets one low
+        // fixture graze the wall face and lay a pool on the water.
+        private const float QuayLampIntensity = 6f;
+        private const float QuayLampRange = 10f;
+        private const float QuayLampSpotAngle = 130f;
+        private const float QuayLampInnerSpotAngle = 70f;
+        private const float QuayLampHaloInnerSize = 0.70f;
+        private const float QuayLampHaloOuterSize = 1.90f;
+
         private static readonly Color StreetLightColor =
             new Color(1f, 0.72f, 0.42f);
         private static readonly Color BarLightColor =
@@ -48,7 +60,13 @@ namespace BarPromenade
         private int[] selectedAnchorIndices = Array.Empty<int>();
         private float[] selectedAnchorDistances = Array.Empty<float>();
         private float[] pooledLightBaseIntensities = Array.Empty<float>();
+        // Whether a pool slot may show its travelling halo. Only the
+        // leased practical does: every fixed lamp carries its own
+        // always-on halo now, and a pooled spot arriving at a mast or
+        // a quay lantern must not double the blob.
+        private bool[] pooledHaloVisible = Array.Empty<bool>();
         private int activePracticalIndex = -1;
+        private int quayAnchorStartIndex = int.MaxValue;
         private float nextReassignmentTime;
         private Vector3 lastAssignmentPosition;
         private float nightFactor = 1f;
@@ -79,7 +97,8 @@ namespace BarPromenade
             IReadOnlyList<Transform> streetLampAnchors,
             IReadOnlyList<Vector3> barLightPositions,
             IReadOnlyList<CityFringePracticalAnchor>
-                fringePracticalAnchors = null)
+                fringePracticalAnchors = null,
+            IReadOnlyList<Transform> quayLampAnchors = null)
         {
             player = playerTransform != null
                 ? playerTransform
@@ -94,7 +113,12 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(barLightPositions));
             }
 
-            lampAnchors = CopyAnchors(streetLampAnchors);
+            // The quay lanterns ride in the same nearest-first pool as
+            // the street masts, distinguished by index alone: anything
+            // at or past the boundary takes the low waterside profile
+            // and its anchor's own authored aim.
+            lampAnchors = CopyAnchors(streetLampAnchors, quayLampAnchors);
+            quayAnchorStartIndex = streetLampAnchors.Count;
             practicalAnchors = CopyPracticalAnchors(
                 fringePracticalAnchors);
             int barLightCount = Mathf.Min(
@@ -126,6 +150,7 @@ namespace BarPromenade
             selectedAnchorIndices = new int[streetLightCount];
             selectedAnchorDistances = new float[streetLightCount];
             pooledLightBaseIntensities = new float[streetLightCount];
+            pooledHaloVisible = new bool[streetLightCount];
             for (int index = 0; index < streetLightCount; index++)
             {
                 pooledLightBaseIntensities[index] = StreetLightIntensity;
@@ -194,7 +219,9 @@ namespace BarPromenade
 
                 streetLightHalos[index].SetIntensityFactor(nightFactor);
                 streetLightHalos[index].SetVisible(
-                    visible && streetLightPool[index].enabled);
+                    visible &&
+                    streetLightPool[index].enabled &&
+                    pooledHaloVisible[index]);
             }
 
             if (visible &&
@@ -260,14 +287,24 @@ namespace BarPromenade
                 if (IsPracticalSlotLeased &&
                     index == streetLightPool.Length - 1)
                 {
+                    pooledHaloVisible[index] = true;
                     AssignPracticalLight(
                         index,
                         practicalAnchors[activePracticalIndex]);
                     continue;
                 }
 
-                ApplyStreetProfile(index);
                 int anchorIndex = selectedAnchorIndices[index];
+                bool isQuay = anchorIndex >= quayAnchorStartIndex;
+                if (isQuay)
+                {
+                    ApplyQuayLampProfile(index);
+                }
+                else
+                {
+                    ApplyStreetProfile(index);
+                }
+
                 Light light = streetLightPool[index];
                 bool hasAnchor =
                     anchorIndex >= 0 &&
@@ -277,14 +314,22 @@ namespace BarPromenade
                     hasAnchor &&
                     nightFactor > VisibleFactorThreshold;
                 light.enabled = visible;
-                streetLightHalos[index].SetVisible(visible);
+                // The fixture's own always-on halo carries the blur;
+                // the pooled spot brings light alone.
+                pooledHaloVisible[index] = false;
+                streetLightHalos[index].SetVisible(false);
                 if (hasAnchor)
                 {
                     AssignedStreetLightCount++;
                     Transform anchor = lampAnchors[anchorIndex];
+                    // A quay lantern's anchor is authored aim, the
+                    // practical's convention; a street anchor only
+                    // knows its road and the tilt is derived.
                     light.transform.SetPositionAndRotation(
                         anchor.position,
-                        CreateStreetLightRotation(anchor));
+                        isQuay
+                            ? anchor.rotation
+                            : CreateStreetLightRotation(anchor));
                 }
             }
 
@@ -388,6 +433,21 @@ namespace BarPromenade
                 55f,
                 1.15f,
                 3.10f,
+                StreetHaloInner,
+                StreetHaloOuter);
+        }
+
+        private void ApplyQuayLampProfile(int poolIndex)
+        {
+            ApplyPooledLightProfile(
+                poolIndex,
+                StreetLightColor,
+                QuayLampIntensity,
+                QuayLampRange,
+                QuayLampSpotAngle,
+                QuayLampInnerSpotAngle,
+                QuayLampHaloInnerSize,
+                QuayLampHaloOuterSize,
                 StreetHaloInner,
                 StreetHaloOuter);
         }
@@ -536,9 +596,11 @@ namespace BarPromenade
         }
 
         private static Transform[] CopyAnchors(
-            IReadOnlyList<Transform> anchors)
+            IReadOnlyList<Transform> anchors,
+            IReadOnlyList<Transform> quayAnchors)
         {
-            var result = new Transform[anchors.Count];
+            int quayCount = quayAnchors?.Count ?? 0;
+            var result = new Transform[anchors.Count + quayCount];
             for (int index = 0; index < anchors.Count; index++)
             {
                 result[index] = anchors[index] != null
@@ -546,6 +608,15 @@ namespace BarPromenade
                     : throw new ArgumentException(
                         "Street lamp anchors cannot contain null.",
                         nameof(anchors));
+            }
+
+            for (int index = 0; index < quayCount; index++)
+            {
+                result[anchors.Count + index] = quayAnchors[index] != null
+                    ? quayAnchors[index]
+                    : throw new ArgumentException(
+                        "Quay lamp anchors cannot contain null.",
+                        nameof(quayAnchors));
             }
 
             return result;
