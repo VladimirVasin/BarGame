@@ -88,85 +88,85 @@ MonoBehaviour:
     role: cat_chest
     paletteName: fur_light
     renderer: {fileID: 6144771271824240249}
-    baseColor: {r: 0.085, g: 0.088, b: 0.082, a: 1}
+    baseColor: {r: 0.88, g: 0.88, b: 0.86, a: 1}
   - rendererName: GEO_Ear.L
     pivotName: PIVOT_Ear.L
     role: cat_ear
     paletteName: fur_dark
     renderer: {fileID: 6170315947074767201}
-    baseColor: {r: 0.033, g: 0.034, b: 0.032, a: 1}
+    baseColor: {r: 0.62, g: 0.62, b: 0.6, a: 1}
   - rendererName: GEO_Ear.R
     pivotName: PIVOT_Ear.R
     role: cat_ear
     paletteName: fur_dark
     renderer: {fileID: 1156748076972574956}
-    baseColor: {r: 0.033, g: 0.034, b: 0.032, a: 1}
+    baseColor: {r: 0.62, g: 0.62, b: 0.6, a: 1}
   - rendererName: GEO_FrontLeg.L
     pivotName: 
     role: cat_leg
     paletteName: fur_dark
     renderer: {fileID: 3201826286494238323}
-    baseColor: {r: 0.033, g: 0.034, b: 0.032, a: 1}
+    baseColor: {r: 0.62, g: 0.62, b: 0.6, a: 1}
   - rendererName: GEO_FrontLeg.R
     pivotName: 
     role: cat_leg
     paletteName: fur_dark
     renderer: {fileID: 7804023168579211980}
-    baseColor: {r: 0.033, g: 0.034, b: 0.032, a: 1}
+    baseColor: {r: 0.62, g: 0.62, b: 0.6, a: 1}
   - rendererName: GEO_Haunches
     pivotName: 
     role: cat_body
     paletteName: fur
     renderer: {fileID: 7672621036833465746}
-    baseColor: {r: 0.052, g: 0.054, b: 0.05, a: 1}
+    baseColor: {r: 0.78, g: 0.78, b: 0.76, a: 1}
   - rendererName: GEO_Head
     pivotName: PIVOT_Head
     role: cat_head
     paletteName: fur
     renderer: {fileID: 2924099689325542588}
-    baseColor: {r: 0.052, g: 0.054, b: 0.05, a: 1}
+    baseColor: {r: 0.78, g: 0.78, b: 0.76, a: 1}
   - rendererName: GEO_Muzzle
     pivotName: PIVOT_Head
     role: cat_muzzle
     paletteName: fur_light
     renderer: {fileID: 197372915939477213}
-    baseColor: {r: 0.085, g: 0.088, b: 0.082, a: 1}
+    baseColor: {r: 0.88, g: 0.88, b: 0.86, a: 1}
   - rendererName: GEO_Paw.L
     pivotName: 
     role: cat_paw
     paletteName: paw
     renderer: {fileID: 3089618813213010853}
-    baseColor: {r: 0.06, g: 0.062, b: 0.058, a: 1}
+    baseColor: {r: 0.74, g: 0.72, b: 0.7, a: 1}
   - rendererName: GEO_Paw.R
     pivotName: 
     role: cat_paw
     paletteName: paw
     renderer: {fileID: 2830728530402878646}
-    baseColor: {r: 0.06, g: 0.062, b: 0.058, a: 1}
+    baseColor: {r: 0.74, g: 0.72, b: 0.7, a: 1}
   - rendererName: GEO_Torso
     pivotName: PIVOT_Chest
     role: cat_chest
     paletteName: fur
     renderer: {fileID: 6288940696637217248}
-    baseColor: {r: 0.052, g: 0.054, b: 0.05, a: 1}
+    baseColor: {r: 0.78, g: 0.78, b: 0.76, a: 1}
   - rendererName: TAIL_Segment.01
     pivotName: PIVOT_Tail.01
     role: cat_tail
     paletteName: fur_tail
     renderer: {fileID: 2931477692751302702}
-    baseColor: {r: 0.04, g: 0.042, b: 0.039, a: 1}
+    baseColor: {r: 0.7, g: 0.7, b: 0.68, a: 1}
   - rendererName: TAIL_Segment.02
     pivotName: PIVOT_Tail.02
     role: cat_tail
     paletteName: fur_tail
     renderer: {fileID: 7585064431977928569}
-    baseColor: {r: 0.04, g: 0.042, b: 0.039, a: 1}
+    baseColor: {r: 0.7, g: 0.7, b: 0.68, a: 1}
   - rendererName: TAIL_Segment.03
     pivotName: PIVOT_Tail.03
     role: cat_tail
     paletteName: fur_dark
     renderer: {fileID: 2335184016496623791}
-    baseColor: {r: 0.033, g: 0.034, b: 0.032, a: 1}
+    baseColor: {r: 0.62, g: 0.62, b: 0.6, a: 1}
   chestPivot: {fileID: 8863277547888786705}
   headPivot: {fileID: 6389118055665189418}
   earLeftPivot: {fileID: 6895705600794816917}

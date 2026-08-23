@@ -98,9 +98,9 @@
       "role": "cat_chest",
       "palette_name": "fur_light",
       "base_color": [
-        0.085,
-        0.088,
-        0.082,
+        0.88,
+        0.88,
+        0.86,
         1.0
       ],
       "vertices": 26,
@@ -112,9 +112,9 @@
       "role": "cat_ear",
       "palette_name": "fur_dark",
       "base_color": [
-        0.033,
-        0.034,
-        0.032,
+        0.62,
+        0.62,
+        0.6,
         1.0
       ],
       "vertices": 8,
@@ -126,9 +126,9 @@
       "role": "cat_ear",
       "palette_name": "fur_dark",
       "base_color": [
-        0.033,
-        0.034,
-        0.032,
+        0.62,
+        0.62,
+        0.6,
         1.0
       ],
       "vertices": 8,
@@ -140,9 +140,9 @@
       "role": "cat_leg",
       "palette_name": "fur_dark",
       "base_color": [
-        0.033,
-        0.034,
-        0.032,
+        0.62,
+        0.62,
+        0.6,
         1.0
       ],
       "vertices": 16,
@@ -154,9 +154,9 @@
       "role": "cat_leg",
       "palette_name": "fur_dark",
       "base_color": [
-        0.033,
-        0.034,
-        0.032,
+        0.62,
+        0.62,
+        0.6,
         1.0
       ],
       "vertices": 16,
@@ -168,9 +168,9 @@
       "role": "cat_body",
       "palette_name": "fur",
       "base_color": [
-        0.052,
-        0.054,
-        0.05,
+        0.78,
+        0.78,
+        0.76,
         1.0
       ],
       "vertices": 62,
@@ -182,9 +182,9 @@
       "role": "cat_head",
       "palette_name": "fur",
       "base_color": [
-        0.052,
-        0.054,
-        0.05,
+        0.78,
+        0.78,
+        0.76,
         1.0
       ],
       "vertices": 62,
@@ -196,9 +196,9 @@
       "role": "cat_muzzle",
       "palette_name": "fur_light",
       "base_color": [
-        0.085,
-        0.088,
-        0.082,
+        0.88,
+        0.88,
+        0.86,
         1.0
       ],
       "vertices": 26,
@@ -210,9 +210,9 @@
       "role": "cat_paw",
       "palette_name": "paw",
       "base_color": [
-        0.06,
-        0.062,
-        0.058,
+        0.74,
+        0.72,
+        0.7,
         1.0
       ],
       "vertices": 8,
@@ -224,9 +224,9 @@
       "role": "cat_paw",
       "palette_name": "paw",
       "base_color": [
-        0.06,
-        0.062,
-        0.058,
+        0.74,
+        0.72,
+        0.7,
         1.0
       ],
       "vertices": 8,
@@ -238,9 +238,9 @@
       "role": "cat_chest",
       "palette_name": "fur",
       "base_color": [
-        0.052,
-        0.054,
-        0.05,
+        0.78,
+        0.78,
+        0.76,
         1.0
       ],
       "vertices": 24,
@@ -252,9 +252,9 @@
       "role": "cat_tail",
       "palette_name": "fur_tail",
       "base_color": [
-        0.04,
-        0.042,
-        0.039,
+        0.7,
+        0.7,
+        0.68,
         1.0
       ],
       "vertices": 16,
@@ -266,9 +266,9 @@
       "role": "cat_tail",
       "palette_name": "fur_tail",
       "base_color": [
-        0.04,
-        0.042,
-        0.039,
+        0.7,
+        0.7,
+        0.68,
         1.0
       ],
       "vertices": 16,
@@ -280,9 +280,9 @@
       "role": "cat_tail",
       "palette_name": "fur_dark",
       "base_color": [
-        0.033,
-        0.034,
-        0.032,
+        0.62,
+        0.62,
+        0.6,
         1.0
       ],
       "vertices": 42,
