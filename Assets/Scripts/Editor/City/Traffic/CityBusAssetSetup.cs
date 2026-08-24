@@ -457,11 +457,14 @@ namespace BarPromenade.Editor
 
         private static Dictionary<CityBusMaterialSlot, Material> BuildMaterials()
         {
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            // The project's own Lit, so a bus rebuild keeps the vertex
+            // snap instead of quietly reverting all thirteen materials to
+            // the package shader.
+            Shader shader = Shader.Find("Bar Promenade/PS1 Lit");
             if (shader == null)
             {
                 throw new InvalidOperationException(
-                    "URP/Lit shader is unavailable for City bus materials.");
+                    "PS1 Lit shader is unavailable for City bus materials.");
             }
 
             foreach (string texturePath in Enum

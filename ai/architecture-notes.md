@@ -2586,15 +2586,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   camera is moved out of the skull instead.
 - **Accepted — player graphics toggles are one static service over
   `PlayerPrefs`, the project's first persistence:** `GraphicsEffectsSettings`
-  holds five booleans (`graphics.dof`, `graphics.intoxication_fx`,
-  `graphics.dither`, `graphics.scanlines`, `graphics.rain_lens`, all
-  default-on), loaded lazily and saved on change, with a `Version` counter
-  consumers poll instead of subscribing to events — no lifecycle hazards, the
-  same polling idiom the weather controller already uses. Effect consumers gate
-  themselves: the PS1 composite zeroes its dither/scanline/rain floats per
-  frame, the intoxication lens driver forces zero per `Apply`, and
-  `DepthOfFieldSettingsBinder` flips `active` only on volume-profile clones or
-  runtime-built profiles, never on the authored `.asset` at play time.
+  holds six booleans (`graphics.dof`, `graphics.intoxication_fx`,
+  `graphics.dither`, `graphics.scanlines`, `graphics.aspect_4_3` and
+  `graphics.vertex_jitter`), loaded lazily and saved on change, with a
+  `Version` counter consumers poll instead of subscribing to events — no
+  lifecycle hazards. The first four default on; 4:3 and vertex jitter are
+  explicit opt-ins. Effect consumers gate themselves: the PS1 composite
+  zeroes its dither/scanline floats per frame, the render feature supplies
+  camera-specific vertex-snap globals, the intoxication lens driver forces
+  zero per `Apply`, and `DepthOfFieldSettingsBinder` flips `active` only on
+  volume-profile clones or runtime-built profiles, never on the authored
+  `.asset` at play time.
 - **Accepted — depth of field runs in two tiers around the PS1 crush:** the
   always-on tier is Gaussian in every scene grade (City `start 8 / end 28 /
   radius 1.5` — the band must sit inside the `48 m` far clip where exp² fog
@@ -2609,20 +2611,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   (aperture ~10), not a render-scale change, which would soften the whole PS1
   look. Transparent depth-less surfaces (river water, glass, particles) blur by
   the opaque depth behind them — accepted at this subtlety.
-- **Accepted — the PS1 composite carries the new film layers itself:** Bayer
-  4x4 dithering perturbs the perceptual value by at most half an RGB555 step
-  before quantization, indexed by internal-pixel coordinates so the checker is
-  chunky-pixel-locked; the scanline mask darkens the leading third of each
-  internal row on the upscale pass (a step, not a cosine — a symmetric cosine
-  cancels at exactly 2x vertical scale, the 720p case); and rain-on-lens is a
-  UV offset applied to `warpedUv` before the 4-tap average (two hashed droplet
-  cell layers plus a crawling streak layer, fed by `RainLensRenderState`, which
-  `CityWeatherController` ramps over `2.5 s` and shelter dries). Rain time uses
-  its own `_Ps1RainTime` (unscaled) rather than `_IntoxicationTime`, which is
-  only fed while a status controller lives. Intoxication additionally drives
-  URP `ChromaticAberration` (`0 → 0.45`) and `LensDistortion` (`0 → -0.14`,
-  small and negative so the pinched rim stays under what the point-sample crop
-  hides) through `IntoxicationLensVolumeDriver` at volume priority `8`.
+- **Accepted — film stays in the composite, polygon jitter stays in Lit:**
+  Bayer 4x4 dithering perturbs the perceptual value by at most half an RGB555
+  step before quantization, indexed by internal-pixel coordinates so the
+  checker is chunky-pixel-locked; the scanline mask darkens the leading third
+  of each internal row on the upscale pass (a step, not a cosine — a symmetric
+  cosine cancels at exactly 2x vertical scale, the 720p case). Optional vertex
+  jitter instead wraps the stock URP Lit vertex functions in the project-owned
+  `Ps1Lit` shader and rounds clip XY onto the presented-pixel grid. Its strength
+  is a camera-scoped global rather than material state, preserving the SRP
+  Batcher; inventory-preview and reflection cameras carry an explicit
+  `Ps1VertexJitterExclusion`. Intoxication additionally drives URP
+  `ChromaticAberration` (`0 → 0.45`) and `LensDistortion` (`0 → -0.14`, small
+  and negative so the pinched rim stays under what the point-sample crop hides)
+  through `IntoxicationLensVolumeDriver` at volume priority `8`.
 - **Accepted — the opt-in 4:3 mode is a composite crop, not a camera change:**
   when `graphics.aspect_4_3` is on (default off), the feature computes the
   internal resolution for the centered 4:3 window (`480x360` from a 16:9

@@ -24,9 +24,14 @@ namespace BarPromenade.Rendering
         private float ditherStrength = 0.6f;
         [SerializeField, Range(0f, 0.6f)]
         private float scanlineIntensity = 0.22f;
-        [SerializeField] private bool rainLensEnabled = true;
+        // How far the vertex snap goes: 0 leaves the geometry exactly
+        // where the projection put it, 1 rounds it fully onto the
+        // internal-resolution grid the way the hardware did. Kept as a
+        // dial rather than a constant because the right amount depends on
+        // the resolution preset - the grid is three times coarser at
+        // Authentic320x180 than at Balanced640x360.
         [SerializeField, Range(0f, 1f)]
-        private float rainLensStrength = 0.8f;
+        private float vertexJitterStrength = 1f;
 
         public bool EffectEnabled => effectEnabled;
         public Ps1ResolutionPreset ResolutionPreset => resolutionPreset;
@@ -36,8 +41,8 @@ namespace BarPromenade.Rendering
             ditherEnabled ? Mathf.Clamp01(ditherStrength) : 0f;
         public float ScanlineIntensity =>
             Mathf.Clamp(scanlineIntensity, 0f, 0.6f);
-        public float RainLensStrength =>
-            rainLensEnabled ? Mathf.Clamp01(rainLensStrength) : 0f;
+        public float VertexJitterStrength =>
+            Mathf.Clamp01(vertexJitterStrength);
 
         public Vector2Int GetInternalResolution(int outputWidth, int outputHeight)
         {

@@ -676,6 +676,39 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void WorldBuilder_QuayFacesCoverCoplanarPavingAndBedSides()
+        {
+            var parent = new GameObject("Quay Face Test Parent");
+            try
+            {
+                CityMountainBoundaryPlan mountainPlan =
+                    CityMountainBoundaryPlanner.Create(layout);
+                GameObject river = CityRiverWorldBuilder.Build(
+                    parent.transform,
+                    layout,
+                    mountainPlan);
+
+                Transform walls = river.transform.Find(
+                    "Granite Quay Walls");
+                AssertQuayWallFaces(
+                    walls,
+                    layout.River.Segments[0].WaterBounds);
+
+                Assert.That(mountainPlan.HasRiverCave, Is.True);
+                Transform caveWalls = river.transform
+                    .Find("River Cave Extension")
+                    .Find("Granite Quay Walls");
+                AssertQuayWallFaces(
+                    caveWalls,
+                    mountainPlan.RiverCave.WaterApproachBounds);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
         public void WorldBuilder_CreatesWaterBridgesAndFourPhysicalLandings()
         {
             var parent = new GameObject("River Test Parent");
@@ -929,6 +962,45 @@ namespace BarPromenade.Tests.EditMode
             float z) =>
             x >= bounds.min.x && x <= bounds.max.x &&
             z >= bounds.min.z && z <= bounds.max.z;
+
+        private static void AssertQuayWallFaces(
+            Transform walls,
+            Rect waterBounds)
+        {
+            Assert.That(walls, Is.Not.Null);
+            Renderer[] renderers =
+                walls.GetComponentsInChildren<Renderer>(true);
+            Assert.That(renderers, Is.Not.Empty);
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Renderer renderer = renderers[index];
+                bool west = renderer.bounds.center.x < waterBounds.center.x;
+                float waterEdgeX = west
+                    ? waterBounds.xMin
+                    : waterBounds.xMax;
+                float waterReveal = west
+                    ? renderer.bounds.max.x - waterEdgeX
+                    : waterEdgeX - renderer.bounds.min.x;
+                float landwardDepth = west
+                    ? waterEdgeX - renderer.bounds.min.x
+                    : renderer.bounds.max.x - waterEdgeX;
+
+                Assert.That(
+                    waterReveal,
+                    Is.GreaterThanOrEqualTo(
+                        CityRiverWorldBuilder.QuayWallWaterReveal -
+                        0.001f),
+                    $"'{renderer.name}' does not cover the paving/bed " +
+                    "side plane at the water edge.");
+                Assert.That(
+                    landwardDepth,
+                    Is.EqualTo(
+                            CityRiverWorldBuilder.QuayWallLandwardDepth)
+                        .Within(0.001f),
+                    $"'{renderer.name}' moved its rail-side seat while " +
+                    "covering the water face.");
+            }
+        }
 
         private static Rect CreateFootprint(RuntimeOrientedBox box)
         {

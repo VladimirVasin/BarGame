@@ -24,11 +24,10 @@ namespace BarPromenade
         IntoxicationFx = 1,
         Dither = 2,
         Scanlines = 3,
-        RainOnLens = 4,
-        AspectRatio43 = 5,
-        HighFrameRate = 6,
-        Back = 7,
-        Count = 8
+        AspectRatio43 = 4,
+        VertexJitter = 5,
+        Back = 6,
+        Count = 7
     }
 
     public enum PauseMenuAction

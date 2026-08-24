@@ -41,7 +41,10 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(cylinderMaterial, Is.SameAs(expected));
                 Assert.That(
                     expected.shader.name,
-                    Is.EqualTo("Universal Render Pipeline/Lit"));
+                    Is.EqualTo("Bar Promenade/PS1 Lit"),
+                    "Every runtime primitive in the game shares this " +
+                    "material, so it is what carries the vertex snap; " +
+                    "back on stock URP Lit the jitter reaches nothing.");
                 Assert.That(expected.shader.isSupported, Is.True);
             }
             finally

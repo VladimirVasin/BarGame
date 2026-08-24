@@ -27,8 +27,6 @@ Shader "Hidden/BarPromenade/PS1Composite"
             float4 _Ps1LowResolutionTexelSize;
             float _Ps1QuantizationStrength;
             float _Ps1DitherStrength;
-            float _Ps1RainLens;
-            float _Ps1RainTime;
             float _Ps1AspectFraction;
             float _IntoxicationVignette;
             float _IntoxicationGhostPixels;
@@ -36,75 +34,6 @@ Shader "Hidden/BarPromenade/PS1Composite"
             float _IntoxicationWarmth;
             float _IntoxicationExposurePulse;
             float _IntoxicationTime;
-
-            float Ps1Hash(float2 cell)
-            {
-                return frac(
-                    sin(dot(cell, float2(127.1, 311.7))) *
-                    43758.5453);
-            }
-
-            // One layer of quasi-static droplets: hashed cells decide
-            // droplet existence, centre jitter, radius and lifetime
-            // phase. Inside a droplet the sample pulls back toward its
-            // centre, a cheap refraction that survives RGB555. Offsets
-            // are in internal pixels.
-            float2 Ps1RainDropletLayer(
-                float2 pixel,
-                float cellSize,
-                float time,
-                float intensity,
-                float seed)
-            {
-                float2 cell = floor(pixel / cellSize) + seed;
-                float existence = Ps1Hash(cell);
-                float life = frac(time / 7.0 + Ps1Hash(cell + 17.0));
-                float presence =
-                    step(1.0 - intensity * 0.6, existence) *
-                    smoothstep(0.0, 0.1, life) *
-                    (1.0 - smoothstep(0.65, 1.0, life));
-                float2 jitter = float2(
-                    Ps1Hash(cell + 39.0),
-                    Ps1Hash(cell + 71.0)) - 0.5;
-                float2 centre =
-                    (floor(pixel / cellSize) + 0.5 + jitter * 0.5) *
-                    cellSize;
-                float radius =
-                    cellSize * (0.10 + 0.08 * Ps1Hash(cell + 93.0));
-                float2 delta = pixel - centre;
-                float inside =
-                    step(length(delta), radius) * presence;
-                return delta * -0.35 * inside;
-            }
-
-            float2 Ps1RainLensOffset(
-                float2 uv,
-                float time,
-                float intensity)
-            {
-                if (intensity <= 0.0)
-                {
-                    return float2(0.0, 0.0);
-                }
-
-                float2 pixel = uv * _Ps1LowResolutionTexelSize.zw;
-                float2 offset =
-                    Ps1RainDropletLayer(
-                        pixel, 26.0, time, intensity, 0.0) +
-                    Ps1RainDropletLayer(
-                        pixel, 40.0, time, intensity, 53.0);
-
-                // Slow run-down streaks: narrow tall cells whose hash
-                // window crawls downward, smearing the sample upward.
-                float2 streakCell = floor(float2(
-                    pixel.x / 2.0,
-                    (pixel.y + time * 22.0) / 12.0));
-                float streak =
-                    step(1.0 - intensity * 0.22,
-                         Ps1Hash(streakCell + 91.0));
-                offset.y -= streak * 2.0;
-                return offset * _Ps1LowResolutionTexelSize.xy;
-            }
 
             float4 FragDownsample(Varyings input) : SV_Target
             {
@@ -136,10 +65,6 @@ Shader "Hidden/BarPromenade/PS1Composite"
                     radiusSquared *
                     _IntoxicationWarp *
                     1.8;
-                warpedUv += Ps1RainLensOffset(
-                    input.texcoord,
-                    _Ps1RainTime,
-                    _Ps1RainLens);
                 float2 offset =
                     _Ps1LowResolutionTexelSize.xy * 0.25;
                 float4 source =

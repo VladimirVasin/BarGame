@@ -46,6 +46,12 @@ namespace BarPromenade
         private const float LandingRetainingWallThickness = 0.24f;
         private const float MinimumParapetOpening = 1.2f;
         internal const float SurfaceClearance = 0.03f;
+        internal const float QuayWallLandwardDepth = 0.44f;
+        internal const float QuayWallWaterReveal = SurfaceClearance;
+        private const float QuayWallThickness =
+            QuayWallLandwardDepth + QuayWallWaterReveal;
+        private const float QuayWallCenterOffset =
+            (QuayWallLandwardDepth - QuayWallWaterReveal) * 0.5f;
 
         private static readonly Color Granite =
             new Color(0.34f, 0.36f, 0.34f);
@@ -379,9 +385,12 @@ namespace BarPromenade
                         new Vector2Int(nodeX, southZ));
                     float northBankY = layout.ElevationPlan.GetNodeElevation(
                         new Vector2Int(nodeX, northZ));
-                    float x = west
-                        ? segment.WaterBounds.xMin - 0.22f
-                        : segment.WaterBounds.xMax + 0.22f;
+                    float waterEdgeX = west
+                        ? segment.WaterBounds.xMin
+                        : segment.WaterBounds.xMax;
+                    float x = ResolveQuayWallCenterX(
+                        waterEdgeX,
+                        west);
                     var frontageRanges = new List<AxisRange>();
                     for (int landingIndex = 0;
                          landingIndex < layout.River.Landings.Count;
@@ -738,7 +747,9 @@ namespace BarPromenade
             BuildRiverCaveWall(
                 walls,
                 "West River Cave Quay Wall",
-                cave.WaterApproachBounds.xMin - 0.22f,
+                ResolveQuayWallCenterX(
+                    cave.WaterApproachBounds.xMin,
+                    true),
                 cave.WaterApproachBounds.yMin,
                 cave.WaterApproachBounds.yMax + 0.04f,
                 cave.WestMouthBankY,
@@ -747,7 +758,9 @@ namespace BarPromenade
             BuildRiverCaveWall(
                 walls,
                 "East River Cave Quay Wall",
-                cave.WaterApproachBounds.xMax + 0.22f,
+                ResolveQuayWallCenterX(
+                    cave.WaterApproachBounds.xMax,
+                    false),
                 cave.WaterApproachBounds.yMin,
                 cave.WaterApproachBounds.yMax + 0.04f,
                 cave.EastMouthBankY,
@@ -779,7 +792,7 @@ namespace BarPromenade
                     x,
                     (cityBankY + waterDatumY) * 0.5f - 0.08f,
                     zMax),
-                0.44f,
+                QuayWallThickness,
                 height,
                 GraniteEdge,
                 true,
@@ -1811,7 +1824,7 @@ namespace BarPromenade
                     x,
                     (endBankY + endWaterY) * 0.5f - 0.08f,
                     zMax),
-                0.44f,
+                QuayWallThickness,
                 height,
                 GraniteEdge,
                 true,
@@ -1854,11 +1867,28 @@ namespace BarPromenade
                 parent,
                 new Vector3(x, (topY + startBottomY) * 0.5f, zMin),
                 new Vector3(x, (topY + endBottomY) * 0.5f, zMax),
-                0.44f,
+                QuayWallThickness,
                 Mathf.Max(0.16f, height),
                 GraniteEdge,
                 true,
                 CityRiverSurfaceKind.Quay);
+        }
+
+        /// <summary>
+        /// Keeps the wall's landward seat fixed under the iron rail while
+        /// bringing its visible face slightly into the channel. Paving,
+        /// landing and submerged-bed boxes all terminate at the water edge;
+        /// a proud Quay face hides those side faces instead of sharing their
+        /// depth plane and flickering against them.
+        /// </summary>
+        private static float ResolveQuayWallCenterX(
+            float waterEdgeX,
+            bool westBank)
+        {
+            return waterEdgeX +
+                   (westBank
+                       ? -QuayWallCenterOffset
+                       : QuayWallCenterOffset);
         }
 
         private static void BuildTransverseQuayRail(

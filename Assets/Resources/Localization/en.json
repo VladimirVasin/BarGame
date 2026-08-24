@@ -65,16 +65,12 @@
       "value": "SCANLINES"
     },
     {
-      "key": "options.rain_lens",
-      "value": "RAIN ON LENS"
-    },
-    {
       "key": "options.aspect_4_3",
       "value": "4:3 ASPECT"
     },
     {
-      "key": "options.frame_rate_60",
-      "value": "60 FPS (INSTEAD OF 30)"
+      "key": "options.vertex_jitter",
+      "value": "POLYGON JITTER"
     },
     {
       "key": "options.back",

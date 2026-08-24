@@ -9,18 +9,16 @@ namespace BarPromenade
             "graphics.intoxication_fx";
         private const string DitherKey = "graphics.dither";
         private const string ScanlinesKey = "graphics.scanlines";
-        private const string RainOnLensKey = "graphics.rain_lens";
         private const string AspectRatio43Key = "graphics.aspect_4_3";
-        private const string HighFrameRateKey = "graphics.frame_rate_60";
+        private const string VertexJitterKey = "graphics.vertex_jitter";
 
         private static bool loaded;
         private static bool depthOfFieldEnabled;
         private static bool intoxicationLensFxEnabled;
         private static bool ditherEnabled;
         private static bool scanlinesEnabled;
-        private static bool rainOnLensEnabled;
         private static bool aspectRatio43Enabled;
-        private static bool highFrameRateEnabled;
+        private static bool vertexJitterEnabled;
 
         public static int Version { get; private set; }
 
@@ -70,16 +68,6 @@ namespace BarPromenade
             set => Apply(ref scanlinesEnabled, value, ScanlinesKey);
         }
 
-        public static bool RainOnLensEnabled
-        {
-            get
-            {
-                EnsureLoaded();
-                return rainOnLensEnabled;
-            }
-            set => Apply(ref rainOnLensEnabled, value, RainOnLensKey);
-        }
-
         public static bool AspectRatio43Enabled
         {
             get
@@ -94,23 +82,22 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Off is the period rate the game is dressed for and the
-        /// default; on doubles it for players who would rather have the
-        /// smoother motion. Both live in
-        /// <see cref="BarPromenadeRuntimeBootstrap"/>, which owns the
-        /// actual cap.
+        /// Rounds projected vertices onto the internal-resolution grid,
+        /// the way a console with no sub-pixel precision did. Off by
+        /// default: it changes how the whole world moves, so it is the
+        /// player's to switch on.
         /// </summary>
-        public static bool HighFrameRateEnabled
+        public static bool VertexJitterEnabled
         {
             get
             {
                 EnsureLoaded();
-                return highFrameRateEnabled;
+                return vertexJitterEnabled;
             }
             set => Apply(
-                ref highFrameRateEnabled,
+                ref vertexJitterEnabled,
                 value,
-                HighFrameRateKey);
+                VertexJitterKey);
         }
 
         [RuntimeInitializeOnLoadMethod(
@@ -138,15 +125,15 @@ namespace BarPromenade
                 ReadFlag(IntoxicationLensFxKey);
             ditherEnabled = ReadFlag(DitherKey);
             scanlinesEnabled = ReadFlag(ScanlinesKey);
-            rainOnLensEnabled = ReadFlag(RainOnLensKey);
             // The 4:3 pillarbox is the one opt-in effect: the game is
             // authored widescreen, so the retro frame is a choice.
             aspectRatio43Enabled =
                 ReadFlag(AspectRatio43Key, false);
-            // Likewise opt-in: the period rate is the default, and
-            // doubling it is the player's call.
-            highFrameRateEnabled =
-                ReadFlag(HighFrameRateKey, false);
+            // The second opt-in. Vertex jitter is the loudest of the
+            // retro effects - it moves every silhouette in the game - so
+            // it is offered rather than imposed.
+            vertexJitterEnabled =
+                ReadFlag(VertexJitterKey, false);
             loaded = true;
         }
 

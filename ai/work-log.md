@@ -6,6 +6,108 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-24 — The quay keeps one visible face under its rail
+
+- The texture flicker seen from the river was exact depth fighting, not a
+  texture or shader fault. Upper Paving slabs, lowered platforms and the cave
+  approach all ended on the water boundary; their side faces were coplanar
+  with the Quay wall there. The submerged Bed side deliberately lapped the
+  same wall by `0.04 m`, adding another coincident face below the waterline.
+- All three wall paths now reveal the Quay skin `0.03 m` toward the water.
+  The wall grows asymmetrically rather than shifting: its landward face stays
+  fixed beneath the iron-rail seat, while its river face covers the Paving
+  and Bed faces instead of competing with them.
+- Verification: focused Unity EditMode
+  `CityRiverPlannerTests.WorldBuilder_QuayFacesCoverCoplanarPavingAndBedSides`
+  passed `1/1`. Full suites and a player build were not run.
+
+## 2026-08-24 — The vertices learn to jump, and the options page learns to scroll
+
+- PS1 vertex jitter, the artefact of a console with no sub-pixel precision:
+  its GPU took whole-number screen coordinates, so a vertex did not slide
+  as the camera moved, it jumped from pixel to pixel and the triangle
+  between two of them boiled. Reproduced by rounding the projected XY onto
+  the grid the frame is presented on. Off by default; the strength is a
+  dial on the presentation profile.
+- Two facts shaped the whole implementation. The world is drawn entirely by
+  **stock URP Lit** through the serialized `RuntimePrimitiveLit` material —
+  423 call sites across 74 files — so there was nowhere to put a vertex
+  stage until the world moved onto a project-owned shader. And the scene
+  rasterizes at full resolution: the PS1 image is post-only, so a snap
+  tuned to the framebuffer would land three times finer than a visible
+  pixel and read as nothing at all.
+- `Ps1Lit.shader` is therefore a **verbatim copy** of the package
+  `Lit.shader` — produced by copying the file, not by transcribing it —
+  with exactly four differences: the shader name, a shared
+  `Ps1VertexJitter.hlsl` include in three passes, their `#pragma vertex`
+  lines, and a header comment. Each wrapper calls URP's own vertex
+  function and rounds the clip position it returns, so at strength zero the
+  output is bit-identical to stock Lit and the game looks exactly as it
+  did. No `.hlsl` is forked, so a URP upgrade stays a re-copy of one
+  ShaderLab file rather than a four-way merge.
+- Which passes snap is a correctness question, not a taste one. ForwardLit,
+  DepthOnly and DepthNormals snap identically from one shared include —
+  SSAO reads depth-normals, so a disagreement of one bit haloes every
+  silhouette. ShadowCaster deliberately does not: the shadow map is a
+  different projection at a different resolution, so no snap can agree with
+  the camera's, and snapping there would make the shadow wobble
+  independently of the silhouette. `Meta` must never snap (its
+  `positionCS` is lightmap-UV space) and `MotionVectors` cannot be wrapped
+  at all — its include declares its own `#pragma vertex`. All nine passes
+  are still cloned: URP strips by pass name, so they cost nothing in a
+  build and buy keyword-space equality with the stock shader.
+- The snap parameters travel as a **global** written by a render-graph pass
+  rather than as a material property: `UnityPerMaterial` has to stay
+  byte-identical to stock Lit or the SRP Batcher stops batching every
+  renderer in the game. A pass rather than `Shader.SetGlobalVector`
+  because a process-wide write belongs to whichever camera renders next,
+  and two cameras here must not jitter — the inventory preview, whose
+  orthographic lens is a few centimetres wide, and the reflection probe,
+  whose six cube faces would each round onto their own grid and seam. Both
+  carry a `Ps1VertexJitterExclusion` marker. An unset global reads as
+  zero, so material thumbnails and any camera without the feature keep the
+  stock image for free.
+- Migration: 16 materials (world, hero, thirteen bus) repointed, and the
+  two editor asset-setup scripts that would have silently regenerated 14 of
+  them back onto the package shader. `Ps1LitShaderParityTests` reads the
+  live package file and asserts per-pass pragma equality, keyword-space
+  equality, the property names the world drives through, and that no
+  migrated material has fallen back — the URP bump that would invalidate
+  the clone now fails a test instead of dimming the lighting.
+- Three removals the user asked for in the same pass. The frame rate is
+  fixed at 60 and is no longer a setting: it changes how the hero handles
+  near tight geometry, so it is not the player's to move. Rain-on-lens is
+  gone entirely — droplet shader code, the render state, the weather
+  drive, the setting and the row. And the options list, which had quietly
+  grown past the bottom of its panel, now scrolls: the window follows the
+  selection, the wheel nudges it, and the rows live in one table instead of
+  being hand-numbered at each call site, which is what let it overflow
+  unnoticed.
+- Verification: EditMode across the settings, menu, localization,
+  presentation, primitive-factory and asset-import fixtures; shader compile
+  and parity gates; the composite's own render tests. Visual confirmation
+  of the jitter in motion is still outstanding.
+
+## 2026-08-24 — Street dressing reaches the ground and laundry keeps clear
+
+- Ground-level frontage and roadside decorations inherited the owning lot's
+  terrace datum even after their XZ anchor moved toward the street. The
+  rendered terrain is sampled separately and includes both its continuous
+  slope and top offset, so furniture and utility clusters could visibly hang
+  above it. Their final anchors now sample that real surface; geometry,
+  collision proxies and interaction docks remain on the same descriptor.
+- Residential courtyard lines no longer use the fixed lateral `2.9 m` shift
+  that put their nearest pole inside the discarded-furniture cluster. A line
+  now takes the free bay opposite its furniture anchor and is retained only
+  when its full corridor stays on ground, clears the entrance and intersects
+  no blocking decoration. The low masonry piece in that furniture recipe was
+  also seated flush with the corrected origin.
+- Verification: `dotnet build BarPromenade.EditModeTests.csproj` completed
+  with zero errors (only the existing serialized-field warnings), and the
+  scoped diff passed `git diff --check`. The focused Unity regression was not
+  started because another filtered EditMode batch process already held the
+  project; no full suite or player build was run.
+
 ## 2026-08-24 — Both quays hand their full walking width to the shore
 
 - Production-layout probing found a descriptor mismatch rather than a bad

@@ -65,16 +65,12 @@
       "value": "СКАНЛАЙНЫ"
     },
     {
-      "key": "options.rain_lens",
-      "value": "КАПЛИ НА ОБЪЕКТИВЕ"
-    },
-    {
       "key": "options.aspect_4_3",
       "value": "ФОРМАТ 4:3"
     },
     {
-      "key": "options.frame_rate_60",
-      "value": "60 КАДРОВ (ВМЕСТО 30)"
+      "key": "options.vertex_jitter",
+      "value": "ДРОЖАНИЕ ПОЛИГОНОВ"
     },
     {
       "key": "options.back",

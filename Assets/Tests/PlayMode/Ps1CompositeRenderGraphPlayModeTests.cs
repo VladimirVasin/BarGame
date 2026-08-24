@@ -21,7 +21,6 @@ namespace BarPromenade.Tests.PlayMode
         private bool fogStateCaptured;
         private bool previousDitherEnabled;
         private bool previousScanlinesEnabled;
-        private bool previousRainOnLensEnabled;
         private bool previousAspectRatio43Enabled;
         private bool effectFlagsCaptured;
 
@@ -32,14 +31,11 @@ namespace BarPromenade.Tests.PlayMode
                 GraphicsEffectsSettings.DitherEnabled;
             previousScanlinesEnabled =
                 GraphicsEffectsSettings.ScanlinesEnabled;
-            previousRainOnLensEnabled =
-                GraphicsEffectsSettings.RainOnLensEnabled;
             previousAspectRatio43Enabled =
                 GraphicsEffectsSettings.AspectRatio43Enabled;
             effectFlagsCaptured = true;
             GraphicsEffectsSettings.DitherEnabled = false;
             GraphicsEffectsSettings.ScanlinesEnabled = false;
-            GraphicsEffectsSettings.RainOnLensEnabled = false;
             GraphicsEffectsSettings.AspectRatio43Enabled = false;
         }
 
@@ -245,8 +241,6 @@ namespace BarPromenade.Tests.PlayMode
                     previousDitherEnabled;
                 GraphicsEffectsSettings.ScanlinesEnabled =
                     previousScanlinesEnabled;
-                GraphicsEffectsSettings.RainOnLensEnabled =
-                    previousRainOnLensEnabled;
                 GraphicsEffectsSettings.AspectRatio43Enabled =
                     previousAspectRatio43Enabled;
                 effectFlagsCaptured = false;

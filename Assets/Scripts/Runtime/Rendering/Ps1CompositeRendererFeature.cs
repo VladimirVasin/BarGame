@@ -17,6 +17,7 @@ namespace BarPromenade.Rendering
             RenderPassEvent.AfterRenderingPostProcessing;
 
         private Ps1CompositePass pass;
+        private Ps1VertexSnapGlobalsPass snapPass;
         private bool loggedMissingResources;
 
         public Ps1PresentationSettings PresentationSettings =>
@@ -33,6 +34,14 @@ namespace BarPromenade.Rendering
             {
                 renderPassEvent = injectionPoint
             };
+            // Ahead of the shadow pass and the depth prepass: every pass
+            // that transforms world geometry has to read the same snap
+            // parameters, or the depth buffer stops matching what the
+            // forward pass drew.
+            snapPass = new Ps1VertexSnapGlobalsPass
+            {
+                renderPassEvent = RenderPassEvent.BeforeRendering
+            };
         }
 
         public override void AddRenderPasses(
@@ -40,14 +49,17 @@ namespace BarPromenade.Rendering
             ref RenderingData renderingData)
         {
             CameraData cameraData = renderingData.cameraData;
-            if (cameraData.cameraType != CameraType.Game ||
-                !cameraData.resolveFinalTarget ||
-                presentationSettings == null ||
-                !presentationSettings.EffectEnabled ||
-                compositeMaterial == null)
-            {
-                return;
-            }
+            // The composite draws only on a game camera that owns the
+            // final image. The vertex snap, though, has to be told its
+            // parameters on EVERY camera this renderer serves - a camera
+            // that never hears from us would keep whatever grid the last
+            // one set, so "off" has to be pushed rather than skipped.
+            bool present =
+                cameraData.cameraType == CameraType.Game &&
+                cameraData.resolveFinalTarget &&
+                presentationSettings != null &&
+                presentationSettings.EffectEnabled &&
+                compositeMaterial != null;
 
             int outputWidth =
                 cameraData.cameraTargetDescriptor.width;
@@ -70,10 +82,41 @@ namespace BarPromenade.Rendering
                 }
             }
 
-            Vector2Int resolution =
-                presentationSettings.GetInternalResolution(
+            Vector2Int resolution = presentationSettings != null
+                ? presentationSettings.GetInternalResolution(
                     effectiveWidth,
-                    outputHeight);
+                    outputHeight)
+                : Vector2Int.zero;
+
+            // The snap grid is the grid the frame is presented on, which
+            // is why it is derived here rather than in the shader: only
+            // this method knows both the internal resolution and the 4:3
+            // crop. NDC spans two units, so a grid count is half the texel
+            // count; in 4:3 the internal width already describes the
+            // cropped window, so it is widened back out by the same
+            // fraction the composite samples with - otherwise the step
+            // would jump every time the player toggles the pillarbox.
+            float snapStrength = 0f;
+            Vector2 snapGrid = Vector2.zero;
+            if (present &&
+                GraphicsEffectsSettings.VertexJitterEnabled &&
+                !cameraData.camera.TryGetComponent(
+                    out Ps1VertexJitterExclusion _))
+            {
+                snapStrength = presentationSettings.VertexJitterStrength;
+                snapGrid = new Vector2(
+                    resolution.x / (2f * Mathf.Max(0.01f, aspectFraction)),
+                    resolution.y * 0.5f);
+            }
+
+            snapPass.Setup(snapGrid, snapStrength);
+            renderer.EnqueuePass(snapPass);
+
+            if (!present)
+            {
+                return;
+            }
+
             pass.Setup(
                 compositeMaterial,
                 resolution,
@@ -85,11 +128,6 @@ namespace BarPromenade.Rendering
                 GraphicsEffectsSettings.ScanlinesEnabled
                     ? presentationSettings.ScanlineIntensity
                     : 0f,
-                GraphicsEffectsSettings.RainOnLensEnabled
-                    ? presentationSettings.RainLensStrength *
-                      RainLensRenderState.Intensity
-                    : 0f,
-                Time.unscaledTime,
                 IntoxicationRenderState.Current);
             renderer.EnqueuePass(pass);
         }
@@ -107,6 +145,7 @@ namespace BarPromenade.Rendering
         {
             pass?.Dispose();
             pass = null;
+            snapPass = null;
         }
 
         private void ResolveResources()
@@ -137,6 +176,59 @@ namespace BarPromenade.Rendering
             }
         }
 
+        /// <summary>
+        /// Hands every world shader the pixel grid to round its vertices
+        /// onto.
+        ///
+        /// This is written on the command buffer rather than through
+        /// <c>Shader.SetGlobalVector</c> deliberately. A process-wide
+        /// write belongs to whichever camera renders next, and this
+        /// project renders two cameras that must not jitter - the
+        /// inventory preview and the reflection probe - from the same
+        /// renderer. A pass is ordered on the GPU timeline, so each camera
+        /// gets its own value and nothing leaks between them.
+        /// </summary>
+        private sealed class Ps1VertexSnapGlobalsPass : ScriptableRenderPass
+        {
+            private static readonly int SnapParamsId =
+                Shader.PropertyToID("_Ps1VertexSnapParams");
+
+            private Vector4 parameters;
+
+            private sealed class PassData
+            {
+                public Vector4 Parameters;
+            }
+
+            public void Setup(Vector2 grid, float strength)
+            {
+                parameters = new Vector4(
+                    grid.x,
+                    grid.y,
+                    Mathf.Clamp01(strength),
+                    0f);
+            }
+
+            public override void RecordRenderGraph(
+                RenderGraph renderGraph,
+                ContextContainer frameData)
+            {
+                using IUnsafeRenderGraphBuilder builder =
+                    renderGraph.AddUnsafePass(
+                        "PS1 Vertex Snap Globals",
+                        out PassData data);
+                data.Parameters = parameters;
+                // The pass writes no texture, so the graph would prune it.
+                builder.AllowPassCulling(false);
+                builder.AllowGlobalStateModification(true);
+                builder.SetRenderFunc(
+                    (PassData passData, UnsafeGraphContext context) =>
+                        context.cmd.SetGlobalVector(
+                            SnapParamsId,
+                            passData.Parameters));
+            }
+        }
+
         private sealed class Ps1CompositePass : ScriptableRenderPass
         {
             private const string LowResolutionName =
@@ -149,10 +241,6 @@ namespace BarPromenade.Rendering
                 Shader.PropertyToID("_Ps1DitherStrength");
             private static readonly int ScanlineIntensityId =
                 Shader.PropertyToID("_Ps1ScanlineIntensity");
-            private static readonly int RainLensId =
-                Shader.PropertyToID("_Ps1RainLens");
-            private static readonly int RainTimeId =
-                Shader.PropertyToID("_Ps1RainTime");
             private static readonly int AspectFractionId =
                 Shader.PropertyToID("_Ps1AspectFraction");
             private static readonly int IntoxicationVignetteId =
@@ -183,8 +271,6 @@ namespace BarPromenade.Rendering
                 float quantizationStrength,
                 float ditherStrength,
                 float scanlineIntensity,
-                float rainLens,
-                float rainTime,
                 IntoxicationRenderParameters intoxication)
             {
                 material = composite;
@@ -208,12 +294,6 @@ namespace BarPromenade.Rendering
                 material.SetFloat(
                     ScanlineIntensityId,
                     Mathf.Clamp01(scanlineIntensity));
-                material.SetFloat(
-                    RainLensId,
-                    Mathf.Clamp01(rainLens));
-                material.SetFloat(
-                    RainTimeId,
-                    Mathf.Max(0f, rainTime));
                 material.SetFloat(
                     IntoxicationVignetteId,
                     Mathf.Clamp01(

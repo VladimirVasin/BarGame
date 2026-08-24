@@ -484,7 +484,7 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 87d777c6537c409428f832e17ea15f53, type: 3}
   m_Name: 
-  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.LakeFishermanRigAnchors
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.SeacoastFishermanRigAnchors
   pedestrianRegistry: {fileID: 7494912495709786444}
   pipeEmberAnchor: {fileID: 2928207855104229898}
   rodTipAnchor: {fileID: 3336010958459139664}

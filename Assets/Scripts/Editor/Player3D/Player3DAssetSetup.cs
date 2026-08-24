@@ -371,12 +371,16 @@ namespace BarPromenade.Editor
 
         private static Material EnsureSharedMaterial()
         {
-            Shader shader = Shader.Find("Universal Render Pipeline/Lit");
+            // The project's own Lit: stock URP Lit with a vertex snap
+            // wrapped around three of its passes. Regenerating this
+            // material against the package shader instead would silently
+            // take the hero back off the PS1 jitter.
+            Shader shader = Shader.Find("Bar Promenade/PS1 Lit");
             if (shader == null)
             {
                 throw new InvalidOperationException(
-                    "URP/Lit shader is unavailable; cannot create Player 3D " +
-                    "material.");
+                    "PS1 Lit shader is unavailable; cannot create Player " +
+                    "3D material.");
             }
 
             Material material =

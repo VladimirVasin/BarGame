@@ -171,7 +171,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(material.shader, Is.Not.Null);
             Assert.That(
                 material.shader.name,
-                Is.EqualTo("Universal Render Pipeline/Lit"));
+                Is.EqualTo("Bar Promenade/PS1 Lit"),
+                "The hero jitters with the world; a regenerated material " +
+                "on stock URP Lit would leave him gliding through it.");
             Assert.That(material.enableInstancing, Is.True);
 
             GameObject prefab = Player3DResources.LoadPrefab();

@@ -751,9 +751,9 @@ namespace BarPromenade
                 0.16f, 0.28f, 0.16f);
             Add(parts, c, BatchStyle.Street, 0.12f * mirror, 0.14f, 0f,
                 0.16f, 0.28f, 0.16f);
-            Add(parts, c, BatchStyle.Masonry, 1.25f * mirror, 0.18f, 0.35f,
+            Add(parts, c, BatchStyle.Masonry, 1.25f * mirror, 0.11f, 0.35f,
                 1.30f, 0.22f, 2.10f);
-            Add(parts, c, BatchStyle.Street, 1.25f * mirror, 0.31f, 0.35f,
+            Add(parts, c, BatchStyle.Street, 1.25f * mirror, 0.24f, 0.35f,
                 1.12f, 0.05f, 1.92f);
         }
 

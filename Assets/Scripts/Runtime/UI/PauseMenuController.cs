@@ -29,6 +29,32 @@ namespace BarPromenade
         private bool closePending;
         private int inputUnlockFrame;
         private int closeRequestedFrame;
+
+        // How many option rows fit between the title and the bottom of
+        // the panel. Rows start at y = 94 and stand 32 apart inside a
+        // panel that ends at y = 340, which leaves room for seven plus
+        // the scroll hints above and below them.
+        private const int VisibleOptionsRows = 7;
+
+        // The order the options page draws. One table rather than a run
+        // of hand-numbered calls: the row indices used to be written out
+        // at every call site, so adding a row meant renumbering each one
+        // below it - which is how the list quietly grew past the panel.
+        private static readonly (PauseMenuOptionsRow Row, string Key)[]
+            OptionsRows =
+            {
+                (PauseMenuOptionsRow.DepthOfField, "options.dof"),
+                (PauseMenuOptionsRow.IntoxicationFx,
+                    "options.intoxication_fx"),
+                (PauseMenuOptionsRow.Dither, "options.dither"),
+                (PauseMenuOptionsRow.Scanlines, "options.scanlines"),
+                (PauseMenuOptionsRow.AspectRatio43, "options.aspect_4_3"),
+                (PauseMenuOptionsRow.VertexJitter,
+                    "options.vertex_jitter"),
+                (PauseMenuOptionsRow.Back, "options.back")
+            };
+
+        private int optionsScroll;
         private string pendingCloseReason = string.Empty;
 
         public static bool IsAnyPaused =>
@@ -401,46 +427,100 @@ namespace BarPromenade
                 LocalizationService.Get("pause.options"),
                 titleStyle);
 
-            DrawOptionsRow(
-                canvas,
-                0,
-                PauseMenuOptionsRow.DepthOfField,
-                "options.dof");
-            DrawOptionsRow(
-                canvas,
-                1,
-                PauseMenuOptionsRow.IntoxicationFx,
-                "options.intoxication_fx");
-            DrawOptionsRow(
-                canvas,
-                2,
-                PauseMenuOptionsRow.Dither,
-                "options.dither");
-            DrawOptionsRow(
-                canvas,
-                3,
-                PauseMenuOptionsRow.Scanlines,
-                "options.scanlines");
-            DrawOptionsRow(
-                canvas,
-                4,
-                PauseMenuOptionsRow.RainOnLens,
-                "options.rain_lens");
-            DrawOptionsRow(
-                canvas,
-                5,
-                PauseMenuOptionsRow.AspectRatio43,
-                "options.aspect_4_3");
-            DrawOptionsRow(
-                canvas,
-                6,
-                PauseMenuOptionsRow.HighFrameRate,
-                "options.frame_rate_60");
-            DrawOptionsRow(
-                canvas,
-                7,
-                PauseMenuOptionsRow.Back,
-                "options.back");
+            int rowCount = OptionsRows.Length;
+            int selectedIndex = 0;
+            for (int index = 0; index < rowCount; index++)
+            {
+                if (OptionsRows[index].Row == SelectedOptionsRow)
+                {
+                    selectedIndex = index;
+                    break;
+                }
+            }
+
+            // The list outgrew the panel, so it scrolls. The window
+            // follows the selection rather than the mouse: this menu is
+            // driven by the keyboard and the pad, and a row you have
+            // selected but cannot see is the one bug a scrolling list
+            // must not have.
+            int maximumScroll = Mathf.Max(0, rowCount - VisibleOptionsRows);
+            optionsScroll = Mathf.Clamp(optionsScroll, 0, maximumScroll);
+            if (selectedIndex < optionsScroll)
+            {
+                optionsScroll = selectedIndex;
+            }
+            else if (selectedIndex >= optionsScroll + VisibleOptionsRows)
+            {
+                optionsScroll = selectedIndex - VisibleOptionsRows + 1;
+            }
+
+            if (Event.current.type == EventType.ScrollWheel &&
+                panel.Contains(RetroUiTheme.LogicalMousePosition(canvas)))
+            {
+                optionsScroll = Mathf.Clamp(
+                    optionsScroll +
+                    (Event.current.delta.y > 0f ? 1 : -1),
+                    0,
+                    maximumScroll);
+                Event.current.Use();
+            }
+
+            for (int slot = 0; slot < VisibleOptionsRows; slot++)
+            {
+                int index = optionsScroll + slot;
+                if (index >= rowCount)
+                {
+                    break;
+                }
+
+                DrawOptionsRow(
+                    canvas,
+                    slot,
+                    OptionsRows[index].Row,
+                    OptionsRows[index].Key);
+            }
+
+            DrawScrollHint(
+                new Rect(panel.center.x - 8f, 84f, 16f, 8f),
+                optionsScroll > 0);
+            DrawScrollHint(
+                new Rect(
+                    panel.center.x - 8f,
+                    96f + VisibleOptionsRows * 32f,
+                    16f,
+                    8f),
+                optionsScroll < maximumScroll,
+                true);
+        }
+
+        // A stack of dots narrowing to a point, drawn as filled rects
+        // rather than a glyph so it survives the retro font and the
+        // RGB555 pass.
+        private static void DrawScrollHint(
+            Rect area,
+            bool visible,
+            bool pointingDown = false)
+        {
+            if (!visible)
+            {
+                return;
+            }
+
+            const int rows = 3;
+            for (int row = 0; row < rows; row++)
+            {
+                float width = area.width * (row + 1) / rows;
+                float y = pointingDown
+                    ? area.y + (rows - 1 - row) * 3f
+                    : area.y + row * 3f;
+                RetroUiTheme.FillRect(
+                    new Rect(
+                        area.center.x - width * 0.5f,
+                        y,
+                        width,
+                        2f),
+                    RetroUiTheme.Accent);
+            }
         }
 
         private void DrawOptionsRow(
@@ -537,24 +617,15 @@ namespace BarPromenade
                     GraphicsEffectsSettings.ScanlinesEnabled =
                         !GraphicsEffectsSettings.ScanlinesEnabled;
                     return;
-                case PauseMenuOptionsRow.RainOnLens:
-                    GraphicsEffectsSettings.RainOnLensEnabled =
-                        !GraphicsEffectsSettings.RainOnLensEnabled;
-                    return;
                 case PauseMenuOptionsRow.AspectRatio43:
                     GraphicsEffectsSettings.AspectRatio43Enabled =
                         !GraphicsEffectsSettings
                             .AspectRatio43Enabled;
                     return;
-                case PauseMenuOptionsRow.HighFrameRate:
-                    GraphicsEffectsSettings.HighFrameRateEnabled =
+                case PauseMenuOptionsRow.VertexJitter:
+                    GraphicsEffectsSettings.VertexJitterEnabled =
                         !GraphicsEffectsSettings
-                            .HighFrameRateEnabled;
-                    // Unlike the other rows, this one is not read back
-                    // by a renderer feature each frame - the cap is a
-                    // player setting, so push it now.
-                    BarPromenadeRuntimeBootstrap
-                        .RefreshFrameRateCap();
+                            .VertexJitterEnabled;
                     return;
                 default:
                     throw new ArgumentOutOfRangeException(
@@ -580,15 +651,12 @@ namespace BarPromenade
                 case PauseMenuOptionsRow.Scanlines:
                     return GraphicsEffectsSettings
                         .ScanlinesEnabled;
-                case PauseMenuOptionsRow.RainOnLens:
-                    return GraphicsEffectsSettings
-                        .RainOnLensEnabled;
                 case PauseMenuOptionsRow.AspectRatio43:
                     return GraphicsEffectsSettings
                         .AspectRatio43Enabled;
-                case PauseMenuOptionsRow.HighFrameRate:
+                case PauseMenuOptionsRow.VertexJitter:
                     return GraphicsEffectsSettings
-                        .HighFrameRateEnabled;
+                        .VertexJitterEnabled;
                 default:
                     return false;
             }

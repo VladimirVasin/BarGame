@@ -155,9 +155,12 @@ The vertical slice contains:
   bank, producing four navigable lower landings. Each promenade cut has a
   collidered, box-projected Quay lining along the landward stair profile,
   platform side and terminal face; its railed waterside stays open to the
-  river. River-owned parapets stop at the bank-road pads and preserve those
-  four stair openings; generic road-edge fences treat bridge decks as
-  support-only and do not duplicate them. Route
+  river. Across the main spans, lowered landing frontages and cave approach,
+  the visible Quay face projects `0.03 m` waterward of the Paving and Bed
+  side faces that used to be coplanar, while its landward face stays fixed
+  beneath the rail seat. River-owned parapets stop at the bank-road pads and
+  preserve those four stair openings; generic road-edge fences treat bridge
+  decks as support-only and do not duplicate them. Route
   01 may use the road bridges but never the timber crossing. In
   `default-coastal`, water and its silt bed continue more than `48 m` behind
   the southern mountain so their end remains beyond visibility. Both
@@ -673,7 +676,10 @@ The vertical slice contains:
   into a batch: each hangs from the top beam as a hinged rigid body the
   hero pushes by walking into it. The
   ordinary random roadside pool deliberately omits bus shelters because
-  Route 01 owns its target-derived physical stop poles;
+  Route 01 owns its target-derived physical stop poles. Ground-level
+  frontage and roadside descriptors sample the rendered terrain at their
+  final XZ anchor, so their geometry, collision proxies and interaction
+  docks share the actual pavement height rather than the lot datum;
 - four first-class open district points of interest on their own full-block
   land-use lots: Old Town's waterworks court, Residential's drying yard,
   Industrial's weighbridge and Nightlife's last-route island. Their canonical
@@ -751,7 +757,10 @@ The vertical slice contains:
   a `ClothPanelFactory` panel on the weather-wind registry; rope-width
   strips (`<= 0.12 m`) keep the factory's flat colour while wider pieces
   ride the shared POI cloth sheet; only line poles collide (batched
-  collider), and the bar-side yard, lighthouse island, drained-lake block,
+  collider). Residential lines use the free frontage bay opposite their
+  furniture anchor and are omitted when that complete corridor would meet a
+  blocking decoration, leave the block or crowd the entrance. The bar-side
+  yard, lighthouse island, drained-lake block,
   tunnel forecourt, flood works and stone terraces hang nothing by
   authored rule;
 - frontage-aware windows and facade details now face each lot's actual road.

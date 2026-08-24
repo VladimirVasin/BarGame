@@ -1059,6 +1059,17 @@ namespace BarPromenade
                 lot.Center +
                 (forward * (buildingHalfDepth + depth)) +
                 (right * lateral);
+            if (!CityTerrainSurfacePlan.TrySampleGroundTop(
+                    layout,
+                    new Vector2(position.x, position.z),
+                    out float groundTop,
+                    out _))
+            {
+                position = default;
+                return false;
+            }
+
+            position.y = groundTop;
             return true;
         }
 

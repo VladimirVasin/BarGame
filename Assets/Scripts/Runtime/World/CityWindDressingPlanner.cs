@@ -37,6 +37,8 @@ namespace BarPromenade
         private const float CourtyardLineSag = 0.18f;
         private const float CourtyardLineHalfSpan = 1.6f;
         private const float CourtyardPoleHeight = 2.2f;
+        private const float CourtyardLineObjectClearance = 0.30f;
+        private const float CourtyardEntranceClearance = 1.10f;
         private const float RopeThickness = 0.03f;
 
         /// <summary>
@@ -296,6 +298,8 @@ namespace BarPromenade
             List<CityDecorationDescriptor> anchors = CollectDecorations(
                 decorationPlan,
                 CityDecorationKind.ResidentialDiscardedFurniture);
+            List<Bounds> blockingDecoration =
+                CollectBlockingDecorationBounds(layout, decorationPlan);
             var chosenCenters = new List<Vector3>(6);
             int lineOrdinal = 0;
             for (int index = 0;
@@ -312,8 +316,18 @@ namespace BarPromenade
                     out _,
                     out _);
                 uint hash = HashAt(layout.Seed, origin, LineSalt);
-                float side = (hash & 1u) == 0u ? 1f : -1f;
-                Vector3 center = origin + (tangent * (2.9f * side));
+                if (!TryCreateCourtyardLineCenter(
+                        layout,
+                        anchor,
+                        origin,
+                        forward,
+                        tangent,
+                        blockingDecoration,
+                        out Vector3 center))
+                {
+                    continue;
+                }
+
                 if (hasDryingYard &&
                     DistanceToRect(
                         new Vector2(center.x, center.z),
@@ -353,6 +367,174 @@ namespace BarPromenade
                 chosenCenters.Add(center);
                 lineOrdinal++;
             }
+        }
+
+        /// <summary>
+        /// The furniture anchor occupies one lateral bay of its frontage.
+        /// Mirroring that authored bay through the lot centre puts the line
+        /// beside it without inventing another arbitrary offset, keeps the
+        /// central door clear and preserves the line inside the same block.
+        /// The final corridor check rejects a bay taken by any other physical
+        /// decoration; a crowded lot simply contributes no laundry.
+        /// </summary>
+        private static bool TryCreateCourtyardLineCenter(
+            CityLayout layout,
+            CityDecorationDescriptor anchor,
+            Vector3 origin,
+            Vector3 forward,
+            Vector3 tangent,
+            IReadOnlyList<Bounds> blockingDecoration,
+            out Vector3 center)
+        {
+            if (!anchor.TryResolveLot(layout, out BuildingLot lot))
+            {
+                center = default;
+                return false;
+            }
+
+            float ownerLateral = Vector3.Dot(
+                origin - lot.Center,
+                tangent);
+            if (Mathf.Abs(ownerLateral) < 0.10f)
+            {
+                center = default;
+                return false;
+            }
+
+            float freeSide = -Mathf.Sign(ownerLateral);
+            float targetLateral = freeSide *
+                (Mathf.Abs(ownerLateral) +
+                 CourtyardLineObjectClearance);
+            float forwardOffset = Vector3.Dot(
+                origin - lot.Center,
+                forward);
+            center = lot.Center +
+                (tangent * targetLateral) +
+                (forward * forwardOffset);
+
+            float parallelBlockSpan =
+                (Mathf.Abs(tangent.x) > 0.5f
+                    ? layout.NodeSpacing.x
+                    : layout.NodeSpacing.y) -
+                layout.RoadWidth;
+            if (Mathf.Abs(targetLateral) +
+                CourtyardLineHalfSpan +
+                CourtyardLineObjectClearance >
+                parallelBlockSpan * 0.5f)
+            {
+                center = default;
+                return false;
+            }
+
+            float doorLateral = Vector3.Dot(
+                lot.DoorPosition - lot.Center,
+                tangent);
+            float lineMinimum =
+                targetLateral - CourtyardLineHalfSpan;
+            float lineMaximum =
+                targetLateral + CourtyardLineHalfSpan;
+            float doorDistance = doorLateral < lineMinimum
+                ? lineMinimum - doorLateral
+                : doorLateral > lineMaximum
+                    ? doorLateral - lineMaximum
+                    : 0f;
+            if (doorDistance < CourtyardEntranceClearance)
+            {
+                center = default;
+                return false;
+            }
+
+            Vector3 footA = center -
+                (tangent * CourtyardLineHalfSpan);
+            Vector3 footB = center +
+                (tangent * CourtyardLineHalfSpan);
+            if (!CityTerrainSurfacePlan.TrySampleGroundTop(
+                    layout,
+                    new Vector2(footA.x, footA.z),
+                    out float groundA,
+                    out _) ||
+                !CityTerrainSurfacePlan.TrySampleGroundTop(
+                    layout,
+                    new Vector2(footB.x, footB.z),
+                    out float groundB,
+                    out _))
+            {
+                center = default;
+                return false;
+            }
+
+            Rect corridor = Rect.MinMaxRect(
+                Mathf.Min(footA.x, footB.x) -
+                CourtyardLineObjectClearance,
+                Mathf.Min(footA.z, footB.z) -
+                CourtyardLineObjectClearance,
+                Mathf.Max(footA.x, footB.x) +
+                CourtyardLineObjectClearance,
+                Mathf.Max(footA.z, footB.z) +
+                CourtyardLineObjectClearance);
+            for (int index = 0;
+                 index < blockingDecoration.Count;
+                 index++)
+            {
+                if (OverlapsStrict(
+                        corridor,
+                        FootprintOf(blockingDecoration[index])))
+                {
+                    center = default;
+                    return false;
+                }
+            }
+
+            center.y = (groundA + groundB) * 0.5f;
+            return true;
+        }
+
+        private static List<Bounds> CollectBlockingDecorationBounds(
+            CityLayout layout,
+            CityDecorationPlan decorationPlan)
+        {
+            var result = new List<Bounds>();
+            var buffer = new List<Bounds>(
+                CityStaticCollisionBuilder.MaximumDecorationProxyCount);
+            for (int index = 0;
+                 index < decorationPlan.Descriptors.Count;
+                 index++)
+            {
+                CityDecorationDescriptor descriptor =
+                    decorationPlan.Descriptors[index];
+                if (descriptor.CollisionTier ==
+                    CityDecorationCollisionTier.None)
+                {
+                    continue;
+                }
+
+                buffer.Clear();
+                CityStaticCollisionBuilder.AddDecorationProxyBounds(
+                    layout,
+                    descriptor,
+                    buffer);
+                result.AddRange(buffer);
+            }
+
+            return result;
+        }
+
+        private static Rect FootprintOf(Bounds bounds)
+        {
+            return Rect.MinMaxRect(
+                bounds.min.x,
+                bounds.min.z,
+                bounds.max.x,
+                bounds.max.z);
+        }
+
+        private static bool OverlapsStrict(Rect left, Rect right)
+        {
+            const float epsilon = 0.001f;
+            return left.xMin < right.xMax - epsilon &&
+                   left.xMax > right.xMin + epsilon &&
+                   left.yMin < right.yMax - epsilon &&
+                   left.yMax > right.yMin + epsilon;
         }
 
         private static void AddCourtyardLine(

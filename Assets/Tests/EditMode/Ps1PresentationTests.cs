@@ -79,8 +79,8 @@ namespace BarPromenade.Tests.EditMode
                 profile.ScanlineIntensity,
                 Is.EqualTo(0.22f).Within(0.001f));
             Assert.That(
-                profile.RainLensStrength,
-                Is.EqualTo(0.8f).Within(0.001f));
+                profile.VertexJitterStrength,
+                Is.EqualTo(1f).Within(0.001f));
             Assert.That(material, Is.Not.Null);
             Assert.That(material.shader, Is.Not.Null);
             Assert.That(material.shader.name,

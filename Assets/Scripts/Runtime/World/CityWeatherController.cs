@@ -1,5 +1,4 @@
 using System;
-using BarPromenade.Rendering;
 using UnityEngine;
 
 namespace BarPromenade
@@ -21,7 +20,6 @@ namespace BarPromenade
         private Func<bool> isSheltered;
         private bool hasAppliedSample;
         private long lastThunderStrikeId = long.MinValue;
-        private float lensRainIntensity;
 
         public bool IsInitialized { get; private set; }
         public WeatherVisualSample CurrentSample { get; private set; }
@@ -69,7 +67,6 @@ namespace BarPromenade
             ApplyWind();
             WeatherVisualSample nextSample =
                 GameWeatherRules.EvaluateCurrent();
-            ApplyLensRain(nextSample);
             ApplyWetSurfaces(nextSample, force);
             bool kindChanged =
                 !hasAppliedSample ||
@@ -170,23 +167,6 @@ namespace BarPromenade
                     sample.AzimuthDegrees));
         }
 
-        private void ApplyLensRain(WeatherVisualSample sample)
-        {
-            // The droplet film keeps fading while the weather sample is
-            // visually unchanged, so it runs before the equivalence
-            // early-out, like wind and lightning. Shelter (the bus
-            // cabin) dries the lens over the same ramp.
-            float target =
-                isSheltered != null && isSheltered()
-                    ? 0f
-                    : sample.RainIntensity;
-            lensRainIntensity = Mathf.MoveTowards(
-                lensRainIntensity,
-                Mathf.Clamp01(target),
-                Time.deltaTime / 2.5f);
-            RainLensRenderState.Set(lensRainIntensity);
-        }
-
         private static void ApplyWetSurfaces(
             WeatherVisualSample sample,
             bool force)
@@ -220,11 +200,6 @@ namespace BarPromenade
         private void Update()
         {
             ApplyCurrentWeather();
-        }
-
-        private void OnDestroy()
-        {
-            RainLensRenderState.Clear();
         }
     }
 }

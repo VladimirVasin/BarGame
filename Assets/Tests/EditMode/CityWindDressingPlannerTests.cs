@@ -70,6 +70,151 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void DefaultCity_GroundsStreetMiscAndKeepsCourtyardLinesClear()
+        {
+            CityLayout layout = CreateDefaultLayout();
+            RoadFencePlan fencePlan = RoadFencePlanner.CreatePlan(layout);
+            CityNightFixturePlan nightPlan =
+                CityNightFixturePlanner.CreatePlan(layout);
+            CityDecorationPlan decorationPlan =
+                CityDecorationPlanner.CreatePlan(
+                    layout,
+                    fencePlan,
+                    nightPlan);
+            CityMountainBoundaryPlan mountainPlan =
+                CityMountainBoundaryPlanner.Create(layout);
+            CityWindDressingPlan windPlan =
+                CityWindDressingPlanner.Create(
+                    layout,
+                    decorationPlan,
+                    CitySeacoastPlanner.Create(layout),
+                    CityCemeteryPlanner.Create(layout),
+                    CityFringeYardPlanner.Create(
+                        layout,
+                        mountainPlan));
+
+            int groundedDescriptorCount = 0;
+            var decorationProxies = new List<Bounds>();
+            var proxyBuffer = new List<Bounds>(
+                CityStaticCollisionBuilder.MaximumDecorationProxyCount);
+            for (int index = 0;
+                 index < decorationPlan.Descriptors.Count;
+                 index++)
+            {
+                CityDecorationDescriptor descriptor =
+                    decorationPlan.Descriptors[index];
+                if (descriptor.AnchorKind ==
+                        CityDecorationAnchorKind.BuildingFrontage ||
+                    descriptor.AnchorKind ==
+                        CityDecorationAnchorKind.Roadside)
+                {
+                    Assert.That(
+                        CityTerrainSurfacePlan.TrySampleGroundTop(
+                            layout,
+                            new Vector2(
+                                descriptor.Position.x,
+                                descriptor.Position.z),
+                            out float groundTop,
+                            out _),
+                        Is.True,
+                        $"Street misc '{descriptor.StableId}' has no " +
+                        "sampled ground.");
+                    Assert.That(
+                        descriptor.Position.y,
+                        Is.EqualTo(groundTop).Within(0.001f),
+                        $"Street misc '{descriptor.StableId}' floats " +
+                        "above or sinks below its sampled ground.");
+                    groundedDescriptorCount++;
+                }
+
+                if (descriptor.CollisionTier ==
+                    CityDecorationCollisionTier.None)
+                {
+                    continue;
+                }
+
+                proxyBuffer.Clear();
+                CityStaticCollisionBuilder.AddDecorationProxyBounds(
+                    layout,
+                    descriptor,
+                    proxyBuffer);
+                decorationProxies.AddRange(proxyBuffer);
+            }
+
+            Assert.That(
+                groundedDescriptorCount,
+                Is.GreaterThan(0),
+                "The default city planned no grounded street misc.");
+            Assert.That(
+                decorationProxies,
+                Is.Not.Empty,
+                "The default city planned no physical decoration proxies.");
+
+            int linePoleCount = 0;
+            int lineSupportCount = 0;
+            for (int index = 0;
+                 index < windPlan.Supports.Count;
+                 index++)
+            {
+                CityWindDressingSupportDescriptor support =
+                    windPlan.Supports[index];
+                if (support.Zone != CityWindDressingZone.Residential)
+                {
+                    continue;
+                }
+
+                lineSupportCount++;
+                Bounds supportBounds = AxisAlignedBounds(support.Box);
+                for (int proxyIndex = 0;
+                     proxyIndex < decorationProxies.Count;
+                     proxyIndex++)
+                {
+                    Assert.That(
+                        OverlapsStrict(
+                            supportBounds,
+                            decorationProxies[proxyIndex]),
+                        Is.False,
+                        $"Courtyard-line support " +
+                        $"'{support.StableId}' intersects physical " +
+                        $"decoration proxy {proxyIndex}.");
+                }
+
+                if (support.Kind !=
+                    CityWindDressingSupportKind.LinePole)
+                {
+                    continue;
+                }
+
+                Assert.That(
+                    CityTerrainSurfacePlan.TrySampleGroundTop(
+                        layout,
+                        new Vector2(
+                            support.Box.Center.x,
+                            support.Box.Center.z),
+                        out float poleGroundTop,
+                        out _),
+                    Is.True,
+                    $"Line pole '{support.StableId}' has no sampled " +
+                    "ground.");
+                Assert.That(
+                    supportBounds.min.y,
+                    Is.EqualTo(poleGroundTop).Within(0.001f),
+                    $"Line pole '{support.StableId}' is not planted " +
+                    "on sampled ground.");
+                linePoleCount++;
+            }
+
+            Assert.That(
+                lineSupportCount,
+                Is.GreaterThan(0),
+                "The default city planned no courtyard-line supports.");
+            Assert.That(
+                linePoleCount,
+                Is.GreaterThan(0),
+                "The default city planned no courtyard-line poles.");
+        }
+
+        [Test]
         public void DefaultCity_RespectsZoneBudgetsAndBodyRegistry()
         {
             CityWindDressingPlan plan =
@@ -361,6 +506,38 @@ namespace BarPromenade.Tests.EditMode
                 source.y - amount,
                 source.width + (amount * 2f),
                 source.height + (amount * 2f));
+        }
+
+        private static Bounds AxisAlignedBounds(RuntimeOrientedBox box)
+        {
+            Vector3 axisX = box.Rotation *
+                new Vector3(box.Size.x * 0.5f, 0f, 0f);
+            Vector3 axisY = box.Rotation *
+                new Vector3(0f, box.Size.y * 0.5f, 0f);
+            Vector3 axisZ = box.Rotation *
+                new Vector3(0f, 0f, box.Size.z * 0.5f);
+            var extents = new Vector3(
+                Mathf.Abs(axisX.x) +
+                Mathf.Abs(axisY.x) +
+                Mathf.Abs(axisZ.x),
+                Mathf.Abs(axisX.y) +
+                Mathf.Abs(axisY.y) +
+                Mathf.Abs(axisZ.y),
+                Mathf.Abs(axisX.z) +
+                Mathf.Abs(axisY.z) +
+                Mathf.Abs(axisZ.z));
+            return new Bounds(box.Center, extents * 2f);
+        }
+
+        private static bool OverlapsStrict(Bounds left, Bounds right)
+        {
+            const float Epsilon = 0.001f;
+            return left.min.x < right.max.x - Epsilon &&
+                   left.max.x > right.min.x + Epsilon &&
+                   left.min.y < right.max.y - Epsilon &&
+                   left.max.y > right.min.y + Epsilon &&
+                   left.min.z < right.max.z - Epsilon &&
+                   left.max.z > right.min.z + Epsilon;
         }
     }
 }
