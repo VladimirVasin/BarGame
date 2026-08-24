@@ -132,7 +132,7 @@ namespace BarPromenade.Tests.PlayMode
             presentation.Initialize(playerRoot.transform, registry);
             contactSheet = new Texture2D(
                 TileSize * 2,
-                TileSize * 2,
+                TileSize * 3,
                 TextureFormat.RGBA32,
                 false,
                 true)
@@ -146,9 +146,11 @@ namespace BarPromenade.Tests.PlayMode
                 "Idle",
                 "BedSleepLoop",
                 "SmokeLoop",
-                "CatFeedLoop"
+                "CatFeedLoop",
+                "WalkBack",
+                "TurnLeft"
             };
-            float[] samples = { 0.35f, 0.55f, 0.50f, 0.50f };
+            float[] samples = { 0.35f, 0.55f, 0.50f, 0.50f, 0.25f, 0.25f };
             int[] foregroundCounts = new int[clips.Length];
             for (int index = 0; index < clips.Length; index++)
             {

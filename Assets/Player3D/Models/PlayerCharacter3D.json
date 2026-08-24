@@ -12,7 +12,7 @@
   "object_count": 75,
   "mesh_count": 73,
   "triangle_count": 1534,
-  "action_count": 32,
+  "action_count": 35,
   "socket_count": 6,
   "bounds_min": [
     -0.773908,
@@ -429,7 +429,40 @@
       "root_motion": false
     },
     {
+      "name": "TurnLeft",
+      "category": "locomotion",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "source_frame_count": 24,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 24.0,
+      "root_motion": false
+    },
+    {
+      "name": "TurnRight",
+      "category": "locomotion",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "source_frame_count": 24,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 24.0,
+      "root_motion": false
+    },
+    {
       "name": "Walk",
+      "category": "locomotion",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "source_frame_count": 24,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 24.0,
+      "root_motion": false
+    },
+    {
+      "name": "WalkBack",
       "category": "locomotion",
       "duration_seconds": 1.0,
       "loop": true,

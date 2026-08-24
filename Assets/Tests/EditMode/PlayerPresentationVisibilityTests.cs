@@ -20,7 +20,7 @@ namespace BarPromenade.Tests.EditMode
             public PlayerPresentationMetrics Metrics => default;
             public bool InteractionHandoffLocked { get; private set; }
 
-            public void SetMotion(Vector3 planarVelocity)
+            public void SetMotion(in PlayerMotionSample motion)
             {
             }
 

@@ -380,7 +380,7 @@ namespace BarPromenade.Tests.EditMode
                 string.Empty;
             public bool IsClipActive => ActiveClipName.Length > 0;
 
-            public void SetMotion(Vector3 planarVelocity)
+            public void SetMotion(in PlayerMotionSample motion)
             {
             }
 

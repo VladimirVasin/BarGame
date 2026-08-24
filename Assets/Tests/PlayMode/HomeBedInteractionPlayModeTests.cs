@@ -371,7 +371,7 @@ namespace BarPromenade.Tests.PlayMode
                 home.Player.GameObject.transform.position;
             keyboard.MakeCurrent();
             inputFixture.Press(
-                keyboard.dKey,
+                keyboard.wKey,
                 queueEventOnly: true);
             InputSystem.Update();
             yield return null;
@@ -389,7 +389,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 keyboard.MakeCurrent();
                 inputFixture.Press(
-                    keyboard.dKey,
+                    keyboard.wKey,
                     queueEventOnly: true);
                 yield return null;
             }
@@ -400,7 +400,7 @@ namespace BarPromenade.Tests.PlayMode
                     wakePosition),
                 Is.GreaterThanOrEqualTo(0.04f),
                 "Movement input must work again after waking. " +
-                $"key={keyboard.dKey.isPressed}, " +
+                $"key={keyboard.wKey.isPressed}, " +
                 $"motorEnabled={home.Player.Motor.enabled}, " +
                 $"inputEnabled={home.Player.Motor.InputEnabled}, " +
                 $"speedMultiplier={home.Player.Motor.SpeedMultiplier}, " +
@@ -411,7 +411,7 @@ namespace BarPromenade.Tests.PlayMode
                 $"spawn={home.Layout.PlayerSpawn}, " +
                 $"approach={home.BedInteractionPlan.ApproachRootPosition}");
             inputFixture.Release(
-                keyboard.dKey,
+                keyboard.wKey,
                 queueEventOnly: true);
             InputSystem.Update();
             yield return null;

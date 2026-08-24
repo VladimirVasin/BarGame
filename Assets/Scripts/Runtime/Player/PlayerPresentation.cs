@@ -43,9 +43,43 @@ namespace BarPromenade
         public float FallDirection { get; }
     }
 
+    /// <summary>
+    /// One frame of locomotion, as the motor actually executed it. The
+    /// presentation cannot derive the sign of travel or the turn intent
+    /// from a bare velocity now that the root no longer faces the
+    /// velocity, so the motor reports them explicitly.
+    /// </summary>
+    public readonly struct PlayerMotionSample
+    {
+        public PlayerMotionSample(
+            Vector3 planarVelocity,
+            float signedForwardSpeed,
+            float turnInput)
+        {
+            PlanarVelocity = planarVelocity;
+            SignedForwardSpeed = signedForwardSpeed;
+            TurnInput = Mathf.Clamp(turnInput, -1f, 1f);
+        }
+
+        /// <summary>Measured planar velocity in metres per second.</summary>
+        public Vector3 PlanarVelocity { get; }
+
+        /// <summary>
+        /// Velocity projected onto the root's forward axis: positive
+        /// walks forward, negative backs up.
+        /// </summary>
+        public float SignedForwardSpeed { get; }
+
+        /// <summary>Yaw input in [-1, 1]; positive turns right.</summary>
+        public float TurnInput { get; }
+
+        public static PlayerMotionSample Stationary =>
+            new PlayerMotionSample(Vector3.zero, 0f, 0f);
+    }
+
     public interface IPlayerMotionPresentation
     {
-        void SetMotion(Vector3 planarVelocity);
+        void SetMotion(in PlayerMotionSample motion);
     }
 
     public interface IPlayerStatusPresentation

@@ -6,6 +6,8 @@ namespace BarPromenade
     public sealed class PlayerMotor : MonoBehaviour
     {
         private const float MoveSpeed = 2.6f;
+        private const float BackwardMoveSpeed = 1.4f;
+        private const float TurnSpeedDegreesPerSecond = 150f;
         private const float InteractionTurnSpeedDegrees = 540f;
         private const float Acceleration = 6.5f;
         private const float Deceleration = 11f;
@@ -16,14 +18,12 @@ namespace BarPromenade
         private const float InteractionStallTimeoutSeconds = 1.5f;
         private const float InteractionProgressDistance = 0.0001f;
         private const float InteractionProgressDegrees = 0.05f;
-        private const float CameraCutLatchDegrees = 30f;
 
         public const float InteractionPositionTolerance = 0.015f;
         public const float InteractionVerticalTolerance = 0.02f;
         public const float InteractionRotationToleranceDegrees = 0.5f;
 
         private CharacterController controller;
-        private Camera movementCamera;
         private IWalkableArea walkableArea;
         private IPlayerMotionPresentation presentation;
         private float verticalSpeed;
@@ -33,10 +33,6 @@ namespace BarPromenade
         private float interactionPoseStallSeconds;
         private Vector3 lastInteractionPosePosition;
         private Quaternion lastInteractionPoseRotation;
-        private Vector3 heldInputForward;
-        private Vector3 heldInputRight;
-        private bool hasHeldInputBasis;
-        private bool heldInputBasisLatched;
 
         public bool InputEnabled { get; private set; } = true;
         public bool IsGrounded =>
@@ -48,7 +44,6 @@ namespace BarPromenade
         public bool InteractionPoseMoveStalled { get; private set; }
 
         public void Initialize(
-            Camera cameraToUse,
             IWalkableArea area,
             IPlayerMotionPresentation visual)
         {
@@ -58,7 +53,6 @@ namespace BarPromenade
                 controller.minMoveDistance = 0f;
             }
 
-            movementCamera = cameraToUse;
             walkableArea = area;
             presentation = visual;
         }
@@ -92,8 +86,6 @@ namespace BarPromenade
 
             transform.position = position;
             verticalSpeed = 0f;
-            hasHeldInputBasis = false;
-            heldInputBasisLatched = false;
             ResetInteractionPoseMove();
             StopPlanarMotion();
 
@@ -275,7 +267,12 @@ namespace BarPromenade
                 ? displacement / deltaTime
                 : Vector3.zero;
             FaceMovementDirection(PlanarVelocity);
-            presentation?.SetMotion(PlanarVelocity);
+            // Scripted approaches always face along their travel, so the
+            // presentation sees them as plain forward walking.
+            presentation?.SetMotion(new PlayerMotionSample(
+                PlanarVelocity,
+                PlanarVelocity.magnitude,
+                0f));
             UpdateFootsteps(
                 displacement,
                 allowWhenInputDisabled: true);
@@ -301,16 +298,28 @@ namespace BarPromenade
             {
                 UpdateVerticalMotion();
                 PlanarVelocity = Vector3.zero;
-                presentation?.SetMotion(Vector3.zero);
+                presentation?.SetMotion(PlayerMotionSample.Stationary);
                 return;
             }
 
+            // Tank controls: A/D yaw the hero on the spot, W walks along
+            // the hero's own forward axis and S backs up along it at a
+            // reduced pace. The camera no longer steers locomotion.
             Vector2 input = InputEnabled && !isTransitioning
                 ? ReadMovement()
                 : Vector2.zero;
-            Vector3 desiredDirection = CameraRelativeDirection(input);
+            float turnInput = input.x;
+            transform.Rotate(
+                0f,
+                turnInput * TurnSpeedDegreesPerSecond *
+                speedMultiplier * Time.deltaTime,
+                0f);
+
+            float desiredSpeed = input.y >= 0f
+                ? input.y * MoveSpeed
+                : input.y * BackwardMoveSpeed;
             Vector3 desiredPlanarVelocity =
-                desiredDirection * MoveSpeed * speedMultiplier;
+                transform.forward * (desiredSpeed * speedMultiplier);
             float velocityChangeRate = GetVelocityChangeRate(
                 PlanarVelocity,
                 desiredPlanarVelocity);
@@ -336,8 +345,10 @@ namespace BarPromenade
             Vector3 planarVelocity = transform.position - before;
             planarVelocity.y = 0f;
             PlanarVelocity = planarVelocity * inverseDelta;
-            FaceMovementDirection(PlanarVelocity);
-            presentation?.SetMotion(PlanarVelocity);
+            presentation?.SetMotion(new PlayerMotionSample(
+                PlanarVelocity,
+                Vector3.Dot(PlanarVelocity, transform.forward),
+                turnInput));
             UpdateFootsteps(planarVelocity);
         }
 
@@ -386,7 +397,7 @@ namespace BarPromenade
         {
             PlanarVelocity = Vector3.zero;
             footstepDistance = 0f;
-            presentation?.SetMotion(Vector3.zero);
+            presentation?.SetMotion(PlayerMotionSample.Stationary);
         }
 
         private void RecordInteractionPoseProgress(float deltaTime)
@@ -542,55 +553,6 @@ namespace BarPromenade
                 Vector3.up);
         }
 
-        private Vector3 CameraRelativeDirection(Vector2 input)
-        {
-            if (input.sqrMagnitude < 0.001f)
-            {
-                hasHeldInputBasis = false;
-                heldInputBasisLatched = false;
-                return Vector3.zero;
-            }
-
-            Camera cameraToUse = movementCamera != null ? movementCamera : Camera.main;
-            Vector3 forward = cameraToUse == null
-                ? Vector3.forward
-                : cameraToUse.transform.forward;
-            Vector3 right = cameraToUse == null
-                ? Vector3.right
-                : cameraToUse.transform.right;
-            forward.y = 0f;
-            right.y = 0f;
-            forward.Normalize();
-            right.Normalize();
-
-            // A fixed-camera cut mid-hold would instantly re-aim the
-            // held input and bounce the player between two camera
-            // zones; keep steering in the pre-cut frame until the
-            // keys or stick are released.
-            if (hasHeldInputBasis &&
-                Vector3.Angle(heldInputForward, forward) >
-                CameraCutLatchDegrees)
-            {
-                heldInputBasisLatched = true;
-            }
-
-            if (heldInputBasisLatched)
-            {
-                forward = heldInputForward;
-                right = heldInputRight;
-            }
-            else
-            {
-                heldInputForward = forward;
-                heldInputRight = right;
-                hasHeldInputBasis = true;
-            }
-
-            return Vector3.ClampMagnitude(
-                (right * input.x) + (forward * input.y),
-                1f);
-        }
-
         private static Vector2 ReadMovement()
         {
             Vector2 movement = Vector2.zero;
@@ -613,7 +575,12 @@ namespace BarPromenade
                 movement = gamepad.leftStick.ReadValue();
             }
 
-            return Vector2.ClampMagnitude(movement, 1f);
+            // The axes are independent channels now: X is yaw, Y is
+            // travel. A combined W+A must keep full forward speed, so
+            // no vector clamp across the pair.
+            movement.x = Mathf.Clamp(movement.x, -1f, 1f);
+            movement.y = Mathf.Clamp(movement.y, -1f, 1f);
+            return movement;
         }
     }
 }

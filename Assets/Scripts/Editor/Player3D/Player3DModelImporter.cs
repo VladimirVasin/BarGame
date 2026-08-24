@@ -17,6 +17,9 @@ namespace BarPromenade.Editor
             {
                 "Idle",
                 "Walk",
+                "WalkBack",
+                "TurnLeft",
+                "TurnRight",
                 "BedSleepLoop",
                 "SmokeLoop",
                 "CatFeedLoop",

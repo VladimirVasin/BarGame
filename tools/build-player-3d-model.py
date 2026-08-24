@@ -222,6 +222,9 @@ REQUIRED_ACTIONS = (
     "Relaxed",
     "Idle",
     "Walk",
+    "WalkBack",
+    "TurnLeft",
+    "TurnRight",
     "Face_Neutral",
     "Face_HalfBlink",
     "Face_ClosedBlink",
@@ -2559,6 +2562,162 @@ class CharacterBuilder:
                 (0.75, walk_left_pass),
                 (0.875, walk_left_up),
                 (1.0, walk_left_contact),
+            ),
+            interpolation="BEZIER",
+        )
+        # The backpedal is the eight walk landmarks traversed in reverse
+        # time. A real backward gait keeps the opposite-arm-to-leg
+        # relationship, and the reversed cycle preserves it for free.
+        self._create_action(
+            "WalkBack", "locomotion", 1.0, True, 24, 24,
+            (
+                (0.0, walk_left_contact),
+                (0.125, walk_left_up),
+                (0.25, walk_left_pass),
+                (0.375, walk_right_down),
+                (0.5, walk_right_contact),
+                (0.625, walk_right_up),
+                (0.75, walk_right_pass),
+                (0.875, walk_left_down),
+                (1.0, walk_left_contact),
+            ),
+            interpolation="BEZIER",
+        )
+
+        # Turn-in-place: the torso winds into the turn while the inner
+        # foot lifts and re-plants, then the outer foot drags after it.
+        # Probe-verified signs: positive local Y on pelvis/spine/chest
+        # yaws the character to his own left; negative local X on a
+        # thigh lifts that leg forward.
+        turn_left_wind = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(0.0, 3.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(-2.0, 4.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(2.5, 7.0, -1.0)),
+                "head": BonePose(rotation_degrees=(1.5, 5.0, 0.0)),
+                "thigh.L": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+                "forearm.L": BonePose(rotation_degrees=(-8.0, 3.0, -2.0)),
+                "forearm.R": BonePose(rotation_degrees=(-3.0, -3.0, 2.0)),
+            },
+        )
+        turn_left_lift = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(1.0, 5.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(-2.5, 5.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(3.0, 8.0, -1.0)),
+                "head": BonePose(rotation_degrees=(1.5, 6.0, 0.0)),
+                "thigh.L": BonePose(rotation_degrees=(-20.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(26.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                "forearm.L": BonePose(rotation_degrees=(-10.0, 3.0, -2.0)),
+                "forearm.R": BonePose(rotation_degrees=(-4.0, -3.0, 2.0)),
+            },
+        )
+        turn_left_plant = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(1.0, 2.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(-2.0, 1.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(2.5, 1.0, 0.0)),
+                "head": BonePose(rotation_degrees=(1.5, 2.0, 0.0)),
+                "thigh.L": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+                "forearm.L": BonePose(rotation_degrees=(-6.0, 3.0, -2.0)),
+                "forearm.R": BonePose(rotation_degrees=(-6.0, -3.0, 2.0)),
+            },
+        )
+        turn_left_drag = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(0.5, -2.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(-2.0, -1.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(2.5, -2.0, 1.0)),
+                "head": BonePose(rotation_degrees=(1.5, 1.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+                "forearm.L": BonePose(rotation_degrees=(-4.0, 3.0, -2.0)),
+                "forearm.R": BonePose(rotation_degrees=(-8.0, -3.0, 2.0)),
+            },
+        )
+        self._create_action(
+            "TurnLeft", "locomotion", 1.0, True, 24, 24,
+            (
+                (0.0, turn_left_wind),
+                (0.25, turn_left_lift),
+                (0.5, turn_left_plant),
+                (0.75, turn_left_drag),
+                (1.0, turn_left_wind),
+            ),
+            interpolation="BEZIER",
+        )
+
+        # Hand-authored mirror of TurnLeft, following the walk
+        # convention: swap .L/.R, negate the Y and Z components on the
+        # axial chain and the forearms.
+        turn_right_wind = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(0.0, -3.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(-2.0, -4.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(2.5, -7.0, 1.0)),
+                "head": BonePose(rotation_degrees=(1.5, -5.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+                "forearm.R": BonePose(rotation_degrees=(-8.0, -3.0, 2.0)),
+                "forearm.L": BonePose(rotation_degrees=(-3.0, 3.0, -2.0)),
+            },
+        )
+        turn_right_lift = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(1.0, -5.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(-2.5, -5.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(3.0, -8.0, 1.0)),
+                "head": BonePose(rotation_degrees=(1.5, -6.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-20.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(26.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                "forearm.R": BonePose(rotation_degrees=(-10.0, -3.0, 2.0)),
+                "forearm.L": BonePose(rotation_degrees=(-4.0, 3.0, -2.0)),
+            },
+        )
+        turn_right_plant = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(1.0, -2.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(-2.0, -1.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(2.5, -1.0, 0.0)),
+                "head": BonePose(rotation_degrees=(1.5, -2.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+                "shin.R": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+                "forearm.R": BonePose(rotation_degrees=(-6.0, -3.0, 2.0)),
+                "forearm.L": BonePose(rotation_degrees=(-6.0, 3.0, -2.0)),
+            },
+        )
+        turn_right_drag = self.merge_pose(
+            relaxed,
+            {
+                "pelvis": BonePose(rotation_degrees=(0.5, 2.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(-2.0, 1.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(2.5, 2.0, -1.0)),
+                "head": BonePose(rotation_degrees=(1.5, -1.0, 0.0)),
+                "thigh.L": BonePose(rotation_degrees=(-12.0, 0.0, 0.0)),
+                "shin.L": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
+                "forearm.R": BonePose(rotation_degrees=(-4.0, -3.0, 2.0)),
+                "forearm.L": BonePose(rotation_degrees=(-8.0, 3.0, -2.0)),
+            },
+        )
+        self._create_action(
+            "TurnRight", "locomotion", 1.0, True, 24, 24,
+            (
+                (0.0, turn_right_wind),
+                (0.25, turn_right_lift),
+                (0.5, turn_right_plant),
+                (0.75, turn_right_drag),
+                (1.0, turn_right_wind),
             ),
             interpolation="BEZIER",
         )

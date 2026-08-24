@@ -44,7 +44,7 @@ namespace BarPromenade.Tests
             Assert.That(manifest.parts, Has.Length.EqualTo(manifest.mesh_count));
             Assert.That(manifest.triangle_count, Is.InRange(1, 4500));
             Assert.That(manifest.actions, Has.Length.EqualTo(manifest.action_count));
-            Assert.That(manifest.action_count, Is.EqualTo(32));
+            Assert.That(manifest.action_count, Is.EqualTo(35));
             Assert.That(manifest.forward_axis, Is.EqualTo("-Y"));
             Assert.That(manifest.anatomical_left_axis, Is.EqualTo("+X"));
             // HomeBedInteraction builds its timeline from these same frame

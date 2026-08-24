@@ -323,6 +323,10 @@ namespace BarPromenade.Tests.PlayMode
             GameSessionState.TryCompleteQuest(QuestId.FeedTheCat);
             root.Player.Motor.Teleport(
                 new Vector3(-1.45f, 1.74f, 1.30f));
+            // Tank controls walk the hero's own forward axis, so the
+            // descent aims him down the lower flight before W is held.
+            root.Player.GameObject.transform.rotation =
+                Quaternion.Euler(0f, 180f, 0f);
             yield return null;
             Assert.That(
                 root.FixedCamera.ActiveShotKind,
@@ -331,9 +335,6 @@ namespace BarPromenade.Tests.PlayMode
 
             inputFixture.Press(
                 keyboard.wKey,
-                queueEventOnly: true);
-            inputFixture.Press(
-                keyboard.dKey,
                 queueEventOnly: true);
             float deadline = Time.realtimeSinceStartup + 8f;
             Vector3 position =
@@ -348,9 +349,6 @@ namespace BarPromenade.Tests.PlayMode
 
             inputFixture.Release(
                 keyboard.wKey,
-                queueEventOnly: true);
-            inputFixture.Release(
-                keyboard.dKey,
                 queueEventOnly: true);
             yield return null;
 

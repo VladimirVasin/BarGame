@@ -50,7 +50,7 @@ namespace BarPromenade.Tests.PlayMode
             Camera camera = cameraObject.AddComponent<Camera>();
             cameraFollow = cameraObject.AddComponent<PlayerCameraFollow>();
             cameraFollow.Initialize(camera, playerObject.transform, true);
-            motor.Initialize(camera, null, null);
+            motor.Initialize(null, null);
 
             uiObject = new GameObject("Inventory Test UI");
             hud = uiObject.AddComponent<IntoxicationHudView>();

@@ -31,12 +31,11 @@ namespace BarPromenade.Tests.PlayMode
         private const float MovementTimeoutSeconds = 2f;
         private const float MinimumMovingSpeed = 0.25f;
         private const float MaximumMovingSpeed = 2.6f;
+        private const float BackwardMaximumSpeed = 1.4f;
         private const float Deceleration = 11f;
 
         private GameObject playerObject;
-        private GameObject cameraObject;
         private PlayerMotor motor;
-        private Camera movementCamera;
         private InputTestFixture inputFixture;
         private Keyboard keyboard;
 
@@ -50,11 +49,7 @@ namespace BarPromenade.Tests.PlayMode
             playerObject.transform.position = new Vector3(0f, 100f, 0f);
             playerObject.AddComponent<CharacterController>();
             motor = playerObject.AddComponent<PlayerMotor>();
-
-            cameraObject = new GameObject("Player Motor Heading Test Camera");
-            movementCamera = cameraObject.AddComponent<Camera>();
-            movementCamera.enabled = false;
-            motor.Initialize(movementCamera, null, null);
+            motor.Initialize(null, null);
 
             keyboard = InputSystem.AddDevice<Keyboard>();
             yield return null;
@@ -66,11 +61,6 @@ namespace BarPromenade.Tests.PlayMode
             if (keyboard != null && keyboard.added)
             {
                 InputSystem.RemoveDevice(keyboard);
-            }
-
-            if (cameraObject != null)
-            {
-                Object.Destroy(cameraObject);
             }
 
             if (playerObject != null)
@@ -114,32 +104,23 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ForwardInput_MovesCameraRelativeAndFacesActualVelocity()
+        public IEnumerator ForwardInput_MovesAlongOwnForwardWithoutTurning()
         {
-            movementCamera.transform.rotation =
-                Quaternion.Euler(24f, 73f, 0f);
             playerObject.transform.rotation =
                 Quaternion.Euler(0f, 180f, 0f);
-            Vector3 expectedDirection = Vector3.ProjectOnPlane(
-                movementCamera.transform.forward,
-                Vector3.up).normalized;
+            Vector3 expectedDirection = playerObject.transform.forward;
+            float expectedYaw = playerObject.transform.eulerAngles.y;
 
             inputFixture.Press(
                 keyboard.wKey,
                 queueEventOnly: true);
             yield return WaitForMovement();
 
-            Vector3 actualVelocity = motor.PlanarVelocity;
             Assert.That(
-                Vector3.Angle(actualVelocity, expectedDirection),
+                Vector3.Angle(motor.PlanarVelocity, expectedDirection),
                 Is.LessThan(0.1f),
-                "W movement must follow the camera's planar forward direction.");
-            Assert.That(
-                Vector3.Angle(
-                    playerObject.transform.forward,
-                    actualVelocity.normalized),
-                Is.LessThan(0.1f),
-                "The player root must face its actual planar velocity.");
+                "W must walk along the hero's own forward axis.");
+            AssertHeadingUnchanged(expectedDirection, expectedYaw);
 
             inputFixture.Release(
                 keyboard.wKey,
@@ -148,10 +129,142 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator ReleasedInput_PreservesHeadingWhenCameraRotates()
+        public IEnumerator BackwardInput_WalksBackwardWithoutTurning()
         {
-            movementCamera.transform.rotation =
-                Quaternion.Euler(18f, 41f, 0f);
+            playerObject.transform.rotation =
+                Quaternion.Euler(0f, 90f, 0f);
+            Vector3 heading = playerObject.transform.forward;
+            float expectedYaw = playerObject.transform.eulerAngles.y;
+
+            inputFixture.Press(
+                keyboard.sKey,
+                queueEventOnly: true);
+            yield return WaitForMovement();
+
+            Assert.That(
+                Vector3.Angle(motor.PlanarVelocity, -heading),
+                Is.LessThan(0.1f),
+                "S must back the hero up along his own forward axis " +
+                "instead of turning him around.");
+            AssertHeadingUnchanged(heading, expectedYaw);
+
+            float sampleDeadline = Time.realtimeSinceStartup + 0.5f;
+            while (Time.realtimeSinceStartup < sampleDeadline)
+            {
+                yield return null;
+                Assert.That(
+                    motor.PlanarVelocity.magnitude,
+                    Is.LessThanOrEqualTo(BackwardMaximumSpeed + 0.05f),
+                    "Backing up must stay slower than walking forward.");
+            }
+
+            AssertHeadingUnchanged(heading, expectedYaw);
+            inputFixture.Release(
+                keyboard.sKey,
+                queueEventOnly: true);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator TurnInput_RotatesInPlaceWithoutTranslation()
+        {
+            Vector3 startPosition = playerObject.transform.position;
+            float startYaw = playerObject.transform.eulerAngles.y;
+
+            inputFixture.Press(
+                keyboard.aKey,
+                queueEventOnly: true);
+            float deadline = Time.realtimeSinceStartup + 0.4f;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                Assert.That(
+                    motor.PlanarVelocity.magnitude,
+                    Is.LessThan(0.001f),
+                    "A alone must not translate the hero.");
+            }
+
+            inputFixture.Release(
+                keyboard.aKey,
+                queueEventOnly: true);
+            AssertPlanarPositionUnchanged(startPosition);
+            float leftDelta = Mathf.DeltaAngle(
+                startYaw,
+                playerObject.transform.eulerAngles.y);
+            Assert.That(
+                leftDelta,
+                Is.LessThan(-5f),
+                "A must yaw the hero to his left on the spot.");
+
+            yield return null;
+            startYaw = playerObject.transform.eulerAngles.y;
+            inputFixture.Press(
+                keyboard.dKey,
+                queueEventOnly: true);
+            deadline = Time.realtimeSinceStartup + 0.4f;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            inputFixture.Release(
+                keyboard.dKey,
+                queueEventOnly: true);
+            AssertPlanarPositionUnchanged(startPosition);
+            float rightDelta = Mathf.DeltaAngle(
+                startYaw,
+                playerObject.transform.eulerAngles.y);
+            Assert.That(
+                rightDelta,
+                Is.GreaterThan(5f),
+                "D must yaw the hero to his right on the spot.");
+        }
+
+        [UnityTest]
+        public IEnumerator ForwardPlusTurn_MovesAlongAnArc()
+        {
+            inputFixture.Press(
+                keyboard.wKey,
+                queueEventOnly: true);
+            inputFixture.Press(
+                keyboard.dKey,
+                queueEventOnly: true);
+            yield return WaitForSpeed(2f);
+
+            Vector3 startPosition = playerObject.transform.position;
+            float startYaw = playerObject.transform.eulerAngles.y;
+            float deadline = Time.realtimeSinceStartup + 0.35f;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            float yawDelta = Mathf.DeltaAngle(
+                startYaw,
+                playerObject.transform.eulerAngles.y);
+            Assert.That(
+                yawDelta,
+                Is.GreaterThan(10f),
+                "Holding W+D must keep turning while walking.");
+            Assert.That(
+                PlanarDistance(
+                    startPosition,
+                    playerObject.transform.position),
+                Is.GreaterThan(0.3f),
+                "Holding W+D must keep the hero travelling.");
+
+            inputFixture.Release(
+                keyboard.wKey,
+                queueEventOnly: true);
+            inputFixture.Release(
+                keyboard.dKey,
+                queueEventOnly: true);
+            yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator ReleasedInput_PreservesHeadingWhileCoasting()
+        {
             playerObject.transform.rotation =
                 Quaternion.Euler(0f, 205f, 0f);
 
@@ -169,73 +282,11 @@ namespace BarPromenade.Tests.PlayMode
             yield return WaitForStop();
 
             AssertHeadingUnchanged(heldHeading, heldYaw);
-
-            movementCamera.transform.rotation =
-                Quaternion.Euler(18f, 167f, 0f);
-            yield return null;
-            yield return null;
-
-            Assert.That(
-                motor.PlanarVelocity.sqrMagnitude,
-                Is.LessThan(0.0001f),
-                "Rotating the camera without input must not move the player.");
-            AssertHeadingUnchanged(heldHeading, heldYaw);
-        }
-
-        [UnityTest]
-        public IEnumerator CameraCutDuringHeldInput_KeepsPreCutFrameUntilRelease()
-        {
-            movementCamera.transform.rotation =
-                Quaternion.Euler(19f, 136f, 0f);
-            Vector3 preCutForward = Vector3.ProjectOnPlane(
-                movementCamera.transform.forward,
-                Vector3.up).normalized;
-
-            inputFixture.Press(
-                keyboard.wKey,
-                queueEventOnly: true);
-            yield return WaitForMovement();
-
-            movementCamera.transform.rotation =
-                Quaternion.Euler(24f, 38f, 0f);
-            yield return null;
-            yield return null;
-
-            Assert.That(
-                Vector3.Angle(motor.PlanarVelocity, preCutForward),
-                Is.LessThan(0.5f),
-                "A hard camera cut must not re-aim input that is " +
-                "already held.");
-
-            inputFixture.Release(
-                keyboard.wKey,
-                queueEventOnly: true);
-            yield return WaitForStop();
-
-            Vector3 postCutForward = Vector3.ProjectOnPlane(
-                movementCamera.transform.forward,
-                Vector3.up).normalized;
-            inputFixture.Press(
-                keyboard.wKey,
-                queueEventOnly: true);
-            yield return WaitForMovement();
-
-            Assert.That(
-                Vector3.Angle(motor.PlanarVelocity, postCutForward),
-                Is.LessThan(0.5f),
-                "After releasing input the motor must adopt the new " +
-                "camera frame.");
-
-            inputFixture.Release(
-                keyboard.wKey,
-                queueEventOnly: true);
-            yield return null;
         }
 
         [UnityTest]
         public IEnumerator HeldThenReleasedInput_AcceleratesAndCoastsToStop()
         {
-            movementCamera.transform.rotation = Quaternion.identity;
             Vector3 startingPosition = playerObject.transform.position;
 
             inputFixture.Press(
@@ -345,9 +396,8 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator OppositeInput_BrakesBeforeReversing()
+        public IEnumerator OppositeInput_BrakesThenBacksUpWithoutTurning()
         {
-            movementCamera.transform.rotation = Quaternion.identity;
             inputFixture.Press(
                 keyboard.wKey,
                 queueEventOnly: true);
@@ -355,6 +405,8 @@ namespace BarPromenade.Tests.PlayMode
 
             Vector3 originalDirection =
                 motor.PlanarVelocity.normalized;
+            Vector3 heldHeading = playerObject.transform.forward;
+            float heldYaw = playerObject.transform.eulerAngles.y;
             inputFixture.Release(
                 keyboard.wKey,
                 queueEventOnly: true);
@@ -394,9 +446,12 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(
                 Vector3.Angle(
-                    playerObject.transform.forward,
-                    motor.PlanarVelocity.normalized),
-                Is.LessThan(0.1f));
+                    motor.PlanarVelocity,
+                    -heldHeading),
+                Is.LessThan(0.1f),
+                "The reversal must back the hero up along his facing, " +
+                "never spin him around.");
+            AssertHeadingUnchanged(heldHeading, heldYaw);
 
             inputFixture.Release(
                 keyboard.sKey,
@@ -424,11 +479,11 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
             motor.SetInputEnabled(true);
             inputFixture.Press(
-                keyboard.dKey,
+                keyboard.wKey,
                 queueEventOnly: true);
             yield return WaitForSpeed(1f);
             inputFixture.Release(
-                keyboard.dKey,
+                keyboard.wKey,
                 queueEventOnly: true);
 
             Vector3 teleportedPosition =
@@ -447,7 +502,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Blocked = true
             };
-            motor.Initialize(movementCamera, area, null);
+            motor.Initialize(area, null);
             Vector3 blockedPosition = playerObject.transform.position;
 
             inputFixture.Press(
@@ -587,7 +642,7 @@ namespace BarPromenade.Tests.PlayMode
             {
                 Blocked = true
             };
-            motor.Initialize(movementCamera, area, null);
+            motor.Initialize(area, null);
             motor.SetInputEnabled(false);
             Vector3 start = playerObject.transform.position;
             Vector3 target = start + Vector3.right * 0.5f;

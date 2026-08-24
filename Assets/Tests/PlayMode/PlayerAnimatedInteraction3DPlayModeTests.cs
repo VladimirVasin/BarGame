@@ -20,7 +20,7 @@ namespace BarPromenade.Tests.PlayMode
             PlayerMotor motor = playerObject.AddComponent<PlayerMotor>();
             PlayerInteractor interactor =
                 playerObject.AddComponent<PlayerInteractor>();
-            motor.Initialize(camera, null, presentation);
+            motor.Initialize(null, presentation);
             interactor.Initialize(null);
             PlayerRuntime player = new PlayerRuntime(
                 playerObject,
@@ -120,7 +120,7 @@ namespace BarPromenade.Tests.PlayMode
             PlayerMotor motor = playerObject.AddComponent<PlayerMotor>();
             PlayerInteractor interactor =
                 playerObject.AddComponent<PlayerInteractor>();
-            motor.Initialize(camera, null, presentation);
+            motor.Initialize(null, presentation);
             interactor.Initialize(null);
             PlayerRuntime player = new PlayerRuntime(
                 playerObject,
@@ -405,7 +405,7 @@ namespace BarPromenade.Tests.PlayMode
             EndClipCount++;
         }
 
-        public void SetMotion(Vector3 planarVelocity)
+        public void SetMotion(in PlayerMotionSample motion)
         {
         }
 

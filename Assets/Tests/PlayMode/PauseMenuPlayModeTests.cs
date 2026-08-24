@@ -63,7 +63,7 @@ namespace BarPromenade.Tests.PlayMode
                 camera,
                 playerObject.transform,
                 true);
-            motor.Initialize(camera, null, null);
+            motor.Initialize(null, null);
 
             uiObject = new GameObject("Pause Test UI");
             hud = uiObject.AddComponent<IntoxicationHudView>();

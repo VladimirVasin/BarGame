@@ -984,9 +984,24 @@ MonoBehaviour:
     clip: {fileID: -5214764653953503558, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 4
     looping: 1
+  - clipName: TurnLeft
+    category: locomotion
+    clip: {fileID: 5150705899159750486, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 1
+    looping: 1
+  - clipName: TurnRight
+    category: locomotion
+    clip: {fileID: -3977427891364104068, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 1
+    looping: 1
   - clipName: Walk
     category: locomotion
     clip: {fileID: -227416529858450933, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 1
+    looping: 1
+  - clipName: WalkBack
+    category: locomotion
+    clip: {fileID: 7782575537884476560, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 1
     looping: 1
   anchors:
@@ -1008,7 +1023,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 2.8.0
   sourcePose: apose
   sourceTriangleCount: 1534
-  buildSignature: a2590937cc4e8f27ad53dfa77a600176
+  buildSignature: 701a53063109533679420816bd5a94f1
   applyPaletteOnEnable: 1
 --- !u!1001 &6417608413615941791
 PrefabInstance:

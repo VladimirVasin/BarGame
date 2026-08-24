@@ -102,7 +102,7 @@ namespace BarPromenade
             contactShadow.Initialize(player.transform, visual);
 
             PlayerMotor motor = player.AddComponent<PlayerMotor>();
-            motor.Initialize(camera, walkableArea, visual);
+            motor.Initialize(walkableArea, visual);
 
             PlayerInteractor interactor = player.AddComponent<PlayerInteractor>();
             interactor.Initialize(promptView);

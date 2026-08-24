@@ -102,7 +102,8 @@ All Actions animate bones only, keep the `root` bone fixed and store exact
 duration/loop/source-rate metadata as `bp_*` custom properties. The production
 library contains:
 
-- locomotion: `Relaxed`, `Idle`, `Walk`;
+- locomotion: `Relaxed`, `Idle`, `Walk`, `WalkBack`, `TurnLeft`,
+  `TurnRight`;
 - face: `Face_Neutral`, `Face_HalfBlink`, `Face_ClosedBlink`,
   `Face_Watchful`, `Face_Tense`;
 - falls: `FallLeft/Right`, `DownLeft/Right`, `RiseLeft/Right`;
@@ -117,8 +118,14 @@ library contains:
 breaths shift weight through the pelvis and legs while the spine, chest, head,
 upper arms and forearms counter-move. `Walk` is a one-second eight-phase gait:
 each side passes through contact, down, passing and up poses with independent
-elbow, knee and ankle articulation and opposite arm swing. These two
-locomotion Actions and the three bed Actions use auto-clamped
+elbow, knee and ankle articulation and opposite arm swing. `WalkBack` is the
+same eight landmarks traversed in reverse time, which preserves the
+opposite-arm-to-leg relationship of a real backpedal for free. `TurnLeft` and
+`TurnRight` are one-second in-place step-turns — the torso winds into the
+turn while the inner foot lifts and re-plants and the outer foot drags after
+it; the right turn is the hand-authored mirror of the left, following the
+walk convention (swap `.L`/`.R`, negate Y/Z on the axial chain and forearms).
+The locomotion Actions and the three bed Actions use auto-clamped
 Bezier curves; the remaining contextual, facial and fall Actions plus
 `Relaxed` retain their authored linear timing.
 

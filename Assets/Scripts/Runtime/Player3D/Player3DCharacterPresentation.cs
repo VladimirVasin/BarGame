@@ -10,7 +10,10 @@ namespace BarPromenade
     public enum Player3DLocomotionState
     {
         Idle = 0,
-        Walk
+        Walk,
+        WalkBack,
+        TurnLeft,
+        TurnRight
     }
 
     /// <summary>
@@ -25,6 +28,7 @@ namespace BarPromenade
         IPlayerClipPresentation
     {
         public const float FullWalkSpeed = 2.6f;
+        public const float FullWalkBackSpeed = 1.4f;
 
         // The Silent Hill head: how fast attention takes and releases
         // the head, how the turn is shared down the neck, and the sign
@@ -46,6 +50,18 @@ namespace BarPromenade
         private const float StatusBlendSpeed = 4.5f;
         private const float BodyRadius = 0.32f;
 
+        // Turn-in-place engages only while the feet are effectively
+        // stationary and the player is clearly holding a yaw input.
+        private const float TurnInPlaceSpeedThreshold = 0.25f;
+        private const float TurnInPlaceInputThreshold = 0.2f;
+
+        // Locomotion mixer layout: input 0 is Idle, the gaits follow.
+        private const int GaitCount = 4;
+        private const int WalkGait = 0;
+        private const int WalkBackGait = 1;
+        private const int TurnLeftGait = 2;
+        private const int TurnRightGait = 3;
+
         private enum ClipOwner
         {
             None = 0,
@@ -63,18 +79,25 @@ namespace BarPromenade
         private AnimationLayerMixerPlayable layerMixer;
         private AnimationClipPlayable idlePlayable;
         private AnimationClipPlayable walkPlayable;
+        private AnimationClipPlayable walkBackPlayable;
+        private AnimationClipPlayable turnLeftPlayable;
+        private AnimationClipPlayable turnRightPlayable;
         private AnimationClipPlayable activeClipPlayable;
         private Player3DAnimationBinding idleBinding;
         private Player3DAnimationBinding walkBinding;
+        private Player3DAnimationBinding walkBackBinding;
+        private Player3DAnimationBinding turnLeftBinding;
+        private Player3DAnimationBinding turnRightBinding;
         private Player3DAnimationBinding activeClipBinding;
         private ClipOwner activeClipOwner;
         private Vector3 clipModelLocalPosition;
         private Quaternion clipModelLocalRotation;
         private Vector3 clipModelLocalScale;
         private bool clipSpatialStateCaptured;
-        private float targetLocomotionBlend;
+        private readonly float[] targetGaitWeights = new float[GaitCount];
+        private readonly float[] gaitWeights = new float[GaitCount];
+        private readonly float[] gaitWeightVelocities = new float[GaitCount];
         private float locomotionBlend;
-        private float locomotionBlendVelocity;
         private float planarSpeed;
         private float intoxicationTarget;
         private float intoxicationAmount;
@@ -186,10 +209,14 @@ namespace BarPromenade
             }
 
             if (!TryResolveAnimation("Idle", out idleBinding) ||
-                !TryResolveAnimation("Walk", out walkBinding))
+                !TryResolveAnimation("Walk", out walkBinding) ||
+                !TryResolveAnimation("WalkBack", out walkBackBinding) ||
+                !TryResolveAnimation("TurnLeft", out turnLeftBinding) ||
+                !TryResolveAnimation("TurnRight", out turnRightBinding))
             {
                 throw new InvalidOperationException(
-                    "The Player3D registry requires Idle and Walk clips.");
+                    "The Player3D registry requires the Idle, Walk, " +
+                    "WalkBack, TurnLeft and TurnRight clips.");
             }
 
             animator.applyRootMotion = false;
@@ -200,24 +227,63 @@ namespace BarPromenade
             CaptureStatusBones();
             CaptureFacialBones();
             facialState.Reset();
-            SetMotion(Vector3.zero);
+            SetMotion(PlayerMotionSample.Stationary);
             ApplyLocomotionWeights(immediate: true);
             EvaluateGraph(0f);
             footGroundingProbe = FootGroundingProbe.Create(registry);
             CaptureGroundedFootHeightOffset();
         }
 
-        public void SetMotion(Vector3 planarVelocity)
+        public void SetMotion(in PlayerMotionSample motion)
         {
+            Vector3 planarVelocity = motion.PlanarVelocity;
             planarVelocity.y = 0f;
             planarSpeed = planarVelocity.magnitude;
-            targetLocomotionBlend = interactionHandoffLocked
-                ? 0f
-                : Mathf.Clamp01(planarSpeed / FullWalkSpeed);
-            CurrentLocomotionState =
-                targetLocomotionBlend >= MotionThreshold
-                    ? Player3DLocomotionState.Walk
-                    : Player3DLocomotionState.Idle;
+
+            for (int index = 0; index < GaitCount; index++)
+            {
+                targetGaitWeights[index] = 0f;
+            }
+
+            Player3DLocomotionState state = Player3DLocomotionState.Idle;
+            if (!interactionHandoffLocked)
+            {
+                bool turningInPlace =
+                    planarSpeed < TurnInPlaceSpeedThreshold &&
+                    Mathf.Abs(motion.TurnInput) >
+                    TurnInPlaceInputThreshold;
+                if (turningInPlace)
+                {
+                    bool turningLeft = motion.TurnInput < 0f;
+                    targetGaitWeights[
+                        turningLeft ? TurnLeftGait : TurnRightGait] = 1f;
+                    state = turningLeft
+                        ? Player3DLocomotionState.TurnLeft
+                        : Player3DLocomotionState.TurnRight;
+                }
+                else if (motion.SignedForwardSpeed >= 0f)
+                {
+                    float blend = Mathf.Clamp01(
+                        motion.SignedForwardSpeed / FullWalkSpeed);
+                    targetGaitWeights[WalkGait] = blend;
+                    if (blend >= MotionThreshold)
+                    {
+                        state = Player3DLocomotionState.Walk;
+                    }
+                }
+                else
+                {
+                    float blend = Mathf.Clamp01(
+                        -motion.SignedForwardSpeed / FullWalkBackSpeed);
+                    targetGaitWeights[WalkBackGait] = blend;
+                    if (blend >= MotionThreshold)
+                    {
+                        state = Player3DLocomotionState.WalkBack;
+                    }
+                }
+            }
+
+            CurrentLocomotionState = state;
         }
 
         public void SetInteractionHandoffLocked(bool locked)
@@ -232,9 +298,7 @@ namespace BarPromenade
             interactionHandoffLocked = true;
             releaseInteractionHandoffAfterLateUpdate = false;
             planarSpeed = 0f;
-            targetLocomotionBlend = 0f;
-            locomotionBlend = 0f;
-            locomotionBlendVelocity = 0f;
+            ResetGaitWeights();
             footPlantAmount = 1f;
             CurrentLocomotionState = Player3DLocomotionState.Idle;
             facialState.Reset();
@@ -468,11 +532,14 @@ namespace BarPromenade
             if (!IsClipActive)
             {
                 ApplyLocomotionWeights(immediate: false);
-                double speed = Mathf.Lerp(
+                walkPlayable.SetSpeed((double)Mathf.Lerp(
                     0.78f,
                     1.12f,
-                    locomotionBlend);
-                walkPlayable.SetSpeed(speed);
+                    gaitWeights[WalkGait]));
+                walkBackPlayable.SetSpeed((double)Mathf.Lerp(
+                    0.70f,
+                    0.90f,
+                    gaitWeights[WalkBackGait]));
                 EvaluateGraph(deltaTime);
                 UpdateFootPlant();
             }
@@ -526,9 +593,7 @@ namespace BarPromenade
             footPlantAmount = 1f;
             ragdollPoseActive = false;
             planarSpeed = 0f;
-            targetLocomotionBlend = 0f;
-            locomotionBlend = 0f;
-            locomotionBlendVelocity = 0f;
+            ResetGaitWeights();
             CurrentLocomotionState = Player3DLocomotionState.Idle;
             facialState.Reset();
             RestoreAttentionPoseBase();
@@ -616,23 +681,30 @@ namespace BarPromenade
         {
             graph = PlayableGraph.Create("Player3D Presentation");
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
-            locomotionMixer = AnimationMixerPlayable.Create(graph, 2);
+            locomotionMixer = AnimationMixerPlayable.Create(
+                graph,
+                GaitCount + 1);
             layerMixer = AnimationLayerMixerPlayable.Create(graph, 2);
-            idlePlayable = AnimationClipPlayable.Create(
-                graph,
-                idleBinding.Clip);
-            walkPlayable = AnimationClipPlayable.Create(
-                graph,
-                walkBinding.Clip);
-            idlePlayable.SetApplyFootIK(false);
-            idlePlayable.SetApplyPlayableIK(false);
-            walkPlayable.SetApplyFootIK(false);
-            walkPlayable.SetApplyPlayableIK(false);
+            idlePlayable = CreateLocomotionPlayable(idleBinding);
+            walkPlayable = CreateLocomotionPlayable(walkBinding);
+            walkBackPlayable = CreateLocomotionPlayable(walkBackBinding);
+            turnLeftPlayable = CreateLocomotionPlayable(turnLeftBinding);
+            turnRightPlayable = CreateLocomotionPlayable(turnRightBinding);
             graph.Connect(idlePlayable, 0, locomotionMixer, 0);
-            graph.Connect(walkPlayable, 0, locomotionMixer, 1);
+            graph.Connect(walkPlayable, 0, locomotionMixer, WalkGait + 1);
+            graph.Connect(
+                walkBackPlayable, 0, locomotionMixer, WalkBackGait + 1);
+            graph.Connect(
+                turnLeftPlayable, 0, locomotionMixer, TurnLeftGait + 1);
+            graph.Connect(
+                turnRightPlayable, 0, locomotionMixer, TurnRightGait + 1);
             graph.Connect(locomotionMixer, 0, layerMixer, 0);
             locomotionMixer.SetInputWeight(0, 1f);
-            locomotionMixer.SetInputWeight(1, 0f);
+            for (int gait = 0; gait < GaitCount; gait++)
+            {
+                locomotionMixer.SetInputWeight(gait + 1, 0f);
+            }
+
             layerMixer.SetInputWeight(0, 1f);
             layerMixer.SetInputWeight(1, 0f);
 
@@ -645,6 +717,29 @@ namespace BarPromenade
             graph.Play();
         }
 
+        private AnimationClipPlayable CreateLocomotionPlayable(
+            Player3DAnimationBinding binding)
+        {
+            AnimationClipPlayable playable = AnimationClipPlayable.Create(
+                graph,
+                binding.Clip);
+            playable.SetApplyFootIK(false);
+            playable.SetApplyPlayableIK(false);
+            return playable;
+        }
+
+        private void ResetGaitWeights()
+        {
+            for (int gait = 0; gait < GaitCount; gait++)
+            {
+                targetGaitWeights[gait] = 0f;
+                gaitWeights[gait] = 0f;
+                gaitWeightVelocities[gait] = 0f;
+            }
+
+            locomotionBlend = 0f;
+        }
+
         private void ApplyLocomotionWeights(bool immediate)
         {
             if (!locomotionMixer.IsValid())
@@ -652,47 +747,91 @@ namespace BarPromenade
                 return;
             }
 
-            if (immediate)
+            float total = 0f;
+            for (int gait = 0; gait < GaitCount; gait++)
             {
-                locomotionBlend = targetLocomotionBlend;
-                locomotionBlendVelocity = 0f;
-            }
-            else
-            {
-                float smoothTime = targetLocomotionBlend > locomotionBlend
-                    ? LocomotionBlendInTime
-                    : LocomotionBlendOutTime;
-                locomotionBlend = Mathf.SmoothDamp(
-                    locomotionBlend,
-                    targetLocomotionBlend,
-                    ref locomotionBlendVelocity,
-                    smoothTime,
-                    Mathf.Infinity,
-                    Mathf.Max(0f, Time.deltaTime));
-                if (Mathf.Abs(
-                        locomotionBlend - targetLocomotionBlend) < 0.0005f)
+                if (immediate)
                 {
-                    locomotionBlend = targetLocomotionBlend;
-                    locomotionBlendVelocity = 0f;
+                    gaitWeights[gait] = targetGaitWeights[gait];
+                    gaitWeightVelocities[gait] = 0f;
                 }
+                else
+                {
+                    float smoothTime =
+                        targetGaitWeights[gait] > gaitWeights[gait]
+                            ? LocomotionBlendInTime
+                            : LocomotionBlendOutTime;
+                    gaitWeights[gait] = Mathf.SmoothDamp(
+                        gaitWeights[gait],
+                        targetGaitWeights[gait],
+                        ref gaitWeightVelocities[gait],
+                        smoothTime,
+                        Mathf.Infinity,
+                        Mathf.Max(0f, Time.deltaTime));
+                    if (Mathf.Abs(
+                            gaitWeights[gait] -
+                            targetGaitWeights[gait]) < 0.0005f)
+                    {
+                        gaitWeights[gait] = targetGaitWeights[gait];
+                        gaitWeightVelocities[gait] = 0f;
+                    }
+                }
+
+                total += gaitWeights[gait];
             }
 
-            locomotionMixer.SetInputWeight(0, 1f - locomotionBlend);
-            locomotionMixer.SetInputWeight(1, locomotionBlend);
+            // A crossfade briefly overlaps two gaits; scale the applied
+            // weights (never the smoothed state) so the pose cannot
+            // overshoot while idle fills whatever remains.
+            float scale = total > 1f ? 1f / total : 1f;
+            locomotionMixer.SetInputWeight(
+                0,
+                Mathf.Max(0f, 1f - (total * scale)));
+            for (int gait = 0; gait < GaitCount; gait++)
+            {
+                locomotionMixer.SetInputWeight(
+                    gait + 1,
+                    gaitWeights[gait] * scale);
+            }
+
+            locomotionBlend = Mathf.Min(1f, total);
         }
 
         private void UpdateFootPlant()
         {
-            if (!walkPlayable.IsValid() ||
-                walkBinding == null ||
-                walkBinding.Clip.length <= 0.0001f)
+            AnimationClipPlayable gaitPlayable = walkPlayable;
+            Player3DAnimationBinding gaitBinding = walkBinding;
+            float bestWeight = gaitWeights[WalkGait];
+            if (gaitWeights[WalkBackGait] > bestWeight)
+            {
+                bestWeight = gaitWeights[WalkBackGait];
+                gaitPlayable = walkBackPlayable;
+                gaitBinding = walkBackBinding;
+            }
+
+            if (gaitWeights[TurnLeftGait] > bestWeight)
+            {
+                bestWeight = gaitWeights[TurnLeftGait];
+                gaitPlayable = turnLeftPlayable;
+                gaitBinding = turnLeftBinding;
+            }
+
+            if (gaitWeights[TurnRightGait] > bestWeight)
+            {
+                gaitPlayable = turnRightPlayable;
+                gaitBinding = turnRightBinding;
+            }
+
+            if (!gaitPlayable.IsValid() ||
+                gaitBinding == null ||
+                gaitBinding.Clip.length <= 0.0001f)
             {
                 footPlantAmount = 1f;
                 return;
             }
 
-            float cycle = (float)(walkPlayable.GetTime() /
-                                  walkBinding.Clip.length);
+            float cycle = (float)(gaitPlayable.GetTime() /
+                                  gaitBinding.Clip.length);
             float planted = Mathf.Abs(Mathf.Cos(cycle * Mathf.PI * 2f));
             footPlantAmount = Mathf.Lerp(
                 1f,

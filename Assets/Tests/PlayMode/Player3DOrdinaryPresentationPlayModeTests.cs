@@ -106,9 +106,11 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(ShadowCastingMode.On));
             }
 
-            presentation.SetMotion(
+            presentation.SetMotion(new PlayerMotionSample(
                 Vector3.forward *
-                Player3DCharacterPresentation.FullWalkSpeed);
+                Player3DCharacterPresentation.FullWalkSpeed,
+                Player3DCharacterPresentation.FullWalkSpeed,
+                0f));
             float deadline = Time.realtimeSinceStartup + 1f;
             float previousBlend = presentation.LocomotionBlend;
             bool sawStartTransition = false;
@@ -137,7 +139,7 @@ namespace BarPromenade.Tests.PlayMode
                 "intermediate Idle/Walk weight.");
 
             float visibleWalkWeight = presentation.LocomotionBlend;
-            presentation.SetMotion(Vector3.zero);
+            presentation.SetMotion(PlayerMotionSample.Stationary);
             Assert.That(
                 presentation.LocomotionBlend,
                 Is.EqualTo(visibleWalkWeight).Within(0.0001f),
@@ -172,6 +174,93 @@ namespace BarPromenade.Tests.PlayMode
             AssertAuthoredLocomotionJointRanges(
                 presentation,
                 presentation.Registry);
+        }
+
+        [UnityTest]
+        public IEnumerator BackwardAndTurnMotion_SelectDedicatedLocomotionStates()
+        {
+            cameraObject = new GameObject("Player3D Tank Test Camera");
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+
+            PlayerRuntime player = PlayerFactory.Create(
+                null,
+                Vector3.zero,
+                camera,
+                null,
+                null);
+            playerObject = player.GameObject;
+            player.Motor.enabled = false;
+            yield return null;
+
+            var presentation =
+                (Player3DCharacterPresentation)player.Visual;
+
+            presentation.SetMotion(new PlayerMotionSample(
+                Vector3.back * Player3DCharacterPresentation.FullWalkBackSpeed,
+                -Player3DCharacterPresentation.FullWalkBackSpeed,
+                0f));
+            Assert.That(
+                presentation.CurrentLocomotionState,
+                Is.EqualTo(Player3DLocomotionState.WalkBack),
+                "A negative forward speed must select the backpedal.");
+            yield return WaitForBlend(presentation, 0.9f);
+
+            presentation.SetMotion(new PlayerMotionSample(
+                Vector3.zero,
+                0f,
+                -1f));
+            Assert.That(
+                presentation.CurrentLocomotionState,
+                Is.EqualTo(Player3DLocomotionState.TurnLeft),
+                "A held left yaw with no travel must select the left " +
+                "turn-in-place.");
+            yield return WaitForBlend(presentation, 0.9f);
+
+            presentation.SetMotion(new PlayerMotionSample(
+                Vector3.zero,
+                0f,
+                1f));
+            Assert.That(
+                presentation.CurrentLocomotionState,
+                Is.EqualTo(Player3DLocomotionState.TurnRight),
+                "A held right yaw with no travel must select the right " +
+                "turn-in-place.");
+            yield return WaitForBlend(presentation, 0.9f);
+
+            presentation.SetMotion(PlayerMotionSample.Stationary);
+            Assert.That(
+                presentation.CurrentLocomotionState,
+                Is.EqualTo(Player3DLocomotionState.Idle));
+            float deadline = Time.realtimeSinceStartup + 1f;
+            while (presentation.LocomotionBlend > 0.05f &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                presentation.LocomotionBlend,
+                Is.LessThan(0.1f),
+                "Releasing the turn must settle back into Idle.");
+        }
+
+        private static IEnumerator WaitForBlend(
+            Player3DCharacterPresentation presentation,
+            float minimumBlend)
+        {
+            float deadline = Time.realtimeSinceStartup + 1f;
+            while (presentation.LocomotionBlend < minimumBlend &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                presentation.LocomotionBlend,
+                Is.GreaterThanOrEqualTo(minimumBlend),
+                "The locomotion crossfade did not reach the requested " +
+                "weight in time.");
         }
 
         [UnityTest]
@@ -425,9 +514,11 @@ namespace BarPromenade.Tests.PlayMode
                     groundY + PlayerFactory.GroundedRootOffset + 0.005f),
                 "The production neutral boot geometry must begin near the " +
                 "ground plane.");
-            presentation.SetMotion(
+            presentation.SetMotion(new PlayerMotionSample(
                 Vector3.forward *
-                Player3DCharacterPresentation.FullWalkSpeed);
+                Player3DCharacterPresentation.FullWalkSpeed,
+                Player3DCharacterPresentation.FullWalkSpeed,
+                0f));
             float deadline = Time.realtimeSinceStartup + 1f;
             while (presentation.LocomotionBlend < 0.99f &&
                    Time.realtimeSinceStartup < deadline)
@@ -729,23 +820,53 @@ namespace BarPromenade.Tests.PlayMode
                 presentation.ReapplyLatePresentationPose();
             }
 
-            yield return null;
-            presentation.ReapplyLatePresentationPose();
-            Assert.That(
-                Quaternion.Angle(
+            // The idle loop itself swings the pelvis a couple of degrees
+            // over its four seconds, so a single-frame comparison against
+            // the captured neutral only passes when the loop phases line
+            // up. Poll across one full idle loop instead: with the
+            // procedural status contributions gone the pose must revisit
+            // the captured phase; with any residue the arms carry a
+            // constant offset and never do.
+            float poseDeadline = Time.realtimeSinceStartup + 4.5f;
+            float pelvisAngle = float.MaxValue;
+            float leftArmAngle = float.MaxValue;
+            float rightArmAngle = float.MaxValue;
+            while (Time.realtimeSinceStartup < poseDeadline)
+            {
+                yield return null;
+                presentation.ReapplyLatePresentationPose();
+                pelvisAngle = Quaternion.Angle(
                     neutralPelvisRotation,
-                    pelvis.localRotation),
-                Is.LessThan(0.5f));
-            Assert.That(
-                Quaternion.Angle(
+                    pelvis.localRotation);
+                leftArmAngle = Quaternion.Angle(
                     neutralLeftArmRotation,
-                    leftUpperArm.localRotation),
-                Is.LessThan(0.5f));
-            Assert.That(
-                Quaternion.Angle(
+                    leftUpperArm.localRotation);
+                rightArmAngle = Quaternion.Angle(
                     neutralRightArmRotation,
-                    rightUpperArm.localRotation),
-                Is.LessThan(0.5f));
+                    rightUpperArm.localRotation);
+                if (pelvisAngle < 0.5f &&
+                    leftArmAngle < 0.5f &&
+                    rightArmAngle < 0.5f)
+                {
+                    break;
+                }
+            }
+
+            Assert.That(
+                pelvisAngle,
+                Is.LessThan(0.5f),
+                "The pelvis must revisit its neutral pose within one " +
+                "idle loop after the status pose releases.");
+            Assert.That(
+                leftArmAngle,
+                Is.LessThan(0.5f),
+                "The left arm must shed its status spread within one " +
+                "idle loop after the status pose releases.");
+            Assert.That(
+                rightArmAngle,
+                Is.LessThan(0.5f),
+                "The right arm must shed its status spread within one " +
+                "idle loop after the status pose releases.");
 
             var sides = new[]
             {
@@ -1289,6 +1410,45 @@ namespace BarPromenade.Tests.PlayMode
                 Quaternion.Angle(relaxedLeftShin, leftShin.localRotation),
                 Is.GreaterThan(35f),
                 "The left swing leg must flex clearly at the knee.");
+            presentation.EndClip();
+
+            // The backpedal is the walk cycle reversed, so the deep knee
+            // flexes land on the opposite quarters.
+            Assert.That(presentation.TryBeginClip("WalkBack"), Is.True);
+            presentation.SampleActiveClip(0.25f);
+            Assert.That(
+                Quaternion.Angle(relaxedLeftShin, leftShin.localRotation),
+                Is.GreaterThan(35f),
+                "The reversed cycle must swing the left leg first.");
+            presentation.SampleActiveClip(0.75f);
+            Assert.That(
+                Quaternion.Angle(relaxedRightShin, rightShin.localRotation),
+                Is.GreaterThan(35f),
+                "The reversed cycle must swing the right leg second.");
+            presentation.EndClip();
+
+            Assert.That(presentation.TryBeginClip("TurnLeft"), Is.True);
+            presentation.SampleActiveClip(0.25f);
+            Assert.That(
+                Quaternion.Angle(relaxedChest, chest.localRotation),
+                Is.GreaterThan(4f),
+                "The left turn must wind the torso into the turn.");
+            Assert.That(
+                Quaternion.Angle(relaxedLeftShin, leftShin.localRotation),
+                Is.GreaterThan(15f),
+                "The left turn must lift the inner foot.");
+            presentation.EndClip();
+
+            Assert.That(presentation.TryBeginClip("TurnRight"), Is.True);
+            presentation.SampleActiveClip(0.25f);
+            Assert.That(
+                Quaternion.Angle(relaxedChest, chest.localRotation),
+                Is.GreaterThan(4f),
+                "The right turn must wind the torso into the turn.");
+            Assert.That(
+                Quaternion.Angle(relaxedRightShin, rightShin.localRotation),
+                Is.GreaterThan(15f),
+                "The right turn must lift the inner foot.");
             presentation.EndClip();
         }
 
