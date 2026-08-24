@@ -4,7 +4,7 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace BarPromenade.Tests
+namespace BarPromenade.Tests.EditMode
 {
     [Category("CityRiver")]
     public sealed class CityRiverPlannerTests
@@ -244,6 +244,145 @@ namespace BarPromenade.Tests
                         Is.False,
                         $"{bridge.Definition.Id} spans over " +
                         promenade.Id);
+                }
+            }
+        }
+
+        [Test]
+        public void ParkBenches_FollowRealPathsInBothHalves()
+        {
+            Assert.That(layout.Park.Regions, Has.Count.EqualTo(2));
+            Assert.That(
+                layout.Park.Benches,
+                Has.Count.EqualTo(
+                    layout.Park.Regions.Count *
+                    CityParkBenchPlanner.BenchCountPerRegion));
+
+            CityStreetSurfacePlan surfaces =
+                CityStreetSurfacePlanner.Create(layout);
+            RoadEdge[] pathEdges = layout.RoadEdges
+                .Where(edge =>
+                    layout.GetPathKind(edge) == CityPathKind.ParkPath &&
+                    !layout.IsRiverBridgeEdge(edge))
+                .ToArray();
+            Assert.That(pathEdges, Is.Not.Empty);
+
+            foreach (CityParkRegionPlan region in layout.Park.Regions)
+            {
+                CityParkBenchDescriptor[] benches = layout.Park.Benches
+                    .Where(bench => string.Equals(
+                        bench.RegionId,
+                        region.Id,
+                        StringComparison.Ordinal))
+                    .ToArray();
+                Assert.That(
+                    benches,
+                    Has.Length.EqualTo(
+                        CityParkBenchPlanner.BenchCountPerRegion),
+                    region.Id);
+
+                foreach (CityParkBenchDescriptor bench in benches)
+                {
+                    Assert.That(
+                        region.WalkableBounds.Contains(
+                            new Vector2(
+                                bench.Position.x,
+                                bench.Position.z)),
+                        Is.True,
+                        bench.Id);
+
+                    RoadEdge nearest = default;
+                    Vector3 closest = default;
+                    float nearestDistance = float.MaxValue;
+                    foreach (RoadEdge edge in pathEdges)
+                    {
+                        Vector3 candidate = ClosestPointOnSegmentXZ(
+                            bench.Position,
+                            layout.GetNodeWorldPosition(edge.A),
+                            layout.GetNodeWorldPosition(edge.B));
+                        if (!region.WalkableBounds.Contains(
+                                new Vector2(candidate.x, candidate.z)))
+                        {
+                            continue;
+                        }
+
+                        float distance = PlanarDistance(
+                            bench.Position,
+                            candidate);
+                        if (distance < nearestDistance)
+                        {
+                            nearest = edge;
+                            closest = candidate;
+                            nearestDistance = distance;
+                        }
+                    }
+
+                    Assert.That(
+                        nearestDistance,
+                        Is.LessThan(float.MaxValue),
+                        $"{bench.Id} has no path in {region.Id}.");
+                    float expectedOffset =
+                        layout.GetTravelWidth(nearest) * 0.5f +
+                        CityParkBenchDescriptor.SeatDepth * 0.5f +
+                        CityParkBenchPlanner.PathEdgeGap;
+                    Assert.That(
+                        nearestDistance,
+                        Is.EqualTo(expectedOffset).Within(0.001f),
+                        $"{bench.Id} is not beside its path.");
+
+                    Vector3 pathTangent =
+                        layout.GetNodeWorldPosition(nearest.B) -
+                        layout.GetNodeWorldPosition(nearest.A);
+                    pathTangent.y = 0f;
+                    pathTangent.Normalize();
+                    Assert.That(
+                        Mathf.Abs(Vector3.Dot(
+                            bench.Tangent,
+                            pathTangent)),
+                        Is.EqualTo(1f).Within(0.001f),
+                        $"{bench.Id} is not parallel to its path.");
+                    Vector3 towardPath = closest - bench.Position;
+                    towardPath.y = 0f;
+                    towardPath.Normalize();
+                    Assert.That(
+                        Vector3.Dot(bench.Forward, towardPath),
+                        Is.EqualTo(1f).Within(0.001f),
+                        $"{bench.Id} faces away from its path.");
+
+                    float timberNearEdge = nearestDistance -
+                        CityParkBenchDescriptor.SeatDepth * 0.5f;
+                    Assert.That(
+                        timberNearEdge,
+                        Is.GreaterThanOrEqualTo(
+                            layout.GetTravelWidth(nearest) * 0.5f +
+                            CityParkBenchPlanner.PathEdgeGap -
+                            0.001f),
+                        $"{bench.Id} blocks the path.");
+
+                    Vector3 dock = bench.Position +
+                        bench.Forward *
+                        (CityParkBenchDescriptor.SeatDepth * 0.5f +
+                         CityBenchSitPlan.EntryEdgeDistance);
+                    foreach (float along in new[]
+                             {
+                                 -CityParkBenchDescriptor.SeatWidth * 0.5f,
+                                 0f,
+                                 CityParkBenchDescriptor.SeatWidth * 0.5f
+                             })
+                    {
+                        Vector3 sample = dock + bench.Tangent * along;
+                        Assert.That(
+                            surfaces.ParkPathGeometry.Any(path =>
+                                path.TrySampleTop(sample, out _)),
+                            Is.True,
+                            $"{bench.Id} has no path under its entry line.");
+                    }
+
+                    Assert.That(
+                        layout.Park.TreePositions.Any(tree =>
+                            PlanarDistance(tree, bench.Position) < 2.4f),
+                        Is.False,
+                        $"{bench.Id} intersects a park tree.");
                 }
             }
         }
@@ -622,16 +761,24 @@ namespace BarPromenade.Tests
                 Assert.That(
                     rails.Find("East Quay South End Rail"),
                     Is.Null);
-                // The north seals came off when the seacoast arrived:
-                // its quay stairs bridge the step onto the sand, so a
-                // rail there would wall off a walk that now exists —
-                // the same rule the river cave applies at the south.
+                // The full north seals came off when the seacoast
+                // arrived. Its stairs open the logical three-metre
+                // walk; only the extra structural lip by the water is
+                // capped so it cannot look traversable.
                 Assert.That(
                     rails.Find("West Quay North End Rail"),
                     Is.Null);
                 Assert.That(
                     rails.Find("East Quay North End Rail"),
                     Is.Null);
+                Assert.That(
+                    rails.Find("West Quay North Water Lip Rail"),
+                    Is.Not.Null,
+                    "The non-walkable waterside lip needs a visible cap.");
+                Assert.That(
+                    rails.Find("East Quay North Water Lip Rail"),
+                    Is.Not.Null,
+                    "The non-walkable waterside lip needs a visible cap.");
                 Collider[] railColliders =
                     rails.GetComponentsInChildren<Collider>();
                 foreach (CityRiverBridgeDescriptor bridge in
@@ -800,6 +947,31 @@ namespace BarPromenade.Tests
                 box.Center.z - extentZ,
                 box.Center.x + extentX,
                 box.Center.z + extentZ);
+        }
+
+        private static Vector3 ClosestPointOnSegmentXZ(
+            Vector3 point,
+            Vector3 start,
+            Vector3 end)
+        {
+            Vector3 delta = end - start;
+            delta.y = 0f;
+            Vector3 offset = point - start;
+            offset.y = 0f;
+            float denominator = delta.sqrMagnitude;
+            float amount = denominator > 0.0001f
+                ? Mathf.Clamp01(Vector3.Dot(offset, delta) / denominator)
+                : 0f;
+            Vector3 result = Vector3.Lerp(start, end, amount);
+            result.y = point.y;
+            return result;
+        }
+
+        private static float PlanarDistance(Vector3 first, Vector3 second)
+        {
+            float x = first.x - second.x;
+            float z = first.z - second.z;
+            return Mathf.Sqrt(x * x + z * z);
         }
 
         private static bool HasPositiveOverlap(Rect first, Rect second) =>

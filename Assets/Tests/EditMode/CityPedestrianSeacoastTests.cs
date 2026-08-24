@@ -153,22 +153,20 @@ namespace BarPromenade.Tests.EditMode
                 Is.True,
                 "The east quay lost its stair.");
 
-            // Each stair stands at the promenade's own lane x, just
-            // north of the boundary the rail used to seal.
+            // Each threshold covers the full logical promenade while
+            // retaining the offset pedestrian lane inside it.
             foreach (CityRiverPromenadeDescriptor promenade in
                      layout.River.Promenades)
             {
                 CitySeacoastPartDescriptor stair = promenade.WestBank
                     ? west
                     : east;
-                float laneX = promenade.WestBank
-                    ? promenade.Bounds.xMin +
-                      CitySeacoastPlanner.PromenadeLaneInset
-                    : promenade.Bounds.xMax -
-                      CitySeacoastPlanner.PromenadeLaneInset;
                 Assert.That(
                     stair.Center.x,
-                    Is.EqualTo(laneX).Within(0.01f));
+                    Is.EqualTo(promenade.Bounds.center.x).Within(0.01f));
+                Assert.That(
+                    stair.Size.x,
+                    Is.EqualTo(promenade.Bounds.width).Within(0.01f));
                 Assert.That(
                     stair.Center.z,
                     Is.GreaterThan(promenade.Bounds.yMax));

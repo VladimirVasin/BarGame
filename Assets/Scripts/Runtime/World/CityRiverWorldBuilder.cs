@@ -7,6 +7,8 @@ namespace BarPromenade
     internal static class CityRiverWorldBuilder
     {
         internal const string RootName = "City River";
+        internal const string LandingCutRetainingWallsName =
+            "Granite Landing Cut Retaining Walls";
 
         /// <summary>
         /// How far the channel floor sits below the water top. The water
@@ -41,6 +43,7 @@ namespace BarPromenade
         private const float PromenadeThickness = 0.18f;
         private const float RailHeight = 1.05f;
         private const float RailThickness = 0.14f;
+        private const float LandingRetainingWallThickness = 0.24f;
         private const float MinimumParapetOpening = 1.2f;
         internal const float SurfaceClearance = 0.03f;
 
@@ -76,7 +79,7 @@ namespace BarPromenade
         private const float QuayWallLampBridgeClearance = 6f;
         private const float QuayWallLampLandingClearance = 1.0f;
 
-        // Each lantern carries its own always-on fog halo: the lens
+        // Each waterside lantern carries its own always-on fog halo: the lens
         // alone is a couple of pixels the fog swallows by twenty
         // metres, where the halo billboard is the blurred ball of
         // light a lamp actually is at a distance in fog - the row
@@ -498,12 +501,35 @@ namespace BarPromenade
                             promenade,
                             physicalBounds.yMin));
                 }
-                // When the seacoast exists, the promenade's north end
-                // is not an edge any more: the coast's quay stair
-                // bridges the step onto the sand, so the seal comes
-                // off — the river-cave rule at the south end, applied
-                // at the mouth.
-                if (!CitySeacoastPlanner.HasDressableSeacoast(layout))
+                // The coast opens exactly the logical three-metre
+                // promenade. Its paving has an extra structural lip
+                // up to the waterside rail; cap that lip visibly so it
+                // cannot masquerade as another route.
+                bool hasSeacoast =
+                    CitySeacoastPlanner.HasDressableSeacoast(layout);
+                if (hasSeacoast)
+                {
+                    float lipMinimum = promenade.WestBank
+                        ? promenade.Bounds.xMax + RailThickness * 0.5f
+                        : physicalBounds.xMin + RailThickness * 0.5f;
+                    float lipMaximum = promenade.WestBank
+                        ? physicalBounds.xMax - RailThickness * 0.5f
+                        : promenade.Bounds.xMin - RailThickness * 0.5f;
+                    if (lipMaximum > lipMinimum)
+                    {
+                        BuildTransverseQuayRail(
+                            rails,
+                            $"{(promenade.WestBank ? "West" : "East")} " +
+                            "Quay North Water Lip Rail",
+                            lipMinimum,
+                            lipMaximum,
+                            physicalBounds.yMax,
+                            SamplePromenadeY(
+                                promenade,
+                                physicalBounds.yMax));
+                    }
+                }
+                else
                 {
                     BuildTransverseQuayRail(
                         rails,
@@ -1167,20 +1193,33 @@ namespace BarPromenade
                 flight.GetComponent<Renderer>(),
                 CityRiverSurfaceKind.Paving,
                 Granite);
-            CreateBox(
-                "Lower Waterside Platform",
-                root,
-                new Vector3(
-                    landing.PlatformBounds.center.x,
-                    landing.LowerY - 0.12f,
-                    landing.PlatformBounds.center.y),
-                new Vector3(
-                    landing.PlatformBounds.width,
-                    0.24f,
-                    landing.PlatformBounds.height),
-                Granite,
-                true,
-                CityRiverSurfaceKind.Paving);
+
+            GameObject platform =
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    "Lower Waterside Platform",
+                    root,
+                    new[]
+                    {
+                        new Bounds(
+                            new Vector3(
+                                landing.PlatformBounds.center.x,
+                                landing.LowerY - 0.12f,
+                                landing.PlatformBounds.center.y),
+                            new Vector3(
+                                landing.PlatformBounds.width,
+                                0.24f,
+                                landing.PlatformBounds.height))
+                    },
+                    Granite,
+                    true,
+                    CityRiverSurfaceAppearance
+                        .GetRecipe(CityRiverSurfaceKind.Paving)
+                        .MetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            CityRiverSurfaceAppearance.ApplyCombined(
+                platform.GetComponent<Renderer>(),
+                CityRiverSurfaceKind.Paving,
+                Granite);
 
             float lowerEdgeZ = landing.StairBounds.center.y +
                                direction * landing.StairBounds.height * 0.5f;
@@ -1269,6 +1308,14 @@ namespace BarPromenade
             float terminalZ = landing.PlatformBounds.center.y +
                               direction *
                               landing.PlatformBounds.height * 0.5f;
+            BuildLandingCutRetainingWalls(
+                root,
+                landing,
+                steps,
+                tread,
+                direction,
+                landwardEdgeX,
+                terminalZ);
             CreateBox(
                 "Platform End Rail",
                 root,
@@ -1346,6 +1393,82 @@ namespace BarPromenade
             }
         }
 
+        private static void BuildLandingCutRetainingWalls(
+            Transform parent,
+            CityRiverLandingDescriptor landing,
+            IReadOnlyList<Bounds> steps,
+            float tread,
+            float descentDirection,
+            float landwardEdgeX,
+            float terminalZ)
+        {
+            float landwardDirection = landing.WestBank ? -1f : 1f;
+            var walls = new List<Bounds>(steps.Count + 2);
+
+            // The promenade is cut away for the stair flight. Its landward
+            // edge needs an actual inward-facing retaining surface from each
+            // tread back up to the untouched promenade datum. The waterside
+            // remains open, so the rail still looks out over the river.
+            for (int index = 0; index < steps.Count; index++)
+            {
+                Bounds step = steps[index];
+                float bottomY = step.max.y;
+                float height = landing.UpperY - bottomY;
+                walls.Add(new Bounds(
+                    new Vector3(
+                        landwardEdgeX + landwardDirection *
+                        LandingRetainingWallThickness * 0.5f,
+                        bottomY + height * 0.5f,
+                        step.center.z),
+                    new Vector3(
+                        LandingRetainingWallThickness,
+                        height,
+                        tread)));
+            }
+
+            float platformHeight = landing.UpperY - landing.LowerY;
+            walls.Add(new Bounds(
+                new Vector3(
+                    landwardEdgeX + landwardDirection *
+                    LandingRetainingWallThickness * 0.5f,
+                    landing.LowerY + platformHeight * 0.5f,
+                    landing.PlatformBounds.center.y),
+                new Vector3(
+                    LandingRetainingWallThickness,
+                    platformHeight,
+                    landing.PlatformBounds.height)));
+
+            // Extend the terminal panel only toward land so the two walls
+            // meet at a sealed corner without intruding on the river side.
+            walls.Add(new Bounds(
+                new Vector3(
+                    landing.PlatformBounds.center.x + landwardDirection *
+                    LandingRetainingWallThickness * 0.5f,
+                    landing.LowerY + platformHeight * 0.5f,
+                    terminalZ + descentDirection *
+                    LandingRetainingWallThickness * 0.5f),
+                new Vector3(
+                    landing.PlatformBounds.width +
+                    LandingRetainingWallThickness,
+                    platformHeight,
+                    LandingRetainingWallThickness)));
+
+            GameObject result = RuntimePrimitiveFactory.CreateCombinedBoxes(
+                LandingCutRetainingWallsName,
+                parent,
+                walls,
+                GraniteEdge,
+                true,
+                CityRiverSurfaceAppearance
+                    .GetRecipe(CityRiverSurfaceKind.Quay)
+                    .MetersPerTile,
+                RuntimeWorldUvMode.BoxProjected);
+            CityRiverSurfaceAppearance.ApplyCombined(
+                result.GetComponent<Renderer>(),
+                CityRiverSurfaceKind.Quay,
+                GraniteEdge);
+        }
+
         private static void BuildPromenadeLights(
             Transform parent,
             CityLayout layout,
@@ -1355,7 +1478,8 @@ namespace BarPromenade
                 "Embankment Lamps").transform;
             lights.SetParent(parent, false);
             var posts = new List<Bounds>();
-            var bulbs = new List<Bounds>();
+            var promenadeBulbs = new List<Bounds>();
+            var quayWallBulbs = new List<Bounds>();
             var brackets = new List<Bounds>();
             IReadOnlyList<Vector3> positions = CreatePromenadeLampPositions(
                 layout);
@@ -1365,7 +1489,7 @@ namespace BarPromenade
                 posts.Add(new Bounds(
                     position + Vector3.up * 1.25f,
                     new Vector3(0.16f, 2.5f, 0.16f)));
-                bulbs.Add(new Bounds(
+                promenadeBulbs.Add(new Bounds(
                     position + Vector3.up * 2.62f,
                     new Vector3(0.42f, 0.24f, 0.42f)));
                 CityLightHalo.CreateNightRegistered(
@@ -1379,10 +1503,11 @@ namespace BarPromenade
 
             // The waterside lanterns: a back plate, an arm, a hood
             // and a lens hung low on the wall face, plus a pool
-            // anchor apiece so the nearest few burn with real light.
+            // anchor apiece so the nearest few add real spill at night.
             // The wall is not walkable, so none of it carries a
-            // collider; the lenses ride in the same glow batch as
-            // the upper plafonds.
+            // collider. These municipal wall fixtures burn around
+            // the clock, so their lenses and halos stay separate from
+            // the night-gated upper plafonds.
             IReadOnlyList<Vector3> wallPositions =
                 CreateQuayWallLampPositions(layout);
             float channelCenterX = layout.River.Segments.Count > 0
@@ -1404,23 +1529,19 @@ namespace BarPromenade
                     new Vector3(
                         p.x + sign * 0.30f, p.y + 0.15f, p.z),
                     new Vector3(0.34f, 0.10f, 0.34f)));
-                bulbs.Add(new Bounds(
+                quayWallBulbs.Add(new Bounds(
                     new Vector3(p.x + sign * 0.30f, p.y, p.z),
                     new Vector3(0.24f, 0.20f, 0.24f)));
 
                 // A step off the lens toward the water, so the soft
                 // particle's depth fade meets the channel behind it
                 // rather than the fixture it hangs on.
-                CityLightHalo.CreateNightRegistered(
+                CreateAlwaysOnQuayWallHalo(
                     lights,
                     new Vector3(
                         p.x + sign * 0.55f,
                         p.y,
-                        p.z),
-                    QuayWallLampHaloInnerSize,
-                    QuayWallLampHaloOuterSize,
-                    QuayWallLampHaloInner,
-                    QuayWallLampHaloOuter);
+                        p.z));
 
                 if (quayLampAnchorSink != null)
                 {
@@ -1483,19 +1604,46 @@ namespace BarPromenade
                     Iron);
             }
 
-            if (bulbs.Count > 0)
+            if (promenadeBulbs.Count > 0)
             {
                 GameObject glow =
                     RuntimePrimitiveFactory.CreateCombinedBoxes(
-                        "Embankment Lamp Glow",
+                        "Promenade Lamp Glow",
                         lights,
-                        bulbs,
+                        promenadeBulbs,
                         LampGlow,
                         CityNightResources.EmissiveMaterial);
                 CityNightGlowRegistry.Register(
                     glow.GetComponent<Renderer>(),
                     LampGlow);
             }
+
+            if (quayWallBulbs.Count > 0)
+            {
+                RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    "Quay Wall Lamp Glow",
+                    lights,
+                    quayWallBulbs,
+                    LampGlow,
+                    CityNightResources.EmissiveMaterial);
+            }
+        }
+
+        private static void CreateAlwaysOnQuayWallHalo(
+            Transform parent,
+            Vector3 localPosition)
+        {
+            var haloObject = new GameObject("Quay Wall Lamp Halo");
+            haloObject.transform.SetParent(parent, false);
+            haloObject.transform.localPosition = localPosition;
+            CityLightHalo halo =
+                haloObject.AddComponent<CityLightHalo>();
+            halo.Initialize(
+                CityNightResources.AtmosphereMaterial,
+                QuayWallLampHaloInnerSize,
+                QuayWallLampHaloOuterSize,
+                QuayWallLampHaloInner,
+                QuayWallLampHaloOuter);
         }
 
         internal static IReadOnlyList<Vector3> CreatePromenadeLampPositions(CityLayout layout)

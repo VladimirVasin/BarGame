@@ -80,9 +80,8 @@ namespace BarPromenade
     /// The seat offer on one city bench: entry dock, seated pelvis and
     /// facing, derived from the authored bench geometry so the
     /// interaction and the timber can never disagree. The bar-side yard
-    /// bench faces the dead tree, the park benches face each other
-    /// across the plaza, the point-of-interest benches keep their
-    /// authored orientation.
+    /// bench faces the dead tree, each park bench faces its own path,
+    /// and point-of-interest benches keep their authored orientation.
     /// </summary>
     public readonly struct CityBenchSitPlan
     {
@@ -103,8 +102,10 @@ namespace BarPromenade
         // Matches the authored park benches in CityWorldBuilder: the
         // seat plank tops out 0.71 m over the park ground.
         public const float ParkSeatTopHeight = 0.71f;
-        public const float ParkSeatWidth = 2.2f;
-        public const float ParkSeatDepth = 0.58f;
+        public const float ParkSeatWidth =
+            CityParkBenchDescriptor.SeatWidth;
+        public const float ParkSeatDepth =
+            CityParkBenchDescriptor.SeatDepth;
 
         /// <summary>
         /// How far past the end of a game-table plank its dock stands.
@@ -471,7 +472,10 @@ namespace BarPromenade
                 Add(plans, yardSeat);
             }
 
-            AddParkSeats(plans, layout.Park);
+            AddParkSeats(
+                plans,
+                layout,
+                streetSurfacePlan);
             AddCemeterySeats(
                 plans,
                 layout,
@@ -680,35 +684,40 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The four plaza benches flank the park centre east and west,
-        /// planks along the X axis, so each one faces the plaza's
-        /// centre line across from its twin.
+        /// Ordinary park seats inherit the same path-facing direction
+        /// as their timber and collider. Their entry dock is resampled
+        /// on the raised path surface rather than left at lawn height.
         /// </summary>
         private static void AddParkSeats(
             List<CityBenchSitPlan> plans,
-            CityParkPlan park)
+            CityLayout layout,
+            CityStreetSurfacePlan streetSurfacePlan)
         {
+            CityParkPlan park = layout?.Park;
             if (park == null || !park.IsEnabled)
             {
                 return;
             }
 
             for (int index = 0;
-                 index < park.BenchPositions.Count;
+                 index < park.Benches.Count;
                  index++)
             {
-                Vector3 position = park.BenchPositions[index];
+                CityParkBenchDescriptor bench = park.Benches[index];
+                Vector3 position = bench.Position;
                 var seat = new CityBenchSeat(
-                    $"park-bench-{index}",
+                    bench.Id,
                     position + Vector3.up * ParkSeatTopHeight,
                     ParkSeatWidth,
                     ParkSeatDepth,
                     position.y,
-                    new Vector3(
-                        0f,
-                        0f,
-                        park.Center.z >= position.z ? 1f : -1f));
-                Add(plans, seat);
+                    bench.Forward);
+                Add(
+                    plans,
+                    ResolveSeatDockGround(
+                        layout,
+                        streetSurfacePlan,
+                        seat));
             }
         }
 

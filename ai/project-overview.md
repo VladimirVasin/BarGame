@@ -152,15 +152,20 @@ The vertical slice contains:
   across its south and north edges, while a separate `2.8 m` timber
   ParkPath bridge reconnects the two `2 x 4` halves of the 16-cell central
   park. Each road bridge owns one staircase and lower waterside platform per
-  bank, producing four navigable lower landings. River-owned parapets stop at
-  the bank-road pads and preserve those four stair openings; generic road-edge
-  fences treat bridge decks as support-only and do not duplicate them. Route
+  bank, producing four navigable lower landings. Each promenade cut has a
+  collidered, box-projected Quay lining along the landward stair profile,
+  platform side and terminal face; its railed waterside stays open to the
+  river. River-owned parapets stop at the bank-road pads and preserve those
+  four stair openings; generic road-edge fences treat bridge decks as
+  support-only and do not duplicate them. Route
   01 may use the road bridges but never the timber crossing. In
   `default-coastal`, water and its silt bed continue more than `48 m` behind
   the southern mountain so their end remains beyond visibility. Both
   promenades extend walkably from world `Z=-156` to physical rock stops at
   `Z=-182`; the cave water and space behind those stops never enter the
-  navigation mask;
+  navigation mask. Low waterside lanterns at `13 m` pitch keep their emissive
+  lenses and fog halos lit around the clock; their pooled realtime spill and
+  the sparse upper promenade lamps remain night-driven;
 - one immutable `CityElevationPlan` produced after 2D topology and before any
   lot, surface or access is materialized. The default coastal blueprint spans
   about `8.1 m` across its generated road nodes, peaks near `10.08 m`, gives
@@ -393,9 +398,11 @@ The vertical slice contains:
   and steering/road roll up to `1` degree. All four wheel assemblies stay
   outside that pivot and grounded while the actor, collider and route pose
   remain unchanged. Its bounded audio presentation is equally physical: a
-  fully spatial rear-engine loop keeps a readable linear tail across the
-  `76-86 m` fog-hidden activation band, and a second rear-mounted
-  structure-borne loop fades in only for the hero aboard. The front and rear
+  fully spatial rear-engine loop uses a linear `24-48 m` tail tied to
+  `RuntimeSceneSetup.CityFarClipPlane`: it is silent through the `76-86 m`
+  fog-hidden activation band and becomes readable only after entering the
+  rendered street slice. A second rear-mounted structure-borne loop fades in
+  only for the hero aboard. The front and rear
   doorways each own a dedicated spatial pneumatic voice; opening and closing
   clips are fired once from the actual door-phase edges and pool cleanly with
   the actor. Canonical Route 01 is an immutable right-hand, Street-only
@@ -602,7 +609,10 @@ The vertical slice contains:
 - four readable built areas—Old Town, Residential, Industrial and
   Nightlife—plus a fixed 16-cell central park split into two `2 x 4` regions
   with lawn, plazas, trees, benches and hedges. A dedicated timber footbridge
-  joins their ParkPath graph across the river;
+  joins their ParkPath graph across the river. `CityParkBenchPlanner` derives
+  four ordinary benches per region from real non-bridge path runs; one
+  descriptor keeps the oriented timber, collider and path-facing sit dock in
+  agreement;
 - one mandatory north-edge waterfront in the default blueprint, dressed as
   the seacoast precinct (`CitySeacoastPlanner`): its connected beach has a
   deterministic street approach and remains walkable to the water line,
@@ -615,8 +625,9 @@ The vertical slice contains:
   abandoned municipal boat station (hut, «ПРОКАТ ЛОДОК» board, sea pier
   with the fisherman, chained slipway, hauled hulls) at the centre; rotten
   breakwater piles, driftwood, dune grass and a stranded barge on the wild
-  east — with a timber footbridge over the mouth, quay stairs adopting the
-  river promenades' north ends, a coast pedestrian lane in the walker
+  east — with a timber footbridge over the mouth, full-width quay thresholds
+  adopting both river promenades' north ends while short transverse rails
+  visibly close only their non-walkable waterside lips, a coast pedestrian lane in the walker
   graph, seacoast texture sheets, map landmarks and a synthesized surf
   ambience bed. Offshore, at the edge of visibility in the fog, stands
   the abandoned lighthouse island (`CityLighthouseIslandPlanner`): a

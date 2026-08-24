@@ -174,14 +174,19 @@ namespace BarPromenade
 
         internal static void AddParkBenchColliders(
             Transform parent,
-            IReadOnlyList<Vector3> positions)
+            IReadOnlyList<CityParkBenchDescriptor> benches)
         {
-            var bounds = new List<Bounds>(positions.Count);
-            for (int index = 0; index < positions.Count; index++)
+            var bounds = new List<Bounds>(benches.Count);
+            for (int index = 0; index < benches.Count; index++)
             {
+                CityParkBenchDescriptor bench = benches[index];
+                bool runsAlongZ = Mathf.Abs(bench.Tangent.z) >
+                                  Mathf.Abs(bench.Tangent.x);
                 bounds.Add(new Bounds(
-                    positions[index] + (Vector3.up * 0.48f),
-                    new Vector3(2.30f, 0.96f, 0.72f)));
+                    bench.Position + (Vector3.up * 0.48f),
+                    runsAlongZ
+                        ? new Vector3(0.72f, 0.96f, 2.30f)
+                        : new Vector3(2.30f, 0.96f, 0.72f)));
             }
 
             AddColliderGroup(parent, "Park Bench Colliders", bounds);

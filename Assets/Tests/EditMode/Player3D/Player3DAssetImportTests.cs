@@ -4,7 +4,7 @@ using NUnit.Framework;
 using UnityEditor;
 using UnityEngine;
 
-namespace BarPromenade.Tests
+namespace BarPromenade.Tests.EditMode
 {
     public sealed class Player3DAssetImportTests
     {

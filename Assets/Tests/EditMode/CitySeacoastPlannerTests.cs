@@ -481,6 +481,189 @@ namespace BarPromenade.Tests.EditMode
                 "Open sea became walkable away from the decks.");
         }
 
+        [Test]
+        public void WorldBuilder_LetsTheProductionControllerCrossBothQuayShoreJunctions()
+        {
+            CityLayout layout = CreateDefaultLayout();
+            CitySeacoastPlan coast = CitySeacoastPlanner.Create(layout);
+            RoadWalkableArea walkable = RoadWalkableArea.FromLayout(layout);
+            var root = new GameObject("Quay Shore Collision Test");
+            try
+            {
+                CityWorldBuilder.Build(
+                    root.transform,
+                    layout,
+                    CityGenerationSettings.Default);
+                Physics.SyncTransforms();
+
+                foreach (CityRiverPromenadeDescriptor promenade in
+                         layout.River.Promenades)
+                {
+                    string stairId = promenade.WestBank
+                        ? CitySeacoastPlanner.PromenadeStairWestId
+                        : CitySeacoastPlanner.PromenadeStairEastId;
+                    List<CitySeacoastPartDescriptor> steps = coast.Parts
+                        .Where(part =>
+                            part.Kind ==
+                                CitySeacoastPartKind.EsplanadeStair &&
+                            (part.StableId == stairId ||
+                             part.StableId.StartsWith(stairId + "-")))
+                        .OrderBy(part => part.Center.z)
+                        .ToList();
+                    Assert.That(steps, Is.Not.Empty);
+                    foreach (CitySeacoastPartDescriptor step in steps)
+                    {
+                        Assert.That(
+                            step.Center.x,
+                            Is.EqualTo(promenade.Bounds.center.x)
+                                .Within(0.001f),
+                            $"{step.StableId} is not centred on its quay.");
+                        Assert.That(
+                            step.Size.x,
+                            Is.EqualTo(promenade.Bounds.width)
+                                .Within(0.001f),
+                            $"{step.StableId} does not cover the full " +
+                            "visible quay opening.");
+                    }
+
+                    Rect junction = CitySeacoastPlanner
+                        .CreatePromenadeShoreJunctionBounds(promenade);
+                    const float auditRadius =
+                        CityGroundTraversalPlanner.MaximumAgentRadius;
+                    for (int sample = 0; sample <= 8; sample++)
+                    {
+                        float x = Mathf.Lerp(
+                            promenade.Bounds.xMin + auditRadius,
+                            promenade.Bounds.xMax - auditRadius,
+                            sample / 8f);
+                        for (int depth = 0; depth <= 8; depth++)
+                        {
+                            float z = Mathf.Lerp(
+                                junction.yMin + auditRadius,
+                                junction.yMax - auditRadius,
+                                depth / 8f);
+                            Assert.That(
+                                walkable.Contains(
+                                    new Vector3(x, promenade.NorthY, z),
+                                    auditRadius),
+                                Is.True,
+                                $"{stairId} has a navigation clamp at " +
+                                $"({x:F2}, {z:F2}).");
+                        }
+                    }
+
+                    float promenadeZ = promenade.Bounds.yMax - 0.6f;
+                    float promenadeTop = Mathf.Lerp(
+                        promenade.SouthY,
+                        promenade.NorthY,
+                        Mathf.InverseLerp(
+                            promenade.Bounds.yMin,
+                            promenade.Bounds.yMax,
+                            promenadeZ));
+                    CitySeacoastPartDescriptor last =
+                        steps[steps.Count - 1];
+                    float shoreZ = last.Center.z +
+                                   last.Size.z * 0.5f + 0.6f;
+                    const float physicalInset = 0.34f;
+                    foreach (float x in new[]
+                             {
+                                 promenade.Bounds.xMin + physicalInset,
+                                 promenade.Bounds.center.x,
+                                 promenade.Bounds.xMax - physicalInset
+                             })
+                    {
+                        float shoreTop =
+                            CitySeacoastPlanner.SampleShoreWalkTop(
+                                layout,
+                                coast.Frame,
+                                x,
+                                shoreZ);
+                        AssertControllerCrosses(
+                            root.transform,
+                            walkable,
+                            new Vector3(x, promenadeTop, promenadeZ),
+                            new Vector3(x, shoreTop, shoreZ),
+                            stairId + $" promenade-to-shore x={x:F2}");
+                        AssertControllerCrosses(
+                            root.transform,
+                            walkable,
+                            new Vector3(x, shoreTop, shoreZ),
+                            new Vector3(x, promenadeTop, promenadeZ),
+                            stairId + $" shore-to-promenade x={x:F2}");
+                    }
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void AssertControllerCrosses(
+            Transform parent,
+            RoadWalkableArea walkable,
+            Vector3 startGround,
+            Vector3 targetGround,
+            string label)
+        {
+            var actor = new GameObject(label);
+            actor.transform.SetParent(parent, false);
+            CharacterController controller =
+                actor.AddComponent<CharacterController>();
+            controller.height = 1.7f;
+            controller.radius = 0.32f;
+            controller.center = new Vector3(0f, 0.85f, 0f);
+            controller.stepOffset = 0.28f;
+            controller.slopeLimit = 45f;
+            controller.skinWidth = PlayerFactory.GroundedRootOffset;
+            actor.transform.position = startGround + Vector3.up * 0.12f;
+            Physics.SyncTransforms();
+            for (int settle = 0; settle < 12; settle++)
+            {
+                controller.Move(Vector3.down * 0.08f);
+            }
+
+            int stalls = 0;
+            for (int move = 0; move < 180; move++)
+            {
+                Vector3 current = actor.transform.position;
+                if (Mathf.Abs(current.z - targetGround.z) <= 0.08f)
+                {
+                    UnityEngine.Object.DestroyImmediate(actor);
+                    return;
+                }
+
+                Vector3 desired = current;
+                desired.x = targetGround.x;
+                desired.z = Mathf.MoveTowards(
+                    current.z,
+                    targetGround.z,
+                    0.08f);
+                Vector3 constrained = walkable.Constrain(
+                    current,
+                    desired,
+                    controller.radius);
+                float beforeZ = current.z;
+                controller.Move(
+                    constrained - current + Vector3.down * 0.08f);
+                stalls = Mathf.Abs(actor.transform.position.z - beforeZ) <
+                         0.005f
+                    ? stalls + 1
+                    : 0;
+                if (stalls >= 8)
+                {
+                    break;
+                }
+            }
+
+            Vector3 stopped = actor.transform.position;
+            UnityEngine.Object.DestroyImmediate(actor);
+            Assert.Fail(
+                $"{label} stopped at ({stopped.x:F2}, " +
+                $"{stopped.y:F2}, {stopped.z:F2}) before " +
+                $"Z={targetGround.z:F2}.");
+        }
+
         private static void WalkBetween(
             CitySeacoastPlan plan,
             RoadWalkableArea area,

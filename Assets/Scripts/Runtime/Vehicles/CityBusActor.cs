@@ -1449,7 +1449,7 @@ namespace BarPromenade
                 return;
             }
 
-            audioPresentation.Start(
+            audioPresentation.BeginPlayback(
                 Mathf.Clamp01(speed / CruiseSpeed),
                 HasPlayerPassenger);
         }

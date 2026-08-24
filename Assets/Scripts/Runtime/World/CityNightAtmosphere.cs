@@ -62,8 +62,9 @@ namespace BarPromenade
         private float[] pooledLightBaseIntensities = Array.Empty<float>();
         // Whether a pool slot may show its travelling halo. Only the
         // leased practical does: every fixed lamp carries its own
-        // always-on halo now, and a pooled spot arriving at a mast or
-        // a quay lantern must not double the blob.
+        // fixture halo now, and a pooled spot arriving at a mast or
+        // a quay lantern must not double the blob. The quay wall halo
+        // is independently always lit; most fixtures remain night-gated.
         private bool[] pooledHaloVisible = Array.Empty<bool>();
         private int activePracticalIndex = -1;
         private int quayAnchorStartIndex = int.MaxValue;

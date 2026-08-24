@@ -41,12 +41,14 @@ namespace BarPromenade
         /// <summary>
         /// Builds a fog halo with no Light of its own and hands it to
         /// <see cref="CityNightGlowRegistry"/> so it follows the night
-        /// factor: dead by day, full at night. This is how every fixed
-        /// lamp in the city stays visible at a distance — the emissive
+        /// factor: dead by day, full at night. This is how ordinary
+        /// night-gated fixed lamps stay visible at a distance — the emissive
         /// lens is a couple of pixels the fog swallows by twenty
         /// metres, where the halo billboard is the blurred ball of
         /// light a lamp actually is in fog. The pooled realtime lights
         /// carry light only; the blurred presence is the fixture's own.
+        /// Always-burning fixtures initialize a halo directly and therefore
+        /// deliberately stay outside this night registry.
         /// </summary>
         public static CityLightHalo CreateNightRegistered(
             Transform parent,

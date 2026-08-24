@@ -108,13 +108,21 @@ namespace BarPromenade
                     SampleGround(elevation, position, centerDatum)));
             }
 
-            var benches = new List<Vector3>(source.BenchPositions.Count);
-            for (int index = 0; index < source.BenchPositions.Count; index++)
+            var benches = new List<CityParkBenchDescriptor>(
+                source.Benches.Count);
+            for (int index = 0; index < source.Benches.Count; index++)
             {
-                Vector3 position = source.BenchPositions[index];
-                benches.Add(WithY(
-                    position,
-                    SampleGround(elevation, position, centerDatum)));
+                CityParkBenchDescriptor bench = source.Benches[index];
+                benches.Add(new CityParkBenchDescriptor(
+                    bench.Id,
+                    bench.RegionId,
+                    WithY(
+                        bench.Position,
+                        SampleGround(
+                            elevation,
+                            bench.Position,
+                            centerDatum)),
+                    bench.Forward));
             }
 
             var regions = new List<CityParkRegionPlan>(

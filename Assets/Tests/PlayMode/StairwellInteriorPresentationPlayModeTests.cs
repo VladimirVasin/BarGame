@@ -333,24 +333,43 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                     StairwellCameraShotKind.MiddleFlight));
 
-            inputFixture.Press(
-                keyboard.wKey,
-                queueEventOnly: true);
-            float deadline = Time.realtimeSinceStartup + 8f;
+            // Pin the frame step so the eight seconds below are eight
+            // seconds of walking rather than however many frames the
+            // machine can push through them. Unpinned, batch mode runs
+            // frames far faster than real time and the hero covers the
+            // flight even while crawling — which is exactly how a real
+            // obstruction hid here: the upper-flight debris used to graze
+            // his head on the top treads, and every contact cost him all
+            // his speed. Held to a real stride, this test measures the
+            // descent a player would make, and fails if he is scraping
+            // something again.
             Vector3 position =
                 root.Player.GameObject.transform.position;
-            while (position.y > 0.30f &&
-                   Time.realtimeSinceStartup < deadline)
+            float previousCaptureDeltaTime = Time.captureDeltaTime;
+            Time.captureDeltaTime = 1f / 60f;
+            try
             {
-                yield return null;
-                position =
-                    root.Player.GameObject.transform.position;
-            }
+                inputFixture.Press(
+                    keyboard.wKey,
+                    queueEventOnly: true);
+                float deadline = Time.realtimeSinceStartup + 8f;
+                while (position.y > 0.30f &&
+                       Time.realtimeSinceStartup < deadline)
+                {
+                    yield return null;
+                    position =
+                        root.Player.GameObject.transform.position;
+                }
 
-            inputFixture.Release(
-                keyboard.wKey,
-                queueEventOnly: true);
-            yield return null;
+                inputFixture.Release(
+                    keyboard.wKey,
+                    queueEventOnly: true);
+                yield return null;
+            }
+            finally
+            {
+                Time.captureDeltaTime = previousCaptureDeltaTime;
+            }
 
             Assert.That(
                 position.y,
@@ -586,6 +605,22 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.Player.Motor.InputEnabled, Is.True);
             Assert.That(root.Player.Interactor.InputEnabled, Is.True);
             yield return null;
+
+            if (Application.isBatchMode)
+            {
+                // Batch mode has no game view, so OnGUI never runs and the
+                // prompt can never report a rendered layout. Everything
+                // above — the refused feeding, the missing-stew prompt key
+                // and the restored input — has already been asserted and
+                // would have failed this test headless. Only the IMGUI
+                // panel measurements below are unverifiable.
+                Assert.Ignore(
+                    "IMGUI layout cannot be exercised in batch mode (no " +
+                    "game view, so OnGUI never runs); the interaction " +
+                    "assertions above did run. Batchmode-environment " +
+                    "limit, stash-verified 2026-08-23; see work-log " +
+                    "latent.");
+            }
 
             InteractionPromptView prompt = root.InteractionPrompt;
             Assert.That(prompt.HasRenderedLayout, Is.True);

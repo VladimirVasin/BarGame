@@ -281,26 +281,31 @@ namespace BarPromenade
                 frame.ChannelXMax + FootbridgeOverhang + SeamReach,
                 waterline - FootbridgeZOffset + FootbridgeWidth * 0.5f));
 
-            // The quay junctions. The promenade rectangles and the
-            // sand row merely abut at the waterfront boundary, and
-            // abutting rectangles leave a dead band two agent radii
-            // wide — so each junction gets a bridging strip across
-            // the seam, under the stair that walks it.
+            // The promenade and sand rectangles merely abut at the
+            // waterfront boundary. Bridge the complete logical
+            // three-metre quay, not only the pedestrian lane: the
+            // whole visible stair is a real player route. The extra
+            // physical lip beside the water remains behind a short
+            // river-owned rail.
             for (int index = 0;
                  index < layout.River.Promenades.Count;
                  index++)
             {
                 CityRiverPromenadeDescriptor promenade =
                     layout.River.Promenades[index];
-                float laneX = promenade.WestBank
-                    ? promenade.Bounds.xMin + PromenadeLaneInset
-                    : promenade.Bounds.xMax - PromenadeLaneInset;
-                destination.Add(Rect.MinMaxRect(
-                    laneX - 1.1f,
-                    promenade.Bounds.yMax - SeamReach,
-                    laneX + 1.1f,
-                    promenade.Bounds.yMax + SeamReach));
+                destination.Add(
+                    CreatePromenadeShoreJunctionBounds(promenade));
             }
+        }
+
+        internal static Rect CreatePromenadeShoreJunctionBounds(
+            in CityRiverPromenadeDescriptor promenade)
+        {
+            return Rect.MinMaxRect(
+                promenade.Bounds.xMin,
+                promenade.Bounds.yMax - SeamReach,
+                promenade.Bounds.xMax,
+                promenade.Bounds.yMax + SeamReach);
         }
 
         /// <summary>
@@ -2456,13 +2461,12 @@ namespace BarPromenade
             {
                 CityRiverPromenadeDescriptor promenade =
                     layout.River.Promenades[index];
-                float laneX = promenade.WestBank
-                    ? promenade.Bounds.xMin + PromenadeLaneInset
-                    : promenade.Bounds.xMax - PromenadeLaneInset;
+                Rect junction =
+                    CreatePromenadeShoreJunctionBounds(promenade);
                 float joinZ = promenade.Bounds.yMax;
                 float sand = SampleSandTop(
                     layout,
-                    laneX,
+                    junction.center.x,
                     joinZ + 4.3f);
                 float drop = promenade.NorthY - sand;
                 string baseId = promenade.WestBank
@@ -2487,12 +2491,12 @@ namespace BarPromenade
                         CitySeacoastPartKind.EsplanadeStair,
                         CitySeacoastStyle.Granite,
                         new Vector3(
-                            laneX,
+                            junction.center.x,
                             top - 0.15f,
                             joinZ + 0.28f + step * StairTread),
                         Quaternion.identity,
                         new Vector3(
-                            2.0f,
+                            junction.width,
                             0.30f,
                             StairTread + 0.08f)));
                 }

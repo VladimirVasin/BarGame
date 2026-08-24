@@ -113,7 +113,12 @@ namespace BarPromenade
             Dictionary<RoadEdge, CityPathKind> pathKinds =
                 CreatePathKinds(snapshot, roads);
             CityParkPlan park =
-                CreateParkPlan(snapshot, seed, origin);
+                CreateParkPlan(
+                    snapshot,
+                    seed,
+                    origin,
+                    roads,
+                    pathKinds);
             List<BuildingLot> lots = CreateBuildingLots(
                 snapshot,
                 seed,
@@ -2034,11 +2039,18 @@ namespace BarPromenade
         private static CityParkPlan CreateParkPlan(
             CityGenerationSettings settings,
             int seed,
-            Vector3 origin)
+            Vector3 origin,
+            IReadOnlyList<RoadEdge> roads,
+            IReadOnlyDictionary<RoadEdge, CityPathKind> pathKinds)
         {
             if (settings.Blueprint?.River != null)
             {
-                return CreateRiverParkPlan(settings, seed, origin);
+                return CreateRiverParkPlan(
+                    settings,
+                    seed,
+                    origin,
+                    roads,
+                    pathKinds);
             }
 
             Vector2Int count = settings.EffectiveParkBlockCount;
@@ -2050,7 +2062,7 @@ namespace BarPromenade
                     Vector3.zero,
                     Array.Empty<CityParkGateDescriptor>(),
                     Array.Empty<Vector3>(),
-                    Array.Empty<Vector3>());
+                    Array.Empty<CityParkBenchDescriptor>());
             }
 
             Vector2Int minimum = settings.ParkCellMinimum;
@@ -2114,23 +2126,42 @@ namespace BarPromenade
                     gateWidth)
             };
 
-            List<Vector3> trees =
-                CreateParkTreePositions(seed, walkable, center);
-            List<Vector3> benches =
-                CreateParkBenchPositions(center);
+            var region = new CityParkRegionPlan(
+                "central-park",
+                cells,
+                walkable,
+                center,
+                gates,
+                center);
+            var regions = new[] { region };
+            List<CityParkBenchDescriptor> benches =
+                CityParkBenchPlanner.Create(
+                    regions,
+                    settings,
+                    origin,
+                    roads,
+                    pathKinds);
+            List<Vector3> trees = CreateParkTreePositions(
+                seed,
+                walkable,
+                center,
+                benches);
             return new CityParkPlan(
                 cells,
                 walkable,
                 center,
                 gates,
                 trees,
-                benches);
+                benches,
+                regions);
         }
 
         private static CityParkPlan CreateRiverParkPlan(
             CityGenerationSettings settings,
             int seed,
-            Vector3 origin)
+            Vector3 origin,
+            IReadOnlyList<RoadEdge> roads,
+            IReadOnlyDictionary<RoadEdge, CityPathKind> pathKinds)
         {
             CityAreaPlacement park = settings.Blueprint.CentralPark;
             CityRiverDefinition river = settings.Blueprint.River;
@@ -2178,18 +2209,24 @@ namespace BarPromenade
             var gates = new List<CityParkGateDescriptor>();
             gates.AddRange(west.Gates);
             gates.AddRange(east.Gates);
+            List<CityParkBenchDescriptor> benches =
+                CityParkBenchPlanner.Create(
+                    regions,
+                    settings,
+                    origin,
+                    roads,
+                    pathKinds);
             var trees = new List<Vector3>();
             trees.AddRange(CreateParkTreePositions(
                 seed,
                 west.WalkableBounds,
-                west.PlazaPosition));
+                west.PlazaPosition,
+                benches));
             trees.AddRange(CreateParkTreePositions(
                 seed ^ 0x51A7,
                 east.WalkableBounds,
-                east.PlazaPosition));
-            var benches = new List<Vector3>();
-            AddRiverParkBenches(benches, west, true);
-            AddRiverParkBenches(benches, east, false);
+                east.PlazaPosition,
+                benches));
             return new CityParkPlan(
                 new List<Vector2Int>(park.Cells),
                 aggregate,
@@ -2311,28 +2348,11 @@ namespace BarPromenade
                 plaza);
         }
 
-        private static void AddRiverParkBenches(
-            ICollection<Vector3> target,
-            CityParkRegionPlan region,
-            bool west)
-        {
-            float inward = west ? 1f : -1f;
-            target.Add(region.PlazaPosition + new Vector3(
-                -inward * 5.5f,
-                0f,
-                -7f));
-            target.Add(region.PlazaPosition + new Vector3(
-                -inward * 5.5f,
-                0f,
-                7f));
-            target.Add(region.Center + new Vector3(0f, 0f, -15f));
-            target.Add(region.Center + new Vector3(0f, 0f, 15f));
-        }
-
         private static List<Vector3> CreateParkTreePositions(
             int seed,
             Rect bounds,
-            Vector3 center)
+            Vector3 center,
+            IReadOnlyList<CityParkBenchDescriptor> benches)
         {
             const int gridSize = 8;
             const float pathClearance = 5.4f;
@@ -2374,6 +2394,11 @@ namespace BarPromenade
                         position.z,
                         bounds.yMin + 1f,
                         bounds.yMax - 1f);
+                    if (IsNearParkBench(position, benches))
+                    {
+                        continue;
+                    }
+
                     result.Add(position);
                 }
             }
@@ -2381,20 +2406,22 @@ namespace BarPromenade
             return result;
         }
 
-        private static List<Vector3> CreateParkBenchPositions(
-            Vector3 center)
+        private static bool IsNearParkBench(
+            Vector3 position,
+            IReadOnlyList<CityParkBenchDescriptor> benches)
         {
-            return new List<Vector3>
+            const float clearance = 2.4f;
+            for (int index = 0; index < benches.Count; index++)
             {
-                center + new Vector3(-12f, 0f, -5.5f),
-                center + new Vector3(-12f, 0f, 5.5f),
-                center + new Vector3(12f, 0f, -5.5f),
-                center + new Vector3(12f, 0f, 5.5f),
-                center + new Vector3(-5.5f, 0f, -12f),
-                center + new Vector3(5.5f, 0f, -12f),
-                center + new Vector3(-5.5f, 0f, 12f),
-                center + new Vector3(5.5f, 0f, 12f)
-            };
+                if (XzSquaredDistance(
+                        position,
+                        benches[index].Position) < clearance * clearance)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static Vector2Int ChooseFrontage(

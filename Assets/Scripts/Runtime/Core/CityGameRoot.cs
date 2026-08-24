@@ -533,10 +533,10 @@ namespace BarPromenade
                     Layout,
                     World.DecorationPlan));
             // Every authored seat is sittable in the bus ride's seated
-            // pose: the bar-side yard bench faces the dead tree, the park,
-            // point-of-interest and street-decoration seats face their
-            // own centres and every bus stop shelter bench faces its
-            // road.
+            // pose: the bar-side yard bench faces the dead tree, ordinary
+            // park benches face their own paths, point-of-interest and
+            // street-decoration seats face their centres and every bus
+            // stop shelter bench faces its road.
             List<CityBenchSitPlan> benchPlans =
                 CityBenchSitPlan.CreateAll(
                     Layout,

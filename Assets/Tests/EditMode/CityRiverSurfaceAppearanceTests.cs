@@ -339,6 +339,7 @@ namespace BarPromenade.Tests.EditMode
                 }
 
                 var seen = new HashSet<CityRiverSurfaceKind>();
+                int retainingWallCount = 0;
                 foreach (Renderer renderer in
                          river.GetComponentsInChildren<Renderer>(true))
                 {
@@ -413,6 +414,26 @@ namespace BarPromenade.Tests.EditMode
                             .Within(0.001f),
                         $"'{renderer.name}' is tinted with a colour the " +
                         "contract was not measured from.");
+                    if (renderer.name == "Lower Waterside Platform")
+                    {
+                        AssertBoxProjectedWorldUvs(
+                            renderer,
+                            CityRiverSurfaceAppearance
+                                .GetRecipe(CityRiverSurfaceKind.Paving)
+                                .MetersPerTile);
+                    }
+
+                    if (renderer.name ==
+                        CityRiverWorldBuilder.LandingCutRetainingWallsName)
+                    {
+                        retainingWallCount++;
+                        AssertBoxProjectedWorldUvs(
+                            renderer,
+                            CityRiverSurfaceAppearance
+                                .GetRecipe(CityRiverSurfaceKind.Quay)
+                                .MetersPerTile);
+                        AssertLandingCutIsClosed(renderer);
+                    }
                 }
 
                 Assert.That(
@@ -425,11 +446,147 @@ namespace BarPromenade.Tests.EditMode
                             CityRiverSurfaceKind.Iron,
                             CityRiverSurfaceKind.Bed,
                         }));
+                Assert.That(
+                    retainingWallCount,
+                    Is.EqualTo(layout.River.Landings.Count),
+                    "Every river landing must line the landward and terminal " +
+                    "sides of its cut instead of showing fog through the " +
+                    "embankment.");
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(parent);
             }
+        }
+
+        /// <summary>
+        /// Combined landing slabs and cut walls expose both horizontal and
+        /// vertical faces. Box-projected mesh UVs keep every face at its
+        /// surface sheet's true metre pitch.
+        /// </summary>
+        private static void AssertBoxProjectedWorldUvs(
+            Renderer renderer,
+            float tileSize)
+        {
+            Mesh mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+            Assert.That(mesh, Is.Not.Null);
+            Vector3[] vertices = mesh.vertices;
+            Vector3[] normals = mesh.normals;
+            Vector2[] uvs = mesh.uv;
+            Assert.That(normals, Has.Length.EqualTo(vertices.Length));
+            Assert.That(uvs, Has.Length.EqualTo(vertices.Length));
+
+            for (int index = 0; index < vertices.Length; index++)
+            {
+                Vector3 vertex = vertices[index];
+                Vector3 normal = normals[index];
+                float absoluteX = Mathf.Abs(normal.x);
+                float absoluteY = Mathf.Abs(normal.y);
+                float absoluteZ = Mathf.Abs(normal.z);
+                Vector2 expected;
+                if (absoluteY >= absoluteX && absoluteY >= absoluteZ)
+                {
+                    expected = new Vector2(vertex.x, vertex.z);
+                }
+                else if (absoluteX >= absoluteZ)
+                {
+                    expected = new Vector2(vertex.z, vertex.y);
+                }
+                else
+                {
+                    expected = new Vector2(vertex.x, vertex.y);
+                }
+
+                Assert.That(
+                    uvs[index].x,
+                    Is.EqualTo(expected.x / tileSize).Within(0.0001f),
+                    $"'{renderer.name}' has a stretched U coordinate.");
+                Assert.That(
+                    uvs[index].y,
+                    Is.EqualTo(expected.y / tileSize).Within(0.0001f),
+                    $"'{renderer.name}' has a stretched V coordinate.");
+            }
+        }
+
+        private static void AssertLandingCutIsClosed(Renderer renderer)
+        {
+            CityRiverLandingDescriptor landing =
+                FindLanding(renderer.transform);
+            Bounds bounds = renderer.bounds;
+            if (landing.WestBank)
+            {
+                Assert.That(
+                    bounds.min.x,
+                    Is.LessThan(landing.StairBounds.xMin - 0.05f),
+                    $"'{renderer.transform.parent.name}' has no landward " +
+                    "lining.");
+                Assert.That(
+                    bounds.max.x,
+                    Is.EqualTo(landing.PlatformBounds.xMax).Within(0.001f));
+            }
+            else
+            {
+                Assert.That(
+                    bounds.max.x,
+                    Is.GreaterThan(landing.StairBounds.xMax + 0.05f),
+                    $"'{renderer.transform.parent.name}' has no landward " +
+                    "lining.");
+                Assert.That(
+                    bounds.min.x,
+                    Is.EqualTo(landing.PlatformBounds.xMin).Within(0.001f));
+            }
+
+            Assert.That(
+                bounds.min.y,
+                Is.EqualTo(landing.LowerY).Within(0.001f));
+            Assert.That(
+                bounds.max.y,
+                Is.EqualTo(landing.UpperY).Within(0.001f));
+
+            float expectedZMin = Mathf.Min(
+                landing.StairBounds.yMin,
+                landing.PlatformBounds.yMin);
+            float expectedZMax = Mathf.Max(
+                landing.StairBounds.yMax,
+                landing.PlatformBounds.yMax);
+            Assert.That(bounds.min.z, Is.LessThanOrEqualTo(expectedZMin));
+            Assert.That(bounds.max.z, Is.GreaterThanOrEqualTo(expectedZMax));
+
+            Mesh mesh = renderer.GetComponent<MeshFilter>().sharedMesh;
+            int minimumBoxVertexCount = (landing.StepCount + 2) * 24;
+            Assert.That(
+                mesh.vertexCount,
+                Is.GreaterThanOrEqualTo(minimumBoxVertexCount),
+                $"'{renderer.transform.parent.name}' must line every stair " +
+                "tread plus the platform side and terminal cut.");
+            Assert.That(
+                renderer.GetComponent<MeshCollider>(),
+                Is.Not.Null,
+                "The retaining wall must remain physically solid.");
+        }
+
+        private static CityRiverLandingDescriptor FindLanding(
+            Transform renderer)
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                Seed);
+            for (int index = 0; index < layout.River.Landings.Count; index++)
+            {
+                CityRiverLandingDescriptor landing =
+                    layout.River.Landings[index];
+                if (renderer.parent != null &&
+                    renderer.parent.name == landing.Id)
+                {
+                    return landing;
+                }
+            }
+
+            Assert.Fail(
+                $"Retaining walls '{renderer.name}' are not parented to a " +
+                "planned river landing.");
+            return default;
         }
 
         /// <summary>
@@ -471,14 +628,17 @@ namespace BarPromenade.Tests.EditMode
             }
 
             string name = renderer.name;
-            if (name == "Embankment Lamp Glow" ||
+            if (name == "Promenade Lamp Glow" ||
+                name == "Quay Wall Lamp Glow" ||
+                name == "Quay Wall Lamp Halo" ||
                 name == "Fog Light Halo")
             {
                 return null;
             }
 
             if (name.Contains("Quay Wall") ||
-                name.Contains("Quay Frontage"))
+                name.Contains("Quay Frontage") ||
+                name == CityRiverWorldBuilder.LandingCutRetainingWallsName)
             {
                 return CityRiverSurfaceKind.Quay;
             }

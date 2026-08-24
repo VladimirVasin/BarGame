@@ -10,6 +10,26 @@ namespace BarPromenade.Tests.EditMode
         private static readonly int SmoothnessId =
             Shader.PropertyToID("_Smoothness");
 
+        // A colour read back out of a MaterialPropertyBlock is not the
+        // colour that was written: the native round-trip drifts by about
+        // one ULP (0.31f returns as 0.309999973), which NUnit's exact
+        // struct equality rejects while both sides still print
+        // identically. The drift is already there when the appearance
+        // writes the authored tint, before any weather runs, so it says
+        // nothing about the wetness path. White is the one value that
+        // survives it bit-for-bit, which is why the plain surface case
+        // could get away with exact equality for so long. Assert the
+        // contract that matters instead: the authored tint comes back.
+        private const float TintTolerance = 1e-5f;
+
+        private static void AssertTint(Color actual, Color expected)
+        {
+            Assert.That(actual.r, Is.EqualTo(expected.r).Within(TintTolerance));
+            Assert.That(actual.g, Is.EqualTo(expected.g).Within(TintTolerance));
+            Assert.That(actual.b, Is.EqualTo(expected.b).Within(TintTolerance));
+            Assert.That(actual.a, Is.EqualTo(expected.a).Within(TintTolerance));
+        }
+
         [SetUp]
         public void SetUp()
         {
@@ -211,9 +231,9 @@ namespace BarPromenade.Tests.EditMode
 
                 CityWetSurfaceRegistry.SetImmediate(0f);
                 renderer.GetPropertyBlock(properties);
-                Assert.That(
+                AssertTint(
                     properties.GetColor(BaseColorId),
-                    Is.EqualTo(Color.white));
+                    Color.white);
                 Assert.That(
                     properties.GetFloat(SmoothnessId),
                     Is.EqualTo(CityExteriorAppearance.RoadSmoothness)
@@ -248,9 +268,9 @@ namespace BarPromenade.Tests.EditMode
 
                 CityWetSurfaceRegistry.SetImmediate(0f);
                 renderer.GetPropertyBlock(properties);
-                Assert.That(
+                AssertTint(
                     properties.GetColor(BaseColorId),
-                    Is.EqualTo(authoredTint));
+                    authoredTint);
             }
             finally
             {

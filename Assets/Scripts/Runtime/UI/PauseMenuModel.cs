@@ -26,8 +26,9 @@ namespace BarPromenade
         Scanlines = 3,
         RainOnLens = 4,
         AspectRatio43 = 5,
-        Back = 6,
-        Count = 7
+        HighFrameRate = 6,
+        Back = 7,
+        Count = 8
     }
 
     public enum PauseMenuAction

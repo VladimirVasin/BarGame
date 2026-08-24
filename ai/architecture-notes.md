@@ -172,33 +172,54 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   beams with one `abs(dot)` — `FlashFactorAt`'s `min(Δ, 180°−Δ)` in cosine
   space — and the C# rules class stays the single source of truth for the
   rotation and the 14°.
-- **Accepted — The quay lanterns are pool anchors, not lights:** The river's
-  waterside lanterns (13 m pitch, both wall faces, lens riding the falling
-  water datum) would cost ~36 permanent `Light`s done naively. Instead each
-  plants an aimed anchor transform and the anchors join
-  `CityNightAtmosphere`'s nearest-first pool after the street masts,
-  distinguished **by index alone** (`quayAnchorStartIndex`): a slot assigned
-  past the boundary takes a low wide profile (6 / 10 m / 130° / 70° — the
-  lens hangs ~1 m over what it lights, not the mast's 4.7 m) and the
-  anchor's own authored rotation, the fringe practicals' convention. The
-  12-light budget and the pool of 8 are untouched; near the river the pool
-  drains to the lanterns and the adjacent streets go emissive-only, which is
-  the art bible's stated preference. With lamps at the water the river also
-  turned `_AdditionalSpecular` on (1.2, the fountain's value) — the shader's
-  old "lamps too far up the bank to glint" rationale is dead. Geometry note:
-  the appearance walk expects the **Quay** sheet from any renderer whose
-  name contains "Quay Wall"/"Quay Frontage", so the iron bracket batch is
-  named "Waterside Lantern Brackets", and the lenses ride in the existing
-  "Embankment Lamp Glow" batch — the walk's single emissive exemption.
+- **Accepted — The quay lanterns are pool anchors, not permanent lights:** The
+  river's waterside lanterns (13 m pitch, both wall faces, lens riding the
+  falling water datum) would cost ~36 permanent `Light`s done naively. Every
+  wall fixture instead keeps one always-lit emissive lens and fog halo, plus
+  an aimed anchor that joins `CityNightAtmosphere`'s nearest-first pool after
+  the street masts. Anchors are distinguished **by index alone**
+  (`quayAnchorStartIndex`): at night a slot assigned past the boundary takes a
+  low wide profile (6 / 10 m / 130° / 70° — the lens hangs ~1 m over what it
+  lights, not the mast's 4.7 m) and the anchor's own authored rotation, the
+  fringe practicals' convention. The 12-light budget and pool of 8 stay
+  untouched; daytime keeps the visible wall bulbs and halos but does not spend
+  realtime slots on their secondary spill. With lamps at the water the river
+  also turned `_AdditionalSpecular` on (1.2, the fountain's value). Geometry
+  note: the iron brackets remain "Waterside Lantern Brackets" and the lenses
+  now live in their own "Quay Wall Lamp Glow" batch, separate from the
+  night-gated "Promenade Lamp Glow" batch.
+- **Accepted — Puddles are the fourth water, and wetness is a material
+  uniform:** The gutter puddles left the wet-surface MPB registry and
+  became a `CityRiverWater` material (`CityPuddleWaterResources`, the
+  fountain-basin recipe: flow zero, facets zero so the mirror holds,
+  refraction zero, `_FoamDistance 0.002` pinned *below* the planner's
+  3 mm standing depth because edge foam at that scale whitewashes the
+  whole patch). Water carries no property blocks — that rule predates
+  puddles — so drying could not ride the MPB path: the shader gained
+  `_SurfaceWetness`, a whole-material uniform pushed through
+  `CityWaterResources.SetSurfaceWetness` from `CityWetSurfaceRegistry`'s
+  existing throttled beats, and only materials registered
+  `driesWithStreets` receive it (river, sea and basin keep the default 1
+  and never dry). Because the shader composites its own background from
+  `_CameraOpaqueTexture`, a dry puddle is not a transparent puddle — the
+  fragment lerps toward the sampled road, so wetness 0 is pixel-equal
+  to no puddle at all under `Blend Off`. The rectangle is hidden by
+  `_EdgeNoiseParams`: a world-XZ value noise eats the rim first (rim
+  mask arrives as a UV pyramid on the builder's 3×3 patch grid), so a
+  drying puddle shrinks to its middle instead of fading as a box. All
+  patches share one combined mesh, one material and one
+  `CityFountainReflectionController` cubemap hung over the road-network
+  centre — an envmap has no parallax, so one probe serves every puddle
+  exactly as it serves the fountain.
 - **Accepted — Fixed lamps own their halos; pooled spots carry light
   alone:** An emissive lens is a couple of pixels the ExpSquared fog
-  swallows by ~25-30 m, so every fixed lamp in the city (street masts,
-  esplanade posts, both kinds of river embankment lamp) now builds its
-  own always-on `CityLightHalo` via
-  `CityLightHalo.CreateNightRegistered`, registered with
-  `CityNightGlowRegistry`'s new halo list — dead by day, full at
-  night. The blurred ball is the fixture's own; the pooled realtime
-  spots therefore hide their travelling halos
+  swallows by ~25-30 m, so every fixed lamp builds its own `CityLightHalo`.
+  Ordinary street, esplanade and upper-promenade fixtures use
+  `CityLightHalo.CreateNightRegistered` and remain dead by day. The low river
+  wall fixtures are the deliberate exception: their directly initialized
+  halos and separate emissive batch stay full around the clock. The blurred
+  ball is the fixture's own; the pooled realtime spots therefore hide their
+  travelling halos
   (`CityNightAtmosphere.pooledHaloVisible`, true only for the leased
   fringe practical, which has no static duplicate) so an arriving
   spot never doubles the blob. Street-mast halos stand apart from the
@@ -2048,9 +2069,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   neither shares the continuous ambience tier.
 - **Accepted — Bus audio belongs to visible mechanisms:** The pooled Route 01
   actor owns exactly four fully spatial voices. Two sit in the rear motor
-  compartment: a mid-rich exterior diesel whose linear tail remains readable
-  throughout the `76-86 m` hidden spawn band, and a distinct chassis loop
-  faded in only while the hero is an attached passenger. The two other voices
+  compartment: a mid-rich exterior diesel whose linear `24-48 m` tail is tied
+  to `RuntimeSceneSetup.CityFarClipPlane`, stays silent throughout the
+  `76-86 m` hidden spawn band and rises only inside the rendered street slice;
+  and a distinct chassis loop faded in only while the hero is an attached
+  passenger. The two other voices
   sit above the actual front/rear entry anchors and play low-rate pneumatic
   opening or closing clips once per real door-phase edge. NPC occupancy never
   enables the cabin mix, generic door SFX cooldowns cannot suppress either
@@ -2522,6 +2545,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   entire precinct. `CitySeacoastPlanner.AppendWalkableFootprints` contributes
   the mol, pier and footbridge decks to the mask — never the open sea — and
   the same setup feeds both the mask and the geometry so they cannot drift.
+  The two promenade-to-shore junctions follow the same rule across each
+  complete logical `3 m` promenade: their connector and granite threshold
+  share `promenade.Bounds`. The extra roughly `1 m` structural lip between
+  that route and the waterside rail stays outside the mask and is closed by a
+  short visible transverse rail, rather than by an invisible motor clamp.
   Pedestrians are unaffected in practice: they consume the mask only as a
   clamp, not as a source of destinations.
 - **Accepted — the park boards are played by a pure engine the presentation

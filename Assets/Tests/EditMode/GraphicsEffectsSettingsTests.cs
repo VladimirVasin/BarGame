@@ -12,7 +12,8 @@ namespace BarPromenade.Tests.EditMode
             "graphics.dither",
             "graphics.scanlines",
             "graphics.rain_lens",
-            "graphics.aspect_4_3"
+            "graphics.aspect_4_3",
+            "graphics.frame_rate_60"
         };
 
         private bool[] savedExists;
@@ -77,7 +78,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GraphicsEffectsSettings.AspectRatio43Enabled,
                 Is.False,
-                "The 4:3 pillarbox is the one opt-in effect.");
+                "The 4:3 pillarbox is opt-in: the game is authored " +
+                "widescreen.");
+            Assert.That(
+                GraphicsEffectsSettings.HighFrameRateEnabled,
+                Is.False,
+                "The period rate is the default; doubling it is the " +
+                "player's choice.");
             Assert.That(GraphicsEffectsSettings.Version, Is.Zero);
         }
 

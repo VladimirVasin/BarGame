@@ -19,7 +19,10 @@ yard (the drained former lake block) plus a reachable `3 x 2`
 cemetery with deterministic physical landmarks and street access;
 the north edge carries the dressed seacoast precinct — mol, beacon,
 the transplanted boat station with its fisherman, footbridge over
-the river mouth, animated sea and wild east shore. The default city now reads as a coastal basin: physical flat-shaded
+the river mouth, animated sea and wild east shore. Both `3 m` river
+promenades hand their complete logical width to the shore over granite
+thresholds; short transverse rails visibly close only the extra waterside
+lips. The default city now reads as a coastal basin: physical flat-shaded
 mountain ridges close only its western and southern edges. At the river axis
 the southern skyline stays closed above one low, dark `10 m`-wide water mouth
 instead of opening into an empty gorge. Water and its bed continue more than

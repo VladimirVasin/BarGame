@@ -95,6 +95,17 @@ Shader "Bar Promenade/City River Water"
         _ReflectionStrength("Reflection Strength", Range(0, 2)) = 0
         _ReflectionDistortion("Reflection Distortion", Range(0, 1)) = 0.30
 
+        // The puddle film. Wetness dissolves the whole surface into
+        // the very background the shader composites from - at 0 the
+        // pixel IS the road below, which is how a puddle dries with
+        // Blend Off. Edge noise gnaws the patch rim first (the rim
+        // mask arrives in TEXCOORD0.x from the puddle mesh), so a
+        // drying puddle shrinks toward its middle instead of fading
+        // out as a rectangle. Defaults 1 / off: river, sea and
+        // fountain never dry and carry no UV stream to read.
+        _SurfaceWetness("Surface Wetness", Range(0, 1)) = 1
+        _EdgeNoiseParams("Edge Noise (Scale, Bite, On)", Vector) = (0, 0, 0, 0)
+
         // The lighthouse's virtual lamp. The island deliberately
         // carries no real Light - a point light could never reach the
         // shore across forty metres of sea - so the sea is told where
@@ -189,6 +200,8 @@ Shader "Bar Promenade/City River Water"
                 half4 _FoamColor;
                 half _ReflectionStrength;
                 half _ReflectionDistortion;
+                half _SurfaceWetness;
+                float4 _EdgeNoiseParams;
                 float4 _LanternPosition;
                 half4 _LanternColor;
                 half _LanternGlint;
@@ -198,6 +211,12 @@ Shader "Bar Promenade/City River Water"
             struct Attributes
             {
                 float4 positionOS : POSITION;
+                // Rim mask for the puddle film, 0 at the patch edge and
+                // 1 at its centre. The big water meshes carry no UV
+                // stream at all — the missing stream reads as zero, so
+                // the vertex stage only consumes it when
+                // _EdgeNoiseParams.z turns the film's edge on.
+                float2 uv : TEXCOORD0;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
 
@@ -209,6 +228,7 @@ Shader "Bar Promenade/City River Water"
                 float4 screenPos : TEXCOORD2;
                 float viewZ : TEXCOORD3;
                 float crest : TEXCOORD4;
+                half edgeMask : TEXCOORD5;
                 UNITY_VERTEX_OUTPUT_STEREO
             };
 
@@ -372,7 +392,34 @@ Shader "Bar Promenade/City River Water"
                 // Eye depth interpolates exactly, so the fragment
                 // stage derives the factor from it instead.
                 output.viewZ = -TransformWorldToView(positionWS).z;
+                output.edgeMask = _EdgeNoiseParams.z > 0.5
+                    ? (half)saturate(input.uv.x)
+                    : 1.0h;
                 return output;
+            }
+
+            // Bilinear value noise for the puddle rim: cheap, stable
+            // in world space, and blocky enough for the composite.
+            float EdgeNoiseHash(float2 cell)
+            {
+                return frac(
+                    sin(dot(cell, float2(127.1, 311.7))) * 43758.5453);
+            }
+
+            float EdgeNoise(float2 positionXZ)
+            {
+                float2 grid = positionXZ * max(0.5, _EdgeNoiseParams.x);
+                float2 cell = floor(grid);
+                float2 blend = frac(grid);
+                blend = blend * blend * (3.0 - 2.0 * blend);
+                float a = EdgeNoiseHash(cell);
+                float b = EdgeNoiseHash(cell + float2(1.0, 0.0));
+                float c = EdgeNoiseHash(cell + float2(0.0, 1.0));
+                float d = EdgeNoiseHash(cell + float2(1.0, 1.0));
+                return lerp(
+                    lerp(a, b, blend.x),
+                    lerp(c, d, blend.x),
+                    blend.y);
             }
 
             // One ripple sheet sampled twice: different pitch, different
@@ -731,6 +778,27 @@ Shader "Bar Promenade/City River Water"
                 half fogFactor = ComputeFogFactorZ0ToFar(
                     max(input.viewZ - _ProjectionParams.y, 0));
                 color = MixFog(color, fogFactor);
+
+                // The puddle film. Both sides of the lerp are final
+                // pixels — the water is fogged above and the sampled
+                // background is the already-composited frame — so
+                // dissolving here is exact: at zero wetness the pixel
+                // IS the road. The rim erodes first, carved by world
+                // noise, so a drying puddle pulls toward its middle.
+                half film = _SurfaceWetness;
+                if (_EdgeNoiseParams.z > 0.5)
+                {
+                    float erosion =
+                        (1.0 - input.edgeMask) *
+                        (0.4 + 0.6 * EdgeNoise(input.positionWS.xz)) *
+                        max(0.05, _EdgeNoiseParams.y);
+                    film = (half)smoothstep(
+                        0.0,
+                        0.12,
+                        _SurfaceWetness - erosion);
+                }
+
+                color = lerp((half3)background, color, saturate(film));
                 return half4(color, 1.0h);
             }
             ENDHLSL

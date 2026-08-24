@@ -116,6 +116,76 @@ namespace BarPromenade
         }
     }
 
+    /// <summary>
+    /// One ordinary park bench and the path-side relationship that owns
+    /// its presentation. Position alone is not enough: the timber,
+    /// collider and sit interaction must all agree which way the bench
+    /// runs and which path it faces.
+    /// </summary>
+    public readonly struct CityParkBenchDescriptor :
+        IEquatable<CityParkBenchDescriptor>
+    {
+        public const float SeatWidth = 2.2f;
+        public const float SeatDepth = 0.58f;
+
+        internal CityParkBenchDescriptor(
+            string id,
+            string regionId,
+            Vector3 position,
+            Vector3 forward)
+        {
+            forward.y = 0f;
+            if (string.IsNullOrWhiteSpace(id) ||
+                string.IsNullOrWhiteSpace(regionId) ||
+                forward.sqrMagnitude <= 0.0001f)
+            {
+                throw new ArgumentException(
+                    "A park bench requires IDs and a planar forward axis.");
+            }
+
+            Id = id.Trim();
+            RegionId = regionId.Trim();
+            Position = position;
+            Forward = forward.normalized;
+        }
+
+        public string Id { get; }
+        public string RegionId { get; }
+        public Vector3 Position { get; }
+        public Vector3 Forward { get; }
+        public Vector3 Tangent => Vector3.Cross(Vector3.up, Forward);
+        public Quaternion Rotation =>
+            Quaternion.LookRotation(Forward, Vector3.up);
+
+        public bool Equals(CityParkBenchDescriptor other)
+        {
+            return string.Equals(Id, other.Id, StringComparison.Ordinal) &&
+                   string.Equals(
+                       RegionId,
+                       other.RegionId,
+                       StringComparison.Ordinal) &&
+                   Position.Equals(other.Position) &&
+                   Forward.Equals(other.Forward);
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is CityParkBenchDescriptor other && Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = StringComparer.Ordinal.GetHashCode(Id);
+                hash = (hash * 397) ^
+                       StringComparer.Ordinal.GetHashCode(RegionId);
+                hash = (hash * 397) ^ Position.GetHashCode();
+                return (hash * 397) ^ Forward.GetHashCode();
+            }
+        }
+    }
+
     public sealed class CityParkPlan
     {
         private readonly HashSet<Vector2Int> cellSet;
@@ -126,14 +196,14 @@ namespace BarPromenade
             Vector3 center,
             IList<CityParkGateDescriptor> gates,
             IList<Vector3> treePositions,
-            IList<Vector3> benchPositions)
+            IList<CityParkBenchDescriptor> benches)
             : this(
                 cells,
                 walkableBounds,
                 center,
                 gates,
                 treePositions,
-                benchPositions,
+                benches,
                 cells != null && cells.Count > 0
                     ? new[]
                     {
@@ -155,7 +225,7 @@ namespace BarPromenade
             Vector3 center,
             IList<CityParkGateDescriptor> gates,
             IList<Vector3> treePositions,
-            IList<Vector3> benchPositions,
+            IList<CityParkBenchDescriptor> benches,
             IList<CityParkRegionPlan> regions)
         {
             Cells = new ReadOnlyCollection<Vector2Int>(
@@ -170,10 +240,17 @@ namespace BarPromenade
                 new List<Vector3>(
                     treePositions ??
                     throw new ArgumentNullException(nameof(treePositions))));
+            Benches = new ReadOnlyCollection<CityParkBenchDescriptor>(
+                new List<CityParkBenchDescriptor>(
+                    benches ?? throw new ArgumentNullException(nameof(benches))));
+            var benchPositions = new List<Vector3>(Benches.Count);
+            for (int index = 0; index < Benches.Count; index++)
+            {
+                benchPositions.Add(Benches[index].Position);
+            }
+
             BenchPositions = new ReadOnlyCollection<Vector3>(
-                new List<Vector3>(
-                    benchPositions ??
-                    throw new ArgumentNullException(nameof(benchPositions))));
+                benchPositions);
             Regions = new ReadOnlyCollection<CityParkRegionPlan>(
                 new List<CityParkRegionPlan>(
                     regions ?? throw new ArgumentNullException(nameof(regions))));
@@ -185,6 +262,7 @@ namespace BarPromenade
         public Vector3 Center { get; }
         public IReadOnlyList<CityParkGateDescriptor> Gates { get; }
         public IReadOnlyList<Vector3> TreePositions { get; }
+        public IReadOnlyList<CityParkBenchDescriptor> Benches { get; }
         public IReadOnlyList<Vector3> BenchPositions { get; }
         public IReadOnlyList<CityParkRegionPlan> Regions { get; }
         public bool IsEnabled => Cells.Count > 0;

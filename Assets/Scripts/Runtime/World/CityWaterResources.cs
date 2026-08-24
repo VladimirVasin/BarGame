@@ -27,23 +27,35 @@ namespace BarPromenade
             Shader.PropertyToID("_NightFactor");
         private static readonly int RainIntensityId =
             Shader.PropertyToID("_RainIntensity");
+        private static readonly int SurfaceWetnessId =
+            Shader.PropertyToID("_SurfaceWetness");
 
         private static readonly List<Material> materials =
             new List<Material>();
+        private static readonly HashSet<Material> dryingMaterials =
+            new HashSet<Material>();
 
         private static float nightFactor = 1f;
         private static float rainIntensity;
+        private static float surfaceWetness;
 
         public static float NightFactor => nightFactor;
         public static float RainIntensity => rainIntensity;
+        public static float SurfaceWetness => surfaceWetness;
         public static int Count => materials.Count;
 
         /// <summary>
         /// Adds a water material to the drive and brings it up to the
         /// values already pushed. Registering the same material twice is
         /// a no-op, so a body may call this from its material getter.
+        /// A body that <paramref name="driesWithStreets"/> also follows
+        /// the street wetness: its film dissolves into the road as the
+        /// city dries. The river, the sea and the fountain never dry —
+        /// only the gutter puddles opt in.
         /// </summary>
-        public static void Register(Material material)
+        public static void Register(
+            Material material,
+            bool driesWithStreets = false)
         {
             if (material == null)
             {
@@ -53,6 +65,11 @@ namespace BarPromenade
             if (!materials.Contains(material))
             {
                 materials.Add(material);
+            }
+
+            if (driesWithStreets)
+            {
+                dryingMaterials.Add(material);
             }
 
             Apply(material);
@@ -66,6 +83,7 @@ namespace BarPromenade
             }
 
             materials.Remove(material);
+            dryingMaterials.Remove(material);
         }
 
         public static void SetNightFactor(float factor)
@@ -77,6 +95,17 @@ namespace BarPromenade
         public static void SetRainIntensity(float intensity)
         {
             rainIntensity = Mathf.Clamp01(intensity);
+            ApplyAll();
+        }
+
+        /// <summary>
+        /// The street-film wetness from
+        /// <see cref="CityWetSurfaceRegistry"/>: it reaches only the
+        /// bodies registered as drying with the streets.
+        /// </summary>
+        public static void SetSurfaceWetness(float wetness)
+        {
+            surfaceWetness = Mathf.Clamp01(wetness);
             ApplyAll();
         }
 
@@ -99,6 +128,10 @@ namespace BarPromenade
         {
             material.SetFloat(NightFactorId, nightFactor);
             material.SetFloat(RainIntensityId, rainIntensity);
+            if (dryingMaterials.Contains(material))
+            {
+                material.SetFloat(SurfaceWetnessId, surfaceWetness);
+            }
         }
 
         [RuntimeInitializeOnLoadMethod(
@@ -106,8 +139,10 @@ namespace BarPromenade
         private static void Reset()
         {
             materials.Clear();
+            dryingMaterials.Clear();
             nightFactor = 1f;
             rainIntensity = 0f;
+            surfaceWetness = 0f;
         }
     }
 }

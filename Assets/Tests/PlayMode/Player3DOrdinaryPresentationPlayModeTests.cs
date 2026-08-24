@@ -827,6 +827,15 @@ namespace BarPromenade.Tests.PlayMode
             // procedural status contributions gone the pose must revisit
             // the captured phase; with any residue the arms carry a
             // constant offset and never do.
+            //
+            // Each joint is scored by its own CLOSEST approach over the
+            // loop, not by the frame the loop happens to end on. The three
+            // joints reach their minima a frame or two apart, so an
+            // all-three-at-once break condition can miss under batchmode
+            // frame pacing and leave the assert reading an arbitrary phase
+            // — the old shape of this poll failed that way at ~0.04° over
+            // tolerance. A residue still fails: a constant offset lifts the
+            // whole sweep, minimum included.
             float poseDeadline = Time.realtimeSinceStartup + 4.5f;
             float pelvisAngle = float.MaxValue;
             float leftArmAngle = float.MaxValue;
@@ -835,15 +844,21 @@ namespace BarPromenade.Tests.PlayMode
             {
                 yield return null;
                 presentation.ReapplyLatePresentationPose();
-                pelvisAngle = Quaternion.Angle(
-                    neutralPelvisRotation,
-                    pelvis.localRotation);
-                leftArmAngle = Quaternion.Angle(
-                    neutralLeftArmRotation,
-                    leftUpperArm.localRotation);
-                rightArmAngle = Quaternion.Angle(
-                    neutralRightArmRotation,
-                    rightUpperArm.localRotation);
+                pelvisAngle = Mathf.Min(
+                    pelvisAngle,
+                    Quaternion.Angle(
+                        neutralPelvisRotation,
+                        pelvis.localRotation));
+                leftArmAngle = Mathf.Min(
+                    leftArmAngle,
+                    Quaternion.Angle(
+                        neutralLeftArmRotation,
+                        leftUpperArm.localRotation));
+                rightArmAngle = Mathf.Min(
+                    rightArmAngle,
+                    Quaternion.Angle(
+                        neutralRightArmRotation,
+                        rightUpperArm.localRotation));
                 if (pelvisAngle < 0.5f &&
                     leftArmAngle < 0.5f &&
                     rightArmAngle < 0.5f)

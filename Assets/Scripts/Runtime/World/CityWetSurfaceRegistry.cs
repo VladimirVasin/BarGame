@@ -297,6 +297,10 @@ namespace BarPromenade
             }
 
             lastAppliedWetness = clamped;
+            // The gutter puddles are water now, not tinted road quads:
+            // their film follows the same street wetness, through the
+            // water drive, on the same throttled beats as the MPB path.
+            CityWaterResources.SetSurfaceWetness(clamped);
             for (int index = Entries.Count - 1; index >= 0; index--)
             {
                 Entry entry = Entries[index];

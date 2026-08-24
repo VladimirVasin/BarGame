@@ -7,7 +7,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.TestTools;
 
-namespace BarPromenade.Tests
+namespace BarPromenade.Tests.PlayMode
 {
     public sealed class PlayerCameraPresentationPlayModeTests
     {

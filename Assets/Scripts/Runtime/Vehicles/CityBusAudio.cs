@@ -11,14 +11,15 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Canonical bus gain staging and distance law. The exterior tail is
-    /// deliberately still present at the far spawn edge: the bus must be
-    /// heard approaching through the fog before it becomes visible.
+    /// Canonical bus gain staging and distance law. The exterior tail starts
+    /// at the City's visible boundary and remains silent while the pooled bus
+    /// is travelling through its fog-hidden spawn band.
     /// </summary>
     public static class CityBusAudioMix
     {
-        public const float ExteriorMinimumDistance = 10f;
-        public const float ExteriorMaximumDistance = 104f;
+        public const float ExteriorMinimumDistance = 24f;
+        public const float ExteriorMaximumDistance =
+            RuntimeSceneSetup.CityFarClipPlane;
         public const float InteriorMinimumDistance = 4.5f;
         public const float InteriorMaximumDistance = 24f;
         public const float DoorMinimumDistance = 3.5f;
@@ -196,7 +197,9 @@ namespace BarPromenade
             PositionDoorSource(rearDoorSource, rearDoorEntryAnchor);
         }
 
-        public void Start(float normalizedSpeed, bool playerInside)
+        public void BeginPlayback(
+            float normalizedSpeed,
+            bool playerInside)
         {
             if (!isInitialized)
             {

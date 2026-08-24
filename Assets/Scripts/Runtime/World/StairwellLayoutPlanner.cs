@@ -81,9 +81,22 @@ namespace BarPromenade
                 new Vector3(1.62f, 2.04f, 0.68f),
                 new Vector3(3.82f, 4.22f, -3.72f),
                 new Vector3(0.70f, 2.04f, 1.40f),
+                // The debris seals the upper flight from the apartment
+                // floor plane upward, which the validator pins. That
+                // bottom face sits at 3.20 while a hero standing on the
+                // top treads of the LOWER flight, directly underneath,
+                // carries his head to 3.17 plus the controller's skin —
+                // so at its old z the blocker grazed him by a centimetre
+                // on the way down. Contact costs him all his speed
+                // (planar velocity is read back from achieved movement),
+                // so the descent crawled, and at high frame rates it
+                // stopped outright. Set back along the flight to where
+                // the lower stairs have dropped well clear of it: the
+                // seal is unchanged in x and y, only the reach toward
+                // the middle landing is trimmed.
                 new Bounds(
-                    new Vector3(-1.45f, 4.20f, -0.46f),
-                    new Vector3(1.72f, 2.0f, 0.88f)));
+                    new Vector3(-1.45f, 4.20f, -0.75f),
+                    new Vector3(1.72f, 2.0f, 0.70f)));
             StairwellLayoutValidator.ValidateOrThrow(plan);
             return plan;
         }

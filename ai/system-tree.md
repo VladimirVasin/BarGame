@@ -215,7 +215,7 @@ Assets/
         CityBlueprintCatalog.cs  default 13x12 river city with eastern Cemetery, six Yards + legacy blueprint
         CityRiverPlan.cs         10 m channel, dual core promenades, three typed bridges + four lower landings
         CityRiverResources.cs    shared animated water material and night/rain factors
-        CityRiverWorldBuilder.cs core river + mountain-plan cave water/bed/banks/rails
+        CityRiverWorldBuilder.cs core river + mountain-plan cave water/bed/banks/rails + always-lit wall lamps
         CityElevationPlan.cs     node/cell datums, classified grades + authoritative height sampler
         CityElevationPlanner.cs  river-valley node profile + flat custom fallback
         CityElevationValidator.cs coverage, water, grade + four-district stair invariants
@@ -278,6 +278,7 @@ Assets/
         CitySeaResources.cs      the sea material: zero flow, long swell, isotropic ripple, pier-lamp glint
         CityWaterResources.cs    the one night/rain drive shared by every water material
         CityParkSurfaceAppearance.cs  eight park albedos (lawn/path/plaza/bark/foliage/timber/stone/painted metal) via MPBs
+        CityParkBenchPlanner.cs  four path-aligned ordinary benches per park region
         CityDistrict.cs          area IDs, district/path/land-use enums and park data
         CityTravelDistance.cs    weighted road/park-path distance between bars
         CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
@@ -450,7 +451,7 @@ Assets/
         CityBusTargetRoutePlanner.cs grounded POI/Home candidates + deterministic winding loop solver
         CityBusWideTurnPlanner.cs  level-apron two-edge safe-right macro between graded links
         CityBusActor.cs            3D fixed-loop motion/pitch, 10 s dwell + service ownership
-        CityBusAudio.cs            rear diesel/fog tail, passenger cabin layer + two causal doorway pneumatics
+        CityBusAudio.cs            visibility-bounded rear diesel, passenger cabin layer + two causal doorway pneumatics
         CityBusDirector.cs         fog spawn, passenger-safe recycle and forced-cleanup lifecycle
         CityBusRidePlan.cs         local-surface door transfer + level camera geometry
         CityBusRideController.cs   prompts, board/ride/alight, ride look input + exact cleanup
@@ -874,7 +875,8 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                                -> forced shutdown invokes registered passenger cleanup
                             -> no camera/frustum lifecycle dependency
                             -> CityBusActor kinematic box + CityBusAudio
-                               -> rear exterior diesel audible across the fog spawn band
+                               -> rear exterior diesel silent beyond the 48 m City view
+                                  and rising only inside it
                                -> hero-only rear cabin/body layer
                                -> front/rear doorway pneumatics on real phase edges
                             -> CityBusPresentation

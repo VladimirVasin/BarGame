@@ -2,7 +2,7 @@ using System;
 using System.Collections.Generic;
 using NUnit.Framework;
 
-namespace BarPromenade.Tests
+namespace BarPromenade.Tests.EditMode
 {
     public sealed class BarDrinkCatalogTests
     {

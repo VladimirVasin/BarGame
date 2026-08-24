@@ -7,7 +7,7 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.TestTools;
 
-namespace BarPromenade.Tests
+namespace BarPromenade.Tests.PlayMode
 {
     public sealed class Ps1CompositeRenderGraphPlayModeTests
     {

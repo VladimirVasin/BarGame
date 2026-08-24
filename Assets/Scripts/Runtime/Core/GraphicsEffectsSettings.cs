@@ -11,6 +11,7 @@ namespace BarPromenade
         private const string ScanlinesKey = "graphics.scanlines";
         private const string RainOnLensKey = "graphics.rain_lens";
         private const string AspectRatio43Key = "graphics.aspect_4_3";
+        private const string HighFrameRateKey = "graphics.frame_rate_60";
 
         private static bool loaded;
         private static bool depthOfFieldEnabled;
@@ -19,6 +20,7 @@ namespace BarPromenade
         private static bool scanlinesEnabled;
         private static bool rainOnLensEnabled;
         private static bool aspectRatio43Enabled;
+        private static bool highFrameRateEnabled;
 
         public static int Version { get; private set; }
 
@@ -91,6 +93,26 @@ namespace BarPromenade
                 AspectRatio43Key);
         }
 
+        /// <summary>
+        /// Off is the period rate the game is dressed for and the
+        /// default; on doubles it for players who would rather have the
+        /// smoother motion. Both live in
+        /// <see cref="BarPromenadeRuntimeBootstrap"/>, which owns the
+        /// actual cap.
+        /// </summary>
+        public static bool HighFrameRateEnabled
+        {
+            get
+            {
+                EnsureLoaded();
+                return highFrameRateEnabled;
+            }
+            set => Apply(
+                ref highFrameRateEnabled,
+                value,
+                HighFrameRateKey);
+        }
+
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void Reset()
@@ -121,6 +143,10 @@ namespace BarPromenade
             // authored widescreen, so the retro frame is a choice.
             aspectRatio43Enabled =
                 ReadFlag(AspectRatio43Key, false);
+            // Likewise opt-in: the period rate is the default, and
+            // doubling it is the player's call.
+            highFrameRateEnabled =
+                ReadFlag(HighFrameRateKey, false);
             loaded = true;
         }
 

@@ -1,7 +1,7 @@
 using System;
 using NUnit.Framework;
 
-namespace BarPromenade.Tests
+namespace BarPromenade.Tests.EditMode
 {
     public sealed class PlayerNeedsRulesTests
     {

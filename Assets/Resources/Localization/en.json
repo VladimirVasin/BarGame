@@ -73,6 +73,10 @@
       "value": "4:3 ASPECT"
     },
     {
+      "key": "options.frame_rate_60",
+      "value": "60 FPS (INSTEAD OF 30)"
+    },
+    {
       "key": "options.back",
       "value": "BACK"
     },

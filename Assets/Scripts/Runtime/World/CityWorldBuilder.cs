@@ -626,25 +626,32 @@ namespace BarPromenade
                 CityParkSurfaceKind.Foliage,
                 ParkCanopy);
 
-            var benchParts =
-                new List<Bounds>(plan.BenchPositions.Count * 3);
+            var benchParts = new List<RuntimeOrientedBox>(
+                plan.Benches.Count * 3);
             for (int index = 0;
-                 index < plan.BenchPositions.Count;
+                 index < plan.Benches.Count;
                  index++)
             {
-                Vector3 position = plan.BenchPositions[index];
-                benchParts.Add(new Bounds(
-                    position + (Vector3.up * 0.62f),
-                    new Vector3(2.2f, 0.18f, 0.58f)));
-                benchParts.Add(new Bounds(
-                    position + new Vector3(-0.72f, 0.30f, 0f),
-                    new Vector3(0.18f, 0.60f, 0.46f)));
-                benchParts.Add(new Bounds(
-                    position + new Vector3(0.72f, 0.30f, 0f),
-                    new Vector3(0.18f, 0.60f, 0.46f)));
+                CityParkBenchDescriptor bench = plan.Benches[index];
+                benchParts.Add(new RuntimeOrientedBox(
+                    bench.Position + (Vector3.up * 0.62f),
+                    bench.Rotation,
+                    new Vector3(
+                        CityParkBenchDescriptor.SeatWidth,
+                        0.18f,
+                        CityParkBenchDescriptor.SeatDepth)));
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    benchParts.Add(new RuntimeOrientedBox(
+                        bench.Position +
+                        bench.Tangent * (side * 0.72f) +
+                        Vector3.up * 0.30f,
+                        bench.Rotation,
+                        new Vector3(0.18f, 0.60f, 0.46f)));
+                }
             }
 
-            BuildParkSurfaceBoxesIfAny(
+            BuildParkSurfaceOrientedBoxesIfAny(
                 "Park Benches",
                 park,
                 benchParts,
@@ -652,7 +659,7 @@ namespace BarPromenade
                 ParkBench);
             CityStaticCollisionBuilder.AddParkBenchColliders(
                 park,
-                plan.BenchPositions);
+                plan.Benches);
             if (layout.HasParkBoundaryHedges)
             {
                 BuildParkHedges(park, plan);
@@ -2127,6 +2134,35 @@ namespace BarPromenade
                 false,
                 CityParkSurfaceAppearance.GetRecipe(kind).MetersPerTile,
                 CityParkSurfaceAppearance.GetUvMode(kind));
+            CityParkSurfaceAppearance.ApplyCombined(
+                group.GetComponent<Renderer>(),
+                kind,
+                color);
+        }
+
+        private static void BuildParkSurfaceOrientedBoxesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<RuntimeOrientedBox> boxes,
+            CityParkSurfaceKind kind,
+            Color color)
+        {
+            if (boxes.Count == 0)
+            {
+                return;
+            }
+
+            GameObject group =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    name,
+                    parent,
+                    boxes,
+                    color,
+                    false,
+                    CityParkSurfaceAppearance
+                        .GetRecipe(kind)
+                        .MetersPerTile,
+                    CityParkSurfaceAppearance.GetUvMode(kind));
             CityParkSurfaceAppearance.ApplyCombined(
                 group.GetComponent<Renderer>(),
                 kind,

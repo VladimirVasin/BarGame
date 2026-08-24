@@ -4,7 +4,7 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace BarPromenade.Tests
+namespace BarPromenade.Tests.EditMode
 {
     public sealed class CityLayoutGeneratorTests
     {
@@ -70,6 +70,9 @@ namespace BarPromenade.Tests
             CollectionAssert.AreEqual(
                 first.Park.TreePositions,
                 second.Park.TreePositions);
+            CollectionAssert.AreEqual(
+                first.Park.Benches,
+                second.Park.Benches);
         }
 
         [Test]

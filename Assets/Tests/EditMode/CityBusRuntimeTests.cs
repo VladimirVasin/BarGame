@@ -58,14 +58,30 @@ namespace BarPromenade.Tests.EditMode
                         .Within(0.0001f));
                 Assert.That(
                     CityBusAudioMix.ExteriorMaximumDistance,
-                    Is.GreaterThan(CityBusDirector.MaximumSpawnDistance));
+                    Is.EqualTo(RuntimeSceneSetup.CityFarClipPlane),
+                    "Bus audio must end at the same boundary as City " +
+                    "visibility.");
                 Assert.That(
                     CityBusAudioMix.EvaluateExteriorSourceGain(
-                        CityBusDirector.MaximumSpawnDistance,
+                        RuntimeSceneSetup.CityFarClipPlane,
+                        1f),
+                    Is.Zero,
+                    "The diesel must be silent outside the rendered City " +
+                    "slice.");
+                Assert.That(
+                    CityBusAudioMix.EvaluateExteriorSourceGain(
+                        RuntimeSceneSetup.CityFarClipPlane - 3f,
                         0f),
-                    Is.GreaterThan(0.055f),
-                    "The idle diesel must retain a deliberate far tail at " +
-                    "the most distant fog-hidden spawn.");
+                    Is.GreaterThan(0.035f),
+                    "The idle diesel should emerge gently just inside the " +
+                    "visible boundary.");
+                Assert.That(
+                    CityBusAudioMix.EvaluateExteriorSourceGain(
+                        RuntimeSceneSetup.CityFarClipPlane - 8f,
+                        0f),
+                    Is.GreaterThan(0.10f),
+                    "The approaching bus should already read clearly once " +
+                    "it is inside the visible street slice.");
                 Assert.That(
                     firstAudio.EngineAnchor.localPosition.z,
                     Is.LessThan(-2f),

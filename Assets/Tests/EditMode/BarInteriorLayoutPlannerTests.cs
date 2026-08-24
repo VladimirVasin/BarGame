@@ -4,7 +4,7 @@ using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
-namespace BarPromenade.Tests
+namespace BarPromenade.Tests.EditMode
 {
     public sealed class BarInteriorLayoutPlannerTests
     {

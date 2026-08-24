@@ -152,6 +152,45 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void UpperBlocker_LeavesHeadroomOverTheLowerFlight()
+        {
+            // The blocker seals the upper flight from the apartment floor
+            // plane upward, and the lower flight climbs to the middle
+            // landing directly beneath it. With a 1.6 m storey and a 1.7 m
+            // hero those two are one centimetre from meeting: the blocker
+            // used to graze the head of anyone walking down the top
+            // treads, and because planar speed is read back from achieved
+            // movement, every graze cost him all of it — the descent
+            // crawled instead of stopping outright, which is why it read
+            // as a flaky test rather than as a wall.
+            StairwellLayoutPlan plan =
+                StairwellLayoutPlanner.Generate();
+            Bounds blocker = plan.UpperBlockerBounds;
+            StairwellFlightPlan lower = plan.LowerFlight;
+
+            // The hero's crown, plus the controller skin that collides
+            // slightly ahead of it, at the highest point of the lower
+            // flight that reaches under the blocker. His capsule is a
+            // radius wide, so he arrives that far before his feet do.
+            const float heroCrown = 1.7f + 0.04f;
+            const float capsuleRadius = 0.32f;
+            float reachZ = blocker.max.z + capsuleRadius;
+            float travelled = Mathf.Clamp(
+                reachZ - lower.Start.y,
+                0f,
+                lower.RunLength);
+            float surface = lower.BaseElevation +
+                (travelled / lower.RunLength) *
+                (lower.TopElevation - lower.BaseElevation);
+
+            Assert.That(
+                surface + heroCrown,
+                Is.LessThan(blocker.min.y),
+                "The upper-flight debris hangs into the head clearance " +
+                "of a hero descending the lower flight.");
+        }
+
+        [Test]
         public void WorldBuilder_CreatesWalkableRampsAndPhysicalBlocker()
         {
             var parent =

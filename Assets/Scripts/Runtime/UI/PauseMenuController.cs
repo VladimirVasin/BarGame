@@ -434,6 +434,11 @@ namespace BarPromenade
             DrawOptionsRow(
                 canvas,
                 6,
+                PauseMenuOptionsRow.HighFrameRate,
+                "options.frame_rate_60");
+            DrawOptionsRow(
+                canvas,
+                7,
                 PauseMenuOptionsRow.Back,
                 "options.back");
         }
@@ -541,6 +546,16 @@ namespace BarPromenade
                         !GraphicsEffectsSettings
                             .AspectRatio43Enabled;
                     return;
+                case PauseMenuOptionsRow.HighFrameRate:
+                    GraphicsEffectsSettings.HighFrameRateEnabled =
+                        !GraphicsEffectsSettings
+                            .HighFrameRateEnabled;
+                    // Unlike the other rows, this one is not read back
+                    // by a renderer feature each frame - the cap is a
+                    // player setting, so push it now.
+                    BarPromenadeRuntimeBootstrap
+                        .RefreshFrameRateCap();
+                    return;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(row),
@@ -571,6 +586,9 @@ namespace BarPromenade
                 case PauseMenuOptionsRow.AspectRatio43:
                     return GraphicsEffectsSettings
                         .AspectRatio43Enabled;
+                case PauseMenuOptionsRow.HighFrameRate:
+                    return GraphicsEffectsSettings
+                        .HighFrameRateEnabled;
                 default:
                     return false;
             }

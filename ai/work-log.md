@@ -6,15 +6,232 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
-## 2026-08-24 — Route 01 is audible before it emerges from the fog
+## 2026-08-24 — Both quays hand their full walking width to the shore
+
+- Production-layout probing found a descriptor mismatch rather than a bad
+  terrain collider. Each physical north end was visibly open, but the
+  seacoast contributed only a `2.2 m` connector centred on the offset
+  pedestrian lane. After shrinking that rectangle by the player's `0.32 m`
+  capsule, most of each logical `3 m` quay became an invisible clamp.
+- `CitySeacoastPlanner` now derives one shared full-width junction rectangle
+  from `promenade.Bounds` for both navigation and every granite threshold
+  tread. The extra roughly `1 m` structural lip between the logical route and
+  the waterside rail remains non-walkable and now has a short transverse rail
+  at each bank, so visible geometry and movement permissions agree.
+- Verification: focused EditMode
+  `WorldBuilder_LetsTheProductionControllerCrossBothQuayShoreJunctions`
+  passed for both banks, both directions and the outer/centre/waterside lanes
+  with the production collider stack. The same regression samples the whole
+  seam at the conservative `0.35 m` audit radius. Full suites, a player build
+  and manual visual smoke were intentionally not run in fast mode.
+
+## 2026-08-24 — Split-park benches follow the paths they serve
+
+- The old river-park pass placed eight raw `Vector3` points at fixed offsets
+  from each region's centre and plaza without consulting `ParkPath`. In the
+  default seed two west benches crossed the path centreline, two clipped its
+  edge, and most east benches sat loose in the lawn. Geometry, collision and
+  sitting then independently assumed every plank ran along world X.
+- Added the pure `CityParkBenchPlanner`: each non-bridge linear ParkPath yields
+  path-side candidates, four distributed candidates are retained per park
+  region, and the timber stays `0.30 m` beyond the path edge while its entry
+  dock reaches the paving. One immutable descriptor now carries region,
+  position and facing through elevation rebasing, oriented mesh batching,
+  collision and the sit plan. Trees are placed after benches and reject their
+  clearance circle; the sit dock resamples the raised path top.
+- Verification: focused EditMode
+  `ParkBenches_FollowRealPathsInBothHalves` passed `1/1`; it proves four
+  benches in each half, path alignment/facing, a clear path footprint, a full
+  entry line over ParkPath geometry and tree clearance. Unity compiled the
+  changed Runtime and EditMode assemblies without errors. No neighbouring
+  fixtures, full suites, player build or subjective visual smoke was run.
+
+## 2026-08-24 — River landing cuts now have real retaining faces
+
+- The initial platform-UV diagnosis was incomplete. The supplied gameplay
+  screenshot showed that the broad pale areas were fog visible through the
+  missing vertical faces of the promenade cut, not the
+  `Lower Waterside Platform` renderer. The platform keeps its useful
+  metre-scale `BoxProjected` paving update, but it was not the pictured gap.
+- Every landing now owns one combined, collidered
+  `Granite Landing Cut Retaining Walls` batch. Stepped panels rise from each
+  tread to the upper promenade along the landward edge, continue beside the
+  lower platform and close its terminal edge; the railed waterside remains
+  open to the river. The batch uses the Quay sheet with metre-scale
+  `BoxProjected` UVs so every inward-facing wall reads as granite masonry.
+- Extended the existing whole-river appearance regression to require exactly
+  one lining for each of the four planned landings and verify its coverage,
+  collider, Quay albedo and every face UV. The platform faces remain covered
+  by the same regression.
+- Verification: focused EditMode
+  `BuildRiver_TexturesEveryBankAndBridgeMember` passed `1/1`; Unity compiled
+  the changed Runtime and EditMode assemblies without errors. No neighbouring
+  fixtures, full suites, player build or subjective visual smoke was run.
+
+## 2026-08-24 — Quay wall lamps burn around the clock
+
+- The river builder used to merge sparse upper-promenade plafonds and the low
+  wall-mounted waterside lenses into one `Embankment Lamp Glow` renderer, then
+  hand that whole batch and every halo to `CityNightGlowRegistry`. Split the
+  geometry into night-gated `Promenade Lamp Glow` and always-lit
+  `Quay Wall Lamp Glow`; wall halos are now directly initialized and stay out
+  of the night registry. The fixtures therefore remain visibly energized by
+  day without adding any `Light` or changing the 12-light runtime pool.
+- Added a focused river regression that drives the shared night factor to zero
+  and proves upper lenses/halos go dark while every wall lens and halo keeps
+  its full authored value. The river appearance resolver explicitly exempts
+  both emissive batches and the new wall-halo name from ordinary surface
+  texturing.
+- Verification: focused EditMode
+  `QuayWallLamps_KeepTheirBulbsAndHalosLitDuringDay` passed `1/1`; Unity
+  compiled the changed Runtime and EditMode assemblies without errors. No
+  neighbouring fixtures, full suites, player build or subjective visual smoke
+  was run.
+
+## 2026-08-24 — The known-red list stops being folklore
+
+- `CityWetSurfaceTests.CustomGroundTint_SurvivesWetAndDryWeather` is fixed at
+  the root, which turned out not to be where anyone was looking. A probe
+  printing full-precision channels at each stage showed the authored
+  `0.31f` already returning as `0.309999973` **straight out of
+  `ApplyGroundSurface`**, before any weather runs: the
+  `MaterialPropertyBlock` round-trip is not bit-exact, it drifts by one ULP.
+  The wetness path is faithful (`afterDry == afterApply`) and the CPU
+  arithmetic is exact, so the planned "write the dry tint exactly" change
+  would have fixed nothing — the probe cancelled it. Both colour asserts in
+  that file now compare per channel `Within(1e-5f)`. The neighbouring
+  `Is.EqualTo(Color.white)` assert was left exact for months only because
+  `1.0` is the one value that survives the drift, so it moved to the same
+  helper rather than staying as a trap to copy.
+- The namespace half of the test-filter trap is dead at the root: **17**
+  files (not the 3 first suspected) declared `BarPromenade.Tests` while
+  living in the EditMode or PlayMode folder, so any
+  `BarPromenade.Tests.EditMode.(...)` filter silently dropped them and still
+  reported green. All now declare the namespace matching their assembly.
+  Grepped first for full-name references in code, docs, scripts and CI —
+  none outside historical work-log prose. The `(.EditMode)?` escape hatch in
+  filters is no longer needed; the *other* half of the trap (a filter is
+  also silent about class names that do not exist) is unaffected and stays.
+- Four permanent batchmode reds became honest skips instead of noise every
+  full run: both synthetic bus boarding scenarios and the stairwell IMGUI
+  tail now `Assert.Ignore` under `Application.isBatchMode` with a reason
+  naming the cause, the stash-verified baseline date and this log. The
+  stairwell cat test keeps asserting the refusal, the missing-stew prompt
+  key and the restored input headless — only the panel-rect measurements
+  are skipped.
+- `StatusFaceFallsAndContactShadowDrive3DBonesAndCleanUp` was flaky by
+  construction, not by tolerance: its post-release poll overwrote the three
+  joint angles every frame and only broke out when all three dipped under
+  `0.5°` in the *same* frame. The joints reach their minima a frame or two
+  apart, so under batchmode pacing the break never fired and the assert
+  read whichever phase the loop ended on. Each joint is now scored by its
+  own closest approach across the loop. A real residue still fails: a
+  constant offset lifts the whole sweep, minimum included.
+- The stairwell descent red was not environment noise at all: it was a
+  scene bug the harness had been hiding. Three traces got there.
+  A position/grounded/heading log showed the hero walking `0.97 m` and then
+  standing still for seven seconds, grounded, input enabled, W held, facing
+  correctly. Motor diagnostics then showed the controller delivering
+  **100 %** of every requested move — nothing was blocked — while his speed
+  kept collapsing to zero and ramping up again. Collider names named the
+  culprit: `562` hits on **Upper Stair Debris Safety Blocker**, contact at
+  its bottom face.
+- The debris that seals the upper flight sits with its underside on the
+  apartment floor plane at `y = 3.20`, which
+  `StairwellLayoutValidator.ValidateUpperBlocker` requires. Directly
+  beneath it the lower flight climbs to the middle landing, and with a
+  `1.6 m` storey and a `1.7 m` hero the two clear each other by about
+  **minus one centimetre**: descending the top treads, his crown plus the
+  controller skin grazed the blocker. Planar velocity is read back from
+  achieved movement, so every graze cost him all his speed and he
+  re-accelerated from a standstill — a crawl, not a wall, which is exactly
+  why it read as flakiness. The blocker is now set back along the flight
+  (`z` span `[-1.10, -0.40]`, was `[-0.90, -0.02]`); its `x` and `y` seal
+  is untouched, so the validator's contract and the debris-blocks-the-climb
+  test hold, and the descent has about `0.23 m` of headroom.
+  `UpperBlocker_LeavesHeadroomOverTheLowerFlight` pins that clearance
+  against the flight geometry rather than against a magic number.
+- The test keeps `Time.captureDeltaTime` pinned to `1/60` for the walk, but
+  for the opposite reason to the one first supposed: unpinned, batch mode
+  runs frames far faster than real time, so the hero covered the flight
+  even while crawling — which is how a physical obstruction hid behind a
+  green run for weeks. Held to a real stride, the test measures the descent
+  a player would actually make. The fixture now runs `6 passed / 1 skipped`
+  headless, against the `5/7` with two reds the notes had called permanent.
+- Frame rate was ruled out as the *cause* on the way: a sweep at
+  `60/90/120/144/240/500` fps showed the hero failing to reach the bottom
+  in eight seconds at *every* rate, getting a step or two further at `60`.
+  The high-rate cases only made the same graze unrecoverable.
+- The game is capped anyway, on its own merits rather than as a fix. It
+  shipped uncapped (`QualitySettings`, one `PC` level, `vSyncCount: 0`, no
+  `Application.targetFrameRate`), so a fast machine rendered this
+  `640x360` composite at several hundred frames a second — the regime where
+  a stride per frame shrinks past the controller's `40 mm` skin and any
+  contact eats whole frames of movement. `BarPromenadeRuntimeBootstrap` now
+  applies `PeriodFrameRate = 30` before the first scene, the rate the
+  fixed-camera survival horror this game is shaped like actually ran at
+  (Silent Hill 2 on the PS2, the first Silent Hill on the PS1). Batch mode
+  is exempt so the test runner is not idled between frames.
+- The rate is the player's to change: `options.frame_rate_60` joins the
+  pause-menu graphics rows as the second opt-in after the 4:3 pillarbox,
+  persisted through `GraphicsEffectsSettings` like the rest, and the
+  options row re-applies the cap immediately rather than waiting for a
+  restart. Only `30` and `60` are offered, and
+  `Cap_KeepsEveryOfferedRateStridingPastTheSkin` is what forbids a third:
+  it asserts that a single frame of walking still clears the controller
+  skin twice over at every rate on the menu. Geometry was ruled out on the way: the flight
+  runs `-Z` from the middle landing, so the hardcoded `180°` heading is
+  right; the cat sits on the far side at `x = 0.72` behind a trigger, not a
+  blocker; and `UpperBlockerBounds` sits at `y = 3.2-5.2`, nowhere near.
+- **Latent, owned by the bus session:** root-cause the two synthetic bus
+  PlayMode boarding scenarios under batch mode —
+  `Passenger_BoardsRidesAndExitsAtLaterStop` waits for `Riding` and gets
+  `Outside` (frame pace of the approach to the dock), and
+  `AmbientPassenger_BoardsRidesAndAlightsAtALaterStop` never seats a waiter
+  at the stop beyond the fog band. The `Assert.Ignore` guards come out the
+  day that lands.
+
+## 2026-08-24 — The puddles join the water
+
+- The gutter puddles stopped being tinted Lit quads and became the city's
+  fourth `CityRiverWater` material (`CityPuddleWaterResources`): the fountain
+  basin's still-water recipe (flow zero, facets zero, refraction zero) with
+  `_AdditionalSpecular 1.6` for lamp glints, `_ReflectionStrength 0.8` into a
+  second `CityFountainReflectionController` cubemap hung 1.6 m over the road
+  network's centre, and `_FoamDistance 0.002` pinned below the planner's 3 mm
+  standing depth so edge foam cannot whitewash a patch.
+- Drying reuses the shader's own background composite instead of alpha: a new
+  `_SurfaceWetness` uniform lerps the fragment toward the sampled road, so a
+  dry puddle is pixel-equal to bare asphalt under `Blend Off`. New
+  `_EdgeNoiseParams` value noise (world XZ) erodes the rim first — the rim
+  mask rides UV0 as a pyramid over each 3×3 patch grid in the rebuilt
+  combined sheet — so puddles shrink to their middles rather than fading as
+  rectangles. Planner untouched; still one mesh, one material, no collider.
+- Wetness reaches water as a whole-material drive, not MPB (the water rule):
+  `CityWaterResources` gained `SetSurfaceWetness` plus a `driesWithStreets`
+  registration flag, fed from `CityWetSurfaceRegistry`'s throttled beats;
+  river, sea and basin keep the shader default 1 and never dry.
+- Verification: 4 new `CityPuddleWaterTests` (contracts, wetness routing
+  reaching only the drying material, registry-driven film, builder
+  mesh/mirror/no-MPB shape) passed and were confirmed by name in the results
+  XML; headless captures at wetness 1 / 0.4 / 0 showed lamp glints and mirror
+  on the film, centre-shrunk remnants, and a dry frame indistinguishable from
+  road. Note: `CityWetSurfaceTests.CustomGroundTint_SurvivesWetAndDryWeather`
+  fails at HEAD `0226bce` with a sub-print-precision tint drift **with these
+  changes stashed** — pre-existing, classified via a clean-HEAD baseline run,
+  not owned by this change.
+
+## 2026-08-24 — Route 01 audio respects the visible City slice
 
 - Replaced the actor-root, bass-only `0.08-0.24` engine voice whose
   logarithmic `48 m` limit sat well inside the `76-86 m` hidden spawn band.
   `CityBusAudio` now owns a bounded four-voice presentation: a rear-mounted
-  mid-readable exterior diesel (`0.32-0.52`, linear `10-104 m`), a distinct
-  rear cabin/body loop faded over `0.35 s` only for the attached hero, and one
-  dedicated pneumatic source above each real passenger doorway. Every voice
-  stays fully spatial and routes to `SFX/World`.
+  mid-readable exterior diesel (`0.32-0.52`, linear `24-48 m`) tied directly
+  to `RuntimeSceneSetup.CityFarClipPlane`, a distinct rear cabin/body loop
+  faded over `0.35 s` only for the attached hero, and one dedicated pneumatic
+  source above each real passenger doorway. The diesel is silent throughout
+  the `76-86 m` hidden spawn band and rises only after entering the rendered
+  City slice. Every voice stays fully spatial and routes to `SFX/World`.
 - Door clips are deterministic low-rate mono valve/hiss/mechanism/latch
   gestures. They fire once on the real Closed-to-Opening and Open-to-Closing
   phase edges (including a coarse-step closing fallback), so neither generic
@@ -34,6 +251,10 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   `git diff --check` is clean apart from the pre-existing mixer line-ending
   warning. No full suites, player build or subjective speaker/headphone
   audition was run.
+- Follow-up visibility cap: `dotnet build BarPromenade.EditModeTests.csproj
+  -nologo` compiled Runtime and the updated distance regression with `0`
+  errors (`154` existing serialized-field warnings). The live Unity editor was
+  left undisturbed, so the updated EditMode selection was not re-run.
 
 ## 2026-08-24 — Whole-game mix puts actions ahead of music
 
