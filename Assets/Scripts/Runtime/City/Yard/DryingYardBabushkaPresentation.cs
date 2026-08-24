@@ -72,6 +72,14 @@ namespace BarPromenade
         public AnimationClip ActiveClip { get; private set; }
         public Cloth Carpet => carpet;
         public bool Strolls => strolls;
+        public int StrikeCount { get; private set; }
+
+        /// <summary>
+        /// Raised at the authored frame where the beater actually meets the
+        /// cloth. Positional audio and other reactions subscribe to the real
+        /// action instead of guessing from an ambience timer.
+        /// </summary>
+        public event Action<DryingYardBabushkaPresentation> StrikeOccurred;
 
         public void Initialize(
             CityPedestrianAssetRegistry registry,
@@ -226,6 +234,8 @@ namespace BarPromenade
             if (crossedStrike)
             {
                 strikePulseRemaining = StrikePulseSeconds;
+                StrikeCount++;
+                StrikeOccurred?.Invoke(this);
             }
 
             previousNormalizedTime = normalized;

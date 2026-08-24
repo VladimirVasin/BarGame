@@ -6,6 +6,93 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-24 — Route 01 is audible before it emerges from the fog
+
+- Replaced the actor-root, bass-only `0.08-0.24` engine voice whose
+  logarithmic `48 m` limit sat well inside the `76-86 m` hidden spawn band.
+  `CityBusAudio` now owns a bounded four-voice presentation: a rear-mounted
+  mid-readable exterior diesel (`0.32-0.52`, linear `10-104 m`), a distinct
+  rear cabin/body loop faded over `0.35 s` only for the attached hero, and one
+  dedicated pneumatic source above each real passenger doorway. Every voice
+  stays fully spatial and routes to `SFX/World`.
+- Door clips are deterministic low-rate mono valve/hiss/mechanism/latch
+  gestures. They fire once on the real Closed-to-Opening and Open-to-Closing
+  phase edges (including a coarse-step closing fallback), so neither generic
+  door cooldowns nor per-frame ambience can suppress or multiply them. The
+  two doorway pitches differ slightly, while their shared gain budget rises
+  from `0.66` outside to `0.82` for the hero aboard.
+- The first focused door run exposed a useful `2.1 mm` mismatch after the
+  sprung body settled. The audio anchors now follow the live front/rear entry
+  transforms after every presentation motion update instead of remaining at
+  their bind poses. Pooling stops both loops and both one-shots, clears clips
+  and resets phase counters.
+- Verification: the full bus audio lifecycle scenario
+  `SamePlanAndAdvanceSequence_RepeatsBusLifecycle` passed; after the anchor
+  correction the exact regression
+  `StopDwell_HoldsForTenSecondsBeforeResuming` passed `1/1`. Unity recompiled
+  Runtime, Editor, EditModeTests and PlayModeTests without errors;
+  `git diff --check` is clean apart from the pre-existing mixer line-ending
+  warning. No full suites, player build or subjective speaker/headphone
+  audition was run.
+
+## 2026-08-24 — Whole-game mix puts actions ahead of music
+
+- Audited every runtime `AudioSource` and the committed mixer. All sources
+  already route through the canonical topology and no serialized scene or
+  prefab sources bypass it; the actual gap was that every leaf fader remained
+  at Unity's `0 dB` default in all five snapshots.
+- Measured the six present MP3 masters with EBU R128. Their raw integrated
+  loudness ranged from `-18.3` to `-10.2 LUFS`, which made Bar roughly `8 dB`
+  louder than City before room response. Added non-destructive per-track
+  source trims that converge within `0.15 dB` of a `-30.5 LUFS` in-game
+  background target, plus a shared `12 kHz` music low-pass. The absent
+  cemetery theme retains a neutral placeholder and must be measured when a
+  master is supplied.
+- Authored one snapshot-invariant gain hierarchy: Master `-6 dB`, Music
+  `-5.5`, Beds `-4`, Details `+0.5`, World `+2`, Gameplay `+2.5`, UI `+1.5`.
+  Detail and world reverb/echo sends were reduced by their dry-bus boosts, so
+  the existing City/Bar/Stairwell/Home room identities retain their wet energy
+  without masking attacks. The master compressor and transition envelopes are
+  unchanged; no global sidechain was added to avoid audible pumping.
+- Reclassified spatial thunder from ambient detail to World and the Home wake
+  alarm from World to Gameplay. Updated dependent PlayMode expectations and
+  made the mixer generator author every content leaf deterministically.
+- Verification: Unity regenerated `BarPromenadeAudio.mixer` successfully and
+  focused `GameAudioMixerAssetTests` passed `16/16`, including serialized
+  snapshot faders, DSP routing, send compensation and music calibration.
+  `git diff --check` is clean. No full suites, player build or subjective
+  speaker/headphone audition was run.
+
+## 2026-08-24 — City sound now belongs to visible physical sources
+
+- Replaced the city filler layer with an immutable causal sound plan built
+  from the runtime layout and point-of-interest geometry. The default City has
+  ten descriptors owned by five visible constructions: waterworks, drying
+  yard, weighbridge, last-route island and park fountain. Five are stable
+  loops, three are autonomous but explained details and two can fire only from
+  a real presentation event.
+- Added a fixed nine-voice runtime director with fully spatial linear rolloff,
+  per-source radii, deterministic scheduling and variants, mixer routing,
+  building-mass low-pass/volume occlusion and a provenance ring buffer. The
+  clips are generated lazily as mono, 22.05 kHz, quantized PS1-like signals;
+  the former City bed now carries only a very quiet diffuse air layer.
+- Bound carpet impacts to the exact authored contact frame and the renderer
+  centre of the carpet that was actually struck. Weighbridge stress follows a
+  real load-threshold crossing. The playground swing deliberately stays
+  silent until it exposes a first-class motion event instead of receiving a
+  decorative timer.
+- Moved surf to the nearest point of the finite visible shoreline and gave it
+  the same building occlusion model. Thunder now comes from the lightning
+  azimuth after distance delay and pending balcony thunder is cancelled when
+  the exterior is no longer visible. Rain remains diffuse around the listener
+  by design.
+- Added pure planner/scheduler/synthesis coverage plus a focused integration
+  fixture for source ownership, trigger classes, occlusion tiers and the hard
+  voice budget. Verification: `CitySoundscapeIntegrationTests` passed `3/3`
+  after the final positioning patch; `CitySourceSoundSynthesisTests` passed
+  `5/5`; `git diff --check` is clean. No full Unity suites or player build were
+  run.
+
 ## 2026-08-24 — First atmospheric visual slice: wet streets, district windows and four bar rooms
 
 - Audited the current runtime-composed world before changing it and kept the
@@ -53,7 +140,101 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   process and returned before discovery. No full suites or player build were
   run.
 
-## 2026-08-24 — The planar floor rises to 35 m and learns to try before vetoing
+## 2026-08-24 — The wipers arc like wipers, and they actually wipe
+
+- Three user requests on the glass rain. (1) The static bead layer is
+  gone — only the running drops remain. (2) The wiper motion was the
+  Body-axis trap again: `ResolveForwardAxisLocal` against the
+  imported Body node handed the blades the vehicle VERTICAL, so they
+  swung door-style around their base — which read as a broken
+  fulcrum. The reference is the vehicle root now and the blades arc
+  across the windshield around its normal (the authored pivots at the
+  arm bases were always correct). (3) The blades now truly wipe: the
+  droplet shader carries a per-frame wipe mask — pivot, blade angle
+  and sweep direction per wiper, pushed in each pane's own
+  coordinates from `AdvanceWipers`. The blade angle is MEASURED from
+  the visible blade tip every frame (tip captured in pivot-local
+  space at initialization from renderer bounds), so the mask can
+  never disagree with the drawn arm; drops ahead of the blade wait
+  for it, behind it the glass starts clean and regrows toward the
+  return stroke. The mask gates on panes facing the bus forward, so
+  side windows keep their drops.
+- Test-infrastructure lesson, now in memory: the asset-import test
+  classes live in `BarPromenade.Tests` WITHOUT `.EditMode`
+  (`CityBusAssetImportTests`, `CityBusDriverAssetContractTests`, like
+  `Player3DAssetImportTests`), so a
+  `BarPromenade.Tests.EditMode.(...)` filter silently dropped every
+  new bus contract test while the rest kept the run green — the
+  steering and glass-rain guards "passed" without ever running. The
+  correct filter is `BarPromenade.Tests(.EditMode)?.(...)`, and a new
+  test's NAME must be seen in the results XML at least once.
+- Verified with the fixed filter: 41/41 including
+  `Wipers_ArcAcrossTheWindshieldAndDriveTheWipeMask` (arc around the
+  windshield normal, no vertical swing, mask radius from the measured
+  blade, mask parks with the rain),
+  `Steering_YawsFrontWheelsAndRollsTheColumnWithTheTurn` and
+  `GlassRain_OverlaysCoverEveryPaneAndFollowIntensity` — all three
+  now genuinely executed. Visual QA: exterior windshield captures at
+  two sweep phases show the blades arcing and the wiped sector
+  trailing them (TestResults/wiper-upswing.png, wiper-downswing.png).
+
+## 2026-08-24 — Rain reaches the bus windows, and drops run down the glass
+
+- The user flagged that a rainy ride reads dry from inside the bus.
+  Two causes, two fixes. (1) The rain field's sheltered donut kept a
+  10 m rain-free core around the follow target — every streak stood
+  past the fog's teeth. `CityRainField.ShelterHoleRadius` is now
+  6.5 m: the 8.25 x 2.38 m body has a 4.3 m half-diagonal, the rest
+  is wind-drift margin, and the donut band becomes 6.5-19.5 m — rain
+  stands right outside the glass. Pinned by
+  `CityRainFieldWindTests.ShelterHole_HugsTheBusButKeepsRainAtTheGlass`.
+- (2) New droplet overlays: `CityBusPresentation` clones every
+  Glass-slot pane (4 door leaves + the combined `GLS_Windows`) into a
+  child renderer carrying `Bar Promenade/City Bus Glass Rain` — a
+  procedural runner-and-bead shader driven per frame by the same
+  `RainIntensity` the wipers already receive (`AdvanceWipers` ends by
+  pushing it into per-overlay MaterialPropertyBlocks; dry glass
+  disables the overlays entirely). The shader computes its pane
+  coordinates in WORLD metres re-anchored to the pane object's
+  origin: the imported glass nodes carry neither the vehicle basis
+  (object Y runs along the bus) nor metre units (the transforms bear
+  a 100x scale), so object-space patterns collapsed into sub-pixel
+  noise — the same import-basis trap as the wheel pivots and the
+  shelter heights, now documented in the shader.
+- Guard: `CityBusAssetImportTests.
+  GlassRain_OverlaysCoverEveryPaneAndFollowIntensity` — one overlay
+  per Glass binding reusing the pane's own mesh, disabled while dry,
+  intensity mirrored into the property block, drying back off.
+  Verified visually via edit-mode captures (door leaf and the full
+  glazing band show chunky trails and beads at intensity 0.9).
+
+- The user flagged two steering bugs the grand loop finally made
+  visible (30-45 manoeuvres per lap where the old tour had a handful;
+  no bus re-export happened — these were latent since the model
+  landed). Probe-measured in root space: at steer +20 (a right turn)
+  the front-left steering pivot rotated 20° around (0, 0, -1) — pure
+  camber, the wheels LEANED into corners — and the hand wheel rolled
+  +71° around (0, 0, +1), which the driver, watching from the axis
+  tail, sees as counterclockwise: the rim spun LEFT on right turns.
+- Two one-line causes in `CityBusPresentation`. (1)
+  `ResolveVerticalAxisLocal` took `registry.Body` as its vertical
+  reference, but the imported Body node's own up reads (0, 0, -1) in
+  root space — the very import rotation the resolution exists to
+  absorb — so the "vertical" it derived WAS the longitudinal axis;
+  the reference is now the vehicle root transform. (2) The steering
+  column axis binding points at the windshield, and a positive Unity
+  rotation reads counterclockwise to the viewer the axis points away
+  from; the applied axis is now negated so a positive (right) steer
+  rolls the rim clockwise under the driver's hands. The grips are
+  children of the rim, so the driver's hands follow for free.
+- New contract guard
+  `CityBusAssetImportTests.Steering_YawsFrontWheelsAndRollsTheColumnWithTheTurn`:
+  both steering pivots must yaw +20 around the vehicle vertical with
+  under 1° of longitudinal roll, and the column's signed roll toward
+  the driver must equal `SteeringWheelAngle` — so the next re-export
+  cannot silently reintroduce either bug. Wipers still resolve their
+  sweep axis against Body (`ResolveForwardAxisLocal`) — same latent
+  trap, left untouched pending a visual check.
 
 - The user exercised the documented escalation immediately: stops 1
   and 2 (home + supermarket, 33.2 m planar, 338 m apart along the

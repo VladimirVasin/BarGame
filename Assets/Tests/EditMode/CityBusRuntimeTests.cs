@@ -33,19 +33,116 @@ namespace BarPromenade.Tests.EditMode
 
                 Assert.That(first.Director.ActiveCount, Is.EqualTo(1));
                 Assert.That(second.Director.ActiveCount, Is.EqualTo(1));
+                CityBusAudio firstAudio = first.Actor.AudioPresentation;
+                Assert.That(firstAudio, Is.Not.Null);
                 Assert.That(first.Actor.EngineAudioSource.clip, Is.Not.Null);
                 Assert.That(first.Actor.EngineAudioSource.loop, Is.True);
                 Assert.That(
                     first.Actor.EngineAudioSource.spatialBlend,
                     Is.EqualTo(1f));
                 Assert.That(
+                    first.Actor.EngineAudioSource.rolloffMode,
+                    Is.EqualTo(AudioRolloffMode.Linear));
+                Assert.That(
+                    first.Actor.EngineAudioSource.minDistance,
+                    Is.EqualTo(CityBusAudioMix.ExteriorMinimumDistance));
+                Assert.That(
+                    first.Actor.EngineAudioSource.maxDistance,
+                    Is.EqualTo(CityBusAudioMix.ExteriorMaximumDistance));
+                Assert.That(
+                    first.Actor.EngineAudioSource.priority,
+                    Is.EqualTo(CityBusAudioMix.ExteriorPriority));
+                Assert.That(
                     first.Actor.EngineAudioSource.volume,
                     Is.EqualTo(CityBusActor.EngineIdleVolume)
                         .Within(0.0001f));
                 Assert.That(
+                    CityBusAudioMix.ExteriorMaximumDistance,
+                    Is.GreaterThan(CityBusDirector.MaximumSpawnDistance));
+                Assert.That(
+                    CityBusAudioMix.EvaluateExteriorSourceGain(
+                        CityBusDirector.MaximumSpawnDistance,
+                        0f),
+                    Is.GreaterThan(0.055f),
+                    "The idle diesel must retain a deliberate far tail at " +
+                    "the most distant fog-hidden spawn.");
+                Assert.That(
+                    firstAudio.EngineAnchor.localPosition.z,
+                    Is.LessThan(-2f),
+                    "The diesel must emit from the rear motor compartment, " +
+                    "not from the actor origin.");
+                Assert.That(
+                    first.Actor.InteriorEngineAudioSource,
+                    Is.Not.Null);
+                Assert.That(
+                    first.Actor.InteriorEngineAudioSource.clip,
+                    Is.Not.SameAs(first.Actor.EngineAudioSource.clip));
+                Assert.That(
+                    first.Actor.InteriorEngineAudioSource.spatialBlend,
+                    Is.EqualTo(1f));
+                Assert.That(
+                    first.Actor.InteriorEngineAudioSource.volume,
+                    Is.Zero,
+                    "Ambient NPC occupancy must not turn on the hero cabin mix.");
+                Assert.That(
+                    first.Actor.EngineAudioSource.outputAudioMixerGroup,
+                    Is.SameAs(GameAudioMixer.SfxWorldGroup));
+                Assert.That(
                     first.Actor.SpawnAnchorId,
                     Is.EqualTo(second.Actor.SpawnAnchorId));
                 Assert.That(first.Director.ActiveCount, Is.LessThanOrEqualTo(1));
+
+                var npcPassenger = new object();
+                Assert.That(
+                    first.Actor.TryAttachNpcPassenger(
+                        npcPassenger,
+                        out _),
+                    Is.True);
+                first.Actor.Advance(
+                    CityBusAudioMix.CabinBlendSeconds,
+                    CityBusObstacleState.Clear,
+                    0f);
+                second.Actor.Advance(
+                    CityBusAudioMix.CabinBlendSeconds,
+                    CityBusObstacleState.Clear,
+                    0f);
+                Assert.That(firstAudio.CabinBlend, Is.Zero);
+                Assert.That(first.Actor.ReleasePassenger(npcPassenger), Is.True);
+
+                var heroPassenger = new object();
+                Assert.That(
+                    first.Actor.TryAttachPassenger(heroPassenger),
+                    Is.True);
+                first.Actor.Advance(
+                    CityBusAudioMix.CabinBlendSeconds,
+                    CityBusObstacleState.Clear,
+                    0f);
+                second.Actor.Advance(
+                    CityBusAudioMix.CabinBlendSeconds,
+                    CityBusObstacleState.Clear,
+                    0f);
+                Assert.That(firstAudio.CabinBlend, Is.EqualTo(1f));
+                Assert.That(
+                    first.Actor.InteriorEngineAudioSource.volume,
+                    Is.GreaterThan(CityBusAudioMix.InteriorIdleVolume));
+                Assert.That(
+                    first.Actor.EngineAudioSource.volume +
+                    first.Actor.InteriorEngineAudioSource.volume,
+                    Is.GreaterThan(CityBusActor.EngineIdleVolume),
+                    "Inside the moving bus the positional cabin structure " +
+                    "layer must make the engine materially clearer.");
+                Assert.That(
+                    first.Actor.ReleasePassenger(heroPassenger),
+                    Is.True);
+                first.Actor.Advance(
+                    CityBusAudioMix.CabinBlendSeconds,
+                    CityBusObstacleState.Clear,
+                    0f);
+                second.Actor.Advance(
+                    CityBusAudioMix.CabinBlendSeconds,
+                    CityBusObstacleState.Clear,
+                    0f);
+                Assert.That(firstAudio.CabinBlend, Is.Zero);
 
                 bool observedOpenDoor = false;
                 for (int step = 0; step < 120; step++)
@@ -92,6 +189,18 @@ namespace BarPromenade.Tests.EditMode
                     first.Actor.EngineAudioSource.pitch,
                     Is.EqualTo(CityBusActor.EngineIdlePitch)
                         .Within(0.0001f));
+                Assert.That(
+                    first.Actor.InteriorEngineAudioSource.isPlaying,
+                    Is.False);
+                Assert.That(
+                    first.Actor.InteriorEngineAudioSource.volume,
+                    Is.Zero);
+                Assert.That(firstAudio.FrontDoorSource.isPlaying, Is.False);
+                Assert.That(firstAudio.RearDoorSource.isPlaying, Is.False);
+                Assert.That(firstAudio.FrontDoorSource.clip, Is.Null);
+                Assert.That(firstAudio.RearDoorSource.clip, Is.Null);
+                Assert.That(firstAudio.DoorOpeningCueCount, Is.Zero);
+                Assert.That(firstAudio.DoorClosingCueCount, Is.Zero);
             }
             finally
             {
@@ -553,6 +662,7 @@ namespace BarPromenade.Tests.EditMode
                     "Ten Second Dwell",
                     CreateCyclicPlan());
                 fixture.SpawnDirectly();
+                CityBusAudio audio = fixture.Actor.AudioPresentation;
 
                 for (int guard = 0;
                      guard < 1200 &&
@@ -575,6 +685,39 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     fixture.Presentation.DriverDoorSample.ButtonPress01,
                     Is.EqualTo(1f));
+                Assert.That(audio.DoorOpeningCueCount, Is.EqualTo(1));
+                Assert.That(audio.DoorClosingCueCount, Is.Zero);
+                Assert.That(
+                    audio.LastDoorCue,
+                    Is.EqualTo(CityBusDoorAudioCue.Opening));
+                Assert.That(audio.FrontDoorSource.clip, Is.Not.Null);
+                Assert.That(
+                    audio.RearDoorSource.clip,
+                    Is.SameAs(audio.FrontDoorSource.clip));
+                AudioClip openingClip = audio.FrontDoorSource.clip;
+                Assert.That(
+                    audio.FrontDoorSource.spatialBlend,
+                    Is.EqualTo(1f));
+                Assert.That(
+                    audio.RearDoorSource.spatialBlend,
+                    Is.EqualTo(1f));
+                Assert.That(
+                    audio.FrontDoorSource.outputAudioMixerGroup,
+                    Is.SameAs(GameAudioMixer.SfxWorldGroup));
+                Assert.That(
+                    Vector3.Distance(
+                        audio.FrontDoorSource.transform.position,
+                        fixture.Presentation.Registry
+                            .FrontDoorEntryAnchor.position +
+                        (fixture.Actor.transform.up * 1.65f)),
+                    Is.LessThan(0.0001f));
+                Assert.That(
+                    Vector3.Distance(
+                        audio.RearDoorSource.transform.position,
+                        fixture.Presentation.Registry
+                            .RearDoorEntryAnchor.position +
+                        (fixture.Actor.transform.up * 1.65f)),
+                    Is.LessThan(0.0001f));
                 Assert.That(
                     CityBusActor.DwellDuration,
                     Is.EqualTo(10f));
@@ -600,6 +743,15 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     fixture.Presentation.DoorPhase,
                     Is.EqualTo(CityBusDoorPhase.Open));
+                Assert.That(
+                    audio.DoorOpeningCueCount,
+                    Is.EqualTo(1),
+                    "The opening pneumatic must be an edge cue, not a " +
+                    "per-frame ambience loop.");
+                var heroPassenger = new object();
+                Assert.That(
+                    fixture.Actor.TryAttachPassenger(heroPassenger),
+                    Is.True);
                 fixture.Actor.Advance(
                     CityBusActor.DwellDuration -
                     fullyOpenSample -
@@ -615,6 +767,19 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     fixture.Presentation.DoorPhase,
                     Is.EqualTo(CityBusDoorPhase.Closing));
+                Assert.That(audio.DoorOpeningCueCount, Is.EqualTo(1));
+                Assert.That(audio.DoorClosingCueCount, Is.EqualTo(1));
+                Assert.That(
+                    audio.LastDoorCue,
+                    Is.EqualTo(CityBusDoorAudioCue.Closing));
+                Assert.That(audio.FrontDoorSource.clip, Is.Not.SameAs(openingClip));
+                Assert.That(
+                    audio.FrontDoorSource.volume,
+                    Is.EqualTo(CityBusAudioMix.InteriorDoorVolume)
+                        .Within(0.0001f));
+                Assert.That(
+                    audio.FrontDoorSource.volume,
+                    Is.GreaterThan(CityBusAudioMix.ExteriorDoorVolume));
                 Assert.That(
                     fixture.Actor.Position,
                     Is.EqualTo(stoppedPosition));
@@ -631,6 +796,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     fixture.Presentation.DoorPhase,
                     Is.EqualTo(CityBusDoorPhase.Closed));
+                Assert.That(audio.DoorOpeningCueCount, Is.EqualTo(1));
+                Assert.That(audio.DoorClosingCueCount, Is.EqualTo(1));
                 Assert.That(fixture.Actor.DwellCount, Is.EqualTo(1));
             }
             finally

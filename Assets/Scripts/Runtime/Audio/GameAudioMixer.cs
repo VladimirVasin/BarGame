@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 using UnityEngine.Audio;
 
@@ -28,6 +29,17 @@ namespace BarPromenade
 
     public static class GameAudioMixer
     {
+        // Canonical whole-game gain staging. These values are authored into
+        // every snapshot, so a scene change can alter room character without
+        // changing the player's hierarchy of what matters.
+        public const float MasterHeadroomDb = -6f;
+        public const float MusicGainDb = -5.5f;
+        public const float AmbienceBedsGainDb = -4f;
+        public const float AmbienceDetailsGainDb = 0.5f;
+        public const float SfxWorldGainDb = 2f;
+        public const float SfxGameplayGainDb = 2.5f;
+        public const float UiGainDb = 1.5f;
+
         public const string ResourcePath =
             "Audio/Mixers/BarPromenadeAudio";
 
@@ -167,6 +179,32 @@ namespace BarPromenade
             return index >= 0 && index < GroupPaths.Length
                 ? GroupPaths[index]
                 : string.Empty;
+        }
+
+        public static float GetGroupGainDb(GameAudioGroup group)
+        {
+            switch (group)
+            {
+                case GameAudioGroup.Master:
+                    return MasterHeadroomDb;
+                case GameAudioGroup.Music:
+                    return MusicGainDb;
+                case GameAudioGroup.AmbienceBeds:
+                    return AmbienceBedsGainDb;
+                case GameAudioGroup.AmbienceDetails:
+                    return AmbienceDetailsGainDb;
+                case GameAudioGroup.SfxWorld:
+                    return SfxWorldGainDb;
+                case GameAudioGroup.SfxGameplay:
+                    return SfxGameplayGainDb;
+                case GameAudioGroup.Ui:
+                    return UiGainDb;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(group),
+                        group,
+                        "The audio group has no canonical mix gain.");
+            }
         }
 
         public static AudioMixerGroup GetGroup(GameAudioGroup group)

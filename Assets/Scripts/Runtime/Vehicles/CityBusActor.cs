@@ -119,22 +119,18 @@ namespace BarPromenade
         public const int EngineSampleRate = 22050;
         public const float EngineIdlePitch = 0.72f;
         public const float EngineMaximumPitch = 1.16f;
-        public const float EngineIdleVolume = 0.08f;
-        public const float EngineMaximumVolume = 0.24f;
+        public const float EngineIdleVolume = 0.32f;
+        public const float EngineMaximumVolume = 0.52f;
 
         private const float DistanceTolerance = 0.02f;
         private const float ObstacleProbeStep = 0.65f;
         private const int MaximumObstacleProbeLinkDepth = 8;
         private const uint RandomFallbackSeed = 0xA341316Cu;
-        private const string EngineClipName = "City Bus Engine Loop";
-
-        private static AudioClip engineLoopClip;
-
         private CityBusPlan plan;
         private CityBusPresentation presentation;
         private BoxCollider bodyCollider;
         private Rigidbody rigidBody;
-        private AudioSource engineAudioSource;
+        private CityBusAudio audioPresentation;
         private Bounds localVisualBounds;
         private CityBusDimensions dimensions;
         private int currentLinkIndex = -1;
@@ -161,7 +157,15 @@ namespace BarPromenade
         public CityBusPresentation Presentation => presentation;
         public BoxCollider BodyCollider => bodyCollider;
         public Rigidbody RigidBody => rigidBody;
-        public AudioSource EngineAudioSource => engineAudioSource;
+        public CityBusAudio AudioPresentation => audioPresentation;
+        public AudioSource EngineAudioSource =>
+            audioPresentation != null
+                ? audioPresentation.ExteriorEngineSource
+                : null;
+        public AudioSource InteriorEngineAudioSource =>
+            audioPresentation != null
+                ? audioPresentation.InteriorEngineSource
+                : null;
         public Vector3 Position => transform.position;
         public Quaternion Rotation => transform.rotation;
         public Vector3 TravelDirection => transform.forward;
@@ -341,6 +345,7 @@ namespace BarPromenade
             visual.localScale = Vector3.one;
             presentation.ResetForPool();
             presentation.gameObject.SetActive(true);
+            audioPresentation.BindPresentation(presentation);
             rigidBody.detectCollisions = true;
             bodyCollider.enabled = true;
             StartEngineAudio();
@@ -414,7 +419,13 @@ namespace BarPromenade
         /// </summary>
         public bool TryAttachPassenger(object owner)
         {
-            return TryAttachOccupant(owner, true, out _);
+            bool attached = TryAttachOccupant(owner, true, out _);
+            if (attached)
+            {
+                UpdateEngineAudio(0f);
+            }
+
+            return attached;
         }
 
         /// <summary>
@@ -436,7 +447,13 @@ namespace BarPromenade
                 return false;
             }
 
+            bool wasPlayer = occupants[index].IsPlayer;
             occupants.RemoveAt(index);
+            if (wasPlayer)
+            {
+                UpdateEngineAudio(0f);
+            }
+
             return true;
         }
 
@@ -616,7 +633,7 @@ namespace BarPromenade
                 IsYielding = false;
                 IsBraking = true;
                 speed = 0f;
-                presentation.SetDriverDoorSample(default);
+                ApplyDriverDoorSample(default);
                 presentation.SetMotion(
                     0f,
                     0f,
@@ -624,7 +641,8 @@ namespace BarPromenade
                     0f,
                     true,
                     safeDeltaTime);
-                UpdateEngineAudio();
+                audioPresentation.SyncPhysicalAnchors();
+                UpdateEngineAudio(safeDeltaTime);
                 return;
             }
 
@@ -972,7 +990,7 @@ namespace BarPromenade
 
             if (MotionState == CityBusMotionState.RouteEnded)
             {
-                presentation.SetDriverDoorSample(default);
+                ApplyDriverDoorSample(default);
             }
             else if (MotionState != CityBusMotionState.Dwelling)
             {
@@ -981,7 +999,7 @@ namespace BarPromenade
                         Mathf.Max(0f, distanceToStop - travelled),
                         speed)
                     : default;
-                presentation.SetDriverDoorSample(driverDoor);
+                ApplyDriverDoorSample(driverDoor);
             }
             presentation.SetMotion(
                 travelled,
@@ -990,7 +1008,8 @@ namespace BarPromenade
                 ResolveSteeringAngle(),
                 IsBraking,
                 deltaTime);
-            UpdateEngineAudio();
+            audioPresentation.SyncPhysicalAnchors();
+            UpdateEngineAudio(deltaTime);
         }
 
         /// <summary>
@@ -1149,7 +1168,7 @@ namespace BarPromenade
             IsYielding = false;
             IsBraking = true;
             MotionState = CityBusMotionState.Dwelling;
-            presentation.SetDriverDoorSample(
+            ApplyDriverDoorSample(
                 CityBusDriverDoorTimeline.SampleDwell(
                     0f,
                     dwellDuration,
@@ -1182,7 +1201,7 @@ namespace BarPromenade
                 }
             }
 
-            presentation.SetDriverDoorSample(
+            ApplyDriverDoorSample(
                 CityBusDriverDoorTimeline.SampleDwell(
                     dwellElapsed,
                     dwellDuration,
@@ -1194,7 +1213,8 @@ namespace BarPromenade
                 0f,
                 true,
                 deltaTime);
-            UpdateEngineAudio();
+            audioPresentation.SyncPhysicalAnchors();
+            UpdateEngineAudio(deltaTime);
             if (dwellElapsed < dwellDuration)
             {
                 return;
@@ -1204,7 +1224,7 @@ namespace BarPromenade
             dwellElapsed = 0f;
             dwellDuration = 0f;
             IsBraking = false;
-            presentation.SetDriverDoorSample(default);
+            ApplyDriverDoorSample(default);
             MotionState = distanceSinceSpawn < EnteringTravelDistance
                 ? CityBusMotionState.Entering
                 : CityBusMotionState.Cruising;
@@ -1413,101 +1433,57 @@ namespace BarPromenade
 
         private void InitializeEngineAudio()
         {
-            engineAudioSource = GetComponent<AudioSource>();
-            if (engineAudioSource == null)
+            audioPresentation = GetComponent<CityBusAudio>();
+            if (audioPresentation == null)
             {
-                engineAudioSource = gameObject.AddComponent<AudioSource>();
+                audioPresentation = gameObject.AddComponent<CityBusAudio>();
             }
 
-            engineAudioSource.playOnAwake = false;
-            engineAudioSource.loop = true;
-            engineAudioSource.spatialBlend = 1f;
-            engineAudioSource.dopplerLevel = 0.15f;
-            engineAudioSource.rolloffMode = AudioRolloffMode.Logarithmic;
-            engineAudioSource.minDistance = 4f;
-            engineAudioSource.maxDistance = 48f;
-            engineAudioSource.volume = 0f;
-            engineAudioSource.pitch = EngineIdlePitch;
-            engineAudioSource.clip = GetOrCreateEngineLoopClip();
-            GameAudioMixer.Route(
-                engineAudioSource,
-                GameAudioGroup.SfxWorld);
+            audioPresentation.Initialize(dimensions);
         }
 
         private void StartEngineAudio()
         {
-            if (engineAudioSource == null)
+            if (audioPresentation == null)
             {
                 return;
             }
 
-            UpdateEngineAudio();
-            if (Application.isPlaying && !engineAudioSource.isPlaying)
-            {
-                engineAudioSource.Play();
-            }
+            audioPresentation.Start(
+                Mathf.Clamp01(speed / CruiseSpeed),
+                HasPlayerPassenger);
         }
 
-        private void UpdateEngineAudio()
+        private void UpdateEngineAudio(float deltaTime)
         {
-            if (engineAudioSource == null || !IsSpawned)
+            if (audioPresentation == null || !IsSpawned)
             {
                 return;
             }
 
-            float normalizedSpeed = Mathf.Clamp01(speed / CruiseSpeed);
-            engineAudioSource.pitch = Mathf.Lerp(
-                EngineIdlePitch,
-                EngineMaximumPitch,
-                normalizedSpeed);
-            engineAudioSource.volume = Mathf.Lerp(
-                EngineIdleVolume,
-                EngineMaximumVolume,
-                normalizedSpeed);
+            audioPresentation.UpdateEngine(
+                Mathf.Clamp01(speed / CruiseSpeed),
+                HasPlayerPassenger,
+                deltaTime);
         }
 
         private void StopEngineAudio()
         {
-            if (engineAudioSource == null)
+            if (audioPresentation == null)
             {
                 return;
             }
 
-            engineAudioSource.Stop();
-            engineAudioSource.volume = 0f;
-            engineAudioSource.pitch = EngineIdlePitch;
-            engineAudioSource.time = 0f;
+            audioPresentation.Stop();
         }
 
-        private static AudioClip GetOrCreateEngineLoopClip()
+        private void ApplyDriverDoorSample(
+            CityBusDriverDoorSample sample)
         {
-            if (engineLoopClip != null)
-            {
-                return engineLoopClip;
-            }
-
-            var samples = new float[EngineSampleRate];
-            for (int index = 0; index < samples.Length; index++)
-            {
-                float time = index / (float)EngineSampleRate;
-                float pulse = 0.78f +
-                              (Mathf.Sin(
-                                   Mathf.PI * 2f * 12f * time) * 0.08f);
-                float tone =
-                    (Mathf.Sin(Mathf.PI * 2f * 48f * time) * 0.25f) +
-                    (Mathf.Sin(Mathf.PI * 2f * 96f * time) * 0.10f) +
-                    (Mathf.Sin(Mathf.PI * 2f * 144f * time) * 0.045f);
-                samples[index] = tone * pulse;
-            }
-
-            engineLoopClip = AudioClip.Create(
-                EngineClipName,
-                samples.Length,
-                1,
-                EngineSampleRate,
-                false);
-            engineLoopClip.SetData(samples, 0);
-            return engineLoopClip;
+            presentation.SetDriverDoorSample(sample);
+            audioPresentation?.ApplyDoorSample(
+                sample,
+                HasPlayerPassenger);
         }
 
         private uint NextRandomUInt()

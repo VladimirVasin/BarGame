@@ -86,6 +86,10 @@ namespace BarPromenade
         public const float FarDelaySeconds = 3.0f;
         public const float NearCutoffFrequency = 2600f;
         public const float FarCutoffFrequency = 900f;
+        public const float NearSourceDistance = 24f;
+        public const float FarSourceDistance = 48f;
+        public const float NearSourceHeight = 12f;
+        public const float FarSourceHeight = 22f;
 
         private readonly AudioSource[] sources = new AudioSource[2];
         private readonly AudioLowPassFilter[] filters =
@@ -109,14 +113,18 @@ namespace BarPromenade
                 AudioSource source = voice.AddComponent<AudioSource>();
                 source.playOnAwake = false;
                 source.loop = false;
-                source.spatialBlend = 0f;
+                source.spatialBlend = 1f;
                 source.dopplerLevel = 0f;
+                source.rolloffMode = AudioRolloffMode.Linear;
+                source.minDistance = 16f;
+                source.maxDistance = 96f;
+                source.spread = 58f;
                 source.priority = 150;
                 source.volume = 0f;
                 source.clip = generatedClip;
                 GameAudioMixer.Route(
                     source,
-                    GameAudioGroup.AmbienceDetails);
+                    GameAudioGroup.SfxWorld);
                 AudioLowPassFilter filter =
                     voice.AddComponent<AudioLowPassFilter>();
                 filter.cutoffFrequency = FarCutoffFrequency;
@@ -126,7 +134,10 @@ namespace BarPromenade
             }
         }
 
-        public void PlayStrike(float distanceFactor)
+        public void PlayStrike(
+            float distanceFactor,
+            float azimuthDegrees,
+            Vector3 listenerPosition)
         {
             float distance = Mathf.Clamp01(distanceFactor);
             AudioSource source = sources[nextSourceIndex];
@@ -138,6 +149,20 @@ namespace BarPromenade
             }
 
             source.Stop();
+            Vector3 direction = Quaternion.Euler(
+                0f,
+                azimuthDegrees,
+                0f) * Vector3.forward;
+            source.transform.position =
+                listenerPosition +
+                direction * Mathf.Lerp(
+                    NearSourceDistance,
+                    FarSourceDistance,
+                    distance) +
+                Vector3.up * Mathf.Lerp(
+                    NearSourceHeight,
+                    FarSourceHeight,
+                    distance);
             source.volume =
                 MaximumVolume * Mathf.Lerp(1f, 0.38f, distance);
             filter.cutoffFrequency = Mathf.Lerp(
@@ -153,8 +178,17 @@ namespace BarPromenade
             StrikesPlayed++;
         }
 
+        public void StopAll()
+        {
+            for (int index = 0; index < sources.Length; index++)
+            {
+                sources[index]?.Stop();
+            }
+        }
+
         private void OnDestroy()
         {
+            StopAll();
             if (generatedClip == null)
             {
                 return;

@@ -19,9 +19,14 @@ namespace BarPromenade
 
         /// <summary>
         /// Radius of the rain-free core used while the hero rides inside the
-        /// bus, so streaks never spawn through the cabin roof.
+        /// bus, so streaks never spawn through the cabin roof. It hugs the
+        /// body: the 8.25 x 2.38 m bus has a 4.3 m half-diagonal, and the
+        /// rest is margin for wind drift during the fall. The old 10 m core
+        /// pushed every streak past the fog's teeth and the ride read as
+        /// dry — the passenger judges the weather by what stands right
+        /// outside the glass.
         /// </summary>
-        public const float ShelterHoleRadius = 10f;
+        public const float ShelterHoleRadius = 6.5f;
 
         /// <summary>
         /// Streak drift spans this range of the wind velocity, so rain

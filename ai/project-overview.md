@@ -392,7 +392,13 @@ The vertical slice contains:
   cartoon heave up to `0.045 m`, acceleration/road pitch up to `0.8` degrees
   and steering/road roll up to `1` degree. All four wheel assemblies stay
   outside that pivot and grounded while the actor, collider and route pose
-  remain unchanged. Canonical Route 01 is an immutable right-hand, Street-only
+  remain unchanged. Its bounded audio presentation is equally physical: a
+  fully spatial rear-engine loop keeps a readable linear tail across the
+  `76-86 m` fog-hidden activation band, and a second rear-mounted
+  structure-borne loop fades in only for the hero aboard. The front and rear
+  doorways each own a dedicated spatial pneumatic voice; opening and closing
+  clips are fired once from the actual door-phase edges and pool cleanly with
+  the actor. Canonical Route 01 is an immutable right-hand, Street-only
   closed grand city loop. Its target planner serves every district point of
   interest and `PlayerHome`, and on a dressed layout adds coverage targets:
   every open-area access gate (cemetery, all yards, the waterfront), two
@@ -513,9 +519,12 @@ The vertical slice contains:
   it: a theme always leaves through an unscaled `4 s` fade-out, and no other
   theme may sound a note until that tail reaches zero, after which it starts
   from silence with an unscaled `1 s` fade-in.
-  Every scene theme waits for its background-streamed clip data before that
-  entry. The apartment theme alone caps its source volume at `0.35` instead of
-  the shared `0.65` scene-music level. A departing theme detaches from its
+  Every scene theme waits for its imported clip data before that entry. The
+  six present masters are measured independently because their raw integrated
+  loudness spans roughly `8 LUFS`; per-track source trims plus the shared
+  `-5.5 dB` Music bus place them all near `-30.5 LUFS` after the `-6 dB`
+  master headroom. A `12 kHz` low-pass leaves the upper transient band to
+  actions without removing the themes' melodic presence. A departing theme detaches from its
   scene into the persistent mix, so a Single-load never cuts the fade-out
   short and never waits for it either: the tail finishes over the door
   presentation while the destination streams in, and the destination theme
@@ -538,17 +547,34 @@ The vertical slice contains:
   low-pass treatment and remain owned by their scene or interaction;
 - one shared `BarPromenadeAudio` mixer with `Music`, `Ambience/Beds`,
   `Ambience/Details`, `SFX/World`, `SFX/Gameplay` and dry `UI` groups;
-  City, Bar, Stairwell, Home and DoorTransition snapshots keep `-6 dB`
-  headroom under a master compressor, feed dedicated reverb/echo returns and
+  every snapshot authors the same causal gain hierarchy over `-6 dB` master
+  headroom: Music `-5.5 dB`, Beds `-4 dB`, Details `+0.5 dB`, World
+  `+2 dB`, Gameplay `+2.5 dB` and UI `+1.5 dB`. City, Bar, Stairwell, Home
+  and DoorTransition still feed dedicated reverb/echo returns and
   switch with a short `0.25 s` wet-tail transition outside the immediate
-  DoorTransition blackout;
+  DoorTransition blackout. Details/world sends are offset against their dry
+  boosts, so foreground transients rise without making rooms wetter;
 - deterministic generated mono retro SFX at `22050 Hz`, including a separate
   door latch and sustained hinge creak, with bounded
   category pools, per-effect cooldowns and voice limits, all routed through
   canonical mixer groups;
 - separate scene-local procedural City, Bar, Home and Stairwell ambience beds,
-  plus a five-source Home spatial soundscape and a three-source Stairwell
-  soundscape. Home combines a calm room bed, synchronized co-located closed
+  plus a nine-voice causal City runtime, a five-source Home spatial soundscape
+  and a three-source Stairwell soundscape. City's former non-spatial electrical
+  content is gone: its bed is only a quiet diffuse air floor. Ten immutable
+  descriptors bind five loops, three autonomous details and two physical-action
+  cues to the exact visible waterworks, drying rack, carpet, weighbridge,
+  last-route speaker and park-fountain bounds. The director owns five loop,
+  three scheduled and one action voice, creates only deterministic quantized
+  mono `22050 Hz` clips, activates them inside their finite radii and applies
+  coarse building-mass occlusion. Carpet impacts fire on the authored contact
+  frame; weighbridge stress fires only when its real needle crosses the loaded
+  threshold. The unbound park swing deliberately remains silent.
+  Surf is one fully spatial voice following the nearest point of the finite
+  waterline and reuses the same building-mass attenuation; thunder is placed
+  at the deterministic lightning azimuth, and
+  rain alone stays diffuse because it is a field around the listener. Home
+  combines a calm room bed, synchronized co-located closed
   and open refrigerator loops, balcony night air and sparse soft wood,
   radiator, radio and bathroom details, plus a dedicated fluorescent crackle
   source co-located with the bathroom tube. The crackle is triggered by the

@@ -48,7 +48,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.GreaterThan(source.minDistance));
             Assert.That(
                 source.outputAudioMixerGroup,
-                Is.SameAs(GameAudioMixer.SfxWorldGroup));
+                Is.SameAs(GameAudioMixer.SfxGameplayGroup));
 
             Assert.That(clip, Is.Not.Null);
             Assert.That(

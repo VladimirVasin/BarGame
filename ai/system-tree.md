@@ -182,7 +182,16 @@ Assets/
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
         CityRainSound.cs                   deterministic rain noise loop + intensity player
-        CityThunderSound.cs                deterministic thunder one-shot + distance player
+        CitySurfSound.cs                   one nearest-waterline spatial surf voice
+        CityThunderSound.cs                deterministic azimuthal thunder + distance delay
+        CitySourceSoundSynthesis.cs        quantized City fixture loops/details/actions
+        CitySoundSourceDescriptor.cs       physical-owner anchor and causal-mode contract
+        CitySoundscapePlan.cs              stable-ID ordered loop/scheduled/triggered views
+        CitySoundscapePlanner.cs           pure validation, profiles and stable hashes
+        CitySoundSchedulePlanner.cs        deterministic no-catch-up detail cursors
+        CitySoundscapeAnchorPlanner.cs     POI/fountain plans -> exact physical anchors
+        CitySoundOcclusion.cs              coarse authored-building mass attenuation
+        CitySoundscapeDirector.cs          bounded spatial pool + real-action bindings
         SceneMusicPlayer.cs                unscaled entry/exit fade and pause envelope
         SupermarketMusicPlayer.cs          optional SupermarketInterior theme
         HomeMusicPlayer.cs                 Home theme + Balcony shot pause/resume
@@ -441,6 +450,7 @@ Assets/
         CityBusTargetRoutePlanner.cs grounded POI/Home candidates + deterministic winding loop solver
         CityBusWideTurnPlanner.cs  level-apron two-edge safe-right macro between graded links
         CityBusActor.cs            3D fixed-loop motion/pitch, 10 s dwell + service ownership
+        CityBusAudio.cs            rear diesel/fog tail, passenger cabin layer + two causal doorway pneumatics
         CityBusDirector.cs         fog spawn, passenger-safe recycle and forced-cleanup lifecycle
         CityBusRidePlan.cs         local-surface door transfer + level camera geometry
         CityBusRideController.cs   prompts, board/ride/alight, ride look input + exact cleanup
@@ -614,6 +624,7 @@ Assets/
       InteractionPromptViewTests.cs          prompt callback lifecycle
       InteriorSoundscapeSynthesisTests.cs   deterministic distinct loop contracts
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
+      Audio/CitySound*.cs                   causal plan/schedule/synthesis/occlusion contracts
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
@@ -862,7 +873,10 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                                -> forbidden while passenger owner remains attached
                                -> forced shutdown invokes registered passenger cleanup
                             -> no camera/frustum lifecycle dependency
-                            -> CityBusActor kinematic box + engine
+                            -> CityBusActor kinematic box + CityBusAudio
+                               -> rear exterior diesel audible across the fog spawn band
+                               -> hero-only rear cabin/body layer
+                               -> front/rear doorway pneumatics on real phase edges
                             -> CityBusPresentation
                                -> grounded wheels + sprung `Suspension Visual` body
                                   -> heave `0.045 m` / pitch `0.8°` / roll `1°` caps
@@ -1147,18 +1161,22 @@ F8 -> GameDiagnosticsSnapshot -> GameLog -> flushed debug.log state record
 state boundaries + scene correlation -> GameLog -> rotating NDJSON
 Unity warning/error/exception ----------------------------^
 scene root -> GameAudioMixer -> City/Bar/Stairwell/Home/DoorTransition snapshot
+           -> invariant gains: Music -5.5 / Beds -4 / Details +0.5 dB
+                               World +2 / Gameplay +2.5 / UI +1.5 dB
 scene transition -> preload -> outgoing theme fade-out -> activate destination
-City root -> CityMusicPlayer -> city_theme + entry/exit fades ----> Music
-Bar root -> BarMusicPlayer -> bar_theme + entry/exit fades ------> Music
-Supermarket root -> SupermarketMusicPlayer -> optional supermarket_theme + fades -> Music
-Stairwell root -> StairwellMusicPlayer -> optional stairwell_theme + fades -> Music
-Home root -> HomeMusicPlayer -> optional home_theme + Balcony pause/resume -> Music
-Home smoking interaction -> optional smoking_theme + gain envelope -> Music
+six present themes -> per-track EBU trim -> 12 kHz tone ----------> Music
+City/Bar/Supermarket/Stairwell/Home -> scene fades ----------------^
+Home smoking interaction -> smoking_theme + gain envelope --------^
 scene root -> matching procedural ambience -----------------------> Ambience/Beds
+City plans -> physical sound anchors -> CitySoundscapeDirector
+           -> fixture loops/autonomous details -------------------> Ambience/Details
+           -> carpet/scale owner events --------------------------> SFX/World
+coast -> nearest finite waterline -> one spatial surf voice ------> Ambience/Details
+lightning azimuth + distance -> delayed spatial thunder ----------> SFX/World
 Home/Stairwell root -> spatial soundscape ------------------------> Ambience/Details
-Home opening -> HomeAlarmClock -> spatial mechanical ring --------> SFX/World
+Home opening -> HomeAlarmClock -> spatial mechanical ring --------> SFX/Gameplay
 input/gameplay events -> RetroAudioService -> pooled SFX/UI groups
-Music/details/world sends -> reverb/echo returns -> Master compressor
+music + compensated details/world sends -> reverb/echo -> Master compressor
 URP post-processing -> 640x360 average -> subtle RGB555 blend -> point upscale
 world composite -> crisp retro IMGUI overlay
 ```

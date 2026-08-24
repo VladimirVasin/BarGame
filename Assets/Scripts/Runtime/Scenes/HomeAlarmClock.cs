@@ -420,7 +420,7 @@ namespace BarPromenade
             ringSource.reverbZoneMix = 0.82f;
             GameAudioMixer.Route(
                 ringSource,
-                GameAudioGroup.SfxWorld);
+                GameAudioGroup.SfxGameplay);
         }
 
         private void ApplyDisplayTime()

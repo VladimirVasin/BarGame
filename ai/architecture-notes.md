@@ -2038,6 +2038,23 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and world SFX feed scene-specific send levels; Home stays short, damped and
   echo-free, while Stairwell uses the longest/strongest reverb with a dark
   high-frequency rolloff plus restrained stereo echo.
+- **Accepted — The mix hierarchy is invariant across scenes:** Snapshots may
+  change room response, not the order of information. Every snapshot authors
+  Music `-5.5 dB`, Ambience/Beds `-4 dB`, Ambience/Details `+0.5 dB`,
+  SFX/World `+2 dB`, SFX/Gameplay `+2.5 dB` and dry UI `+1.5 dB` below the
+  shared `-6 dB` Master. Detail/world send trims compensate their dry-bus
+  lifts, preserving the previous wet-tail energy while attacks move forward.
+  Thunder is a readable world event and the wake alarm a gameplay signal;
+  neither shares the continuous ambience tier.
+- **Accepted — Bus audio belongs to visible mechanisms:** The pooled Route 01
+  actor owns exactly four fully spatial voices. Two sit in the rear motor
+  compartment: a mid-rich exterior diesel whose linear tail remains readable
+  throughout the `76-86 m` hidden spawn band, and a distinct chassis loop
+  faded in only while the hero is an attached passenger. The two other voices
+  sit above the actual front/rear entry anchors and play low-rate pneumatic
+  opening or closing clips once per real door-phase edge. NPC occupancy never
+  enables the cabin mix, generic door SFX cooldowns cannot suppress either
+  doorway, and pooling stops and resets every voice.
 - **Accepted — Reproducible mixer authoring:** The committed mixer is created
   and updated through `AudioMixerAssetSetup`, which uses Unity's editor API,
   preserves one exact topology across repeated runs and fails when a required
@@ -2051,10 +2068,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `Resources/Audio/SupermarketMusic`;
   `StairwellMusicPlayer` optionally loads only `stairwell_theme` from
   `Resources/Audio/StairwellMusic`; `HomeMusicPlayer` optionally loads only
-  `home_theme` from `Resources/Audio/HomeMusic`. Each clip background-streams
-  through a non-spatial looping `AudioSource`, mild low-pass filter and the
-  shared `Music` group under its matching scene root. `SceneMusicPlayer` owns
-  a smooth unscaled gain envelope, waits for background-streamed clip data
+  `home_theme` from `Resources/Audio/HomeMusic`. Each clip loads through its
+  importer mode into a non-spatial looping `AudioSource`, `12 kHz` low-pass
+  filter and the shared `Music` group under its matching scene root. The six
+  present masters are EBU-R128 measured and independently source-trimmed so
+  their roughly `8 LUFS` raw spread converges near `-30.5 LUFS` after the
+  Music and Master buses; a replacement master must be remeasured.
+  `SceneMusicPlayer` owns a smooth unscaled gain envelope, waits for clip data
   before starting it and fails silent if loading fails. Home alone reads the
   fixed-camera Balcony shot: it fades `home_theme` to zero, pauses while
   preserving the sample position and resumes through the same envelope only
@@ -2135,6 +2155,30 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   stops both synchronized refrigerator loops together, and Single-mode cleanup
   destroys every scene-local source and runtime clip while the persistent
   pooled SFX service remains available to the next scene.
+- **Accepted — A City sound needs a physical owner:**
+  `CitySoundscapeAnchorPlanner` may convert only geometry already present in
+  `CityLayout` and `CityDecorationPlan`; it has no fallback coordinates and a
+  missing fixture means silence. Each immutable descriptor carries a stable
+  ID, district, semantic owner, exact visible bounds, cue, radius and one of
+  three causal modes: loop, autonomous scheduled one-shot, or physical-action
+  one-shot. Cue validation fixes that mode — a waterworks drip, wind-driven
+  rope creak or broken-speaker chime may schedule itself, while carpet impact,
+  weighbridge stress and the future swing creak may not exist without a real
+  owner event. The default city produces ten descriptors: five loops, three
+  autonomous details and the carpet/scale actions. `CitySoundscapeDirector`
+  owns a hard nine-source pool (five loop, three scheduled, one action), lazy
+  deterministic `22050 Hz` mono clips, a global detail-silence interval and
+  coarse line-of-sight attenuation through authored building masses. The
+  carpet cue subscribes to the exact authored strike frame; the scale cue
+  follows the real needle's loaded crossing. The park swing remains
+  silent until its motion has a first-class registry rather than a hierarchy
+  search. The old City bed now contains diffuse air only and is kept at
+  `0.025`; rain remains non-spatial because it surrounds the listener. Surf is
+  one source at the nearest point of the finite real waterline, reuses the same
+  quarter-second building-mass attenuation and avoids duplicated-loop phase
+  seams, while thunder is placed at its deterministic lightning azimuth. This
+  is the boundary between diegetic ambience and filler:
+  every localizable sound must answer what visible system emitted it.
 - **Accepted — Diegetic bar identity:** Bar lots keep their warm body color and
   add amber windows, a framed canopy and one collider-free pixel mug sign.
   Active signs share one generated sprite and use the existing upright

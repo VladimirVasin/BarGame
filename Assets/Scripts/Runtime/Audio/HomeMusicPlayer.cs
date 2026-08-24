@@ -15,7 +15,8 @@ namespace BarPromenade
         public const string TrackName = "home_theme";
         public const string ResourcePath =
             ResourceFolder + "/" + TrackName;
-        public const float ThemeOutputVolume = 0.35f;
+        public const float ThemeOutputVolume =
+            MusicMix.HomeOutputVolume;
 
         private HomeFixedCameraController cameraController;
         private bool hasObservedBalconyState;

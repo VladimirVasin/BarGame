@@ -205,7 +205,10 @@ namespace BarPromenade
             }
 
             lastThunderStrikeId = sample.StrikeId;
-            ThunderSound.PlayStrike(sample.DistanceFactor);
+            ThunderSound.PlayStrike(
+                sample.DistanceFactor,
+                sample.AzimuthDegrees,
+                targetCamera.transform.position);
         }
 
         private static double ResolveAbsoluteGameMinutes()
@@ -365,6 +368,7 @@ namespace BarPromenade
             SetPedestriansActive(false);
             FogField.FogRenderer.enabled = false;
             RainField.RainRenderer.enabled = false;
+            ThunderSound.StopAll();
             SetExteriorLightingEnabled(false);
             CityPostProcessVolume.weight = 0f;
             homeVisibility.Restore(targetCamera);
@@ -413,6 +417,10 @@ namespace BarPromenade
             if (LightningFlash != null)
             {
                 LightningFlash.Apply(LightningSample.None);
+            }
+            if (ThunderSound != null)
+            {
+                ThunderSound.StopAll();
             }
             IsBalconyVisibilityActive = false;
         }

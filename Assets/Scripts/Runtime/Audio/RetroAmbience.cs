@@ -85,10 +85,9 @@ namespace BarPromenade
                 Mathf.Sin(phase * 157f + 4.1f) * 0.07f +
                 Mathf.Sin(phase * 263f + 0.9f) * 0.045f +
                 Mathf.Sin(phase * 431f + 3.4f) * 0.025f;
-            float electrical =
-                Mathf.Sin(phase * 188f) * 0.035f +
-                Mathf.Sin(phase * 376f + 0.35f) * 0.018f;
-            return air * slowWind + electrical;
+            // City infrastructure now speaks from real spatial owners.
+            // This legacy bed is only the diffuse pressure of outdoor air.
+            return air * slowWind * 0.58f;
         }
 
         private static float GenerateBarSample(float phase)
@@ -212,7 +211,7 @@ namespace BarPromenade
     {
         protected override RetroAmbienceKind AmbienceKind =>
             RetroAmbienceKind.City;
-        protected override float OutputVolume => 0.075f;
+        protected override float OutputVolume => 0.025f;
         protected override float CutoffFrequency => 5200f;
     }
 

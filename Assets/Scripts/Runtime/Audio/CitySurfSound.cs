@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -97,26 +98,38 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Plays the synthesized surf bed and maps nearness to the
-    /// waterline onto loudness and brightness: far off it is a low
-    /// pressure under the city's sound, at the sand it opens up.
+    /// Plays one synthesized surf voice at the nearest point of the real,
+    /// finite waterline. Spatial rolloff makes the sea disappear with
+    /// distance while retaining an unambiguous shoreward direction.
     /// </summary>
     [DisallowMultipleComponent]
     [RequireComponent(typeof(AudioSource))]
     [RequireComponent(typeof(AudioLowPassFilter))]
     public sealed class CitySurfSoundPlayer : MonoBehaviour
     {
+        public const int OwnedSourceCount = 1;
         public const float MaximumVolume = 0.10f;
         public const float FarCutoffFrequency = 900f;
         public const float ShoreCutoffFrequency = 2600f;
+        public const float MinimumDistance = 4f;
+        public const float MaximumDistance = 44f;
+        public const float ActivationMargin = 4f;
 
         private const float MinimumAudibleIntensity = 0.005f;
 
         private AudioClip generatedClip;
         private float appliedIntensity = -1f;
+        private bool hasShoreline;
+        private Rect shoreline;
+        private float waterlineZ;
+        private float sourceHeight;
+        private float occlusionVolume = 1f;
+        private float occlusionCutoff = float.MaxValue;
 
         public AudioSource Source { get; private set; }
         public AudioLowPassFilter ToneFilter { get; private set; }
+        public Vector3 Anchor =>
+            Source != null ? Source.transform.position : Vector3.zero;
         public AudioClip ActiveClip => generatedClip;
         public float Intensity =>
             appliedIntensity < 0f ? 0f : appliedIntensity;
@@ -127,21 +140,26 @@ namespace BarPromenade
             ToneFilter = GetComponent<AudioLowPassFilter>();
             generatedClip =
                 CitySurfAmbienceSynthesis.CreateRuntimeClip();
+            ConfigureSource(Source, ToneFilter);
+        }
 
-            Source.playOnAwake = false;
-            Source.loop = true;
-            Source.spatialBlend = 0f;
-            Source.dopplerLevel = 0f;
-            Source.priority = 168;
-            Source.volume = 0f;
-            Source.clip = generatedClip;
-            GameAudioMixer.Route(
-                Source,
-                GameAudioGroup.AmbienceBeds);
+        public void SetShoreline(CitySeacoastPlan plan)
+        {
+            hasShoreline = plan != null;
+            if (!hasShoreline)
+            {
+                StopAll();
+                return;
+            }
 
-            ToneFilter.cutoffFrequency = FarCutoffFrequency;
-            ToneFilter.lowpassResonanceQ = 1f;
-            Source.Play();
+            CitySeacoastFrame frame = plan.Frame;
+            shoreline = frame.BeachRowBounds;
+            waterlineZ = frame.WaterlineZ + 0.35f;
+            sourceHeight = frame.SeaTopY + 0.18f;
+            Source.transform.position = new Vector3(
+                shoreline.center.x,
+                sourceHeight,
+                waterlineZ);
         }
 
         public void SetIntensity(float intensity)
@@ -153,27 +171,110 @@ namespace BarPromenade
             }
 
             appliedIntensity = clamped;
-            if (Source == null)
+            ApplyMix();
+        }
+
+        public void SetOcclusion(CitySoundOcclusionSample occlusion)
+        {
+            if (occlusionVolume.Equals(occlusion.VolumeMultiplier) &&
+                occlusionCutoff.Equals(
+                    occlusion.MaximumCutoffFrequency))
             {
                 return;
             }
 
-            if (clamped <= MinimumAudibleIntensity)
-            {
-                Source.volume = 0f;
-                return;
-            }
+            occlusionVolume = occlusion.VolumeMultiplier;
+            occlusionCutoff = occlusion.MaximumCutoffFrequency;
+            ApplyMix();
+        }
 
-            Source.volume =
-                MaximumVolume * Mathf.Pow(clamped, 0.85f);
-            ToneFilter.cutoffFrequency = Mathf.Lerp(
+        private void ApplyMix()
+        {
+            float intensity = Mathf.Max(0f, appliedIntensity);
+            float volume = intensity <= MinimumAudibleIntensity
+                ? 0f
+                : MaximumVolume *
+                  Mathf.Pow(intensity, 0.85f) *
+                  occlusionVolume;
+            float directCutoff = Mathf.Lerp(
                 FarCutoffFrequency,
                 ShoreCutoffFrequency,
-                clamped);
+                intensity);
+            Source.volume = volume;
+            ToneFilter.cutoffFrequency = Mathf.Min(
+                directCutoff,
+                occlusionCutoff);
+            if (volume <= 0f && Source.isPlaying)
+            {
+                Source.Stop();
+            }
+        }
+
+        public void SetListenerPosition(Vector3 listenerPosition)
+        {
+            if (!hasShoreline)
+            {
+                return;
+            }
+
+            // One voice follows the nearest point of the finite waterline.
+            // It remains visibly explainable as surf, avoids four copies of
+            // the same loop and cannot produce phase seams along the beach.
+            Source.transform.position = new Vector3(
+                Mathf.Clamp(
+                    listenerPosition.x,
+                    shoreline.xMin,
+                    shoreline.xMax),
+                sourceHeight,
+                waterlineZ);
+            float activeDistance = MaximumDistance + ActivationMargin;
+            Vector3 delta = Source.transform.position - listenerPosition;
+            delta.y = 0f;
+            bool shouldRun =
+                appliedIntensity > MinimumAudibleIntensity &&
+                delta.sqrMagnitude <= activeDistance * activeDistance;
+            if (shouldRun && !Source.isPlaying)
+            {
+                Source.Play();
+            }
+            else if (!shouldRun && Source.isPlaying)
+            {
+                Source.Stop();
+            }
+        }
+
+        private void ConfigureSource(
+            AudioSource source,
+            AudioLowPassFilter filter)
+        {
+            source.playOnAwake = false;
+            source.loop = true;
+            source.spatialBlend = 1f;
+            source.dopplerLevel = 0f;
+            source.rolloffMode = AudioRolloffMode.Linear;
+            source.minDistance = MinimumDistance;
+            source.maxDistance = MaximumDistance;
+            source.spread = 72f;
+            source.priority = 184;
+            source.volume = 0f;
+            source.clip = generatedClip;
+            source.reverbZoneMix = 0.7f;
+            GameAudioMixer.Route(
+                source,
+                GameAudioGroup.AmbienceDetails);
+
+            filter.cutoffFrequency = FarCutoffFrequency;
+            filter.lowpassResonanceQ = 1f;
+        }
+
+        private void StopAll()
+        {
+            Source?.Stop();
         }
 
         private void OnDestroy()
         {
+            StopAll();
             if (generatedClip == null)
             {
                 return;
@@ -193,27 +294,25 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Feeds the surf player from the hero's distance to the
-    /// waterline: full within twenty metres of the sand's edge, gone
-    /// by ninety, and a little louder in wind — the deterministic
-    /// weather schedule's wind, so every scene hears the same sea.
+    /// Keeps the surf source on the nearest physical waterline point and
+    /// drives its breaker strength from deterministic weather wind.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CitySurfSoundController : MonoBehaviour
     {
-        public const float FullDistance = 20f;
-        public const float SilentDistance = 90f;
+        public const float OcclusionRefreshSeconds = 0.25f;
 
         private CitySurfSoundPlayer player;
         private Transform listener;
-        private Rect shoreline;
-        private float waterlineZ;
+        private IReadOnlyList<BuildingLot> buildingLots;
+        private float occlusionCountdown;
         private bool ready;
 
         public void Initialize(
             CitySurfSoundPlayer surfPlayer,
             Transform listenerTransform,
-            CitySeacoastPlan seacoastPlan)
+            CitySeacoastPlan seacoastPlan,
+            IReadOnlyList<BuildingLot> occlusionLots)
         {
             player = surfPlayer != null
                 ? surfPlayer
@@ -222,6 +321,8 @@ namespace BarPromenade
                 ? listenerTransform
                 : throw new ArgumentNullException(
                     nameof(listenerTransform));
+            buildingLots = occlusionLots ??
+                throw new ArgumentNullException(nameof(occlusionLots));
             if (seacoastPlan == null)
             {
                 ready = false;
@@ -229,8 +330,7 @@ namespace BarPromenade
                 return;
             }
 
-            shoreline = seacoastPlan.Frame.BeachRowBounds;
-            waterlineZ = seacoastPlan.Frame.WaterlineZ;
+            player.SetShoreline(seacoastPlan);
             ready = true;
         }
 
@@ -241,24 +341,19 @@ namespace BarPromenade
                 return;
             }
 
-            Vector3 position = listener.position;
-            float alongX = Mathf.Clamp(
-                position.x,
-                shoreline.xMin,
-                shoreline.xMax);
-            float acrossZ = position.z >= waterlineZ
-                ? 0f
-                : waterlineZ - position.z;
-            float lateral = Mathf.Abs(position.x - alongX);
-            float distance = Mathf.Sqrt(
-                lateral * lateral + acrossZ * acrossZ);
-            float nearness = 1f - Mathf.Clamp01(
-                (distance - FullDistance) /
-                (SilentDistance - FullDistance));
-
             WindSample wind = GameWeatherRules.EvaluateCurrentWind();
             player.SetIntensity(Mathf.Clamp01(
-                nearness * (0.72f + 0.38f * wind.Strength01)));
+                0.72f + 0.28f * wind.Strength01));
+            player.SetListenerPosition(listener.position);
+            occlusionCountdown -= Time.deltaTime;
+            if (occlusionCountdown <= 0f)
+            {
+                occlusionCountdown = OcclusionRefreshSeconds;
+                player.SetOcclusion(CitySoundOcclusion.Evaluate(
+                    player.Anchor,
+                    listener.position,
+                    buildingLots));
+            }
         }
     }
 }

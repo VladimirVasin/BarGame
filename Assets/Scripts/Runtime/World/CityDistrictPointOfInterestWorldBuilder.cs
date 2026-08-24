@@ -5,6 +5,22 @@ using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
+    public readonly struct CityPointOfInterestSoundGeometry
+    {
+        public CityPointOfInterestSoundGeometry(
+            Bounds loopOwnerBounds,
+            Bounds detailOwnerBounds)
+        {
+            LoopOwnerBounds = loopOwnerBounds;
+            DetailOwnerBounds = detailOwnerBounds;
+        }
+
+        public Bounds LoopOwnerBounds { get; }
+        public Bounds DetailOwnerBounds { get; }
+        public Vector3 LoopPosition => LoopOwnerBounds.center;
+        public Vector3 DetailPosition => DetailOwnerBounds.center;
+    }
+
     /// <summary>
     /// Builds the four district points of interest as open public places.
     /// The layout owns their position and access contract; this builder owns
@@ -557,6 +573,126 @@ namespace BarPromenade
                 WeighbridgeDeckHalfWidth * horizontalScale,
                 WeighbridgeDeckHalfLength * horizontalScale);
             return true;
+        }
+
+        /// <summary>
+        /// Returns the exact visible fixture bounds that own this point of
+        /// interest's continuous and event sounds. The same recipe transform
+        /// used to draw the objects is used here, so audio cannot drift away
+        /// from the standpipe, rack, scale or route mast.
+        /// </summary>
+        public static bool TryDescribeSoundGeometry(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            out CityPointOfInterestSoundGeometry geometry)
+        {
+            if (descriptor == null)
+            {
+                throw new ArgumentNullException(nameof(descriptor));
+            }
+
+            Bounds loopLocal;
+            Bounds detailLocal;
+            switch (descriptor.Kind)
+            {
+                case CityDistrictPointOfInterestKind
+                    .OldTownWaterworksCourt:
+                    loopLocal = new Bounds(
+                        new Vector3(0.55f, 1.98f, 0.40f),
+                        new Vector3(1.08f, 3.20f, 1.08f));
+                    detailLocal = new Bounds(
+                        new Vector3(0.55f, 2.62f, 1.58f),
+                        new Vector3(0.44f, 0.60f, 0.32f));
+                    break;
+                case CityDistrictPointOfInterestKind
+                    .ResidentialDryingYard:
+                    loopLocal = new Bounds(
+                        new Vector3(0f, 2.30f, 0f),
+                        new Vector3(9.30f, 1.50f, 6.30f));
+                    detailLocal = new Bounds(
+                        new Vector3(
+                            CarpetRackX,
+                            CarpetRackBarHeight * 0.55f,
+                            (CarpetRackZSouth + CarpetRackZNorth) * 0.5f),
+                        new Vector3(
+                            0.25f,
+                            CarpetRackBarHeight * 1.10f,
+                            CarpetRackZNorth - CarpetRackZSouth + 0.20f));
+                    break;
+                case CityDistrictPointOfInterestKind
+                    .IndustrialWeighbridge:
+                    loopLocal = new Bounds(
+                        new Vector3(3.25f, 0.34f, 0.20f),
+                        new Vector3(1.20f, 0.56f, 1.28f));
+                    detailLocal = new Bounds(
+                        new Vector3(0f, 0.16f, 0f),
+                        new Vector3(3.60f, 0.22f, 11.60f));
+                    break;
+                case CityDistrictPointOfInterestKind
+                    .NightlifeLastRouteIsland:
+                    loopLocal = new Bounds(
+                        new Vector3(-2.75f, 0.52f, -1.25f),
+                        new Vector3(1.12f, 0.78f, 1.12f));
+                    detailLocal = new Bounds(
+                        new Vector3(-2.75f, 4.18f, -0.90f),
+                        new Vector3(0.78f, 0.48f, 0.18f));
+                    break;
+                default:
+                    geometry = default;
+                    return false;
+            }
+
+            Quaternion rotation = Quaternion.LookRotation(
+                ResolveForward(descriptor),
+                Vector3.up);
+            float scale = ResolveHorizontalScale(
+                descriptor.PublicBounds);
+            geometry = new CityPointOfInterestSoundGeometry(
+                TransformRecipeBounds(
+                    descriptor.Center,
+                    rotation,
+                    scale,
+                    loopLocal),
+                TransformRecipeBounds(
+                    descriptor.Center,
+                    rotation,
+                    scale,
+                    detailLocal));
+            return true;
+        }
+
+        private static Bounds TransformRecipeBounds(
+            Vector3 recipeCenter,
+            Quaternion recipeRotation,
+            float horizontalScale,
+            Bounds localBounds)
+        {
+            Vector3 scaledCenter = new Vector3(
+                localBounds.center.x * horizontalScale,
+                localBounds.center.y,
+                localBounds.center.z * horizontalScale);
+            Vector3 scaledExtents = new Vector3(
+                localBounds.extents.x * horizontalScale,
+                localBounds.extents.y,
+                localBounds.extents.z * horizontalScale);
+            Vector3 xAxis = recipeRotation *
+                new Vector3(scaledExtents.x, 0f, 0f);
+            Vector3 yAxis = recipeRotation *
+                new Vector3(0f, scaledExtents.y, 0f);
+            Vector3 zAxis = recipeRotation *
+                new Vector3(0f, 0f, scaledExtents.z);
+            Vector3 worldExtents = new Vector3(
+                Mathf.Abs(xAxis.x) +
+                Mathf.Abs(yAxis.x) +
+                Mathf.Abs(zAxis.x),
+                Mathf.Abs(xAxis.y) +
+                Mathf.Abs(yAxis.y) +
+                Mathf.Abs(zAxis.y),
+                Mathf.Abs(xAxis.z) +
+                Mathf.Abs(yAxis.z) +
+                Mathf.Abs(zAxis.z));
+            return new Bounds(
+                recipeCenter + recipeRotation * scaledCenter,
+                worldExtents * 2f);
         }
 
         private static CityDryingYardNpcStance CreateStance(
@@ -1506,6 +1642,19 @@ namespace BarPromenade
                 surface: CityPointOfInterestSurfaceKind.Paper);
             AddBox(parent, "Totem Route Number Plate", -2.71f, 5.97f, -0.97f,
                 0.42f, 0.20f, 0.025f, NightlifeRouteInk, false, homeExterior);
+            // The incomplete departure signal has a physical mouth. This
+            // small municipal speaker is bolted to the mast below the map;
+            // its grille is deliberately readable before it is heard.
+            AddBox(parent, "Last Route Speaker Housing",
+                -2.75f, 4.18f, -0.99f,
+                0.78f, 0.48f, 0.18f,
+                NightlifeFrame, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+            AddBox(parent, "Last Route Speaker Grille",
+                -2.75f, 4.18f, -0.885f,
+                0.62f, 0.32f, 0.035f,
+                NightlifeWaste, false, homeExterior,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
             AddBox(parent, "Departure Board", 2.45f, 2.10f, -2.55f,
                 2.65f, 1.10f, 0.28f, NightlifeFrame, false, homeExterior, -12f,
                 surface: CityPointOfInterestSurfaceKind.PaintedMetal);

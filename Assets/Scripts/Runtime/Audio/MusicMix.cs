@@ -41,6 +41,22 @@ namespace BarPromenade
         public const float FadeInSeconds = 1f;
         public const float SilentVolumeThreshold = 0.0001f;
 
+        // Calibrated against the current imported masters. Their raw
+        // integrated loudness spans roughly eight LUFS; these source trims
+        // place all six present themes near -30.5 LUFS after Music and Master
+        // bus gains, before scene acoustics. Music remains a location colour,
+        // while actions and short details keep the foreground.
+        public const float CalibratedIntegratedTargetLufs = -30.5f;
+        public const float ToneCutoffFrequency = 12000f;
+        public const float DefaultOutputVolume = 0.40f;
+        public const float CityOutputVolume = 0.92f;
+        public const float BarOutputVolume = 0.36f;
+        public const float HomeOutputVolume = 0.47f;
+        public const float SmokingOutputVolume = 0.58f;
+        public const float StairwellOutputVolume = 0.38f;
+        public const float SupermarketOutputVolume = 0.52f;
+        public const float CemeteryOutputVolume = DefaultOutputVolume;
+
         private static readonly List<AudioSource> FadingOut =
             new List<AudioSource>();
 

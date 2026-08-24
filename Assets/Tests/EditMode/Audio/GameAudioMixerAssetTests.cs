@@ -88,6 +88,67 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void MixPolicy_KeepsActionsAheadOfMusicAndBeds()
+        {
+            Assert.That(
+                GameAudioMixer.GetGroupGainDb(GameAudioGroup.Master),
+                Is.EqualTo(-6f));
+            Assert.That(
+                GameAudioMixer.GetGroupGainDb(GameAudioGroup.Music),
+                Is.LessThan(
+                    GameAudioMixer.GetGroupGainDb(
+                        GameAudioGroup.AmbienceBeds)));
+            Assert.That(
+                GameAudioMixer.GetGroupGainDb(
+                    GameAudioGroup.AmbienceDetails),
+                Is.GreaterThan(
+                    GameAudioMixer.GetGroupGainDb(
+                        GameAudioGroup.AmbienceBeds)));
+            Assert.That(
+                GameAudioMixer.GetGroupGainDb(
+                    GameAudioGroup.SfxWorld) -
+                GameAudioMixer.GetGroupGainDb(GameAudioGroup.Music),
+                Is.GreaterThanOrEqualTo(7.5f));
+            Assert.That(
+                GameAudioMixer.GetGroupGainDb(
+                    GameAudioGroup.SfxGameplay),
+                Is.GreaterThan(
+                    GameAudioMixer.GetGroupGainDb(
+                        GameAudioGroup.SfxWorld)));
+        }
+
+        [TestCase(-18.3f, MusicMix.CityOutputVolume, "City")]
+        [TestCase(-10.2f, MusicMix.BarOutputVolume, "Bar")]
+        [TestCase(-12.5f, MusicMix.HomeOutputVolume, "Home")]
+        [TestCase(-14.3f, MusicMix.SmokingOutputVolume, "Smoking")]
+        [TestCase(-10.7f, MusicMix.StairwellOutputVolume, "Stairwell")]
+        [TestCase(
+            -13.3f,
+            MusicMix.SupermarketOutputVolume,
+            "Supermarket")]
+        public void MusicCalibration_CurrentMastersShareBackgroundTarget(
+            float rawIntegratedLufs,
+            float sourceVolume,
+            string track)
+        {
+            float effectiveLufs =
+                rawIntegratedLufs +
+                20f * Mathf.Log10(sourceVolume) +
+                GameAudioMixer.MusicGainDb +
+                GameAudioMixer.MasterHeadroomDb;
+
+            Assert.That(
+                effectiveLufs,
+                Is.EqualTo(MusicMix.CalibratedIntegratedTargetLufs)
+                    .Within(0.15f),
+                track + " theme must remain in the shared background " +
+                "loudness window.");
+            Assert.That(
+                MusicMix.ToneCutoffFrequency,
+                Is.InRange(10000f, 13000f));
+        }
+
+        [Test]
         public void MixerAsset_HasCompleteCanonicalTopology()
         {
             AudioMixer mixer =
@@ -328,13 +389,24 @@ namespace BarPromenade.Tests.EditMode
                         "Wetmix"),
                     0.34f,
                     $"{snapshotName} Echo Wetmix");
-                AssertValue(
-                    GetGroupVolume(
-                        master,
+                for (int groupIndex = 0;
+                     groupIndex < RequiredGroups.Length;
+                     groupIndex++)
+                {
+                    AudioMixerGroup mixedGroup = FindExactGroup(
                         mixer,
-                        snapshot),
-                    -6f,
-                    $"{snapshotName} Master volume");
+                        RequiredGroupPaths[groupIndex],
+                        RequiredGroupNames[groupIndex]);
+                    AssertValue(
+                        GetGroupVolume(
+                            mixedGroup,
+                            mixer,
+                            snapshot),
+                        GameAudioMixer.GetGroupGainDb(
+                            RequiredGroups[groupIndex]),
+                        $"{snapshotName} " +
+                        $"{RequiredGroupNames[groupIndex]} volume");
+                }
             }
 
             AudioMixerSnapshot door =
@@ -376,9 +448,9 @@ namespace BarPromenade.Tests.EditMode
                 echoReceive,
                 stairwell,
                 home,
-                -9f,
-                -25f,
-                -22f);
+                -9.5f,
+                -25.5f,
+                -22.5f);
             AssertSceneContrast(
                 mixer,
                 world,
@@ -386,9 +458,9 @@ namespace BarPromenade.Tests.EditMode
                 echoReceive,
                 stairwell,
                 home,
-                -12f,
-                -24f,
-                -26f);
+                -14f,
+                -26f,
+                -28f);
             AssertValue(
                 GetEffectParameter(
                     reverb,

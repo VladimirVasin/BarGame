@@ -7,9 +7,11 @@ namespace BarPromenade
         public const string TrackName = "stairwell_theme";
         public const string ResourcePath =
             ResourceFolder + "/" + TrackName;
+        public const float ThemeOutputVolume =
+            MusicMix.StairwellOutputVolume;
 
         protected override string TrackResourcePath =>
             ResourcePath;
-        protected override float OutputVolume => 0.50f;
+        protected override float OutputVolume => ThemeOutputVolume;
     }
 }

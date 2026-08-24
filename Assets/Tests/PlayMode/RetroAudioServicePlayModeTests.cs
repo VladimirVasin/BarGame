@@ -129,7 +129,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(player.ToneFilter, Is.Not.Null);
             Assert.That(
                 player.ToneFilter.cutoffFrequency,
-                Is.EqualTo(15500f).Within(1f));
+                Is.EqualTo(MusicMix.ToneCutoffFrequency).Within(1f));
 
             Object.Destroy(musicObject);
             yield return null;

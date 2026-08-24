@@ -304,11 +304,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 home.AlarmClock.Source.spatialBlend,
                 Is.EqualTo(1f));
-            AudioMixerGroup worldGroup =
-                GameAudioMixer.SfxWorldGroup;
+            AudioMixerGroup gameplayGroup =
+                GameAudioMixer.SfxGameplayGroup;
             Assert.That(
                 home.AlarmClock.Source.outputAudioMixerGroup,
-                Is.SameAs(worldGroup));
+                Is.SameAs(gameplayGroup));
             Assert.That(
                 home.GetComponentsInChildren<AudioSource>(true),
                 Has.Length.EqualTo(

@@ -17,6 +17,7 @@ namespace BarPromenade
         private CityRainSoundPlayer sound;
         private CityLightningFlashLight lightning;
         private CityThunderSoundPlayer thunder;
+        private Transform listener;
         private Func<bool> isSheltered;
         private bool hasAppliedSample;
         private long lastThunderStrikeId = long.MinValue;
@@ -33,6 +34,7 @@ namespace BarPromenade
             CityRainSoundPlayer soundPlayer,
             CityLightningFlashLight lightningFlash,
             CityThunderSoundPlayer thunderPlayer,
+            Transform listenerTransform,
             Func<bool> shelterProvider)
         {
             if (IsInitialized)
@@ -47,6 +49,10 @@ namespace BarPromenade
             sound = soundPlayer;
             lightning = lightningFlash;
             thunder = thunderPlayer;
+            listener = listenerTransform != null
+                ? listenerTransform
+                : throw new ArgumentNullException(
+                    nameof(listenerTransform));
             isSheltered = shelterProvider;
             IsInitialized = true;
             ApplyCurrentWeather(true);
@@ -146,7 +152,10 @@ namespace BarPromenade
             lastThunderStrikeId = sample.StrikeId;
             if (thunder != null)
             {
-                thunder.PlayStrike(sample.DistanceFactor);
+                thunder.PlayStrike(
+                    sample.DistanceFactor,
+                    sample.AzimuthDegrees,
+                    listener.position);
             }
 
             GameLog.Debug(

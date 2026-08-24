@@ -74,7 +74,8 @@ namespace BarPromenade
               NormalizedGain <= SilentGainThreshold));
 
         protected abstract string TrackResourcePath { get; }
-        protected virtual float OutputVolume => 0.65f;
+        protected virtual float OutputVolume =>
+            MusicMix.DefaultOutputVolume;
 
         protected virtual void Awake()
         {
@@ -282,7 +283,8 @@ namespace BarPromenade
         {
             // The music keeps its dynamics and timing. This only rounds the
             // brittle top octave, unlike the stronger baked treatment on SFX.
-            toneFilter.cutoffFrequency = 15500f;
+            toneFilter.cutoffFrequency =
+                MusicMix.ToneCutoffFrequency;
             toneFilter.lowpassResonanceQ = 1f;
         }
 

@@ -1,6 +1,7 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
@@ -19,6 +20,9 @@ namespace BarPromenade
         private const float MinimumWiperHertz = 0.35f;
         private const float MaximumWiperHertz = 1.15f;
         private const float WiperParkDegreesPerSecond = 110f;
+        private const float MinimumGlassRainIntensity = 0.02f;
+        private const string GlassRainShaderName =
+            "Bar Promenade/City Bus Glass Rain";
 
         private const float SuspensionWaveLength = 2.8f;
         private const float SuspensionResponse = 7f;
@@ -42,6 +46,16 @@ namespace BarPromenade
 
         private static readonly int EmissionColorId =
             Shader.PropertyToID("_EmissionColor");
+        private static readonly int RainIntensityId =
+            Shader.PropertyToID("_RainIntensity");
+        private static readonly int WiperAId =
+            Shader.PropertyToID("_WiperA");
+        private static readonly int WiperBId =
+            Shader.PropertyToID("_WiperB");
+        private static readonly int WiperMaskId =
+            Shader.PropertyToID("_WiperMask");
+        private static readonly int BusForwardId =
+            Shader.PropertyToID("_BusForwardWS");
         private static readonly Color HeadlightEmission =
             new Color(4.2f, 3.55f, 2.35f);
         private static readonly Color TailLightEmission =
@@ -55,6 +69,20 @@ namespace BarPromenade
 
         private MaterialPropertyBlock lightProperties;
         private CityBusAssetRegistry registry;
+        private readonly List<Renderer> glassRainOverlays =
+            new List<Renderer>();
+        private readonly List<MaterialPropertyBlock>
+            glassRainOverlayProperties =
+                new List<MaterialPropertyBlock>();
+        private Material glassRainMaterial;
+        private float appliedGlassRainIntensity = -1f;
+        private Vector3 leftWiperTipLocal;
+        private Vector3 rightWiperTipLocal;
+        private float wiperBladeReach;
+        private float previousLeftWiperAngle;
+        private float previousRightWiperAngle;
+        private float leftWiperSweepSign = 1f;
+        private float rightWiperSweepSign = -1f;
         private Light[] headlightLights = Array.Empty<Light>();
         private Light[] cabinLights = Array.Empty<Light>();
         private Transform suspensionVisual;
@@ -104,6 +132,8 @@ namespace BarPromenade
             driverPresentation;
         public float NightFactor { get; private set; }
         public float RainIntensity { get; private set; }
+        public IReadOnlyList<Renderer> GlassRainOverlays =>
+            glassRainOverlays;
         public float WiperAngleDegrees { get; private set; }
         public float BrakeFactor => brakeFactor;
         public Transform SuspensionVisual => suspensionVisual;
@@ -129,6 +159,7 @@ namespace BarPromenade
             CreateRuntimeLights();
             CaptureDoorHingeAxis();
             CaptureBasePoses();
+            CreateGlassRainOverlays();
             IsInitialized = true;
             ResetForPool();
         }
@@ -224,10 +255,16 @@ namespace BarPromenade
                 SteeringAngle * SteeringWheelRatio,
                 -MaximumSteeringWheelAngle,
                 MaximumSteeringWheelAngle);
+            // The column axis binding points at the windshield, and a
+            // positive Unity rotation reads counterclockwise to the
+            // viewer that axis points away from — so the rim rolled LEFT
+            // under the driver's hands on every right turn. The driver
+            // watches from the axis tail: negate it so a positive (right)
+            // steer rolls the rim clockwise for him, like a real wheel.
             ApplyAxisPose(
                 steeringWheelBase,
                 SteeringWheelAngle,
-                registry.SteeringWheelAxisLocal);
+                -registry.SteeringWheelAxisLocal);
             AdvanceSuspension(
                 signedDistance,
                 speedMetersPerSecond,
@@ -357,6 +394,7 @@ namespace BarPromenade
                 rightWiperBase,
                 -WiperAngleDegrees,
                 rightWiperAxisLocal);
+            ApplyGlassRain();
         }
 
         public void ResetForPool()
@@ -374,6 +412,11 @@ namespace BarPromenade
             driverDoorSample = default;
             NightFactor = 0f;
             RainIntensity = 0f;
+            previousLeftWiperAngle = 0f;
+            previousRightWiperAngle = 0f;
+            leftWiperSweepSign = 1f;
+            rightWiperSweepSign = -1f;
+            ApplyGlassRain();
             WiperAngleDegrees = 0f;
             wiperPhase = 0f;
             wipersRunning = false;
@@ -444,12 +487,18 @@ namespace BarPromenade
                 registry.FrontLeftSteeringPivot);
             frontRightSteeringBase = new TransformPose(
                 registry.FrontRightSteeringPivot);
+            // The reference must be the VEHICLE ROOT, never the imported
+            // Body node: Body's own up reads (0, 0, -1) in root space —
+            // the very import rotation this resolution exists to absorb —
+            // so resolving against Body.up handed the pivots the
+            // longitudinal axis and the front wheels leaned into corners
+            // instead of turning.
             frontLeftSteeringAxisLocal = ResolveVerticalAxisLocal(
                 registry.FrontLeftSteeringPivot,
-                registry.Body);
+                transform);
             frontRightSteeringAxisLocal = ResolveVerticalAxisLocal(
                 registry.FrontRightSteeringPivot,
-                registry.Body);
+                transform);
             steeringWheelBase = new TransformPose(
                 registry.SteeringWheelPivot);
             doorButtonBase = new TransformPose(
@@ -458,12 +507,17 @@ namespace BarPromenade
                 registry.LeftWiperPivot);
             rightWiperBase = new TransformPose(
                 registry.RightWiperPivot);
+            // The reference must be the VEHICLE ROOT, like the wheel
+            // pivots: the imported Body's own forward reads (0, -1, 0)
+            // in root space, so resolving against it swung the blades
+            // around the vehicle vertical — door-style — instead of
+            // arcing them across the windshield around its normal.
             leftWiperAxisLocal = ResolveForwardAxisLocal(
                 registry.LeftWiperPivot,
-                registry.Body);
+                transform);
             rightWiperAxisLocal = ResolveForwardAxisLocal(
                 registry.RightWiperPivot,
-                registry.Body);
+                transform);
         }
 
         private void CreateSuspensionHierarchy()
@@ -519,6 +573,322 @@ namespace BarPromenade
             doorHingeAxisLocal = suspensionVisual
                 .InverseTransformDirection(transform.up)
                 .normalized;
+        }
+
+        /// <summary>
+        /// Clones every glass pane into a droplet overlay: the same mesh,
+        /// pulled a hair toward the camera by the shader's depth offset,
+        /// carrying the procedural running-drop layer. Cloning keeps the
+        /// panes' own translucent look untouched and needs no prefab
+        /// rebuild — the drops simply stop rendering while the glass is
+        /// dry.
+        /// </summary>
+        private void CreateGlassRainOverlays()
+        {
+            glassRainOverlays.Clear();
+            glassRainOverlayProperties.Clear();
+            Shader shader = Shader.Find(GlassRainShaderName);
+            if (shader == null)
+            {
+                return;
+            }
+
+            glassRainMaterial = new Material(shader)
+            {
+                name = "City Bus Glass Rain (Runtime)"
+            };
+            IReadOnlyList<CityBusRendererBinding> bindings =
+                registry.RendererBindings;
+            for (int index = 0; index < bindings.Count; index++)
+            {
+                CityBusRendererBinding binding = bindings[index];
+                if (binding == null ||
+                    binding.MaterialSlot != CityBusMaterialSlot.Glass ||
+                    binding.Renderer == null)
+                {
+                    continue;
+                }
+
+                MeshFilter sourceFilter =
+                    binding.Renderer.GetComponent<MeshFilter>();
+                if (sourceFilter == null ||
+                    sourceFilter.sharedMesh == null)
+                {
+                    continue;
+                }
+
+                GameObject overlayObject = new GameObject(
+                    binding.Renderer.name + " Rain Drops");
+                overlayObject.layer =
+                    binding.Renderer.gameObject.layer;
+                Transform overlayTransform = overlayObject.transform;
+                overlayTransform.SetParent(
+                    binding.Renderer.transform,
+                    false);
+                overlayObject.AddComponent<MeshFilter>().sharedMesh =
+                    sourceFilter.sharedMesh;
+                MeshRenderer overlay =
+                    overlayObject.AddComponent<MeshRenderer>();
+                overlay.sharedMaterial = glassRainMaterial;
+                overlay.shadowCastingMode = ShadowCastingMode.Off;
+                overlay.receiveShadows = false;
+                overlay.lightProbeUsage = LightProbeUsage.Off;
+                overlay.reflectionProbeUsage =
+                    ReflectionProbeUsage.Off;
+                overlay.motionVectorGenerationMode =
+                    MotionVectorGenerationMode.Object;
+                overlay.enabled = false;
+                var properties = new MaterialPropertyBlock();
+                properties.SetFloat(RainIntensityId, 0f);
+                overlay.SetPropertyBlock(properties);
+                glassRainOverlays.Add(overlay);
+                glassRainOverlayProperties.Add(properties);
+            }
+
+            MeasureWiperBlades();
+        }
+
+        /// <summary>
+        /// Measures each parked wiper's blade tip in its pivot's local
+        /// space, so the wipe mask can follow the VISIBLE blade every
+        /// frame instead of re-deriving rest angles from the imported
+        /// axes — the sweep mask and the drawn arm can never disagree.
+        /// </summary>
+        private void MeasureWiperBlades()
+        {
+            wiperBladeReach = 0f;
+            leftWiperTipLocal = MeasureWiperTipLocal(
+                registry.LeftWiperPivot,
+                ref wiperBladeReach);
+            rightWiperTipLocal = MeasureWiperTipLocal(
+                registry.RightWiperPivot,
+                ref wiperBladeReach);
+        }
+
+        private static Vector3 MeasureWiperTipLocal(
+            Transform pivot,
+            ref float reach)
+        {
+            if (pivot == null)
+            {
+                return Vector3.zero;
+            }
+
+            Vector3 tipWorld = pivot.position;
+            float best = 0f;
+            Renderer[] renderers =
+                pivot.GetComponentsInChildren<Renderer>();
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Bounds bounds = renderers[index].bounds;
+                for (int corner = 0; corner < 8; corner++)
+                {
+                    var point = new Vector3(
+                        (corner & 1) == 0
+                            ? bounds.min.x
+                            : bounds.max.x,
+                        (corner & 2) == 0
+                            ? bounds.min.y
+                            : bounds.max.y,
+                        (corner & 4) == 0
+                            ? bounds.min.z
+                            : bounds.max.z);
+                    float distance = Vector3.Distance(
+                        point,
+                        pivot.position);
+                    if (distance > best)
+                    {
+                        best = distance;
+                        tipWorld = point;
+                    }
+                }
+            }
+
+            reach = Mathf.Max(reach, best);
+            return pivot.InverseTransformPoint(tipWorld);
+        }
+
+        /// <summary>
+        /// Pushes the droplet state for this frame: intensity plus the
+        /// wipe mask that trails the visible blades, so the drops
+        /// vanish exactly where a blade has just squeegeed and regrow
+        /// toward its return stroke. Dry glass turns the overlays off
+        /// entirely.
+        /// </summary>
+        private void ApplyGlassRain()
+        {
+            if (glassRainOverlayProperties.Count == 0)
+            {
+                return;
+            }
+
+            float intensity =
+                RainIntensity < MinimumGlassRainIntensity
+                    ? 0f
+                    : RainIntensity;
+            if (intensity <= 0f)
+            {
+                if (Mathf.Approximately(appliedGlassRainIntensity, 0f))
+                {
+                    return;
+                }
+
+                appliedGlassRainIntensity = 0f;
+                for (int index = 0;
+                     index < glassRainOverlays.Count;
+                     index++)
+                {
+                    if (glassRainOverlays[index] != null)
+                    {
+                        glassRainOverlays[index].enabled = false;
+                    }
+                }
+
+                return;
+            }
+
+            appliedGlassRainIntensity = intensity;
+            Vector3 busForward = transform.forward;
+            Vector3 acrossAxis = Vector3.Cross(
+                busForward,
+                Vector3.down);
+            acrossAxis = acrossAxis.sqrMagnitude > 0.0001f
+                ? acrossAxis.normalized
+                : Vector3.right;
+            bool wiping = wipersRunning &&
+                wiperBladeReach > 0.01f &&
+                leftWiperBase.Target != null &&
+                rightWiperBase.Target != null;
+            float leftAngle = 0f;
+            float rightAngle = 0f;
+            if (wiping)
+            {
+                leftAngle = MeasureBladeAngle(
+                    leftWiperBase.Target,
+                    leftWiperTipLocal,
+                    acrossAxis);
+                rightAngle = MeasureBladeAngle(
+                    rightWiperBase.Target,
+                    rightWiperTipLocal,
+                    acrossAxis);
+                UpdateSweepSign(
+                    leftAngle,
+                    ref previousLeftWiperAngle,
+                    ref leftWiperSweepSign);
+                UpdateSweepSign(
+                    rightAngle,
+                    ref previousRightWiperAngle,
+                    ref rightWiperSweepSign);
+            }
+
+            var mask = wiping
+                ? new Vector4(
+                    0.12f,
+                    wiperBladeReach * 1.06f,
+                    1.6f,
+                    1f)
+                : Vector4.zero;
+            for (int index = 0;
+                 index < glassRainOverlays.Count;
+                 index++)
+            {
+                Renderer overlay = glassRainOverlays[index];
+                if (overlay == null)
+                {
+                    continue;
+                }
+
+                overlay.enabled = true;
+                MaterialPropertyBlock properties =
+                    glassRainOverlayProperties[index];
+                properties.SetFloat(RainIntensityId, intensity);
+                properties.SetVector(WiperMaskId, mask);
+                if (wiping)
+                {
+                    Vector3 origin = overlay.transform.position;
+                    properties.SetVector(WiperAId, WiperState(
+                        leftWiperBase.Target,
+                        origin,
+                        acrossAxis,
+                        leftAngle,
+                        leftWiperSweepSign));
+                    properties.SetVector(WiperBId, WiperState(
+                        rightWiperBase.Target,
+                        origin,
+                        acrossAxis,
+                        rightAngle,
+                        rightWiperSweepSign));
+                    properties.SetVector(
+                        BusForwardId,
+                        busForward);
+                }
+
+                overlay.SetPropertyBlock(properties);
+            }
+        }
+
+        private static Vector4 WiperState(
+            Transform pivot,
+            Vector3 paneOrigin,
+            Vector3 acrossAxis,
+            float bladeAngle,
+            float sweepSign)
+        {
+            Vector3 relative = pivot.position - paneOrigin;
+            return new Vector4(
+                Vector3.Dot(relative, acrossAxis),
+                relative.y,
+                bladeAngle,
+                sweepSign);
+        }
+
+        private static float MeasureBladeAngle(
+            Transform pivot,
+            Vector3 tipLocal,
+            Vector3 acrossAxis)
+        {
+            Vector3 offset =
+                pivot.TransformPoint(tipLocal) - pivot.position;
+            return Mathf.Atan2(
+                offset.y,
+                Vector3.Dot(offset, acrossAxis));
+        }
+
+        private static void UpdateSweepSign(
+            float angle,
+            ref float previousAngle,
+            ref float sweepSign)
+        {
+            float delta = Mathf.DeltaAngle(
+                previousAngle * Mathf.Rad2Deg,
+                angle * Mathf.Rad2Deg);
+            if (Mathf.Abs(delta) > 0.01f)
+            {
+                sweepSign = Mathf.Sign(delta);
+            }
+
+            previousAngle = angle;
+        }
+
+        private void OnDestroy()
+        {
+            if (glassRainMaterial == null)
+            {
+                return;
+            }
+
+            // Edit-mode teardown (DestroyImmediate cascades in tests)
+            // must not route through the deferred Destroy.
+            if (Application.isPlaying)
+            {
+                Destroy(glassRainMaterial);
+            }
+            else
+            {
+                DestroyImmediate(glassRainMaterial);
+            }
+
+            glassRainMaterial = null;
         }
 
         private void CreateRuntimeLights()

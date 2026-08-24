@@ -15,7 +15,6 @@ namespace BarPromenade.Editor
             "Assets/Resources/Audio/Mixers/BarPromenadeAudio.mixer";
 
         private const float SilentDb = -80f;
-        private const float MasterHeadroomDb = -6f;
 
         private static readonly string[] SnapshotNames =
         {
@@ -31,8 +30,8 @@ namespace BarPromenade.Editor
             new SceneMix(
                 "City",
                 -32f,
-                -26f,
-                -30f,
+                -26.5f,
+                -32f,
                 SilentDb,
                 SilentDb,
                 0.72f,
@@ -43,8 +42,8 @@ namespace BarPromenade.Editor
             new SceneMix(
                 "Bar",
                 -28f,
-                -20f,
-                -22f,
+                -20.5f,
+                -24f,
                 SilentDb,
                 SilentDb,
                 1.05f,
@@ -55,10 +54,10 @@ namespace BarPromenade.Editor
             new SceneMix(
                 "Stairwell",
                 -24f,
-                -9f,
-                -12f,
-                -22f,
-                -26f,
+                -9.5f,
+                -14f,
+                -22.5f,
+                -28f,
                 2.25f,
                 0.38f,
                 -750f,
@@ -67,8 +66,8 @@ namespace BarPromenade.Editor
             new SceneMix(
                 "Home",
                 -32f,
-                -25f,
-                -24f,
+                -25.5f,
+                -26f,
                 SilentDb,
                 SilentDb,
                 0.55f,
@@ -414,11 +413,21 @@ namespace BarPromenade.Editor
             {
                 SceneMix mix = SceneMixes[index];
                 object snapshot = snapshots[mix.SnapshotName];
-                api.SetGroupVolume(
-                    master,
-                    controller,
-                    snapshot,
-                    MasterHeadroomDb);
+                for (int groupIndex = 0;
+                     groupIndex < (int)GameAudioGroup.Count;
+                     groupIndex++)
+                {
+                    GameAudioGroup audioGroup =
+                        (GameAudioGroup)groupIndex;
+                    object group = groups[
+                        GameAudioMixer.GetGroupPath(audioGroup)];
+                    api.SetGroupVolume(
+                        group,
+                        controller,
+                        snapshot,
+                        GameAudioMixer.GetGroupGainDb(audioGroup));
+                }
+
                 api.SetGroupVolume(
                     reverbReturn,
                     controller,

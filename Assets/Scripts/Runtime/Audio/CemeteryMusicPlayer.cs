@@ -11,8 +11,10 @@ namespace BarPromenade
         public const string TrackName = "cemetery_theme";
         public const string ResourcePath =
             ResourceFolder + "/" + TrackName;
+        public const float ThemeOutputVolume =
+            MusicMix.CemeteryOutputVolume;
 
         protected override string TrackResourcePath => ResourcePath;
-        protected override float OutputVolume => 0.55f;
+        protected override float OutputVolume => ThemeOutputVolume;
     }
 }

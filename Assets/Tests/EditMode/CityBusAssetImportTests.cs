@@ -569,6 +569,262 @@ namespace BarPromenade.Tests
         }
 
         [Test]
+        public void GlassRain_OverlaysCoverEveryPaneAndFollowIntensity()
+        {
+            GameObject busPrefab = CityBusResources.LoadPrefab();
+            Assert.That(busPrefab, Is.Not.Null);
+            GameObject bus = UnityEngine.Object.Instantiate(busPrefab);
+            try
+            {
+                CityBusAssetRegistry registry =
+                    bus.GetComponent<CityBusAssetRegistry>();
+                CityBusPresentation presentation =
+                    bus.AddComponent<CityBusPresentation>();
+                presentation.Initialize(registry);
+
+                int glassCount = 0;
+                foreach (CityBusRendererBinding binding in
+                         registry.RendererBindings)
+                {
+                    if (binding.MaterialSlot ==
+                        CityBusMaterialSlot.Glass)
+                    {
+                        glassCount++;
+                    }
+                }
+
+                Assert.That(glassCount, Is.GreaterThan(0));
+                Assert.That(
+                    presentation.GlassRainOverlays.Count,
+                    Is.EqualTo(glassCount),
+                    "Every glass pane must carry a droplet overlay.");
+
+                foreach (Renderer overlay in
+                         presentation.GlassRainOverlays)
+                {
+                    Assert.That(overlay, Is.Not.Null);
+                    Assert.That(
+                        overlay.enabled,
+                        Is.False,
+                        "Dry glass must not render droplets.");
+                    MeshFilter paneFilter = overlay.transform.parent
+                        .GetComponent<MeshFilter>();
+                    MeshFilter overlayFilter =
+                        overlay.GetComponent<MeshFilter>();
+                    Assert.That(
+                        overlayFilter.sharedMesh,
+                        Is.SameAs(paneFilter.sharedMesh),
+                        "The overlay must reuse its pane's own mesh.");
+                    Assert.That(
+                        overlay.sharedMaterial.shader.name,
+                        Is.EqualTo("Bar Promenade/City Bus Glass Rain"));
+                }
+
+                presentation.AdvanceWipers(0.8f, 1f / 60f);
+                var block = new MaterialPropertyBlock();
+                foreach (Renderer overlay in
+                         presentation.GlassRainOverlays)
+                {
+                    Assert.That(
+                        overlay.enabled,
+                        Is.True,
+                        "Rain must light the droplet overlays up.");
+                    overlay.GetPropertyBlock(block);
+                    Assert.That(
+                        block.GetFloat("_RainIntensity"),
+                        Is.EqualTo(0.8f).Within(0.0001f));
+                }
+
+                presentation.AdvanceWipers(0f, 1f / 60f);
+                foreach (Renderer overlay in
+                         presentation.GlassRainOverlays)
+                {
+                    Assert.That(
+                        overlay.enabled,
+                        Is.False,
+                        "The droplets must dry off with the rain.");
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(bus);
+            }
+        }
+
+        [Test]
+        public void Wipers_ArcAcrossTheWindshieldAndDriveTheWipeMask()
+        {
+            GameObject busPrefab = CityBusResources.LoadPrefab();
+            Assert.That(busPrefab, Is.Not.Null);
+            GameObject bus = UnityEngine.Object.Instantiate(busPrefab);
+            try
+            {
+                CityBusAssetRegistry registry =
+                    bus.GetComponent<CityBusAssetRegistry>();
+                CityBusPresentation presentation =
+                    bus.AddComponent<CityBusPresentation>();
+                presentation.Initialize(registry);
+
+                Quaternion leftBefore =
+                    registry.LeftWiperPivot.rotation;
+                for (int frame = 0; frame < 12; frame++)
+                {
+                    presentation.AdvanceWipers(1f, 1f / 30f);
+                }
+
+                Assert.That(
+                    Mathf.Abs(presentation.WiperAngleDegrees),
+                    Is.GreaterThan(5f),
+                    "Heavy rain must visibly swing the blades.");
+
+                // A real wiper arcs across the windshield around its
+                // normal; resolving the axis against the imported Body
+                // node once swung the blades door-style around the
+                // vehicle vertical.
+                Quaternion delta =
+                    registry.LeftWiperPivot.rotation *
+                    Quaternion.Inverse(leftBefore);
+                delta.ToAngleAxis(out float angle, out Vector3 axis);
+                float alongForward = Mathf.Abs(angle * Vector3.Dot(
+                    axis,
+                    bus.transform.forward));
+                float alongUp = Mathf.Abs(angle * Vector3.Dot(
+                    axis,
+                    bus.transform.up));
+                Assert.That(
+                    alongForward,
+                    Is.GreaterThan(5f),
+                    "The blade must arc around the windshield normal.");
+                Assert.That(
+                    alongUp,
+                    Is.LessThan(0.5f),
+                    "The blade must not swing door-style around the " +
+                    "vehicle vertical.");
+
+                // While the blades run, every droplet overlay carries a
+                // live wipe mask sized by the measured blade reach.
+                Assert.That(
+                    presentation.GlassRainOverlays.Count,
+                    Is.GreaterThan(0));
+                var block = new MaterialPropertyBlock();
+                presentation.GlassRainOverlays[0]
+                    .GetPropertyBlock(block);
+                Vector4 mask = block.GetVector("_WiperMask");
+                Assert.That(mask.w, Is.EqualTo(1f).Within(0.0001f));
+                Assert.That(
+                    mask.y,
+                    Is.InRange(0.5f, 1.5f),
+                    "The wipe radius must come from the measured " +
+                    "blade, not a guess.");
+
+                presentation.AdvanceWipers(0f, 1f / 30f);
+                Assert.That(
+                    presentation.GlassRainOverlays[0].enabled,
+                    Is.False,
+                    "Dry glass parks the mask together with the drops.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(bus);
+            }
+        }
+
+        [Test]
+        public void Steering_YawsFrontWheelsAndRollsTheColumnWithTheTurn()
+        {
+            GameObject busPrefab = CityBusResources.LoadPrefab();
+            Assert.That(busPrefab, Is.Not.Null);
+            GameObject bus = UnityEngine.Object.Instantiate(busPrefab);
+            try
+            {
+                CityBusAssetRegistry registry =
+                    bus.GetComponent<CityBusAssetRegistry>();
+                CityBusPresentation presentation =
+                    bus.AddComponent<CityBusPresentation>();
+                presentation.Initialize(registry);
+                Transform root = bus.transform;
+
+                Quaternion leftPivotBefore =
+                    registry.FrontLeftSteeringPivot.rotation;
+                Quaternion rightPivotBefore =
+                    registry.FrontRightSteeringPivot.rotation;
+                Quaternion columnBefore =
+                    registry.SteeringWheelPivot.rotation;
+                presentation.SetMotion(0f, 3f, 0f, 20f, false, 1f / 60f);
+
+                // A positive steer is a RIGHT turn (the actor reports
+                // SignedAngle(forward, futureForward, up)). The front
+                // wheels must YAW +20 around the vehicle vertical and
+                // never roll around the longitudinal axis — the wheel
+                // pivots' imported basis reads the bus up as (0, 0, -1)
+                // locally, and resolving the steering axis against the
+                // Body node once made them lean into corners.
+                AssertSteeringPivotYaw(
+                    root,
+                    leftPivotBefore,
+                    registry.FrontLeftSteeringPivot.rotation,
+                    "front-left");
+                AssertSteeringPivotYaw(
+                    root,
+                    rightPivotBefore,
+                    registry.FrontRightSteeringPivot.rotation,
+                    "front-right");
+
+                // The same right steer must roll the rim CLOCKWISE as
+                // the driver sees it: positive around the axis pointing
+                // from the windshield back at his seat. The raw column
+                // binding points the other way, which once spun the
+                // wheel left under his hands on every right turn.
+                Quaternion columnDelta =
+                    registry.SteeringWheelPivot.rotation *
+                    Quaternion.Inverse(columnBefore);
+                columnDelta.ToAngleAxis(
+                    out float columnAngle,
+                    out Vector3 columnAxis);
+                float signedColumnRoll = columnAngle * Vector3.Dot(
+                    columnAxis,
+                    -root.forward);
+                Assert.That(
+                    signedColumnRoll,
+                    Is.EqualTo(presentation.SteeringWheelAngle)
+                        .Within(2f),
+                    "The rim must roll clockwise under the driver's " +
+                    "hands on a right turn.");
+                Assert.That(
+                    presentation.SteeringWheelAngle,
+                    Is.GreaterThan(60f));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(bus);
+            }
+        }
+
+        private static void AssertSteeringPivotYaw(
+            Transform root,
+            Quaternion before,
+            Quaternion after,
+            string label)
+        {
+            Quaternion delta = after * Quaternion.Inverse(before);
+            delta.ToAngleAxis(out float angle, out Vector3 axis);
+            float signedYaw = angle * Vector3.Dot(axis, root.up);
+            float longitudinalRoll = angle * Vector3.Dot(
+                axis,
+                root.forward);
+            Assert.That(
+                signedYaw,
+                Is.EqualTo(20f).Within(0.5f),
+                $"The {label} wheel must yaw with the turn around the " +
+                "vehicle vertical.");
+            Assert.That(
+                Mathf.Abs(longitudinalRoll),
+                Is.LessThan(1f),
+                $"The {label} wheel must never lean around the " +
+                "longitudinal axis while steering.");
+        }
+
+        [Test]
         public void DriverPresentation_TracksWheelPressesButtonAndLooksAtDoor()
         {
             GameObject busPrefab = CityBusResources.LoadPrefab();

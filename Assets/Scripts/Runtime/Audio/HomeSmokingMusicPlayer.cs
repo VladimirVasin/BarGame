@@ -13,8 +13,10 @@ namespace BarPromenade
         public const string TrackName = "smoking_theme";
         public const string ResourcePath =
             ResourceFolder + "/" + TrackName;
-        public const float TargetVolume = 0.50f;
-        public const float CutoffFrequency = 15500f;
+        public const float TargetVolume =
+            MusicMix.SmokingOutputVolume;
+        public const float CutoffFrequency =
+            MusicMix.ToneCutoffFrequency;
 
         private bool startDeferred;
         private bool entryRampActive;

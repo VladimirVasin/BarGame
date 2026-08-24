@@ -41,7 +41,7 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(player.ToneFilter, Is.Not.Null);
             Assert.That(
                 player.ToneFilter.cutoffFrequency,
-                Is.EqualTo(15500f).Within(1f));
+                Is.EqualTo(MusicMix.ToneCutoffFrequency).Within(1f));
             Assert.That(
                 player.ToneFilter.lowpassResonanceQ,
                 Is.EqualTo(1f).Within(0.01f));
@@ -96,7 +96,11 @@ namespace BarPromenade.Tests.PlayMode
 
             player.ApplyNormalizedGain(0.4f);
             Assert.That(player.NormalizedGain, Is.EqualTo(0.4f));
-            Assert.That(player.Source.volume, Is.EqualTo(0.2f).Within(0.001f));
+            Assert.That(
+                player.Source.volume,
+                Is.EqualTo(
+                    HomeSmokingMusicPlayer.TargetVolume * 0.4f)
+                    .Within(0.001f));
 
             player.StopImmediate();
             Assert.That(player.Source.isPlaying, Is.False);

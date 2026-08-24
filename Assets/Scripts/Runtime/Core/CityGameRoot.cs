@@ -28,6 +28,8 @@ namespace BarPromenade
             private set;
         }
         public CityAmbiencePlayer Ambience { get; private set; }
+        public CitySoundscapePlan SoundscapePlan { get; private set; }
+        public CitySoundscapeDirector Soundscape { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public CityPedestrianPlan PedestrianPlan { get; private set; }
         public CityPedestrianDirector Pedestrians { get; private set; }
@@ -600,6 +602,20 @@ namespace BarPromenade
                 "city",
                 "bus_stop_waits_planned",
                 GameLog.Field("wait_points", BusStopWaits.Count));
+            // The city sound layer is composed only after every moving
+            // physical owner exists. Its plan contains no anonymous fallback
+            // emitters: missing fixtures stay silent.
+            SoundscapePlan = CitySoundscapeAnchorPlanner.Create(
+                Layout,
+                World.DecorationPlan);
+            Soundscape = CitySoundscapeDirector.Create(
+                transform,
+                SoundscapePlan,
+                camera.transform,
+                Layout,
+                DryingYardBabushkas,
+                WeighbridgeNeedle,
+                () => Night.NightFactor);
             GameObject rainObject = new GameObject("City Rain Field");
             rainObject.transform.SetParent(transform, false);
             Rain = rainObject.AddComponent<CityRainField>();
@@ -626,8 +642,9 @@ namespace BarPromenade
                 .AddComponent<CitySurfSoundController>()
                 .Initialize(
                     SurfSound,
-                    Player.GameObject.transform,
-                    World.SeacoastPlan);
+                    camera.transform,
+                    World.SeacoastPlan,
+                    Layout.BuildingLots);
             GameObject lightningObject =
                 new GameObject("City Lightning Flash");
             lightningObject.transform.SetParent(transform, false);
@@ -644,6 +661,7 @@ namespace BarPromenade
                 RainSound,
                 Lightning,
                 Thunder,
+                camera.transform,
                 () => BusRide != null && BusRide.IsPassengerAboard);
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();

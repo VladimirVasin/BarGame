@@ -45,12 +45,16 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(0.5f).Within(0.0001f));
             Assert.That(
                 player.Source.volume,
-                Is.EqualTo(0.325f).Within(0.0001f));
+                Is.EqualTo(
+                    CityMusicPlayer.ThemeOutputVolume * 0.5f)
+                    .Within(0.0001f));
 
             player.AdvanceFade(
                 MusicMix.FadeInSeconds * 0.5f);
             Assert.That(player.NormalizedGain, Is.EqualTo(1f));
-            Assert.That(player.Source.volume, Is.EqualTo(0.65f));
+            Assert.That(
+                player.Source.volume,
+                Is.EqualTo(CityMusicPlayer.ThemeOutputVolume));
             Assert.That(player.IsFadeActive, Is.False);
             Assert.That(
                 player.PlaybackState,
