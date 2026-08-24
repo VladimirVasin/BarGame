@@ -735,33 +735,43 @@ namespace BarPromenade
             }
 
             // The same planar offset the plan constructor walks from the
-            // seat centre to the entry dock.
+            // seat centre to the entry dock. The authored ground is only
+            // a fallback: whenever the continuous terrain or any walkway
+            // box actually covers the dock, the highest sampled surface
+            // wins in BOTH directions, because that is what the sitter's
+            // CharacterController grounds on. Raising only from the
+            // authored value let an inflated baseline through — the home
+            // stop's shelter bench sat 8 cm above its own pavement and
+            // the entry pose stalled out of the motor's 2 cm tolerance.
             Vector3 dock = seat.SeatTopCenter + GetDockOffset(seat);
-            float groundY = seat.GroundY;
-            if (CityTerrainSurfacePlan.TrySampleGroundTop(
-                    layout,
-                    new Vector2(dock.x, dock.z),
-                    out float terrainTop,
-                    out _))
-            {
-                groundY = terrainTop;
-            }
-
-            groundY = RaiseToWalkwayTops(
+            bool sampled = CityTerrainSurfacePlan.TrySampleGroundTop(
+                layout,
+                new Vector2(dock.x, dock.z),
+                out float groundY,
+                out _);
+            SampleWalkwayTops(
                 streetSurfacePlan.SidewalkGeometry,
                 dock,
-                groundY);
-            groundY = RaiseToWalkwayTops(
+                ref groundY,
+                ref sampled);
+            SampleWalkwayTops(
                 streetSurfacePlan.ParkPathGeometry,
                 dock,
-                groundY);
+                ref groundY,
+                ref sampled);
 
             // A dock that overhangs the kerb stands its sitter on the
             // carriageway surface rather than the strip behind him.
-            groundY = RaiseToWalkwayTops(
+            SampleWalkwayTops(
                 streetSurfacePlan.StreetGeometry,
                 dock,
-                groundY);
+                ref groundY,
+                ref sampled);
+            if (!sampled)
+            {
+                groundY = seat.GroundY;
+            }
+
             return new CityBenchSeat(
                 seat.Id,
                 seat.SeatTopCenter,
@@ -773,22 +783,26 @@ namespace BarPromenade
                 seat.Kind);
         }
 
-        private static float RaiseToWalkwayTops(
+        private static void SampleWalkwayTops(
             IReadOnlyList<RuntimeOrientedBox> walkways,
             Vector3 position,
-            float groundY)
+            ref float groundY,
+            ref bool sampled)
         {
             for (int index = 0; index < walkways.Count; index++)
             {
-                if (walkways[index].TrySampleTop(
+                if (!walkways[index].TrySampleTop(
                         position,
                         out float walkwayTop))
                 {
-                    groundY = Mathf.Max(groundY, walkwayTop);
+                    continue;
                 }
-            }
 
-            return groundY;
+                groundY = sampled
+                    ? Mathf.Max(groundY, walkwayTop)
+                    : walkwayTop;
+                sampled = true;
+            }
         }
 
         private static void Add(

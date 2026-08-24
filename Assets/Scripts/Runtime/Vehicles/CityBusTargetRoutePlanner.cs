@@ -855,6 +855,11 @@ namespace BarPromenade
                     (layout.RoadWidth * 0.5f) +
                     RoadsidePoleOutsideRoadEdge -
                     laneCenterOffset));
+            // Provisional analytic height only, good enough for the
+            // planner's own distance and exclusion checks. On graded
+            // links it drifts from the boxed pavement, so the final
+            // descriptors are re-grounded against the physical surface
+            // in GroundShelterPositions before the plan is published.
             result.y = roadPosition.y +
                 (CityStreetSurfacePlanner.SidewalkTop -
                  CityStreetSurfacePlanner.RoadTop);

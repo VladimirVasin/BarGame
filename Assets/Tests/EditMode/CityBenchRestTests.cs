@@ -154,31 +154,36 @@ namespace BarPromenade.Tests.EditMode
                 // stand him on the surface that is really there — the
                 // continuous district ground, the raised sidewalk and
                 // park path strips, or the carriageway a kerb-side dock
-                // overhangs.
+                // overhangs. The seat's own authored ground is only the
+                // fallback for docks nothing samples: a sampled surface
+                // wins in both directions, because that is what the
+                // sitter's CharacterController grounds on.
                 Vector3 dock = seat.SeatTopCenter +
                     CityBenchSitPlan.GetDockOffset(seat);
-                float expectedGround = seat.GroundY;
-                if (CityTerrainSurfacePlan.TrySampleGroundTop(
-                        layout,
-                        new Vector2(dock.x, dock.z),
-                        out float terrainTop,
-                        out _))
-                {
-                    expectedGround = terrainTop;
-                }
-
-                expectedGround = SampleWalkwayTops(
+                bool sampled = CityTerrainSurfacePlan.TrySampleGroundTop(
+                    layout,
+                    new Vector2(dock.x, dock.z),
+                    out float expectedGround,
+                    out _);
+                sampled = SampleWalkwayTops(
                     streetSurface.SidewalkGeometry,
                     dock,
-                    expectedGround);
-                expectedGround = SampleWalkwayTops(
+                    ref expectedGround,
+                    sampled);
+                sampled = SampleWalkwayTops(
                     streetSurface.ParkPathGeometry,
                     dock,
-                    expectedGround);
-                expectedGround = SampleWalkwayTops(
+                    ref expectedGround,
+                    sampled);
+                sampled = SampleWalkwayTops(
                     streetSurface.StreetGeometry,
                     dock,
-                    expectedGround);
+                    ref expectedGround,
+                    sampled);
+                if (!sampled)
+                {
+                    expectedGround = seat.GroundY;
+                }
 
                 Assert.That(
                     plan.EntryRootPosition.y,
@@ -203,21 +208,25 @@ namespace BarPromenade.Tests.EditMode
                 "resolution has become vacuous.");
         }
 
-        private static float SampleWalkwayTops(
+        private static bool SampleWalkwayTops(
             System.Collections.Generic.IReadOnlyList<RuntimeOrientedBox>
                 walkways,
             Vector3 position,
-            float groundY)
+            ref float groundY,
+            bool sampled)
         {
             foreach (RuntimeOrientedBox walkway in walkways)
             {
-                if (walkway.TrySampleTop(position, out float top))
+                if (!walkway.TrySampleTop(position, out float top))
                 {
-                    groundY = Mathf.Max(groundY, top);
+                    continue;
                 }
+
+                groundY = sampled ? Mathf.Max(groundY, top) : top;
+                sampled = true;
             }
 
-            return groundY;
+            return sampled;
         }
 
         [Test]

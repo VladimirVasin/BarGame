@@ -542,6 +542,38 @@ namespace BarPromenade
                 out _);
         }
 
+        /// <summary>
+        /// Samples the highest physical sidewalk/street surface covering
+        /// the point, if any of the built boxes actually does. This is
+        /// the surface a walker's CharacterController grounds on, so
+        /// planners that place street furniture stand it on this value
+        /// rather than on an analytic grade line.
+        /// </summary>
+        public static bool TryResolvePhysicalSurfaceTop(
+            Vector3 position,
+            CityStreetSurfacePlan streetSurfacePlan,
+            out float surfaceTop)
+        {
+            surfaceTop = 0f;
+            if (streetSurfacePlan == null)
+            {
+                return false;
+            }
+
+            bool hasPhysicalSurface = false;
+            SampleTopMax(
+                streetSurfacePlan.SidewalkGeometry,
+                position,
+                ref surfaceTop,
+                ref hasPhysicalSurface);
+            SampleTopMax(
+                streetSurfacePlan.StreetGeometry,
+                position,
+                ref surfaceTop,
+                ref hasPhysicalSurface);
+            return hasPhysicalSurface;
+        }
+
         private static float ResolveGroundedRootY(
             Vector3 position,
             CityStreetSurfacePlan streetSurfacePlan,

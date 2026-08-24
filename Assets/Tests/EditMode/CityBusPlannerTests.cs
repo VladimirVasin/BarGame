@@ -518,6 +518,8 @@ namespace BarPromenade.Tests.EditMode
                     .Distinct()
                     .Count(),
                 Is.EqualTo(plan.Stops.Count));
+            CityStreetSurfacePlan streetSurfaces =
+                CityStreetSurfacePlanner.Create(layout);
             for (int stopIndex = 0;
                  stopIndex < plan.Stops.Count;
                  stopIndex++)
@@ -584,12 +586,22 @@ namespace BarPromenade.Tests.EditMode
                     Vector3.Dot(roadsideOffset, stop.Forward),
                     Is.EqualTo(0f).Within(GeometryTolerance),
                     stop.Id);
+                // The shelter stands on the physical ground the walker's
+                // CharacterController lands on; the analytic road-line
+                // height is only the fallback where nothing samples.
+                float expectedShelterY =
+                    CityBusPlanner.TryResolveShelterGroundTop(
+                        layout,
+                        streetSurfaces,
+                        stop.ShelterPosition,
+                        out float shelterGroundTop)
+                        ? shelterGroundTop
+                        : stop.Position.y +
+                          CityStreetSurfacePlanner.SidewalkTop -
+                          CityStreetSurfacePlanner.RoadTop;
                 Assert.That(
                     stop.ShelterPosition.y,
-                    Is.EqualTo(
-                        stop.Position.y +
-                        CityStreetSurfacePlanner.SidewalkTop -
-                        CityStreetSurfacePlanner.RoadTop)
+                    Is.EqualTo(expectedShelterY)
                         .Within(GeometryTolerance),
                     stop.Id);
                 Assert.That(

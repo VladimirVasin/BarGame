@@ -352,11 +352,51 @@ namespace BarPromenade.Tests.EditMode
                 $"stops={stops.Count} loop={busPlan.LoopLength:F1} " +
                 $"worstGap={worstGap:F1} " +
                 $"withinTarget={withinTarget}/{stops.Count}");
+
+            // withinTarget stays a diagnostic print only. The old
+            // "two thirds of gaps within MaximumStopGap" quota measured
+            // an artefact: on the folded corridors that regularity was
+            // held up by poles standing metres apart across the fold,
+            // which the planar floor below now removes on purpose. The
+            // real service guards are the mean interval here, the
+            // three-interval ceiling above and the walk budgets in the
+            // coverage tests — do not resurrect the quota.
             Assert.That(
-                withinTarget * 3,
-                Is.GreaterThanOrEqualTo(stops.Count * 2),
-                "At least two thirds of the along-loop gaps must stay " +
-                "within the maximum stop gap.");
+                busPlan.LoopLength / stops.Count,
+                Is.LessThanOrEqualTo(
+                    CityBusPlanner.TargetStopSpacing * 1.5f),
+                "The mean along-loop interval must stay near the " +
+                "target spacing.");
+
+            // No two poles anywhere on the map may stand closer than
+            // the planar floor, whatever their order along the loop —
+            // the same bus calls at both, so the pair is redundant by
+            // construction. Only a pair of never-dropped stops (home,
+            // district points of interest) may compress.
+            for (int first = 0; first < stops.Count; first++)
+            {
+                for (int second = first + 1;
+                     second < stops.Count;
+                     second++)
+                {
+                    if (IsMandatoryStopKind(stops[first].TargetKind) &&
+                        IsMandatoryStopKind(stops[second].TargetKind))
+                    {
+                        continue;
+                    }
+
+                    Vector3 delta = stops[first].ShelterPosition -
+                                    stops[second].ShelterPosition;
+                    delta.y = 0f;
+                    Assert.That(
+                        delta.magnitude,
+                        Is.GreaterThanOrEqualTo(
+                            CityBusPlanner.MinimumPlanarStopSpacing -
+                            GeometryTolerance),
+                        $"{stops[first].Id} and {stops[second].Id} " +
+                        "stand on practically the same spot.");
+                }
+            }
         }
 
         [Test]
@@ -543,6 +583,58 @@ namespace BarPromenade.Tests.EditMode
                 maximum.x = Mathf.Max(maximum.x, position.x);
                 maximum.y = Mathf.Max(maximum.y, position.z);
             }
+        }
+
+        [Test]
+        public void EveryShelter_StandsOnThePhysicalPavement()
+        {
+            CreateContext(
+                out CityLayout layout,
+                out CityBusPlan busPlan,
+                out _,
+                out _);
+            CityStreetSurfacePlan surfaces =
+                CityStreetSurfacePlanner.Create(layout);
+            Assert.That(busPlan.Stops, Is.Not.Empty);
+
+            // The shelter's Y is the local sidewalk top every consumer
+            // trusts: the stop visual sits its boxes on it, the ride
+            // plan grounds its door docks from it and the shelter
+            // bench derives its plank and sit-entry heights from it.
+            // An analytic grade-line height floated the home shelter
+            // 8 cm above the boxed pavement and the bench refused its
+            // sitter, so the built surface is the only accepted truth.
+            var violations = new List<string>();
+            for (int index = 0; index < busPlan.Stops.Count; index++)
+            {
+                CityBusStopDescriptor stop = busPlan.Stops[index];
+                if (!CityBusPlanner.TryResolveShelterGroundTop(
+                        layout,
+                        surfaces,
+                        stop.ShelterPosition,
+                        out float surfaceTop))
+                {
+                    violations.Add(
+                        stop.Id + ": no physical surface under the " +
+                        "shelter");
+                    continue;
+                }
+
+                float drift = stop.ShelterPosition.y - surfaceTop;
+                if (Mathf.Abs(drift) > 0.001f)
+                {
+                    violations.Add(
+                        stop.Id + ": shelter floats " +
+                        drift.ToString("F3") + " m off the pavement");
+                }
+            }
+
+            Assert.That(
+                violations,
+                Is.Empty,
+                "Every shelter must stand exactly on the surface the " +
+                "walker grounds on: " +
+                string.Join("; ", violations));
         }
 
         private static void CreateContext(

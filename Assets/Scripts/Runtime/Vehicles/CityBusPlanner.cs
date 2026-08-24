@@ -183,6 +183,15 @@ namespace BarPromenade
                 finalLinks,
                 loopLength,
                 stops);
+            stops = CoalescePlanarCloseStops(
+                layout,
+                vehicle,
+                nodes,
+                routeLinkMetadata,
+                finalLinks,
+                loopLength,
+                stops);
+            stops = GroundShelterPositions(layout, stops);
             List<CityBusSpawnAnchor> anchors = CreateSpawnAnchors(
                 layout,
                 vehicle,
@@ -205,6 +214,97 @@ namespace BarPromenade
                 failures,
                 streets.Count,
                 acceptedLinks.Count);
+        }
+
+        /// <summary>
+        /// The ground the shelter really stands on: the pole plants on
+        /// the district strip just outside the pavement edge, so the
+        /// continuous terrain samples first and any sidewalk or street
+        /// box that reaches the point may only raise it — the same
+        /// max-wins idiom as the ride-plan door docks.
+        /// </summary>
+        internal static bool TryResolveShelterGroundTop(
+            CityLayout layout,
+            CityStreetSurfacePlan surfacePlan,
+            Vector3 shelterPosition,
+            out float groundTop)
+        {
+            bool sampled = CityTerrainSurfacePlan.TrySampleGroundTop(
+                layout,
+                new Vector2(shelterPosition.x, shelterPosition.z),
+                out groundTop,
+                out _);
+            if (CityBusRidePlan.TryResolvePhysicalSurfaceTop(
+                    shelterPosition,
+                    surfacePlan,
+                    out float surfaceTop))
+            {
+                groundTop = sampled
+                    ? Mathf.Max(groundTop, surfaceTop)
+                    : surfaceTop;
+                sampled = true;
+            }
+
+            return sampled;
+        }
+
+        /// <summary>
+        /// Stands every shelter on the physical pavement the walker's
+        /// CharacterController actually grounds on. The stop planners
+        /// derive shelter height analytically — road centre line plus
+        /// the kerb step — and on graded links that line drifts from
+        /// the boxed sidewalk segments by centimetres, which floated
+        /// the shelter, its bench plank and the authored sit entry
+        /// above the walkable surface (the home stop sat 8 cm high and
+        /// the bench refused its sitter). The built surface boxes get
+        /// the last word here, in one place, so the stop visual, the
+        /// ride docks, the wait points and the shelter bench all agree.
+        /// </summary>
+        private static List<CityBusStopDescriptor> GroundShelterPositions(
+            CityLayout layout,
+            List<CityBusStopDescriptor> stops)
+        {
+            CityStreetSurfacePlan surfacePlan =
+                CityStreetSurfacePlanner.Create(layout);
+            var result = new List<CityBusStopDescriptor>(stops.Count);
+            for (int index = 0; index < stops.Count; index++)
+            {
+                CityBusStopDescriptor stop = stops[index];
+                if (!TryResolveShelterGroundTop(
+                        layout,
+                        surfacePlan,
+                        stop.ShelterPosition,
+                        out float groundTop) ||
+                    Mathf.Approximately(
+                        groundTop,
+                        stop.ShelterPosition.y))
+                {
+                    result.Add(stop);
+                    continue;
+                }
+
+                Vector3 shelterPosition = stop.ShelterPosition;
+                shelterPosition.y = groundTop;
+                result.Add(new CityBusStopDescriptor(
+                    stop.Id,
+                    stop.SourceDecorationId,
+                    stop.NameLocalizationKey,
+                    stop.SequenceIndex,
+                    stop.DistanceAlongLoop,
+                    stop.District,
+                    shelterPosition,
+                    stop.RoadsideForward,
+                    stop.LinkIndex,
+                    stop.DistanceAlongLink,
+                    stop.Position,
+                    stop.Forward,
+                    stop.RoadEdge,
+                    stop.TargetKind,
+                    stop.TargetId,
+                    stop.TargetCell));
+            }
+
+            return result;
         }
 
         private static List<DirectedStreet> CreateDirectedStreets(

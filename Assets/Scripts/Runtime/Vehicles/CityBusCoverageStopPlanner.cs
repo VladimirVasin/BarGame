@@ -38,6 +38,34 @@ namespace BarPromenade
         public const float MinimumStopSpacing = 80f;
 
         /// <summary>
+        /// Planar floor between any two poles anywhere on the map,
+        /// regardless of their order along the loop. The along-loop
+        /// coalesce cannot see the loop folding back on itself: the
+        /// production roster carried poles 9.8-24.8 m apart across the
+        /// eastern-column fold and the industrial corner, and on a
+        /// single one-way loop such neighbours are redundant by
+        /// construction — the same bus calls at both. The floor began
+        /// at 30 m, sparing the named home+supermarket (33.2 m) and
+        /// nightlife+cemetery (31.4 m) pairs; the user then flagged
+        /// riding a 338 m leg to step off 33 m away, so it rose to
+        /// 35 m and the retention ranks resolved them — the
+        /// supermarket merges into the home stop, the cemetery gate
+        /// into the nightlife point of interest, and the walk budgets
+        /// in the coverage tests keep proving both destinations
+        /// served. The tightest surviving pairs stand ~37 m apart.
+        /// </summary>
+        public const float MinimumPlanarStopSpacing = 35f;
+
+        /// <summary>
+        /// A planar drop must never tear a service hole this long into
+        /// the loop; when the preferred member's removal would, the
+        /// pair's other member goes instead, and when either removal
+        /// would, both poles stay. Matches the along-loop ceiling the
+        /// spacing test enforces.
+        /// </summary>
+        public const float MaximumCoalescedStopGap = TargetStopSpacing * 3f;
+
+        /// <summary>
         /// Coverage budget proven by the coverage test: every notable
         /// destination lies within this pedestrian-graph distance of some
         /// stop's wait point.
@@ -873,6 +901,195 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Drops the less essential stop of any pair standing closer
+        /// than <see cref="MinimumPlanarStopSpacing"/> across the map,
+        /// whatever their order along the loop. The along-loop coalesce
+        /// only compares consecutive stations, so it never sees the
+        /// loop folding back on itself — poles metres apart on the
+        /// eastern-column fold and around the industrial corner
+        /// survived it. Every drop is tried empirically: the spacing
+        /// insertion refills whatever hole the removal opens, and only
+        /// when even the refilled loop keeps a gap past
+        /// <see cref="MaximumCoalescedStopGap"/> does the drop roll
+        /// back — first onto the pair's other member, then into a
+        /// permanent protection of the pair. A forecast veto had kept
+        /// the home+supermarket pair standing 33 m apart: it could not
+        /// know the refill would stand a fresh pole mid-corridor.
+        /// </summary>
+        private static List<CityBusStopDescriptor> CoalescePlanarCloseStops(
+            CityLayout layout,
+            CityBusDesignVehicle vehicle,
+            IReadOnlyList<TemporaryNode> nodes,
+            IList<RouteLinkMetadata> metadata,
+            IReadOnlyList<CityBusRouteLink> finalLinks,
+            float loopLength,
+            List<CityBusStopDescriptor> stops)
+        {
+            if (stops.Count < 3)
+            {
+                return stops;
+            }
+
+            // Termination: refill insertions respect the planar floor
+            // themselves (every insertion candidate checks clearance
+            // against every standing pole), so a refill can never mint
+            // a new planar violation and removals cannot bring two
+            // surviving poles closer. Each iteration therefore either
+            // permanently removes one member of a violating pair or
+            // permanently protects that pair — the violation set only
+            // shrinks, and the scan converges deterministically (fixed
+            // pair order, one pair per iteration).
+            var protectedPairs = new HashSet<string>();
+            var working = new List<CityBusStopDescriptor>(stops);
+            bool changed = false;
+            while (TryFindPlanarViolation(
+                       working,
+                       protectedPairs,
+                       out int first,
+                       out int second))
+            {
+                string pairKey = PlanarPairKey(
+                    working[first],
+                    working[second]);
+                int drop = SelectStopToDrop(
+                    working[first],
+                    working[second]);
+                int preferredIndex = drop == 1 ? first : second;
+                int otherIndex = drop == 1 ? second : first;
+                if (TryDropWithRefill(
+                        layout,
+                        vehicle,
+                        nodes,
+                        metadata,
+                        finalLinks,
+                        loopLength,
+                        working,
+                        preferredIndex,
+                        out List<CityBusStopDescriptor> refilled) ||
+                    (GetStopRetentionRank(
+                         working[otherIndex].TargetKind) != 0 &&
+                     TryDropWithRefill(
+                         layout,
+                         vehicle,
+                         nodes,
+                         metadata,
+                         finalLinks,
+                         loopLength,
+                         working,
+                         otherIndex,
+                         out refilled)))
+                {
+                    working = refilled;
+                    changed = true;
+                    continue;
+                }
+
+                protectedPairs.Add(pairKey);
+            }
+
+            return changed ? RenumberStops(working) : stops;
+        }
+
+        private static bool TryFindPlanarViolation(
+            List<CityBusStopDescriptor> working,
+            HashSet<string> protectedPairs,
+            out int first,
+            out int second)
+        {
+            for (first = 0; first < working.Count; first++)
+            {
+                for (second = first + 1;
+                     second < working.Count;
+                     second++)
+                {
+                    if (XzDistance(
+                            working[first].ShelterPosition,
+                            working[second].ShelterPosition) >=
+                        MinimumPlanarStopSpacing)
+                    {
+                        continue;
+                    }
+
+                    if (SelectStopToDrop(
+                            working[first],
+                            working[second]) == 0)
+                    {
+                        continue;
+                    }
+
+                    if (protectedPairs.Contains(PlanarPairKey(
+                            working[first],
+                            working[second])))
+                    {
+                        continue;
+                    }
+
+                    return true;
+                }
+            }
+
+            first = -1;
+            second = -1;
+            return false;
+        }
+
+        private static bool TryDropWithRefill(
+            CityLayout layout,
+            CityBusDesignVehicle vehicle,
+            IReadOnlyList<TemporaryNode> nodes,
+            IList<RouteLinkMetadata> metadata,
+            IReadOnlyList<CityBusRouteLink> finalLinks,
+            float loopLength,
+            List<CityBusStopDescriptor> working,
+            int dropIndex,
+            out List<CityBusStopDescriptor> result)
+        {
+            var reduced = new List<CityBusStopDescriptor>(working);
+            reduced.RemoveAt(dropIndex);
+            result = InsertSpacingStops(
+                layout,
+                vehicle,
+                nodes,
+                metadata,
+                finalLinks,
+                loopLength,
+                reduced);
+            return !HasServiceHole(result, loopLength);
+        }
+
+        private static bool HasServiceHole(
+            IReadOnlyList<CityBusStopDescriptor> stops,
+            float loopLength)
+        {
+            for (int index = 0; index < stops.Count; index++)
+            {
+                int next = (index + 1) % stops.Count;
+                float gap = stops[next].DistanceAlongLoop -
+                            stops[index].DistanceAlongLoop;
+                if (gap < 0f)
+                {
+                    gap += loopLength;
+                }
+
+                if (gap > MaximumCoalescedStopGap)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string PlanarPairKey(
+            CityBusStopDescriptor first,
+            CityBusStopDescriptor second)
+        {
+            return string.CompareOrdinal(first.Id, second.Id) <= 0
+                ? first.Id + "|" + second.Id
+                : second.Id + "|" + first.Id;
+        }
+
+        /// <summary>
         /// 0 = keep both (a home/point-of-interest pair), 1 = drop the
         /// first, 2 = drop the second. Between coverage stops the more
         /// essential kind survives; equals keep the earlier one.
@@ -1000,7 +1217,8 @@ namespace BarPromenade
                 out Vector2 maximum);
             List<Vector3> entrancePoints =
                 CreateEntranceClearancePoints(layout);
-            var suffixCounts = new Dictionary<string, int>();
+            Dictionary<string, int> suffixCounts =
+                SeedSpacingSuffixCounts(stops);
             var inserted = new List<CityBusStopDescriptor>();
             int originalCount = stops.Count;
             for (int index = 0; index < originalCount; index++)
@@ -1029,6 +1247,7 @@ namespace BarPromenade
                     directedUses,
                     usedLinkIndices,
                     loopLength,
+                    stops,
                     current,
                     gap,
                     minimumEndInset,
@@ -1108,6 +1327,7 @@ namespace BarPromenade
             Dictionary<DirectedKey, int> directedUses,
             ISet<int> usedLinkIndices,
             float loopLength,
+            IReadOnlyList<CityBusStopDescriptor> existingStops,
             CityBusStopDescriptor gapStart,
             float gap,
             float minimumEndInset,
@@ -1211,6 +1431,22 @@ namespace BarPromenade
                         continue;
                     }
 
+                    // Along-loop spacing alone cannot see the loop fold
+                    // back on itself: a candidate a whole gap away by
+                    // station can stand on the next kerb over. Planar
+                    // clearance against every pole already planned keeps
+                    // the planar coalesce from having to drop this
+                    // insertion right back out.
+                    if (!IsPlanarClearOfStops(
+                            layout,
+                            finalLinks[entry.FinalLinkIndex],
+                            placement,
+                            existingStops,
+                            inserted))
+                    {
+                        continue;
+                    }
+
                     float score = Mathf.Abs(candidateStation - ideal);
                     if (score < bestScore - GeometryTolerance)
                     {
@@ -1243,6 +1479,45 @@ namespace BarPromenade
                 usedLinkIndices.Add(stop.LinkIndex);
                 previousStation = bestStation;
             }
+        }
+
+        private static bool IsPlanarClearOfStops(
+            CityLayout layout,
+            CityBusRouteLink link,
+            float placement,
+            IReadOnlyList<CityBusStopDescriptor> existingStops,
+            IReadOnlyList<CityBusStopDescriptor> inserted)
+        {
+            EvaluateSamples(
+                link.Samples,
+                placement,
+                out Vector3 position,
+                out Vector3 forward);
+            Vector3 right = new Vector3(
+                forward.z,
+                0f,
+                -forward.x).normalized;
+            Vector3 shelter = GetShelterPosition(layout, position, right);
+            return IsPlanarClearOf(shelter, existingStops) &&
+                   IsPlanarClearOf(shelter, inserted);
+        }
+
+        private static bool IsPlanarClearOf(
+            Vector3 shelterPosition,
+            IReadOnlyList<CityBusStopDescriptor> stops)
+        {
+            for (int index = 0; index < stops.Count; index++)
+            {
+                if (XzDistance(
+                        shelterPosition,
+                        stops[index].ShelterPosition) <
+                    MinimumPlanarStopSpacing)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static CityBusStopDescriptor CreateSpacingStop(
@@ -1313,6 +1588,70 @@ namespace BarPromenade
                 CityBusStopTargetKind.LoopSpacing,
                 string.Empty,
                 rightCell);
+        }
+
+        /// <summary>
+        /// A refill insertion can run again after the planar coalesce,
+        /// so the side counters must resume from the poles already
+        /// standing — restarting them from zero minted a second
+        /// "loop-east" id on the probe roster.
+        /// </summary>
+        private static Dictionary<string, int> SeedSpacingSuffixCounts(
+            IReadOnlyList<CityBusStopDescriptor> stops)
+        {
+            var counts = new Dictionary<string, int>();
+            string[] sides =
+            {
+                "loop-east",
+                "loop-west",
+                "loop-north",
+                "loop-south"
+            };
+            const string marker = ":route-01:";
+            for (int index = 0; index < stops.Count; index++)
+            {
+                string id = stops[index].Id;
+                int markerIndex = id.LastIndexOf(
+                    marker,
+                    System.StringComparison.Ordinal);
+                if (markerIndex < 0)
+                {
+                    continue;
+                }
+
+                string suffix = id.Substring(
+                    markerIndex + marker.Length);
+                for (int sideIndex = 0;
+                     sideIndex < sides.Length;
+                     sideIndex++)
+                {
+                    string side = sides[sideIndex];
+                    if (!suffix.StartsWith(
+                            side,
+                            System.StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    int uses = 1;
+                    if (suffix.Length > side.Length)
+                    {
+                        if (suffix[side.Length] != '-' ||
+                            !int.TryParse(
+                                suffix.Substring(side.Length + 1),
+                                out uses))
+                        {
+                            continue;
+                        }
+                    }
+
+                    counts.TryGetValue(side, out int existing);
+                    counts[side] = Mathf.Max(existing, uses);
+                    break;
+                }
+            }
+
+            return counts;
         }
 
         private static string CreateSpacingSuffix(
