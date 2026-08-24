@@ -32,7 +32,11 @@ namespace BarPromenade
     {
         None = 0,
         DistrictPointOfInterest,
-        PlayerHome
+        PlayerHome,
+        OpenAreaAccess,
+        ParkGate,
+        Supermarket,
+        LoopSpacing
     }
 
     public sealed class CityBusDesignVehicle

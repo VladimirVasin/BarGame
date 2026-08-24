@@ -79,10 +79,18 @@ namespace BarPromenade.Tests.EditMode
                     link.MinimumTurnRadius >=
                         plan.Vehicle.MinimumBodyCenterTurnRadius),
                 Is.True);
+            // Accumulate in float exactly the way the planner does — the
+            // LINQ Sum runs in double, and over ~380 links the two drift
+            // past the geometry tolerance.
+            float summedLength = 0f;
+            for (int index = 0; index < plan.Links.Count; index++)
+            {
+                summedLength += plan.Links[index].Length;
+            }
+
             Assert.That(
                 plan.LoopLength,
-                Is.EqualTo(plan.Links.Sum(link => link.Length))
-                    .Within(GeometryTolerance));
+                Is.EqualTo(summedLength).Within(GeometryTolerance));
             for (int index = 0; index < plan.Links.Count; index++)
             {
                 CityBusRouteLink current = plan.Links[index];
@@ -155,8 +163,6 @@ namespace BarPromenade.Tests.EditMode
                 Is.False);
             foreach (CityBusStopDescriptor stop in plan.Stops)
             {
-                IEnumerable<RoadEdge> frontages;
-                float referenceDistance;
                 if (stop.TargetKind == CityBusStopTargetKind.PlayerHome)
                 {
                     Assert.That(
@@ -164,23 +170,27 @@ namespace BarPromenade.Tests.EditMode
                             layout.PlayerHome,
                             out RoadEdge homeFrontage),
                         Is.True);
-                    frontages = new[] { homeFrontage };
-                    referenceDistance = Mathf.Min(
-                        XzDistance(
-                            stop.ShelterPosition,
-                            layout.PlayerHome.ReturnPosition),
-                        XzDistance(
-                            stop.ShelterPosition,
-                            layout.PlayerHome.SidewalkArrivalPosition));
+                    Assert.That(
+                        RoadEdgeHop(
+                            stop.RoadEdge,
+                            new[] { homeFrontage }),
+                        Is.LessThanOrEqualTo(1),
+                        stop.TargetId);
                 }
-                else
+                else if (stop.TargetKind ==
+                         CityBusStopTargetKind.DistrictPointOfInterest)
                 {
                     CityDistrictPointOfInterestDescriptor point =
                         layout.DistrictPointsOfInterest.Single(candidate =>
                             candidate.Id == stop.TargetId);
-                    frontages = point.Accesses.Select(access =>
-                        access.FrontageEdge);
-                    referenceDistance = point.Accesses
+                    Assert.That(
+                        RoadEdgeHop(
+                            stop.RoadEdge,
+                            point.Accesses.Select(access =>
+                                access.FrontageEdge)),
+                        Is.LessThanOrEqualTo(5),
+                        stop.TargetId);
+                    float referenceDistance = point.Accesses
                         .Select(access => XzDistance(
                             stop.ShelterPosition,
                             access.Center))
@@ -188,22 +198,39 @@ namespace BarPromenade.Tests.EditMode
                             stop.ShelterPosition,
                             point.Center))
                         .Min();
-                }
-
-                int maximumHop = stop.TargetKind ==
-                        CityBusStopTargetKind.DistrictPointOfInterest
-                    ? 5
-                    : 1;
-                Assert.That(
-                    RoadEdgeHop(stop.RoadEdge, frontages),
-                    Is.LessThanOrEqualTo(maximumHop),
-                    stop.TargetId);
-                if (stop.TargetKind ==
-                    CityBusStopTargetKind.DistrictPointOfInterest)
-                {
                     Assert.That(
                         referenceDistance,
                         Is.LessThanOrEqualTo(120f),
+                        stop.TargetId);
+                }
+                else if (stop.TargetKind ==
+                         CityBusStopTargetKind.OpenAreaAccess)
+                {
+                    CityOpenAreaAccessDescriptor access = layout
+                        .OpenAreaAccesses
+                        .SingleOrDefault(candidate =>
+                            candidate.Id == stop.TargetId);
+                    if (string.IsNullOrEmpty(access.Id))
+                    {
+                        // A synthetic waterfront spread stop has no
+                        // matching descriptor; the coverage tests bound
+                        // it instead.
+                        continue;
+                    }
+
+                    Assert.That(
+                        RoadEdgeHop(
+                            stop.RoadEdge,
+                            new[] { access.FrontageEdge }),
+                        Is.LessThanOrEqualTo(
+                            CityBusPlanner.MaximumCoverageStopRoadEdgeHop),
+                        stop.TargetId);
+                    Assert.That(
+                        XzDistance(
+                            stop.ShelterPosition,
+                            access.Center),
+                        Is.LessThanOrEqualTo(
+                            CityBusPlanner.MaximumCoverageStopDistance),
                         stop.TargetId);
                 }
             }
@@ -449,9 +476,6 @@ namespace BarPromenade.Tests.EditMode
             }
 
             Assert.That(
-                plan.Stops.Count,
-                Is.EqualTo(layout.DistrictPointsOfInterest.Count + 1));
-            Assert.That(
                 plan.Stops.Count(stop => stop.TargetKind ==
                     CityBusStopTargetKind.DistrictPointOfInterest),
                 Is.EqualTo(layout.DistrictPointsOfInterest.Count));
@@ -459,11 +483,40 @@ namespace BarPromenade.Tests.EditMode
                 plan.Stops.Count(stop => stop.TargetKind ==
                     CityBusStopTargetKind.PlayerHome),
                 Is.EqualTo(1));
+            // Coverage stop counts are bounded, not pinned: stops that
+            // land closer than the minimum spacing to a neighbour are
+            // coalesced into it, and the coverage tests prove the
+            // surviving poles still serve every gate.
             Assert.That(
-                plan.Stops.Select(stop => stop.TargetId).Distinct().Count(),
-                Is.EqualTo(plan.Stops.Count));
+                plan.Stops.Count(stop => stop.TargetKind ==
+                    CityBusStopTargetKind.OpenAreaAccess),
+                Is.GreaterThanOrEqualTo(
+                    (layout.OpenAreaAccesses.Count / 2) + 1),
+                "Most open-area gates keep their own stop.");
             Assert.That(
-                plan.Stops.Select(stop => stop.RoadEdge).Distinct().Count(),
+                plan.Stops.Count(stop => stop.TargetKind ==
+                    CityBusStopTargetKind.ParkGate),
+                Is.LessThanOrEqualTo(2));
+            Assert.That(
+                plan.Stops.Count(stop => stop.TargetKind ==
+                    CityBusStopTargetKind.Supermarket),
+                Is.LessThanOrEqualTo(1));
+            Assert.That(
+                plan.Stops
+                    .Where(stop => stop.TargetKind !=
+                        CityBusStopTargetKind.LoopSpacing)
+                    .Select(stop => stop.TargetId)
+                    .Distinct()
+                    .Count(),
+                Is.EqualTo(plan.Stops.Count(stop => stop.TargetKind !=
+                    CityBusStopTargetKind.LoopSpacing)));
+            // A physical edge may carry two stops — one per driving
+            // direction, each with its own kerbside pole — but never two
+            // stops on the same directed link.
+            Assert.That(
+                plan.Stops.Select(stop => stop.LinkIndex)
+                    .Distinct()
+                    .Count(),
                 Is.EqualTo(plan.Stops.Count));
             for (int stopIndex = 0;
                  stopIndex < plan.Stops.Count;
@@ -500,10 +553,13 @@ namespace BarPromenade.Tests.EditMode
                     stop.DistanceAlongLoop,
                     Is.LessThan(plan.LoopLength),
                     stop.Id);
-                float expectedLoopDistance = plan.Links
-                    .Take(stop.LinkIndex)
-                    .Sum(routeLink => routeLink.Length) +
-                    stop.DistanceAlongLink;
+                float expectedLoopDistance = stop.DistanceAlongLink;
+                for (int linkIndex = 0;
+                     linkIndex < stop.LinkIndex;
+                     linkIndex++)
+                {
+                    expectedLoopDistance += plan.Links[linkIndex].Length;
+                }
                 Assert.That(
                     stop.DistanceAlongLoop,
                     Is.EqualTo(expectedLoopDistance)
@@ -646,17 +702,23 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.StreetStateCount,
                 Is.EqualTo(streetEdgeCount * 2));
-            var stopEdges = new HashSet<RoadEdge>(
-                plan.Stops.Select(stop => stop.RoadEdge));
-            foreach (RoadEdge stopEdge in stopEdges)
+            // A stop belongs to one DRIVING DIRECTION of its street: the
+            // loop may drive the opposite direction as often as it needs
+            // (that pass runs on the far side of the carriageway), but
+            // the stop's own direction must be driven exactly once so
+            // the bus never cruises past its own pole.
+            foreach (CityBusStopDescriptor stop in plan.Stops)
             {
+                CityBusRouteNode stopNode =
+                    plan.Nodes[plan.Links[stop.LinkIndex].FromNodeIndex];
                 int longStraightOccurrences = 0;
                 for (int index = 0; index < plan.Links.Count; index++)
                 {
                     CityBusRouteLink link = plan.Links[index];
                     CityBusRouteNode node =
                         plan.Nodes[link.FromNodeIndex];
-                    if (node.RoadEdge == stopEdge &&
+                    if (node.FromGridNode == stopNode.FromGridNode &&
+                        node.ToGridNode == stopNode.ToGridNode &&
                         link.Kind == CityBusRouteLinkKind.Straight &&
                         link.Length > layout.RoadWidth)
                     {
@@ -667,20 +729,20 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     longStraightOccurrences,
                     Is.EqualTo(1),
-                    stopEdge.ToString());
+                    stop.Id);
             }
         }
 
         /// <summary>
-        /// Regression: the stop order was the district enum — Industrial,
-        /// Nightlife, Residential, Old Town, then home — which carried no
-        /// geography. On the default layout it crossed the whole city twice
-        /// for a `1166 m` straight-line tour where `754 m` was available, and
-        /// the road loop it forced ran `2592 m`. The order is now a shortest
-        /// closed tour, which brought the same loop to `1798 m`.
+        /// Regression: the stop order was once the district enum, then a
+        /// shortest closed tour over five semantic targets. The grand loop
+        /// replaces both — targets are ordered by their station along the
+        /// road-grid perimeter, counter-clockwise so the right-hand doors
+        /// face the outer precincts, and the river is crossed exactly
+        /// twice, once per road bridge.
         /// </summary>
         [Test]
-        public void ServedOrder_IsAShortestClosedTourStartingAtHome()
+        public void ServedOrder_IsABankContiguousLoopStartingAtHome()
         {
             CreateContext(
                 out CityLayout layout,
@@ -694,23 +756,26 @@ namespace BarPromenade.Tests.EditMode
                 "A closed loop has no last stop, so numbering starts at the " +
                 "one place the hero can name.");
 
-            var positions = new List<Vector3>(plan.Stops.Count);
+            // Stops follow the loop, and the loop may cross the river only
+            // over the two road bridges, each exactly once — so the served
+            // sequence changes banks exactly twice per lap.
+            int corridorCellX = layout.River.Definition.CorridorCellX;
+            int bankTransitions = 0;
             for (int index = 0; index < plan.Stops.Count; index++)
             {
-                Vector3 position = plan.Stops[index].Position;
-                position.y = 0f;
-                positions.Add(position);
+                bool currentEast = IsEastBank(
+                    plan.Stops[index].RoadEdge,
+                    corridorCellX);
+                bool nextEast = IsEastBank(
+                    plan.Stops[(index + 1) % plan.Stops.Count].RoadEdge,
+                    corridorCellX);
+                if (currentEast != nextEast)
+                {
+                    bankTransitions++;
+                }
             }
 
-            float served = MeasureCycle(positions, Identity(positions.Count));
-            float best = MeasureBestCycle(positions);
-            Assert.That(
-                served,
-                Is.LessThanOrEqualTo(best * 1.05f),
-                $"The served order walks {served:F1} m between stops where " +
-                $"{best:F1} m is available; a route that doubles back reads " +
-                "as a mistake however well the streets between stops are " +
-                "proven.");
+            Assert.That(bankTransitions, Is.EqualTo(2));
 
             // Same layout and seed must always produce the same loop, so the
             // tie-break cannot depend on the order the search reaches
@@ -725,58 +790,9 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
-        private static int[] Identity(int count)
+        private static bool IsEastBank(RoadEdge edge, int corridorCellX)
         {
-            var order = new int[count];
-            for (int index = 0; index < count; index++)
-            {
-                order[index] = index;
-            }
-
-            return order;
-        }
-
-        private static float MeasureCycle(
-            IReadOnlyList<Vector3> points,
-            IReadOnlyList<int> order)
-        {
-            float total = 0f;
-            for (int index = 0; index < order.Count; index++)
-            {
-                total += Vector3.Distance(
-                    points[order[index]],
-                    points[order[(index + 1) % order.Count]]);
-            }
-
-            return total;
-        }
-
-        private static float MeasureBestCycle(IReadOnlyList<Vector3> points)
-        {
-            var order = Identity(points.Count);
-            float best = MeasureCycle(points, order);
-            PermuteTail(points, order, 1, ref best);
-            return best;
-        }
-
-        private static void PermuteTail(
-            IReadOnlyList<Vector3> points,
-            int[] order,
-            int start,
-            ref float best)
-        {
-            if (start >= order.Length)
-            {
-                best = Mathf.Min(best, MeasureCycle(points, order));
-                return;
-            }
-
-            for (int index = start; index < order.Length; index++)
-            {
-                (order[start], order[index]) = (order[index], order[start]);
-                PermuteTail(points, order, start + 1, ref best);
-                (order[start], order[index]) = (order[index], order[start]);
-            }
+            return edge.A.x >= corridorCellX + 1;
         }
 
         private static void CreateContext(

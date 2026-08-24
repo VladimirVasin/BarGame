@@ -585,6 +585,186 @@
       "value": "Home stop"
     },
     {
+      "key": "bus.stop.default_coastal.supermarket",
+      "value": "Supermarket stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.park_east",
+      "value": "Park East Gate stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.park_west",
+      "value": "Park West Gate stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.cemetery",
+      "value": "Cemetery stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_east",
+      "value": "East Yards stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_north_east",
+      "value": "Dry Lake stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.north_waterfront",
+      "value": "Esplanade stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.north_waterfront_wild",
+      "value": "Wild Shore stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.north_waterfront_east",
+      "value": "East Esplanade stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_west_north",
+      "value": "North-West Outskirts stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_west_south",
+      "value": "West Outskirts stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_south_west",
+      "value": "South Outskirts stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_south_east",
+      "value": "South-East Outskirts stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north",
+      "value": "North Street stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_2",
+      "value": "North Street stop, 2"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_3",
+      "value": "North Street stop, 3"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_4",
+      "value": "North Street stop, 4"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_5",
+      "value": "North Street stop, 5"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_6",
+      "value": "North Street stop, 6"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_7",
+      "value": "North Street stop, 7"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_8",
+      "value": "North Street stop, 8"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south",
+      "value": "South Street stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_2",
+      "value": "South Street stop, 2"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_3",
+      "value": "South Street stop, 3"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_4",
+      "value": "South Street stop, 4"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_5",
+      "value": "South Street stop, 5"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_6",
+      "value": "South Street stop, 6"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_7",
+      "value": "South Street stop, 7"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_8",
+      "value": "South Street stop, 8"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west",
+      "value": "West Street stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_2",
+      "value": "West Street stop, 2"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_3",
+      "value": "West Street stop, 3"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_4",
+      "value": "West Street stop, 4"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_5",
+      "value": "West Street stop, 5"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_6",
+      "value": "West Street stop, 6"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_7",
+      "value": "West Street stop, 7"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_8",
+      "value": "West Street stop, 8"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east",
+      "value": "East Street stop"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_2",
+      "value": "East Street stop, 2"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_3",
+      "value": "East Street stop, 3"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_4",
+      "value": "East Street stop, 4"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_5",
+      "value": "East Street stop, 5"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_6",
+      "value": "East Street stop, 6"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_7",
+      "value": "East Street stop, 7"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_8",
+      "value": "East Street stop, 8"
+    },
+    {
       "key": "map.clear",
       "value": "Clear route"
     },

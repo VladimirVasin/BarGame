@@ -22,20 +22,39 @@ namespace BarPromenade
                 return new List<RouteOccurrence>();
             }
 
-            var candidatesByTarget = new List<StopCandidate>[targets.Count];
+            List<Vector3> entrancePoints =
+                CreateEntranceClearancePoints(layout);
+            var keptTargets = new List<StopTarget>(targets.Count);
+            var candidatesByTarget = new List<List<StopCandidate>>(
+                targets.Count);
             for (int index = 0; index < targets.Count; index++)
             {
-                candidatesByTarget[index] = CreateStopCandidates(
+                List<StopCandidate> candidates = CreateStopCandidates(
                     layout,
                     vehicle,
                     targets[index],
                     nodes,
-                    acceptedLinks);
-                if (candidatesByTarget[index].Count == 0)
+                    acceptedLinks,
+                    entrancePoints);
+                if (candidates.Count == 0)
                 {
-                    return new List<RouteOccurrence>();
+                    if (targets[index].IsMandatory)
+                    {
+                        return new List<RouteOccurrence>();
+                    }
+
+                    continue;
                 }
+
+                keptTargets.Add(targets[index]);
+                candidatesByTarget.Add(candidates);
             }
+
+            if (candidatesByTarget.Count == 0)
+            {
+                return new List<RouteOccurrence>();
+            }
+
             List<int>[] outgoing = CreateRouteAdjacency(
                 nodes.Count,
                 acceptedLinks,
@@ -45,11 +64,27 @@ namespace BarPromenade
                 acceptedLinks,
                 true);
             if (!KeepCycleCapableCandidates(
+                    keptTargets,
                     candidatesByTarget,
                     outgoing,
                     acceptedLinks))
             {
                 return new List<RouteOccurrence>();
+            }
+
+            // Cap AFTER the cycle-capability prune: near river flanks the
+            // best-sorted candidates are often dead stubs, and capping
+            // before the prune left such a target with nothing.
+            for (int index = 0; index < candidatesByTarget.Count; index++)
+            {
+                List<StopCandidate> candidates = candidatesByTarget[index];
+                if (IsCoverageStopTargetKind(keptTargets[index].Kind) &&
+                    candidates.Count > MaximumCoverageStopCandidates)
+                {
+                    candidates.RemoveRange(
+                        MaximumCoverageStopCandidates,
+                        candidates.Count - MaximumCoverageStopCandidates);
+                }
             }
             List<RouteOccurrence> fallback = null;
             int assignmentAttempts = 0;
@@ -78,7 +113,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                var selected = new StopCandidate[targets.Count];
+                var selected = new StopCandidate[candidatesByTarget.Count];
                 selected[0] = anchor;
                 var usedEdges = new HashSet<RoadEdge>
                 {
@@ -86,6 +121,7 @@ namespace BarPromenade
                 };
                 if (TryAssignCandidates(
                         layout,
+                        nodes,
                         1,
                         compatible,
                         selected,
@@ -137,10 +173,11 @@ namespace BarPromenade
                     continue;
                 }
 
-                var selected = new StopCandidate[targets.Count];
+                var selected = new StopCandidate[candidatesByTarget.Count];
                 selected[0] = anchor;
                 if (TryAssignCandidates(
                         layout,
+                        nodes,
                         1,
                         compatible,
                         selected,
@@ -202,7 +239,9 @@ namespace BarPromenade
                     point.District,
                     frontages,
                     references,
-                    excluded));
+                    excluded,
+                    GetStopSuffix(point.District),
+                    true));
             }
 
             BuildingLot home = layout.PlayerHome;
@@ -229,10 +268,16 @@ namespace BarPromenade
                             bounds.min.z,
                             bounds.max.x,
                             bounds.max.z)
-                    }));
+                    },
+                    "home",
+                    true));
             }
 
-            return OrderAsServiceLoop(result);
+            List<StopTarget> coverage = CreateCoverageStopTargets(layout);
+            result.AddRange(coverage);
+            return coverage.Count > 0
+                ? OrderAsPerimeterLoop(layout, result)
+                : OrderAsServiceLoop(result);
         }
 
         /// <summary>
@@ -414,32 +459,7 @@ namespace BarPromenade
         /// </summary>
         private static List<StopTarget> RotateToHome(List<StopTarget> targets)
         {
-            if (targets.Count == 0)
-            {
-                return targets;
-            }
-
-            int homeIndex = -1;
-            for (int index = 0; index < targets.Count; index++)
-            {
-                if (targets[index].Kind == CityBusStopTargetKind.PlayerHome)
-                {
-                    homeIndex = index;
-                    break;
-                }
-            }
-
-            if (homeIndex < 0)
-            {
-                homeIndex = 0;
-            }
-
-            var forward = new List<StopTarget>(targets.Count);
-            for (int index = 0; index < targets.Count; index++)
-            {
-                forward.Add(targets[(homeIndex + index) % targets.Count]);
-            }
-
+            List<StopTarget> forward = RotateToHomeForward(targets);
             if (forward.Count <= 2)
             {
                 return forward;
@@ -521,7 +541,8 @@ namespace BarPromenade
             CityBusDesignVehicle vehicle,
             StopTarget target,
             IReadOnlyList<TemporaryNode> nodes,
-            IList<TemporaryLink> acceptedLinks)
+            IList<TemporaryLink> acceptedLinks,
+            IReadOnlyList<Vector3> entrancePoints)
         {
             var result = new List<StopCandidate>();
             float safeEndDistance = vehicle.InflatedLength * 0.5f +
@@ -546,9 +567,16 @@ namespace BarPromenade
                     layout.River.IsEnabled &&
                     target.Kind ==
                         CityBusStopTargetKind.DistrictPointOfInterest;
+                // A gate whose own frontage edge is a graph cul-de-sac
+                // (river flanks, dead map corners) is served from the
+                // nearest live stretch of the same street instead.
+                bool isCoverageTarget =
+                    IsCoverageStopTargetKind(target.Kind);
                 int maximumRoadEdgeHop = usesRiverPointFallback
                     ? MaximumRiverPointStopRoadEdgeHop
-                    : 1;
+                    : isCoverageTarget
+                        ? MaximumCoverageStopRoadEdgeHop
+                        : 1;
                 if (roadEdgeHop > maximumRoadEdgeHop)
                 {
                     continue;
@@ -558,7 +586,14 @@ namespace BarPromenade
                 Vector2Int roadsideCell = GetRightSideCell(
                     node.FromGridNode,
                     node.ToGridNode);
-                if (roadsideCell == target.Cell)
+                // A POI or home stop must not stand inside its own target
+                // cell; a coverage stop is the opposite — its kerb SHOULD
+                // face the precinct so the doors open onto the gate.
+                bool forbidTargetCellKerb =
+                    target.Kind ==
+                        CityBusStopTargetKind.DistrictPointOfInterest ||
+                    target.Kind == CityBusStopTargetKind.PlayerHome;
+                if (forbidTargetCellKerb && roadsideCell == target.Cell)
                 {
                     continue;
                 }
@@ -583,6 +618,7 @@ namespace BarPromenade
                         roadEdgeHop,
                         districtPenalty,
                         safeEndDistance,
+                        entrancePoints,
                         out StopCandidate candidate))
                 {
                     continue;
@@ -595,11 +631,97 @@ namespace BarPromenade
                     continue;
                 }
 
+                if (isCoverageTarget &&
+                    candidate.ReferenceDistance >
+                    MaximumCoverageStopDistance)
+                {
+                    continue;
+                }
+
                 result.Add(candidate);
             }
 
-            result.Sort(CompareStopCandidates);
+            // On a river layout every candidate must sit on the target's own
+            // bank: the closed loop may cross the river exactly twice, so the
+            // stop banks have to match the bank-contiguous target order.
+            if (layout.River != null && layout.River.IsEnabled)
+            {
+                RiverBank targetBank = GetTargetBank(
+                    target,
+                    layout.River.Definition.CorridorCellX);
+                if (targetBank != RiverBank.Unknown)
+                {
+                    for (int index = result.Count - 1; index >= 0; index--)
+                    {
+                        if (GetRiverBank(
+                                result[index].Source.RoadEdge,
+                                layout.River.Definition.CorridorCellX) !=
+                            targetBank)
+                        {
+                            result.RemoveAt(index);
+                        }
+                    }
+                }
+            }
+
+            // A coverage stop's kerb side outranks its adjacency: the
+            // gate's own edge is too short to host a shelter outside the
+            // approach strip, so the hop-first order used to flip these
+            // stops into the opposite driving direction — against the
+            // counter-clockwise loop — and strangle the route search on
+            // the sparse boundary columns.
+            result.Sort(IsCoverageStopTargetKind(target.Kind)
+                ? CompareCoverageStopCandidates
+                : (System.Comparison<StopCandidate>)CompareStopCandidates);
             return result;
+        }
+
+        private static int CompareCoverageStopCandidates(
+            StopCandidate left,
+            StopCandidate right)
+        {
+            int districtComparison = left.DistrictPenalty.CompareTo(
+                right.DistrictPenalty);
+            if (districtComparison != 0)
+            {
+                return districtComparison;
+            }
+
+            // A flat kerb within the 120 m coverage ceiling beats a
+            // nearer ramp: the supermarket's hop-first pick once put its
+            // shelter on a grade whose door docks missed the physical
+            // sidewalk by 6.5 cm.
+            int gradeComparison = left.IsGraded.CompareTo(
+                right.IsGraded);
+            if (gradeComparison != 0)
+            {
+                return gradeComparison;
+            }
+
+            int hopComparison = left.RoadEdgeHop.CompareTo(
+                right.RoadEdgeHop);
+            if (hopComparison != 0)
+            {
+                return hopComparison;
+            }
+
+            int distanceComparison = left.ReferenceDistance.CompareTo(
+                right.ReferenceDistance);
+            if (distanceComparison != 0)
+            {
+                return distanceComparison;
+            }
+
+            int edgeComparison = RoadEdge.Compare(
+                left.Source.RoadEdge,
+                right.Source.RoadEdge);
+            if (edgeComparison != 0)
+            {
+                return edgeComparison;
+            }
+
+            return left.SourceLinkIndex.CompareTo(
+                right.SourceLinkIndex);
         }
 
         private static bool TryCreateStopCandidate(
@@ -611,6 +733,7 @@ namespace BarPromenade
             int roadEdgeHop,
             int districtPenalty,
             float safeEndDistance,
+            IReadOnlyList<Vector3> entrancePoints,
             out StopCandidate candidate)
         {
             float minimumDistance = safeEndDistance + CandidateEndInset;
@@ -653,6 +776,22 @@ namespace BarPromenade
                 }
             }
 
+            // A placement that would crowd a bar, home or supermarket
+            // door slides along the link to the nearest clear spot; the
+            // reference distance is re-measured afterwards so the
+            // candidate sort judges the pole where it actually stands.
+            if (!TryClearBuildingEntrances(
+                    layout,
+                    entrancePoints,
+                    link.Samples,
+                    minimumDistance,
+                    maximumDistance,
+                    ref bestDistanceAlongLink))
+            {
+                candidate = null;
+                return false;
+            }
+
             EvaluateSamples(
                 link.Samples,
                 bestDistanceAlongLink,
@@ -672,6 +811,18 @@ namespace BarPromenade
                 return false;
             }
 
+            bestReferenceDistance = float.PositiveInfinity;
+            for (int index = 0;
+                 index < target.ReferencePositions.Count;
+                 index++)
+            {
+                bestReferenceDistance = Mathf.Min(
+                    bestReferenceDistance,
+                    XzDistance(
+                        shelterPosition,
+                        target.ReferencePositions[index]));
+            }
+
             candidate = new StopCandidate(
                 target,
                 link,
@@ -684,7 +835,8 @@ namespace BarPromenade
                 -stopRight,
                 roadEdgeHop,
                 districtPenalty,
-                bestReferenceDistance);
+                bestReferenceDistance,
+                !IsLevelStopEdge(layout, link.RoadEdge));
             return true;
         }
 
@@ -823,13 +975,14 @@ namespace BarPromenade
         }
 
         private static bool KeepCycleCapableCandidates(
-            IList<List<StopCandidate>> candidatesByTarget,
+            List<StopTarget> targets,
+            List<List<StopCandidate>> candidatesByTarget,
             IReadOnlyList<List<int>> outgoing,
             IList<TemporaryLink> acceptedLinks)
         {
-            for (int targetIndex = 0;
-                 targetIndex < candidatesByTarget.Count;
-                 targetIndex++)
+            for (int targetIndex = candidatesByTarget.Count - 1;
+                 targetIndex >= 0;
+                 targetIndex--)
             {
                 List<StopCandidate> candidates =
                     candidatesByTarget[targetIndex];
@@ -851,15 +1004,22 @@ namespace BarPromenade
 
                 if (candidates.Count == 0)
                 {
-                    return false;
+                    if (targets[targetIndex].IsMandatory)
+                    {
+                        return false;
+                    }
+
+                    targets.RemoveAt(targetIndex);
+                    candidatesByTarget.RemoveAt(targetIndex);
                 }
             }
 
-            return true;
+            return candidatesByTarget.Count > 0;
         }
 
         private static bool TryAssignCandidates(
             CityLayout layout,
+            IReadOnlyList<TemporaryNode> nodes,
             int targetIndex,
             IReadOnlyList<List<StopCandidate>> candidates,
             StopCandidate[] selected,
@@ -882,6 +1042,7 @@ namespace BarPromenade
                 assignmentAttempts++;
                 if (!TryBuildClosedRoute(
                         layout,
+                        nodes,
                         selected,
                         !requireUniqueEdges,
                         outgoing,
@@ -922,6 +1083,7 @@ namespace BarPromenade
                              usedEdges.Add(option.Source.RoadEdge);
                 if (TryAssignCandidates(
                         layout,
+                        nodes,
                         targetIndex + 1,
                         candidates,
                         selected,
@@ -951,8 +1113,36 @@ namespace BarPromenade
             return false;
         }
 
+        /// <summary>
+        /// The connector prohibition is DIRECTED: a stop belongs to one
+        /// driving direction of its street, and only that direction is
+        /// closed to connectors — the bus must never cruise past its own
+        /// pole. The opposite direction stays open; that pass runs on
+        /// the far side of the carriageway, as on any real street. An
+        /// edge-based ban strangled the graph once the grand loop grew
+        /// to eighteen targets, and the strict phase could no longer
+        /// close at all.
+        /// </summary>
+        private static HashSet<DirectedKey> CreateStopStreetSet(
+            IReadOnlyList<TemporaryNode> nodes,
+            IReadOnlyList<StopCandidate> selected)
+        {
+            var result = new HashSet<DirectedKey>();
+            for (int index = 0; index < selected.Count; index++)
+            {
+                TemporaryNode node =
+                    nodes[selected[index].Source.FromNodeIndex];
+                result.Add(new DirectedKey(
+                    node.FromGridNode,
+                    node.ToGridNode));
+            }
+
+            return result;
+        }
+
         private static bool TryBuildClosedRoute(
             CityLayout layout,
+            IReadOnlyList<TemporaryNode> nodes,
             IReadOnlyList<StopCandidate> selected,
             bool allowStopEdgeReuse,
             IReadOnlyList<List<int>> outgoing,
@@ -963,6 +1153,7 @@ namespace BarPromenade
             {
                 return TryBuildRiverClosedRoute(
                     layout,
+                    nodes,
                     selected,
                     allowStopEdgeReuse,
                     outgoing,
@@ -971,12 +1162,9 @@ namespace BarPromenade
             }
 
             route = new List<RouteOccurrence>();
-            var stopEdges = new HashSet<RoadEdge>();
-            for (int index = 0; index < selected.Count; index++)
-            {
-                stopEdges.Add(selected[index].Source.RoadEdge);
-            }
-
+            HashSet<DirectedKey> stopStreets = CreateStopStreetSet(
+                nodes,
+                selected);
             route.Add(new RouteOccurrence(
                 selected[0].Source,
                 selected[0]));
@@ -989,7 +1177,8 @@ namespace BarPromenade
                 if (!TryAppendConnector(
                         current.Source.ToNodeIndex,
                         next.Source.FromNodeIndex,
-                        stopEdges,
+                        nodes,
+                        stopStreets,
                         allowStopEdgeReuse,
                         outgoing,
                         acceptedLinks,
@@ -1006,7 +1195,8 @@ namespace BarPromenade
             if (!TryAppendConnector(
                     current.Source.ToNodeIndex,
                     selected[0].Source.FromNodeIndex,
-                    stopEdges,
+                    nodes,
+                    stopStreets,
                     allowStopEdgeReuse,
                     outgoing,
                     acceptedLinks,
@@ -1068,7 +1258,8 @@ namespace BarPromenade
         private static bool TryAppendConnector(
             int fromNodeIndex,
             int toNodeIndex,
-            ISet<RoadEdge> stopEdges,
+            IReadOnlyList<TemporaryNode> nodes,
+            ISet<DirectedKey> stopStreets,
             bool allowStopEdgeReuse,
             IReadOnlyList<List<int>> outgoing,
             IList<TemporaryLink> acceptedLinks,
@@ -1077,7 +1268,9 @@ namespace BarPromenade
             if (!TryFindPath(
                     fromNodeIndex,
                     toNodeIndex,
-                    stopEdges,
+                    null,
+                    stopStreets,
+                    nodes,
                     outgoing,
                     acceptedLinks,
                     out List<int> path) &&
@@ -1086,6 +1279,8 @@ namespace BarPromenade
                     fromNodeIndex,
                     toNodeIndex,
                     null,
+                    null,
+                    nodes,
                     outgoing,
                     acceptedLinks,
                     out path)))
@@ -1103,10 +1298,19 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>
+        /// Shortest connector by travelled metres, not by link count. A
+        /// breadth-first search counted a two-edge wide-right macro as one
+        /// hop, so it preferred zigzags full of right turns over a plain
+        /// boulevard run and the loop came out as spaghetti; weighting by
+        /// sample length makes connectors hug the straight streets.
+        /// </summary>
         private static bool TryFindPath(
             int fromNodeIndex,
             int toNodeIndex,
             ISet<RoadEdge> forbiddenRoadEdges,
+            ISet<DirectedKey> forbiddenStreets,
+            IReadOnlyList<TemporaryNode> nodes,
             IReadOnlyList<List<int>> outgoing,
             IList<TemporaryLink> acceptedLinks,
             out List<int> path)
@@ -1118,19 +1322,34 @@ namespace BarPromenade
             }
 
             var previousLink = new int[outgoing.Count];
+            var distances = new float[outgoing.Count];
+            var closed = new bool[outgoing.Count];
             for (int index = 0; index < previousLink.Length; index++)
             {
                 previousLink[index] = -1;
+                distances[index] = float.PositiveInfinity;
             }
 
-            var visited = new bool[outgoing.Count];
-            var queue = new Queue<int>();
-            visited[fromNodeIndex] = true;
-            queue.Enqueue(fromNodeIndex);
-            while (queue.Count > 0 && !visited[toNodeIndex])
+            distances[fromNodeIndex] = 0f;
+            var heap = new List<PathHeapEntry>
             {
-                int nodeIndex = queue.Dequeue();
-                IReadOnlyList<int> links = outgoing[nodeIndex];
+                new PathHeapEntry(fromNodeIndex, 0f)
+            };
+            while (heap.Count > 0)
+            {
+                PathHeapEntry entry = PopPathEntry(heap);
+                if (closed[entry.NodeIndex])
+                {
+                    continue;
+                }
+
+                closed[entry.NodeIndex] = true;
+                if (entry.NodeIndex == toNodeIndex)
+                {
+                    break;
+                }
+
+                IReadOnlyList<int> links = outgoing[entry.NodeIndex];
                 for (int index = 0; index < links.Count; index++)
                 {
                     int linkIndex = links[index];
@@ -1145,19 +1364,41 @@ namespace BarPromenade
                         continue;
                     }
 
-                    int nextNodeIndex = link.ToNodeIndex;
-                    if (visited[nextNodeIndex])
+                    if (forbiddenStreets != null &&
+                        (link.OccupiesPrimaryRoadEdge &&
+                         forbiddenStreets.Contains(new DirectedKey(
+                             nodes[link.FromNodeIndex].FromGridNode,
+                             nodes[link.FromNodeIndex].ToGridNode)) ||
+                         link.HasSecondaryRoadEdge &&
+                         forbiddenStreets.Contains(new DirectedKey(
+                             nodes[link.ToNodeIndex].FromGridNode,
+                             nodes[link.ToNodeIndex].ToGridNode))))
                     {
                         continue;
                     }
 
-                    visited[nextNodeIndex] = true;
-                    previousLink[nextNodeIndex] = linkIndex;
-                    queue.Enqueue(nextNodeIndex);
+                    int nextNodeIndex = link.ToNodeIndex;
+                    if (closed[nextNodeIndex])
+                    {
+                        continue;
+                    }
+
+                    float candidate = distances[entry.NodeIndex] +
+                                      link.Length;
+                    if (candidate <
+                        distances[nextNodeIndex] - GeometryTolerance)
+                    {
+                        distances[nextNodeIndex] = candidate;
+                        previousLink[nextNodeIndex] = linkIndex;
+                        heap.Add(new PathHeapEntry(
+                            nextNodeIndex,
+                            candidate));
+                        BubbleUpPathEntry(heap);
+                    }
                 }
             }
 
-            if (!visited[toNodeIndex])
+            if (!closed[toNodeIndex])
             {
                 return false;
             }
@@ -1178,6 +1419,86 @@ namespace BarPromenade
 
             path.Reverse();
             return true;
+        }
+
+        private static PathHeapEntry PopPathEntry(List<PathHeapEntry> heap)
+        {
+            PathHeapEntry result = heap[0];
+            int last = heap.Count - 1;
+            heap[0] = heap[last];
+            heap.RemoveAt(last);
+            int parent = 0;
+            while (true)
+            {
+                int left = (parent * 2) + 1;
+                int right = left + 1;
+                int smallest = parent;
+                if (left < heap.Count &&
+                    ComparePathEntries(heap[left], heap[smallest]) < 0)
+                {
+                    smallest = left;
+                }
+
+                if (right < heap.Count &&
+                    ComparePathEntries(heap[right], heap[smallest]) < 0)
+                {
+                    smallest = right;
+                }
+
+                if (smallest == parent)
+                {
+                    break;
+                }
+
+                (heap[parent], heap[smallest]) =
+                    (heap[smallest], heap[parent]);
+                parent = smallest;
+            }
+
+            return result;
+        }
+
+        private static void BubbleUpPathEntry(List<PathHeapEntry> heap)
+        {
+            int child = heap.Count - 1;
+            while (child > 0)
+            {
+                int parent = (child - 1) / 2;
+                if (ComparePathEntries(heap[parent], heap[child]) <= 0)
+                {
+                    break;
+                }
+
+                (heap[parent], heap[child]) = (heap[child], heap[parent]);
+                child = parent;
+            }
+        }
+
+        /// <summary>
+        /// Distance first, node index as the tie-break, so equally distant
+        /// frontier nodes always settle in the same order and the loop
+        /// stays deterministic across runs.
+        /// </summary>
+        private static int ComparePathEntries(
+            PathHeapEntry left,
+            PathHeapEntry right)
+        {
+            int comparison = left.Distance.CompareTo(right.Distance);
+            return comparison != 0
+                ? comparison
+                : left.NodeIndex.CompareTo(right.NodeIndex);
+        }
+
+        private readonly struct PathHeapEntry
+        {
+            public PathHeapEntry(int nodeIndex, float distance)
+            {
+                NodeIndex = nodeIndex;
+                Distance = distance;
+            }
+
+            public int NodeIndex { get; }
+            public float Distance { get; }
         }
 
         private static List<int>[] CreateRouteAdjacency(
@@ -1279,10 +1600,7 @@ namespace BarPromenade
                 if (candidate != null)
                 {
                     int sequenceIndex = result.Count;
-                    string suffix = candidate.Target.Kind ==
-                            CityBusStopTargetKind.PlayerHome
-                        ? "home"
-                        : GetStopSuffix(candidate.Target.District);
+                    string suffix = candidate.Target.Suffix;
                     string blueprintKey =
                         layout.BlueprintId.Replace('-', '_');
                     result.Add(new CityBusStopDescriptor(
@@ -1342,6 +1660,13 @@ namespace BarPromenade
                 return districtComparison;
             }
 
+            int gradeComparison = left.IsGraded.CompareTo(
+                right.IsGraded);
+            if (gradeComparison != 0)
+            {
+                return gradeComparison;
+            }
+
             int distanceComparison = left.ReferenceDistance.CompareTo(
                 right.ReferenceDistance);
             if (distanceComparison != 0)
@@ -1394,7 +1719,9 @@ namespace BarPromenade
                 CityDistrictKind district,
                 List<RoadEdge> frontageEdges,
                 List<Vector3> referencePositions,
-                List<Rect> excludedBounds)
+                List<Rect> excludedBounds,
+                string suffix,
+                bool isMandatory)
             {
                 Kind = kind;
                 Id = id ?? string.Empty;
@@ -1403,6 +1730,8 @@ namespace BarPromenade
                 FrontageEdges = frontageEdges;
                 ReferencePositions = referencePositions;
                 ExcludedBounds = excludedBounds;
+                Suffix = suffix ?? string.Empty;
+                IsMandatory = isMandatory;
             }
 
             public CityBusStopTargetKind Kind { get; }
@@ -1412,6 +1741,14 @@ namespace BarPromenade
             public IReadOnlyList<RoadEdge> FrontageEdges { get; }
             public IReadOnlyList<Vector3> ReferencePositions { get; }
             public IReadOnlyList<Rect> ExcludedBounds { get; }
+            public string Suffix { get; }
+
+            /// <summary>
+            /// A mandatory target with no viable stop candidate fails the
+            /// whole route; a coverage target is dropped instead, so one
+            /// unlucky gate never erases the entire bus.
+            /// </summary>
+            public bool IsMandatory { get; }
         }
 
         private sealed class StopCandidate
@@ -1428,7 +1765,8 @@ namespace BarPromenade
                 Vector3 roadsideForward,
                 int roadEdgeHop,
                 int districtPenalty,
-                float referenceDistance)
+                float referenceDistance,
+                bool isGraded)
             {
                 Target = target;
                 Source = source;
@@ -1442,6 +1780,7 @@ namespace BarPromenade
                 RoadEdgeHop = roadEdgeHop;
                 DistrictPenalty = districtPenalty;
                 ReferenceDistance = referenceDistance;
+                IsGraded = isGraded;
             }
 
             public StopTarget Target { get; }
@@ -1456,6 +1795,14 @@ namespace BarPromenade
             public int RoadEdgeHop { get; }
             public int DistrictPenalty { get; }
             public float ReferenceDistance { get; }
+
+            /// <summary>
+            /// True when the stop edge carries a vehicle grade. Level
+            /// kerbs sort first: a shelter on a slope leans visibly and
+            /// its door docks drift from the physical sidewalk height,
+            /// so a graded stop is a last resort for mandatory service.
+            /// </summary>
+            public bool IsGraded { get; }
         }
 
         private sealed class RouteOccurrence

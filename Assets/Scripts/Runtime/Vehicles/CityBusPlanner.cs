@@ -174,6 +174,15 @@ namespace BarPromenade
                 layout,
                 routeLinkMetadata,
                 finalLinks);
+            stops = CoalesceCloseStops(stops, loopLength);
+            stops = InsertSpacingStops(
+                layout,
+                vehicle,
+                nodes,
+                routeLinkMetadata,
+                finalLinks,
+                loopLength,
+                stops);
             List<CityBusSpawnAnchor> anchors = CreateSpawnAnchors(
                 layout,
                 vehicle,

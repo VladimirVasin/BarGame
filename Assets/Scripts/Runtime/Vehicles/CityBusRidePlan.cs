@@ -555,47 +555,23 @@ namespace BarPromenade
                 return localSidewalkTop + groundedRootOffset;
             }
 
-            IReadOnlyList<RuntimeOrientedBox> sidewalks =
-                streetSurfacePlan.SidewalkGeometry;
+            // The walker stands on the highest physical surface at the
+            // point, so sidewalks and street/apron boxes sample together:
+            // a graded sidewalk's end dips under the flat junction pad
+            // that physically covers it, and sampling sidewalks first
+            // used to report the buried slope instead of the pad.
             float surfaceTop = 0f;
             hasPhysicalSurface = false;
-            for (int index = 0; index < sidewalks.Count; index++)
-            {
-                if (!TrySampleTop(
-                        sidewalks[index],
-                        position,
-                        out float sampledTop))
-                {
-                    continue;
-                }
-
-                surfaceTop = hasPhysicalSurface
-                    ? Mathf.Max(surfaceTop, sampledTop)
-                    : sampledTop;
-                hasPhysicalSurface = true;
-            }
-
-            if (!hasPhysicalSurface)
-            {
-                IReadOnlyList<RuntimeOrientedBox> streets =
-                    streetSurfacePlan.StreetGeometry;
-                for (int index = 0; index < streets.Count; index++)
-                {
-                    if (!TrySampleTop(
-                            streets[index],
-                            position,
-                            out float sampledTop))
-                    {
-                        continue;
-                    }
-
-                    surfaceTop = hasPhysicalSurface
-                        ? Mathf.Max(surfaceTop, sampledTop)
-                        : sampledTop;
-                    hasPhysicalSurface = true;
-                }
-            }
-
+            SampleTopMax(
+                streetSurfacePlan.SidewalkGeometry,
+                position,
+                ref surfaceTop,
+                ref hasPhysicalSurface);
+            SampleTopMax(
+                streetSurfacePlan.StreetGeometry,
+                position,
+                ref surfaceTop,
+                ref hasPhysicalSurface);
             if (!hasPhysicalSurface)
             {
                 surfaceTop = localSidewalkTop -
@@ -604,6 +580,26 @@ namespace BarPromenade
             }
 
             return surfaceTop + groundedRootOffset;
+        }
+
+        private static void SampleTopMax(
+            IReadOnlyList<RuntimeOrientedBox> boxes,
+            Vector3 position,
+            ref float surfaceTop,
+            ref bool hasPhysicalSurface)
+        {
+            for (int index = 0; index < boxes.Count; index++)
+            {
+                if (!TrySampleTop(boxes[index], position, out float top))
+                {
+                    continue;
+                }
+
+                surfaceTop = hasPhysicalSurface
+                    ? Mathf.Max(surfaceTop, top)
+                    : top;
+                hasPhysicalSurface = true;
+            }
         }
 
         private static bool TrySampleTop(

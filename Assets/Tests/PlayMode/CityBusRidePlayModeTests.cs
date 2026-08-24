@@ -605,7 +605,11 @@ namespace BarPromenade.Tests.PlayMode
                     CityStreetSurfacePlanner.Create(layout);
                 var walkableArea = RoadWalkableArea.FromLayout(layout);
                 CityBusPlan route = CityBusPlanner.Create(layout);
-                Assert.That(route.Stops, Has.Count.EqualTo(5));
+                Assert.That(
+                    route.Stops,
+                    Has.Count.GreaterThan(10),
+                    "The grand loop serves every district, gate and " +
+                    "spread stop, not just the five semantic targets.");
 
                 root = new GameObject(
                     "Production City Bus Prompt Diagnostic Root");
@@ -757,11 +761,14 @@ namespace BarPromenade.Tests.PlayMode
                                 streetSurfacePlan.Sidewalks,
                                 boardingPlan.EntryPose.RootPosition))
                         {
+                            // A road/apron dock's own grounded height IS
+                            // the carriageway height at that stop — the
+                            // grand loop serves graded boundary streets,
+                            // where the old constant world RoadTop sat
+                            // metres below the dock and silently killed
+                            // the prompt.
                             Vector3 roadHeightApproach =
                                 boardingPlan.EntryPose.RootPosition;
-                            roadHeightApproach.y =
-                                CityStreetSurfacePlanner.RoadTop +
-                                PlayerFactory.GroundedRootOffset;
                             player.Motor.Teleport(roadHeightApproach);
                             player.GameObject.transform.rotation =
                                 boardingPlan.EntryPose.RootRotation;

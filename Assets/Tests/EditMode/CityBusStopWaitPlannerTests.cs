@@ -33,9 +33,10 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.That(
                 waitPlan.Count,
-                Is.GreaterThan(0),
-                "The default layout must expose reachable pavement beside " +
-                "at least one Route 01 stop.");
+                Is.EqualTo(busPlan.Stops.Count),
+                "Every Route 01 stop must keep reachable pavement beside " +
+                "its pole — a silently skipped stop is one nobody can be " +
+                "served at.");
 
             for (int index = 0; index < waitPlan.WaitPoints.Count; index++)
             {

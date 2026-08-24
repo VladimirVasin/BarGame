@@ -240,11 +240,10 @@ namespace BarPromenade
             {
                 CitySurfaceDescriptor surface =
                     layout.Surfaces[surfaceIndex];
+                // Any dry surface supports a corner pad — including open
+                // yard ground: the boundary-street corners pour their pads
+                // onto it so Route 01 can turn along the city fringe.
                 if (surface.IsWater ||
-                    // v1 yards are undecorated bare ground; keeping them
-                    // non-supporting preserves the pre-yard Route 01 bus
-                    // intersections (the home stop would drift otherwise).
-                    surface.Kind == CitySurfaceKind.OpenGround ||
                     !Contains(surface.WorldBounds, corner))
                 {
                     continue;

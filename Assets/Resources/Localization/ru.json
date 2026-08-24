@@ -585,6 +585,186 @@
       "value": "Остановка «Дом»"
     },
     {
+      "key": "bus.stop.default_coastal.supermarket",
+      "value": "Остановка «Универсам»"
+    },
+    {
+      "key": "bus.stop.default_coastal.park_east",
+      "value": "Остановка «Парк, восточные ворота»"
+    },
+    {
+      "key": "bus.stop.default_coastal.park_west",
+      "value": "Остановка «Парк, западные ворота»"
+    },
+    {
+      "key": "bus.stop.default_coastal.cemetery",
+      "value": "Остановка «Кладбище»"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_east",
+      "value": "Остановка «Восточные дворы»"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_north_east",
+      "value": "Остановка «Сухое озеро»"
+    },
+    {
+      "key": "bus.stop.default_coastal.north_waterfront",
+      "value": "Остановка «Набережная»"
+    },
+    {
+      "key": "bus.stop.default_coastal.north_waterfront_wild",
+      "value": "Остановка «Дикий берег»"
+    },
+    {
+      "key": "bus.stop.default_coastal.north_waterfront_east",
+      "value": "Остановка «Восточная набережная»"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_west_north",
+      "value": "Остановка «Северо-западная окраина»"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_west_south",
+      "value": "Остановка «Западная окраина»"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_south_west",
+      "value": "Остановка «Южная окраина»"
+    },
+    {
+      "key": "bus.stop.default_coastal.yard_south_east",
+      "value": "Остановка «Юго-восточная окраина»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north",
+      "value": "Остановка «Северная улица»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_2",
+      "value": "Остановка «Северная улица, 2»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_3",
+      "value": "Остановка «Северная улица, 3»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_4",
+      "value": "Остановка «Северная улица, 4»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_5",
+      "value": "Остановка «Северная улица, 5»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_6",
+      "value": "Остановка «Северная улица, 6»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_7",
+      "value": "Остановка «Северная улица, 7»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_north_8",
+      "value": "Остановка «Северная улица, 8»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south",
+      "value": "Остановка «Южная улица»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_2",
+      "value": "Остановка «Южная улица, 2»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_3",
+      "value": "Остановка «Южная улица, 3»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_4",
+      "value": "Остановка «Южная улица, 4»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_5",
+      "value": "Остановка «Южная улица, 5»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_6",
+      "value": "Остановка «Южная улица, 6»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_7",
+      "value": "Остановка «Южная улица, 7»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_south_8",
+      "value": "Остановка «Южная улица, 8»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west",
+      "value": "Остановка «Западная улица»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_2",
+      "value": "Остановка «Западная улица, 2»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_3",
+      "value": "Остановка «Западная улица, 3»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_4",
+      "value": "Остановка «Западная улица, 4»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_5",
+      "value": "Остановка «Западная улица, 5»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_6",
+      "value": "Остановка «Западная улица, 6»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_7",
+      "value": "Остановка «Западная улица, 7»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_west_8",
+      "value": "Остановка «Западная улица, 8»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east",
+      "value": "Остановка «Восточная улица»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_2",
+      "value": "Остановка «Восточная улица, 2»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_3",
+      "value": "Остановка «Восточная улица, 3»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_4",
+      "value": "Остановка «Восточная улица, 4»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_5",
+      "value": "Остановка «Восточная улица, 5»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_6",
+      "value": "Остановка «Восточная улица, 6»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_7",
+      "value": "Остановка «Восточная улица, 7»"
+    },
+    {
+      "key": "bus.stop.default_coastal.loop_east_8",
+      "value": "Остановка «Восточная улица, 8»"
+    },
+    {
       "key": "map.clear",
       "value": "Очистить маршрут"
     },

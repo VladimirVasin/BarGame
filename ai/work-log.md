@@ -6,6 +6,129 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-24 — Stops step away from doorways (and off the steepest ramps)
+
+- The user flagged stops standing practically on top of bar entrances.
+  Nothing in the planner knew about doors: a stop excluded only its own
+  target's bounds, so a pole and its four-metre shelter could land
+  across any bar, home or supermarket doorway.
+- New entrance clearance in the planner
+  (`CityBusCoverageStopPlanner`): every bar, home and supermarket door
+  (its `SidewalkArrivalPosition`) projects a `7 m`
+  `BuildingEntranceClearance` zone checked at the pole AND the shelter
+  wall centre, leaving ~`4.9 m` of daylight from the nearest shelter
+  piece to the door. A blocked placement slides along its link in
+  `0.5 m` steps (forward first) to the nearest clear spot — both for
+  target candidates (`TryCreateStopCandidate`, which then re-measures
+  its reference distance so sorting judges the pole where it really
+  stands) and for inserted street stops. A link with no clear span is
+  rejected. New `CityBusCoverageTests.Stops_KeepClearOfBuildingEntrances`
+  pins the contract for every stop × every door.
+- The reshuffle exposed two grade bugs. First, stop candidates now
+  carry `IsGraded` and sort level-first (coverage: penalty, grade, hop;
+  mandatory: hop, penalty, grade) — grade stays a last resort, never a
+  ban: an outright ban emptied the route (a hillside POI lost every
+  candidate) and starved the eastern plateau climb of inserted stops
+  (an 880 m stopless hole).
+- Second, the real dock-height fix: `CityBusRidePlan.ResolveGroundedRootY`
+  sampled sidewalk boxes first and street boxes only as a fallback, so
+  where a graded sidewalk's end dips under the flat junction pad the
+  plan reported the buried slope — the supermarket stop's docks missed
+  the physical surface by up to `6.5 cm`. Sidewalks and street/apron
+  boxes now sample together and the highest surface wins, matching the
+  physics raycast by construction.
+- Production roster: 35 stops on a `5618 m` loop (the supermarket
+  regained its own pole once home slid clear of the shared bar door),
+  minimum gap `82.9 m`, worst named-destination walk still `55.5 m`.
+- Verification: bundled-dotnet compile clean; EditMode bus + coverage +
+  wait + runtime + map + localization + layout + bench + stop-builder
+  suites 68/68 green; PlayMode
+  `ProductionCityRoute_AllStopsExposeBothDoorPrompts` and
+  `ProductionCityDoorDocks_MatchPhysicalSurfaceHeight` green. The two
+  synthetic bus PlayMode boarding tests remain the stash-proven
+  batchmode baseline reds, untouched.
+
+## 2026-08-24 — Close stop pairs coalesce into one pole
+
+- The user flagged the flip side of the grand loop: in places the
+  stops now stood absurdly close together. Target stops anchor to
+  destinations independently, so a gate, a park gate and the
+  supermarket could pile onto neighbouring kerbs — the minimum
+  spacing only ever bound the inserted street stops.
+- New `CoalesceCloseStops` pass between target-stop creation and the
+  spacing pass: any pair closer than `MinimumStopSpacing` (`80 m`)
+  along the loop loses its less essential member (retention order:
+  home/POI never dropped, then gate > park gate > supermarket >
+  street stop; equals keep the earlier). The route geometry is
+  untouched — the bus still drives past the dropped gate, whose
+  destination the surviving neighbour provably serves.
+- Production roster: `36 -> 33` stops on the same `4980 m` loop;
+  dropped `yard-east`, `yard-west-south`, the `north-waterfront-wild`
+  spread anchor and the supermarket pole, each absorbed by a
+  neighbour on the same street. Minimum along-loop gap rose to
+  `87.1 m`; worst named-destination walk stayed `55.5 m`, worst gap
+  stayed `343.3 m` (the doubled-back west approach corridor).
+- Tests now hold the minimum for EVERY adjacent pair except
+  home/POI pairs (`StopSpacing_StaysRegularAlongTheLoop`, which also
+  prints the full roster), `OpenAreaStops_ServeTheirGates` asserts
+  every gate keeps some pole within the `150 m` walk budget instead
+  of demanding its own, and `SemanticStops` bounds coverage-stop
+  counts instead of pinning them.
+- Verification: bundled-dotnet compile clean; EditMode
+  `CityBusPlannerTests|CityBusCoverageTests|CityBusStopWaitPlannerTests|`
+  `CityBusRuntimeTests|CityMapBusOverlayTests|LocalizationCatalogTests|`
+  `CityLayoutGeneratorTests` 63/63 green, plus stop consumers
+  `CityBenchRestTests|CityBenchSitTests|CityBusStopWorldBuilderTests|`
+  `CityPedestrianRuntimeTests` 26/26 green.
+
+## 2026-08-24 — Route 01 becomes the grand city loop
+
+- The user called the five-stop bus route "absolutely broken and
+  illogical": it toured the four district POIs and Home over ~1.9 km
+  and ignored the beach, the cemetery, the park and every yard. The
+  brief: pass through as much of the city as possible, stop at a
+  steady sensible interval, and put any point of the city within a
+  walk of a stop — road-network changes allowed if realistic.
+- The one road-network change needed was not an edge but a rule:
+  `CityBusIntersectionSelector` refused to pour corner pads onto
+  `OpenGround`, so the entire boundary ring (x=0, z=0, x=13) was
+  turn-incapable and no route could ever reach the fringe. Yard
+  ground is supporting now; ~30 boundary nodes gained Road v2.1
+  aprons and nothing else moved (the widening is monotone).
+- Targets grew from 5 to ~21: every `OpenAreaAccess` gate, two
+  synthetic eastern waterfront anchors (the beach is 440 m long and
+  its only gate is on the west bank), the outermost park gate per
+  bank, the supermarket. Ordered by perimeter station,
+  counter-clockwise so the doors face the precincts and the river is
+  crossed exactly twice by construction; coverage targets are
+  droppable, bank-filtered, capped after the cycle prune, prefer the
+  precinct-side kerb over hop count, and anchor `8 m` beside their
+  gate because a shelter projected into the `8.8 m` approach throat
+  is always rejected.
+- Three planner mechanics had to change for the strict phase to
+  close at 21 targets: connectors are Dijkstra by metres (the old
+  link-count BFS scored a two-edge wide-right as one hop and wove
+  spaghetti), the stop prohibition is per driving direction rather
+  than per edge (the opposite kerb is a different pole), and a
+  spacing pass inserts numbered street stops wherever an along-loop
+  gap exceeds `200 m`, only on directed streets the loop drives
+  exactly once.
+- Production layout: 36 stops on a 4980 m loop, built in ~0.4 s,
+  every named destination within 55 m of a stop by pavement graph,
+  worst pavement metre 229 m (a sunken riverside walk), worst
+  along-loop gap 343 m, 31/36 gaps at or under 200 m. New
+  `CityBusCoverageTests` pins coverage, spacing, wait-point
+  completeness and gate service; `ru`/`en` gained 45 stop names.
+- Verification: EditMode
+  `CityBusPlannerTests|CityBusCoverageTests|CityBusStopWaitPlannerTests|`
+  `CityBusRuntimeTests|CityMapBusOverlayTests|LocalizationCatalogTests|`
+  `CityLayoutGeneratorTests` 63/63 green; full EditMode 1411/1411
+  green; PlayMode `ProductionCityRoute_AllStopsExposeBothDoorPrompts`
+  and `ProductionCityDoorDocks_MatchPhysicalSurfaceHeight` green after
+  teaching the prompt diagnostic that a graded dock's own Y is the
+  road height. The two synthetic bus PlayMode tests fail headless on
+  the clean baseline too (stash-verified) — pre-existing, untouched.
+
 ## 2026-08-23 — Every fixed lamp gets the blurred ball it is in fog
 
 - Standing on a bridge, the new quay lanterns and their glints were

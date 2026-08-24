@@ -7,6 +7,7 @@ namespace BarPromenade
     {
         private static bool TryBuildRiverClosedRoute(
             CityLayout layout,
+            IReadOnlyList<TemporaryNode> nodes,
             IReadOnlyList<StopCandidate> selected,
             bool allowStopEdgeReuse,
             IReadOnlyList<List<int>> outgoing,
@@ -53,12 +54,9 @@ namespace BarPromenade
                 return false;
             }
 
-            var stopEdges = new HashSet<RoadEdge>();
-            for (int index = 0; index < selected.Count; index++)
-            {
-                stopEdges.Add(selected[index].Source.RoadEdge);
-            }
-
+            HashSet<DirectedKey> stopStreets = CreateStopStreetSet(
+                nodes,
+                selected);
             var bridgeEdges = new[]
             {
                 roadBridges[0].Definition.CrossingEdge,
@@ -90,7 +88,8 @@ namespace BarPromenade
                             selected[next].Source.FromNodeIndex,
                             requiredBridge,
                             bridgeEdges,
-                            stopEdges,
+                            nodes,
+                            stopStreets,
                             allowStopEdgeReuse,
                             outgoing,
                             acceptedLinks,
@@ -124,7 +123,8 @@ namespace BarPromenade
             int toNodeIndex,
             RoadEdge? requiredBridge,
             IReadOnlyList<RoadEdge> bridgeEdges,
-            ISet<RoadEdge> stopEdges,
+            IReadOnlyList<TemporaryNode> nodes,
+            ISet<DirectedKey> stopStreets,
             bool allowStopEdgeReuse,
             IReadOnlyList<List<int>> outgoing,
             IList<TemporaryLink> acceptedLinks,
@@ -135,7 +135,8 @@ namespace BarPromenade
                     toNodeIndex,
                     requiredBridge,
                     bridgeEdges,
-                    stopEdges,
+                    nodes,
+                    stopStreets,
                     outgoing,
                     acceptedLinks,
                     out List<int> path) &&
@@ -145,6 +146,7 @@ namespace BarPromenade
                      toNodeIndex,
                      requiredBridge,
                      bridgeEdges,
+                     nodes,
                      null,
                      outgoing,
                      acceptedLinks,
@@ -168,23 +170,24 @@ namespace BarPromenade
             int toNodeIndex,
             RoadEdge? requiredBridge,
             IReadOnlyList<RoadEdge> bridgeEdges,
-            ISet<RoadEdge> stopEdges,
+            IReadOnlyList<TemporaryNode> nodes,
+            ISet<DirectedKey> stopStreets,
             IReadOnlyList<List<int>> outgoing,
             IList<TemporaryLink> acceptedLinks,
             out List<int> path)
         {
+            // Bridges stay banned in BOTH directions — each may be
+            // crossed exactly once, at its splice — while stop streets
+            // are banned only in the stop's own driving direction.
             var forbidden = new HashSet<RoadEdge>(bridgeEdges);
-            if (stopEdges != null)
-            {
-                forbidden.UnionWith(stopEdges);
-            }
-
             if (!requiredBridge.HasValue)
             {
                 return TryFindPath(
                     fromNodeIndex,
                     toNodeIndex,
                     forbidden,
+                    stopStreets,
+                    nodes,
                     outgoing,
                     acceptedLinks,
                     out path);
@@ -207,6 +210,8 @@ namespace BarPromenade
                         fromNodeIndex,
                         bridgeLink.FromNodeIndex,
                         forbidden,
+                        stopStreets,
+                        nodes,
                         outgoing,
                         acceptedLinks,
                         out List<int> prefix) ||
@@ -214,6 +219,8 @@ namespace BarPromenade
                         bridgeLink.ToNodeIndex,
                         toNodeIndex,
                         forbidden,
+                        stopStreets,
+                        nodes,
                         outgoing,
                         acceptedLinks,
                         out List<int> suffix))

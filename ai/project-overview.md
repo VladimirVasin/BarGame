@@ -380,27 +380,48 @@ The vertical slice contains:
   and steering/road roll up to `1` degree. All four wheel assemblies stay
   outside that pivot and grounded while the actor, collider and route pose
   remain unchanged. Canonical Route 01 is an immutable right-hand, Street-only
-  closed winding service loop. Its target planner orders every district point
-  of interest that actually exists, followed by `PlayerHome`; the default
-  sequence is Industrial, Nightlife, Residential, Old Town and Home. It assigns
-  one safe straight to every target. Home stays on its frontage or one connected
-  road edge away. In the river layout a district POI may use the nearest
-  same-district cyclic Street up to five grid edges and `120 m` from its public
-  access; this bounded fallback keeps the two-bridge service loop closed without
-  moving the Home stop. The roadside pole remains outside the POI public/access
-  bounds or Home footprint. Full-body-clear ordinary
-  straights and proven `6 m`-radius left turns enter the loop. At selected Road
-  v2.1 nodes only, a clearance-proven two-edge right-turn macro uses a long
-  S-merge across the full incoming Street, a `4.5 m` quarter-turn in the clear
-  core and a symmetric S-return across the outgoing Street. The macro owns both
-  physical edges, so a connector cannot use it to bypass a selected stop edge;
-  ordinary tight `3 m` right turns remain rejected. A physical street link may
-  recur in a connector, but every ordered occurrence receives a unique route
-  link/node ID. Route selection has no random branch or player pursuit. The
-  default five semantic stops each have a physical blue `01` pole and are served
-  once per lap by that deterministic door/driver timeline with a fixed `10 s`
-  total dwell, including `0.70 s` opening and `0.70 s` closing transitions for
-  both doors. Random roadside decoration does not emit bus shelters.
+  closed grand city loop. Its target planner serves every district point of
+  interest and `PlayerHome`, and on a dressed layout adds coverage targets:
+  every open-area access gate (cemetery, all yards, the waterfront), two
+  eastern waterfront spread anchors so the whole `400 m` beach front is
+  driven, the outermost park gate on each river bank and the supermarket.
+  Targets are ordered by their station along the road-grid perimeter,
+  counter-clockwise from home, so the right-hand doors face the outer
+  precincts and the served sequence crosses the river exactly twice — once
+  per road bridge. Coverage targets prefer the kerb that faces their
+  precinct over raw edge adjacency, anchor beside the gate rather than in
+  its `8.8 m` approach throat, may drift up to four road edges and `120 m`
+  when their own frontage ends in a river-flank or map-corner stub, and are
+  dropped (never fatal) if no cycle-capable candidate survives. District
+  POIs keep their bounded same-district river fallback and Home stays on
+  its frontage or one edge away. Connectors are length-weighted shortest
+  paths that may not drive any selected stop's own direction — the bus
+  never cruises past its own pole — while the opposite direction of a stop
+  street stays open, as on any real carriageway. Stop furniture keeps
+  `7 m` of clearance (pole and shelter wall centre) from every bar, home
+  and supermarket door sidewalk point: a blocked placement slides along
+  its link to the nearest clear spot and a link with no clear spot is
+  rejected, so no shelter ever crowds an entrance. After the ring closes,
+  a coalescing pass drops the less essential stop of any pair closer than
+  `80 m` along the loop (home and the district POIs are never dropped; the
+  surviving pole serves both destinations), then a spacing pass walks the
+  loop and inserts plain kerbside stops wherever the along-loop gap exceeds
+  `200 m`, aiming at `150 m` and never landing two inserted stops closer
+  than `80 m` or on a directed street the loop drives twice. Full-body-clear ordinary straights and proven `6 m`-radius left
+  turns enter the loop. At selected Road v2.1 nodes only — whose corner
+  pads may now stand on open yard ground, which is what lets the loop turn
+  along the city fringe — a clearance-proven two-edge right-turn macro uses
+  a long S-merge across the full incoming Street, a `4.5 m` quarter-turn in
+  the clear core and a symmetric S-return across the outgoing Street;
+  ordinary tight `3 m` right turns remain rejected. A physical street link
+  may recur in a connector, but every ordered occurrence receives a unique
+  route link/node ID. Route selection has no random branch or player
+  pursuit. On the production layout the loop runs about `5.6 km` and serves
+  about thirty-five named stops — semantic, gate and numbered street stops —
+  each with a physical blue `01` pole, served once per lap by that
+  deterministic door/driver timeline with a fixed `10 s` total dwell,
+  including `0.70 s` opening and `0.70 s` closing transitions for both
+  doors. Random roadside decoration does not emit bus shelters.
   Nightlife's last-route island now has a working pole
   nearby but outside its public ground and approaches, leaving the abandoned
   island structures distinct from the live stop. A pooled actor prefers
