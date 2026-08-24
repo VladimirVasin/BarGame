@@ -7,6 +7,9 @@ namespace BarPromenade.Tests.EditMode
 {
     public sealed class BarDistrictIdentityTests
     {
+        private static readonly int BaseColorId =
+            Shader.PropertyToID("_BaseColor");
+
         private static readonly CityDistrictKind[] BarDistricts =
         {
             CityDistrictKind.OldTown,
@@ -20,6 +23,12 @@ namespace BarPromenade.Tests.EditMode
         {
             var nameKeys = new HashSet<string>(StringComparer.Ordinal);
             var moods = new HashSet<BarDistrictMood>();
+            var wallTints = new HashSet<Color>();
+            var counterTints = new HashSet<Color>();
+            var metalTints = new HashSet<Color>();
+            var pendantColors = new HashSet<Color>();
+            var pendantIntensities = new HashSet<float>();
+            var signColors = new HashSet<Color>();
             foreach (CityDistrictKind district in BarDistricts)
             {
                 BarDistrictIdentity identity =
@@ -45,11 +54,35 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     identity.CounterWoodTint.maxColorComponent,
                     Is.GreaterThan(0f));
+                Assert.That(
+                    wallTints.Add(identity.WallTint),
+                    Is.True,
+                    "Every district needs a distinct large wall field.");
+                Assert.That(
+                    counterTints.Add(identity.CounterWoodTint),
+                    Is.True,
+                    "Every district needs distinct counter materials.");
+                Assert.That(
+                    metalTints.Add(identity.MetalTint),
+                    Is.True,
+                    "Every district needs a distinct metal family.");
+                Assert.That(
+                    pendantColors.Add(identity.PendantColor),
+                    Is.True,
+                    "Every district needs its own counter light colour.");
+                Assert.That(
+                    pendantIntensities.Add(
+                        identity.PendantIntensityScale),
+                    Is.True,
+                    "Every district needs its own counter light level.");
+                Assert.That(
+                    signColors.Add(identity.SignAccentColor),
+                    Is.True,
+                    "Every district needs its own readable sign accent.");
             }
 
-            // The Residential bar («Огонёк») is the first authored
-            // identity: the worn surface set with warmer, dimmer
-            // pendants; the rest still share today's amber.
+            // Residential keeps the packaged worn sheets; the other
+            // bars separate through authored block colours and dress.
             BarDistrictIdentity residential =
                 BarDistrictIdentityCatalog.Get(
                     CityDistrictKind.Residential);
@@ -68,6 +101,77 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 residential.PendantColor,
                 Is.Not.EqualTo(nightlife.PendantColor));
+        }
+
+        [TestCase(
+            CityDistrictKind.OldTown,
+            "Old Town Ledger Field")]
+        [TestCase(
+            CityDistrictKind.Residential,
+            "Residential Curtain Field")]
+        [TestCase(
+            CityDistrictKind.Industrial,
+            "Industrial Safety Band")]
+        [TestCase(
+            CityDistrictKind.Nightlife,
+            "Nightlife Neon Cyan")]
+        public void WorldBuilder_AppliesTheDistrictVisualSignature(
+            CityDistrictKind district,
+            string expectedSignalName)
+        {
+            var parent = new GameObject("Bar District Visual Test");
+            try
+            {
+                BarInteriorLayoutPlan plan =
+                    BarInteriorLayoutPlanner.Generate(
+                        20260824,
+                        $"bar-visual-{district}",
+                        BarActivityKind.Cocktail,
+                        district);
+                Vector3 counterBefore = plan.CounterPosition;
+                Vector3 stationBefore = plan.CounterStationPosition;
+                Transform room = BarInteriorWorldBuilder.Build(
+                    parent.transform,
+                    plan);
+                Transform dress = room.Find("District Identity");
+
+                Assert.That(dress, Is.Not.Null);
+                Transform signal = dress.Find(expectedSignalName);
+                Assert.That(signal, Is.Not.Null);
+                Renderer signalRenderer = signal.GetComponent<Renderer>();
+                Assert.That(signalRenderer, Is.Not.Null);
+                Assert.That(
+                    Mathf.Max(
+                        signalRenderer.bounds.size.y,
+                        signalRenderer.bounds.size.z),
+                    Is.GreaterThanOrEqualTo(2.3f),
+                    "The district signal must survive the 640x360 view.");
+                Assert.That(
+                    dress.GetComponentsInChildren<Collider>(true),
+                    Is.Empty,
+                    "Visual identity cannot alter bar traversal.");
+                Assert.That(
+                    plan.CounterPosition,
+                    Is.EqualTo(counterBefore));
+                Assert.That(
+                    plan.CounterStationPosition,
+                    Is.EqualTo(stationBefore));
+
+                BarDistrictIdentity identity = plan.DistrictIdentity;
+                AssertRendererColor(
+                    room.Find("Ceiling"),
+                    identity.CeilingTint);
+                AssertRendererColor(
+                    room.Find("Backbar Amber Sign"),
+                    identity.SignGlowColor);
+                AssertRendererColor(
+                    room.Find("Practical Bulb 1"),
+                    identity.PendantColor * 2.2f);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+            }
         }
 
         [Test]
@@ -169,6 +273,21 @@ namespace BarPromenade.Tests.EditMode
                     BarDistrictIdentityCatalog.FallbackDistrict),
                 "A non-bar district must normalize on entry.");
             GameSessionState.BeginNewGame();
+        }
+
+        private static void AssertRendererColor(
+            Transform part,
+            Color expected)
+        {
+            Assert.That(part, Is.Not.Null);
+            Renderer renderer = part.GetComponent<Renderer>();
+            Assert.That(renderer, Is.Not.Null);
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            Color actual = properties.GetColor(BaseColorId);
+            Assert.That(actual.r, Is.EqualTo(expected.r).Within(0.0001f));
+            Assert.That(actual.g, Is.EqualTo(expected.g).Within(0.0001f));
+            Assert.That(actual.b, Is.EqualTo(expected.b).Within(0.0001f));
         }
     }
 }

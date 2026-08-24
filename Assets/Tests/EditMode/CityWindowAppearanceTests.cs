@@ -12,7 +12,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void ResolveWindowFamily_IsStableAndKeepsTheOldMix()
+        public void ResolveWindowFamily_IsStableAndKeepsADarkDistrictMix()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityGenerationSettings.Default,
@@ -84,11 +84,11 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            // The lit/dark split must stay near the authored 65% so the
-            // night city keeps its scatter of lit rooms.
+            // District schedules retain a mostly dark skyline without
+            // collapsing the production layout into a blackout.
             Assert.That(total, Is.GreaterThan(200));
             float darkShare = (float)off / total;
-            Assert.That(darkShare, Is.InRange(0.55f, 0.75f));
+            Assert.That(darkShare, Is.InRange(0.55f, 0.82f));
         }
 
         [Test]

@@ -14,6 +14,8 @@ Assets/
     StairwellInterior.unity
   Settings/
     CityNoirVolumeProfile.asset
+    PCPresentationBaselineVolumeProfile.asset  project-owned Neutral/Bloom/Vignette baseline
+    PC_RPAsset.asset              active PC pipeline + baseline volume reference
     PC_Renderer.asset             active PC PS1 renderer feature
   Resources/
     Materials/
@@ -272,6 +274,9 @@ Assets/
         CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
         CityDistrictPointOfInterestPlanner.cs  primary/public reservations + 18 m guard
         CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes + drying yard and island mast floodlights, carpet rack and babushka stances
+        CityDistrictArtProfile.cs  pure frontage/mass/window/light/wear identity for four urban districts
+        CityDistrictPresentationPlan.cs  immutable per-block channel decisions + transition motif
+        CityDistrictPresentationPlanner.cs  stable block keys and one-block allowed-neighbour transition band
         CityPointOfInterestSurfaceAppearance.cs  five scripted POI albedos (paving/metal/cloth/timber/paper) via MPBs
         CityDecorationDescriptor.cs  24 visual families and anchor contracts
         CityDecorationPlan.cs        immutable ordered seeded decoration data
@@ -285,7 +290,10 @@ Assets/
         CityBoardGameMarkers.cs  pooled emissive plates for hover/selection/destinations/check
         CityChessSetMen.cs       the four static batches, remembered per table so one can be hidden
         CityStaticCollisionBuilder.cs  tier catalog + decoration/park/pole box proxies
-        CityExteriorAppearance.cs    shared City/Home ground + three street MPB recipes + window family resolver
+        CityExteriorAppearance.cs    shared City/Home wet-aware surfaces + district window family resolver
+        CityWetSurfaceRegistry.cs    cross-scene rain film, slow drying + tint-preserving MPB response
+        CityPuddlePlanner.cs         deterministic bounded road-patch plan
+        CityPuddleWorldBuilder.cs    one collider-free top-only puddle mesh
         CityWindowAppearance.cs      windowed-pane sheet, five shared lit materials on the night factor
         CityNightGlowRegistry.cs     registered electric glows (neon/signs/lamps) that die by day
         CityNightSiteLightRegistry.cs  authored site realtime lights scaled/disabled by the night factor
@@ -298,7 +306,7 @@ Assets/
         RoadFencePlanner.cs      unsupported edges, true Street terminals + default NE road-cap L
         CityNightFixturePlanner.cs  lamps/signals clear public ground and approaches
         CityDayNightController.cs   session lighting + exterior night factor
-        CityWeatherController.cs    per-frame weather sample -> rain, flash, thunder
+        CityWeatherController.cs    per-frame weather sample -> rain, wet film, flash, thunder
         CityRainField.cs            seeded player-following stretched rain streaks
         CityLightningFlashLight.cs  transient shadowless directional storm flash
         CityRopeSpanGeometry.cs     shared parabolic rope sag: curve samples + chord-chain boxes
@@ -592,6 +600,12 @@ Assets/
       GameTimeStateTests.cs                 freeze/start/elapsed delta/day/midnight/reset
       GameTimeDayNightRulesTests.cs         phase boundaries and smooth transitions
       GameWeatherRulesTests.cs              slot determinism, targets and boundary ramps
+      CityWetSurfaceTests.cs                film timing/tint persistence + bounded grounded puddles
+      CityDistrictPresentationPlannerTests.cs profiles, transitions + window schedules
+      CityWindowAppearanceTests.cs          special families, stable district mix + night factor
+      BarDistrictIdentityTests.cs           four identities and fallback contract
+      BarSurfaceAppearanceTests.cs          worn sheets and district builder tints
+      SupermarketInteriorAtmosphereTests.cs explicit baseline + local depth of field
       HomeAlarmClockPlanTests.cs            clock placement and circulation
       HomeRefrigerator{Plan,Timeline}Tests.cs  slots, approach and phase channels
       HomeBalconySmoking{Plan,Timeline}Tests.cs  dock, 3D clips, timing, drift + safe exit
@@ -780,6 +794,9 @@ player + seed -> CityFogField (unchanged by time of day)
 seed + session time -> GameWeatherRules -> CityWeatherController
                                         -> CityRainField streaks (bus-ride safe core)
                                         -> CityRainSoundPlayer volume/cutoff
+                                        -> CityWetSurfaceRegistry
+                                           -> shared surface MPBs + slow drying
+                                           -> CityPuddleWorldBuilder top-only batch
                                         -> storm windows -> CityLightningFlashLight
                                                          -> CityThunderSoundPlayer delay
                                         -> CityBusDirector rain provider -> wiper sweep
@@ -1075,8 +1092,10 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                       -> City waits for transition completion
                                       -> enable teleport + open map + clear request
        -> BarInteriorLayoutPlanner -> BarInteriorLayoutValidator
+                                   -> BarDistrictIdentity
                                    -> BarInteriorWorldBuilder
                                    -> seven zones + four clear paths
+                                   -> district palette/wall motif
                                    -> practical light/audio/NPC anchors
        -> BarInteriorAtmosphere -> six shadowless lights + grade + dust
        -> BarPatronWorldBuilder -> pooled 3D guests seated/standing on anchors

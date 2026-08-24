@@ -475,6 +475,9 @@ namespace BarPromenade
                 false,
                 CityExteriorAppearance.RoadMarkingTextureTileSize,
                 CityExteriorAppearance.ApplyRoadMarkingSurface);
+            CityPuddleWorldBuilder.Build(
+                roads,
+                CityPuddlePlanner.Create(plan, layout.Seed));
         }
 
         private static void AddRoadGeometry(

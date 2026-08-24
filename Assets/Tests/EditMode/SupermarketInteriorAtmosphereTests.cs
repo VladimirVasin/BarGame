@@ -1,10 +1,33 @@
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade.Tests.EditMode
 {
     public sealed class SupermarketInteriorAtmosphereTests
     {
+        private const string PipelineAssetPath =
+            "Assets/Settings/PC_RPAsset.asset";
+        private const string BaselineProfilePath =
+            "Assets/Settings/PCPresentationBaselineVolumeProfile.asset";
+
+        [Test]
+        public void PcPipeline_UsesTheIntentionalPresentationBaseline()
+        {
+            UniversalRenderPipelineAsset pipeline =
+                AssetDatabase.LoadAssetAtPath<
+                    UniversalRenderPipelineAsset>(PipelineAssetPath);
+
+            Assert.That(pipeline, Is.Not.Null);
+            Assert.That(pipeline.volumeProfile, Is.Not.Null);
+            Assert.That(
+                AssetDatabase.GetAssetPath(pipeline.volumeProfile),
+                Is.EqualTo(BaselineProfilePath));
+            AssertBaselineGrade(pipeline.volumeProfile);
+        }
+
         [Test]
         public void Install_KeepsTheShadowlessSixLightBudget()
         {
@@ -42,6 +65,12 @@ namespace BarPromenade.Tests.EditMode
                 }
 
                 Assert.That(atmosphere.Flicker, Is.Not.Null);
+                AssertBaselineGrade(atmosphere.RuntimeProfile);
+                Assert.That(
+                    atmosphere.RuntimeProfile.TryGet(
+                        out DepthOfField depthOfField),
+                    Is.True);
+                Assert.That(depthOfField.active, Is.True);
             }
             finally
             {
@@ -96,6 +125,30 @@ namespace BarPromenade.Tests.EditMode
             {
                 Object.DestroyImmediate(holder);
             }
+        }
+
+        private static void AssertBaselineGrade(VolumeProfile profile)
+        {
+            Assert.That(profile, Is.Not.Null);
+            Assert.That(
+                profile.TryGet(out Tonemapping tonemapping),
+                Is.True);
+            Assert.That(tonemapping.active, Is.True);
+            Assert.That(
+                tonemapping.mode.value,
+                Is.EqualTo(TonemappingMode.Neutral));
+
+            Assert.That(profile.TryGet(out Bloom bloom), Is.True);
+            Assert.That(bloom.active, Is.True);
+            Assert.That(bloom.threshold.value, Is.EqualTo(1f));
+            Assert.That(bloom.intensity.value, Is.EqualTo(0.25f));
+            Assert.That(bloom.scatter.value, Is.EqualTo(0.5f));
+            Assert.That(bloom.highQualityFiltering.value, Is.True);
+
+            Assert.That(profile.TryGet(out Vignette vignette), Is.True);
+            Assert.That(vignette.active, Is.True);
+            Assert.That(vignette.intensity.value, Is.EqualTo(0.2f));
+            Assert.That(vignette.smoothness.value, Is.EqualTo(0.2f));
         }
     }
 }

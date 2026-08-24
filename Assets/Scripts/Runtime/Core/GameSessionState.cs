@@ -244,6 +244,7 @@ namespace BarPromenade
 
         private static void ResetToDefaults()
         {
+            CityWetSurfaceRegistry.ResetForNewSession();
             CitySeed = DefaultCitySeed;
             CityBlueprintId = DefaultCityBlueprintId;
             ActiveBarId = string.Empty;

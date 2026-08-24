@@ -24,12 +24,11 @@ namespace BarPromenade.Tests.EditMode
                 [BarSurfaceKind.WornPlank] = new[]
                 {
                     new Color(0.14f, 0.06f, 0.042f),
-                    new Color(0.16f, 0.055f, 0.028f),
+                    new Color(0.075f, 0.024f, 0.017f),
                 },
                 [BarSurfaceKind.Wallpaper] = new[]
                 {
                     new Color(0.29f, 0.075f, 0.075f),
-                    new Color(0.13f, 0.042f, 0.032f),
                 },
                 [BarSurfaceKind.DarkWood] = new[]
                 {

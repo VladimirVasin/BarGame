@@ -98,6 +98,9 @@ namespace BarPromenade
                 exteriorContext,
                 lightingFocus);
             BuildCityPostProcessVolume();
+            CityWetSurfaceRegistry.InitializeOrResume(
+                GameWeatherRules.EvaluateCurrent().RainIntensity,
+                ResolveAbsoluteGameMinutes());
             IsInitialized = true;
             RefreshVisibility(true);
         }
@@ -167,6 +170,12 @@ namespace BarPromenade
             WeatherVisualSample weather =
                 GameWeatherRules.EvaluateCurrent();
             RainField.SetIntensity(weather.RainIntensity);
+            CityWetSurfaceRegistry.Advance(
+                weather.RainIntensity,
+                GameSessionState.IsGameTimeRunning
+                    ? Time.deltaTime
+                    : 0f,
+                ResolveAbsoluteGameMinutes());
             Vector3 windVelocity = GameWeatherRules
                 .EvaluateCurrentWind()
                 .Velocity(GameWeatherRules.WindSpeedAtFullStrength);
@@ -197,6 +206,13 @@ namespace BarPromenade
 
             lastThunderStrikeId = sample.StrikeId;
             ThunderSound.PlayStrike(sample.DistanceFactor);
+        }
+
+        private static double ResolveAbsoluteGameMinutes()
+        {
+            return (GameSessionState.GameDayIndex *
+                    GameTimeDayNightRules.MinutesPerDay) +
+                   GameSessionState.GameTimeOfDayMinutes;
         }
 
         private void OnDisable()

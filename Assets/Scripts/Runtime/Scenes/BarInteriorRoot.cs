@@ -284,10 +284,9 @@ namespace BarPromenade
             Atmosphere =
                 atmosphereObject.AddComponent<BarInteriorAtmosphere>();
 
-            // The district identity owns how the pendants burn: the
-            // Residential bar runs a step warmer and dimmer — the
-            // cheap incandescent bulbs of a bar for people without
-            // money — while the other identities keep today's amber.
+            // The district identity owns how the counter pendants
+            // burn: tired Old Town amber, cheap Residential bulbs,
+            // pale Industrial work light or Nightlife cyan.
             BarDistrictIdentity identity = Layout.DistrictIdentity;
             var lights = new List<BarPracticalLightSpec>(
                 Layout.LightAnchors.Count);

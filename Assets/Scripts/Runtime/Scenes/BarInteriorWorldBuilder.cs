@@ -7,24 +7,12 @@ namespace BarPromenade
 {
     public static class BarInteriorWorldBuilder
     {
-        // Reflective enough to catch the pendant pools: the old
-        // 0.095 floor was a 5% mirror of nothing.
-        private static readonly Color FloorColor =
-            new Color(0.14f, 0.06f, 0.042f);
-        private static readonly Color WallColor =
-            new Color(0.29f, 0.075f, 0.075f);
-        private static readonly Color WallPanelColor =
-            new Color(0.13f, 0.042f, 0.032f);
         private static readonly Color DarkWoodColor =
             new Color(0.075f, 0.024f, 0.017f);
-        private static readonly Color WoodColor =
-            new Color(0.16f, 0.055f, 0.028f);
         private static readonly Color LeatherColor =
             new Color(0.30f, 0.035f, 0.045f);
         private static readonly Color BrassColor =
             new Color(0.86f, 0.46f, 0.14f);
-        private static readonly Color TealGlassColor =
-            new Color(0.055f, 0.18f, 0.19f);
 
         /// <summary>
         /// Resurfaces one primitive with a packaged worn sheet when
@@ -81,8 +69,9 @@ namespace BarPromenade
             BuildActivityBay(room);
             BuildSocialTables(room, plan);
             BuildEntranceDress(room, plan);
-            BuildWallDress(room);
-            BuildCeilingFan(room);
+            BuildWallDress(room, plan);
+            BuildDistrictDress(room, plan);
+            BuildCeilingFan(room, plan);
             BuildActivityDress(room, plan);
             BuildPracticalFixtures(room, plan);
             return room;
@@ -92,6 +81,7 @@ namespace BarPromenade
             Transform room,
             BarInteriorLayoutPlan plan)
         {
+            BarDistrictIdentity identity = plan.DistrictIdentity;
             float width = plan.RoomSize.x;
             float depth = plan.RoomSize.y;
             float height = plan.RoomHeight;
@@ -107,17 +97,17 @@ namespace BarPromenade
                     room,
                     new Vector3(0f, -0.12f, 0f),
                     new Vector3(width, 0.24f, depth),
-                    FloorColor),
+                    identity.FloorTint),
                 plan,
                 BarSurfaceKind.WornPlank,
                 SurfaceProjection.BoxXZ,
-                FloorColor);
+                identity.FloorTint);
             RuntimePrimitiveFactory.CreateBox(
                 "Ceiling",
                 room,
                 new Vector3(0f, height + 0.10f, 0f),
                 new Vector3(width, 0.20f, depth),
-                new Color(0.045f, 0.021f, 0.020f),
+                identity.CeilingTint,
                 false);
             ApplyWornSurface(
                 RuntimePrimitiveFactory.CreateBox(
@@ -125,33 +115,33 @@ namespace BarPromenade
                     room,
                     new Vector3(0f, height * 0.5f, depth * 0.5f),
                     new Vector3(width, height, wall),
-                    WallColor),
+                    identity.WallTint),
                 plan,
                 BarSurfaceKind.Wallpaper,
                 SurfaceProjection.BoxXY,
-                WallColor);
+                identity.WallTint);
             ApplyWornSurface(
                 RuntimePrimitiveFactory.CreateBox(
                     "Left Wall",
                     room,
                     new Vector3(-width * 0.5f, height * 0.5f, 0f),
                     new Vector3(wall, height, depth),
-                    WallColor),
+                    identity.WallTint),
                 plan,
                 BarSurfaceKind.Wallpaper,
                 SurfaceProjection.BoxZY,
-                WallColor);
+                identity.WallTint);
             ApplyWornSurface(
                 RuntimePrimitiveFactory.CreateBox(
                     "Right Wall",
                     room,
                     new Vector3(width * 0.5f, height * 0.5f, 0f),
                     new Vector3(wall, height, depth),
-                    WallColor),
+                    identity.WallTint),
                 plan,
                 BarSurfaceKind.Wallpaper,
                 SurfaceProjection.BoxZY,
-                WallColor);
+                identity.WallTint);
             RuntimePrimitiveFactory.CreateBox(
                 "Front Wall Left",
                 room,
@@ -160,13 +150,13 @@ namespace BarPromenade
                     height * 0.5f,
                     -depth * 0.5f),
                 new Vector3(frontSegmentWidth, height, wall),
-                WallColor);
+                identity.WallTint);
             ApplyWornSurface(
                 room.Find("Front Wall Left").gameObject,
                 plan,
                 BarSurfaceKind.Wallpaper,
                 SurfaceProjection.BoxXY,
-                WallColor);
+                identity.WallTint);
             ApplyWornSurface(
                 RuntimePrimitiveFactory.CreateBox(
                     "Front Wall Right",
@@ -176,32 +166,32 @@ namespace BarPromenade
                         height * 0.5f,
                         -depth * 0.5f),
                     new Vector3(frontSegmentWidth, height, wall),
-                    WallColor),
+                    identity.WallTint),
                 plan,
                 BarSurfaceKind.Wallpaper,
                 SurfaceProjection.BoxXY,
-                WallColor);
+                identity.WallTint);
 
             RuntimePrimitiveFactory.CreateBox(
                 "Entrance Left Post",
                 room,
                 new Vector3(-1.72f, 2.25f, -depth * 0.5f + 0.04f),
                 new Vector3(0.28f, 4.5f, 0.42f),
-                BrassColor,
+                identity.MetalTint,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Entrance Right Post",
                 room,
                 new Vector3(1.72f, 2.25f, -depth * 0.5f + 0.04f),
                 new Vector3(0.28f, 4.5f, 0.42f),
-                BrassColor,
+                identity.MetalTint,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Entrance Lintel",
                 room,
                 new Vector3(0f, 4.20f, -depth * 0.5f + 0.04f),
                 new Vector3(3.7f, 0.30f, 0.42f),
-                BrassColor,
+                identity.MetalTint,
                 false);
 
             var crossBeams = new List<Bounds>();
@@ -216,7 +206,7 @@ namespace BarPromenade
                 "Ceiling Cross Beams",
                 room,
                 crossBeams,
-                DarkWoodColor));
+                identity.DarkWoodTint));
 
             var longBeams = new List<Bounds>
             {
@@ -231,13 +221,14 @@ namespace BarPromenade
                 "Ceiling Long Beams",
                 room,
                 longBeams,
-                DarkWoodColor));
+                identity.DarkWoodTint));
         }
 
         private static void BuildWallPanels(
             Transform room,
             BarInteriorLayoutPlan plan)
         {
+            BarDistrictIdentity identity = plan.DistrictIdentity;
             float width = plan.RoomSize.x;
             float depth = plan.RoomSize.y;
             var panels = new List<Bounds>
@@ -256,7 +247,7 @@ namespace BarPromenade
                 "Wall Wainscot",
                 room,
                 panels,
-                WallPanelColor));
+                identity.WallPanelTint));
 
             var rails = new List<Bounds>
             {
@@ -274,13 +265,14 @@ namespace BarPromenade
                 "Wall Brass Rails",
                 room,
                 rails,
-                BrassColor));
+                identity.MetalTint));
         }
 
         private static void BuildCounter(
             Transform room,
             BarInteriorLayoutPlan plan)
         {
+            BarDistrictIdentity identity = plan.DistrictIdentity;
             Vector3 counter = plan.CounterPosition;
             Vector3 size = plan.CounterSize;
             ApplyWornSurface(
@@ -289,17 +281,17 @@ namespace BarPromenade
                     room,
                     counter,
                     size,
-                    DarkWoodColor),
+                    identity.CounterWoodTint),
                 plan,
                 BarSurfaceKind.DarkWood,
                 SurfaceProjection.BoxXY,
-                DarkWoodColor);
+                identity.CounterWoodTint);
             RuntimePrimitiveFactory.CreateBox(
                 "Counter Top",
                 room,
                 counter + Vector3.up * (size.y * 0.5f + 0.08f),
                 new Vector3(size.x + 0.45f, 0.16f, size.z + 0.32f),
-                BrassColor,
+                identity.MetalTint,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Counter Foot Rail",
@@ -309,7 +301,7 @@ namespace BarPromenade
                     -size.y * 0.29f,
                     -size.z * 0.62f),
                 new Vector3(size.x - 0.45f, 0.10f, 0.10f),
-                BrassColor,
+                identity.MetalTint,
                 false);
 
             var panels = new List<Bounds>();
@@ -333,11 +325,11 @@ namespace BarPromenade
                     "Counter Front Panels",
                     room,
                     panels,
-                    WoodColor),
+                    identity.WoodTint),
                 plan,
                 BarSurfaceKind.DarkWood,
                 SurfaceProjection.BoxXY,
-                WoodColor));
+                identity.WoodTint));
 
             float[] stoolXs = { -4.25f, -2.55f, -0.85f, 0.85f, 2.55f, 4.25f };
             for (int index = 0; index < stoolXs.Length; index++)
@@ -371,7 +363,7 @@ namespace BarPromenade
                         counter.y + size.y * 0.5f + 0.34f,
                         counter.z),
                     new Vector3(0.08f, 0.26f, 0.08f),
-                    BrassColor,
+                    identity.MetalTint,
                     false);
                 RuntimePrimitiveFactory.CreateBox(
                     $"Beer Tap Handle {index + 1}",
@@ -381,7 +373,9 @@ namespace BarPromenade
                         counter.y + size.y * 0.5f + 0.63f,
                         counter.z),
                     new Vector3(0.13f, 0.30f, 0.13f),
-                    index % 2 == 0 ? LeatherColor : TealGlassColor,
+                    index % 2 == 0
+                        ? identity.UpholsteryTint
+                        : identity.GlassTint,
                     false);
             }
         }
@@ -390,6 +384,7 @@ namespace BarPromenade
             Transform room,
             BarInteriorLayoutPlan plan)
         {
+            BarDistrictIdentity identity = plan.DistrictIdentity;
             BarInteriorFurnitureFootprint footprint =
                 RequireFurniture(
                     plan,
@@ -406,13 +401,13 @@ namespace BarPromenade
                     footprint.Bounds.width,
                     footprint.Height,
                     footprint.Bounds.height),
-                DarkWoodColor);
+                identity.CounterWoodTint);
             ApplyWornSurface(
                 room.Find("Backbar Cabinet").gameObject,
                 plan,
                 BarSurfaceKind.DarkWood,
                 SurfaceProjection.BoxXY,
-                DarkWoodColor);
+                identity.CounterWoodTint);
 
             var mirrorPanels = new List<Bounds>();
             for (int index = 0; index < 5; index++)
@@ -429,7 +424,7 @@ namespace BarPromenade
                 "Backbar Mirror Panels",
                 room,
                 mirrorPanels,
-                TealGlassColor));
+                identity.GlassTint));
 
             var shelfBoxes = new List<Bounds>();
             for (int row = 0; row < 3; row++)
@@ -456,7 +451,7 @@ namespace BarPromenade
                 "Backbar Shelves",
                 room,
                 shelfBoxes,
-                BrassColor));
+                identity.MetalTint));
             BuildBottleSilhouettes(room, backZ - 0.28f);
 
             RuntimePrimitiveFactory.CreateBox(
@@ -464,14 +459,14 @@ namespace BarPromenade
                 room,
                 new Vector3(0f, 4.14f, backZ - 0.12f),
                 new Vector3(11.35f, 0.34f, 0.42f),
-                DarkWoodColor,
+                identity.DarkWoodTint,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Backbar Amber Sign",
                 room,
                 new Vector3(0f, 4.12f, backZ - 0.35f),
                 new Vector3(4.6f, 0.18f, 0.08f),
-                new Color(2.6f, 1.10f, 0.24f),
+                identity.SignGlowColor,
                 CityNightResources.EmissiveMaterial,
                 false);
         }
@@ -534,6 +529,7 @@ namespace BarPromenade
             Transform room,
             BarInteriorLayoutPlan plan)
         {
+            BarDistrictIdentity identity = plan.DistrictIdentity;
             int boothIndex = 0;
             for (int index = 0;
                  index < plan.FurnitureFootprints.Count;
@@ -565,46 +561,46 @@ namespace BarPromenade
                         room,
                         new Vector3(baseX, 0.20f, z),
                         new Vector3(0.78f, 0.40f, depth),
-                        DarkWoodColor),
+                        identity.CounterWoodTint),
                     plan,
                     BarSurfaceKind.DarkWood,
                     SurfaceProjection.BoxXY,
-                    DarkWoodColor);
+                    identity.CounterWoodTint);
                 ApplyWornSurface(
                     RuntimePrimitiveFactory.CreateBox(
                         $"Booth Cushion {boothIndex}",
                         room,
                         new Vector3(baseX + 0.02f, 0.435f, z),
                         new Vector3(0.76f, 0.09f, depth - 0.10f),
-                        LeatherColor,
+                        identity.UpholsteryTint,
                         false),
                     plan,
                     BarSurfaceKind.WornLeather,
                     SurfaceProjection.BoxXZ,
-                    LeatherColor);
+                    identity.UpholsteryTint);
                 ApplyWornSurface(
                     RuntimePrimitiveFactory.CreateBox(
                         $"Booth Back {boothIndex}",
                         room,
                         new Vector3(backX, 0.90f, z),
                         new Vector3(0.18f, 0.95f, bounds.height),
-                        LeatherColor),
+                        identity.UpholsteryTint),
                     plan,
                     BarSurfaceKind.WornLeather,
                     SurfaceProjection.BoxZY,
-                    LeatherColor);
+                    identity.UpholsteryTint);
                 RuntimePrimitiveFactory.CreateBox(
                     $"Booth Table Top {boothIndex}",
                     room,
                     new Vector3(tableX, 0.88f, z),
                     new Vector3(1.18f, 0.12f, 1.48f),
-                    BrassColor);
+                    identity.MetalTint);
                 RuntimePrimitiveFactory.CreateCylinder(
                     $"Booth Table Leg {boothIndex}",
                     room,
                     new Vector3(tableX, 0.43f, z),
                     new Vector3(0.18f, 0.43f, 0.18f),
-                    DarkWoodColor);
+                    identity.DarkWoodTint);
             }
         }
 
@@ -612,6 +608,7 @@ namespace BarPromenade
             Transform room,
             BarInteriorLayoutPlan plan)
         {
+            BarDistrictIdentity identity = plan.DistrictIdentity;
             BarInteriorFurnitureFootprint footprint =
                 RequireFurniture(
                     plan,
@@ -631,33 +628,33 @@ namespace BarPromenade
                     bounds.width,
                     footprint.Height,
                     bounds.height),
-                DarkWoodColor);
+                identity.CounterWoodTint);
             ApplyWornSurface(
                 room.Find("Small Stage").gameObject,
                 plan,
                 BarSurfaceKind.WornPlank,
                 SurfaceProjection.BoxXZ,
-                DarkWoodColor);
+                identity.CounterWoodTint);
             RuntimePrimitiveFactory.CreateBox(
                 "Stage Left Curtain",
                 room,
                 new Vector3(bounds.xMin + 0.16f, 2.55f, curtainZ),
                 new Vector3(0.42f, 4.25f, 0.35f),
-                LeatherColor,
+                identity.UpholsteryTint,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Stage Right Curtain",
                 room,
                 new Vector3(bounds.xMax - 0.16f, 2.55f, curtainZ),
                 new Vector3(0.42f, 4.25f, 0.35f),
-                LeatherColor,
+                identity.UpholsteryTint,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Stage Valance",
                 room,
                 new Vector3(centerX, 4.34f, curtainZ),
                 new Vector3(bounds.width + 0.12f, 0.62f, 0.35f),
-                LeatherColor,
+                identity.UpholsteryTint,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Stage Left Speaker",
@@ -682,7 +679,7 @@ namespace BarPromenade
                 room,
                 new Vector3(centerX, 0.95f, centerZ - 0.55f),
                 new Vector3(0.055f, 0.80f, 0.055f),
-                BrassColor,
+                identity.MetalTint,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Stage Microphone",
@@ -757,6 +754,7 @@ namespace BarPromenade
             Transform room,
             BarInteriorLayoutPlan plan)
         {
+            BarDistrictIdentity identity = plan.DistrictIdentity;
             BarInteriorFurnitureFootprint coatRack =
                 RequireFurniture(
                     plan,
@@ -770,7 +768,7 @@ namespace BarPromenade
                 room,
                 coatRackPosition + Vector3.up * 0.92f,
                 new Vector3(0.12f, 0.92f, 0.12f),
-                BrassColor);
+                identity.MetalTint);
             for (int index = 0; index < 4; index++)
             {
                 GameObject hook = RuntimePrimitiveFactory.CreateBox(
@@ -778,7 +776,7 @@ namespace BarPromenade
                     room,
                     coatRackPosition + Vector3.up * 1.70f,
                     new Vector3(0.52f, 0.08f, 0.08f),
-                    BrassColor,
+                    identity.MetalTint,
                     false);
                 hook.transform.localRotation =
                     Quaternion.Euler(0f, index * 45f, 18f);
@@ -789,38 +787,150 @@ namespace BarPromenade
                 room,
                 new Vector3(9.65f, 1.25f, 7.76f),
                 new Vector3(1.65f, 2.50f, 0.12f),
-                TealGlassColor,
+                identity.GlassTint,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Service Door Frame",
                 room,
                 new Vector3(9.65f, 2.57f, 7.70f),
                 new Vector3(1.92f, 0.14f, 0.20f),
-                BrassColor,
+                identity.MetalTint,
                 false);
         }
 
-        private static void BuildWallDress(Transform room)
+        private static void BuildWallDress(
+            Transform room,
+            BarInteriorLayoutPlan plan)
         {
+            BarDistrictIdentity identity = plan.DistrictIdentity;
             BuildPoster(
                 room,
                 "Burgundy Poster",
                 new Vector3(10.78f, 2.55f, -4.30f),
-                new Color(0.56f, 0.08f, 0.10f));
+                Color.Lerp(identity.WallTint, identity.SignAccentColor, 0.68f));
             BuildPoster(
                 room,
                 "Teal Poster",
                 new Vector3(10.78f, 2.55f, 4.25f),
-                new Color(0.08f, 0.38f, 0.42f));
+                identity.GlassTint * 1.35f);
             BuildPoster(
                 room,
                 "Entrance Notice",
                 new Vector3(-10.78f, 2.45f, -6.20f),
-                new Color(0.62f, 0.38f, 0.12f));
+                identity.SignAccentColor);
         }
 
-        private static void BuildCeilingFan(Transform room)
+        private static void BuildDistrictDress(
+            Transform room,
+            BarInteriorLayoutPlan plan)
         {
+            BarDistrictIdentity identity = plan.DistrictIdentity;
+            Transform dress = new GameObject("District Identity").transform;
+            dress.SetParent(room, false);
+            switch (identity.Mood)
+            {
+                case BarDistrictMood.Memory:
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Old Town Ledger Field",
+                        dress,
+                        new Vector3(10.76f, 2.68f, 0f),
+                        new Vector3(0.06f, 2.32f, 4.80f),
+                        Color.Lerp(
+                            identity.WallTint,
+                            new Color(0.48f, 0.31f, 0.15f), 0.46f),
+                        false);
+                    SetNoShadows(RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Old Town Missing Portraits",
+                        dress,
+                        CreateWallCards(2.88f, 3, 1.22f, 0.72f, 0.62f),
+                        identity.SignAccentColor));
+                    break;
+                case BarDistrictMood.Household:
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Residential Curtain Field",
+                        dress,
+                        new Vector3(10.76f, 2.68f, 0f),
+                        new Vector3(0.06f, 2.35f, 4.80f),
+                        identity.UpholsteryTint,
+                        false);
+                    SetNoShadows(RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Residential Curtain Pleats",
+                        dress,
+                        CreateWallCards(2.68f, 7, 0.64f, 2.18f, 0.14f),
+                        identity.WallPanelTint));
+                    break;
+                case BarDistrictMood.AfterShift:
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Industrial Safety Band",
+                        dress,
+                        new Vector3(10.76f, 1.82f, 0f),
+                        new Vector3(0.06f, 0.34f, 6.25f),
+                        identity.SignAccentColor,
+                        false);
+                    SetNoShadows(RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Industrial Utility Pipes",
+                        dress,
+                        CreateWallCards(2.78f, 4, 1.28f, 3.20f, 0.16f),
+                        identity.MetalTint));
+                    break;
+                default:
+                    BuildNightlifeNeon(dress, identity);
+                    break;
+            }
+        }
+
+        private static IReadOnlyList<Bounds> CreateWallCards(
+            float y,
+            int count,
+            float spacing,
+            float height,
+            float width)
+        {
+            var cards = new List<Bounds>(count);
+            float center = (count - 1) * 0.5f;
+            for (int index = 0; index < count; index++)
+            {
+                cards.Add(new Bounds(
+                    new Vector3(
+                        10.69f,
+                        y,
+                        (index - center) * spacing),
+                    new Vector3(0.05f, height, width)));
+            }
+            return cards;
+        }
+
+        private static void BuildNightlifeNeon(
+            Transform dress,
+            BarDistrictIdentity identity)
+        {
+            GameObject cyan = RuntimePrimitiveFactory.CreateBox(
+                "Nightlife Neon Cyan",
+                dress,
+                new Vector3(10.73f, 2.72f, -1.05f),
+                new Vector3(0.06f, 0.16f, 2.65f),
+                identity.PendantColor * 2.8f,
+                CityNightResources.EmissiveMaterial,
+                false);
+            cyan.transform.localRotation = Quaternion.Euler(24f, 0f, 0f);
+            GameObject magenta = RuntimePrimitiveFactory.CreateBox(
+                "Nightlife Neon Magenta",
+                dress,
+                new Vector3(10.73f, 2.72f, 1.05f),
+                new Vector3(0.06f, 0.16f, 2.65f),
+                identity.SignAccentColor * 2.8f,
+                CityNightResources.EmissiveMaterial,
+                false);
+            magenta.transform.localRotation = Quaternion.Euler(-24f, 0f, 0f);
+            SetNoShadows(cyan);
+            SetNoShadows(magenta);
+        }
+
+        private static void BuildCeilingFan(
+            Transform room,
+            BarInteriorLayoutPlan plan)
+        {
+            BarDistrictIdentity identity = plan.DistrictIdentity;
             GameObject fan = new GameObject("Slow Ceiling Fan");
             fan.transform.SetParent(room, false);
             fan.transform.localPosition = new Vector3(0f, 4.35f, 0.75f);
@@ -831,7 +941,7 @@ namespace BarPromenade
                 fan.transform,
                 Vector3.zero,
                 new Vector3(0.28f, 0.10f, 0.28f),
-                BrassColor,
+                identity.MetalTint,
                 false);
             for (int index = 0; index < 4; index++)
             {
@@ -840,7 +950,7 @@ namespace BarPromenade
                     fan.transform,
                     new Vector3(1.10f, -0.05f, 0f),
                     new Vector3(1.75f, 0.08f, 0.34f),
-                    DarkWoodColor,
+                    identity.DarkWoodTint,
                     false);
                 blade.transform.localRotation =
                     Quaternion.Euler(0f, index * 90f, 0f);
@@ -1139,10 +1249,17 @@ namespace BarPromenade
             Transform room,
             BarInteriorLayoutPlan plan)
         {
+            BarDistrictIdentity identity = plan.DistrictIdentity;
             for (int index = 0; index < plan.LightAnchors.Count; index++)
             {
                 BarInteriorLightAnchor anchor =
                     plan.LightAnchors[index];
+                bool counterPendant =
+                    anchor.Kind ==
+                    BarInteriorLightKind.CounterPendant;
+                Color bulbColor = counterPendant
+                    ? identity.PendantColor
+                    : anchor.Color;
                 float cableHeight =
                     Mathf.Max(0.2f, plan.RoomHeight - anchor.Position.y);
                 RuntimePrimitiveFactory.CreateBox(
@@ -1153,21 +1270,23 @@ namespace BarPromenade
                         anchor.Position.y + cableHeight * 0.5f,
                         anchor.Position.z),
                     new Vector3(0.035f, cableHeight, 0.035f),
-                    DarkWoodColor,
+                    identity.DarkWoodTint,
                     false);
                 RuntimePrimitiveFactory.CreateCylinder(
                     $"Practical Shade {index + 1}",
                     room,
                     anchor.Position + Vector3.up * 0.10f,
                     new Vector3(0.58f, 0.14f, 0.58f),
-                    index % 2 == 0 ? BrassColor : DarkWoodColor,
+                    index % 2 == 0
+                        ? identity.MetalTint
+                        : identity.DarkWoodTint,
                     false);
                 RuntimePrimitiveFactory.CreateCylinder(
                     $"Practical Bulb {index + 1}",
                     room,
                     anchor.Position - Vector3.up * 0.10f,
                     new Vector3(0.19f, 0.18f, 0.19f),
-                    anchor.Color * 2.2f,
+                    bulbColor * 2.2f,
                     CityNightResources.EmissiveMaterial,
                     false);
             }

@@ -165,8 +165,9 @@ namespace BarPromenade
             switch (style)
             {
                 case CityFringeYardStyle.ServiceGround:
-                    CityExteriorAppearance.ApplyGroundSurface(renderer);
-                    RuntimePrimitiveFactory.SetColor(renderer, color);
+                    CityExteriorAppearance.ApplyGroundSurface(
+                        renderer,
+                        color);
                     break;
                 case CityFringeYardStyle.ServiceTrack:
                     CityFringeYardSurfaceAppearance.ApplyCombined(

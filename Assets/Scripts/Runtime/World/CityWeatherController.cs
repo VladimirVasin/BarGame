@@ -25,6 +25,8 @@ namespace BarPromenade
         public bool IsInitialized { get; private set; }
         public WeatherVisualSample CurrentSample { get; private set; }
         public int WeatherApplicationCount { get; private set; }
+        public float SurfaceWetness =>
+            CityWetSurfaceRegistry.CurrentWetness;
 
         public void Initialize(
             CityRainField rainField,
@@ -62,6 +64,7 @@ namespace BarPromenade
             WeatherVisualSample nextSample =
                 GameWeatherRules.EvaluateCurrent();
             ApplyLensRain(nextSample);
+            ApplyWetSurfaces(nextSample, force);
             bool kindChanged =
                 !hasAppliedSample ||
                 CurrentSample.Kind != nextSample.Kind;
@@ -173,6 +176,30 @@ namespace BarPromenade
                 Mathf.Clamp01(target),
                 Time.deltaTime / 2.5f);
             RainLensRenderState.Set(lensRainIntensity);
+        }
+
+        private static void ApplyWetSurfaces(
+            WeatherVisualSample sample,
+            bool force)
+        {
+            double absoluteGameMinutes =
+                (GameSessionState.GameDayIndex *
+                 GameTimeDayNightRules.MinutesPerDay) +
+                GameSessionState.GameTimeOfDayMinutes;
+            if (force)
+            {
+                CityWetSurfaceRegistry.InitializeOrResume(
+                    sample.RainIntensity,
+                    absoluteGameMinutes);
+                return;
+            }
+
+            CityWetSurfaceRegistry.Advance(
+                sample.RainIntensity,
+                GameSessionState.IsGameTimeRunning
+                    ? Time.deltaTime
+                    : 0f,
+                absoluteGameMinutes);
         }
 
         private void UpdateShelter()

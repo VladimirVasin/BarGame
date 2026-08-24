@@ -114,6 +114,13 @@ namespace BarPromenade
 
         public static void ApplyGroundSurface(Renderer renderer)
         {
+            ApplyGroundSurface(renderer, Color.white);
+        }
+
+        public static void ApplyGroundSurface(
+            Renderer renderer,
+            Color dryTint)
+        {
             if (renderer == null)
             {
                 return;
@@ -122,7 +129,9 @@ namespace BarPromenade
             ApplySurface(
                 renderer,
                 GroundTexture,
-                GroundSmoothness);
+                GroundSmoothness,
+                CityWetSurfaceKind.Ground,
+                dryTint);
         }
 
         public static void ApplyRoadSurface(Renderer renderer)
@@ -135,7 +144,9 @@ namespace BarPromenade
             ApplySurface(
                 renderer,
                 RoadTexture,
-                RoadSmoothness);
+                RoadSmoothness,
+                CityWetSurfaceKind.Road,
+                Color.white);
         }
 
         public static void ApplySidewalkSurface(Renderer renderer)
@@ -148,7 +159,9 @@ namespace BarPromenade
             ApplySurface(
                 renderer,
                 SidewalkTexture,
-                SidewalkSmoothness);
+                SidewalkSmoothness,
+                CityWetSurfaceKind.Sidewalk,
+                Color.white);
         }
 
         public static void ApplyRoadMarkingSurface(Renderer renderer)
@@ -161,13 +174,32 @@ namespace BarPromenade
             ApplySurface(
                 renderer,
                 RoadMarkingTexture,
-                RoadMarkingSmoothness);
+                RoadMarkingSmoothness,
+                CityWetSurfaceKind.RoadMarking,
+                Color.white);
+        }
+
+        public static void ApplyPuddleSurface(Renderer renderer)
+        {
+            if (renderer == null)
+            {
+                return;
+            }
+
+            ApplySurface(
+                renderer,
+                RoadTexture,
+                RoadSmoothness,
+                CityWetSurfaceKind.Puddle,
+                Color.white);
         }
 
         private static void ApplySurface(
             Renderer renderer,
             Texture2D texture,
-            float smoothness)
+            float smoothness,
+            CityWetSurfaceKind wetSurfaceKind,
+            Color dryTint)
         {
             if (renderer == null)
             {
@@ -178,11 +210,15 @@ namespace BarPromenade
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
             properties.SetTexture(BaseMapId, texture);
-            properties.SetColor(BaseColorId, Color.white);
-            properties.SetColor(ColorId, Color.white);
+            properties.SetColor(BaseColorId, dryTint);
+            properties.SetColor(ColorId, dryTint);
             properties.SetFloat(SmoothnessId, smoothness);
             properties.SetFloat(MetallicId, 0f);
             renderer.SetPropertyBlock(properties);
+            CityWetSurfaceRegistry.Register(
+                renderer,
+                wetSurfaceKind,
+                dryTint);
         }
 
         private static Texture2D LoadSurfaceTexture(
@@ -263,10 +299,11 @@ namespace BarPromenade
 
         /// <summary>
         /// Which family a facade pane belongs to, plus the stable hash the
-        /// window appearance uses to pick its texture variant. The lit/dark
-        /// split and the cold/warm ratio are unchanged from the original
-        /// flat-colour windows, so a seed lights the same rooms it always
-        /// did.
+        /// window appearance uses to pick its texture variant. Special
+        /// buildings keep their authored family; ordinary buildings read the
+        /// deterministic district presentation profile so residential rooms,
+        /// industrial work lights and Nightlife ground floors no longer share
+        /// one city-wide schedule.
         /// </summary>
         public static CityWindowFamily ResolveWindowFamily(
             BuildingLot lot,
@@ -298,7 +335,79 @@ namespace BarPromenade
                 return CityWindowFamily.Supermarket;
             }
 
-            int selection = (int)(paneHash % 100u);
+            if (!TryGetUrbanWindowProfile(
+                    lot.District,
+                    out CityDistrictWindowProfile windowProfile))
+            {
+                return ResolveLegacyWindowFamily(paneHash);
+            }
+
+            uint variationKey = CityDistrictPresentationPlanner
+                .ResolveWindowVariationKey(
+                    citySeed,
+                    lot.Cell.x,
+                    lot.Cell.y,
+                    lot.District);
+            int groupSize = 2 + (int)(variationKey % 2u);
+            int groupPhase = (int)(
+                (variationKey >> 8) % (uint)groupSize);
+            int groupPane = (pane + groupPhase) / groupSize;
+            uint clusterHash = StableHash(
+                citySeed ^ unchecked(
+                    (int)variationKey),
+                lot.Cell.x,
+                lot.Cell.y,
+                floor,
+                groupPane,
+                side);
+            uint clusterChoiceHash = Mix(clusterHash, 0x434C5354u);
+            bool useApartmentCluster =
+                (clusterChoiceHash % 10000u) <
+                Mathf.RoundToInt(
+                    windowProfile.RhythmRegularity * 10000f);
+            uint selectionHash = useApartmentCluster
+                ? Mix(clusterHash, 0x53454C45u)
+                : paneHash;
+            float litRatio = ResolveLitWindowRatio(
+                windowProfile,
+                floor,
+                side);
+            if ((selectionHash % 10000u) >=
+                Mathf.RoundToInt(litRatio * 10000f))
+            {
+                return CityWindowFamily.Off;
+            }
+
+            uint temperatureHash = Mix(selectionHash, 0x57494E44u);
+            return (temperatureHash % 10000u) <
+                   Mathf.RoundToInt(windowProfile.WarmShare * 10000f)
+                ? CityWindowFamily.Warm
+                : CityWindowFamily.Cold;
+        }
+
+        private static bool TryGetUrbanWindowProfile(
+            CityDistrictKind district,
+            out CityDistrictWindowProfile profile)
+        {
+            switch (district)
+            {
+                case CityDistrictKind.OldTown:
+                case CityDistrictKind.Residential:
+                case CityDistrictKind.Industrial:
+                case CityDistrictKind.Nightlife:
+                    profile = CityDistrictPresentationPlanner
+                        .GetProfile(district)
+                        .Window;
+                    return true;
+                default:
+                    profile = default;
+                    return false;
+            }
+        }
+
+        private static CityWindowFamily ResolveLegacyWindowFamily(uint hash)
+        {
+            int selection = (int)(hash % 100u);
             if (selection < 65)
             {
                 return CityWindowFamily.Off;
@@ -307,6 +416,36 @@ namespace BarPromenade
             return selection < 90
                 ? CityWindowFamily.Cold
                 : CityWindowFamily.Warm;
+        }
+
+        private static float ResolveLitWindowRatio(
+            CityDistrictWindowProfile profile,
+            int floor,
+            int side)
+        {
+            float offset;
+            switch (profile.Family)
+            {
+                case CityDistrictWindowFamily.NarrowIrregular:
+                    offset = floor == 0 ? -0.04f : 0.01f;
+                    break;
+                case CityDistrictWindowFamily.OccupiedClusters:
+                    offset = floor == 0 ? -0.06f : 0.02f;
+                    break;
+                case CityDistrictWindowFamily.SparseUtility:
+                    offset = floor == 0 ? -0.04f : 0.01f;
+                    break;
+                case CityDistrictWindowFamily.DarkUpperActiveBase:
+                    // The front threshold is active; the service/rear side
+                    // stays quiet so Nightlife does not glow as one volume.
+                    offset = floor == 0 && side == 0 ? 0.34f : -0.08f;
+                    break;
+                default:
+                    offset = 0f;
+                    break;
+            }
+
+            return Mathf.Clamp01(profile.LitWindowRatio + offset);
         }
 
         public static Color Darken(

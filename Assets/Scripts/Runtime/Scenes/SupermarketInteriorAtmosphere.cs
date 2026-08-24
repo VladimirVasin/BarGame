@@ -2,6 +2,7 @@ using System;
 using BarPromenade.Rendering;
 using UnityEngine;
 using UnityEngine.Rendering;
+using UnityEngine.Rendering.Universal;
 
 namespace BarPromenade
 {
@@ -244,8 +245,22 @@ namespace BarPromenade
             RuntimeProfile.hideFlags = HideFlags.HideAndDontSave;
             PostProcessVolume.profile = RuntimeProfile;
 
-            // Depth of field only: the fluorescent hall keeps its flat
-            // grade, the far aisles just soften.
+            // Own the former PC baseline explicitly so the hall's flat
+            // fluorescent look never depends on a project template asset.
+            Tonemapping tonemapping =
+                RuntimeProfile.Add<Tonemapping>(true);
+            tonemapping.mode.Override(TonemappingMode.Neutral);
+
+            Bloom bloom = RuntimeProfile.Add<Bloom>(true);
+            bloom.threshold.Override(1f);
+            bloom.intensity.Override(0.25f);
+            bloom.scatter.Override(0.5f);
+            bloom.highQualityFiltering.Override(true);
+
+            Vignette vignette = RuntimeProfile.Add<Vignette>(true);
+            vignette.intensity.Override(0.2f);
+            vignette.smoothness.Override(0.2f);
+
             RuntimeSceneSetup.AddGaussianDepthOfField(
                 RuntimeProfile, 7f, 20f, 1.0f);
             volumeObject
