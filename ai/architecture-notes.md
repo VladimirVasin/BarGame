@@ -1776,16 +1776,24 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   The localized `640x360` menu exposes only Resume, Start Over and Quit Game;
   restart and quit require explicit default-No confirmation, while save/load,
   settings and a visible main-menu destination remain unimplemented.
-- **Accepted — Independent player heading:** The motor rotates the player root
-  only toward non-zero actual planar movement and preserves that heading while
-  idle. The chase camera orbits independently and never writes player yaw.
-- **Accepted — Bounded inertial locomotion:** Camera-relative input targets
-  a `2.6 m/s` maximum through `6.5 m/s²` acceleration and
-  `11 m/s²` braking. The motor feeds actual constrained displacement back
-  into its next velocity step, so road edges and collisions cannot store a
-  hidden impulse. Normal input release coasts, while modal ownership, scene
-  transitions, input disable and teleport still stop planar motion
-  immediately.
+- **Accepted — Tank-control player heading (supersedes independent heading):**
+  A/D yaw the player root directly at `150°/s` (scaled by the intoxication
+  speed multiplier); the root never rotates toward velocity during input
+  locomotion. W walks along the hero's own forward axis, S backs him up at a
+  reduced `1.4 m/s`, and W±A/D walks an arc. The camera-relative steering
+  basis and its camera-cut latch are gone — the chase camera orbits
+  independently and never writes player yaw. Scripted interaction approaches
+  (`WalkPlanarStep`) still face along their travel. The motor reports a
+  `PlayerMotionSample` (planar velocity, signed forward speed, turn input) so
+  the presentation can select `Walk`, `WalkBack` or the `TurnLeft`/
+  `TurnRight` in-place clips on its five-input locomotion mixer.
+- **Accepted — Bounded inertial locomotion:** Character-relative input targets
+  a `2.6 m/s` forward / `1.4 m/s` backward maximum through `6.5 m/s²`
+  acceleration and `11 m/s²` braking. The motor feeds actual constrained
+  displacement back into its next velocity step, so road edges and collisions
+  cannot store a hidden impulse. Normal input release coasts, while modal
+  ownership, scene transitions, input disable and teleport still stop planar
+  motion immediately.
 - **Accepted — Bounded cinematic chase camera:** Exterior/interior framing uses
   `2.6 m / 53°` and `2.2 m / 57°` profiles with `1.4 m / 1.3 m` raised focus
   points that compose the hero below frame center. RMB mouse motion, the
@@ -1899,6 +1907,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   chalky wall rather than a grimy one. The bound and the preserved brightness
   are both swept from the live colour ranges by
   `CityFacadeAppearanceTests`, so widening a district palette fails there.
+- **Accepted — District presentation is pure data with windows as the first
+  consumer:** `CityDistrictPresentationPlanner` owns stable per-block keys for
+  frontage, mass, windows, light and wear plus a one-block transition motif
+  restricted to authored neighbour pairs. The current world build consumes
+  only the window channel: irregular Old Town panes, occupied Residential
+  clusters, sparse Industrial task lights and a front-only active Nightlife
+  ground floor under dark upper/rear facades. Cluster phase and size vary by
+  block so there is no repeated two-pane domino rhythm. Special Bar, Home and
+  Supermarket window families return before district resolution. The remaining
+  channels are implemented inputs, not yet claims about built geometry.
 - **Accepted — PC PS1 world composite:** The active PC renderer runs one native
   Unity 6 RenderGraph feature at `AfterRenderingPostProcessing` for the final
   Game camera. It footprint-averages the world to `640x360` by default, blends
@@ -1961,11 +1979,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   on the balcony; balcony audio and flashes are gated to the active Balcony
   shot. While `CityBusRideController.IsPassengerAboard`, the emitter switches
   to a donut with a `10 m` rain-free core so streaks never spawn inside the
-  cabin. The rain deliberately does not touch `GameTimeDayNightRules`,
-  `RuntimeSceneSetup.ApplyCityExteriorLighting`, fog, grade or far clip: those
-  contracts are asserted exactly by the existing City/Home PlayMode suites,
-  and coupling weather into them is a separate future decision (daylight
-  dimming and wet surfaces remain open gaps).
+  cabin. `CityWetSurfaceRegistry` owns the one transient rain film shared by
+  City and the Home balcony: it wets at `0.58/s`, dries at `0.028/s`, catches
+  up from absolute game time on a scene handoff and resets with a new session.
+  Ground, road, sidewalk and marking recipes multiply their authored dry tint
+  and raise smoothness through MPBs on the existing shared material. A pure
+  stable-rank planner chooses at most `42` road patches and one builder emits
+  their upper faces as a single collider-free mesh `3 mm` above the road; dry
+  puddles return to the road recipe instead of leaving raised boxes. The rain
+  deliberately does not touch `GameTimeDayNightRules`, ambient/directional
+  daylight, fog, grade or far clip: daylight dimming and weather grading remain
+  separate future decisions.
 - **Accepted — Deterministic lightning outside the pooled light budget:**
   Lightning shares the pure schedule: each `12`-game-minute window hashes
   into at most one strike (`70%`) whose start offset, azimuth and distance
@@ -2114,7 +2138,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Diegetic bar identity:** Bar lots keep their warm body color and
   add amber windows, a framed canopy and one collider-free pixel mug sign.
   Active signs share one generated sprite and use the existing upright
-  billboard behavior, so recognition does not depend on color alone.
+  billboard behavior, so recognition does not depend on color alone. Inside,
+  the validated shared layout and all circulation remain fixed while one
+  `BarDistrictIdentity` recolours shell, floor, counter, upholstery, glass,
+  signs and practicals and adds one non-colliding wall-scale motif: Old Town
+  ledger/portraits, Residential worn surfaces and curtains, Industrial safety
+  band/pipes, or Nightlife cyan/magenta neon. This is four readable rooms over
+  one geometry contract, not four bespoke layouts.
 - **Accepted — Both spade acts are a choice, not a swing:** Digging and
   filling ask the hero to pick one of six squares and press `E`; there is no
   timing bar in either. There was one, with five kinds of ground behind it

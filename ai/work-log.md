@@ -6,6 +6,225 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-24 — First atmospheric visual slice: wet streets, district windows and four bar rooms
+
+- Audited the current runtime-composed world before changing it and kept the
+  slice deliberately presentation-only: no scene layout, circulation,
+  colliders, fog distance, day/night schedule or realtime-light budget moved.
+- Replaced the PC pipeline's borrowed sample-scene volume reference with the
+  project-owned `PCPresentationBaselineVolumeProfile`. It preserves the
+  effective Neutral tonemapping, Bloom (`0.25`, threshold `1`, scatter `0.5`,
+  HQ) and Vignette (`0.2`) baseline. The Supermarket's runtime-only volume now
+  states the same baseline explicitly before its local depth of field.
+- Added the pure `CityDistrictArtProfile` / presentation plan and planner for
+  frontage, mass, window, light, wear and one-block authored transitions. The
+  first live consumer is the ordinary facade window resolver: Old Town uses
+  irregular low occupancy, Residential warm apartment clusters, Industrial
+  sparse task lights and Nightlife a bright road-facing base under dark upper
+  and rear facades. Bar/Home/Supermarket families still short-circuit. A
+  focused variation-key API avoids a per-pane plan allocation, while seeded
+  2/3-pane grouping and phase avoid the former global domino cadence.
+- Added one cross-scene wet-film registry driven by the existing deterministic
+  weather. Ground, roads, sidewalks and markings wet at `0.58/s`, dry at
+  `0.028/s`, preserve authored dry tint through multiplicative MPBs and retain
+  state across City/Home handoffs by absolute game time; a new run resets it.
+  `CityPuddlePlanner` stable-ranks at most `42` grounded patches and the world
+  builder emits only their upper faces in one collider-free, shadowless mesh
+  `3 mm` over the road. Application is quantized to `0.01` wetness steps to
+  bound MPB churn without losing continuous state accumulation.
+- Expanded `BarDistrictIdentity` from a narrow accent into a coherent surface,
+  sign, glass and practical-light family over the unchanged validated room.
+  One safe wall-scale motif distinguishes each room: Old Town ledger/missing
+  portraits, Residential worn surfaces/curtains, Industrial safety band/pipes
+  and Nightlife cyan/magenta neon. The Residential large-surface tints remain
+  identical to the packaged texture-generator contract.
+- Added focused EditMode coverage for profile transitions/window schedules and
+  temperature, film timing/tint restoration/re-registration, puddle grounding,
+  bar identities/surface compensation and the explicit PC/Supermarket volume
+  baseline. Three independent static reviews found and closed the authored-tint,
+  fixed window-pair cadence, rear Nightlife glow, per-pane allocation and
+  puddle-selection/seam risks.
+- Verification: Unity batch import completed a clean Tundra script compilation
+  (`949` items evaluated, no C# errors), and `git diff --check` is clean apart
+  from pre-existing player-work line-ending notices. The requested focused
+  test runner did not produce XML: the sandbox attempt lost Package Manager
+  IPC, the first external attempt used a locally incompatible `-quit` flag,
+  and the corrected no-quit launch collided with a second Unity project
+  process and returned before discovery. No full suites or player build were
+  run.
+
+## 2026-08-24 — The planar floor rises to 35 m and learns to try before vetoing
+
+- The user exercised the documented escalation immediately: stops 1
+  and 2 (home + supermarket, 33.2 m planar, 338 m apart along the
+  loop) read as "the bus detours and arrives practically where it
+  left". `MinimumPlanarStopSpacing` rose 30 → 35 as planned, letting
+  the retention ranks resolve both spared named pairs.
+- The forecast ceiling veto turned out to be the wrong shape: it
+  blocked dropping the supermarket because home@5 → loop-south@503
+  would leave a 498 m hole, but it could not know a refill insertion
+  would stand a fresh pole mid-corridor. `CoalescePlanarCloseStops`
+  now tries empirically: drop one pair member, rerun
+  `InsertSpacingStops` (which refills any gap past 200 m with
+  planar-clear poles), and only if the refilled loop still holds a
+  gap past 450 m roll back — first onto the pair's other member, then
+  into a permanent protection of the pair. Termination is monotonic:
+  refill poles respect the planar floor by construction, so the
+  violation set only shrinks. `InsertSpacingStops` now seeds its
+  loop-* suffix counters from the poles already standing — the refill
+  probe minted a duplicate "loop-east" id (and with it a duplicate
+  localization key) when the counters restarted.
+- Production roster 29 → 28: the supermarket pole merges into the
+  home stop (the shop door stays a 33 m walk from it), and the
+  CEMETERY loses its named pole — its gate remains served by the
+  nightlife stop 31.4 m away plus the refilled tail pole
+  (loop-east-2@5488, intervals 260/135). Agreed escalation if the
+  user wants the cemetery pole back by name: exempt OpenAreaAccess
+  stops from planar drops. The home corridor gets a refilled
+  loop-east@352 (intervals 347/151); no planar pair under 35 m
+  remains (tightest 35.4 m), the 450 m ceiling holds everywhere.
+
+## 2026-08-24 — The loop's folded poles coalesce across the map
+
+- The user flagged stops standing practically together (map numbers
+  3+6 and 22+23). `CoalesceCloseStops` only measures ALONG the loop
+  and only consecutive stations, so it never saw the loop folding
+  back on itself: the production roster carried nine planar pairs of
+  9.8-24.8 m — 24+27 at 9.8 m, four pairs at 13.8 m (including both
+  the user's), plus 18.4/19.5/21.9/24.8 m folds. On a single one-way
+  loop such neighbours are redundant by construction: the same bus
+  calls at both.
+- New `CoalescePlanarCloseStops` pass in `CityBusPlanner.Create`
+  (after `InsertSpacingStops`, before `GroundShelterPositions`):
+  deterministic pair scan in list order, one drop per pass with
+  rescan, reusing `SelectStopToDrop`/`GetStopRetentionRank` (home and
+  district points of interest never drop). A drop that would tear an
+  along-loop hole past `MaximumCoalescedStopGap` (450 m, the spacing
+  test's ceiling) falls back to the pair's other member — needed
+  exactly once: pair 10+31 (21.9 m), where dropping 31 tears the
+  loop's tail to 538 m but dropping 10 leaves 301 m. Insertion
+  candidates in `InsertStopsIntoGap` now also check planar clearance
+  against every already-planned pole, so a future layout cannot
+  reinsert a fold twin.
+- `MinimumPlanarStopSpacing = 30f`. The insertion-time clearance did
+  more than expected: instead of inserting fold twins and dropping
+  them again, the spacing pass now places its poles planar-clear from
+  the start, so the production roster settles at 35 → 29 stops with
+  every change confined to ANONYMOUS spacing poles — no named stop,
+  gate, localization key or NPC waiter anchor is touched (the
+  position-derived loop-* suffixes regenerate, which renames some
+  surviving spacing poles). Zero pairs under 30 m remain; the
+  tightest pairs stand at 31.4 m, mean along-loop interval 193.7 m,
+  loop 5618 m. Known decision: the named pairs just above the floor —
+  home+supermarket at 33.2 m and nightlife+cemetery at 31.4 m — are
+  deliberately spared; the escalation path if the user objects is to
+  raise the floor to 35 m and let the retention ranks resolve them
+  (supermarket merges into home, the cemetery gate into the nightlife
+  point of interest).
+- `StopSpacing_StaysRegularAlongTheLoop` gained an all-pairs planar
+  assertion (both-mandatory pairs exempt) and swapped its
+  two-thirds-within-200 m quota for a mean-interval bound
+  (`loopLength / stops <= TargetStopSpacing * 1.5`): the quota
+  measured an artefact — the folds' regularity was held up by the
+  very duplicate poles this change removes; `withinTarget` stays as a
+  diagnostic print.
+
+## 2026-08-24 — Bus shelters stand on the pavement they were drawn over
+
+- The user could not sit on the home stop's shelter bench:
+  `PlayerAnimatedInteractionController` aborted with "Animated
+  interaction entry was blocked; current=(152.68, 8.14, -6.22),
+  target=(152.68, 8.22, -6.22)" — a pure 8 cm vertical mismatch
+  against the motor's 2 cm interaction tolerance, hit after the 1.5 s
+  stall guard.
+- Root cause: `CityBusTargetRoutePlanner.GetShelterPosition` set the
+  shelter's Y analytically (road centre-line height plus the constant
+  kerb step). On the graded boundary street the boxed sidewalk's real
+  top at the shelter was 8 cm lower, so the whole shelter, its bench
+  plank and the authored sit entry floated. `ResolveSeatDockGround`
+  in `CityBenchSitPlan` could not save it: it only RAISES from
+  `seat.GroundY` (`Mathf.Max` against sampled walkway tops), so an
+  inflated baseline passes straight through — and the existing
+  `CreateAll_DocksResolvedSeatsOnTheWalkableSurface` test replicates
+  the same Max-raise from the same baseline, which is why it stayed
+  green. Same bug class as the ride-dock height fix that already
+  taught `CityBusRidePlan.ResolveGroundedRootY` to sample
+  sidewalk+street boxes max-wins — the shelter placement had simply
+  never received it.
+- Two-part fix. (1) A `GroundShelterPositions` post-pass in
+  `CityBusPlanner.Create`, after target/coalesced/inserted stops are
+  final, re-grounds each descriptor's `ShelterPosition.y` through
+  `TryResolveShelterGroundTop`: the pole plants on the district strip
+  just OUTSIDE the pavement edge (`halfRoad + 0.2`), so the continuous
+  terrain (`CityTerrainSurfacePlan.TrySampleGroundTop`) samples first
+  and the sidewalk/street boxes (new public
+  `CityBusRidePlan.TryResolvePhysicalSurfaceTop`) may only raise it —
+  every consumer (stop visual, ride plan's `localSidewalkTop`, wait
+  points, shelter bench GroundY) now agrees. (2)
+  `ResolveSeatDockGround` semantics: the authored `seat.GroundY` is
+  only a fallback for docks NOTHING samples; a sampled terrain or
+  walkway surface wins in both directions, because it is what the
+  sitter's CharacterController grounds on. Cemetery/plinth seats keep
+  their authored fallback (their docks sample no walkway boxes).
+  `GetShelterPosition` keeps its analytic height for the planner's own
+  distance/exclusion checks and now says so in a comment.
+- New EditMode guard `CityBusCoverageTests.
+  EveryShelter_StandsOnThePhysicalPavement`: every production stop's
+  shelter Y must equal the sampled ground within 1 mm (fails on the
+  pre-fix code). `CityBenchRestTests.
+  CreateAll_DocksResolvedSeatsOnTheWalkableSurface` was updated to
+  mirror the new trust-the-sample semantics — its old expected-ground
+  arithmetic replicated the same Max-raise from the same inflated
+  baseline as the code, which is exactly why it never caught this.
+
+- The user asked for classic tank controls: S must back the hero up
+  instead of spinning him around, A/D must turn him in place instead of
+  strafing, and translation happens only on W (steering an arc when
+  combined with A/D). Implemented in `PlayerMotor`: A/D yaw the root at
+  `150°/s` (scaled by the intoxication speed multiplier), W targets
+  `2.6 m/s` along `transform.forward`, S targets `1.4 m/s` backwards
+  (`BackwardMoveSpeed`), the accel/brake inertia model is unchanged, and
+  `FaceMovementDirection` no longer runs during input locomotion (it
+  stays for scripted `WalkPlanarStep` approaches). The whole
+  camera-relative steering path — `CameraRelativeDirection`, the
+  camera-cut latch, the motor's `Camera` dependency — is deleted;
+  `ReadMovement` clamps the axes independently so W+A keeps full
+  forward speed.
+- `IPlayerMotionPresentation.SetMotion` now takes a `PlayerMotionSample`
+  (planar velocity, signed forward speed, turn input). The 3D
+  presentation grew a five-input locomotion mixer (Idle, Walk,
+  WalkBack, TurnLeft, TurnRight) with per-gait SmoothDamp weights,
+  renormalised only at the applied-weight level; `locomotionBlend` is
+  now the total gait weight, and `UpdateFootPlant` reads the dominant
+  gait playable. Turn-in-place engages below `0.25 m/s` with
+  `|turn| > 0.2`.
+- Three new Blender actions (32 → 35): `WalkBack` is the eight walk
+  landmarks in reverse time (keeps the opposite-arm-to-leg relation for
+  free); `TurnLeft`/`TurnRight` are one-second four-phase step-turns
+  (wind, inner-foot lift, plant, outer-foot drag), the right one
+  hand-mirrored per the walk convention. Signs were probe-verified
+  before authoring: +Y on pelvis/chest yaws the character to his own
+  LEFT (facing +18.9° at +20°), −X on a thigh lifts that leg. Importer
+  `LoopingClips` gained the three names; the manifest `action_count`
+  self-updates; the runtime prefab was rebuilt headlessly.
+- Tests: `PlayerMotorHeadingPlayModeTests` rewritten for tank controls
+  (back up without turning, turn in place without translation, W+D
+  arcs, opposite input brakes then backs up without spinning); the
+  camera-cut latch test is deleted with the latch itself (it was also
+  the known batchmode-flaky one). The stairwell descent test now aims
+  the hero down the flight and holds W; the bed wake test presses W
+  (D no longer translates). `Player3DAssetImportTests` pins 35.
+  New presentation coverage: backward/turn samples select the
+  dedicated states, and the authored-joint-range gate samples the three
+  new clips. `StatusFaceFallsAndContactShadowDrive3DBonesAndCleanUp`
+  was tipping over its 0.5° neutral-pose asserts because the idle loop
+  itself swings the pelvis ±2° — the comparison now polls across one
+  full idle loop instead of trusting phase luck.
+- Verification: EditMode `Player3DAssetImportTests` 4/4, visibility and
+  stairwell-cat suites green; PlayMode motor+presentation suite 18/19
+  with the one failure fixed as above. The visual QA contact sheet
+  gained `WalkBack` and `TurnLeft` tiles (2×3 grid).
+
 ## 2026-08-24 — Stops step away from doorways (and off the steepest ramps)
 
 - The user flagged stops standing practically on top of bar entrances.

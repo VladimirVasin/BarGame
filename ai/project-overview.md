@@ -219,6 +219,14 @@ The vertical slice contains:
   fog-matched terminal camera backdrop, City-only `48 m` visibility cap,
   `CityFogField` and `CityNoirVolumeProfile` stay fixed across the cycle. The
   Windows player explicitly retains the runtime-only Exp2 shader variant;
+- deterministic exterior weather also drives one transient surface-film state
+  shared by City and the Home balcony view. Ground, roads, sidewalks and road
+  markings darken and gain smoothness quickly under rain, then dry at a much
+  slower fixed rate; authored dry tints survive because the response is
+  multiplicative through material property blocks on the existing shared
+  material. Scene handoffs advance the film from absolute game time and a new
+  session resets it. City roads add at most `42` deterministic top-only puddle
+  quads, batched into one collider-free mesh `3 mm` above their source roads;
 - a default `640x360` PS1 world composite with four-tap footprint averaging,
   exact 2x/3x scaling at 720p/1080p, a 35% perceptual-space RGB555 blend
   without a screen-space dither grid, point upscaling and percentage-driven
@@ -304,7 +312,12 @@ The vertical slice contains:
   share flat zebra paint and paired signals; retained bus maneuvers sample the
   inflated body against both actual pole positions at a conservative `0.30 m`
   fixture radius. City colliders and the bounded Home reconstruction consume
-  the same geometry plan;
+  the same geometry plan. Ordinary facade panes also consume the first channel
+  of the pure `CityDistrictPresentationPlanner`: stable block variation drives
+  narrow irregular Old Town windows, warm occupied Residential clusters,
+  sparse Industrial task lights and a front-only active Nightlife ground floor
+  under dark upper and rear facades. Bar, Home and Supermarket panes retain
+  their authored families;
 - one player-following `CityFogField`, capped at 36 more visible slowly
   drifting particles, plus depth-tested soft halos around lamps, bar lights
   and active signals;
@@ -407,7 +420,13 @@ The vertical slice contains:
   surviving pole serves both destinations), then a spacing pass walks the
   loop and inserts plain kerbside stops wherever the along-loop gap exceeds
   `200 m`, aiming at `150 m` and never landing two inserted stops closer
-  than `80 m` or on a directed street the loop drives twice. Full-body-clear ordinary straights and proven `6 m`-radius left
+  than `80 m` or on a directed street the loop drives twice. A second,
+  planar coalesce enforces a `35 m` floor between any two poles anywhere
+  on the map — the loop folds back on itself, and along-loop distance
+  cannot see two shelters sharing a corner. The veto is empirical, not
+  predictive: a drop is tried, the spacing pass refills the torn
+  stretch, and only if some gap still exceeds three ideal intervals is
+  the drop rolled back (then the pair's other member, then protection). Full-body-clear ordinary straights and proven `6 m`-radius left
   turns enter the loop. At selected Road v2.1 nodes only — whose corner
   pads may now stand on open yard ground, which is what lets the loop turn
   along the city fringe — a clearance-proven two-edge right-turn macro uses
@@ -417,7 +436,7 @@ The vertical slice contains:
   may recur in a connector, but every ordered occurrence receives a unique
   route link/node ID. Route selection has no random branch or player
   pursuit. On the production layout the loop runs about `5.6 km` and serves
-  about thirty-five named stops — semantic, gate and numbered street stops —
+  about twenty-eight named stops — semantic, gate and numbered street stops —
   each with a physical blue `01` pole, served once per lap by that
   deterministic door/driver timeline with a fixed `10 s` total dwell,
   including `0.70 s` opening and `0.70 s` closing transitions for both
@@ -783,11 +802,13 @@ The vertical slice contains:
   gameplay root, plus one small light-independent analytic contact patch fixed
   to the grounded player root. The patch follows foot plant and expands,
   rotates and offsets for left/right falls without moving the physical root;
-- camera-relative road-constrained movement with a `2.6 m/s` maximum,
-  `6.5 m/s²` acceleration and `11 m/s²` braking; ordinary release coasts,
-  hard modal/transition/teleport stops remain immediate, constrained
-  displacement cannot store hidden momentum, and the last actual movement
-  heading is preserved while idle;
+- tank-control road-constrained movement: `W` walks along the hero's own
+  forward axis to a `2.6 m/s` maximum, `S` backs him up at `1.4 m/s` with a
+  dedicated backpedal gait, `A`/`D` yaw him in place at `150°/s` with
+  step-turn clips (and steer the arc while walking), all through `6.5 m/s²`
+  acceleration and `11 m/s²` braking; ordinary release coasts, hard
+  modal/transition/teleport stops remain immediate, constrained displacement
+  cannot store hidden momentum, and the camera never steers locomotion;
 - in City, BarInterior and ordinary Supermarket play, a very close freely
   orbiting perspective third-person chase camera with
   `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing, deliberately
@@ -966,7 +987,11 @@ The vertical slice contains:
   zones and four validated circulation paths; its long layered counter,
   bottle-backed mirrors, three booths, four high tables, stage, entrance
   dressing and dedicated activity bay are composed at runtime from one
-  validated layout plan;
+  validated layout plan. The same geometry now reads one district identity
+  across shell, floor, counter, upholstery, glass, signage and practicals:
+  Old Town adds ledger/portrait traces, Residential uses the packaged worn set
+  and curtain wall, Industrial adds a safety band and utility pipes, and
+  Nightlife adds restrained cyan/magenta neon;
 - six shadowless practical light pools, a bar-only Bloom/color/vignette/grain
   grade, local dust, a slow ceiling fan and a skippable `1.35 s` single-camera
   Bezier reveal establish the interior without changing the chase-camera
@@ -1300,9 +1325,9 @@ The vertical slice contains:
 - Infinite streaming world and floating origin.
 - Weather beyond the implemented deterministic
   clear/light-rain/heavy-rain/thunderstorm schedule with its rain field, rain
-  bed, lightning flashes and thunder: puddles, wet surfaces, weather-driven
-  ambient lighting or grading changes, wind-driven debris and volumetric
-  light shafts.
+  bed, lightning flashes, thunder, wet street film and puddles:
+  weather-driven ambient lighting or grading changes, wind-driven debris and
+  volumetric light shafts.
 - Player-drivable vehicles, a broader traffic simulation, or skating physics;
   the implemented City-only Route 01 passenger MVP remains route-driven and
   limited to one fixed seat. Fares/payment, destination selection, NPC
