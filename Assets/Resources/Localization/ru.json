@@ -161,6 +161,10 @@
       "value": "E — присесть на лавочку"
     },
     {
+      "key": "interaction.sit_ferry_car",
+      "value": "E — сесть в машину"
+    },
+    {
       "key": "interaction.play_chess",
       "value": "E — сыграть в шахматы"
     },
@@ -187,6 +191,10 @@
     {
       "key": "city.dumpster.placeholder",
       "value": "Только мокрый картон и запах."
+    },
+    {
+      "key": "city.tunnel.unavailable",
+      "value": "Пешком я туда не доберусь."
     },
     {
       "key": "interaction.stop_smoking",
@@ -517,6 +525,46 @@
       "value": "Карта променада"
     },
     {
+      "key": "map.area.city",
+      "value": "Город"
+    },
+    {
+      "key": "map.area.mountain_road",
+      "value": "Горная дорога"
+    },
+    {
+      "key": "map.area.current",
+      "value": "Вы находитесь в этой области."
+    },
+    {
+      "key": "map.area.travel_question",
+      "value": "Переместиться в область «{0}»?"
+    },
+    {
+      "key": "map.area.travel",
+      "value": "Переместиться"
+    },
+    {
+      "key": "map.mountain_road.tunnel_exit",
+      "value": "Выход из тоннеля"
+    },
+    {
+      "key": "map.mountain_road.plateau",
+      "value": "Горная площадка"
+    },
+    {
+      "key": "map.mountain_road.hairpin",
+      "value": "Виток серпантина {0}"
+    },
+    {
+      "key": "map.mountain_road.cafe",
+      "value": "Ночное кафе"
+    },
+    {
+      "key": "map.mountain_road.cableway",
+      "value": "Канатная дорога"
+    },
+    {
       "key": "map.route_title",
       "value": "Маршрут по барам"
     },
@@ -557,8 +605,8 @@
       "value": "Лодочная станция"
     },
     {
-      "key": "map.mountain.tunnel_closed",
-      "value": "Закрытый тоннель"
+      "key": "map.mountain.tunnel",
+      "value": "Тоннель"
     },
     {
       "key": "map.area_at",
@@ -1167,6 +1215,62 @@
     {
       "key": "seacoast.fisherman.line.15",
       "value": "Скоро домой. Ещё немного посижу."
+    },
+    {
+      "key": "interaction.ferryman",
+      "value": "E — заговорить с перевозчиком"
+    },
+    {
+      "key": "lastroute.ferryman.confirm.leave",
+      "value": "Уехать из города?"
+    },
+    {
+      "key": "lastroute.ferryman.line.01",
+      "value": "Рано."
+    },
+    {
+      "key": "lastroute.ferryman.line.02",
+      "value": "Маршрут отменили. Я всё равно жду."
+    },
+    {
+      "key": "lastroute.ferryman.line.03",
+      "value": "Бензин есть. Повода нет."
+    },
+    {
+      "key": "lastroute.ferryman.line.04",
+      "value": "Не сегодня."
+    },
+    {
+      "key": "lastroute.ferryman.line.05",
+      "value": "Двадцать лет вожу. Всё туда же."
+    },
+    {
+      "key": "lastroute.ferryman.line.06",
+      "value": "Фара разбита. Ехать-то можно."
+    },
+    {
+      "key": "lastroute.ferryman.line.07",
+      "value": "Последний рейс уже был. Или ещё будет."
+    },
+    {
+      "key": "lastroute.ferryman.line.08",
+      "value": "Расписание на щите. Оно врёт."
+    },
+    {
+      "key": "lastroute.ferryman.line.09",
+      "value": "Монетку подбрасываю. Ответ всегда один."
+    },
+    {
+      "key": "lastroute.ferryman.line.10",
+      "value": "Жду. Не тебя."
+    },
+    {
+      "key": "lastroute.ferryman.line.11",
+      "value": "У тебя не с собой. Я бы заметил."
+    },
+    {
+      "key": "lastroute.ferryman.line.12",
+      "value": "Обратно этой дорогой не возят."
     },
     {
       "key": "park.quarrel.chess.line.01",

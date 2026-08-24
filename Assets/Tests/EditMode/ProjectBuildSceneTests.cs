@@ -26,10 +26,20 @@ namespace BarPromenade.Tests.EditMode
                 "Assets/Scenes/BarInterior.unity",
                 "Assets/Scenes/SupermarketInterior.unity",
                 "Assets/Scenes/StairwellInterior.unity",
-                "Assets/Scenes/HomeInterior.unity"
+                "Assets/Scenes/HomeInterior.unity",
+                "Assets/Scenes/MountainRoad.unity",
+                "Assets/Scenes/AreaLoading.unity"
             };
 
             CollectionAssert.AreEqual(expected, actual);
+            for (int index = 0; index < expected.Length; index++)
+            {
+                Assert.That(
+                    AssetDatabase.LoadAssetAtPath<SceneAsset>(
+                        expected[index]),
+                    Is.Not.Null,
+                    $"Build scene asset is missing: {expected[index]}");
+            }
         }
 
         [Test]

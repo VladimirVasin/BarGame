@@ -35,7 +35,8 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(plan.IsEnabled, Is.True);
                 Assert.That(plan.HasRiverCave, Is.True);
                 Assert.That(plan.HasTunnel, Is.True);
-                Assert.That(plan.Tunnel.IsSealed, Is.True);
+                Assert.That(plan.Tunnel.HasPhysicalGate, Is.False);
+                Assert.That(plan.Tunnel.TravelAvailable, Is.False);
 
                 Rect layoutBounds = layout.MapWorldXZBounds;
                 Rect displayBounds = controller.DisplayWorldXZBounds;
@@ -120,20 +121,26 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(layoutBounds.yMax).Within(0.001f),
                     "Mountain presentation must not expand the north edge.");
 
-                Vector3 gateCenter = plan.Tunnel.PortalGroundCenter +
-                                     plan.Tunnel.Axis *
-                                     plan.Tunnel.GateInset;
+                Vector3 decisionCenter =
+                    plan.Tunnel.PortalGroundCenter +
+                    plan.Tunnel.Axis *
+                    plan.Tunnel.DecisionDistance;
                 Assert.That(
                     throat.width,
                     Is.EqualTo(plan.Tunnel.OpeningWidth).Within(0.001f));
                 Assert.That(
                     throat.height,
-                    Is.EqualTo(plan.Tunnel.ThroatDepth).Within(0.001f));
+                    Is.EqualTo(plan.Tunnel.MapDisplayDepth).Within(0.001f));
                 Assert.That(
                     throat.Contains(
-                        new Vector2(gateCenter.x, gateCenter.z)),
+                        new Vector2(decisionCenter.x, decisionCenter.z)),
                     Is.True,
-                    "The sealed map crossbar must remain inside the throat.");
+                    "The unavailable travel plane must remain inside the " +
+                    "short mapped throat.");
+                Assert.That(
+                    throat.height,
+                    Is.LessThan(plan.Tunnel.VisualDepth),
+                    "The visual tail must not expand the city map.");
 
                 Rect waterApproach = cave.WaterApproachBounds;
                 Rect cityChannel = layout.River.Segments[0].WaterBounds;

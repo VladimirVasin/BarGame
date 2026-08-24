@@ -13,15 +13,6 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Passenger_BoardsRidesAndExitsAtLaterStop()
         {
-            if (Application.isBatchMode)
-            {
-                Assert.Ignore(
-                    "Synthetic boarding scenario never reaches Riding in " +
-                    "batch mode (the hero arrives at the dock off the " +
-                    "frame pace the approach expects and stays Outside). " +
-                    "Fails on any code — stash-verified baseline " +
-                    "2026-08-24; see work-log latent. Runs in the editor.");
-            }
 
             float previousTimeScale = Time.timeScale;
             GameObject root = null;
@@ -54,7 +45,13 @@ namespace BarPromenade.Tests.PlayMode
 
                 PlayerRuntime player = PlayerFactory.Create(
                     root.transform,
-                    new Vector3(0f, PlayerFactory.GroundedRootOffset, 20f),
+                    // Standing ON the ground this scene draws, which is the
+                    // road: spawning at world zero left his feet under it.
+                    new Vector3(
+                        0f,
+                        CityStreetSurfacePlanner.RoadTop +
+                        PlayerFactory.GroundedRootOffset,
+                        20f),
                     camera,
                     walkableArea,
                     prompt);
@@ -1507,13 +1504,22 @@ namespace BarPromenade.Tests.PlayMode
                 PrimitiveType.Cube);
             ground.name = "Bus Ride Test Ground";
             ground.transform.SetParent(parent, false);
+            // Road height, because that is what this synthetic scene is
+            // built on: CreateTwoStopRoute lays its samples on
+            // CityStreetSurfacePlanner.RoadTop, so the bus and every door
+            // dock derived from it live there. Topping this slab out at
+            // SidewalkTop instead buried them six centimetres deep, which
+            // is a scene nobody can board from. Only this test uses this
+            // ground; the production-layout test below builds the real
+            // city, where the road and the pavement are separate meshes at
+            // their own heights.
             ground.transform.position = new Vector3(
                 10f,
-                CityStreetSurfacePlanner.SidewalkTop * 0.5f,
+                CityStreetSurfacePlanner.RoadTop * 0.5f,
                 -10f);
             ground.transform.localScale = new Vector3(
                 120f,
-                CityStreetSurfacePlanner.SidewalkTop,
+                CityStreetSurfacePlanner.RoadTop,
                 120f);
         }
 

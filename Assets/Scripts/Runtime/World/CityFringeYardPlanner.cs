@@ -15,12 +15,12 @@ namespace BarPromenade
 
         private const float SurfaceLift = 0.035f;
         private const float SurfaceThickness = 0.055f;
+        private const float SurfaceSegmentOverlap = 0.06f;
         private const float BeltRunSegmentLength = 17.5f;
         private const float NarrowSurfaceRunSegmentLength = 8f;
         private const float TunnelRunSegmentLength = 3f;
         private const float TunnelReturnInnerClearance = 0.24f;
         private const float TunnelReturnEmbed = 0.08f;
-        private const float TunnelReturnOverlap = 0.18f;
         private const float LongEdgeMargin = 1.2f;
         private const float MountainTrackInset = 6.1f;
         private const float MountainDrainInset = 3.15f;
@@ -48,11 +48,12 @@ namespace BarPromenade
             }
             if (!mountains.IsEnabled ||
                 !mountains.HasTunnel ||
-                !mountains.Tunnel.IsSealed)
+                mountains.Tunnel.HasPhysicalGate ||
+                mountains.Tunnel.TravelAvailable)
             {
                 throw new InvalidOperationException(
-                    "The default fringe yards require the validated sealed " +
-                    "mountain tunnel plan.");
+                    "The default fringe yards require the validated open, " +
+                    "unavailable mountain tunnel plan.");
             }
             CityTunnelForecourtDescriptor forecourt =
                 CreateTunnelForecourt(layout, mountains.Tunnel);
@@ -132,7 +133,7 @@ namespace BarPromenade
                 driveClear,
                 approachWidth,
                 driveWidth,
-                tunnel.IsSealed);
+                tunnel.HasPhysicalGate);
         }
         private static CityFringeYardDescriptor CreateMountainYard(
             CityLayout layout,
@@ -969,7 +970,8 @@ namespace BarPromenade
                 TunnelRunSegmentLength,
                 null,
                 parts,
-                ForefieldSurfaceLift);
+                ForefieldSurfaceLift,
+                0f);
 
             Vector3 right = Vector3.Cross(Vector3.up, axis).normalized;
             for (int side = -1; side <= 1; side += 2)
@@ -988,7 +990,8 @@ namespace BarPromenade
                     TunnelRunSegmentLength,
                     null,
                     parts,
-                    ForefieldSurfaceLift);
+                    ForefieldSurfaceLift,
+                    0f);
             }
 
             Vector3 cheekStart = Vector3.Lerp(start, end, 0.48f);
@@ -1003,7 +1006,7 @@ namespace BarPromenade
                 for (int index = 0; index < returnCount; index++)
                 {
                     float width = returnWidths[index];
-                    float length = returnPitch + TunnelReturnOverlap;
+                    float length = returnPitch;
                     float sideOffset =
                         forecourt.DriveClearWidth * 0.5f +
                         TunnelReturnInnerClearance +
@@ -1119,7 +1122,7 @@ namespace BarPromenade
                 new Vector3(
                     capWidth,
                     capHeight,
-                    length - TunnelReturnOverlap),
+                    length),
                 false));
         }
 
@@ -1243,7 +1246,8 @@ namespace BarPromenade
             Rect? gap,
             ICollection<CityFringeYardPartDescriptor> parts,
             float maximumSegmentLength = BeltRunSegmentLength,
-            float surfaceLift = SurfaceLift)
+            float surfaceLift = SurfaceLift,
+            float segmentOverlap = SurfaceSegmentOverlap)
         {
             GetLongRange(
                 bounds,
@@ -1268,7 +1272,8 @@ namespace BarPromenade
                 maximumSegmentLength,
                 gap,
                 parts,
-                surfaceLift);
+                surfaceLift,
+                segmentOverlap);
         }
 
         private static void AddGradedStrip(
@@ -1285,7 +1290,8 @@ namespace BarPromenade
             float maximumSegmentLength,
             Rect? gap,
             ICollection<CityFringeYardPartDescriptor> parts,
-            float surfaceLift = SurfaceLift)
+            float surfaceLift = SurfaceLift,
+            float segmentOverlap = SurfaceSegmentOverlap)
         {
             Vector3 flatDelta = new Vector3(
                 end.x - start.x,
@@ -1323,7 +1329,7 @@ namespace BarPromenade
                 Vector3 size = new Vector3(
                     width,
                     thickness,
-                    slope.magnitude + 0.06f);
+                    slope.magnitude + segmentOverlap);
                 if (gap.HasValue &&
                     CalculateFootprint(center, rotation, size)
                         .Overlaps(gap.Value))

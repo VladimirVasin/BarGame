@@ -314,7 +314,8 @@ namespace BarPromenade.Tests.PlayMode
                 Has.Length.EqualTo(
                     3 +
                     HomeSoundscape.OwnedSourceCount +
-                    HomeAlarmClock.OwnedSourceCount));
+                    HomeAlarmClock.OwnedSourceCount +
+                    HomeBalconyExteriorAtmosphere.OwnedSourceCount));
             Assert.That(home.CameraFollow.FixedPoseActive, Is.True);
             Assert.That(
                 Object.FindObjectsByType<Camera>(
@@ -912,9 +913,24 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(HomeOpeningPhase.Complete));
             Assert.That(home.Opening.enabled, Is.False);
             Assert.That(home.AlarmClock.IsRinging, Is.False);
+
+            // Once the opening lets go, the clock FOLLOWS session time -
+            // so pinning the literal "05:59" here was racing it, and lost
+            // the moment the session ticked over to 06:00. What the
+            // restored dressing actually promises is that the clock is
+            // showing the session's own time, which is what this reads.
+            // GameTimeRuntime runs at execution order -1000, so the minute
+            // read here is exactly the one the clock synced to this frame.
+            Assert.That(
+                home.AlarmClock.IsFollowingSessionTime,
+                Is.True,
+                "A cancelled sleep must hand the clock back to the " +
+                "session.");
             Assert.That(
                 home.AlarmClock.DisplayedTime,
-                Is.EqualTo("05:59"));
+                Is.EqualTo(
+                    $"{GameSessionState.GameHour:00}:" +
+                    $"{GameSessionState.GameMinute:00}"));
             Assert.That(home.AlarmClock.DisplayVisible, Is.True);
             Assert.That(home.Player.Motor.InputEnabled, Is.True);
             Assert.That(

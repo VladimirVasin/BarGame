@@ -6,6 +6,258 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-25 — The twenty reds, and the four real bugs behind them
+
+- Took the full PlayMode suite from `20` failures to `0`
+  (`177 passed / 1 skipped`) and EditMode from `16` to `1`
+  (`1552 passed`). The one left is `homeyard-booth` sitting `8.5 cm` under
+  its sampled ground, which belongs to the six `CityFringeYard*` files
+  another session has open right now.
+- **Four were production bugs, not stale expectations.**
+  - The playground swing could never be pushed. Its trigger volume's lift
+    subtracted the seat's PIVOT-space y (about `-2.3`) where the seat's
+    height above the lawn (`0.62`) was meant, so the box floated three
+    metres up by the crossbar. Now `57` contacts and an `0.80 m` push.
+  - `BarMinigameModalLock` is a plain object in a static field, so unlike
+    a MonoBehaviour reference it never went null when its owner was
+    destroyed. A lock taken by an interaction whose scene then unloaded
+    stayed held for the whole session, and every interaction in the game
+    asks `IsAnyLocked` first - so everything would silently stop opening.
+    A lock whose subject is gone now releases itself. This was what made
+    thirteen EditMode tests fail in the suite and pass in isolation.
+  - The Home balcony's exterior view carried street-lamp colliders and a
+    bus stop whose shelter stood inside the bedroom. The night builder's
+    collision is now opt-out and the view passes `false`; the stop is
+    clipped to the exterior half-space the same way the ground boxes
+    already were, rather than dropped, so the balcony keeps its stop.
+  - `HomeBedInteraction` has always known how to hide a crumpled shirt
+    while the hero sleeps and put it back after - and nothing ever built
+    the shirt, so the lookup returned null and the beat was dead. It now
+    exists.
+- The rest were expectations that had stopped describing the game:
+  literals where the blueprint, the population profile or the owner's own
+  constant should have been asked; `Has.Count` reflecting on an array;
+  intoxication and a wall clock raced against real elapsed time; a
+  camera-corner framing check that demanded a whole standing man two
+  metres from the lens; a first-person hand measured on the frame it
+  began to appear. Each is now written against the thing it is really
+  about, with the reason in a comment.
+- Verification: full PlayMode `178` -> `177 passed, 0 failed, 1 skipped`;
+  full EditMode `1553` -> `1552 passed, 1 failed`. The remaining skip is
+  the IMGUI one: batch mode has no game view, so OnGUI never runs.
+
+## 2026-08-25 — Two guarded bus tests were the test's own ground
+
+- Lifted the `Assert.Ignore` guards on
+  `CityBusRidePlayModeTests.Passenger_BoardsRidesAndExitsAtLaterStop` and
+  `CityBusNpcPassengerPlayModeTests.AmbientPassenger_BoardsRidesAndAlightsAtALaterStop`
+  and fixed them. Both had been recorded as "fails on any code"; both were
+  the harness, not the bus.
+- Each builds its route on `CityStreetSurfacePlanner.RoadTop` (`0.08`) while
+  its own `CreateGround` slab topped out at `SidewalkTop` (`0.14`). That
+  buried the bus and every door dock derived from it six centimetres deep,
+  and `CityPedestrianDirector.IsCollisionActivationSafe` then correctly
+  refused to materialise a waiter inside terrain — its clearance capsule's
+  lowest point sat `12 mm` under the slab. The hero test failed the same way
+  one step earlier: he was spawned with his feet under the ground he was
+  meant to walk on. Both slabs now top out at the height their own scene
+  uses, and the hero spawns standing on it.
+- Getting there is worth recording, because four indirect probes were all
+  clean and all misleading: the pedestrian pool had a free actor, twelve
+  riding presentations, no peer overlap, and an external `OverlapCapsule` at
+  the slot reported nothing. What settled it in one run was temporarily
+  logging at every `return null` inside the production spawn path and at
+  each branch of the clearance check — that named the collider and printed
+  the capsule extents. The instrumentation was reverted with
+  `git checkout` after `git diff` confirmed it held nothing but probes.
+- Also fixed, and found only because the City's build log was read rather
+  than the test results: `LastRouteCarSeatPlan.Create` still took its axes
+  from the imported `Body` node — the imported-basis trap for the sixth
+  time, in a file whose sibling had already been corrected for it. That
+  node's forward is nearly vertical, so the flattened vector was zero,
+  `Quaternion.LookRotation` warned into the log and handed back identity,
+  and the hero rode a car built entirely around its transparent glass while
+  facing world `+Z`. Axes now come from the prefab root, and the seat's
+  facing is derived from the drawn cabin (driver's seat → steering wheel),
+  which has no basis to be wrong about. A new PlayMode test asserts the
+  seated facing against that vector rather than merely against identity.
+- Verification: `LastRouteFerrymanPlayModeTests`, both bus suites and the
+  stairwell fixture — `15 passed, 1 skipped, 0 failed`, and the "Look
+  rotation viewing vector is zero" warning is gone from the run.
+  The remaining stairwell skip is a batch-mode capability limit: no game
+  view, so OnGUI never runs and the IMGUI panel cannot be measured; its
+  logic assertions run before the guard.
+- **Not fixed, and not mine:** the full PlayMode suite is `178` tests with
+  `20` failures — audio source counts `10 → 13`, night lights `5 → 6`, city
+  grid `(12,12) → (17,14)`, physical boundaries `5 → 13`, street lamps and
+  the home scenes. Every one is in a subsystem this pass did not touch, and
+  they reproduce identically when run with none of this pass's classes in
+  the filter, which rules out test-order coupling. They belong to the other
+  sessions' in-flight work in the same tree.
+
+## 2026-08-24 — The Ferryman, his coin and his coat
+
+- Finished the Last Route Ferryman end to end: staged archetype, four clips,
+  editor prefab and provider, and six runtime files under
+  `Assets/Scripts/Runtime/City/LastRoute/`. He perches on the bonnet of the
+  parked car with his boots on its bumper, facing out over the nose at
+  whoever walks up, and throws a coin while he waits.
+- He is the clip library's first design with TWO seats — a bonnet and a
+  driver's seat — so `ActionSpec` gained a `perched` flag and an archetype
+  may now declare both bands. Nothing is loosened: every seated clip is
+  still proved against exactly one band, and a clip that cannot name its
+  band is still an error.
+- That immediately caught a real defect. `FerrymanDrive` had been marked
+  `leaves_seat` and was therefore never measured at all; measured, it hung
+  `0.4107 m` of leg under a seat with `0.22 m` of floor beneath it — a bus
+  posture in a car. The cabin floor drop is now per-design rather than the
+  bus's hard-coded `0.41`, and the driving pose was converged against the
+  car's own numbers: `0.2197 m` of leg against `0.22 m` of floor, and
+  `1.0288 m` of head against the `1.04 m` the roof allows.
+- A transition is no longer declared a loop. `FerrymanBoard` is `one_shot`
+  in the manifest, imported with `loopTime` and `loopPose` off, and asserted
+  both ways round — loop-pose normalisation would drag its last frame back
+  towards the bonnet, and it is authored to end exactly on the driving pose
+  the runtime crosses into.
+- The coin has no state: it never reparents, stays a child of the runtime
+  root at scale one, and its world pose is a pure function of the wait
+  loop's normalized time. Three flips per toss, odd on purpose so it lands
+  the other face, and `1080°` so the catch has no seam.
+- The coat skirt is real `Cloth`, hung as two narrow flaps beside his hips
+  rather than one sheet in front. The single front panel was tried first and
+  a render showed it as a signboard propped against his shins; the outer
+  side of each thigh is open air, which is where cloth without colliders can
+  safely hang.
+- Interaction is the cat's, not the fisherman's: "Поговорить" or
+  "Взаимодействовать", and the second asks «Уехать из города?» before it
+  acts. Yes gets him off the bonnet and behind his own wheel and is not
+  reversible. His twelve lines never offer a ride — the offer lives on the
+  menu and only there, which a test enforces by grepping both catalogs.
+- Verification: both Blender generators green (`36` actions,
+  `perched FerrymanWait 0.5077 m`, `seated FerrymanDrive 1.0288/0.2197 m`);
+  `dotnet build` on Runtime, Editor and both test assemblies (0 errors);
+  `Unity.exe -executeMethod CityPedestrianAssetSetup.BuildOrThrow`; EditMode
+  selection `96/96` across the Ferryman, car placement, pedestrian runtime,
+  fisherman, both park players and localization; PlayMode
+  `LastRouteFerrymanPlayModeTests` `4/4`, including the coin holding its arc
+  to `1 mm` over `300` frames and his pelvis landing within `2 cm` of the
+  drawn driver's seat. Throwaway renders from four angles confirmed the
+  perch, the burning headlights and the coat before the capture was deleted.
+- Also fixed, for everyone: the loop check compared raw quaternion
+  components, so `ChessJeer`/`CheckersJeer` failed at `1.5055302` on a pair
+  of clips that loop perfectly — `dot = -1.000000` exactly, the same pose in
+  the antipodal representation. Rotations are now compared as rotations, and
+  a clip that ends on `-q` says so in the build output instead of passing
+  silently.
+
+## 2026-08-24 — Mountain terminal cafe and cableway MVP
+
+- Expanded the joined road endpoint to an irregular approximately `42 x 27 m`
+  terminal while retaining the shared road vertices and a protected `7.5 m`
+  vehicle circle. Terrain now blends smoothly around the exterior apron, the
+  cable corridor is excluded from forest placement, and the upper machinery is
+  hidden by one authored snow-ridge occluder rather than duplicate geometry.
+- Built a same-scene five-sided Nighthawks-inspired cafe on the left with a
+  genuinely open `1.6 m` entrance, physical glass/shell/furniture, a long
+  counter, four silent staged figures and exactly two always-on practical
+  Spots. Three short-range mono voices belong to its visible refrigerator,
+  ceiling fixture and coffee boiler; the interior participates in rain shelter.
+- Built the right-side `58 m` cableway as one continuous up/upper-turn/down/
+  lower-turn loop. Four colliderless cabins move at `2.05 m/s` over three
+  grounded colliderless remote supports; only the lower station is physical.
+  Its visible reducer owns the motor loop and each real roller crossing emits
+  the corresponding positional clack.
+- Added cafe/cableway landmarks and localized hover names to the Mountain Road
+  map from the terminal plan, integrated both builders into the mountain-only
+  runtime root, and documented the new player-visible endpoint.
+- Verification: the focused Unity EditMode `MountainRoad` category passed
+  `9/9`, covering terminal geometry and seam, smooth terrain, cabin clearance
+  and loop continuity, physical/colliderless ownership, open cafe entrance,
+  world budgets, map landmarks and both localization catalogs. Full suites, a
+  player build and a rendered Game View smoke were intentionally not run.
+
+## 2026-08-24 — Mountain Road adopts LastRouteCar scale
+
+- Resized the mountain route against the authored `4.83 x 1.80 m`
+  LastRouteCar instead of treating it as a pedestrian ribbon. Ordinary road
+  width is now `4.8 m`; both hairpins widen to `6.4 m`, use `7.5 m`
+  centreline radii and carry denser arc sampling. The `8 x 5.5 m` tunnel
+  remains unchanged and flares smoothly into the narrower carriageway.
+- Enlarged physical, middle and far forest envelopes plus boulders, logs,
+  stumps, dead trees, guardrails, culvert, mirror, utility fixtures and snow
+  poles. Roadside placement now derives a minimum centre offset from the live
+  ribbon width, the rotated object's cross-road extent and an `0.8 m`
+  shoulder clearance, so the scaled props do not consume the driving lane.
+- Rebuilt the terminal as an irregular approximately `22 x 18 m` turning
+  plateau. The final `5 m` of route is level with it; the road and platform
+  share their two top and lower entry vertices, the terrain bed is continuous,
+  and the former transverse platform sidewall is omitted. This removes the
+  measured `0.60 m` step, `0.42 m` open gap and collider lip at the old join.
+- Verification: focused EditMode
+  `DefaultPlan_BuildsLongGroundedTwoHairpinWorld` passed `1/1`, including the
+  LastRouteCar-width centre corridor, shared mesh vertices, continuous terrain
+  seam and a `6.5 m` clear turning radius on the plateau. Complete suites, a
+  player build and a rendered driving smoke were intentionally not run.
+
+## 2026-08-24 — Mountain Road becomes a separate loaded area
+
+- Appended `MountainRoad` and `AreaLoading` at build indices `7` and `8`,
+  preserving every previous scene index and expanding the shared-player set to
+  six gameplay roots. Mountain Road composes only its own world; City and the
+  mountain are separated by Single-mode loads and never coexist in a frame.
+- Built a continuous `82.7 m` narrow ascent from a `9 m` exit tunnel, with the
+  hero starting `6 m` inside it. The `3.4 m` road widens to `4.6 m` through two
+  `5.5 m` hairpins, rises `8.7 m`, and ends after roughly `31.8 s` of ordinary
+  walking on an irregular approximately `12 x 10 m` mountain plateau.
+- Layered grounded forest/misc, middle ridges and far snowy mountains close the
+  scene without exposing an endpoint. Five positioned sound anchors now belong
+  to readable physical sources, and one tunnel lamp visibly flickers instead
+  of using unattached ambience.
+- Added normal City/Mountain Road map tabs. Selecting the other area routes
+  through a black loading screen with a progress bar; only the active-area tab
+  draws the player. The mountain root regenerates pure City map data without
+  instantiating City GameObjects.
+- Kept the physical City tunnel deliberately unavailable: it still delivers
+  the refusal/return behaviour and is not yet connected to Mountain Road.
+- Verification: Unity compiled the Runtime, Editor, EditMode and PlayMode
+  assemblies during explicit scene setup; the focused area-loading/build-scene
+  selection passed `9/9`, and the Mountain Road plan/world regression passed
+  `1/1` with the real session seed. `git diff --check` is clean. The dedicated
+  map presentation selection, full suites, a player build and Game View visual
+  smoke were not run.
+
+## 2026-08-24 — The south tunnel becomes a visible future route
+
+- The former sealed gate is now an open `8 x 5.5 m` portal into a `72 m`
+  faceted tunnel. Its first `12 m` are physical, later sections bend west,
+  and the uncapped end remains outside both the entrance sightline and the
+  City's far-plane contract. The schematic map shows only the open arch and
+  the first `12 m`, not the hidden visual continuation.
+- An inward crossing at `8 m` shows one localized thought and walks the normal
+  player rig back to `6.5 m`; no prompt, teleport, destination scene or fake
+  transition was added. Portal sheltering gives the player-following rain a
+  dry core, clears local fog particles and hides the camera-relative ridge
+  shell until the player leaves with mouth hysteresis; global Exp2 fog remains.
+- Five path-following ceiling fixtures provide the depth read. The second
+  reuses the existing pooled tunnel Spot with a daytime floor, deterministic
+  sparse two-dip flicker, short-range mono ballast buzz and synchronized
+  positional crackle, preserving the City's twelve-Light cap.
+- Follow-up runtime fix: the lens `MaterialPropertyBlock`, which owns native
+  Unity state, now initializes lazily on its first real lens application rather
+  than in the MonoBehaviour field initializer. This works even under an inactive
+  parent, removes the Unity 6 `CreateImpl` constructor exception and prevents
+  its secondary null dereference during the first flicker application.
+- Follow-up approach z-fighting fix: generic forefield marks are cut out of
+  `DriveClearBounds`; the approach and wheel-rut segments meet exactly instead
+  of overlapping by `0.06 m`, and consecutive concrete-return sections likewise
+  meet at their end planes instead of overlapping by `0.18 m`.
+- Verification: one focused Unity EditMode selection across mountain/fringe
+  construction, travel crossing, shelter, tunnel lighting, night-light budget,
+  map presentation and localization passed `11/11`. Full suites and a player
+  build were not run. The reported lighting lifecycle regression then passed
+  its full inactive-parent factory test `1/1`. The approach regression then
+  passed its focused fringe-yard test `1/1`; no Game View visual smoke was run.
+
 ## 2026-08-24 — The quay keeps one visible face under its rail
 
 - The texture flicker seen from the river was exact depth fighting, not a

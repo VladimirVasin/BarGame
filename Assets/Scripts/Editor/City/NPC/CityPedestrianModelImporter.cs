@@ -91,7 +91,9 @@ namespace BarPromenade.Editor
                 clip.name = NormalizeClipName(clip.name);
                 bool airborne =
                     CityPedestrianAssetSetup.IsAirborneClip(clip.name);
-                clip.loopTime = true;
+                bool oneShot =
+                    CityPedestrianAssetSetup.IsOneShotClip(clip.name);
+                clip.loopTime = !oneShot;
                 clip.keepOriginalOrientation = true;
                 clip.keepOriginalPositionY = true;
                 clip.keepOriginalPositionXZ = true;
@@ -107,8 +109,16 @@ namespace BarPromenade.Editor
                 // Loop-pose normalisation stays off for an airborne design
                 // because it would re-level that same arc, and its clips
                 // already loop exactly.
+                //
+                // A one-shot transition opts out of loop-pose for a
+                // stronger reason than an airborne design does: loop-pose
+                // pulls a clip's two ends towards each other, and this one
+                // is authored to END on the base pose of the clip that
+                // follows it. Normalising it would drag that last frame
+                // back towards the first and put a seam exactly where the
+                // runtime crosses over.
                 clip.lockRootHeightY = true;
-                clip.loopPose = !airborne;
+                clip.loopPose = !airborne && !oneShot;
                 if (!names.Add(clip.name))
                 {
                     throw new InvalidOperationException(

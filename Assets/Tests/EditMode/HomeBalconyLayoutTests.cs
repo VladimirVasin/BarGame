@@ -228,13 +228,25 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(stopCollection, Is.Not.Null);
                 Assert.That(stopCollection.childCount, Is.EqualTo(1));
                 Transform localStop = stopCollection.GetChild(0);
+                // Clipped to the exterior half-space, like every other
+                // thing in this diorama: the stop that belongs to this home
+                // sits against the block's own footprint, and drawn at its
+                // raw converted position its shelter would stand inside the
+                // bedroom. `ClipStopToExterior` is the builder's own rule,
+                // asked here rather than restated.
                 Assert.That(
                     Vector3.Distance(
                         localStop.localPosition,
-                        PlayerHomeBalconyGeometry.ToHomeLocal(
-                            context.PlayerHome,
-                            stop.ShelterPosition)),
+                        HomeExteriorViewBuilder.ClipStopToExterior(
+                            PlayerHomeBalconyGeometry.ToHomeLocal(
+                                context.PlayerHome,
+                                stop.ShelterPosition))),
                     Is.LessThan(0.001f));
+                Assert.That(
+                    localStop.localPosition.x,
+                    Is.GreaterThanOrEqualTo(
+                        HomeExteriorViewBuilder.ExteriorMinimumX),
+                    "A composed stop must stand outside the facade.");
                 Assert.That(
                     stopCollection.GetComponentsInChildren<Renderer>(true),
                     Is.Not.Empty);

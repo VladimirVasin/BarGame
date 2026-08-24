@@ -31,6 +31,9 @@ namespace BarPromenade
         public CitySoundscapePlan SoundscapePlan { get; private set; }
         public CitySoundscapeDirector Soundscape { get; private set; }
         public PlayerRuntime Player { get; private set; }
+        public CityTunnelTravelController TunnelTravel { get; private set; }
+        public CityTunnelLightingController TunnelLighting { get; private set; }
+        public CityTunnelShelterController TunnelShelter { get; private set; }
         public CityPedestrianPlan PedestrianPlan { get; private set; }
         public CityPedestrianDirector Pedestrians { get; private set; }
         public CityBusPlan BusPlan { get; private set; }
@@ -74,6 +77,28 @@ namespace BarPromenade
             private set;
         }
         public SeacoastFishermanPresentation SeacoastFisherman
+        {
+            get;
+            private set;
+        }
+        public LastRouteCarAssetRegistry LastRouteCar
+        {
+            get;
+            private set;
+        }
+        public LastRouteFerrymanPresentation LastRouteFerryman
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
+        /// The two-choice menu the Ferryman opens. The stairwell raises its
+        /// own; this is the City's, and it is the first target interaction
+        /// out here, so anything else that wants "talk, or do the thing"
+        /// should take this one rather than add a second.
+        /// </summary>
+        public InventoryTargetInteractionController TargetInteraction
         {
             get;
             private set;
@@ -307,7 +332,35 @@ namespace BarPromenade
             string spawnSource = "default";
             string returnBarId = string.Empty;
             bool spawnOnSidewalk = false;
-            if (GameSessionState.TryGetReturnBarId(out string barId))
+            Vector3 arrivalForward = Vector3.zero;
+            bool hasAreaArrival = AreaTravelService.TryConsumeArrival(
+                GameAreaId.City,
+                out AreaArrivalToken areaArrivalToken);
+            if (hasAreaArrival)
+            {
+                if (World.FringeYardPlan.HasTunnelForecourt)
+                {
+                    CityTunnelForecourtDescriptor forecourt =
+                        World.FringeYardPlan.TunnelForecourt;
+                    spawnPosition = forecourt.StreetAnchor;
+                    arrivalForward = -forecourt.Axis;
+                    spawnSource = "area_" +
+                                  areaArrivalToken
+                                      .ToString()
+                                      .ToLowerInvariant();
+                }
+                else
+                {
+                    spawnSource = "missing_area_arrival_forecourt";
+                    GameLog.Warning(
+                        "city",
+                        "area_arrival_forecourt_missing",
+                        GameLog.Field(
+                            "arrival_token",
+                            areaArrivalToken.ToString()));
+                }
+            }
+            else if (GameSessionState.TryGetReturnBarId(out string barId))
             {
                 returnBarId = barId;
                 if (World.TryGetBar(barId, out BarEntrance entrance))
@@ -390,6 +443,24 @@ namespace BarPromenade
                 camera,
                 World.WalkableArea,
                 prompt);
+            if (arrivalForward.sqrMagnitude > 0.001f)
+            {
+                arrivalForward.y = 0f;
+                Player.GameObject.transform.rotation =
+                    Quaternion.LookRotation(
+                        arrivalForward.normalized,
+                        Vector3.up);
+            }
+            if (CityTunnelTravelPlanner.TryCreate(
+                    World.MountainBoundaryPlan,
+                    out CityTunnelTravelPlan tunnelTravelPlan))
+            {
+                TunnelTravel = CityTunnelTravelController.Create(
+                    transform,
+                    tunnelTravelPlan,
+                    Player,
+                    prompt);
+            }
             LocationMusic = CityLocationMusicDirector.Create(
                 transform,
                 Player.GameObject.transform,
@@ -413,6 +484,14 @@ namespace BarPromenade
                 Layout.Seed,
                 World.FringePracticalAnchors,
                 World.RiverQuayLampAnchors);
+            if (World.MountainBoundaryPlan.HasTunnel)
+            {
+                TunnelLighting = CityTunnelLightingController.Create(
+                    World.MountainBoundaryRoot.transform,
+                    World.MountainBoundaryPlan.Tunnel,
+                    Night.Atmosphere,
+                    World.FringePracticalAnchors);
+            }
             DayNight = gameObject.AddComponent<CityDayNightController>();
             DayNight.Initialize(Night);
             BusPlan = CityBusPlanner.Create(
@@ -501,6 +580,15 @@ namespace BarPromenade
                 transform,
                 SeacoastFishermanPlan.Create(World.SeacoastPlan),
                 GameSessionState.CitySeed);
+            // The last route island kept its timetable and lost its buses.
+            // A car waits beside the paving instead, off the circle and
+            // clear of every way in - and absent altogether on a seed that
+            // leaves nowhere to park without blocking one.
+            LastRouteCar = LastRouteCarFactory.Create(
+                transform,
+                LastRouteCarPlan.Create(Layout),
+                Player,
+                camera);
             // The park kept a place for company and two men still keep
             // it: an old player at each of the two chess tables, on
             // seats that are each other's rotated 180 degrees about the
@@ -576,6 +664,23 @@ namespace BarPromenade
             }
 
             follow.Initialize(camera, Player.GameObject.transform, false);
+            TargetInteraction =
+                ui.AddComponent<InventoryTargetInteractionController>();
+            TargetInteraction.Initialize(
+                Player,
+                follow,
+                intoxicationHud);
+            // And the man who has been waiting beside that car since before
+            // the route was cancelled: perched on its bonnet with his boots
+            // on the bumper, throwing a coin, facing whoever walks up. He
+            // comes after the car because his whole stance is read off it,
+            // and after the menu above because saying yes to him opens it.
+            LastRouteFerryman = LastRouteFerrymanFactory.Create(
+                transform,
+                LastRouteFerrymanPlan.Create(LastRouteCar),
+                LastRouteCar,
+                TargetInteraction,
+                GameSessionState.CitySeed);
             BusRide = CityBusRideController.Create(
                 Bus,
                 Player,
@@ -624,6 +729,19 @@ namespace BarPromenade
                 CityNightResources.AtmosphereMaterial,
                 Layout.Seed,
                 GameWeatherRules.EvaluateCurrent().RainIntensity);
+            if (World.MountainBoundaryPlan.HasTunnel)
+            {
+                var tunnelShelterObject =
+                    new GameObject("City Tunnel Shelter");
+                tunnelShelterObject.transform.SetParent(transform, false);
+                TunnelShelter = tunnelShelterObject.AddComponent<
+                    CityTunnelShelterController>();
+                TunnelShelter.Initialize(
+                    Player.GameObject.transform,
+                    World.MountainBoundaryPlan.Tunnel,
+                    Night.FogField,
+                    World.MountainBackdrop);
+            }
             GameObject rainSoundObject =
                 new GameObject("City Rain Sound");
             rainSoundObject.transform.SetParent(transform, false);
@@ -662,7 +780,9 @@ namespace BarPromenade
                 Lightning,
                 Thunder,
                 camera.transform,
-                () => BusRide != null && BusRide.IsPassengerAboard);
+                () =>
+                    (BusRide != null && BusRide.IsPassengerAboard) ||
+                    (TunnelShelter != null && TunnelShelter.IsSheltered));
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(
@@ -737,6 +857,13 @@ namespace BarPromenade
                 BusPlan,
                 World.MountainBoundaryPlan,
                 World.SeacoastPlan);
+            MountainRoadPlan mountainMapPlan =
+                MountainRoadPlanner.Create(GameSessionState.CitySeed);
+            Map.ConfigureAreas(
+                GameAreaId.City,
+                CityMapMountainRoadOverlayBuilder.Create(mountainMapPlan),
+                (area, token) =>
+                    AreaTravelService.Request(area, token));
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
                 Player,

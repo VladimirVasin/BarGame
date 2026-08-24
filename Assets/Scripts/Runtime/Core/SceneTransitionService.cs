@@ -18,8 +18,17 @@ namespace BarPromenade
         private static long activeStartedTimestamp;
         private static bool activeUsedFallback;
 
-        public static bool IsTransitioning { get; private set; }
-        public static string CurrentOperationId => activeOperationId;
+        private static bool isSceneTransitioning;
+
+        public static bool IsTransitioning
+        {
+            get => isSceneTransitioning || AreaTravelService.IsTraveling;
+            private set => isSceneTransitioning = value;
+        }
+        public static string CurrentOperationId =>
+            !string.IsNullOrEmpty(activeOperationId)
+                ? activeOperationId
+                : AreaTravelService.CurrentOperationId;
 
         [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
@@ -359,7 +368,7 @@ namespace BarPromenade
         /// the load never cuts a fade-out short and never has to wait for
         /// one either.
         /// </summary>
-        private static void RequestOutgoingMusicFade()
+        internal static void RequestOutgoingMusicFade()
         {
             Scene activeScene = SceneManager.GetActiveScene();
             if (!activeScene.IsValid() || !activeScene.isLoaded)

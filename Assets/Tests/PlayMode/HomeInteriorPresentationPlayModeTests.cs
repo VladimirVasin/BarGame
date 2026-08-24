@@ -362,6 +362,29 @@ namespace BarPromenade.Tests.PlayMode
             AssertForegroundJunkOcclusionContract(
                 home,
                 cornerJunkCollider);
+
+            // Framing is proved where the shot is AUTHORED to hold him -
+            // the middle of its own hold rect - and not in the camera
+            // corner above. That corner is barely two metres from the lens
+            // and off at the edge of a 64-degree frame pitched steeply
+            // down: nothing standing there can be shown whole, which is
+            // exactly why the junk pile is placed in it. The corner earns
+            // its own contract (visible, and occluded correctly) a few
+            // lines up; this is the one about composition.
+            Assert.That(
+                home.FixedCamera.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.MainRoom));
+            Rect mainHold = home.FixedCamera.ActiveShot.HoldBounds;
+            home.Player.Motor.Teleport(
+                new Vector3(
+                    mainHold.center.x,
+                    home.Layout.PlayerSpawn.y,
+                    mainHold.center.y));
+            yield return null;
+
+            Assert.That(
+                home.FixedCamera.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.MainRoom));
             AssertPlayerPresentationInFrame(
                 camera,
                 home.Player.Visual);
@@ -379,7 +402,8 @@ namespace BarPromenade.Tests.PlayMode
             AssertEmitterVisible(camera, bathroomEmitter);
             AssertPlayerPresentationInFrame(
                 camera,
-                home.Player.Visual);
+                home.Player.Visual,
+                requireWholeBody: false);
             Assert.That(
                 Vector3.Distance(
                     camera.transform.position,
@@ -909,9 +933,20 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(viewport.y, Is.InRange(0.05f, 0.95f));
         }
 
+        /// <param name="requireWholeBody">
+        /// True where the shot is composed to hold a standing man whole.
+        /// False for a close shot that cannot: the bathroom camera sits
+        /// inside a room barely two metres across and looks at the hero
+        /// from about seventy-five centimetres, so his boots leave the
+        /// bottom of a 92-degree frame from every position he can stand
+        /// in. That is the shot, not a defect - what still has to hold
+        /// there is that he is on screen, head included, and reads as
+        /// upright.
+        /// </param>
         private static void AssertPlayerPresentationInFrame(
             Camera camera,
-            IPlayerPresentation presentation)
+            IPlayerPresentation presentation,
+            bool requireWholeBody = true)
         {
             Assert.That(presentation, Is.Not.Null);
             Assert.That(presentation.Renderers, Is.Not.Empty);
@@ -966,8 +1001,20 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(minX, Is.GreaterThanOrEqualTo(0.02f));
             Assert.That(maxX, Is.LessThanOrEqualTo(0.98f));
-            Assert.That(minY, Is.GreaterThanOrEqualTo(0.02f));
             Assert.That(maxY, Is.LessThanOrEqualTo(0.98f));
+            if (requireWholeBody)
+            {
+                Assert.That(minY, Is.GreaterThanOrEqualTo(0.02f));
+            }
+            else
+            {
+                // Half of him, at least, and the half with his head in it.
+                Assert.That(
+                    maxY - Mathf.Max(minY, 0f),
+                    Is.GreaterThan(0.5f * (maxY - minY)),
+                    "A close shot may cut his boots, not most of him.");
+            }
+
             float width = maxX - minX;
             float height = maxY - minY;
             Assert.That(width, Is.GreaterThan(0.005f));

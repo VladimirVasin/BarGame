@@ -539,6 +539,23 @@ namespace BarPromenade.Tests.PlayMode
                 ((IPlayerClipPresentation)home.Player.Visual)
                     .IsClipActive,
                 Is.False);
+            // The theme leaves through the shared rule fade, and that fade
+            // runs on UNSCALED time - so the timeScale 12 above hurried the
+            // animation to Idle without touching it, and the gain was still
+            // on its way down. Wait for the fade the mix actually owns
+            // instead of assuming the exit clip outlasts it.
+            float fadeDeadline = Time.realtimeSinceStartup +
+                                 MusicMix.FadeOutSeconds + 2f;
+            while (home.SmokingMusic.IsRuleFadeOutActive &&
+                   Time.realtimeSinceStartup < fadeDeadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(
+                home.SmokingMusic.IsRuleFadeOutActive,
+                Is.False,
+                "The smoking theme never finished its fade-out.");
             Assert.That(
                 home.SmokingMusic.NormalizedGain,
                 Is.EqualTo(0f));

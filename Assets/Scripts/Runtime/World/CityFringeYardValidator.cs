@@ -386,7 +386,7 @@ namespace BarPromenade
                         hasRetaining && hasWheelRut &&
                         hasDrainCover && hasTunnelCheek,
                         yard,
-                        "sealed tunnel forecourt");
+                        "open tunnel forecourt");
                     if (!Approximately(
                             yard.TraversalBounds,
                             plan.TunnelForecourt.DriveClearBounds))
@@ -1038,8 +1038,9 @@ namespace BarPromenade
                     StringComparison.Ordinal) ||
                 !forecourt.PortalAnchor.Equals(tunnel.PortalGroundCenter) ||
                 !forecourt.Axis.Equals(tunnel.Axis.normalized) ||
-                !forecourt.IsSealed ||
-                !tunnel.IsSealed ||
+                forecourt.HasPhysicalGate != tunnel.HasPhysicalGate ||
+                tunnel.HasPhysicalGate ||
+                tunnel.TravelAvailable ||
                 forecourt.DriveClearWidth <
                     CityFringeYardPlanner.MinimumTunnelDriveClearWidth ||
                 forecourt.ApproachWidth < forecourt.DriveClearWidth ||
@@ -1057,7 +1058,7 @@ namespace BarPromenade
                     GeometryTolerance))
             {
                 throw new InvalidOperationException(
-                    "The fringe forecourt drifted from the sealed tunnel.");
+                    "The fringe forecourt drifted from the open tunnel.");
             }
         }
 

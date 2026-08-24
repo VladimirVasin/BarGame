@@ -51,6 +51,10 @@ namespace BarPromenade
             Rect reserved,
             ICollection<CityFringeYardPartDescriptor> parts)
         {
+            Rect? surfaceGap =
+                kind == CityFringeYardKind.SouthTunnelForecourt
+                    ? reserved
+                    : (Rect?)null;
             AddRoadShoulder(
                 layout,
                 surfaces,
@@ -59,6 +63,7 @@ namespace BarPromenade
                 tangent,
                 outward,
                 roadAnchor,
+                surfaceGap,
                 parts);
             AddServiceSpurs(
                 layout,
@@ -70,6 +75,7 @@ namespace BarPromenade
                 outward,
                 roadAnchor,
                 serviceTrackLine,
+                surfaceGap,
                 parts);
             AddForefieldAnchors(
                 layout,
@@ -92,6 +98,7 @@ namespace BarPromenade
             Vector3 tangent,
             Vector3 outward,
             Vector3 roadAnchor,
+            Rect? gap,
             ICollection<CityFringeYardPartDescriptor> parts)
         {
             GetLongRange(bounds, tangent, 0.8f, 0.8f, out float start, out float end);
@@ -137,7 +144,7 @@ namespace BarPromenade
                     ShoulderWidth,
                     ForefieldSurfaceThickness,
                     cellEnd - cellStart + 0.1f,
-                    null,
+                    gap,
                     parts,
                     ForefieldSurfaceLift);
             }
@@ -153,6 +160,7 @@ namespace BarPromenade
             Vector3 outward,
             Vector3 roadAnchor,
             Vector3 serviceTrackLine,
+            Rect? gap,
             ICollection<CityFringeYardPartDescriptor> parts)
         {
             GetLongRange(bounds, tangent, 10f, 10f, out float start, out float end);
@@ -185,7 +193,7 @@ namespace BarPromenade
                     kind == CityFringeYardKind.SouthFloodWorks
                         ? 2f
                         : 8f,
-                    null,
+                    gap,
                     parts,
                     ForefieldSurfaceLift);
             }
@@ -455,7 +463,8 @@ namespace BarPromenade
                 5.15f,
                 12.55f,
                 MaximumTunnelTraceWidth,
-                parts);
+                parts,
+                reserved);
             for (int side = -1; side <= 1; side += 2)
             {
                 AddForefieldStroke(
@@ -473,7 +482,8 @@ namespace BarPromenade
                     4.15f,
                     13.35f,
                     MaximumTunnelTraceWidth,
-                    parts);
+                    parts,
+                    reserved);
             }
         }
 
@@ -637,7 +647,8 @@ namespace BarPromenade
             float startDepth,
             float endDepth,
             float width,
-            ICollection<CityFringeYardPartDescriptor> parts)
+            ICollection<CityFringeYardPartDescriptor> parts,
+            Rect? gap = null)
         {
             Vector3 start = PointAtRoadDepth(
                 bounds,
@@ -661,7 +672,7 @@ namespace BarPromenade
                 width,
                 ForefieldSurfaceThickness,
                 20f,
-                null,
+                gap,
                 parts,
                 ForefieldSurfaceLift);
         }

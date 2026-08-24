@@ -216,7 +216,7 @@ namespace BarPromenade
         /// <summary>
         /// Reserved route from the declared street opening to the mountain
         /// toe. For the south-west site it follows the forecourt to the
-        /// sealed portal.
+        /// open portal.
         /// </summary>
         public Rect TraversalBounds { get; }
 
@@ -238,7 +238,7 @@ namespace BarPromenade
             Rect driveClearBounds,
             float approachWidth,
             float driveClearWidth,
-            bool isSealed)
+            bool hasPhysicalGate)
         {
             StableId = stableId ?? string.Empty;
             AreaId = areaId ?? string.Empty;
@@ -251,7 +251,7 @@ namespace BarPromenade
             DriveClearBounds = driveClearBounds;
             ApproachWidth = approachWidth;
             DriveClearWidth = driveClearWidth;
-            IsSealed = isSealed;
+            HasPhysicalGate = hasPhysicalGate;
         }
 
         public string StableId { get; }
@@ -265,7 +265,7 @@ namespace BarPromenade
         public Rect DriveClearBounds { get; }
         public float ApproachWidth { get; }
         public float DriveClearWidth { get; }
-        public bool IsSealed { get; }
+        public bool HasPhysicalGate { get; }
 
         public bool Equals(CityTunnelForecourtDescriptor other)
         {
@@ -292,7 +292,7 @@ namespace BarPromenade
                    DriveClearBounds.Equals(other.DriveClearBounds) &&
                    ApproachWidth.Equals(other.ApproachWidth) &&
                    DriveClearWidth.Equals(other.DriveClearWidth) &&
-                   IsSealed == other.IsSealed;
+                   HasPhysicalGate == other.HasPhysicalGate;
         }
 
         public override bool Equals(object obj)
@@ -320,7 +320,7 @@ namespace BarPromenade
                 hash = (hash * 397) ^ DriveClearBounds.GetHashCode();
                 hash = (hash * 397) ^ ApproachWidth.GetHashCode();
                 hash = (hash * 397) ^ DriveClearWidth.GetHashCode();
-                return (hash * 397) ^ IsSealed.GetHashCode();
+                return (hash * 397) ^ HasPhysicalGate.GetHashCode();
             }
         }
     }

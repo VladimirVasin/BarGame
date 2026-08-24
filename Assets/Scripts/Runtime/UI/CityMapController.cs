@@ -76,7 +76,7 @@ namespace BarPromenade
     }
 
     [DisallowMultipleComponent]
-    public sealed class CityMapController : MonoBehaviour
+    public sealed partial class CityMapController : MonoBehaviour
     {
         private const float MountainMapPadding = 2f;
 
@@ -399,7 +399,8 @@ namespace BarPromenade
         {
             if (!IsInitialized ||
                 IsOpen ||
-                SceneTransitionService.IsTransitioning)
+                SceneTransitionService.IsTransitioning ||
+                AreaTravelService.IsTraveling)
             {
                 return false;
             }
@@ -1047,6 +1048,7 @@ namespace BarPromenade
 
         private void Update()
         {
+            ProcessAreaMapCommands();
             ProcessQueuedCommands();
 
             if (!IsInitialized)
@@ -1064,7 +1066,8 @@ namespace BarPromenade
                 return;
             }
 
-            if (SceneTransitionService.IsTransitioning)
+            if (SceneTransitionService.IsTransitioning ||
+                AreaTravelService.IsTraveling)
             {
                 Close(false, "transition");
                 return;
@@ -1081,14 +1084,23 @@ namespace BarPromenade
                 return;
             }
 
-            if (!DebugTeleportEnabled && WasClearPressed())
+            int areaDelta = ReadAreaSelectionDelta();
+            if (areaDelta != 0)
+            {
+                MoveAreaSelection(areaDelta);
+                return;
+            }
+
+            if (IsCityMapInteractionActive &&
+                !DebugTeleportEnabled &&
+                WasClearPressed())
             {
                 ClearRoute();
                 return;
             }
 
             int selectionDelta = ReadSelectionDelta();
-            if (selectionDelta != 0)
+            if (IsCityMapInteractionActive && selectionDelta != 0)
             {
                 if (DebugTeleportEnabled)
                 {
@@ -1101,7 +1113,8 @@ namespace BarPromenade
             }
 
             int routeMove = ReadRouteMove();
-            if (!DebugTeleportEnabled &&
+            if (IsCityMapInteractionActive &&
+                !DebugTeleportEnabled &&
                 routeMove != 0 &&
                 IsValidBarIndex(SelectedBarIndex))
             {
@@ -1110,11 +1123,17 @@ namespace BarPromenade
 
             if (WasConfirmPressed())
             {
-                if (DebugTeleportEnabled)
+                if (!IsSelectedAreaCurrent)
+                {
+                    RequestSelectedAreaTravel();
+                }
+                else if (IsCityMapInteractionActive &&
+                         DebugTeleportEnabled)
                 {
                     ConfirmDebugTeleport();
                 }
-                else if (IsValidBarIndex(SelectedBarIndex))
+                else if (IsCityMapInteractionActive &&
+                         IsValidBarIndex(SelectedBarIndex))
                 {
                     ToggleBar(SelectedBarIndex);
                 }
@@ -1123,6 +1142,7 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            ClearAreaMapCommands();
             pendingCommands.Clear();
             Close(false, "disabled");
         }

@@ -160,11 +160,20 @@ namespace BarPromenade
             // lawn: a box dipping into the park's MeshCollider keeps
             // OnTriggerStay firing against the terrain every physics
             // step for the whole session.
+            //
+            // The height that matters is the seat's above the GROUND, and
+            // it has to be spelled that way. `seatCenter` is the plank in
+            // the PIVOT's space - straight down the rope from the beam, so
+            // its y is about -2.3 - and subtracting that lifted the volume
+            // by three metres instead of four centimetres. The trigger sat
+            // up by the crossbar where no walker could ever reach it, so
+            // the swing could not be pushed at all: not in this test, and
+            // not in the park either.
             float pushLift = Mathf.Max(
                 0f,
                 (CityPlaygroundGeometry.PushVolumeHeight * 0.5f) +
                 0.01f -
-                seatCenter.y);
+                CityPlaygroundGeometry.SeatCenterY);
             push.center = seatCenter + (Vector3.up * pushLift);
             push.size = new Vector3(
                 CityPlaygroundGeometry.PushVolumeWidth,
@@ -179,6 +188,14 @@ namespace BarPromenade
             body.collisionDetectionMode =
                 CollisionDetectionMode.ContinuousSpeculative;
             body.linearDamping = 0.02f;
+
+            // A swing hanging straight down is at equilibrium, so PhysX
+            // puts its body to sleep - and a sleeping body receives no
+            // trigger callbacks at all. That means a swing that has come to
+            // rest can never be pushed again: the walker steps into the
+            // push volume and nothing hears it. Keeping this one body awake
+            // is the cost of the whole feature working the second time.
+            body.sleepThreshold = 0f;
 
             // A real rope loses very little per swing; this is the
             // rusted-pin share that eventually brings it to rest.

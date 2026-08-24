@@ -6,7 +6,7 @@ using UnityEngine.InputSystem;
 namespace BarPromenade
 {
     [DisallowMultipleComponent]
-    public sealed class CityMapView : MonoBehaviour
+    public sealed partial class CityMapView : MonoBehaviour
     {
         // A precinct name is the background layer of the map: it answers
         // "what is this ground" only where no named marker answers first,
@@ -152,7 +152,7 @@ namespace BarPromenade
             new Color32(25, 28, 27, 255);
         private static readonly Color MountainRiverCaveMouth =
             new Color32(20, 24, 24, 255);
-        private static readonly Color MountainTunnelGate =
+        private static readonly Color MountainTunnelFrame =
             new Color32(178, 139, 72, 255);
         private static readonly Color WorksBridge =
             new Color32(105, 116, 121, 255);
@@ -302,8 +302,15 @@ namespace BarPromenade
                     LocalizationService.Get("map.title"),
                     titleStyle);
 
+                if (controller.AreaTabsConfigured)
+                {
+                    DrawAreaTabs(panel);
+                }
+
                 const float outerMargin = 11f;
-                const float headerHeight = 33f;
+                float headerHeight = controller.AreaTabsConfigured
+                    ? 55f
+                    : 33f;
                 float routePanelWidth = Mathf.Clamp(
                     panel.width * 0.28f,
                     130f,
@@ -325,16 +332,20 @@ namespace BarPromenade
                     content.height);
 
                 mapViewport.Configure(
-                    controller.DisplayWorldXZBounds,
-                    controller.Layout.NodeSpacing,
+                    controller.ActiveDisplayWorldXZBounds,
+                    controller.ActiveMapReferenceWorldSize,
                     mapArea.size,
                     MinimumMapCellPixels);
-                if (!wasOpen)
+                if (!wasOpen ||
+                    lastPresentedArea != controller.SelectedArea)
                 {
                     mapViewport.CenterOnWorld(
-                        controller.PlayerWorldPosition,
-                        controller.DisplayWorldXZBounds);
+                        controller.ShouldDrawPlayerOnSelectedArea
+                            ? controller.PlayerWorldPosition
+                            : controller.GetSelectedAreaTravelTargetPosition(),
+                        controller.ActiveDisplayWorldXZBounds);
                     wasOpen = true;
+                    lastPresentedArea = controller.SelectedArea;
                 }
 
                 HandlePointerScrolling(mapArea, logicalPointer);
@@ -380,6 +391,12 @@ namespace BarPromenade
 
         private void DrawMap(MapProjection projection)
         {
+            if (controller.SelectedArea == GameAreaId.MountainRoad)
+            {
+                DrawMountainRoadMap(projection);
+                return;
+            }
+
             RetroUiTheme.DrawPanel(
                 projection.ScreenRect,
                 MapVoid,
@@ -422,7 +439,8 @@ namespace BarPromenade
         /// </summary>
         private void DrawAreaSelectionPass(MapProjection projection)
         {
-            if (!controller.DebugTeleportEnabled)
+            if (!controller.IsCityMapInteractionActive ||
+                !controller.DebugTeleportEnabled)
             {
                 return;
             }
@@ -884,52 +902,6 @@ namespace BarPromenade
                 throat,
                 1f,
                 RetroUiTheme.Ink);
-
-            if (!tunnel.IsSealed)
-            {
-                return;
-            }
-
-            Vector3 axis = FlattenMountainAxis(tunnel.Axis);
-            Vector3 right = Vector3.Cross(Vector3.up, axis).normalized;
-            Vector3 gateCenter = tunnel.PortalGroundCenter +
-                                 axis * tunnel.GateInset;
-            float gateHalfWidth = tunnel.OpeningWidth * 0.5f;
-            Vector2 gateStart = projection.WorldToScreen(
-                gateCenter - right * gateHalfWidth);
-            Vector2 gateEnd = projection.WorldToScreen(
-                gateCenter + right * gateHalfWidth);
-            DrawLine(
-                gateStart,
-                gateEnd,
-                5f,
-                RetroUiTheme.Ink);
-            DrawLine(
-                gateStart,
-                gateEnd,
-                3f,
-                MountainTunnelGate);
-
-            float crossHalfWidth = Mathf.Min(
-                1.45f,
-                tunnel.OpeningWidth * 0.22f);
-            const float crossHalfDepth = 1.05f;
-            Vector3 crossRight = right * crossHalfWidth;
-            Vector3 crossDepth = axis * crossHalfDepth;
-            DrawLine(
-                projection.WorldToScreen(
-                    gateCenter - crossRight - crossDepth),
-                projection.WorldToScreen(
-                    gateCenter + crossRight + crossDepth),
-                2f,
-                MountainTunnelGate);
-            DrawLine(
-                projection.WorldToScreen(
-                    gateCenter - crossRight + crossDepth),
-                projection.WorldToScreen(
-                    gateCenter + crossRight - crossDepth),
-                2f,
-                MountainTunnelGate);
         }
 
         private void DrawMountainTunnelMarker(MapProjection projection)
@@ -943,10 +915,10 @@ namespace BarPromenade
 
             CityMountainTunnelDescriptor tunnel = plan.Tunnel;
             Vector3 axis = FlattenMountainAxis(tunnel.Axis);
-            Vector3 gateCenter = tunnel.PortalGroundCenter +
-                                 axis * tunnel.GateInset;
+            Vector3 markerCenter = tunnel.PortalGroundCenter +
+                                   axis * (tunnel.MapDisplayDepth * 0.45f);
             Vector2 projectedCenter =
-                projection.WorldToScreen(gateCenter);
+                projection.WorldToScreen(markerCenter);
             Rect marker = CreateMountainTunnelMarkerRect(
                 projectedCenter,
                 mapLineClipRect);
@@ -960,7 +932,7 @@ namespace BarPromenade
                         marker.center,
                         marker.center + direction.normalized * 16f,
                         3f,
-                        MountainTunnelGate);
+                        MountainTunnelFrame);
                 }
             }
 
@@ -991,45 +963,22 @@ namespace BarPromenade
                 leftBottom,
                 leftShoulder,
                 2f,
-                MountainTunnelGate);
+                MountainTunnelFrame);
             DrawLine(
                 leftShoulder,
                 crown,
                 2f,
-                MountainTunnelGate);
+                MountainTunnelFrame);
             DrawLine(
                 crown,
                 rightShoulder,
                 2f,
-                MountainTunnelGate);
+                MountainTunnelFrame);
             DrawLine(
                 rightShoulder,
                 rightBottom,
                 2f,
-                MountainTunnelGate);
-
-            Vector2 gateLeftTop = new Vector2(
-                mouth.x + 4f,
-                mouth.y + 6f);
-            Vector2 gateRightTop = new Vector2(
-                mouth.xMax - 4f,
-                mouth.y + 6f);
-            Vector2 gateLeftBottom = new Vector2(
-                gateLeftTop.x,
-                mouth.yMax - 2f);
-            Vector2 gateRightBottom = new Vector2(
-                gateRightTop.x,
-                mouth.yMax - 2f);
-            DrawLine(
-                gateLeftTop,
-                gateRightBottom,
-                2f,
-                MountainTunnelGate);
-            DrawLine(
-                gateRightTop,
-                gateLeftBottom,
-                2f,
-                MountainTunnelGate);
+                MountainTunnelFrame);
 
             RegisterHoverTarget(
                 Rect.MinMaxRect(
@@ -1039,7 +988,7 @@ namespace BarPromenade
                     marker.yMax + 2f),
                 marker.center,
                 LocalizationService.Get(
-                    "map.mountain.tunnel_closed"),
+                    "map.mountain.tunnel"),
                 LandmarkHoverPriority);
         }
 
@@ -1082,7 +1031,7 @@ namespace BarPromenade
             Vector3 right = Vector3.Cross(Vector3.up, axis).normalized;
             float halfWidth = tunnel.OpeningWidth * 0.5f;
             Vector3 start = tunnel.PortalGroundCenter;
-            Vector3 end = start + axis * tunnel.ThroatDepth;
+            Vector3 end = start + axis * tunnel.MapDisplayDepth;
             Vector3 startLeft = start - right * halfWidth;
             Vector3 startRight = start + right * halfWidth;
             Vector3 endLeft = end - right * halfWidth;
@@ -1991,6 +1940,11 @@ namespace BarPromenade
 
         private void DrawPlayer(MapProjection projection)
         {
+            if (!controller.ShouldDrawPlayerOnSelectedArea)
+            {
+                return;
+            }
+
             Vector2 position =
                 projection.WorldToScreen(controller.PlayerWorldPosition);
             Vector3 forward = controller.PlayerForward;
@@ -2331,6 +2285,12 @@ namespace BarPromenade
                 true,
                 2f,
                 1f);
+            if (!controller.IsCityMapInteractionActive)
+            {
+                DrawAreaTravelPanel(panel);
+                return;
+            }
+
             if (controller.DebugTeleportEnabled)
             {
                 DrawDebugTeleportPanel(panel);
@@ -2678,7 +2638,7 @@ namespace BarPromenade
 
         private MapProjection CreateProjection(Rect mapRect)
         {
-            Rect bounds = controller.DisplayWorldXZBounds;
+            Rect bounds = controller.ActiveDisplayWorldXZBounds;
             float minimumX = bounds.xMin;
             float maximumX = bounds.xMax;
             float minimumZ = bounds.yMin;

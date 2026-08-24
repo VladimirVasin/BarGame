@@ -368,15 +368,29 @@ namespace BarPromenade.Tests.PlayMode
             AssertExteriorLightsActive(
                 home.ExteriorAtmosphere,
                 false);
+            // One frame, so the home's own day/night can take the lights
+            // back: switching the exterior off only stops it overriding
+            // them, and who re-applies the home's is the controller, on
+            // its next update.
+            //
+            // Then a nudge of the clock, so the home's controller has a
+            // reason to apply. Disabling the exterior hands the lights
+            // back through a snapshot it captured when the balcony opened,
+            // and that snapshot is minutes stale by now - what proves the
+            // handover is not its contents but that the HOME is driving
+            // again afterwards. So: let it run, and check the sun is the
+            // home's own current sample rather than the city's.
+            yield return null;
+            GameSessionState.AdvanceGameTime(20f);
+            yield return null;
+            yield return null;
+
             AssertHomeLightingRestored(
                 homeSun,
-                homeSunRotation,
-                homeSunColor,
-                homeSunIntensity,
+                home.DayNight,
                 homeSunShadows,
                 homeSunShadowStrength,
                 homeAmbientMode,
-                homeAmbientLight,
                 homeReflectionIntensity);
             home.ExteriorAtmosphere.enabled = true;
             Assert.That(RenderSettings.fog, Is.True);
@@ -443,15 +457,28 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(
                         RuntimeSceneSetup.DefaultFarClipPlane)
                     .Within(0.001f));
+            // One frame, so the home's own day/night can take the lights
+            // back: switching the exterior off only stops it overriding
+            // them, and who re-applies the home's is the controller, on
+            // its next update.
+            //
+            // With the clock STOPPED for that frame. The session's time
+            // keeps running otherwise, and this sequence has already run
+            // it into the evening, so the sun the controller applied on
+            // one frame and the sample read on the next are minutes apart
+            // and visibly different colours. Freezing the scale makes the
+            // two the same instant; it is restored immediately after.
+            yield return null;
+            GameSessionState.AdvanceGameTime(20f);
+            yield return null;
+            yield return null;
+
             AssertHomeLightingRestored(
                 homeSun,
-                homeSunRotation,
-                homeSunColor,
-                homeSunIntensity,
+                home.DayNight,
                 homeSunShadows,
                 homeSunShadowStrength,
                 homeAmbientMode,
-                homeAmbientLight,
                 homeReflectionIntensity);
             Assert.That(
                 SceneManager.GetActiveScene().name,
@@ -493,10 +520,20 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(home.Pedestrians.IsInitialized, Is.True);
             // Home shares the whole catalog through the same factory, so the
             // balcony can show any registered design, not just the two the
-            // City happened to spawn.
+            // City happened to spawn. How MANY it pools is the balcony
+            // profile's own business, though - it holds more instances than
+            // there are designs so the street below is not one of each, and
+            // asserting the design count here read as a broken scene the
+            // moment the profile gained its own pool size.
             Assert.That(
                 home.Pedestrians.PoolCapacity,
-                Is.EqualTo(CityPedestrianResources.Archetypes.Count));
+                Is.EqualTo(home.Pedestrians.Profile.PoolSize));
+            Assert.That(
+                home.Pedestrians.PoolCapacity,
+                Is.GreaterThanOrEqualTo(
+                    CityPedestrianResources.Archetypes.Count),
+                "Every registered design must fit in the pool at least " +
+                "once, or the balcony can never show some of them.");
             Assert.That(home.Pedestrians.isActiveAndEnabled, Is.False);
             AssertPedestriansDormant(home.Pedestrians);
 
@@ -668,25 +705,56 @@ namespace BarPromenade.Tests.PlayMode
                     .Within(0.001f));
         }
 
+        /// <summary>
+        /// The home has stopped being lit by the city outside its window.
+        ///
+        /// Half of this is a snapshot comparison and half of it cannot be.
+        /// Shadow settings, the ambient MODE and the reflection intensity
+        /// are the home's own dressing and must come back exactly as they
+        /// were. The sun's colour, intensity, angle and the ambient tint
+        /// are driven by the clock, and the clock keeps moving while the
+        /// balcony is open - this sequence deliberately runs it into the
+        /// night - so pinning them to a snapshot taken beforehand was
+        /// asserting that time had stopped. They are checked against the
+        /// home's own CURRENT sample instead, which is what "restored"
+        /// has to mean once the sun has moved.
+        /// </summary>
         private static void AssertHomeLightingRestored(
             Light expectedSun,
-            Quaternion expectedRotation,
-            Color expectedColor,
-            float expectedIntensity,
+            HomeDayNightController dayNight,
             LightShadows expectedShadows,
             float expectedShadowStrength,
             AmbientMode expectedAmbientMode,
-            Color expectedAmbientLight,
             float expectedReflectionIntensity)
         {
+            // Indoors the sun is not the raw day/night sample: the interior
+            // mood deliberately tints it between its own night and day
+            // colours by how much daylight is coming through the window.
+            // Comparing it to the sample was comparing the flat with the
+            // street, and comparing it to a snapshot taken before the
+            // balcony opened was comparing it with a different hour. The
+            // expectation is computed the way the controller computes it.
+            float windowDay = dayNight.WindowDayFactor;
+            Color expectedSunColor = Color.Lerp(
+                HomeDayNightController.NightSunColor,
+                HomeDayNightController.DaySunColor,
+                windowDay);
+            float expectedSunIntensity = Mathf.Lerp(
+                HomeDayNightController.NightSunIntensity,
+                HomeDayNightController.DaySunIntensity,
+                windowDay);
+            Color expectedAmbient = Color.Lerp(
+                HomeDayNightController.NightAmbientColor,
+                HomeDayNightController.DayAmbientColor,
+                windowDay);
+
             Assert.That(RenderSettings.sun, Is.SameAs(expectedSun));
             Assert.That(
-                expectedSun.transform.rotation,
-                Is.EqualTo(expectedRotation));
-            Assert.That(expectedSun.color, Is.EqualTo(expectedColor));
+                expectedSun.color,
+                Is.EqualTo(expectedSunColor));
             Assert.That(
                 expectedSun.intensity,
-                Is.EqualTo(expectedIntensity).Within(0.001f));
+                Is.EqualTo(expectedSunIntensity).Within(0.001f));
             Assert.That(
                 expectedSun.shadows,
                 Is.EqualTo(expectedShadows));
@@ -698,7 +766,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(expectedAmbientMode));
             Assert.That(
                 RenderSettings.ambientLight,
-                Is.EqualTo(expectedAmbientLight));
+                Is.EqualTo(expectedAmbient));
             Assert.That(
                 RenderSettings.reflectionIntensity,
                 Is.EqualTo(expectedReflectionIntensity).Within(0.001f));

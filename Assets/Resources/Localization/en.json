@@ -161,6 +161,10 @@
       "value": "E — sit on the bench"
     },
     {
+      "key": "interaction.sit_ferry_car",
+      "value": "E — Sit in the car"
+    },
+    {
       "key": "interaction.play_chess",
       "value": "E — play chess"
     },
@@ -187,6 +191,10 @@
     {
       "key": "city.dumpster.placeholder",
       "value": "Just damp cardboard and the smell."
+    },
+    {
+      "key": "city.tunnel.unavailable",
+      "value": "I won't get there on foot."
     },
     {
       "key": "interaction.stop_smoking",
@@ -517,6 +525,46 @@
       "value": "Promenade Map"
     },
     {
+      "key": "map.area.city",
+      "value": "City"
+    },
+    {
+      "key": "map.area.mountain_road",
+      "value": "Mountain road"
+    },
+    {
+      "key": "map.area.current",
+      "value": "You are in this area."
+    },
+    {
+      "key": "map.area.travel_question",
+      "value": "Travel to {0}?"
+    },
+    {
+      "key": "map.area.travel",
+      "value": "Travel"
+    },
+    {
+      "key": "map.mountain_road.tunnel_exit",
+      "value": "Tunnel exit"
+    },
+    {
+      "key": "map.mountain_road.plateau",
+      "value": "Mountain plateau"
+    },
+    {
+      "key": "map.mountain_road.hairpin",
+      "value": "Hairpin {0}"
+    },
+    {
+      "key": "map.mountain_road.cafe",
+      "value": "Night cafe"
+    },
+    {
+      "key": "map.mountain_road.cableway",
+      "value": "Cableway"
+    },
+    {
       "key": "map.route_title",
       "value": "Bar Route"
     },
@@ -557,8 +605,8 @@
       "value": "Boat station"
     },
     {
-      "key": "map.mountain.tunnel_closed",
-      "value": "Closed tunnel"
+      "key": "map.mountain.tunnel",
+      "value": "Tunnel"
     },
     {
       "key": "map.area_at",
@@ -1167,6 +1215,62 @@
     {
       "key": "seacoast.fisherman.line.15",
       "value": "Home soon. I'll sit a while longer."
+    },
+    {
+      "key": "interaction.ferryman",
+      "value": "E — Talk to the ferryman"
+    },
+    {
+      "key": "lastroute.ferryman.confirm.leave",
+      "value": "Leave the city?"
+    },
+    {
+      "key": "lastroute.ferryman.line.01",
+      "value": "Early."
+    },
+    {
+      "key": "lastroute.ferryman.line.02",
+      "value": "The route was cancelled. I wait anyway."
+    },
+    {
+      "key": "lastroute.ferryman.line.03",
+      "value": "There is petrol. There is no reason."
+    },
+    {
+      "key": "lastroute.ferryman.line.04",
+      "value": "Not today."
+    },
+    {
+      "key": "lastroute.ferryman.line.05",
+      "value": "Twenty years on this run. Always the same place."
+    },
+    {
+      "key": "lastroute.ferryman.line.06",
+      "value": "One headlight is gone. It still drives."
+    },
+    {
+      "key": "lastroute.ferryman.line.07",
+      "value": "The last route has already gone. Or it has not yet."
+    },
+    {
+      "key": "lastroute.ferryman.line.08",
+      "value": "The timetable is on the board. It lies."
+    },
+    {
+      "key": "lastroute.ferryman.line.09",
+      "value": "I flip a coin. The answer never changes."
+    },
+    {
+      "key": "lastroute.ferryman.line.10",
+      "value": "I am waiting. Not for you."
+    },
+    {
+      "key": "lastroute.ferryman.line.11",
+      "value": "You have not got it on you. I would have noticed."
+    },
+    {
+      "key": "lastroute.ferryman.line.12",
+      "value": "Nobody gets driven back this way."
     },
     {
       "key": "park.quarrel.chess.line.01",

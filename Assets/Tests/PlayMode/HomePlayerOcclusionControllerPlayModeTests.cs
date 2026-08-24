@@ -25,9 +25,39 @@ namespace BarPromenade.Tests.PlayMode
         private AmbientMode previousAmbientMode;
         private Color previousAmbientLight;
 
+        private GameObject listenerObject;
+
+        /// <summary>
+        /// These tests build a synthetic scene and end on
+        /// `LogAssert.NoUnexpectedReceived()`, which makes them sensitive to
+        /// an engine notice that has nothing to do with them: a scene test
+        /// running before this one can leave music playing, and the moment
+        /// its scene unloads Unity logs "There are no audio listeners in the
+        /// scene". Standing one up before the body runs removes the coupling
+        /// rather than deafening the assertion.
+        /// </summary>
+        [UnitySetUp]
+        public IEnumerator SetUp()
+        {
+            if (Object.FindAnyObjectByType<AudioListener>() == null)
+            {
+                listenerObject =
+                    new GameObject("Synthetic Audio Listener");
+                listenerObject.AddComponent<AudioListener>();
+            }
+
+            yield return null;
+        }
+
         [UnityTearDown]
         public IEnumerator TearDown()
         {
+            if (listenerObject != null)
+            {
+                Object.Destroy(listenerObject);
+                listenerObject = null;
+            }
+
             if (gpuCamera != null)
             {
                 gpuCamera.targetTexture = previousCameraTarget;

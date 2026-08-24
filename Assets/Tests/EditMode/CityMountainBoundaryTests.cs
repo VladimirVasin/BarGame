@@ -55,7 +55,7 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("CityMountain")]
-        public void SouthRim_LeavesSealedTunnelAndAuthoredRiverCaveMouth()
+        public void SouthRim_LeavesOpenUnavailableTunnelAndAuthoredRiverCaveMouth()
         {
             CityLayout layout = CreateDefaultLayout();
             CityMountainBoundaryPlan plan =
@@ -75,7 +75,43 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     CityMountainBoundaryDefinition.SouthWestAreaId));
             Assert.That(tunnel.Axis, Is.EqualTo(Vector3.back));
-            Assert.That(tunnel.IsSealed, Is.True);
+            Assert.That(tunnel.HasPhysicalGate, Is.False);
+            Assert.That(tunnel.TravelAvailable, Is.False);
+            Assert.That(
+                tunnel.VisualDepth,
+                Is.EqualTo(72f).Within(0.01f));
+            Assert.That(
+                tunnel.WalkableDepth,
+                Is.EqualTo(11f).Within(0.01f));
+            Assert.That(
+                tunnel.DecisionDistance,
+                Is.EqualTo(8f).Within(0.01f));
+            Assert.That(
+                tunnel.ReturnDistance,
+                Is.EqualTo(6.5f).Within(0.01f));
+            Assert.That(
+                tunnel.MapDisplayDepth,
+                Is.EqualTo(12f).Within(0.01f));
+            Assert.That(tunnel.Segments, Has.Count.EqualTo(12));
+            Assert.That(
+                tunnel.Segments.Take(2).All(item =>
+                    item.HasCollision && item.Forward == tunnel.Axis),
+                Is.True);
+            Assert.That(
+                tunnel.Segments.Skip(2).All(item =>
+                    !item.HasCollision &&
+                    Vector3.Dot(item.Forward, Vector3.left) > 0f),
+                Is.True);
+            CityMountainTunnelPathSample sightline =
+                tunnel.SamplePath(40f);
+            Vector3 tunnelRight = Vector3.Cross(
+                Vector3.up,
+                tunnel.Axis).normalized;
+            Assert.That(
+                Mathf.Abs(Vector3.Dot(
+                    sightline.Position - tunnel.PortalGroundCenter,
+                    tunnelRight)),
+                Is.GreaterThan(tunnel.OpeningWidth * 0.5f));
             Assert.That(
                 tunnel.PortalGroundCenter.x,
                 Is.EqualTo(access.Center.x).Within(0.01f));
@@ -134,6 +170,34 @@ namespace BarPromenade.Tests.EditMode
                         "forefield.");
                 }
             }
+
+            const float playerRadius = 0.32f;
+            RoadWalkableArea walkable =
+                RoadWalkableArea.FromLayout(layout, plan);
+            Vector3 walker = tunnel.PortalGroundCenter -
+                             tunnel.Axis * 0.75f;
+            for (int step = 0; step < 260; step++)
+            {
+                walker = walkable.Constrain(
+                    walker,
+                    walker + tunnel.Axis * 0.05f,
+                    playerRadius);
+            }
+
+            float progress = Vector3.Dot(
+                walker - tunnel.PortalGroundCenter,
+                tunnel.Axis);
+            Assert.That(
+                progress,
+                Is.EqualTo(tunnel.WalkableDepth - playerRadius)
+                    .Within(0.06f));
+            Assert.That(
+                walkable.Contains(
+                    tunnel.SamplePath(
+                        tunnel.WalkableDepth + playerRadius * 2f).Position,
+                    playerRadius),
+                Is.False,
+                "The player-only tunnel corridor exceeds its safety depth.");
         }
 
         [Test]
@@ -877,7 +941,7 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("CityMountain")]
-        public void WorldBuilders_CreatePhysicalClosureAndPresentationOnlyRim()
+        public void WorldBuilders_CreatePhysicalRimOpenTunnelAndBackdrop()
         {
             CityLayout layout = CreateDefaultLayout();
             CityMountainBoundaryPlan plan =
@@ -961,17 +1025,30 @@ namespace BarPromenade.Tests.EditMode
                     Is.True,
                     "Only the invisible near-toe surface may collide.");
 
-                Transform gate = FindChild(
+                Transform openTunnel = FindChild(
                     physical.transform,
-                    "Sealed Mountain Gate");
-                Assert.That(gate.GetComponent<MeshCollider>(), Is.Not.Null);
+                    "Open South Tunnel");
+                Transform[] openTunnelParts = openTunnel
+                    .GetComponentsInChildren<Transform>(true);
+                Assert.That(
+                    openTunnelParts.Any(item =>
+                        item.name.Contains("Gate") ||
+                        item.name.EndsWith("Stop")),
+                    Is.False,
+                    "The open tunnel regained a physical closure.");
+                Assert.That(
+                    FindChild(
+                        openTunnel,
+                        "Tunnel Portal Rock Facade"),
+                    Is.Not.Null,
+                    "The portal must remain neatly cut into the mountain.");
                 Transform portal = FindChild(
-                    physical.transform,
+                    openTunnel,
                     "Mountain Tunnel Portal");
                 Assert.That(
                     portal.GetComponent<MeshRenderer>().sharedMaterial,
                     Is.EqualTo(RuntimePrimitiveFactory.DefaultMaterial),
-                    "The close tunnel stub must not dither with the ridge.");
+                    "The close tunnel portal must not dither with the ridge.");
                 CityMountainTunnelDescriptor tunnel = plan.Tunnel;
                 Vector3 tunnelAxis = tunnel.Axis.normalized;
                 Vector3 tunnelRight = Vector3.Cross(
@@ -988,15 +1065,50 @@ namespace BarPromenade.Tests.EditMode
                 float portalBack = portalVertices.Max(vertex =>
                     Vector3.Dot(vertex - portalGround, tunnelAxis));
 
-                Transform throat = FindChild(
-                    physical.transform,
-                    "Dark Rock Throat");
-                Vector3[] throatVertices = throat
+                Transform physicalLining = FindChild(
+                    openTunnel,
+                    "Tunnel Lining Physical");
+                Transform visualLining = FindChild(
+                    openTunnel,
+                    "Tunnel Lining Continuation");
+                Transform physicalFloor = FindChild(
+                    openTunnel,
+                    "Tunnel Floor Physical");
+                Transform visualFloor = FindChild(
+                    openTunnel,
+                    "Tunnel Floor Continuation");
+                Assert.That(
+                    physicalLining.GetComponent<MeshCollider>(),
+                    Is.Not.Null);
+                Assert.That(
+                    physicalFloor.GetComponent<MeshCollider>(),
+                    Is.Not.Null);
+                Assert.That(
+                    visualLining.GetComponent<MeshCollider>(),
+                    Is.Null);
+                Assert.That(
+                    visualFloor.GetComponent<MeshCollider>(),
+                    Is.Null);
+                Renderer[] tunnelSegmentRenderers =
+                {
+                    physicalLining.GetComponent<Renderer>(),
+                    visualLining.GetComponent<Renderer>(),
+                    physicalFloor.GetComponent<Renderer>(),
+                    visualFloor.GetComponent<Renderer>()
+                };
+                Assert.That(
+                    tunnelSegmentRenderers.All(item =>
+                        item.shadowCastingMode == ShadowCastingMode.On &&
+                        item.receiveShadows),
+                    Is.True,
+                    "Tunnel sections must cast and receive fixture shadows.");
+
+                Vector3[] throatVertices = physicalLining
                     .GetComponent<MeshFilter>()
                     .sharedMesh
                     .vertices
                     .Select(vertex =>
-                        throat.transform.TransformPoint(vertex))
+                        physicalLining.TransformPoint(vertex))
                     .ToArray();
                 float throatInnerPlane = throatVertices
                     .Where(vertex =>
@@ -1014,15 +1126,12 @@ namespace BarPromenade.Tests.EditMode
                         .Within(0.001f),
                     "The portal and throat regained coplanar side faces.");
 
-                Transform floor = FindChild(
-                    physical.transform,
-                    "Tunnel Floor");
-                Vector3[] floorVertices = floor
+                Vector3[] floorVertices = physicalFloor
                     .GetComponent<MeshFilter>()
                     .sharedMesh
                     .vertices
                     .Select(vertex =>
-                        floor.transform.TransformPoint(vertex))
+                        physicalFloor.TransformPoint(vertex))
                     .ToArray();
                 float floorStart = floorVertices.Min(vertex =>
                     Vector3.Dot(vertex - portalGround, tunnelAxis));
@@ -1038,9 +1147,10 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     floorEnd,
                     Is.GreaterThanOrEqualTo(
-                        tunnel.ThroatDepth +
+                        CityMountainBoundaryDefinition
+                            .TunnelPhysicalDepth +
                         CityMountainBoundaryWorldBuilder
-                            .ThroatPortalOffset - 0.001f));
+                            .TunnelSegmentOverlap - 0.001f));
                 Assert.That(
                     floorTop,
                     Is.EqualTo(
@@ -1095,6 +1205,36 @@ namespace BarPromenade.Tests.EditMode
                     throatVertices.Any(vertex =>
                         Mathf.Abs(vertex.y - ceilingBottom) < 0.001f),
                     Is.True);
+                Vector3 farEnd =
+                    tunnel.SamplePath(tunnel.VisualDepth).Position;
+                float nearestFarFloorVertex = visualFloor
+                    .GetComponent<MeshFilter>()
+                    .sharedMesh
+                    .vertices
+                    .Select(vertex => visualFloor.TransformPoint(vertex))
+                    .Min(vertex => Vector2.Distance(
+                        new Vector2(vertex.x, vertex.z),
+                        new Vector2(farEnd.x, farEnd.z)));
+                Assert.That(
+                    nearestFarFloorVertex,
+                    Is.LessThan(tunnel.OpeningWidth * 0.60f),
+                    "The visual lining no longer reaches 72 metres.");
+                Assert.That(
+                    FindChild(openTunnel, "Tunnel Technical Seams"),
+                    Is.Not.Null);
+                Assert.That(
+                    FindChild(openTunnel, "Tunnel Drainage Channels"),
+                    Is.Not.Null);
+                Assert.That(
+                    FindChild(openTunnel, "Tunnel Cable Run"),
+                    Is.Not.Null);
+                Assert.That(
+                    FindChild(openTunnel, "Tunnel Cable Supports"),
+                    Is.Not.Null);
+                Assert.That(
+                    openTunnel.GetComponentsInChildren<Light>(true),
+                    Is.Empty,
+                    "Tunnel geometry must not manufacture its own lamps.");
                 // The one deliberate exception to the otherwise
                 // presentation-only closure: the river mouth's portal
                 // lamp on the arch crown.

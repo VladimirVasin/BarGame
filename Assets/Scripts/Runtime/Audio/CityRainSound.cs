@@ -86,6 +86,13 @@ namespace BarPromenade
         public const float QuietCutoffFrequency = 1500f;
         public const float HeavyCutoffFrequency = 3600f;
 
+        /// <summary>
+        /// One source, on this player's own GameObject. Scene audio budgets
+        /// are asserted against owner constants rather than a hand-counted
+        /// total, so this is the number they read.
+        /// </summary>
+        public const int OwnedSourceCount = 1;
+
         private const float MinimumAudibleIntensity = 0.005f;
 
         private AudioClip generatedClip;

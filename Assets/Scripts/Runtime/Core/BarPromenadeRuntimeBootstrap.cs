@@ -112,6 +112,14 @@ namespace BarPromenade
             {
                 EnsureDoorTransitionInstalled();
             }
+            else if (scene.name == SceneIds.MountainRoad)
+            {
+                EnsureMountainRoadInstalled();
+            }
+            else if (scene.name == SceneIds.AreaLoading)
+            {
+                EnsureAreaLoadingInstalled();
+            }
         }
 
         private static bool IsAllowListedScene(string sceneName)
@@ -122,7 +130,9 @@ namespace BarPromenade
                    sceneName == SceneIds.SupermarketInterior ||
                    sceneName == SceneIds.HomeInterior ||
                    sceneName == SceneIds.StairwellInterior ||
-                   sceneName == SceneIds.DoorTransition;
+                   sceneName == SceneIds.DoorTransition ||
+                   sceneName == SceneIds.MountainRoad ||
+                   sceneName == SceneIds.AreaLoading;
         }
 
         public static GameTimeRuntime EnsureGameTimeRuntimeInstalled()
@@ -292,6 +302,50 @@ namespace BarPromenade
                 GameObject root = new GameObject(
                     "[Bar Promenade] Stairwell Interior Runtime");
                 return root.AddComponent<StairwellInteriorRoot>();
+            }
+            finally
+            {
+                creating = false;
+            }
+        }
+
+        public static MountainRoadRoot EnsureMountainRoadInstalled()
+        {
+            MountainRoadRoot existing =
+                Object.FindAnyObjectByType<MountainRoadRoot>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject(
+                    "[Bar Promenade] Mountain Road Runtime");
+                return root.AddComponent<MountainRoadRoot>();
+            }
+            finally
+            {
+                creating = false;
+            }
+        }
+
+        public static AreaLoadingRoot EnsureAreaLoadingInstalled()
+        {
+            AreaLoadingRoot existing =
+                Object.FindAnyObjectByType<AreaLoadingRoot>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject(
+                    "[Bar Promenade] Area Loading Runtime");
+                return root.AddComponent<AreaLoadingRoot>();
             }
             finally
             {

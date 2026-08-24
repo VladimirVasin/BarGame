@@ -43,7 +43,7 @@ yard-specific meso anchors keep every longitudinal empty interval at or below
 mountain strips use narrow terrain-following maintenance marks instead of
 broad earth-textured longitudinal service-track overlays. Four large anchors
 still finish the chapters: stepped masonry and a culvert, an industrial repair
-frame, the sealed-tunnel freight forecourt with grounded stepped return wings,
+frame, the open-tunnel freight forecourt with grounded stepped return wings,
 a two-post service frame and a crown-mounted floodlight, and caged floodworks
 with a gauge.
 Dedicated forefield, service-track, board-formed concrete and old-masonry
@@ -52,7 +52,7 @@ now opens into that walkable ground instead of acting as an invisible wall.
 Three capsule-clear `6 m` routes cut precisely through the retaining line to
 the mountain toe. The two western routes use broad gravel aprons, while the
 south-east floodworks marks its equally clear terrain route with a narrow,
-embedded trace ending at the drain. The fourth route reaches the sealed portal
+embedded trace ending at the drain. The fourth route reaches the open portal
 over the conforming terrain and is read from a narrow embedded approach mark
 plus two wheel ruts, not from a floating `6.9 m` surface box. At every
 non-opening toe, the physical
@@ -74,12 +74,21 @@ and their authored approaches remain open.
 Each anchor owns one emissive practical; at night the nearest one may lease the
 last of the existing eight street Spot slots, so `CityNightAtmosphere` still
 owns exactly `12` realtime Lights rather than adding four more. The tunnel
-profile is a `150`-intensity, `16 m` crown floodlight aimed down its sealed
-throat. Its floor overlaps the terrain edge, and offset/overlapping lining
-joints remove the former ground gap, coplanar wall flicker and ceiling slits.
+reuses that slot at the second of five ceiling fixtures; it keeps a restrained
+`0.22` daytime power floor, flickers on a deterministic sparse contact-fault
+pattern and owns a mono ballast buzz audible only within `5.6 m`. Its floor
+overlaps the terrain edge, and offset/overlapping lining joints remove the
+former ground gap, coplanar wall flicker and ceiling slits.
 The eastern Yard uses a separate low,
-unlit utility-edge composition and creates no eastern ridge. The portal still
-adds no interaction, scene transition or walkable continuation. A camera-relative
+unlit utility-edge composition and creates no eastern ridge. The gate-free
+`8 x 5.5 m` portal now leads into a `72 m` faceted rock shell: the first `12 m`
+are straight and physical, the first `11 m` are walkable, and the later
+segments bend west so no rear cap or endpoint is visible. Crossing `8 m`
+inward while physical tunnel travel remains unavailable shows the localized
+thought and guides the hero back to `6.5 m`; this City boundary does not yet
+invoke the separately implemented mountain destination. After the mouth, the player-following rain adopts a
+dry core, local fog particles are cleared and the camera-relative mountain
+shell is hidden; the global Exp2 fog remains unchanged. A camera-relative
 west/south ridge shell keeps that enclosing silhouette inside City's fixed
 `48 m` far plane without closing the northern sea or the deliberately
 untouched eastern horizon. Physical ridge chunks use one shared opaque
@@ -92,12 +101,41 @@ depth and depth-normal passes keep that handoff consistent; tunnel pieces
 remain ordinary `RuntimePrimitiveLit` geometry.
 The City map consumes that same mountain plan, expands its display only west
 and south, and draws the ridge toe/outer hatch, only the visible narrow river
-approach into the mountain, and the sealed tunnel gate without inventing a
+approach into the mountain, and an uncrossed open tunnel arch with only its
+first `12 m` represented without inventing a
 north or east boundary. The sparse
 footprint can be non-rectangular, and the same data-first area contract supports
-reordered urban areas. The runtime places one visually
+reordered urban areas.
+
+The build now has nine explicit scenes. `MountainRoad` is appended at index
+`7` as the sixth gameplay root and `AreaLoading` at index `8` as a black,
+progress-bar-only transfer boundary. The City and mountain worlds are each
+runtime-composed after a Single-mode load and are never resident or rendered
+together. The ordinary map has switchable City/Mountain Road tabs; confirming
+the other area unloads the source into `AreaLoading` and then loads the chosen
+destination. `MountainRoad` generates a pure City layout only for the City tab,
+never City GameObjects. Its hero starts `6 m` inside a `9 m` exit tunnel and
+follows an `82.7 m` continuous narrow uphill road (about `31.8 s` at the normal
+`2.6 m/s`). The ribbon is now dimensioned around the `4.83 x 1.80 m`
+LastRouteCar: ordinary stretches are `4.8 m` wide and two `7.5 m`-radius
+hairpins widen to `6.4 m`. Its `8.7 m` physical rise ends through one level,
+shared-vertex automotive apron on an irregular roughly `42 x 27 m` mountain
+terminal with a protected `7.5 m` turning circle. An enterable five-sided
+glass cafe occupies the left side; a continuously operating `58 m` cableway
+with three supports and four cabins climbs from the right side into an occluding
+snow ridge. Both are built inside the Mountain Road world, not as additional
+scenes, and add only sounds owned by visible appliances, machinery and roller
+crossings. Their cafe/cableway landmarks come from the same terminal plan used
+by the map. Layered larger forest dressing, grounded melancholy roadside
+objects, mid ridges and far snowy mountains make the climb read higher than its
+local rise. Five earlier causal road sound anchors remain, and one tunnel lamp
+visibly flickers.
+For now the City tunnel still refuses passage; only the map invokes this area
+transfer.
+
+The runtime places one visually
 distinct player home beside a bar street and one deterministic street-front
-supermarket, instantiates the same modular low-poly 3D hero in all five gameplay
+supermarket, instantiates the same modular low-poly 3D hero in all six gameplay
 roots, loads separate bar, supermarket, stairwell and home interiors, and
 restores the same seed and matching exterior return point. The hero keeps
 independent body meshes on one Generic rig, uses continuous in-place 3D clips

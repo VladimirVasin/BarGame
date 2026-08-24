@@ -88,14 +88,18 @@ namespace BarPromenade
                 return;
             }
 
+            Vector3 localShelter = PlayerHomeBalconyGeometry.ToHomeLocal(
+                context.PlayerHome,
+                stop.ShelterPosition);
+
+            localShelter = ClipStopToExterior(localShelter);
+
             Transform root = new GameObject("Home Bus Stops").transform;
             root.SetParent(parent, false);
             CityBusStopWorldBuilder.BuildLocalStop(
                 root,
                 stop,
-                PlayerHomeBalconyGeometry.ToHomeLocal(
-                    context.PlayerHome,
-                    stop.ShelterPosition),
+                localShelter,
                 PlayerHomeBalconyGeometry.ToHomeLocalDirection(
                     context.PlayerHome,
                     stop.Forward),
@@ -761,10 +765,44 @@ namespace BarPromenade
                 CityNightWorldBuilder.Build(
                     parent,
                     fixturePlan,
-                    Array.Empty<BarEntrance>());
+                    Array.Empty<BarEntrance>(),
+                    // No collision out here. Everything in this view is on
+                    // the far side of the facade, so a lamp's blocking box
+                    // can only ever cost physics for nothing - or, worse,
+                    // fence off part of the balcony the player IS standing
+                    // on.
+                    buildCollision: false);
             result.Root.name =
                 "Home Exterior Night Fixtures";
             return result;
+        }
+
+        /// <summary>
+        /// How far past the facade the composed stop's anchor is held. Its
+        /// shelter is `4.65 m` across and turns with the lane, so a little
+        /// over half that clears the wall whichever way it faces.
+        /// </summary>
+        public const float BusStopFacadeClearance = 2.70f;
+
+        /// <summary>
+        /// Holds a composed bus stop in the exterior half-space.
+        ///
+        /// The plan picks the stop that BELONGS to this home, by distance
+        /// to its door, and that is the right question for it to answer -
+        /// but the stop that belongs to the home can sit against the
+        /// block's own footprint, and converted into the flat's local
+        /// frame it then lands behind the facade. Drawn there it is a bus
+        /// shelter inside the bedroom. Everything else in this diorama is
+        /// clipped to the half-space past the wall already; the stop is
+        /// clipped the same way rather than dropped, because a balcony
+        /// with no stop in sight loses something the view is for.
+        /// </summary>
+        public static Vector3 ClipStopToExterior(Vector3 localShelter)
+        {
+            localShelter.x = Mathf.Max(
+                localShelter.x,
+                ExteriorMinimumX + BusStopFacadeClearance);
+            return localShelter;
         }
 
         internal static bool TryClipToExteriorHalfSpace(

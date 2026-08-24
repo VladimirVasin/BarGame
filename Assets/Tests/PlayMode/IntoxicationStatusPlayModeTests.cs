@@ -296,7 +296,14 @@ namespace BarPromenade.Tests.PlayMode
             for (int first = 0; first < playerColliders.Length; first++)
             {
                 Collider current = playerColliders[first];
-                if (current == primaryCollider)
+                // Triggers are not ragdoll bones and never were. The hero
+                // also carries a passive "Cloth Body Capsule" trigger, which
+                // exists only because Cloth presses against CapsuleColliders
+                // and a CharacterController is not one. It blocks nothing,
+                // so asking whether it IGNORES the controller is a question
+                // with no meaning - and this loop, written when every other
+                // collider on the hero was a bone, asked it anyway.
+                if (current == primaryCollider || current.isTrigger)
                 {
                     continue;
                 }
@@ -313,6 +320,11 @@ namespace BarPromenade.Tests.PlayMode
                      second++)
                 {
                     Collider other = playerColliders[second];
+                    if (other.isTrigger)
+                    {
+                        continue;
+                    }
+
                     if (other != primaryCollider)
                     {
                         Assert.That(

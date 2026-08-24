@@ -193,19 +193,79 @@ namespace BarPromenade
                 Mathf.Min(portalXZ.y, access.ApproachBounds.yMin),
                 centerX + halfWidth,
                 Mathf.Max(portalXZ.y, access.ApproachBounds.yMax));
+            Vector3 portalGround = new Vector3(
+                centerX,
+                groundY,
+                portalXZ.y);
+            Vector3 axis = access.OutwardNormal.normalized;
+            List<CityMountainTunnelSegmentDescriptor> segments =
+                CreateTunnelSegments(portalGround, axis);
             return new CityMountainTunnelDescriptor(
                 "mountain-south-tunnel-stub",
                 access.Id,
                 access.AreaId,
-                new Vector3(centerX, groundY, portalXZ.y),
-                access.OutwardNormal.normalized,
+                portalGround,
+                axis,
                 portalBounds,
                 approachBounds,
                 CityMountainBoundaryDefinition.TunnelOpeningWidth,
                 CityMountainBoundaryDefinition.TunnelOpeningHeight,
-                CityMountainBoundaryDefinition.TunnelThroatDepth,
-                CityMountainBoundaryDefinition.TunnelGateInset,
-                true);
+                CityMountainBoundaryDefinition.TunnelVisualDepth,
+                CityMountainBoundaryDefinition.TunnelWalkableDepth,
+                CityMountainBoundaryDefinition.TunnelDecisionDistance,
+                CityMountainBoundaryDefinition.TunnelReturnDistance,
+                CityMountainBoundaryDefinition.TunnelMapDisplayDepth,
+                false,
+                false,
+                segments);
+        }
+
+        private static List<CityMountainTunnelSegmentDescriptor>
+            CreateTunnelSegments(Vector3 portalGround, Vector3 axis)
+        {
+            int segmentCount = Mathf.RoundToInt(
+                CityMountainBoundaryDefinition.TunnelVisualDepth /
+                CityMountainBoundaryDefinition.TunnelSegmentLength);
+            int straightSegmentCount = Mathf.RoundToInt(
+                CityMountainBoundaryDefinition.TunnelStraightDepth /
+                CityMountainBoundaryDefinition.TunnelSegmentLength);
+            var result = new List<CityMountainTunnelSegmentDescriptor>(
+                segmentCount);
+            Vector3 cursor = portalGround;
+            for (int index = 0; index < segmentCount; index++)
+            {
+                float startDistance =
+                    index * CityMountainBoundaryDefinition.TunnelSegmentLength;
+                float endDistance = startDistance +
+                                    CityMountainBoundaryDefinition
+                                        .TunnelSegmentLength;
+                float westBendDegrees = index < straightSegmentCount
+                    ? 0f
+                    : (index - straightSegmentCount + 1) *
+                      CityMountainBoundaryDefinition
+                          .TunnelBendDegreesPerSegment;
+                Vector3 forward = Quaternion.AngleAxis(
+                        westBendDegrees,
+                        Vector3.up) *
+                    axis;
+                forward.y = 0f;
+                forward.Normalize();
+                Vector3 end = cursor +
+                              forward * CityMountainBoundaryDefinition
+                                  .TunnelSegmentLength;
+                result.Add(new CityMountainTunnelSegmentDescriptor(
+                    $"mountain-south-tunnel-segment-{index:00}",
+                    startDistance,
+                    endDistance,
+                    cursor,
+                    end,
+                    endDistance <=
+                    CityMountainBoundaryDefinition.TunnelPhysicalDepth +
+                    BoundsTolerance));
+                cursor = end;
+            }
+
+            return result;
         }
 
         private static CityMountainRidgeDescriptor CreateLinearRidge(

@@ -257,6 +257,11 @@ namespace BarPromenade
 
         private bool HasRequiredItem()
         {
+            if (!definition.HasRequirement)
+            {
+                return true;
+            }
+
             InventoryItemRequirement requirement =
                 definition.Requirement;
             return GameSessionState.HasInventoryItem(
@@ -320,6 +325,25 @@ namespace BarPromenade
             if (!prepared)
             {
                 AbortExecution();
+                return;
+            }
+
+            if (!definition.HasRequirement)
+            {
+                // Nothing to spend, so nothing to fail on: straight to the
+                // act the player just agreed to. `requirementTaken` stays
+                // false, which is also what keeps the refund path a no-op
+                // if this is abandoned half way.
+                try
+                {
+                    currentHandler.BeginInventoryInteraction();
+                }
+                catch (Exception exception)
+                {
+                    Debug.LogException(exception, this);
+                    AbortExecution();
+                }
+
                 return;
             }
 

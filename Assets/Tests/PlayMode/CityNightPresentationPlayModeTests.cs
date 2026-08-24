@@ -450,6 +450,19 @@ namespace BarPromenade.Tests.PlayMode
                 city.DayNight.VisualApplicationCount;
             int darkPoolReassignmentCount =
                 city.Night.Atmosphere.ReassignmentCount;
+            int stableAssignedStreetLights =
+                city.Night.Atmosphere.AssignedStreetLightCount;
+            var stableLightPoses = new List<(Vector3, Quaternion)>();
+            for (int index = 0;
+                 index < city.Night.Atmosphere.StreetLightPool.Count;
+                 index++)
+            {
+                Transform pooled =
+                    city.Night.Atmosphere.StreetLightPool[index].transform;
+                stableLightPoses.Add(
+                    (pooled.position, pooled.rotation));
+            }
+
             directional.transform.hasChanged = false;
             GameSessionState.AdvanceGameTime(1f);
             city.DayNight.ApplyCurrentTime();
@@ -461,9 +474,43 @@ namespace BarPromenade.Tests.PlayMode
                 city.DayNight.VisualApplicationCount,
                 Is.EqualTo(stableDayApplicationCount));
             Assert.That(directional.transform.hasChanged, Is.False);
+
+            // What must not change is the ASSIGNMENT, not the counter.
+            // `RefreshImmediate` forces a recompute by definition, so it
+            // always ticks `ReassignmentCount`; asserting that counter
+            // stayed put was asserting something the call cannot honour,
+            // and it duly failed by exactly one. The invariant this test
+            // is really about is that a one-minute daytime advance leaves
+            // every pooled lamp on the same anchor, pointed the same way.
             Assert.That(
                 city.Night.Atmosphere.ReassignmentCount,
-                Is.EqualTo(darkPoolReassignmentCount));
+                Is.GreaterThan(darkPoolReassignmentCount),
+                "A forced refresh must actually recompute.");
+            Assert.That(
+                city.Night.Atmosphere.AssignedStreetLightCount,
+                Is.EqualTo(stableAssignedStreetLights),
+                "A daytime minute must not change how many lamps are lit.");
+            for (int index = 0;
+                 index < city.Night.Atmosphere.StreetLightPool.Count;
+                 index++)
+            {
+                Transform pooled =
+                    city.Night.Atmosphere.StreetLightPool[index].transform;
+                Assert.That(
+                    Vector3.Distance(
+                        pooled.position,
+                        stableLightPoses[index].Item1),
+                    Is.LessThan(0.001f),
+                    $"Pooled street light {index} moved during a daytime " +
+                    "minute.");
+                Assert.That(
+                    Quaternion.Angle(
+                        pooled.rotation,
+                        stableLightPoses[index].Item2),
+                    Is.LessThan(0.01f),
+                    $"Pooled street light {index} turned during a daytime " +
+                    "minute.");
+            }
 
             city.Night.SetNightFactor(0.000095f);
             Assert.That(

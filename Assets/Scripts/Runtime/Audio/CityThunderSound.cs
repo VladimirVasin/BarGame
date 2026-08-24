@@ -91,9 +91,21 @@ namespace BarPromenade
         public const float NearSourceHeight = 12f;
         public const float FarSourceHeight = 22f;
 
-        private readonly AudioSource[] sources = new AudioSource[2];
+        /// <summary>
+        /// How many voices a thunder player owns, and therefore how many
+        /// AudioSources it adds to whatever scene raises it. Two, so a
+        /// second strike can overlap the tail of the first. Scene audio
+        /// budgets are asserted against owner constants rather than against
+        /// a hand-counted total, so this is the number they read.
+        /// </summary>
+        public const int VoiceCount = 2;
+
+        public const int OwnedSourceCount = VoiceCount;
+
+        private readonly AudioSource[] sources =
+            new AudioSource[VoiceCount];
         private readonly AudioLowPassFilter[] filters =
-            new AudioLowPassFilter[2];
+            new AudioLowPassFilter[VoiceCount];
         private AudioClip generatedClip;
         private int nextSourceIndex;
 

@@ -510,6 +510,11 @@ namespace BarPromenade
                 }
             }
 
+            if (mountainPlan.HasTunnel)
+            {
+                AddTunnelWalkableCorridor(area, mountainPlan.Tunnel);
+            }
+
             for (int accessIndex = 0;
                  accessIndex < layout.OpenAreaAccesses.Count;
                  accessIndex++)
@@ -559,6 +564,43 @@ namespace BarPromenade
             }
 
             return area;
+        }
+
+        private static void AddTunnelWalkableCorridor(
+            RoadWalkableArea area,
+            CityMountainTunnelDescriptor tunnel)
+        {
+            if (tunnel.WalkableDepth <= 0f)
+            {
+                return;
+            }
+
+            Vector3 axis = tunnel.Axis;
+            axis.y = 0f;
+            axis.Normalize();
+            Vector3 right = Vector3.Cross(Vector3.up, axis).normalized;
+            float halfWidth = tunnel.OpeningWidth * 0.5f;
+            float seamReach = CityGroundTraversalPlanner.ConnectorReach;
+            Vector3 start = tunnel.PortalGroundCenter - axis * seamReach;
+            Vector3 end = tunnel.PortalGroundCenter +
+                          axis * tunnel.WalkableDepth;
+            Vector3 firstLeft = start - right * halfWidth;
+            Vector3 firstRight = start + right * halfWidth;
+            Vector3 lastLeft = end - right * halfWidth;
+            Vector3 lastRight = end + right * halfWidth;
+            area.Add(Rect.MinMaxRect(
+                Mathf.Min(
+                    Mathf.Min(firstLeft.x, firstRight.x),
+                    Mathf.Min(lastLeft.x, lastRight.x)),
+                Mathf.Min(
+                    Mathf.Min(firstLeft.z, firstRight.z),
+                    Mathf.Min(lastLeft.z, lastRight.z)),
+                Mathf.Max(
+                    Mathf.Max(firstLeft.x, firstRight.x),
+                    Mathf.Max(lastLeft.x, lastRight.x)),
+                Mathf.Max(
+                    Mathf.Max(firstLeft.z, firstRight.z),
+                    Mathf.Max(lastLeft.z, lastRight.z))));
         }
 
         private static void AddVerticalSeam(

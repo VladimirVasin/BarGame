@@ -81,6 +81,7 @@ namespace BarPromenade.Tests.EditMode
             "interaction.search_dumpster",
             "city.phone_booth.placeholder",
             "city.dumpster.placeholder",
+            "city.tunnel.unavailable",
             "interaction.open_refrigerator",
             "interaction.close_refrigerator",
             "home.refrigerator.item.vodka.name",
@@ -214,6 +215,7 @@ namespace BarPromenade.Tests.EditMode
             "options.scanlines",
             "options.aspect_4_3",
             "options.vertex_jitter",
+            "interaction.sit_ferry_car",
             "options.back",
             "common.yes",
             "common.no",
@@ -255,6 +257,16 @@ namespace BarPromenade.Tests.EditMode
             "drink_shop.failure.maximum_intoxication",
             "drink_shop.failure.not_offered",
             "map.title",
+            "map.area.city",
+            "map.area.mountain_road",
+            "map.area.current",
+            "map.area.travel_question",
+            "map.area.travel",
+            "map.mountain_road.tunnel_exit",
+            "map.mountain_road.plateau",
+            "map.mountain_road.hairpin",
+            "map.mountain_road.cafe",
+            "map.mountain_road.cableway",
             "map.route_title",
             "map.route_empty",
             "map.bar_name",
@@ -264,7 +276,7 @@ namespace BarPromenade.Tests.EditMode
             "map.bus.route",
             "map.bus.stop",
             "map.bus.stop_legend",
-            "map.mountain.tunnel_closed",
+            "map.mountain.tunnel",
             "bus.stop.default_coastal.industrial",
             "bus.stop.default_coastal.nightlife",
             "bus.stop.default_coastal.residential",
@@ -334,6 +346,7 @@ namespace BarPromenade.Tests.EditMode
 
         [TestCase("Localization/ru")]
         [TestCase("Localization/en")]
+        [Category("MountainRoad")]
         public void Catalog_IsPresentAndContainsRequiredKeys(string resourcePath)
         {
             Dictionary<string, string> valuesByKey = LoadValues(resourcePath);

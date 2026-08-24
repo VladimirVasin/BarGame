@@ -7,9 +7,9 @@ namespace BarPromenade
 {
     /// <summary>
     /// Builds the close-range western and southern mountain boundary plus the
-    /// deliberately sealed southern tunnel stub. The natural south-west
-    /// corner ground closes the view but remains behind the road fence; the
-    /// tunnel creates no navigation continuation, interaction or transition.
+    /// open, visually deep southern tunnel. The natural south-west corner
+    /// ground closes the view but remains behind the road fence; travel beyond
+    /// the safe entrance corridor is still owned by a separate interaction.
     /// </summary>
     internal static class CityMountainBoundaryWorldBuilder
     {
@@ -18,6 +18,7 @@ namespace BarPromenade
         internal const float ThroatFloorGroundOverlap = 0.25f;
         internal const float ThroatFloorSurfaceLift = 0.03f;
         internal const float ThroatFloorThickness = 0.36f;
+        internal const float TunnelSegmentOverlap = 0.18f;
 
         internal static readonly Color ForeRock =
             new Color(0.21f, 0.235f, 0.215f, 1f);
@@ -28,9 +29,9 @@ namespace BarPromenade
 
         private static readonly Color ThroatRock =
             new Color(0.105f, 0.120f, 0.112f, 1f);
-        private static readonly Color GateMetal =
+        private static readonly Color IronMetal =
             new Color(0.155f, 0.185f, 0.175f, 1f);
-        private static readonly Color GateBrace =
+        private static readonly Color DarkIron =
             new Color(0.105f, 0.125f, 0.120f, 1f);
 
         // The water mouth's one lamp: hand-lamp kerosene warmth, sized
@@ -211,7 +212,12 @@ namespace BarPromenade
                 cave.OpeningHeight,
                 cave.ThroatDepth,
                 0f,
-                false);
+                0f,
+                0f,
+                0f,
+                false,
+                false,
+                Array.Empty<CityMountainTunnelSegmentDescriptor>());
             GameObject portal =
                 CityMountainBoundaryMeshFactory.CreatePortalFrame(
                     parent,
@@ -265,7 +271,7 @@ namespace BarPromenade
         /// blocks hugging its outer arc the two upper corners of that
         /// rectangle stay open, with a sightline down the throat past the
         /// far clip: a fog-bright gap in each corner. Shared by the river
-        /// cave and the sealed tunnel, which had the identical hole.
+        /// cave and the southern tunnel, which have the identical hole.
         /// Depth staggers (flanks 0, crown +0.03, spandrels +0.06) keep
         /// every overlap strip off a shared front plane, so nothing
         /// z-fights beside the arch.
@@ -448,14 +454,14 @@ namespace BarPromenade
                 assembly.transform,
                 new Vector3(0f, 0.28f, 0.30f),
                 new Vector3(0.16f, 0.20f, 0.75f),
-                GateBrace,
+                DarkIron,
                 false);
             RuntimePrimitiveFactory.CreateBox(
                 "Cave Lamp Hood",
                 assembly.transform,
                 new Vector3(0f, 0.12f, 0f),
                 new Vector3(0.66f, 0.16f, 0.52f),
-                GateMetal,
+                IronMetal,
                 false);
             Color glow = MultiplyRgb(CaveLampColor, 4.6f, 1f);
             GameObject lens = RuntimePrimitiveFactory.CreateBox(
@@ -591,25 +597,24 @@ namespace BarPromenade
             CityMountainTunnelDescriptor tunnel,
             CityMountainBoundaryPlan plan)
         {
-            var root = new GameObject("Sealed South Tunnel");
+            var root = new GameObject("Open South Tunnel");
             root.transform.SetParent(parent, false);
 
             CityMountainBoundaryMeshFactory.CreatePortalFrame(
                 root.transform,
                 tunnel);
             BuildThroat(root.transform, tunnel);
-            BuildSealedGate(root.transform, tunnel);
-            BuildTunnelBackstop(root.transform, tunnel, plan);
+            BuildTunnelPortalRockFacade(root.transform, tunnel, plan);
         }
 
         /// <summary>
         /// The ridge line breaks for the tunnel exactly like it does for
         /// the river notch, and nothing stood in the gap above the arch:
         /// wedges of open sky between the tapering ridge ends, plus the
-        /// same spandrel corners the river mouth had. The shared portal
-        /// backstop closes it, topped at the taller adjoining station.
+        /// same spandrel corners the river mouth had. The shared rock facade
+        /// closes only that mountain gap, topped at the taller station.
         /// </summary>
-        private static void BuildTunnelBackstop(
+        private static void BuildTunnelPortalRockFacade(
             Transform parent,
             CityMountainTunnelDescriptor tunnel,
             CityMountainBoundaryPlan plan)
@@ -659,7 +664,7 @@ namespace BarPromenade
                 0.45f);
             GameObject stop =
                 RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                    "Tunnel Rock Stop",
+                    "Tunnel Portal Rock Facade",
                     parent,
                     rock,
                     MidRock,
@@ -677,153 +682,310 @@ namespace BarPromenade
             Transform parent,
             CityMountainTunnelDescriptor tunnel)
         {
-            Vector3 axis = Flatten(tunnel.Axis);
-            Vector3 right = Vector3.Cross(Vector3.up, axis).normalized;
-            Quaternion rotation = Quaternion.LookRotation(axis, Vector3.up);
-            float depth = Mathf.Max(1.5f, tunnel.ThroatDepth);
-            float wallThickness = 0.55f;
-            float centreDistance = depth * 0.5f + ThroatPortalOffset;
-            float wallHeight = tunnel.OpeningHeight;
-            Vector3 centre = tunnel.PortalGroundCenter +
-                             axis * centreDistance;
-            var lining = new List<RuntimeOrientedBox>(3);
-            for (int side = -1; side <= 1; side += 2)
+            const float wallThickness = 0.55f;
+            var physicalFloor = new List<RuntimeOrientedBox>();
+            var visualFloor = new List<RuntimeOrientedBox>();
+            var physicalLining = new List<RuntimeOrientedBox>();
+            var visualLining = new List<RuntimeOrientedBox>();
+
+            for (int index = 0; index < tunnel.Segments.Count; index++)
             {
+                CityMountainTunnelSegmentDescriptor segment =
+                    tunnel.Segments[index];
+                Vector3 forward = segment.Forward;
+                Vector3 right = Vector3.Cross(
+                    Vector3.up,
+                    forward).normalized;
+                Quaternion rotation = Quaternion.LookRotation(
+                    forward,
+                    Vector3.up);
+                bool bendsAtStart = index > 0 &&
+                    Vector3.Angle(
+                        tunnel.Segments[index - 1].Forward,
+                        forward) > 0.01f;
+                bool bendsAtEnd = index < tunnel.Segments.Count - 1 &&
+                    Vector3.Angle(
+                        forward,
+                        tunnel.Segments[index + 1].Forward) > 0.01f;
+                float startExtension = index == 0
+                    ? -ThroatPortalOffset
+                    : bendsAtStart
+                        ? TunnelSegmentOverlap
+                        : 0f;
+                float endExtension = index == tunnel.Segments.Count - 1
+                    ? 0f
+                    : bendsAtEnd
+                        ? TunnelSegmentOverlap
+                        : 0f;
+                float length = segment.Length +
+                               startExtension +
+                               endExtension;
+                Vector3 centre = segment.Center +
+                    forward * ((endExtension - startExtension) * 0.5f);
+                List<RuntimeOrientedBox> lining = segment.HasCollision
+                    ? physicalLining
+                    : visualLining;
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    lining.Add(new RuntimeOrientedBox(
+                        centre +
+                        right * (((tunnel.OpeningWidth + wallThickness) *
+                                  0.5f + ThroatJointOverlap) * side) +
+                        Vector3.up *
+                        (tunnel.OpeningHeight * 0.5f -
+                         ThroatJointOverlap),
+                        rotation,
+                        new Vector3(
+                            wallThickness,
+                            tunnel.OpeningHeight,
+                            length)));
+                }
+
                 lining.Add(new RuntimeOrientedBox(
                     centre +
-                    right * (((tunnel.OpeningWidth + wallThickness) *
-                              0.5f + ThroatJointOverlap) * side) +
-                    Vector3.up *
-                    (wallHeight * 0.5f - ThroatJointOverlap),
+                    Vector3.up * (tunnel.OpeningHeight + 0.20f),
                     rotation,
-                    new Vector3(wallThickness, wallHeight, depth)));
-            }
+                    new Vector3(
+                        tunnel.OpeningWidth + wallThickness * 2f +
+                        ThroatJointOverlap * 4f,
+                        0.55f,
+                        length)));
 
-            lining.Add(new RuntimeOrientedBox(
-                centre + Vector3.up * (tunnel.OpeningHeight + 0.20f),
-                rotation,
-                new Vector3(
-                    tunnel.OpeningWidth + wallThickness * 2f +
-                    ThroatJointOverlap * 4f,
-                    0.55f,
-                    depth)));
-
-            float floorEndDistance = depth + ThroatPortalOffset;
-            float floorDepth = floorEndDistance +
-                               ThroatFloorGroundOverlap;
-            float floorCentreDistance =
-                (floorEndDistance - ThroatFloorGroundOverlap) * 0.5f;
-            var floor = new List<RuntimeOrientedBox>(1)
-            {
-                new RuntimeOrientedBox(
-                    tunnel.PortalGroundCenter +
-                    axis * floorCentreDistance +
+                float floorStartExtension = index == 0
+                    ? ThroatFloorGroundOverlap
+                    : bendsAtStart
+                        ? TunnelSegmentOverlap
+                        : 0f;
+                float floorLength = segment.Length +
+                                    floorStartExtension +
+                                    endExtension;
+                Vector3 floorCentre = segment.Center +
+                    forward *
+                    ((endExtension - floorStartExtension) * 0.5f) +
                     Vector3.up *
                     (ThroatFloorSurfaceLift -
-                     ThroatFloorThickness * 0.5f),
+                     ThroatFloorThickness * 0.5f);
+                List<RuntimeOrientedBox> floor = segment.HasCollision
+                    ? physicalFloor
+                    : visualFloor;
+                floor.Add(new RuntimeOrientedBox(
+                    floorCentre,
                     rotation,
                     new Vector3(
                         tunnel.OpeningWidth + wallThickness,
                         ThroatFloorThickness,
-                        floorDepth))
-            };
+                        floorLength)));
+            }
 
-            GameObject floorObject =
+            CreateTunnelRockBatch(
+                "Tunnel Floor Physical",
+                parent,
+                physicalFloor,
+                true);
+            CreateTunnelRockBatch(
+                "Tunnel Floor Continuation",
+                parent,
+                visualFloor,
+                false);
+            CreateTunnelRockBatch(
+                "Tunnel Lining Physical",
+                parent,
+                physicalLining,
+                true);
+            CreateTunnelRockBatch(
+                "Tunnel Lining Continuation",
+                parent,
+                visualLining,
+                false);
+            BuildTunnelTechnicalDetails(parent, tunnel);
+        }
+
+        private static void CreateTunnelRockBatch(
+            string name,
+            Transform parent,
+            IReadOnlyList<RuntimeOrientedBox> boxes,
+            bool collider)
+        {
+            GameObject built =
                 RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                    "Tunnel Floor",
+                    name,
                     parent,
-                    floor,
+                    boxes,
                     ThroatRock,
-                    false,
+                    collider,
                     CityMountainSurfaceAppearance.MetersPerTile,
                     RuntimeWorldUvMode.BoxProjected);
-            Renderer floorRenderer = floorObject.GetComponent<Renderer>();
-            CityMountainSurfaceAppearance.ApplyCombined(
-                floorRenderer,
-                ThroatRock);
-            floorRenderer.shadowCastingMode = ShadowCastingMode.Off;
-
-            GameObject liningObject =
-                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                    "Dark Rock Throat",
-                    parent,
-                    lining,
-                    ThroatRock,
-                    false,
-                    CityMountainSurfaceAppearance.MetersPerTile,
-                    RuntimeWorldUvMode.BoxProjected);
-            Renderer renderer = liningObject.GetComponent<Renderer>();
+            Renderer renderer = built.GetComponent<Renderer>();
             CityMountainSurfaceAppearance.ApplyCombined(
                 renderer,
                 ThroatRock);
-            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.shadowCastingMode = ShadowCastingMode.On;
+            renderer.receiveShadows = true;
         }
 
-        private static void BuildSealedGate(
+        private static void BuildTunnelTechnicalDetails(
             Transform parent,
             CityMountainTunnelDescriptor tunnel)
         {
-            Vector3 axis = Flatten(tunnel.Axis);
-            Quaternion rotation = Quaternion.LookRotation(axis, Vector3.up);
-            float gateWidth = tunnel.OpeningWidth - 0.38f;
-            float gateHeight = tunnel.OpeningHeight;
-            Vector3 gateCenter = tunnel.PortalGroundCenter +
-                axis * tunnel.GateInset +
-                Vector3.up * (gateHeight * 0.5f);
-            var gate = new List<RuntimeOrientedBox>(1)
+            var seams = new List<RuntimeOrientedBox>();
+            var drains = new List<RuntimeOrientedBox>();
+            var cables = new List<RuntimeOrientedBox>();
+            var supports = new List<RuntimeOrientedBox>();
+            float halfWidth = tunnel.OpeningWidth * 0.5f;
+
+            for (int index = 0; index < tunnel.Segments.Count; index++)
             {
-                new RuntimeOrientedBox(
-                    gateCenter,
+                CityMountainTunnelSegmentDescriptor segment =
+                    tunnel.Segments[index];
+                Vector3 forward = segment.Forward;
+                Vector3 right = Vector3.Cross(
+                    Vector3.up,
+                    forward).normalized;
+                Quaternion rotation = Quaternion.LookRotation(
+                    forward,
+                    Vector3.up);
+                bool bendsAtStart = index > 0 &&
+                    Vector3.Angle(
+                        tunnel.Segments[index - 1].Forward,
+                        forward) > 0.01f;
+                bool bendsAtEnd = index < tunnel.Segments.Count - 1 &&
+                    Vector3.Angle(
+                        forward,
+                        tunnel.Segments[index + 1].Forward) > 0.01f;
+                float detailStartExtension = bendsAtStart ? 0.08f : 0f;
+                float detailEndExtension = bendsAtEnd ? 0.08f : 0f;
+                float detailLength = segment.Length +
+                                     detailStartExtension +
+                                     detailEndExtension;
+                Vector3 detailCentre = segment.Center +
+                    forward *
+                    ((detailEndExtension - detailStartExtension) * 0.5f);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    drains.Add(new RuntimeOrientedBox(
+                        detailCentre +
+                        right * ((halfWidth - 0.24f) * side) +
+                        Vector3.up *
+                        (ThroatFloorSurfaceLift + 0.025f),
+                        rotation,
+                        new Vector3(0.22f, 0.05f, detailLength)));
+                }
+
+                cables.Add(new RuntimeOrientedBox(
+                    detailCentre +
+                    right * (halfWidth + 0.055f) +
+                    Vector3.up * 2.85f,
                     rotation,
-                    new Vector3(gateWidth, gateHeight, 0.30f))
-            };
+                    new Vector3(0.08f, 0.08f, detailLength)));
+            }
+
+            for (float distance =
+                     CityMountainBoundaryDefinition.TunnelSegmentLength;
+                 distance < tunnel.VisualDepth - 0.01f;
+                 distance +=
+                     CityMountainBoundaryDefinition.TunnelSegmentLength)
+            {
+                CityMountainTunnelPathSample sample =
+                    tunnel.SamplePath(distance);
+                Vector3 before = tunnel
+                    .SamplePath(Mathf.Max(0f, distance - 0.01f))
+                    .Forward;
+                Vector3 after = tunnel
+                    .SamplePath(Mathf.Min(
+                        tunnel.VisualDepth,
+                        distance + 0.01f))
+                    .Forward;
+                Vector3 jointForward = (before + after).normalized;
+                Vector3 right = Vector3.Cross(
+                    Vector3.up,
+                    jointForward).normalized;
+                Quaternion rotation = Quaternion.LookRotation(
+                    jointForward,
+                    Vector3.up);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    seams.Add(new RuntimeOrientedBox(
+                        sample.Position +
+                        right * ((halfWidth + 0.02f) * side) +
+                        Vector3.up * (tunnel.OpeningHeight * 0.5f),
+                        rotation,
+                        new Vector3(
+                            0.22f,
+                            tunnel.OpeningHeight,
+                            0.80f)));
+                }
+
+                seams.Add(new RuntimeOrientedBox(
+                    sample.Position +
+                    Vector3.up * (tunnel.OpeningHeight - 0.10f),
+                    rotation,
+                    new Vector3(
+                        tunnel.OpeningWidth + 0.32f,
+                        0.20f,
+                        0.80f)));
+                seams.Add(new RuntimeOrientedBox(
+                    sample.Position +
+                    Vector3.up * (ThroatFloorSurfaceLift + 0.04f),
+                    rotation,
+                    new Vector3(
+                        tunnel.OpeningWidth + 0.20f,
+                        0.08f,
+                        0.80f)));
+                supports.Add(new RuntimeOrientedBox(
+                    sample.Position +
+                    right * (halfWidth - 0.02f) +
+                    Vector3.up * 2.75f,
+                    rotation,
+                    new Vector3(0.42f, 0.10f, 0.12f)));
+            }
+
+            CreateTunnelMetalBatch(
+                "Tunnel Technical Seams",
+                parent,
+                seams,
+                IronMetal);
+            CreateTunnelMetalBatch(
+                "Tunnel Drainage Channels",
+                parent,
+                drains,
+                DarkIron);
+            CreateTunnelMetalBatch(
+                "Tunnel Cable Run",
+                parent,
+                cables,
+                DarkIron);
+            CreateTunnelMetalBatch(
+                "Tunnel Cable Supports",
+                parent,
+                supports,
+                IronMetal);
+        }
+
+        private static void CreateTunnelMetalBatch(
+            string name,
+            Transform parent,
+            IReadOnlyList<RuntimeOrientedBox> boxes,
+            Color color)
+        {
             float pitch = CityRiverSurfaceAppearance
                 .GetRecipe(CityRiverSurfaceKind.Iron)
                 .MetersPerTile;
-            GameObject gateObject =
+            GameObject built =
                 RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                    "Sealed Mountain Gate",
+                    name,
                     parent,
-                    gate,
-                    GateMetal,
-                    true,
-                    pitch,
-                    RuntimeWorldUvMode.BoxProjected);
-            CityRiverSurfaceAppearance.ApplyCombined(
-                gateObject.GetComponent<Renderer>(),
-                CityRiverSurfaceKind.Iron,
-                GateMetal);
-
-            var braces = new List<RuntimeOrientedBox>
-            {
-                new RuntimeOrientedBox(
-                    gateCenter - axis * 0.18f,
-                    rotation,
-                    new Vector3(0.16f, gateHeight, 0.10f)),
-                new RuntimeOrientedBox(
-                    gateCenter - axis * 0.19f +
-                    Vector3.up * (gateHeight * 0.16f),
-                    rotation,
-                    new Vector3(gateWidth, 0.18f, 0.10f)),
-                new RuntimeOrientedBox(
-                    gateCenter - axis * 0.19f -
-                    Vector3.up * (gateHeight * 0.19f),
-                    rotation,
-                    new Vector3(gateWidth, 0.18f, 0.10f))
-            };
-            GameObject braceObject =
-                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                    "Sealed Gate Braces",
-                    parent,
-                    braces,
-                    GateBrace,
+                    boxes,
+                    color,
                     false,
                     pitch,
                     RuntimeWorldUvMode.BoxProjected);
+            Renderer renderer = built.GetComponent<Renderer>();
             CityRiverSurfaceAppearance.ApplyCombined(
-                braceObject.GetComponent<Renderer>(),
+                renderer,
                 CityRiverSurfaceKind.Iron,
-                GateBrace);
+                color);
+            renderer.shadowCastingMode = ShadowCastingMode.On;
+            renderer.receiveShadows = true;
         }
 
         private static Vector3 Flatten(Vector3 direction)

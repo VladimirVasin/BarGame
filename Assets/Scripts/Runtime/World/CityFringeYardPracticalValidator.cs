@@ -119,7 +119,7 @@ namespace BarPromenade
                     {
                         throw new InvalidOperationException(
                             "The tunnel practical must sit over the portal " +
-                            "and point down the sealed throat.");
+                            "and point down the open entrance corridor.");
                     }
                     break;
                 case CityFringeYardKind.SouthFloodWorks:

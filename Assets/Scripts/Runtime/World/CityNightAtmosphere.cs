@@ -8,6 +8,8 @@ namespace BarPromenade
     public sealed class CityNightAtmosphere : MonoBehaviour
     {
         public const int MaximumRealtimeLights = 12;
+        public const float TunnelPracticalDayFloor = 0.22f;
+        public const float MinimumTunnelFlickerMultiplier = 0.05f;
 
         private const float ReassignmentInterval = 0.35f;
         private const float ReassignmentDistance = 1.25f;
@@ -71,12 +73,15 @@ namespace BarPromenade
         private float nextReassignmentTime;
         private Vector3 lastAssignmentPosition;
         private float nightFactor = 1f;
+        private float tunnelPracticalFlickerMultiplier = 1f;
         private bool hasAppliedNightFactor;
 
         public IReadOnlyList<Transform> LampAnchors => lampAnchors;
         public IReadOnlyList<Light> StreetLightPool => streetLightPool;
         public IReadOnlyList<Light> BarLights => barLights;
         public float NightFactor => nightFactor;
+        public float TunnelPracticalFlickerMultiplier =>
+            tunnelPracticalFlickerMultiplier;
         public int ReassignmentCount { get; private set; }
         public int RealtimeLightCount =>
             streetLightPool.Length + barLights.Length;
@@ -211,32 +216,62 @@ namespace BarPromenade
 
             for (int index = 0; index < streetLightPool.Length; index++)
             {
+                float intensityFactor = GetPooledIntensityFactor(index);
                 streetLightPool[index].intensity =
-                    pooledLightBaseIntensities[index] * nightFactor;
-                if (!visible)
+                    pooledLightBaseIntensities[index] * intensityFactor;
+                if (intensityFactor <= VisibleFactorThreshold)
                 {
                     streetLightPool[index].enabled = false;
                 }
+                else if (IsActivePracticalPoolIndex(index))
+                {
+                    streetLightPool[index].enabled = true;
+                }
 
-                streetLightHalos[index].SetIntensityFactor(nightFactor);
+                streetLightHalos[index].SetIntensityFactor(
+                    intensityFactor);
                 streetLightHalos[index].SetVisible(
-                    visible &&
+                    intensityFactor > VisibleFactorThreshold &&
                     streetLightPool[index].enabled &&
                     pooledHaloVisible[index]);
             }
 
-            if (visible &&
-                isActiveAndEnabled &&
-                (force || firstApplication || !wasVisible))
+            if (isActiveAndEnabled &&
+                (force || firstApplication || wasVisible != visible))
             {
                 RefreshStreetLights(true);
             }
         }
 
+        /// <summary>
+        /// Applies the faulty tunnel fixture's visible power loss to the
+        /// already-owned practical slot. Invalid input recovers to steady
+        /// power and finite input is clamped, so a presentation controller
+        /// cannot create a negative or over-budget light state.
+        /// </summary>
+        public void SetTunnelPracticalFlickerMultiplier(float multiplier)
+        {
+            float safeMultiplier =
+                float.IsNaN(multiplier) || float.IsInfinity(multiplier)
+                    ? 1f
+                    : Mathf.Clamp(
+                        multiplier,
+                        MinimumTunnelFlickerMultiplier,
+                        1f);
+            if (Mathf.Approximately(
+                    tunnelPracticalFlickerMultiplier,
+                    safeMultiplier))
+            {
+                return;
+            }
+
+            tunnelPracticalFlickerMultiplier = safeMultiplier;
+            ApplyActivePracticalIntensity();
+        }
+
         private void RefreshStreetLights(bool force)
         {
-            if (nightFactor <= VisibleFactorThreshold ||
-                player == null ||
+            if (player == null ||
                 streetLightPool.Length == 0)
             {
                 return;
@@ -260,26 +295,31 @@ namespace BarPromenade
                 selectedAnchorDistances[index] = float.PositiveInfinity;
             }
 
+            bool nightVisible = nightFactor > VisibleFactorThreshold;
             activePracticalIndex = FindNearestPractical(
-                playerPosition);
+                playerPosition,
+                nightVisible);
             IsPracticalSlotLeased =
                 activePracticalIndex >= 0 &&
                 streetLightPool.Length > 0;
             int streetSlotCount = streetLightPool.Length -
                                   (IsPracticalSlotLeased ? 1 : 0);
 
-            for (int anchorIndex = 0;
-                 anchorIndex < lampAnchors.Length;
-                 anchorIndex++)
+            if (nightVisible)
             {
-                Transform anchor = lampAnchors[anchorIndex];
-                float distance = anchor != null
-                    ? (anchor.position - playerPosition).sqrMagnitude
-                    : float.PositiveInfinity;
-                InsertNearest(
-                    anchorIndex,
-                    distance,
-                    streetSlotCount);
+                for (int anchorIndex = 0;
+                     anchorIndex < lampAnchors.Length;
+                     anchorIndex++)
+                {
+                    Transform anchor = lampAnchors[anchorIndex];
+                    float distance = anchor != null
+                        ? (anchor.position - playerPosition).sqrMagnitude
+                        : float.PositiveInfinity;
+                    InsertNearest(
+                        anchorIndex,
+                        distance,
+                        streetSlotCount);
+                }
             }
 
             AssignedStreetLightCount = 0;
@@ -313,7 +353,7 @@ namespace BarPromenade
                     lampAnchors[anchorIndex] != null;
                 bool visible =
                     hasAnchor &&
-                    nightFactor > VisibleFactorThreshold;
+                    nightVisible;
                 light.enabled = visible;
                 // The fixture's own always-on halo carries the blur;
                 // the pooled spot brings light alone.
@@ -367,13 +407,22 @@ namespace BarPromenade
             }
         }
 
-        private int FindNearestPractical(Vector3 playerPosition)
+        private int FindNearestPractical(
+            Vector3 playerPosition,
+            bool includeNightOnly)
         {
             int nearestIndex = -1;
             float nearestDistance =
                 PracticalLeaseDistance * PracticalLeaseDistance;
             for (int index = 0; index < practicalAnchors.Length; index++)
             {
+                if (!includeNightOnly &&
+                    practicalAnchors[index].Kind !=
+                    CityFringeYardKind.SouthTunnelForecourt)
+                {
+                    continue;
+                }
+
                 Transform anchor = practicalAnchors[index].Anchor;
                 if (anchor == null)
                 {
@@ -418,7 +467,12 @@ namespace BarPromenade
             light.transform.SetPositionAndRotation(
                 practical.Anchor.position,
                 practical.Anchor.rotation);
-            bool visible = nightFactor > VisibleFactorThreshold;
+            float intensityFactor = GetPracticalIntensityFactor(
+                practical.Kind);
+            light.intensity =
+                pooledLightBaseIntensities[poolIndex] * intensityFactor;
+            halo.SetIntensityFactor(intensityFactor);
+            bool visible = intensityFactor > VisibleFactorThreshold;
             light.enabled = visible;
             halo.SetVisible(visible);
         }
@@ -473,12 +527,79 @@ namespace BarPromenade
             light.innerSpotAngle = innerSpotAngle;
             light.shadows = LightShadows.None;
             pooledLightBaseIntensities[poolIndex] = intensity;
-            light.intensity = intensity * nightFactor;
+            light.intensity =
+                intensity * GetPooledIntensityFactor(poolIndex);
             streetLightHalos[poolIndex].SetAppearance(
                 innerHaloSize,
                 outerHaloSize,
                 innerHaloColor,
                 outerHaloColor);
+        }
+
+        private void ApplyActivePracticalIntensity()
+        {
+            if (!IsPracticalSlotLeased ||
+                activePracticalIndex < 0 ||
+                activePracticalIndex >= practicalAnchors.Length ||
+                streetLightPool.Length == 0)
+            {
+                return;
+            }
+
+            CityFringePracticalAnchor practical =
+                practicalAnchors[activePracticalIndex];
+            if (practical.Kind !=
+                CityFringeYardKind.SouthTunnelForecourt)
+            {
+                return;
+            }
+
+            int poolIndex = streetLightPool.Length - 1;
+            float intensityFactor = GetPracticalIntensityFactor(
+                practical.Kind);
+            Light light = streetLightPool[poolIndex];
+            CityLightHalo halo = streetLightHalos[poolIndex];
+            light.intensity =
+                pooledLightBaseIntensities[poolIndex] * intensityFactor;
+            light.enabled = intensityFactor > VisibleFactorThreshold;
+            halo.SetIntensityFactor(intensityFactor);
+            halo.SetVisible(
+                light.enabled && pooledHaloVisible[poolIndex]);
+        }
+
+        private float GetPooledIntensityFactor(int poolIndex)
+        {
+            if (!IsActivePracticalPoolIndex(poolIndex))
+            {
+                return nightFactor;
+            }
+
+            return GetPracticalIntensityFactor(
+                practicalAnchors[activePracticalIndex].Kind);
+        }
+
+        private float GetPracticalIntensityFactor(
+            CityFringeYardKind kind)
+        {
+            if (kind != CityFringeYardKind.SouthTunnelForecourt)
+            {
+                return nightFactor;
+            }
+
+            float poweredFactor = Mathf.Lerp(
+                TunnelPracticalDayFloor,
+                1f,
+                nightFactor);
+            return poweredFactor * tunnelPracticalFlickerMultiplier;
+        }
+
+        private bool IsActivePracticalPoolIndex(int poolIndex)
+        {
+            return IsPracticalSlotLeased &&
+                   activePracticalIndex >= 0 &&
+                   activePracticalIndex < practicalAnchors.Length &&
+                   streetLightPool.Length > 0 &&
+                   poolIndex == streetLightPool.Length - 1;
         }
 
         private static PracticalLightProfile GetPracticalProfile(

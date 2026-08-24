@@ -40,8 +40,40 @@ namespace BarPromenade
         private bool previousHudVisibility;
 
         public bool IsLocked { get; private set; }
-        public static bool IsAnyLocked =>
-            activeLock != null && activeLock.IsLocked;
+
+        /// <summary>
+        /// Whether anything currently holds the modal lock.
+        ///
+        /// A stale lock self-releases here, and that matters far beyond
+        /// tidiness. This class is a PLAIN object held in a static field,
+        /// so unlike a MonoBehaviour reference it does not quietly become
+        /// null when the thing that took it is destroyed - and everything
+        /// the player can interact with asks this property first. A lock
+        /// taken by an interaction whose scene then unloaded would stay
+        /// held for the rest of the session, and every door, every stub
+        /// and every menu in the game would refuse to open with no error
+        /// anywhere. So a lock whose subject is gone is not a lock.
+        /// </summary>
+        public static bool IsAnyLocked
+        {
+            get
+            {
+                if (activeLock == null || !activeLock.IsLocked)
+                {
+                    return false;
+                }
+
+                if (activeLock.interactor != null ||
+                    activeLock.motor != null)
+                {
+                    return true;
+                }
+
+                activeLock.IsLocked = false;
+                activeLock = null;
+                return false;
+            }
+        }
 
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]

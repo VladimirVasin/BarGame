@@ -195,6 +195,11 @@ namespace BarPromenade.Tests.EditMode
             "Home Kitchen Empty Bottle",
             "Home Hidden Bed Bottle",
             "Home Worn Slipper",
+            // The shirt he did not hang up, and its sleeve. Flat-tinted
+            // like the slippers and the bottle it shares the bedside with:
+            // a crumpled garment this small reads by silhouette, and a
+            // tiling surface on it would only fight the bedding.
+            "Home Bed Crumpled Shirt",
             "Home Balcony Ashtray",
             "Home Refrigerator Foot",
             "Home Refrigerator Frost Patch",

@@ -10,8 +10,10 @@ Assets/
     DoorTransition.unity
     BarInterior.unity
     SupermarketInterior.unity
-    HomeInterior.unity
     StairwellInterior.unity
+    HomeInterior.unity
+    MountainRoad.unity
+    AreaLoading.unity
   Settings/
     CityNoirVolumeProfile.asset
     PCPresentationBaselineVolumeProfile.asset  project-owned Neutral/Bloom/Vignette baseline
@@ -170,8 +172,10 @@ Assets/
         StairwellCat.prefab             passive asset outside Resources
   Scripts/
     Runtime/
-      Core/          seven-scene bootstrap, city root, session, transitions
+      Core/          nine-scene bootstrap, gameplay roots, session, transitions
         CityGameRoot.cs           city composition + deferred debug-map arrival
+        AreaTravelTypes.cs        stable City/MountainRoad IDs + arrival token
+        AreaTravelService.cs      guarded Single-load area handoff through AreaLoading
         GameSessionState.cs       persistent clock/needs + one-shot debug-map handoff
         GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed minute delta
         GameTimeRuntime.cs        persistent scaled-delta driver
@@ -192,6 +196,9 @@ Assets/
         CitySoundscapeAnchorPlanner.cs     POI/fountain plans -> exact physical anchors
         CitySoundOcclusion.cs              coarse authored-building mass attenuation
         CitySoundscapeDirector.cs          bounded spatial pool + real-action bindings
+        CityTunnelLampSoundSynthesis.cs    faulty-lamp mono ballast/crackle PCM
+        MountainRoadSoundscape.cs          five causal positioned mountain emitters
+        MountainRoadCafeSoundscape.cs      three visible-appliance cafe voices
         SceneMusicPlayer.cs                unscaled entry/exit fade and pause envelope
         SupermarketMusicPlayer.cs          optional SupermarketInterior theme
         HomeMusicPlayer.cs                 Home theme + Balcony shot pause/resume
@@ -222,14 +229,14 @@ Assets/
         CityElevationRebaser.cs  canonical lots, park, POIs, surfaces + access anchors
         CityTerrainSurfacePlan.cs continuous Buildable/Park/Open/Beach top and normal sampler
         CityTerrainSurfaceWorldBuilder.cs triangulated/filterable terrain batches + matching mesh colliders
-        CityMountainBoundaryPlan.cs west/south ridges, fenced SW ground, river-cave terminus + sealed tunnel
+        CityMountainBoundaryPlan.cs west/south ridges, fenced SW ground, river-cave terminus + open tunnel path
         CityMountainBoundaryPlanner.cs terrain/toe-sampled boundary, cave approaches + corner-ground infill
         CityMountainBoundaryValidator.cs side/cave/tunnel/corner geometry + natural-ground invariants
         CityMountainBoundaryMeshFactory.cs ridges with buried toe bonds + shared render/collider corner earthwork
-        CityMountainBoundaryWorldBuilder.cs corner ground, ridges, river-cave rock stop + sealed tunnel lining
+        CityMountainBoundaryWorldBuilder.cs corner ground, ridges, river-cave rock stop + uncapped bent tunnel lining
         CityMountainSurfaceAppearance.cs rock recipe + one shared fog-safe physical-ridge material
         CityMountainBackdrop{Resources,WorldBuilder,Follower}.cs camera-relative closed west/south shell only
-        CityFringeYardPlan.cs     five typed Yard profiles, parts, practicals + sealed forecourt contract
+        CityFringeYardPlan.cs     five typed Yard profiles, parts, practicals + open forecourt contract
         CityFringeYardPlanner.cs  terrain-graded service belt, grounded tunnel returns + low east utility edge
         CityFringeYardForefieldPlanner.cs road/middle/toe bands + 3-4 seeded meso anchors per mountain strip
         CityFringeYardGroundWorldBuilder.cs exact generic/forefield terrain split with one collider per source area
@@ -240,6 +247,14 @@ Assets/
         CityFringeYardValidator.cs bands/gaps/all-safe-seams/corridors/vocabulary/budget invariants
         CityFringeYard{WorldBuilder,WorldResult}.cs 48 m batches, emissive anchors, no new Lights
         CityFringePracticalAnchor.cs runtime pose passed to the fixed night-light pool
+        MountainRoadPlan.cs       route samples, tunnel/plateau, scenery + sound anchors
+        MountainRoad{Planner,Validator}.cs deterministic geometry and invariants
+        MountainRoadTerminal{Plan,Planner,Validator}.cs vehicle/cafe/cableway terminal contract
+        MountainRoad{Terrain,Surface,Scenery}*.cs continuous climb + layered forest/mountains
+        MountainRoadCafe{WorldBuilder,WorldResult,Geometry,TableauAnimator}.cs enterable glass cafe
+        MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
+        MountainRoadWalkableArea.cs route/plateau movement boundary
+        MountainRoadWorldBuilder.cs separate mountain-only runtime composition
         CityElevationStairPlacement.cs  sidewalk flight/landing integration
         CityExteriorStair{Plan,Planner,Validator}.cs guarded exterior flight contracts
         CityExteriorStairWorldBuilder.cs visible steps + one hidden ramp collider per flight
@@ -318,13 +333,15 @@ Assets/
         CityDayNightController.cs   session lighting + exterior night factor
         CityWeatherController.cs    per-frame weather sample -> rain, wet film, flash, thunder
         CityRainField.cs            seeded player-following stretched rain streaks
+        CityTunnelLightingController.cs five path fixtures, pooled faulty Spot + local sound
+        CityTunnelShelterController.cs  portal hysteresis -> fog/backdrop state + shelter provider
         CityLightningFlashLight.cs  transient shadowless directional storm flash
         CityRopeSpanGeometry.cs     shared parabolic rope sag: curve samples + chord-chain boxes
         CityWindDressingPlan.cs     cloth/rope prop descriptors, per-zone budgets, 32-piece cap
         CityWindDressingPlanner.cs  cross-zone pass hanging cloth off other plans' drawn anchors
         CityWindDressingValidator.cs  budgets, unique ids, water/approach clearance for poles
         CityWindDressingWorldBuilder.cs  batched poles/rope chords + per-piece wind-registered cloth
-        RoadWalkableArea.cs      ground/road/promenade union + mountain-plan cave-bank extensions
+        RoadWalkableArea.cs      ground/road/promenade union + bounded open-tunnel corridor
         HomeInteriorLayout*.cs   main/bath paths, nine footprints and corner blocker
         HomeOcclusionRegistry.cs explicit logical renderer groups and visibility floors
         PlayerHomeBalconyGeometry.cs  shared City/Home facade transform and dimensions
@@ -470,7 +487,7 @@ Assets/
       Player/        motor, presentation contracts, chase/fixed cameras and contact shadow
         PlayerMotor.cs             grounded guided approach + no-progress cancellation
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
-        PlayerFactory.cs           shared prefab spawn in all five gameplay roots
+        PlayerFactory.cs           shared prefab spawn in all six gameplay roots
         PlayerAttention.cs         Silent Hill head: notice cone rules, target picker + magnets
         PlayerCameraFollow.cs      bounded yaw/pitch chase, fixed pose + shared mouse/stick/arrow orbit sampling
         PlayerContactShadow.cs     slope-aligned planted/fall-aware analytic ground patch
@@ -496,6 +513,7 @@ Assets/
         SupermarketProductCatalog.cs five offers with localized metadata/prices
         SupermarketPurchaseRules.cs  pure finite-source/cash/stack validation
       Interaction/   contracts, shops and bar/home/stairwell/supermarket doors
+        CityTunnelTravel{Plan,Planner,Controller}.cs automatic unavailable crossing + visible return
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
         PlayerAnimatedInteraction*.cs  positioning, static/moving pelvis targets + independent exit
         PlayerDoorAction{Controller,Target}.cs  guided door gesture, terminal commit + owned cleanup
@@ -511,8 +529,11 @@ Assets/
         HomeTeethBrushingInteraction.cs  mirror close-up, CCD brushing arm, foam, day-gated relief
         Supermarket{Entrance,Exit}.cs  separate-scene round trip and return context
         SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
-      Scenes/        startup/bar/home/stairwell/supermarket roots and presentation
+      Scenes/        startup/loading plus six gameplay roots and presentation
         MainMenuRoot.cs                 black build-index-0 new-run boundary
+        AreaLoadingRoot.cs              black unscaled progress-bar area transfer
+        MountainRoadRoot.cs             standalone mountain world/player/UI composition
+        MountainRoadAtmosphere.cs       cold fog, time grade and flickering tunnel lamp
         HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 2x wake
         HomeDebugCityMapShortcut.cs     Home F9 -> City/home return + one-shot debug map request
         HomeAlarmClock.cs              session-following 28-segment time, ring and rattle
@@ -543,6 +564,9 @@ Assets/
         SupermarketCashierInteraction.cs   E talk stub on its own trigger
       UI/            retro UI, pause/inventory, segmented HUD, district/bus map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
+        CityMapAreaController.cs    City/MountainRoad tab state + cross-area request
+        CityMapAreaView.cs          tab strip and travel confirmation presentation
+        CityMapMountainRoadOverlay.cs tunnel/serpentine/terminal landmark schematic
         CityMapBusOverlay.cs        simplified blue loop + ordered localized stop markers
         CityMapController.cs        bus overlay, canonical lots, debug teleport + bar route
         CityMapView.cs              bus/stop legend plus shop/POI/bar map presentation
@@ -589,7 +613,15 @@ Assets/
       CityBusDriverAssetContractTests.cs 31-bone rig, eyes, shared material + passive prefab
       CityMapBusOverlayTests.cs         closed simplification + numbered stop projection
       CityMapMountainPresentationTests.cs west/south-only bounds + cave-mouth/tunnel map contract
-      CityMountainBoundaryTests.cs       ridges, non-traversable river cave, tunnel lining + fog handoff
+      CityMountainBoundaryTests.cs       ridges, non-traversable cave + bent open tunnel invariants
+      CityTunnelTravelCrossingTests.cs   inward-only crossing and retreat rearm
+      CityTunnelLightingTests.cs         deterministic sparse flicker + bounded mono PCM
+      CityTunnelShelterTests.cs          portal-depth/lateral shelter hysteresis
+      MountainRoadTests.cs               route length/rise/hairpins/plateau/world contracts
+      MountainRoadTerminalTests.cs       apron, landmarks, terrain blend + cabin clearance
+      MountainCablewayTests.cs            loop continuity, world ownership and causal audio
+      AreaTravelContractTests.cs         destination mapping and one-shot arrival state
+      CityMapAreaPresentationTests.cs    tabs, player visibility + mountain schematic
       CityRiverPlannerTests.cs           core river builders + cave-aware south-rail ownership
       CityFringeYardTests.cs             five profiles, grounded portal/crown light, routes + light-free build
       CityFringeYardGroundWorldBuilderTests.cs exact terrain split, texture, UV + collider ownership
@@ -646,7 +678,7 @@ Assets/
       IntoxicationStatusPlayModeTests.cs hybrid handoff, fixed root, one-phase Rise cleanup
       PlayerAnimatedInteraction3DPlayModeTests.cs   clip sampling, pelvis alignment and cleanup
       PlayerDoorActionPlayModeTests.cs terminal transition commit + cancellation cleanup
-      Player3DGameplaySceneIntegrationPlayModeTests.cs  all five gameplay roots
+      Player3DGameplaySceneIntegrationPlayModeTests.cs  all six gameplay roots
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  prefab subsets + visibility restoration
 ArtSource/
@@ -712,6 +744,23 @@ startup Wake or accepted Home F9 debug skip -> session time 06:00
                                   -> HomeAlarmClock HH:MM
                                   -> CityDayNightController
                                   -> HomeDayNightController
+City/MountainRoad map -> CityMapAreaController -> City / Mountain Road tabs
+                                               -> current-area player marker only
+                                               -> other-area confirmation
+                                                  -> AreaTravelService
+                                                     -> AreaLoading (Single)
+                                                        -> black progress bar
+                                                        -> destination (Single)
+MountainRoadRoot -> MountainRoadPlanner -> validated 82.7 m continuous climb
+                                      -> 9 m exit tunnel, spawn at 6 m
+                                      -> 4.8 m road / two 6.4 m, R7.5 m hairpins
+                                      -> +8.7 m rise -> joined ~42 x 27 m terminal
+                                         -> clear R7.5 m automotive apron
+                                         -> enterable five-sided glass cafe on left
+                                         -> 58 m operating cableway on right
+                                      -> car-scale forest/misc + middle/far snowy layers
+                                      -> five positioned sound anchors + one faulty lamp
+                  -> pure City plan for the City map tab only
 blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                           -> stable area IDs + categories/profiles
                                           -> sparse active-cell topology
@@ -728,13 +777,16 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                              -> low south river-cave mouth
                                                 -> >48 m hidden water + bed throat
                                                 -> two walkable promenades ending at rock
-                                             -> sealed south-west tunnel stub
+                                             -> open south-west tunnel stub
+                                                -> 12 m physical / 72 m bent visual shell
+                                                -> automatic refusal at 8 m, return to 6.5 m
+                                                -> five lamps, one faulty positional ballast
                                              -> camera-relative west/south backdrop
                                           -> five typed fringe Yards
                                              -> west/south municipal service belt
                                                 -> textured 22 m conforming forefield
                                                 -> road/middle/toe bands, <=40 m anchor gaps
-                                             -> sealed tunnel forecourt with >=6 m clear lane
+                                             -> open tunnel forecourt with >=6 m clear lane
                                              -> low eastern utility edge, no ridge
                                           -> CityLayoutGenerator -> validated CityLayout
                                            -> 13x12 envelope preserving 144 lots
@@ -759,6 +811,7 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                             -> RoadWalkableArea
                                                -> streets + park + OpenLand
                                                -> core/cave promenades, bridges + lower landings
+                                               -> first 11 m of the south tunnel
                                                -> complete BuildableGround regions
                                                -> radius-safe road/ground seams
                                                -> water/cave throat/unmapped/outside excluded
@@ -768,7 +821,7 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                              -> district-aware CityMap
                                                 -> clipped readable viewport
                                                 -> independent X/Y pan when overflowing
-                                                -> mountain hatch/cave mouth/sealed gate
+                                                -> mountain hatch/cave mouth/open tunnel arch
                                                 -> display bounds grow west/south only
                                            -> RoadFencePlanner
                                               -> water/unmapped/map-boundary rails
@@ -802,9 +855,10 @@ session time -> GameTimeDayNightRules -> CityDayNightController
                                      -> directional/ambient/reflection lighting
                                      -> CityNightAtmosphere night factor
                                         -> bounded lights + CityLightHalo
-player + seed -> CityFogField (unchanged by time of day)
-seed + session time -> GameWeatherRules -> CityWeatherController
-                                        -> CityRainField streaks (bus-ride safe core)
+player + seed -> CityFogField (unchanged by time of day; cleared while tunnel-sheltered)
+bus ride + tunnel shelter -> CityGameRoot combined shelter provider -> CityWeatherController
+seed + session time -> GameWeatherRules -----------------------------> CityWeatherController
+                                                                        -> CityRainField streaks (player-following dry core)
                                         -> CityRainSoundPlayer volume/cutoff
                                         -> CityWetSurfaceRegistry
                                            -> shared surface MPBs + slow drying
@@ -910,7 +964,7 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> simplified blue ink-outlined closed route
                             -> five default numbered localized hover stops + compact legend
                             -> below orange player route; no live bus marker
-five gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
+six gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
                                       -> 32 Generic in-place Actions
                                          -> Idle/Walk/face/status/fall

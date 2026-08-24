@@ -7,8 +7,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted:** Unity `6000.5.9f1` with URP `17.5.0`.
 - **Accepted:** New Input System is enabled.
 - **Accepted:** Gameplay and transition presentation are composed at runtime
-  in seven explicit build scenes.
-- **Accepted:** City, Bar, Supermarket, Home and Stairwell instantiate one
+  in nine explicit build scenes; `MountainRoad` and `AreaLoading` are appended
+  at build indices `7` and `8`.
+- **Accepted:** City, Mountain Road, Bar, Supermarket, Home and Stairwell instantiate one
   `Resources/Player/Player3D` modular hero prefab through `PlayerFactory`.
   Its Generic rig, independent mesh parts, in-place Actions, prefab-derived
   first-person subsets, dedicated 3D portrait, real mesh shadows and analytic
@@ -70,7 +71,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   restrained `0.10` visibility floor only once native City Exp2 reaches it,
   so rock remains naturally stronger at `9-20 m`, and repeats the identical
   clip contract in `DepthOnly` and
-  `DepthNormalsOnly`. Portal frame, throat and gate remain ordinary
+  `DepthNormalsOnly`. Portal frame, physical entry and visual continuation
+  remain ordinary
   `RuntimePrimitiveLit` pieces because they are close-range props, not part of
   the silhouette handoff. The throat floor reaches `0.25 m` under the terrain
   edge and sits `0.03 m` above its old plane; the wall planes move `0.04 m`
@@ -81,10 +83,24 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   stepped return wings, side service frame and crown floodlight belong to the
   sibling fringe-Yard plan.
   The one portal is derived from `yard-south-west-access`: an approximately
-  `8 x 5.5 m` opening, short dark rock throat and visible metal gate with a
-  collider. It is a sealed future-location stub, not a gameplay tunnel: there
-  is no prompt, interaction component, `SceneIds` entry, transition target or
-  `RoadWalkableArea` expansion.
+  `8 x 5.5 m` gate-free opening into twelve `6 m` floor/lining chords. The
+  first `12 m` remain straight and collidered; their collinear joint meets
+  exactly, while later joints overlap only where each chord turns another
+  `4°` west. At `40 m` the centreline has already
+  left the original opening sightline, and total `72 m` depth also places the
+  uncapped end beyond the player's `11 m` navigation plus City's `48 m` far
+  plane. The decision plane is intentionally earlier at `8 m`: while
+  `TravelAvailable` is false, an inward crossing shows one localized thought,
+  walks the normal rig back to `6.5 m` facing inward, and rearms only after
+  that retreat. This automatic boundary owns no prompt action, fake `SceneId`
+  or transition target; the descriptor is ready for a real handler later.
+  Five ceiling fixtures follow the same sampled path. Four are emissive depth
+  cues; the second reuses the existing fringe practical Spot, has a `0.22`
+  daytime floor and a deterministic sparse two-dip fault. Its exact lens also
+  owns the short-range mono ballast buzz and synchronized crackle. Entering the
+  physical lining changes the player-following rain to a dry-core shape,
+  clears exterior fog particles and hides the camera-relative ridge shell;
+  all three restore with mouth hysteresis on exit.
   Because ordinary geometry at the fixed `48 m` plane disappears into City's
   `0.070` Exp2 fog, a separate presentation-only two-layer shell sits at
   `39.4-43.2 m`. `CityMountainBackdropFollower` copies camera translation but
@@ -99,8 +115,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   consume this presentation shell; it consumes
   `CityWorldResult.MountainBoundaryPlan`, expands display
   bounds only at the west/south minima, and renders the physical toe/outer-foot
-  hatch, the visible narrow river approach into rock and the sealed tunnel
-  gate. It does not expose the hidden cave as open map space. The layout's
+  hatch, the visible narrow river approach into rock and an uncrossed open
+  tunnel arch with only `12 m` of schematic throat. It does not expose the
+  hidden cave or the tunnel's `72 m` visual tail as open map space. The layout's
   north/east maxima remain exact.
 - **Accepted — Water is a surface the engine does not ship:** Unity has a
   full water system, but only in HDRP; URP 17 has no official water package
@@ -311,7 +328,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   box; the south-east chapter uses its drain instead.
   One macro anchor distinguishes each mountain-facing strip: stepped masonry
   around a stone culvert, a concrete repair frame with winch and pipe stock,
-  the readable sealed-tunnel forecourt with continuous stepped concrete wings,
+  the readable open-tunnel forecourt with continuous stepped concrete wings,
   a two-post service frame and a crown-mounted floodlight, and caged floodworks
   with a gauge and
   narrow silt-wash cuts. The floodworks has no broad collider-free repair or
@@ -326,6 +343,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   lowest sampled terrain corner, their iron caps rest on the concrete, the
   two-post service frame stays beside the lane, and the working lamp is fixed
   over the portal crown instead of floating on that side structure.
+  The tunnel lane owns its `DriveClearBounds`: generic forefield surface marks
+  are clipped out there, while its `3 m` trace segments and consecutive return
+  sections meet at exact end planes instead of overlapping coplanarly.
   The other three mountain strips
   reserve straight capsule-clear `6 m` routes from their declared entrances to
   within one player radius of the ridge toe. The two western routes have broad
@@ -346,10 +366,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   eighth street Spot already owned by `CityNightAtmosphere`: the pool remains
   `4` bar + `7` street + `1` fringe, still `12` total, and returns to `4+8`
   outside the activation radius. The tunnel lease is the deliberate stronger
-  exception: a warm shadowless `150`-intensity, `16 m`, `72°`/`40°` Spot above
-  the crown aims down to the floor and sealed gate. The eastern edge has no
-  practical. There is no
-  interaction, prompt, scene or navigation continuation. The lot and road-grid footprint is
+  exception: a warm shadowless `150`-intensity, `16 m`, `72°`/`40°` Spot is
+  moved from the crown to the faulty second ceiling fixture and retains a
+  `0.22` day floor. The eastern edge has no practical. A separate mountain
+  destination now exists, but this physical City crossing remains deliberately
+  unwired; bounded tunnel navigation and automatic refusal are owned by the
+  tunnel contracts rather than this fringe plan. The lot and road-grid footprint is
   still normalized to `(0,0)` because every
   per-cell random stream hashes raw cell coordinates; only the
   `OpenLand`/`Water` fringe may reach `-1`. The `(-1,-1)` blueprint cell stays
@@ -1305,6 +1327,45 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   requested destination. The door opens outward toward the fixed camera and a
   black sprite keeps the revealed doorway opaque; direction changes only the
   warm/cold lighting treatment and does not own persistent gameplay state.
+- **Accepted — Mountain Road is a separate runtime-composed area:** Build index
+  `7` starts the hero `6 m` inside a `9 m` exit tunnel and builds one continuous
+  `82.7 m` uphill road ribbon sized against the `4.83 x 1.80 m` LastRouteCar.
+  Ordinary width is `4.8 m`; two `7.5 m`-radius hairpins widen to `6.4 m`.
+  The physical climb is `8.7 m`; the final `5 m` are level and enter an
+  irregular roughly `42 x 27 m` terminal plateau after about `31.8 s`
+  at `PlayerMotor`'s `2.6 m/s` forward speed. The road and plateau reuse the
+  same entry vertices, terrain height and open lower edge, so neither a visual
+  gap nor a transverse collider lip interrupts a future car. A reserved
+  `7.5 m` centre circle keeps the arrival usable by that car. The left landmark
+  is a same-scene, physically enterable five-sided glass cafe with a `1.6 m`
+  open door, four silent tableau figures and exactly two practical Spots. The
+  right landmark is a `58 m` cableway: four colliderless cabins traverse one
+  continuous up/turn/down loop over three grounded colliderless remote supports;
+  only its lower station is physical and its upper return is hidden behind the
+  authored snow-ridge occluder. The terminal is deliberately not a transition,
+  and the car still has no driving controller. Continuous road/terrain geometry
+  and a smooth exterior apron blend avoid coplanar patchwork or a shoulder lip;
+  larger grounded forest and roadside misc form the close layer,
+  middle ridges carry the perceived elevation, and far snowy mountains close
+  the view. Five positional road sound anchors remain causal and attributable
+  to visible fixtures or structures rather than free ambience; one tunnel lamp
+  shares its visible deterministic flicker with its local sound behaviour. The
+  cafe adds three short-range appliance voices, and the cableway adds only a
+  visible reducer motor plus roller-crossing clacks. Cafe/cableway map landmarks
+  and rain shelter volumes are read from the same validated terminal plan.
+- **Accepted — Cross-area map travel is a hard Single-mode scene boundary:**
+  the ordinary map owns City and Mountain Road tabs, draws the hero only on the
+  current area's tab and asks for confirmation before an other-area transfer.
+  `AreaTravelService` first Single-loads build index `8`, `AreaLoading`, which
+  owns only a black unscaled progress-bar presentation; it then Single-loads
+  the destination and passes a one-shot arrival token. Thus the source world is
+  destroyed before the destination composes, and City/Mountain Road are never
+  resident or rendered together. `MountainRoadRoot` may regenerate the pure
+  seeded City layout and mountain-boundary plan for its City tab, but must not
+  invoke a City world builder or instantiate City GameObjects. Door transitions
+  retain their separate authored `DoorTransition` chain. The physical City
+  tunnel remains an unavailable refusal boundary until a later feature wires
+  it to this destination; for now only the map can request mountain travel.
 - **Accepted — Compact separate home interior:** `HomeInterior` owns a
   validated `10 x 8 x 3.4 m` runtime-composed main room and bathroom with six
   main-room furniture footprints plus toilet, shower and sink, protected
@@ -1378,7 +1439,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   read-only stacks plus atomic add,
   remove and world-source collection operations; `BeginNewGame` resets starter
   possessions and every collected source, while ordinary scene transitions do
-  neither. `InventoryController` is installed beside pause in all five gameplay
+  neither. `InventoryController` is installed beside pause in all six gameplay
   roots, opens on `I` or gamepad North only during free input, captures the
   existing fullscreen modal lock and exact time scale, and restores both on
   close or lifecycle cleanup. Its `640x360` IMGUI view keeps generated
@@ -1468,7 +1529,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   production runtime and UI representation of the main hero now derives from
   the generated modular 3D character. `PlayerFactory` preserves the
   authoritative `PlayerMotor`/`CharacterController` root and instantiates one
-  `Resources/Player/Player3D` prefab in all five gameplay roots. Its Generic
+  `Resources/Player/Player3D` prefab in all six gameplay roots. Its Generic
   Animator uses no root motion; the prefab contains a 31-bone armature with six
   non-deforming sockets, while `Player3DAssetRegistry` serializes 73 mesh
   bindings, 16 required anatomical parts, metrics and 32 in-place Actions.
@@ -1780,9 +1841,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   southern outer feet; it never extends the north/east maxima. Cross-hatched
   toe-to-outer strips describe the ridge mass, the narrow visible river
   approach ends in its dark mountain mouth without drawing the hidden cave as
-  open territory, and the tunnel is a dark throat terminated by a crossed gate
-  rather than a selectable destination.
-- **Accepted — Shared-lock gameplay pause:** City, BarInterior,
+  open territory, and the tunnel is an uncrossed open arch with only its first
+  `12 m` drawn rather than a selectable destination.
+- **Accepted — Shared-lock gameplay pause:** City, MountainRoad, BarInterior,
   SupermarketInterior, HomeInterior and StairwellInterior each attach one
   runtime `PauseMenuController` to their existing UI root. Escape or gamepad
   Start can open it only when no other

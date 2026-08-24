@@ -114,6 +114,14 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Prefabs/ParkCheckersPlayer3D.prefab";
         public const string ParkCheckersPlayerProviderPath =
             "Assets/Resources/City/ParkCheckersPlayerProvider.asset";
+        public const string LastRouteFerrymanModelPath =
+            "Assets/Pedestrians/Staged/Models/LastRouteFerryman3D.fbx";
+        public const string LastRouteFerrymanManifestPath =
+            "Assets/Pedestrians/Staged/Models/LastRouteFerryman3D.json";
+        public const string LastRouteFerrymanPrefabPath =
+            "Assets/Pedestrians/Staged/Prefabs/LastRouteFerryman3D.prefab";
+        public const string LastRouteFerrymanProviderPath =
+            "Assets/Resources/City/LastRouteFerrymanProvider.asset";
 
         private const string LeftWheelPivotName = "PIVOT_Wheel.L";
         private const string RightWheelPivotName = "PIVOT_Wheel.R";
@@ -125,6 +133,8 @@ namespace BarPromenade.Editor
         private const string RightWheelRendererName = "ACC_WheelTyre.R";
         private const string SeatRendererName = "ACC_SeatCushion";
         private const string RightHandBoneName = "hand.R";
+        private const string LeftHandBoneName = "hand.L";
+        private const string PelvisBoneName = "pelvis";
 
         // The one worn lamp the pedestrian contract allows. It stays
         // shadowless and short-range so a single moving Spot cannot disturb
@@ -409,7 +419,37 @@ namespace BarPromenade.Editor
                 2200,
                 isStaged: true,
                 actionClipName: "CheckersJeer",
-                actionDuration: 2f)
+                actionDuration: 2f),
+            // The Ferryman. The library's first design with TWO seats:
+            // he waits perched on the bonnet of his own car and he
+            // drives it away, so unlike every other staged man his
+            // seated loop is not a Route 01 ride. `SitClipName` means
+            // 'this design has an authored seated loop', which is
+            // exactly true of him; the bus never sees him, because he
+            // is staged and stays out of the runtime catalog.
+            //
+            // His action clip is the transition between those two
+            // seats rather than a beat on top of an idle, which is why
+            // it is three quarters of a second long and one-shot.
+            new PedestrianDescriptor(
+                "Last Route Ferryman",
+                "LastRouteFerryman3D",
+                "last_route_ferryman_v1",
+                LastRouteFerrymanModelPath,
+                LastRouteFerrymanManifestPath,
+                LastRouteFerrymanPrefabPath,
+                "FerrymanWait",
+                "FerrymanTrudge",
+                4f,
+                1.5f,
+                900,
+                2200,
+                isStaged: true,
+                sitClipName: "FerrymanDrive",
+                sitDuration: 3f,
+                actionClipName: "FerrymanBoard",
+                actionDuration: 0.75f,
+                carriesCoinRig: true)
         };
 
         private static bool isBuilding;
@@ -506,6 +546,14 @@ namespace BarPromenade.Editor
             Debug.Log("Staged Park Checkers Player prefab rebuilt and bound.");
         }
 
+        [MenuItem(
+            "Bar Promenade/City Pedestrian 3D/Rebuild Staged Last Route Ferryman")]
+        public static void RunLastRouteFerryman()
+        {
+            BuildLastRouteFerrymanOrThrow();
+            Debug.Log("Staged Last Route Ferryman prefab rebuilt and bound.");
+        }
+
         /// <summary>
         /// True for a model path this pipeline owns. The importer asks
         /// rather than keeping its own list: a design added to
@@ -540,6 +588,51 @@ namespace BarPromenade.Editor
         /// Avatar treats as the motion node, so locking root height would
         /// silently strip the hop during import.
         /// </summary>
+        /// <summary>
+        /// A clip that plays once and must not be imported as a loop: the
+        /// Ferryman's board transition, which starts on a car bonnet and
+        /// ends behind its wheel.
+        ///
+        /// Two import settings depend on this and one of them matters a
+        /// great deal. `loopTime` is merely honest. `loopPose`, though,
+        /// normalises a clip's ends towards each other - which is exactly
+        /// right for a loop and exactly wrong here, because it would drag
+        /// the last frame back towards the bonnet and the runtime crosses
+        /// out of that frame into the driving loop.
+        ///
+        /// Declared as the one-shot ACTION of a design that also declares
+        /// a seated loop, which is the shape of a transition between two
+        /// postures rather than a beat on top of an idle.
+        /// </summary>
+        public static bool IsOneShotClip(string normalizedClipName)
+        {
+            if (string.IsNullOrEmpty(normalizedClipName))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < Descriptors.Length; index++)
+            {
+                PedestrianDescriptor descriptor = Descriptors[index];
+                if (!descriptor.HasAction ||
+                    !descriptor.RidesBus ||
+                    !descriptor.IsStaged)
+                {
+                    continue;
+                }
+
+                if (string.Equals(
+                        normalizedClipName,
+                        descriptor.ActionClipName,
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         public static bool IsAirborneClip(string normalizedClipName)
         {
             if (string.IsNullOrEmpty(normalizedClipName))
@@ -1021,6 +1114,11 @@ namespace BarPromenade.Editor
                         candidate.DesignId,
                         SeacoastFishermanProvider.DesignId,
                         StringComparison.Ordinal)));
+                BindLastRouteFerrymanProvider(Descriptors.Single(candidate =>
+                    string.Equals(
+                        candidate.DesignId,
+                        LastRouteFerrymanProvider.DesignId,
+                        StringComparison.Ordinal)));
                 AssetDatabase.SaveAssets();
                 ValidateOrThrow();
             }
@@ -1455,6 +1553,77 @@ namespace BarPromenade.Editor
             }
         }
 
+        public static void BuildLastRouteFerrymanOrThrow()
+        {
+            if (isBuilding)
+            {
+                return;
+            }
+
+            if (!SourcesExist())
+            {
+                throw new InvalidOperationException(
+                    "The staged Ferryman build requires its model, " +
+                    "manifest, locomotion library, production Player " +
+                    "model and shared Player3DLit material.");
+            }
+
+            PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
+                string.Equals(
+                    candidate.DesignId,
+                    LastRouteFerrymanProvider.DesignId,
+                    StringComparison.Ordinal));
+            isBuilding = true;
+            try
+            {
+                EnsureFolderForAsset(descriptor.PrefabPath);
+                AssetDatabase.ImportAsset(
+                    PlayerModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ModelPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    descriptor.ManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationManifestPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+                AssetDatabase.ImportAsset(
+                    AnimationPath,
+                    ImportAssetOptions.ForceUpdate |
+                    ImportAssetOptions.ForceSynchronousImport);
+
+                CityPedestrianAnimationManifest animationManifest =
+                    LoadAndValidateAnimationManifest();
+                Material sharedMaterial =
+                    AssetDatabase.LoadAssetAtPath<Material>(
+                        SharedMaterialPath);
+                if (sharedMaterial == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Shared Player3DLit material is missing at " +
+                        $"'{SharedMaterialPath}'.");
+                }
+
+                BuildDescriptor(
+                    descriptor,
+                    animationManifest,
+                    sharedMaterial);
+                BindLastRouteFerrymanProvider(descriptor);
+                AssetDatabase.SaveAssets();
+                ValidateDescriptor(descriptor, animationManifest);
+            }
+            finally
+            {
+                isBuilding = false;
+            }
+        }
+
         public static void BuildParkChessPlayerOrThrow()
         {
             if (isBuilding)
@@ -1694,6 +1863,52 @@ namespace BarPromenade.Editor
         /// carries the staged lake fisherman prefab into a build — the
         /// automated binding the babushka pass established.
         /// </summary>
+        /// <summary>
+        /// Creates or rewires the one Resources provider asset that
+        /// carries the staged Ferryman prefab into a build.
+        /// </summary>
+        private static void BindLastRouteFerrymanProvider(
+            PedestrianDescriptor descriptor)
+        {
+            GameObject prefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    descriptor.PrefabPath);
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(
+                    "Cannot bind the Ferryman provider before its " +
+                    "prefab exists.");
+            }
+
+            LastRouteFerrymanProvider provider =
+                AssetDatabase
+                    .LoadAssetAtPath<LastRouteFerrymanProvider>(
+                        LastRouteFerrymanProviderPath);
+            if (provider == null)
+            {
+                EnsureFolderForAsset(LastRouteFerrymanProviderPath);
+                provider = ScriptableObject
+                    .CreateInstance<LastRouteFerrymanProvider>();
+                AssetDatabase.CreateAsset(
+                    provider,
+                    LastRouteFerrymanProviderPath);
+            }
+
+            var serialized = new SerializedObject(provider);
+            SerializedProperty prefabProperty =
+                serialized.FindProperty("stagedPrefab");
+            if (prefabProperty == null)
+            {
+                throw new InvalidOperationException(
+                    "LastRouteFerrymanProvider has no serialized " +
+                    "'stagedPrefab' field.");
+            }
+
+            prefabProperty.objectReferenceValue = prefab;
+            serialized.ApplyModifiedPropertiesWithoutUndo();
+            EditorUtility.SetDirty(provider);
+        }
+
         private static void BindSeacoastFishermanProvider(
             PedestrianDescriptor descriptor)
         {
@@ -2031,6 +2246,7 @@ namespace BarPromenade.Editor
             }
 
             ValidateFishingRigBindings(prefab, registry, descriptor);
+            ValidateCoinRigBindings(prefab, registry, descriptor);
             ValidateWheelchairBindings(prefab, registry, descriptor);
             if (descriptor.IsWheelchair)
             {
@@ -2150,7 +2366,8 @@ namespace BarPromenade.Editor
                     behaviour != null &&
                     !(behaviour is CityPedestrianAssetRegistry) &&
                     !(behaviour is CityWheelchairNpcAssetRegistry) &&
-                    !(behaviour is SeacoastFishermanRigAnchors)))
+                    !(behaviour is SeacoastFishermanRigAnchors) &&
+                    !(behaviour is LastRouteFerrymanRigAnchors)))
             {
                 throw new InvalidOperationException(
                     "A staged pedestrian prefab may carry only its passive " +
@@ -2513,12 +2730,23 @@ namespace BarPromenade.Editor
                         clip.archetype,
                         owner.DesignId,
                         StringComparison.Ordinal) ||
-                    !clip.loop ||
+                    // Almost every clip in this library loops, and asserting
+                    // it is what catches a clip that drifts off its own
+                    // first frame. The Ferryman's board transition is the
+                    // one clip that MUST NOT: it starts on a car bonnet and
+                    // ends behind a steering wheel, so both the loop flag
+                    // and the seam error are meaningless for it. What holds
+                    // it together instead is that it opens and closes on
+                    // the base poses of the clips either side, which the
+                    // art generator states by reusing those pose functions
+                    // rather than re-typing numbers.
+                    clip.loop == clip.one_shot ||
                     !clip.in_place ||
                     clip.keyed_bone_count != ExpectedBoneCount ||
                     string.IsNullOrWhiteSpace(clip.authored_posture) ||
                     string.IsNullOrWhiteSpace(clip.gait) ||
-                    Mathf.Abs(clip.loop_max_error) > 0.0001f ||
+                    (!clip.one_shot &&
+                     Mathf.Abs(clip.loop_max_error) > 0.0001f) ||
                     clip.frame_start != 0 ||
                     clip.frame_end != Mathf.RoundToInt(
                         clip.duration_seconds * ExpectedAnimationFps) ||
@@ -3020,6 +3248,50 @@ namespace BarPromenade.Editor
                             emberRenderer);
                 }
 
+                if (descriptor.CarriesCoinRig)
+                {
+                    // Measured once, here, in the bind pose, off the
+                    // imported meshes, for the reason the fisherman's
+                    // anchors exist: both points are drawn by rigidly
+                    // skinned vertices, so neither has a Transform, and
+                    // reconstructing them at runtime would mean
+                    // re-deriving the FBX axis conversion and this
+                    // prefab's own 180 degree model flip in gameplay
+                    // code.
+                    Transform leftHand = RequireTransform(
+                        transformsByName,
+                        LeftHandBoneName,
+                        "Ferryman prefab");
+                    Transform pelvisBone = RequireTransform(
+                        transformsByName,
+                        PelvisBoneName,
+                        "Ferryman prefab");
+                    Renderer palmRenderer = RequireRenderer(
+                        renderersByName,
+                        LastRouteFerrymanRigAnchors
+                            .CoinRestRendererName);
+                    Renderer hemRenderer = RequireRenderer(
+                        renderersByName,
+                        LastRouteFerrymanRigAnchors
+                            .CoatHemRendererName);
+                    Transform coinAnchor = CreateBoneAnchor(
+                        leftHand,
+                        LastRouteFerrymanRigAnchors.CoinRestAnchorName,
+                        BindPoseCenter(palmRenderer));
+                    Transform hemAnchor = CreateBoneAnchor(
+                        pelvisBone,
+                        LastRouteFerrymanRigAnchors.CoatHemAnchorName,
+                        BindPoseTopCenter(hemRenderer));
+                    prefabRoot
+                        .AddComponent<LastRouteFerrymanRigAnchors>()
+                        .Configure(
+                            registry,
+                            coinAnchor,
+                            hemAnchor,
+                            hemRenderer,
+                            BindPoseLateralSize(hemRenderer));
+                }
+
                 if (descriptor.IsWheelchair)
                 {
                     // The shared animation FBX deliberately remains an exact
@@ -3156,6 +3428,82 @@ namespace BarPromenade.Editor
             return farthest;
         }
 
+        /// <summary>
+        /// The centre of a rigidly skinned part's TOP face, in world
+        /// space. Computed from the vertices rather than from
+        /// `mesh.bounds`, because a part's own space is whatever the
+        /// FBX conversion left it in and 'up' there is not necessarily
+        /// up here. The world Y of a vertex has no such ambiguity.
+        /// </summary>
+        private static Vector3 BindPoseTopCenter(Renderer renderer)
+        {
+            Mesh mesh = RequireSharedMesh(renderer);
+            Vector3[] vertices = mesh.vertices;
+            if (vertices.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Renderer '{renderer.name}' has no vertices.");
+            }
+
+            var world = new Vector3[vertices.Length];
+            float top = float.NegativeInfinity;
+            for (int index = 0; index < vertices.Length; index++)
+            {
+                world[index] =
+                    renderer.transform.TransformPoint(vertices[index]);
+                top = Mathf.Max(top, world[index].y);
+            }
+
+            // Everything within a centimetre of the highest vertex is
+            // the top face; its average is its centre.
+            const float bandMeters = 0.01f;
+            var sum = Vector3.zero;
+            int count = 0;
+            for (int index = 0; index < world.Length; index++)
+            {
+                if (world[index].y < top - bandMeters)
+                {
+                    continue;
+                }
+
+                sum += world[index];
+                count++;
+            }
+
+            return sum / count;
+        }
+
+        /// <summary>
+        /// How wide and how deep a part is, in metres, as (width,
+        /// height). Width is the LARGER of the two horizontal extents,
+        /// because a garment around a human waist is wider across than
+        /// front to back and this must not depend on which way the
+        /// bind pose happens to face.
+        /// </summary>
+        private static Vector2 BindPoseLateralSize(Renderer renderer)
+        {
+            Mesh mesh = RequireSharedMesh(renderer);
+            Vector3[] vertices = mesh.vertices;
+            if (vertices.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    $"Renderer '{renderer.name}' has no vertices.");
+            }
+
+            Vector3 min = renderer.transform.TransformPoint(vertices[0]);
+            Vector3 max = min;
+            for (int index = 1; index < vertices.Length; index++)
+            {
+                Vector3 point =
+                    renderer.transform.TransformPoint(vertices[index]);
+                min = Vector3.Min(min, point);
+                max = Vector3.Max(max, point);
+            }
+
+            Vector3 size = max - min;
+            return new Vector2(Mathf.Max(size.x, size.z), size.y);
+        }
+
         private static Mesh RequireSharedMesh(Renderer renderer)
         {
             Mesh mesh = renderer is SkinnedMeshRenderer skinned
@@ -3240,6 +3588,77 @@ namespace BarPromenade.Editor
             }
         }
 
+        /// <summary>
+        /// A coin design owes both bind-pose anchors, on the right
+        /// bones, and nobody else may carry the component. The bone is
+        /// the part that matters: an anchor parented to the wrong one
+        /// still resolves at runtime and then leaves the coin orbiting
+        /// a hip, or the coat hanging off a wrist.
+        /// </summary>
+        private static void ValidateCoinRigBindings(
+            GameObject prefab,
+            CityPedestrianAssetRegistry registry,
+            PedestrianDescriptor descriptor)
+        {
+            LastRouteFerrymanRigAnchors anchors = prefab
+                .GetComponentInChildren<LastRouteFerrymanRigAnchors>(
+                    true);
+            if (!descriptor.CarriesCoinRig)
+            {
+                if (anchors != null)
+                {
+                    throw new InvalidOperationException(
+                        $"'{descriptor.DisplayName}' declares no coin " +
+                        "rig but its prefab carries anchor metadata.");
+                }
+
+                return;
+            }
+
+            if (anchors == null ||
+                anchors.PedestrianRegistry != registry ||
+                anchors.CoinRestAnchor == null ||
+                anchors.CoatHemAnchor == null ||
+                anchors.CoatHemRenderer == null)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' must bind its palm " +
+                    "and hem anchors and its hem renderer.");
+            }
+
+            if (anchors.CoinRestAnchor.parent == null ||
+                !string.Equals(
+                    anchors.CoinRestAnchor.parent.name,
+                    LeftHandBoneName,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The coin rest anchor must ride the left hand bone.");
+            }
+
+            if (anchors.CoatHemAnchor.parent == null ||
+                !string.Equals(
+                    anchors.CoatHemAnchor.parent.name,
+                    PelvisBoneName,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The coat hem anchor must ride the pelvis bone.");
+            }
+
+            // The skirt is cut to this. A zero would produce a cloth
+            // panel with no width, which renders as nothing at all and
+            // would read as 'the coat did not load'.
+            if (anchors.CoatHemSize.x < 0.15f ||
+                anchors.CoatHemSize.x > 0.9f)
+            {
+                throw new InvalidOperationException(
+                    $"The coat hem measures " +
+                    $"{anchors.CoatHemSize.x:0.###} m across; a waist " +
+                    "is between 0.15 and 0.9 m.");
+            }
+        }
+
         private static AnimationClip LoadLocomotionClip(
             string clipName,
             float expectedDuration,
@@ -3270,12 +3689,19 @@ namespace BarPromenade.Editor
             float expectedDuration,
             CityPedestrianAnimationManifest animationManifest)
         {
+            // A transition between two postures is the one kind of clip
+            // here that must NOT be imported as a loop, so its loop flag is
+            // asserted the other way round rather than skipped: an import
+            // that quietly turned FerrymanBoard back into a loop would
+            // re-introduce the loop-pose normalisation this clip cannot
+            // survive, and would do it silently.
+            bool expectLooping = !IsOneShotClip(expectedName);
             if (clip == null ||
                 !string.Equals(
                     NormalizeClipName(clip.name),
                     expectedName,
                     StringComparison.Ordinal) ||
-                !clip.isLooping ||
+                clip.isLooping != expectLooping ||
                 Mathf.Abs(clip.length - expectedDuration) > 1f / 24f ||
                 !string.Equals(
                     AssetDatabase.GetAssetPath(clip),
@@ -3284,8 +3710,8 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     $"Pedestrian '{expectedName}' must directly reference " +
-                    $"the looping custom locomotion clip at " +
-                    $"'{AnimationPath}'.");
+                    $"the {(expectLooping ? "looping" : "one-shot")} " +
+                    $"custom locomotion clip at '{AnimationPath}'.");
             }
 
             CityPedestrianAnimationManifestClip source =
@@ -3642,11 +4068,13 @@ namespace BarPromenade.Editor
                 bool isWheelchair = false,
                 bool carriesFishingRig = false,
                 string actionClipName = null,
-                float actionDuration = 0f)
+                float actionDuration = 0f,
+                bool carriesCoinRig = false)
             {
                 IsStaged = isStaged;
                 IsWheelchair = isWheelchair;
                 CarriesFishingRig = carriesFishingRig;
+                CarriesCoinRig = carriesCoinRig;
                 SitClipName = sitClipName;
                 SitDuration = sitDuration;
                 ActionClipName = actionClipName;
@@ -3735,6 +4163,16 @@ namespace BarPromenade.Editor
             /// </summary>
             public bool CarriesFishingRig { get; }
 
+            /// <summary>
+            /// Declares the two bind-pose anchors the Ferryman needs:
+            /// the hollow of his open left palm, where the coin lies
+            /// between throws, and the top of his coat hem, which the
+            /// runtime cloth skirt hangs from. Both are drawn by
+            /// rigidly skinned vertices, so neither has a Transform of
+            /// its own for the runtime to hang anything off.
+            /// </summary>
+            public bool CarriesCoinRig { get; }
+
             public int ExpectedLightCount => CarriesHeadLamp ? 1 : 0;
             public float Height => ExpectedHeight;
         }
@@ -3762,6 +4200,15 @@ namespace BarPromenade.Editor
             public int frame_start;
             public int frame_end;
             public bool loop;
+
+            /// <summary>
+            /// A clip that plays once and does not return to its own first
+            /// frame - a transition between two postures rather than a
+            /// posture. Exactly the inverse of <see cref="loop"/>, and both
+            /// are written because the pair being consistent is itself
+            /// something the contract checks.
+            /// </summary>
+            public bool one_shot;
             public bool in_place;
             public string authored_posture;
             public string gait;

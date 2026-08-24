@@ -82,7 +82,7 @@ namespace BarPromenade
         /// <summary>
         /// World-space direction of the pooled Spot when this practical is
         /// nearest. The tunnel profile is the overhead portal floodlight and
-        /// points down the sealed throat.
+        /// points down the open entrance corridor.
         /// </summary>
         public Vector3 Forward { get; }
 

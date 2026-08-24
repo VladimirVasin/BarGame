@@ -38,6 +38,27 @@ namespace BarPromenade
         private const float PublicGroundHeight = 0.12f;
         private const float MinimumPublicGroundFoundationDepth = 0.14f;
 
+        // The Ferryman's car, mirrored from
+        // tools/build-last-route-car-3d-model.py so the recipe maths and the
+        // authored FBX cannot disagree about how much room it needs. The bay
+        // radius is the paving's own 5.40 plus the body's half-width plus a
+        // walking gap, so the car stands just off the circle rather than on
+        // it - the island's empty centre is authored, not incidental.
+        private const float CarBayLength = 4.83f;
+        private const float CarBayWidth = 1.80f;
+        private const float CarBayClearance = 0.40f;
+        private const float CarBayPavingRadius = 5.40f;
+        private const float CarBayNoseAngleDegrees = 38f;
+        // Right of the arriving hero first; the mirrored bay is the fallback
+        // for when that side is taken by another way in.
+        private static readonly float[] CarBaySidePreference = { 1f, -1f };
+        // Nearest the street first - he waits at the entrance, not at the
+        // back of the lot.
+        private static readonly float[] CarBayRadialSteps =
+            { 6.9f, 6.3f, 5.7f, 5.1f };
+        private static readonly float[] CarBayLateralSteps =
+            { 3.5f, 4.1f, 4.7f, 5.3f };
+
         // The two sittable benches, shared between the visual recipes
         // below and <see cref="TryDescribeBenchSeat"/> so the seat the
         // hero docks against is always the seat that was drawn.
@@ -331,6 +352,235 @@ namespace BarPromenade
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }
+        }
+
+        /// <summary>
+        /// Where the Ferryman's car stands: pulled up just inside a way in,
+        /// off to the right of it, angled, with its nose pointing back out
+        /// at whoever is arriving.
+        ///
+        /// That angle is the whole read. Parked square against the paving the
+        /// car looks abandoned; parked nose-out at a quarter turn it looks
+        /// like it is waiting to leave, which is what the man beside it is
+        /// doing. It also means the hero meets its front on the way in
+        /// instead of finding its back after walking round the island.
+        ///
+        /// Candidates are tried nearest-the-street first and REJECTED rather
+        /// than nudged: a bay that touches an approach strip, leaves the lot,
+        /// or reaches over the paved circle is out. If nothing on the right
+        /// survives, the mirrored bay on the left is tried; if that fails too
+        /// the car is simply absent - a visible loss is better than a blocked
+        /// way in, and the walkable mask is built from rectangles that know
+        /// nothing about props, so it would never have reported it.
+        ///
+        /// The car is placed in world space at uniform scale, unlike the
+        /// recipe's own parts: the recipe root carries a non-uniform
+        /// horizontal scale, and stretching an authored vehicle 8 % along XZ
+        /// at unchanged height would show.
+        /// </summary>
+        public static bool TryDescribeFerrymanCarStance(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            out CityDryingYardNpcStance stance)
+        {
+            stance = default;
+            if (descriptor.Kind !=
+                CityDistrictPointOfInterestKind.NightlifeLastRouteIsland)
+            {
+                return false;
+            }
+
+            float groundY = descriptor.Center.y + PublicGroundHeight * 0.5f;
+            for (int index = 0; index < descriptor.Accesses.Count; index++)
+            {
+                CityDistrictPointOfInterestAccessDescriptor access =
+                    descriptor.Accesses[index];
+                Vector3 inward = new Vector3(
+                    access.OutwardNormal.x,
+                    0f,
+                    access.OutwardNormal.z);
+                if (inward.sqrMagnitude < 0.0001f)
+                {
+                    continue;
+                }
+
+                inward.Normalize();
+                Vector3 arrivalRight = Vector3.Cross(Vector3.up, inward);
+                foreach (float side in CarBaySidePreference)
+                {
+                    if (TryFitCarBay(
+                            descriptor,
+                            inward,
+                            arrivalRight * side,
+                            side,
+                            groundY,
+                            out stance))
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// Walks the candidate bays on one side of one way in, nearest the
+        /// street first, and reports the first that clears everything.
+        /// </summary>
+        private static bool TryFitCarBay(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            Vector3 inward,
+            Vector3 lateral,
+            float side,
+            float groundY,
+            out CityDryingYardNpcStance stance)
+        {
+            stance = default;
+
+            // Nose out at a quarter turn, leaning across the way in rather
+            // than away from it, so an arriving hero meets the front three
+            // quarters on and the car could pull straight out to the road.
+            float yaw = CarBayNoseAngleDegrees * side;
+            Vector3 facing =
+                (Quaternion.AngleAxis(yaw, Vector3.up) * -inward).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, facing);
+            float halfLength = CarBayLength * 0.5f;
+            float halfWidth = CarBayWidth * 0.5f;
+
+            foreach (float radial in CarBayRadialSteps)
+            {
+                foreach (float offset in CarBayLateralSteps)
+                {
+                    Vector3 center = descriptor.Center -
+                        inward * radial + lateral * offset;
+                    center.y = groundY;
+                    if (!IsCarBayClear(
+                            descriptor,
+                            center,
+                            facing,
+                            right,
+                            halfLength,
+                            halfWidth))
+                    {
+                        continue;
+                    }
+
+                    stance = new CityDryingYardNpcStance(center, facing);
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// A bay is clear when the whole car is inside the lot, off the paved
+        /// circle, and out of every approach strip.
+        /// </summary>
+        private static bool IsCarBayClear(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            Vector3 center,
+            Vector3 facing,
+            Vector3 right,
+            float halfLength,
+            float halfWidth)
+        {
+            float paddedLength = halfLength + CarBayClearance;
+            float paddedWidth = halfWidth + CarBayClearance;
+
+            Rect lot = descriptor.PublicBounds;
+            foreach (Vector3 corner in EnumerateBayCorners(
+                         center, facing, right, paddedLength, paddedWidth))
+            {
+                if (!lot.Contains(new Vector2(corner.x, corner.z)))
+                {
+                    return false;
+                }
+            }
+
+            // The island's empty middle is authored, not incidental, so the
+            // nearest point of the bodywork has to stay off the paving.
+            Vector3 toCenter = descriptor.Center - center;
+            float alongFacing = Mathf.Clamp(
+                Vector3.Dot(toCenter, facing), -halfLength, halfLength);
+            float alongRight = Mathf.Clamp(
+                Vector3.Dot(toCenter, right), -halfWidth, halfWidth);
+            Vector3 nearest = center + facing * alongFacing + right * alongRight;
+            float pavingDistance = Vector2.Distance(
+                new Vector2(nearest.x, nearest.z),
+                new Vector2(descriptor.Center.x, descriptor.Center.z));
+            if (pavingDistance < CarBayPavingRadius + CarBayClearance)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < descriptor.Accesses.Count; index++)
+            {
+                if (OverlapsBay(
+                        descriptor.Accesses[index].ApproachBounds,
+                        center,
+                        facing,
+                        right,
+                        paddedLength,
+                        paddedWidth))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static IEnumerable<Vector3> EnumerateBayCorners(
+            Vector3 center,
+            Vector3 forward,
+            Vector3 right,
+            float halfLength,
+            float halfWidth)
+        {
+            yield return center + forward * halfLength + right * halfWidth;
+            yield return center + forward * halfLength - right * halfWidth;
+            yield return center - forward * halfLength + right * halfWidth;
+            yield return center - forward * halfLength - right * halfWidth;
+        }
+
+        private static bool OverlapsBay(
+            Rect area,
+            Vector3 center,
+            Vector3 forward,
+            Vector3 right,
+            float halfLength,
+            float halfWidth)
+        {
+            // The bay is oriented and the approach is axis-aligned, so test
+            // each one's corners against the other's frame.
+            foreach (Vector2 corner in new[]
+                     {
+                         new Vector2(area.xMin, area.yMin),
+                         new Vector2(area.xMin, area.yMax),
+                         new Vector2(area.xMax, area.yMin),
+                         new Vector2(area.xMax, area.yMax)
+                     })
+            {
+                Vector3 offset =
+                    new Vector3(corner.x, center.y, corner.y) - center;
+                if (Mathf.Abs(Vector3.Dot(offset, forward)) <= halfLength &&
+                    Mathf.Abs(Vector3.Dot(offset, right)) <= halfWidth)
+                {
+                    return true;
+                }
+            }
+
+            foreach (Vector3 corner in EnumerateBayCorners(
+                         center, forward, right, halfLength, halfWidth))
+            {
+                if (area.Contains(new Vector2(corner.x, corner.z)))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>

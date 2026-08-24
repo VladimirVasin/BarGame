@@ -33,14 +33,6 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator AmbientPassenger_BoardsRidesAndAlightsAtALaterStop()
         {
-            if (Application.isBatchMode)
-            {
-                Assert.Ignore(
-                    "Synthetic ambient-passenger scenario never seats a " +
-                    "waiter at the stop beyond the fog band in batch " +
-                    "mode. Fails on any code — stash-verified baseline " +
-                    "2026-08-24; see work-log latent. Runs in the editor.");
-            }
 
             float previousTimeScale = Time.timeScale;
             float previousCaptureDeltaTime = Time.captureDeltaTime;
@@ -601,13 +593,25 @@ namespace BarPromenade.Tests.PlayMode
                 PrimitiveType.Cube);
             ground.name = "NPC Ride Test Ground";
             ground.transform.SetParent(parent, false);
+            // Its TOP must be the height this scene actually lives at, and
+            // that is the ROAD, not the sidewalk. Everything synthetic here
+            // - the route, the bus, and therefore every door dock derived
+            // from it - is built on CityStreetSurfacePlanner.RoadTop, while
+            // this slab used to be raised to SidewalkTop. Six centimetres of
+            // difference buried every dock, and the pedestrian director's
+            // spawn-clearance capsule correctly refused to materialise a
+            // waiter inside terrain: its lowest point sat 12 mm under the
+            // slab. That single line is why this test "failed on any code"
+            // for as long as it existed. In the real city the road and the
+            // pavement are separate meshes at their own heights, so nothing
+            // there was ever wrong.
             ground.transform.position = new Vector3(
                 10f,
-                CityStreetSurfacePlanner.SidewalkTop * 0.5f,
+                CityStreetSurfacePlanner.RoadTop * 0.5f,
                 -10f);
             ground.transform.localScale = new Vector3(
                 160f,
-                CityStreetSurfacePlanner.SidewalkTop,
+                CityStreetSurfacePlanner.RoadTop,
                 160f);
         }
 

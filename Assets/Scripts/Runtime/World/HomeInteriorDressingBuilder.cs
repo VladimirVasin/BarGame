@@ -17,6 +17,11 @@ namespace BarPromenade
             new Color(0.31f, 0.33f, 0.27f);
         private static readonly Color DirtyPaper =
             new Color(0.47f, 0.39f, 0.27f);
+
+        /// <summary>Washed-out grey-blue: a shirt that has been worn more
+        /// times than it has been laundered.</summary>
+        private static readonly Color CrumpledShirtColor =
+            new Color(0.38f, 0.40f, 0.43f);
         private static readonly Color Stain =
             new Color(0.115f, 0.085f, 0.062f);
         private static readonly Color Rust =
@@ -265,6 +270,32 @@ namespace BarPromenade
                     bed.Bounds.yMin - 0.12f),
                 BottleBrown,
                 0.18f);
+
+            // The shirt he did not hang up, lying on the covers where he
+            // left it. `HomeBedInteraction` has always known how to push it
+            // out of sight while he sleeps and put it back when he gets up -
+            // it looks it up by this exact name - but nothing ever built the
+            // thing, so the lookup returned null and the beat was dead. Two
+            // strips rather than one box: a shirt that has been thrown down
+            // folds over itself, and a single slab on a bed reads as a book.
+            Vector3 shirtCentre = new Vector3(
+                Mathf.Lerp(bed.Bounds.xMin, bed.Bounds.xMax, 0.62f),
+                HomeInteriorWorldBuilder.BedMattressSurfaceHeight + 0.03f,
+                Mathf.Lerp(bed.Bounds.yMin, bed.Bounds.yMax, 0.34f));
+            GameObject shirt = RuntimePrimitiveFactory.CreateBox(
+                HomeBedInteraction.SurfaceClutterName,
+                room,
+                shirtCentre,
+                new Vector3(0.40f, 0.055f, 0.26f),
+                CrumpledShirtColor,
+                false);
+            RuntimePrimitiveFactory.CreateBox(
+                "Home Bed Crumpled Shirt Sleeve",
+                shirt.transform,
+                new Vector3(0.16f, 0.005f, -0.17f),
+                new Vector3(0.15f, 0.045f, 0.22f),
+                CrumpledShirtColor,
+                false);
         }
 
         private static void BuildPersonalDetails(

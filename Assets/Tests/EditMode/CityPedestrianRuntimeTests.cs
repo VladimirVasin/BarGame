@@ -31,8 +31,21 @@ namespace BarPromenade.Tests.EditMode
         // the Cemetery Mourner, the Cemetery Watchman and the Seacoast
         // Fisherman contribute two staged loops each. The two park
         // players carry three: an idle, a trudge held for a later pass,
-        // and the authored shout they throw at each other.
-        private const int StagedLocomotionClipCount = (6 * 2) + (2 * 3);
+        // and the authored shout they throw at each other. The Ferryman
+        // carries four, because he is the only design with two seats: a
+        // wait on his bonnet, a trudge held for later, the transition off
+        // the bonnet, and the driving loop it arrives at.
+        private const int StagedLocomotionClipCount =
+            (6 * 2) + (2 * 3) + 4;
+
+        /// <summary>
+        /// The library's only clip that is not a loop. Named here rather
+        /// than asked of the editor pipeline because this assembly does
+        /// not reference it - and naming it is in keeping with the clip
+        /// list below, which is spelled out by hand for the same reason:
+        /// a contract nobody has to look up.
+        /// </summary>
+        private const string OneShotTransitionClipName = "FerrymanBoard";
         private const string LocomotionManifestPath =
             "Assets/Pedestrians/Animations/" +
             "CityPedestrianLocomotion.json";
@@ -175,10 +188,18 @@ namespace BarPromenade.Tests.EditMode
                     "CheckersMull",
                     "CheckersTrudge",
                     "CheckersJeer",
+                    "FerrymanWait",
+                    "FerrymanTrudge",
+                    "FerrymanBoard",
                     "LampshadeSit",
                     "ChairCarrierSit",
                     "KettleHatSit",
-                    "LongArmSit"
+                    "LongArmSit",
+                    // The Ferryman's seated loop is not a Route 01 ride: it
+                    // is him behind the wheel of his own car. He is the one
+                    // design with two seats, and the sit slot carries the
+                    // second.
+                    "FerrymanDrive"
                 },
                 locomotionClips.Select(
                     clip => NormalizeAnimationClipName(clip.name)));
@@ -193,10 +214,26 @@ namespace BarPromenade.Tests.EditMode
                     (CityPedestrianResources.Archetypes.Count * 2) +
                     seatedCount +
                     StagedLocomotionClipCount));
-            Assert.That(
-                locomotionClips.All(clip => clip.isLooping),
-                Is.True,
-                "Every custom pedestrian locomotion clip must loop.");
+            // Every clip loops except a transition between two postures,
+            // and a transition that DID loop would be the bug: loop-pose
+            // normalisation drags its last frame back towards its first,
+            // and the Ferryman's board clip is authored to end exactly on
+            // the driving pose the runtime crosses into.
+            foreach (AnimationClip clip in locomotionClips)
+            {
+                string name = NormalizeAnimationClipName(clip.name);
+                bool oneShot = string.Equals(
+                    name,
+                    OneShotTransitionClipName,
+                    StringComparison.Ordinal);
+                Assert.That(
+                    clip.isLooping,
+                    Is.EqualTo(!oneShot),
+                    oneShot
+                        ? $"'{name}' is a one-shot transition and must " +
+                          "not be imported as a loop."
+                        : $"'{name}' must loop.");
+            }
 
             GameObject pedestrianPrefab =
                 Resources.Load<GameObject>(prefabResourcePath);

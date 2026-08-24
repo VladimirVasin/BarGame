@@ -11,6 +11,8 @@ namespace BarPromenade
     {
         public static readonly Color CityFogColor =
             new Color(0.330f, 0.380f, 0.355f);
+        public static readonly Color MountainRoadFogColor =
+            new Color(0.265f, 0.315f, 0.300f);
         public static readonly Color HomeBackgroundColor =
             new Color(0.105f, 0.080f, 0.070f);
         public static readonly Color CityAmbientColor =
@@ -22,7 +24,10 @@ namespace BarPromenade
 
         public const float CityFogDensity = 0.070f;
         public const float CityFarClipPlane = 48f;
+        public const float MountainRoadFogDensity = 0.026f;
+        public const float MountainRoadFarClipPlane = 120f;
         public const float DoorTransitionFarClipPlane = 18f;
+        public const float AreaLoadingFarClipPlane = 1f;
         public const float DefaultFarClipPlane = 220f;
         public const float GameplayNearClipPlane = 0.06f;
         public const float CityShadowStrength = 0.38f;
@@ -83,6 +88,37 @@ namespace BarPromenade
             RenderSettings.ambientLight = new Color(0.012f, 0.010f, 0.009f);
             RenderSettings.reflectionIntensity = 0f;
             DynamicGI.UpdateEnvironment();
+            return camera;
+        }
+
+        public static Camera EnsureAreaLoading()
+        {
+            Camera camera = EnsureCamera(Color.black);
+            SetPostProcessing(camera, false);
+            camera.cullingMask = 0;
+            camera.allowHDR = false;
+            camera.allowMSAA = false;
+            camera.nearClipPlane = 0.1f;
+            camera.farClipPlane = AreaLoadingFarClipPlane;
+
+            RenderSettings.fog = false;
+            RenderSettings.sun = null;
+            RenderSettings.ambientMode = AmbientMode.Flat;
+            RenderSettings.ambientLight = Color.black;
+            RenderSettings.reflectionIntensity = 0f;
+            return camera;
+        }
+
+        public static Camera EnsureMountainRoad()
+        {
+            Camera camera = EnsureCamera(MountainRoadFogColor);
+            camera.cullingMask = ~0;
+            SetPostProcessing(camera, true);
+            ApplyMountainRoadVisibility(camera);
+            ApplyMountainRoadLighting(
+                GameTimeDayNightRules.Evaluate(
+                    GameSessionState.GameTimeOfDayMinutes));
+            BindAuthoredVolumeDepthOfField();
             return camera;
         }
 
@@ -163,6 +199,21 @@ namespace BarPromenade
             RenderSettings.fogDensity = CityFogDensity;
         }
 
+        public static void ApplyMountainRoadVisibility(Camera camera)
+        {
+            if (camera == null)
+            {
+                throw new ArgumentNullException(nameof(camera));
+            }
+
+            camera.backgroundColor = MountainRoadFogColor;
+            camera.farClipPlane = MountainRoadFarClipPlane;
+            RenderSettings.fog = true;
+            RenderSettings.fogColor = MountainRoadFogColor;
+            RenderSettings.fogMode = FogMode.ExponentialSquared;
+            RenderSettings.fogDensity = MountainRoadFogDensity;
+        }
+
         public static void ApplyHomeInteriorVisibility(Camera camera)
         {
             if (camera == null)
@@ -196,6 +247,32 @@ namespace BarPromenade
                 sample.DirectionalLightRotation;
             RenderSettings.reflectionIntensity =
                 sample.ReflectionIntensity;
+            if (updateEnvironment)
+            {
+                DynamicGI.UpdateEnvironment();
+            }
+        }
+
+        public static void ApplyMountainRoadLighting(
+            DayNightVisualSample sample,
+            bool updateEnvironment = true)
+        {
+            Color coldDirectional = sample.DirectionalLightColor *
+                new Color(0.82f, 0.91f, 0.90f);
+            Color coldAmbient = sample.AmbientLightColor *
+                new Color(0.72f, 0.86f, 0.82f);
+            Light directional = ConfigureDirectionalLighting(
+                coldDirectional,
+                sample.DirectionalLightIntensity * 0.90f,
+                coldAmbient,
+                Mathf.Lerp(
+                    sample.ShadowStrength,
+                    0.52f,
+                    0.35f));
+            directional.transform.rotation =
+                sample.DirectionalLightRotation;
+            RenderSettings.reflectionIntensity =
+                sample.ReflectionIntensity * 0.68f;
             if (updateEnvironment)
             {
                 DynamicGI.UpdateEnvironment();

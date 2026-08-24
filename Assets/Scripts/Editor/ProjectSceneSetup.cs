@@ -22,8 +22,25 @@ namespace BarPromenade.Editor
             "Assets/Scenes/StairwellInterior.unity";
         private const string HomeInteriorScenePath =
             "Assets/Scenes/HomeInterior.unity";
+        private const string MountainRoadScenePath =
+            "Assets/Scenes/MountainRoad.unity";
+        private const string AreaLoadingScenePath =
+            "Assets/Scenes/AreaLoading.unity";
         private const string TestBootstrapScenePrefix =
             "Assets/InitTestScene";
+
+        private static readonly string[] BuildScenePaths =
+        {
+            MainMenuScenePath,
+            CityScenePath,
+            DoorTransitionScenePath,
+            BarInteriorScenePath,
+            SupermarketInteriorScenePath,
+            StairwellInteriorScenePath,
+            HomeInteriorScenePath,
+            MountainRoadScenePath,
+            AreaLoadingScenePath
+        };
 
         private static SceneAsset mainMenuStartScene;
 
@@ -54,6 +71,8 @@ namespace BarPromenade.Editor
             EnsureSupermarketInteriorScene();
             EnsureStairwellInteriorScene();
             EnsureHomeInteriorScene();
+            EnsureMountainRoadScene();
+            EnsureAreaLoadingScene();
             ConfigureBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -65,19 +84,12 @@ namespace BarPromenade.Editor
 
         public static void BuildWindows()
         {
+            EnsureMountainRoadScene();
+            EnsureAreaLoadingScene();
             ConfigureBuildScenes();
             var options = new BuildPlayerOptions
             {
-                scenes = new[]
-                {
-                    MainMenuScenePath,
-                    CityScenePath,
-                    DoorTransitionScenePath,
-                    BarInteriorScenePath,
-                    SupermarketInteriorScenePath,
-                    StairwellInteriorScenePath,
-                    HomeInteriorScenePath
-                },
+                scenes = (string[])BuildScenePaths.Clone(),
                 locationPathName = "Build/Windows/BarPromenade.exe",
                 target = BuildTarget.StandaloneWindows64,
                 options = BuildOptions.None
@@ -331,24 +343,73 @@ namespace BarPromenade.Editor
             }
         }
 
+        private static void EnsureMountainRoadScene()
+        {
+            EnsureEmptyAdditiveScene(MountainRoadScenePath);
+        }
+
+        private static void EnsureAreaLoadingScene()
+        {
+            EnsureEmptyAdditiveScene(AreaLoadingScenePath);
+        }
+
+        private static void EnsureEmptyAdditiveScene(string scenePath)
+        {
+            if (AssetDatabase.LoadAssetAtPath<SceneAsset>(scenePath) != null)
+            {
+                return;
+            }
+
+            Scene previousScene = EditorSceneManager.GetActiveScene();
+            bool canCreateAdditively =
+                previousScene.IsValid() &&
+                previousScene.isLoaded &&
+                !string.IsNullOrEmpty(previousScene.path);
+            Scene scene = EditorSceneManager.NewScene(
+                NewSceneSetup.EmptyScene,
+                canCreateAdditively
+                    ? NewSceneMode.Additive
+                    : NewSceneMode.Single);
+            try
+            {
+                if (!EditorSceneManager.SaveScene(scene, scenePath))
+                {
+                    throw new InvalidOperationException(
+                        $"Failed to create '{scenePath}'.");
+                }
+            }
+            finally
+            {
+                if (canCreateAdditively &&
+                    previousScene.IsValid() &&
+                    previousScene.isLoaded)
+                {
+                    SceneManager.SetActiveScene(previousScene);
+                }
+
+                if (canCreateAdditively &&
+                    scene.IsValid() &&
+                    scene.isLoaded)
+                {
+                    EditorSceneManager.CloseScene(scene, true);
+                }
+            }
+        }
+
         private static void ConfigureBuildScenes()
         {
-            EditorBuildSettings.scenes = new[]
+            var scenes = new EditorBuildSettingsScene[
+                BuildScenePaths.Length];
+            for (int index = 0;
+                 index < BuildScenePaths.Length;
+                 index++)
             {
-                new EditorBuildSettingsScene(
-                    MainMenuScenePath,
-                    true),
-                new EditorBuildSettingsScene(CityScenePath, true),
-                new EditorBuildSettingsScene(DoorTransitionScenePath, true),
-                new EditorBuildSettingsScene(BarInteriorScenePath, true),
-                new EditorBuildSettingsScene(
-                    SupermarketInteriorScenePath,
-                    true),
-                new EditorBuildSettingsScene(
-                    StairwellInteriorScenePath,
-                    true),
-                new EditorBuildSettingsScene(HomeInteriorScenePath, true)
-            };
+                scenes[index] = new EditorBuildSettingsScene(
+                    BuildScenePaths[index],
+                    true);
+            }
+
+            EditorBuildSettings.scenes = scenes;
         }
     }
 }

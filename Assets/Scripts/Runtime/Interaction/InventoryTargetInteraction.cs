@@ -59,6 +59,7 @@ namespace BarPromenade
             }
 
             Requirement = requirement;
+            HasRequirement = true;
             TalkResponseKey = RequireKey(
                 talkResponseKey,
                 nameof(talkResponseKey));
@@ -81,13 +82,71 @@ namespace BarPromenade
             FeedbackDurationSeconds = feedbackDurationSeconds;
         }
 
+        /// <summary>
+        /// A target whose second choice costs nothing to take.
+        ///
+        /// The cat wanted a tin, and this whole flow was written around
+        /// that; but "talk, or do the thing, and are you sure" is the
+        /// shape, not the tin. The Ferryman asks whether you want to
+        /// leave the city, and the answer is not something you carry -
+        /// so his definition declares no requirement and the controller
+        /// skips every inventory step for it.
+        /// </summary>
+        public static InventoryTargetInteractionDefinition WithoutRequirement(
+            string talkResponseKey,
+            string confirmationPromptKey,
+            float feedbackDurationSeconds =
+                DefaultFeedbackDurationSeconds)
+        {
+            return new InventoryTargetInteractionDefinition(
+                talkResponseKey,
+                confirmationPromptKey,
+                feedbackDurationSeconds);
+        }
+
+        private InventoryTargetInteractionDefinition(
+            string talkResponseKey,
+            string confirmationPromptKey,
+            float feedbackDurationSeconds)
+        {
+            Requirement = default;
+            HasRequirement = false;
+            TalkResponseKey = RequireKey(
+                talkResponseKey,
+                nameof(talkResponseKey));
+            ConfirmationPromptKey = RequireKey(
+                confirmationPromptKey,
+                nameof(confirmationPromptKey));
+            // Nothing can be missing, so nothing has to be said about it.
+            MissingRequirementResponseKey = TalkResponseKey;
+            if (feedbackDurationSeconds <= 0f ||
+                float.IsNaN(feedbackDurationSeconds) ||
+                float.IsInfinity(feedbackDurationSeconds))
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(feedbackDurationSeconds),
+                    feedbackDurationSeconds,
+                    "Feedback duration must be finite and positive.");
+            }
+
+            FeedbackDurationSeconds = feedbackDurationSeconds;
+        }
+
         public InventoryItemRequirement Requirement { get; }
+
+        /// <summary>
+        /// False for a target that asks for nothing. The controller reads
+        /// this before it touches the inventory at all - it must never
+        /// take, refund or complain about an item that was never asked
+        /// for.
+        /// </summary>
+        public bool HasRequirement { get; }
         public string TalkResponseKey { get; }
         public string ConfirmationPromptKey { get; }
         public string MissingRequirementResponseKey { get; }
         public float FeedbackDurationSeconds { get; }
         public bool IsValid =>
-            Requirement.IsValid &&
+            (!HasRequirement || Requirement.IsValid) &&
             !string.IsNullOrWhiteSpace(TalkResponseKey) &&
             !string.IsNullOrWhiteSpace(ConfirmationPromptKey) &&
             !string.IsNullOrWhiteSpace(

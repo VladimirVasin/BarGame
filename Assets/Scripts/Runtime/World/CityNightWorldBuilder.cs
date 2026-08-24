@@ -38,10 +38,19 @@ namespace BarPromenade
         private static readonly Color SignalHaloOuter =
             new Color(2.0f, 0.95f, 0.22f, 0.035f);
 
+        /// <param name="buildCollision">
+        /// Whether the lamp poles get their blocking boxes. True for the
+        /// City, where a lamp is something you walk into. False for the
+        /// view through the Home balcony window, which is scenery on the
+        /// far side of a facade the player can never reach - colliders
+        /// there cost physics for nothing and can fence off the balcony
+        /// itself.
+        /// </param>
         public static CityNightWorldResult Build(
             Transform parent,
             CityNightFixturePlan plan,
-            IReadOnlyList<BarEntrance> bars)
+            IReadOnlyList<BarEntrance> bars,
+            bool buildCollision = true)
         {
             if (parent == null)
             {
@@ -97,7 +106,8 @@ namespace BarPromenade
                 root,
                 lampChunks,
                 emissiveMaterial,
-                streetLampBulbRenderers);
+                streetLampBulbRenderers,
+                buildCollision);
             var trafficSignals = BuildTrafficSignals(
                 root,
                 plan.TrafficSignals,
@@ -213,7 +223,8 @@ namespace BarPromenade
             Transform parent,
             IDictionary<LampChunkCoordinate, LampChunkGeometry> chunks,
             Material emissiveMaterial,
-            ICollection<Renderer> bulbRenderers)
+            ICollection<Renderer> bulbRenderers,
+            bool buildCollision)
         {
             var coordinates =
                 new List<LampChunkCoordinate>(chunks.Keys);
@@ -228,9 +239,12 @@ namespace BarPromenade
                 chunk.SetParent(parent, false);
                 chunk.localPosition = coordinate.Origin;
 
-                CityStaticCollisionBuilder.AddBoxColliders(
-                    chunk,
-                    geometry.CollisionBoxes);
+                if (buildCollision)
+                {
+                    CityStaticCollisionBuilder.AddBoxColliders(
+                        chunk,
+                        geometry.CollisionBoxes);
+                }
 
                 RuntimePrimitiveFactory.CreateCombinedBoxes(
                     "Street Lamp Fixtures",

@@ -9,7 +9,7 @@ namespace BarPromenade.Tests.EditMode
     {
         [Test]
         [Category("CityFringeYard")]
-        public void DefaultCoastal_PlansFiveDeterministicFringesAndSealedForecourt()
+        public void DefaultCoastal_PlansFiveDeterministicFringesAndOpenForecourt()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityBlueprintCatalog.Default,
@@ -54,8 +54,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 first.TunnelForecourt.TunnelStableId,
                 Is.EqualTo(mountains.Tunnel.StableId));
-            Assert.That(first.TunnelForecourt.IsSealed, Is.True);
-            Assert.That(mountains.Tunnel.IsSealed, Is.True);
+            Assert.That(first.TunnelForecourt.HasPhysicalGate, Is.False);
+            Assert.That(mountains.Tunnel.HasPhysicalGate, Is.False);
+            Assert.That(mountains.Tunnel.TravelAvailable, Is.False);
             Assert.That(
                 first.TunnelForecourt.ApproachWidth,
                 Is.EqualTo(6.9f).Within(0.01f));
@@ -350,6 +351,39 @@ namespace BarPromenade.Tests.EditMode
                     "tunnel-wheel-rut-1-")),
                 Is.True,
                 "The right tunnel wheel rut disappeared.");
+            foreach (string stableStem in new[]
+                     {
+                         "tunnel-approach-",
+                         "tunnel-wheel-rut--1-",
+                         "tunnel-wheel-rut-1-"
+                     })
+            {
+                AssertSegmentsMeetWithoutOverlap(
+                    yard.Parts.Where(part => part.StableId.Contains(
+                        $"{yard.AreaId}-{stableStem}")),
+                    fringe.TunnelForecourt.Axis);
+            }
+
+            CityFringeYardPartDescriptor[] competingSurfaceTraces =
+                yard.Parts.Where(part =>
+                        part.Footprint.Overlaps(
+                            fringe.TunnelForecourt.DriveClearBounds) &&
+                        (part.Kind ==
+                             CityFringeYardPartKind.RoadShoulder ||
+                         part.Kind ==
+                             CityFringeYardPartKind.ServiceTrack ||
+                         part.Kind ==
+                             CityFringeYardPartKind.ServiceSpur ||
+                         part.Kind ==
+                             CityFringeYardPartKind.ForefieldAnchor ||
+                         (part.Kind == CityFringeYardPartKind.WheelRut &&
+                          !part.StableId.Contains(
+                              "-tunnel-wheel-rut-"))))
+                    .ToArray();
+            Assert.That(
+                competingSurfaceTraces,
+                Is.Empty,
+                "Generic forefield traces overlap the authored tunnel lane.");
 
             CityFringeYardPartDescriptor[] freightAnchors = yard.Parts
                 .Where(part =>
@@ -433,8 +467,9 @@ namespace BarPromenade.Tests.EditMode
                     {
                         Assert.That(
                             startAlong,
-                            Is.LessThanOrEqualTo(previousEnd + 0.001f),
-                            "Portal returns must read as a continuous run.");
+                            Is.EqualTo(previousEnd).Within(0.001f),
+                            "Portal returns must meet without coplanar " +
+                            "overlap or a visible gap.");
                     }
 
                     previousEnd = endAlong;
@@ -606,18 +641,17 @@ namespace BarPromenade.Tests.EditMode
                 tunnelPractical.Forward.y,
                 Is.LessThan(-0.70f),
                 "The portal floodlight no longer washes the tunnel floor.");
-            float gateRayDistance =
-                CityMountainBoundaryDefinition.TunnelGateInset /
-                Vector3.Dot(
-                    tunnelPractical.Forward,
-                    fringe.TunnelForecourt.Axis);
-            float gateRayHeight = tunnelPractical.Position.y +
-                                  tunnelPractical.Forward.y *
-                                  gateRayDistance;
+            float floorRayDistance =
+                (fringe.TunnelForecourt.PortalAnchor.y -
+                 tunnelPractical.Position.y) /
+                tunnelPractical.Forward.y;
+            float floorAxisDistance = floorRayDistance * Vector3.Dot(
+                tunnelPractical.Forward,
+                fringe.TunnelForecourt.Axis);
             Assert.That(
-                gateRayHeight - fringe.TunnelForecourt.PortalAnchor.y,
-                Is.InRange(1f, 2f),
-                "The floodlight misses the floor-to-gate read.");
+                floorAxisDistance,
+                Is.InRange(2f, mountains.Tunnel.WalkableDepth),
+                "The floodlight misses the open entrance floor.");
 
             CityFringeYardPartDescriptor[] drainCovers = yard.Parts.Where(
                     part => part.StableId.StartsWith(
@@ -854,7 +888,12 @@ namespace BarPromenade.Tests.EditMode
 
                 if (yard.Kind == CityFringeYardKind.SouthTunnelForecourt)
                 {
-                    Assert.That(mountains.Tunnel.IsSealed, Is.True);
+                    Assert.That(
+                        mountains.Tunnel.HasPhysicalGate,
+                        Is.False);
+                    Assert.That(
+                        mountains.Tunnel.TravelAvailable,
+                        Is.False);
                     Assert.That(
                         HorizontalDistance(
                             target,
@@ -1344,6 +1383,41 @@ namespace BarPromenade.Tests.EditMode
             return Vector2.Distance(
                 new Vector2(first.x, first.z),
                 new Vector2(second.x, second.z));
+        }
+
+        private static void AssertSegmentsMeetWithoutOverlap(
+            IEnumerable<CityFringeYardPartDescriptor> source,
+            Vector3 axis)
+        {
+            Vector3 normalizedAxis = axis.normalized;
+            CityFringeYardPartDescriptor[] segments = source
+                .OrderBy(part => Vector3.Dot(
+                    part.Center,
+                    normalizedAxis))
+                .ToArray();
+            Assert.That(segments.Length, Is.GreaterThan(1));
+            float previousEnd = float.NegativeInfinity;
+            for (int index = 0; index < segments.Length; index++)
+            {
+                CityFringeYardPartDescriptor segment = segments[index];
+                float halfSpan = segment.Size.z * 0.5f * Mathf.Abs(
+                    Vector3.Dot(
+                        segment.Rotation * Vector3.forward,
+                        normalizedAxis));
+                float start = Vector3.Dot(
+                    segment.Center,
+                    normalizedAxis) - halfSpan;
+                float end = start + halfSpan * 2f;
+                if (index > 0)
+                {
+                    Assert.That(
+                        start,
+                        Is.EqualTo(previousEnd).Within(0.001f),
+                        $"{segment.StableId} overlaps its previous segment.");
+                }
+
+                previousEnd = end;
+            }
         }
 
         private static void AssertMemberEndpointsSupported(

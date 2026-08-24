@@ -17,6 +17,17 @@ namespace BarPromenade
     {
         public const float FogAnchorDepth = 25.5f;
 
+        /// <summary>
+        /// How many AudioSources the weather outside the window adds to the
+        /// Home scene: the rain and the two thunder voices behind the glass.
+        /// Composed from the players' own constants rather than counted
+        /// here, so re-voicing either one keeps the scene's audio budget
+        /// assertions honest instead of stale.
+        /// </summary>
+        public const int OwnedSourceCount =
+            CityRainSoundPlayer.OwnedSourceCount +
+            CityThunderSoundPlayer.OwnedSourceCount;
+
         private Camera targetCamera;
         private HomeFixedCameraController fixedCamera;
         private VisibilitySnapshot homeVisibility;

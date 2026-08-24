@@ -586,9 +586,14 @@ namespace BarPromenade.Tests.PlayMode
         {
             IReadOnlyList<Renderer> renderers =
                 player.Visual.Renderers;
+            // Count, not Has.Count: the constraint reflects for a public
+            // "Count" property on the RUNTIME type, and this list is backed
+            // by a Renderer[], which offers Length. The interface says
+            // IReadOnlyList either way, so the failure was an ArgumentException
+            // out of NUnit rather than an assertion about the game.
             Assert.That(
-                renderers,
-                Has.Count.EqualTo(initialRendererStates.Length));
+                renderers.Count,
+                Is.EqualTo(initialRendererStates.Length));
             for (int index = 0; index < renderers.Count; index++)
             {
                 Assert.That(

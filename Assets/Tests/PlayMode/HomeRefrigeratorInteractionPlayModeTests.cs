@@ -173,6 +173,16 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 interaction.FirstPersonHand.ReachAmount,
                 Is.GreaterThan(0f));
+
+            // The loop above stops on the FIRST frame the hand is visible,
+            // which is the frame it is still entering on - at that instant
+            // it is at the very edge of the picture by construction, and
+            // asking it to sit inside a two-percent margin there was asking
+            // the reach to be over before it began. Let it finish, then
+            // check where it arrived.
+            interaction.AdvanceInteraction(
+                HomeRefrigeratorInteractionTimeline
+                    .ReachDurationSeconds);
             AssertFirstPersonHandIsInFrame(
                 interaction.FirstPersonHand);
 

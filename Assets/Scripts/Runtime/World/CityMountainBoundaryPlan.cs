@@ -33,8 +33,16 @@ namespace BarPromenade
 
         public const float TunnelOpeningWidth = 8f;
         public const float TunnelOpeningHeight = 5.5f;
-        public const float TunnelThroatDepth = 6f;
-        public const float TunnelGateInset = 3.8f;
+        public const float TunnelVisualDepth = 72f;
+        public const float TunnelSegmentLength = 6f;
+        public const float TunnelStraightDepth = 12f;
+        public const float TunnelPhysicalDepth = 12f;
+        public const float TunnelWalkableDepth = 11f;
+        public const float TunnelDecisionDistance = 8f;
+        public const float TunnelReturnDistance = 6.5f;
+        public const float TunnelMapDisplayDepth = 12f;
+        public const float TunnelBendDegreesPerSegment = 4f;
+        public const float TunnelSightOcclusionDistance = 40f;
         public const float TunnelPortalDepth = 1.6f;
 
         public const float RiverCaveOpeningHeight = 8f;
@@ -730,9 +738,97 @@ namespace BarPromenade
         }
     }
 
+    /// <summary>
+    /// One immutable centre-line chord of the visible mountain tunnel. The
+    /// first chords are physical; later chords are presentation only because
+    /// the unavailable travel decision is made before the bend.
+    /// </summary>
+    public readonly struct CityMountainTunnelSegmentDescriptor :
+        IEquatable<CityMountainTunnelSegmentDescriptor>
+    {
+        public CityMountainTunnelSegmentDescriptor(
+            string stableId,
+            float startDistance,
+            float endDistance,
+            Vector3 start,
+            Vector3 end,
+            bool hasCollision)
+        {
+            StableId = stableId ?? string.Empty;
+            StartDistance = startDistance;
+            EndDistance = endDistance;
+            Start = start;
+            End = end;
+            HasCollision = hasCollision;
+        }
+
+        public string StableId { get; }
+        public float StartDistance { get; }
+        public float EndDistance { get; }
+        public Vector3 Start { get; }
+        public Vector3 End { get; }
+        public bool HasCollision { get; }
+        public float Length => EndDistance - StartDistance;
+        public Vector3 Center => (Start + End) * 0.5f;
+        public Vector3 Forward => (End - Start).normalized;
+
+        public bool Equals(CityMountainTunnelSegmentDescriptor other)
+        {
+            return string.Equals(
+                       StableId,
+                       other.StableId,
+                       StringComparison.Ordinal) &&
+                   StartDistance.Equals(other.StartDistance) &&
+                   EndDistance.Equals(other.EndDistance) &&
+                   Start.Equals(other.Start) &&
+                   End.Equals(other.End) &&
+                   HasCollision == other.HasCollision;
+        }
+
+        public override bool Equals(object obj)
+        {
+            return obj is CityMountainTunnelSegmentDescriptor other &&
+                   Equals(other);
+        }
+
+        public override int GetHashCode()
+        {
+            unchecked
+            {
+                int hash = StringComparer.Ordinal.GetHashCode(
+                    StableId ?? string.Empty);
+                hash = (hash * 397) ^ StartDistance.GetHashCode();
+                hash = (hash * 397) ^ EndDistance.GetHashCode();
+                hash = (hash * 397) ^ Start.GetHashCode();
+                hash = (hash * 397) ^ End.GetHashCode();
+                return (hash * 397) ^ HasCollision.GetHashCode();
+            }
+        }
+    }
+
+    public readonly struct CityMountainTunnelPathSample
+    {
+        public CityMountainTunnelPathSample(
+            Vector3 position,
+            Vector3 forward,
+            float distance)
+        {
+            Position = position;
+            Forward = forward;
+            Distance = distance;
+        }
+
+        public Vector3 Position { get; }
+        public Vector3 Forward { get; }
+        public float Distance { get; }
+    }
+
     public readonly struct CityMountainTunnelDescriptor :
         IEquatable<CityMountainTunnelDescriptor>
     {
+        private readonly ReadOnlyCollection<
+            CityMountainTunnelSegmentDescriptor> segments;
+
         public CityMountainTunnelDescriptor(
             string stableId,
             string targetAccessId,
@@ -743,9 +839,14 @@ namespace BarPromenade
             Rect approachBounds,
             float openingWidth,
             float openingHeight,
-            float throatDepth,
-            float gateInset,
-            bool isSealed)
+            float visualDepth,
+            float walkableDepth,
+            float decisionDistance,
+            float returnDistance,
+            float mapDisplayDepth,
+            bool hasPhysicalGate,
+            bool travelAvailable,
+            IList<CityMountainTunnelSegmentDescriptor> sourceSegments)
         {
             StableId = stableId ?? string.Empty;
             TargetAccessId = targetAccessId ?? string.Empty;
@@ -756,9 +857,18 @@ namespace BarPromenade
             ApproachBounds = approachBounds;
             OpeningWidth = openingWidth;
             OpeningHeight = openingHeight;
-            ThroatDepth = throatDepth;
-            GateInset = gateInset;
-            IsSealed = isSealed;
+            VisualDepth = visualDepth;
+            WalkableDepth = walkableDepth;
+            DecisionDistance = decisionDistance;
+            ReturnDistance = returnDistance;
+            MapDisplayDepth = mapDisplayDepth;
+            HasPhysicalGate = hasPhysicalGate;
+            TravelAvailable = travelAvailable;
+            segments = new ReadOnlyCollection<
+                CityMountainTunnelSegmentDescriptor>(
+                new List<CityMountainTunnelSegmentDescriptor>(
+                    sourceSegments ??
+                    Array.Empty<CityMountainTunnelSegmentDescriptor>()));
         }
 
         public string StableId { get; }
@@ -773,33 +883,103 @@ namespace BarPromenade
         public Rect ApproachBounds { get; }
         public float OpeningWidth { get; }
         public float OpeningHeight { get; }
-        public float ThroatDepth { get; }
-        public float GateInset { get; }
-        public bool IsSealed { get; }
+        public float VisualDepth { get; }
+        public float WalkableDepth { get; }
+        public float DecisionDistance { get; }
+        public float ReturnDistance { get; }
+        public float MapDisplayDepth { get; }
+        public bool HasPhysicalGate { get; }
+        public bool TravelAvailable { get; }
+        public IReadOnlyList<CityMountainTunnelSegmentDescriptor> Segments =>
+            segments ??
+            (IReadOnlyList<CityMountainTunnelSegmentDescriptor>)
+            Array.Empty<CityMountainTunnelSegmentDescriptor>();
+
+        /// <summary>
+        /// Compatibility vocabulary for consumers that only need the visible
+        /// lining length. It does not imply a short or sealed throat.
+        /// </summary>
+        public float ThroatDepth => VisualDepth;
+
+        /// <summary>
+        /// Samples the ground-centre path at an arc distance from the portal.
+        /// Fixture, blocker and later transition plans share this path rather
+        /// than reproducing the bend formula.
+        /// </summary>
+        public CityMountainTunnelPathSample SamplePath(float distance)
+        {
+            float clamped = Mathf.Clamp(distance, 0f, VisualDepth);
+            IReadOnlyList<CityMountainTunnelSegmentDescriptor> path =
+                Segments;
+            for (int index = 0; index < path.Count; index++)
+            {
+                CityMountainTunnelSegmentDescriptor segment = path[index];
+                if (clamped > segment.EndDistance &&
+                    index < path.Count - 1)
+                {
+                    continue;
+                }
+
+                float t = segment.Length > 0.0001f
+                    ? Mathf.Clamp01(
+                        (clamped - segment.StartDistance) / segment.Length)
+                    : 0f;
+                return new CityMountainTunnelPathSample(
+                    Vector3.Lerp(segment.Start, segment.End, t),
+                    segment.Forward,
+                    clamped);
+            }
+
+            Vector3 forward = Axis.sqrMagnitude > 0.0001f
+                ? Axis.normalized
+                : Vector3.back;
+            return new CityMountainTunnelPathSample(
+                PortalGroundCenter + forward * clamped,
+                forward,
+                clamped);
+        }
 
         public bool Equals(CityMountainTunnelDescriptor other)
         {
-            return string.Equals(
-                       StableId,
-                       other.StableId,
-                       StringComparison.Ordinal) &&
-                   string.Equals(
-                       TargetAccessId,
-                       other.TargetAccessId,
-                       StringComparison.Ordinal) &&
-                   string.Equals(
-                       AreaId,
-                       other.AreaId,
-                       StringComparison.Ordinal) &&
-                   PortalGroundCenter.Equals(other.PortalGroundCenter) &&
-                   Axis.Equals(other.Axis) &&
-                   PortalBounds.Equals(other.PortalBounds) &&
-                   ApproachBounds.Equals(other.ApproachBounds) &&
-                   OpeningWidth.Equals(other.OpeningWidth) &&
-                   OpeningHeight.Equals(other.OpeningHeight) &&
-                   ThroatDepth.Equals(other.ThroatDepth) &&
-                   GateInset.Equals(other.GateInset) &&
-                   IsSealed == other.IsSealed;
+            if (!string.Equals(
+                    StableId,
+                    other.StableId,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    TargetAccessId,
+                    other.TargetAccessId,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    AreaId,
+                    other.AreaId,
+                    StringComparison.Ordinal) ||
+                !PortalGroundCenter.Equals(other.PortalGroundCenter) ||
+                !Axis.Equals(other.Axis) ||
+                !PortalBounds.Equals(other.PortalBounds) ||
+                !ApproachBounds.Equals(other.ApproachBounds) ||
+                !OpeningWidth.Equals(other.OpeningWidth) ||
+                !OpeningHeight.Equals(other.OpeningHeight) ||
+                !VisualDepth.Equals(other.VisualDepth) ||
+                !WalkableDepth.Equals(other.WalkableDepth) ||
+                !DecisionDistance.Equals(other.DecisionDistance) ||
+                !ReturnDistance.Equals(other.ReturnDistance) ||
+                !MapDisplayDepth.Equals(other.MapDisplayDepth) ||
+                HasPhysicalGate != other.HasPhysicalGate ||
+                TravelAvailable != other.TravelAvailable ||
+                Segments.Count != other.Segments.Count)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < Segments.Count; index++)
+            {
+                if (!Segments[index].Equals(other.Segments[index]))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public override bool Equals(object obj)
@@ -824,9 +1004,19 @@ namespace BarPromenade
                 hash = (hash * 397) ^ ApproachBounds.GetHashCode();
                 hash = (hash * 397) ^ OpeningWidth.GetHashCode();
                 hash = (hash * 397) ^ OpeningHeight.GetHashCode();
-                hash = (hash * 397) ^ ThroatDepth.GetHashCode();
-                hash = (hash * 397) ^ GateInset.GetHashCode();
-                return (hash * 397) ^ IsSealed.GetHashCode();
+                hash = (hash * 397) ^ VisualDepth.GetHashCode();
+                hash = (hash * 397) ^ WalkableDepth.GetHashCode();
+                hash = (hash * 397) ^ DecisionDistance.GetHashCode();
+                hash = (hash * 397) ^ ReturnDistance.GetHashCode();
+                hash = (hash * 397) ^ MapDisplayDepth.GetHashCode();
+                hash = (hash * 397) ^ HasPhysicalGate.GetHashCode();
+                hash = (hash * 397) ^ TravelAvailable.GetHashCode();
+                for (int index = 0; index < Segments.Count; index++)
+                {
+                    hash = (hash * 397) ^ Segments[index].GetHashCode();
+                }
+
+                return hash;
             }
         }
     }

@@ -425,9 +425,17 @@ namespace BarPromenade
                     tunnel.AreaId,
                     CityMountainBoundaryDefinition.SouthWestAreaId,
                     StringComparison.Ordinal) ||
-                !tunnel.IsSealed ||
+                tunnel.HasPhysicalGate ||
+                tunnel.TravelAvailable ||
                 !IsFinite(tunnel.PortalGroundCenter) ||
                 !IsFinite(tunnel.Axis) ||
+                !IsFinite(tunnel.OpeningWidth) ||
+                !IsFinite(tunnel.OpeningHeight) ||
+                !IsFinite(tunnel.VisualDepth) ||
+                !IsFinite(tunnel.WalkableDepth) ||
+                !IsFinite(tunnel.DecisionDistance) ||
+                !IsFinite(tunnel.ReturnDistance) ||
+                !IsFinite(tunnel.MapDisplayDepth) ||
                 Vector3.Dot(tunnel.Axis, Vector3.back) < 0.995f ||
                 Mathf.Abs(tunnel.Axis.magnitude - 1f) > Tolerance ||
                 !IsPositiveRect(tunnel.PortalBounds) ||
@@ -442,13 +450,42 @@ namespace BarPromenade
                 Mathf.Abs(
                     tunnel.OpeningHeight -
                     CityMountainBoundaryDefinition.TunnelOpeningHeight) >
-                Tolerance ||
-                tunnel.GateInset <= 0f ||
-                tunnel.GateInset >= tunnel.ThroatDepth)
+                    Tolerance ||
+                Mathf.Abs(
+                    tunnel.VisualDepth -
+                    CityMountainBoundaryDefinition.TunnelVisualDepth) >
+                    Tolerance ||
+                Mathf.Abs(
+                    tunnel.WalkableDepth -
+                    CityMountainBoundaryDefinition.TunnelWalkableDepth) >
+                    Tolerance ||
+                Mathf.Abs(
+                    tunnel.DecisionDistance -
+                    CityMountainBoundaryDefinition.TunnelDecisionDistance) >
+                    Tolerance ||
+                Mathf.Abs(
+                    tunnel.ReturnDistance -
+                    CityMountainBoundaryDefinition.TunnelReturnDistance) >
+                    Tolerance ||
+                Mathf.Abs(
+                    tunnel.MapDisplayDepth -
+                    CityMountainBoundaryDefinition.TunnelMapDisplayDepth) >
+                    Tolerance ||
+                tunnel.ReturnDistance <= 0f ||
+                tunnel.ReturnDistance >= tunnel.DecisionDistance ||
+                tunnel.DecisionDistance >= tunnel.WalkableDepth ||
+                tunnel.WalkableDepth >
+                    CityMountainBoundaryDefinition.TunnelPhysicalDepth +
+                    Tolerance ||
+                tunnel.VisualDepth <=
+                    RuntimeSceneSetup.CityFarClipPlane +
+                    tunnel.WalkableDepth)
             {
                 throw new InvalidOperationException(
-                    "The sealed south tunnel descriptor is invalid.");
+                    "The open south tunnel descriptor is invalid.");
             }
+
+            ValidateTunnelSegments(tunnel);
 
             CityOpenAreaAccessDescriptor access = default;
             bool foundAccess = false;
@@ -491,6 +528,98 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "The south tunnel no longer follows its yard access.");
+            }
+        }
+
+        private static void ValidateTunnelSegments(
+            CityMountainTunnelDescriptor tunnel)
+        {
+            int expectedCount = Mathf.RoundToInt(
+                tunnel.VisualDepth /
+                CityMountainBoundaryDefinition.TunnelSegmentLength);
+            if (tunnel.Segments.Count != expectedCount)
+            {
+                throw new InvalidOperationException(
+                    "The open south tunnel has an incomplete centre line.");
+            }
+
+            Vector3 cursor = tunnel.PortalGroundCenter;
+            float distance = 0f;
+            Vector3 previousForward = tunnel.Axis;
+            var ids = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < tunnel.Segments.Count; index++)
+            {
+                CityMountainTunnelSegmentDescriptor segment =
+                    tunnel.Segments[index];
+                bool expectedCollision = segment.EndDistance <=
+                    CityMountainBoundaryDefinition.TunnelPhysicalDepth +
+                    Tolerance;
+                if (string.IsNullOrWhiteSpace(segment.StableId) ||
+                    !ids.Add(segment.StableId) ||
+                    !IsFinite(segment.Start) ||
+                    !IsFinite(segment.End) ||
+                    !IsFinite(segment.StartDistance) ||
+                    !IsFinite(segment.EndDistance) ||
+                    Vector3.Distance(segment.Start, cursor) > Tolerance ||
+                    Mathf.Abs(segment.StartDistance - distance) > Tolerance ||
+                    Mathf.Abs(
+                        segment.Length -
+                        CityMountainBoundaryDefinition.TunnelSegmentLength) >
+                    Tolerance ||
+                    Mathf.Abs(
+                        Vector3.Distance(segment.Start, segment.End) -
+                        CityMountainBoundaryDefinition
+                            .TunnelSegmentLength) > Tolerance ||
+                    Mathf.Abs(segment.Forward.y) > Tolerance ||
+                    segment.HasCollision != expectedCollision ||
+                    Vector3.Angle(previousForward, segment.Forward) >
+                    CityMountainBoundaryDefinition
+                        .TunnelBendDegreesPerSegment + Tolerance)
+                {
+                    throw new InvalidOperationException(
+                        $"Tunnel segment '{segment.StableId}' is invalid.");
+                }
+
+                if (segment.StartDistance <
+                    CityMountainBoundaryDefinition.TunnelStraightDepth -
+                    Tolerance)
+                {
+                    if (Vector3.Angle(tunnel.Axis, segment.Forward) >
+                        Tolerance)
+                    {
+                        throw new InvalidOperationException(
+                            "The tunnel entrance is no longer straight.");
+                    }
+                }
+                else if (Vector3.Dot(segment.Forward, Vector3.left) <= 0f)
+                {
+                    throw new InvalidOperationException(
+                        "The tunnel continuation no longer bends west.");
+                }
+
+                cursor = segment.End;
+                distance = segment.EndDistance;
+                previousForward = segment.Forward;
+            }
+
+            if (Mathf.Abs(distance - tunnel.VisualDepth) > Tolerance)
+            {
+                throw new InvalidOperationException(
+                    "The tunnel centre line does not reach its visual depth.");
+            }
+
+            CityMountainTunnelPathSample occlusion = tunnel.SamplePath(
+                CityMountainBoundaryDefinition.TunnelSightOcclusionDistance);
+            Vector3 initialRight = Vector3.Cross(
+                Vector3.up,
+                tunnel.Axis).normalized;
+            float lateralOffset = Mathf.Abs(Vector3.Dot(
+                occlusion.Position - tunnel.PortalGroundCenter,
+                initialRight));
+            if (lateralOffset <= tunnel.OpeningWidth * 0.5f + 0.10f)
+            {
+                throw new InvalidOperationException(
+                    "The open tunnel exposes a straight view of its far end.");
             }
         }
 

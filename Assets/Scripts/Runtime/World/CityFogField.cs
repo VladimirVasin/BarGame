@@ -27,8 +27,10 @@ namespace BarPromenade
 
         private Transform player;
         private Transform particleTransform;
+        private bool isSheltered;
 
         public bool IsInitialized { get; private set; }
+        public bool IsSheltered => isSheltered;
         public Transform Player => player;
         public ParticleSystem Particles => particles;
         public ParticleSystemRenderer FogRenderer => fogRenderer;
@@ -50,6 +52,33 @@ namespace BarPromenade
             PositionEmitter();
             ConfigureParticleSystem(fogMaterial, seed);
             IsInitialized = true;
+        }
+
+        /// <summary>
+        /// The large drifting exterior sheets cannot follow the player under
+        /// a roof without reading as fog spawned inside the structure. A
+        /// sheltered volume clears them locally, then deterministically
+        /// refills the field when the player returns outdoors.
+        /// </summary>
+        public void SetSheltered(bool sheltered)
+        {
+            if (!IsInitialized || sheltered == isSheltered)
+            {
+                return;
+            }
+
+            isSheltered = sheltered;
+            if (sheltered)
+            {
+                particles.Stop(
+                    true,
+                    ParticleSystemStopBehavior.StopEmittingAndClear);
+                return;
+            }
+
+            PositionEmitter();
+            particles.Simulate(InitialFillSeconds, true, true, true);
+            particles.Play(true);
         }
 
         private void LateUpdate()

@@ -15,10 +15,13 @@
   `Assets/Scenes/DoorTransition.unity`,
   `Assets/Scenes/BarInterior.unity`,
   `Assets/Scenes/SupermarketInterior.unity`,
-  `Assets/Scenes/StairwellInterior.unity` and
-  `Assets/Scenes/HomeInterior.unity`.
+  `Assets/Scenes/StairwellInterior.unity`,
+  `Assets/Scenes/HomeInterior.unity`,
+  `Assets/Scenes/MountainRoad.unity` and
+  `Assets/Scenes/AreaLoading.unity`. The last two are appended at build indices
+  `7` and `8`, preserving every previous index.
 - Runtime assembly: `BarPromenade.Runtime`.
-- Player presentation: one modular `Player3D.prefab` in all five gameplay
+- Player presentation: one modular `Player3D.prefab` in all six gameplay
   roots, with independent mesh parts, a Generic in-place action set,
   same-prefab first-person subsets, a dedicated portrait, real mesh shadows
   and an analytic contact patch.
@@ -29,9 +32,10 @@
 
 ## Implemented MVP
 
-A runtime-composed 3D city in which one modular low-poly 3D hero walks along
-roads, approaches interactive bars, a supermarket and his nearby home, enters
-separate interiors, and returns to the matching exterior entrance.
+A runtime-composed 3D coastal city and separately loaded mountain road in which
+one modular low-poly 3D hero walks the streets and climb, approaches interactive
+bars, a supermarket and his nearby home, enters separate interiors, and returns
+to the matching exterior entrance.
 
 The vertical slice contains:
 
@@ -66,6 +70,23 @@ The vertical slice contains:
   `1440` real seconds (`24` minutes), crosses midnight with a day index and
   naturally pauses wherever gameplay sets `timeScale` to zero. The Home clock
   and inventory Status panel both show its current `HH:MM`;
+- a separately runtime-composed `MountainRoad` area. The hero arrives `6 m`
+  inside a `9 m` exit tunnel, then follows one continuous `82.7 m` uphill road
+  ribbon dimensioned for the `4.83 x 1.80 m` LastRouteCar: `4.8 m` wide on
+  ordinary stretches and `6.4 m` through two `7.5 m` hairpins. It rises
+  `8.7 m`; its last `5 m` are level and share the actual road-mesh entry
+  vertices with an irregular roughly `42 x 27 m` terminal plateau, so there is
+  no height step, open seam or transverse collider wall. Its centre reserves a
+  `7.5 m` turning circle; the left side owns an enterable glass cafe and the
+  right side an operating `58 m` cableway with four cabins. At the normal
+  `2.6 m/s` walk speed the route takes about `31.8 s`; vehicle control remains
+  separate future work. Larger layered forest and grounded roadside misc,
+  middle ridges and far snowy peaks
+  provide the longer perceived climb without expanding the physical ascent.
+  Five causal positional sound anchors belong to identifiable visible sources;
+  one tunnel practical visibly flickers. Its root may generate the pure City
+  layout/mountain plan needed by the City map tab, but it never calls a City
+  world builder or creates City GameObjects;
 - a finite, seed-reproducible coastal city driven by one immutable blueprint:
   the default preserves all 144 former road-and-lot cells inside a `13 x 12`
   urban envelope, using the added central column for a north-south river and
@@ -78,10 +99,16 @@ The vertical slice contains:
   over one low, dark `10 m`-wide river-cave water mouth; surrounding rock
   terminates both bank routes physically, and the cave itself is never
   walkable. A
-  separate `8 x 5.5 m` tunnel portal derived from `yard-south-west-access` has
-  a terrain-overlapping raised floor and non-coplanar, closed wall/ceiling
-  joints, then ends at a collidered metal gate. Neither opening has a prompt,
-  interaction, destination scene or transition. The north remains the open sea
+  separate gate-free `8 x 5.5 m` tunnel portal derived from
+  `yard-south-west-access` has a terrain-overlapping raised floor and
+  non-coplanar, closed wall/ceiling joints. Its `72 m` faceted shell stays
+  straight and physical for `12 m`, then bends west until neither its open end
+  nor the camera-relative mountain shell can enter the sightline. The first
+  `11 m` belong to player navigation. Walking through the decision plane at
+  `8 m` shows a localized unavailable-travel thought and guides the ordinary
+  rig back to `6.5 m`; the river cave still has no interaction, and the tunnel
+  still has no physical transition handler even though the separate mountain
+  destination now exists. The north remains the open sea
   edge and the east remains deliberately unbounded for a separate pass. One
   two-layer camera-relative presentation shell adds only west/south ridge silhouette at
   `39.4-43.2 m`, inside the unchanged `48 m` far plane; it keeps fixed world
@@ -106,7 +133,8 @@ The vertical slice contains:
   road cap beside lot `[12,11]` as an ordinary physical `4 m + 4 m` L. It does
   not add ground or extend a boundary along the yards/waterfront, so their
   authored approaches remain open.
-  Portal, throat and gate pieces deliberately retain `RuntimePrimitiveLit`;
+  Portal, physical entry and visual continuation pieces deliberately retain
+  `RuntimePrimitiveLit`;
 - one immutable default-only `CityFringeYardPlan` turns all five typed Yard
   areas into authored middle ground derived from their canonical bounds,
   declared access and sampled terrain. Four west/south variants share an old
@@ -129,23 +157,26 @@ The vertical slice contains:
   masonry at close range. Four small
   emissive practicals remain separate from the combined geometry, while the
   nearest supported anchor within `20 m` can lease the last existing street
-  Spot from `CityNightAtmosphere`; its `12`-Light pool is unchanged. The portal
-  profile uses that lease as a `150`-intensity, `16 m` Spot aimed down the
-  sealed throat from above the opening. The
+  Spot from `CityNightAtmosphere`; its `12`-Light pool is unchanged. The tunnel
+  moves that lease to the faulty second ceiling fixture, keeps a `0.22`
+  daytime floor and applies the same sparse flicker to its lens and pooled
+  light. Four additional emissive-only fixtures continue into the bend; the
+  faulty ballast owns a positional `5.6 m` buzz and crackles only on visible
+  power dips. The
   eastern variant stays a separate low, unlit road/drain/pole/shed/berm utility
   edge and creates no ridge. Large masses are physical, small traces and cables
   are visual only. Every physical ridge overlaps beneath its sampled terrain
-  toe and extends the near-toe collider across that join; only the sealed
+  toe and extends the near-toe collider across that join; only the open
   tunnel portal and low river water mouth interrupt the rock, while the bank
   ends close against it. Every level-safe ring-road seam into the four
   mountain Yards is walkable, while true drops retain rails; three `6 m` routes reserve
   capsule-clear cuts through the retaining line to the rock toe. Two use broad
   gravel aprons, while the south-east flood route uses a narrow embedded trace
-  on continuous terrain; the fourth route remains the sealed tunnel forecourt.
-  The plan adds no interaction,
-  destination, Light component, north/east mountain or
-  world-bounds expansion. Portal frame, throat and sealed gate remain owned by
-  `CityMountainBoundaryPlan`;
+  on continuous terrain; the fourth route continues through the open tunnel
+  forecourt. The fringe plan adds no destination, Light component,
+  north/east mountain or world-bounds expansion. Portal frame, segmented
+  lining, bounded navigation and future-travel decision remain owned by the
+  mountain/tunnel runtime contracts;
 - one immutable river contract splits that default urban envelope with a
   `10 m` channel. Two continuous `3 m` promenades flank it; an `8 m` Works
   road bridge and an `8 m` Mouth road bridge carry ordinary Street traffic
@@ -932,17 +963,34 @@ The vertical slice contains:
   comes directly from the canonical validated layout used by the world
   builder. It consumes `CityWorldResult.MountainBoundaryPlan`, expands its
   display bounds only toward west and south, explicitly including the visible
-  cave approach and tunnel throat, and draws each ridge as a toe-to-outer-foot
+  cave approach and the first `12 m` of the tunnel, and draws each ridge as a toe-to-outer-foot
   hatch while carrying only the visible narrow river approach into its
   mountain mouth. The hidden cave continuation is not drawn as open map space.
-  The closed portal uses a fixed `19 x 17`
-  high-contrast marker with a localized hover label; when its world position is
+  The open portal uses a fixed `19 x 17` uncrossed arch
+  marker with a localized hover label; when its world position is
   outside the scrolling viewport, the marker clamps to the visible edge as a
   direction indicator. North and east keep the layout's original map maxima.
   It also draws the canonical Route 01 loop as a blue ink-outlined
   line below the orange player itinerary, adds five numbered stop markers in
   the default layout with localized hover labels and keeps both symbols in a
   compact legend. The map deliberately has no live bus marker. With the
+  ordinary area tabs, City and Mountain Road can each be inspected as a
+  separate schematic; the player marker is drawn only on the current area's
+  tab. Confirming the other area requests a map arrival, Single-loads the black
+  `AreaLoading` scene, advances its progress bar and only then Single-loads the
+  destination. The source area is therefore unloaded before the destination
+  world is composed: City and Mountain Road are never resident or rendered
+  together. Mountain Road is drawn as its exit tunnel, winding route, two
+  hairpins, enlarged endpoint terminal and surrounding mountain hatch. Its
+  terminal plan also supplies distinct localized cafe and cableway landmarks;
+  the map does not infer them from runtime GameObjects. The physical terminal
+  keeps a clear `7.5 m` vehicle circle on its irregular roughly `42 x 27 m`
+  plateau. On the left, one five-sided Nighthawks-inspired glass cafe is
+  enterable without a scene load and stages four silent figures around its
+  counter. On the right, a `58 m` continuously looping cableway moves four
+  colliderless cabins over three grounded supports while its upper return is
+  hidden by a real snowy ridge. The cafe interior and lower station participate
+  in the shared weather-shelter query. With the
   test teleport enabled through the City F9 toggle or the Home F9 arrival,
   every map lot becomes selectable,
   the side panel asks for an explicit confirmation and a
