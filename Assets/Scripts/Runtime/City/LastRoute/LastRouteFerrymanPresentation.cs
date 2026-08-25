@@ -151,9 +151,15 @@ namespace BarPromenade
 
         public void Initialize(
             CityPedestrianAssetRegistry registry,
+            LastRouteFerrymanRigAnchors anchors,
             LastRouteFerrymanStance stance,
             LastRouteCarAssetRegistry car)
         {
+            if (anchors == null)
+            {
+                throw new ArgumentNullException(nameof(anchors));
+            }
+
             if (registry == null)
             {
                 throw new ArgumentNullException(nameof(registry));
@@ -192,8 +198,8 @@ namespace BarPromenade
             playbackSpeed = Mathf.Max(0.05f, stance.PlaybackSpeed);
             registry.ApplyPaletteVariant(stance.PaletteVariant);
 
-            perchPosition = stance.Position;
             perchRotation = Quaternion.LookRotation(stance.Facing, Vector3.up);
+            perchPosition = stance.Position;
 
             graph = PlayableGraph.Create("Last Route Ferryman");
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
@@ -216,6 +222,9 @@ namespace BarPromenade
             waitPlayable.SetTime(
                 Mathf.Repeat(stance.PhaseOffsetSeconds, wait.length));
             graph.Evaluate(0f);
+
+            SolvePerch(registry, anchors, stance);
+
             Phase = LastRouteFerrymanPhase.Waiting;
             transform.SetPositionAndRotation(perchPosition, perchRotation);
             IsInitialized = true;
@@ -293,6 +302,46 @@ namespace BarPromenade
             transform.SetPositionAndRotation(
                 previousPosition,
                 previousRotation);
+        }
+
+        /// <summary>
+        /// Sets him down on the car, now that the perch pose is evaluated.
+        ///
+        /// The model origin is the sole plane of the BIND pose - standing
+        /// straight - and the perch is nothing like it: both knees are up
+        /// on a bonnet, so the feet leave that plane entirely. Placing the
+        /// root on the soles anchor therefore left him hanging in the air
+        /// above the car with his coat draped on nothing.
+        ///
+        /// So the pelvis is placed instead, exactly as the driver's seat
+        /// is: Blender measured how far the pelvis rides above the lowest
+        /// drawn point of this pose and the prefab carries the number, so
+        /// putting the pelvis that far above the bumper puts his boots on
+        /// the bumper and - because the pose was converged against the
+        /// car's own 0.505 m bonnet drop - his backside on the bonnet.
+        /// Only the height is solved; where he sits along and across the
+        /// car is the anchor's business and is left alone.
+        /// </summary>
+        private void SolvePerch(
+            CityPedestrianAssetRegistry registry,
+            LastRouteFerrymanRigAnchors anchors,
+            LastRouteFerrymanStance stance)
+        {
+            if (anchors == null || anchors.PerchPelvisDrop <= 0f)
+            {
+                throw new InvalidOperationException(
+                    "The Ferryman prefab must carry a measured perch " +
+                    "pelvis drop; without it he cannot be set down.");
+            }
+
+            transform.SetPositionAndRotation(stance.Position, perchRotation);
+            graph.Evaluate(0f);
+
+            float targetPelvisY =
+                stance.Position.y + anchors.PerchPelvisDrop;
+            perchPosition = stance.Position +
+                            (Vector3.up *
+                             (targetPelvisY - registry.Pelvis.position.y));
         }
 
         private AnimationClipPlayable CreateClipPlayable(AnimationClip clip)

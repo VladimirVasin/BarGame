@@ -1,0 +1,18 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 8e05469386094c038eefd622f298af67, type: 3}
+  m_Name: MountainRoadCafeCastProvider
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.MountainRoadCafeCastProvider
+  lonePatronPrefab: {fileID: 5867363309768368238, guid: bf718fd7e094e0041a4e4a4b3942f585, type: 3}
+  pairManPrefab: {fileID: 663946243422956064, guid: 0731aedc0fa8ebb40b68d285eb9b6336, type: 3}
+  pairWomanPrefab: {fileID: 4980540669758797629, guid: f028dd8e1975fb646b1fb48bdb597ca5, type: 3}
+  attendantPrefab: {fileID: 5341111453057532531, guid: 49b7867b0b7f55140bf495d841f6a64a, type: 3}

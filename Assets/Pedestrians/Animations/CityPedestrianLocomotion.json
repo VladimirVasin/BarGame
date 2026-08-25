@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.1.0",
+  "generator_version": "3.2.0",
   "blender_version": "5.0.1",
   "skeleton_source": "PlayerCharacter3D exact A-pose v2.5.0",
   "bone_count": 31,
@@ -52,6 +52,30 @@
       "ground_max_contact_gap_m": 0.0
     },
     {
+      "name": "LampshadeSit",
+      "archetype": "lampshade_walker_v1",
+      "duration_seconds": 3.0,
+      "frame_start": 0,
+      "frame_end": 72,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "seated C-curve, shade tipped forward over folded knees",
+      "gait": "settled seated breath that never straightens the spine",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "seated_headroom_m": 1.029737,
+      "seated_drop_m": 0.355893,
+      "seated_contact_m": 0.06126,
+      "seated_floor_drop_limit_m": 0.41
+    },
+    {
       "name": "ChairCarrierIdle",
       "archetype": "chair_carrier_v1",
       "duration_seconds": 1.5,
@@ -92,6 +116,30 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "ChairCarrierSit",
+      "archetype": "chair_carrier_v1",
+      "duration_seconds": 2.5,
+      "frame_start": 0,
+      "frame_end": 60,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "upright seated spine, the inverted chair still shouldered",
+      "gait": "small seated correction that keeps the chair balanced",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "seated_headroom_m": 1.055113,
+      "seated_drop_m": 0.365917,
+      "seated_contact_m": 0.067418,
+      "seated_floor_drop_limit_m": 0.41
     },
     {
       "name": "KettleHatIdle",
@@ -136,6 +184,30 @@
       "ground_max_contact_gap_m": 0.0
     },
     {
+      "name": "KettleHatSit",
+      "archetype": "kettle_hat_walker_v1",
+      "duration_seconds": 2.75,
+      "frame_start": 0,
+      "frame_end": 66,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "stout seated stance, short legs hanging clear of the floor",
+      "gait": "counter-phased belly and kettle sway with the legs at rest",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "seated_headroom_m": 1.050193,
+      "seated_drop_m": 0.373993,
+      "seated_contact_m": 0.141043,
+      "seated_floor_drop_limit_m": 0.41
+    },
+    {
       "name": "LongArmIdle",
       "archetype": "long_arm_walker_v1",
       "duration_seconds": 2.5,
@@ -178,78 +250,6 @@
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "hand_min_clearance_m": 0.106255
-    },
-    {
-      "name": "LampshadeSit",
-      "archetype": "lampshade_walker_v1",
-      "duration_seconds": 3.0,
-      "frame_start": 0,
-      "frame_end": 72,
-      "loop": true,
-      "one_shot": false,
-      "in_place": true,
-      "authored_posture": "seated C-curve, shade tipped forward over folded knees",
-      "gait": "settled seated breath that never straightens the spine",
-      "keyed_bone_count": 31,
-      "loop_max_error": 0.0,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "seated": true,
-      "seated_headroom_m": 1.029737,
-      "seated_drop_m": 0.355893,
-      "seated_contact_m": 0.06126,
-      "seated_floor_drop_limit_m": 0.41
-    },
-    {
-      "name": "ChairCarrierSit",
-      "archetype": "chair_carrier_v1",
-      "duration_seconds": 2.5,
-      "frame_start": 0,
-      "frame_end": 60,
-      "loop": true,
-      "one_shot": false,
-      "in_place": true,
-      "authored_posture": "upright seated spine, the inverted chair still shouldered",
-      "gait": "small seated correction that keeps the chair balanced",
-      "keyed_bone_count": 31,
-      "loop_max_error": 0.0,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "seated": true,
-      "seated_headroom_m": 1.055113,
-      "seated_drop_m": 0.365917,
-      "seated_contact_m": 0.067418,
-      "seated_floor_drop_limit_m": 0.41
-    },
-    {
-      "name": "KettleHatSit",
-      "archetype": "kettle_hat_walker_v1",
-      "duration_seconds": 2.75,
-      "frame_start": 0,
-      "frame_end": 66,
-      "loop": true,
-      "one_shot": false,
-      "in_place": true,
-      "authored_posture": "stout seated stance, short legs hanging clear of the floor",
-      "gait": "counter-phased belly and kettle sway with the legs at rest",
-      "keyed_bone_count": 31,
-      "loop_max_error": 0.0,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
-      ],
-      "seated": true,
-      "seated_headroom_m": 1.050193,
-      "seated_drop_m": 0.373993,
-      "seated_contact_m": 0.141043,
-      "seated_floor_drop_limit_m": 0.41
     },
     {
       "name": "LongArmSit",
@@ -587,7 +587,7 @@
       "one_shot": false,
       "in_place": true,
       "authored_posture": "perched on the car's bonnet, right hand braced behind the hip, left forearm up with the palm open",
-      "gait": "four slow breaths and one coin flicked up and caught, released at 1/16 of the loop and caught at 5/16",
+      "gait": "four slow breaths, one coin flicked up and caught - released at 1/16 of the loop and caught at 5/16 - and three idle kicks of one leg at a time off the bumper",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
@@ -597,13 +597,14 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.507748,
-      "perch_seat_height_max_m": 0.507748,
-      "perch_pelvis_lift_m": -0.022032,
+      "perch_seat_height_min_m": 0.509661,
+      "perch_seat_height_max_m": 0.510643,
+      "perch_pelvis_lift_m": -0.024335,
       "perch_contact_parts": [
+        "GEO_BootSole.L",
         "GEO_BootSole.R"
       ],
-      "seated_drop_m": 0.485715
+      "seated_drop_m": 0.486308
     },
     {
       "name": "FerrymanTrudge",
@@ -638,7 +639,7 @@
       "authored_posture": "off the bonnet, one push from the bracing hand, into the seat",
       "gait": "a hard shove down off the metal, a half turn, and a drop into the driver's seat with both hands arriving on the wheel",
       "keyed_bone_count": 31,
-      "loop_max_error": 0.564208,
+      "loop_max_error": 0.573442,
       "root_translation_range_m": [
         0.0,
         0.0,
@@ -824,5 +825,5 @@
       "seated_drop_m": 0.602997
     }
   ],
-  "build_signature": "6adfaeea134675f9700a924340c84b18e0309b5a5378437713d307932ab3813a"
+  "build_signature": "3ee6a4c4c1e4b5a608bc2685d63598d660317238973478c27c4e21a856126bc3"
 }

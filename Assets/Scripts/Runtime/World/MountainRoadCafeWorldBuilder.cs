@@ -40,7 +40,6 @@ namespace BarPromenade
         private const float DoorHeight = 2.28f;
         private const float FloorVisualOffset = 0.036f;
         private const float RoofThickness = 0.22f;
-        private const float SeatHeight = 0.46f;
 
         private static readonly Color Facade =
             new Color(0.035f, 0.075f, 0.068f, 1f);
@@ -543,7 +542,17 @@ namespace BarPromenade
             MountainRoadCafePlan plan,
             Transform parent)
         {
-            float[] rightOffsets = { -1.25f, 0.65f, 2.25f };
+            // Two unoccupied seats are structural negative space: one
+            // separates the solitary patron from the couple, the other
+            // finishes the row at the bend without becoming another spawn.
+            float[] rightOffsets =
+            {
+                -1.50f,
+                -0.38f,
+                0.75f,
+                1.80f,
+                3.00f
+            };
             for (int index = 0; index < rightOffsets.Length; index++)
             {
                 Transform stool = new GameObject(
@@ -745,7 +754,9 @@ namespace BarPromenade
             MountainRoadCafePlan plan,
             Transform parent)
         {
-            float[] offsets = { -1.25f, 0.65f, 2.25f };
+            // Only occupied places own cups. Empty stools remain visibly
+            // intentional instead of reading as two more missing NPCs.
+            float[] offsets = { -1.50f, 0.75f, 1.80f };
             for (int index = 0; index < offsets.Length; index++)
             {
                 Vector3 place = Local(
@@ -845,276 +856,11 @@ namespace BarPromenade
             Transform parent,
             IDictionary<string, Transform> semanticAnchors)
         {
-            var presentations = new List<CityPedestrianPresentation>(
-                TableauNpcCount);
-            IReadOnlyList<CityPedestrianArchetype> archetypes =
-                CityPedestrianResources.Archetypes;
-            var specs = new[]
-            {
-                new TableauSpec(
-                    "Lone Patron",
-                    LonePatronAnchorId,
-                    -1.25f,
-                    -2.18f,
-                    plan.Forward,
-                    true,
-                    0,
-                    2),
-                new TableauSpec(
-                    "Pair Patron A",
-                    PairFirstAnchorId,
-                    0.65f,
-                    -2.18f,
-                    plan.Forward,
-                    true,
-                    Mathf.Min(3, archetypes.Count - 1),
-                    3),
-                new TableauSpec(
-                    "Pair Patron B",
-                    PairSecondAnchorId,
-                    2.25f,
-                    -2.18f,
-                    plan.Forward,
-                    true,
-                    Mathf.Min(2, archetypes.Count - 1),
-                    1),
-                new TableauSpec(
-                    "White Attendant",
-                    AttendantAnchorId,
-                    2.25f,
-                    -0.16f,
-                    -plan.Forward,
-                    false,
-                    0,
-                    0)
-            };
-
-            for (int index = 0; index < specs.Length; index++)
-            {
-                BuildTableauFigure(
-                    plan,
-                    parent,
-                    archetypes,
-                    specs[index],
-                    presentations,
-                    semanticAnchors);
-            }
-
-            MountainRoadCafeTableauAnimator animator =
-                parent.gameObject.AddComponent<
-                    MountainRoadCafeTableauAnimator>();
-            animator.Initialize(presentations);
-        }
-
-        private static void BuildTableauFigure(
-            MountainRoadCafePlan plan,
-            Transform parent,
-            IReadOnlyList<CityPedestrianArchetype> archetypes,
-            TableauSpec spec,
-            ICollection<CityPedestrianPresentation> presentations,
-            IDictionary<string, Transform> semanticAnchors)
-        {
-            Vector3 position = Local(
-                plan,
-                spec.Right,
-                0f,
-                spec.Forward);
-            Quaternion rotation = Quaternion.LookRotation(
-                spec.Facing,
-                Vector3.up);
-            CityPedestrianArchetype requested =
-                archetypes.Count > 0
-                    ? archetypes[Mathf.Clamp(
-                        spec.ArchetypeIndex,
-                        0,
-                        archetypes.Count - 1)]
-                    : null;
-
-            if (requested == null ||
-                !TryBuildResourceFigure(
-                    parent,
-                    requested,
-                    spec,
-                    position,
-                    rotation,
-                    presentations,
-                    out Transform figure))
-            {
-                figure = BuildFallbackFigure(
-                    parent,
-                    spec,
-                    position,
-                    rotation);
-            }
-
-            semanticAnchors.Add(spec.StableId, figure);
-        }
-
-        private static bool TryBuildResourceFigure(
-            Transform parent,
-            CityPedestrianArchetype requested,
-            TableauSpec spec,
-            Vector3 position,
-            Quaternion rotation,
-            ICollection<CityPedestrianPresentation> presentations,
-            out Transform figure)
-        {
-            GameObject prefab = CityPedestrianResources.LoadPrefab(requested);
-            if (!CityPedestrianResources.TryInstantiate(
-                    prefab,
-                    parent,
-                    out CityPedestrianAssetRegistry registry))
-            {
-                figure = null;
-                return false;
-            }
-
-            if (registry.Animator == null ||
-                registry.IdleClip == null ||
-                registry.WalkClip == null ||
-                spec.Seated && registry.SitClip == null)
-            {
-                CityPedestrianResources.DestroyObject(registry.gameObject);
-                figure = null;
-                return false;
-            }
-
-            registry.gameObject.name = spec.Name;
-            registry.transform.position = position;
-            registry.transform.rotation = rotation;
-            registry.ApplyPaletteVariant(spec.PaletteVariant);
-            DisableNpcPhysicsAndLights(registry.gameObject);
-
-            CityPedestrianPresentation presentation =
-                registry.GetComponent<CityPedestrianPresentation>();
-            if (presentation == null)
-            {
-                presentation = registry.gameObject.AddComponent<
-                    CityPedestrianPresentation>();
-            }
-
-            if (!presentation.IsInitialized)
-            {
-                presentation.Initialize(registry);
-            }
-
-            presentation.SetMoving(false, true);
-            if (spec.Seated)
-            {
-                if (!CityPedestrianResources.TryGetArchetype(
-                        registry.DesignId,
-                        out CityPedestrianArchetype actual) ||
-                    actual.SeatedRide == null)
-                {
-                    CityPedestrianResources.DestroyObject(
-                        registry.gameObject);
-                    figure = null;
-                    return false;
-                }
-
-                var seat = new GameObject(spec.Name + " Seat Anchor");
-                seat.transform.SetParent(parent, false);
-                seat.transform.position = position +
-                    Vector3.up * SeatHeight;
-                seat.transform.rotation = rotation;
-                if (!presentation.TrySeat(
-                        seat.transform,
-                        actual.SeatedRide))
-                {
-                    CityPedestrianResources.DestroyObject(
-                        registry.gameObject);
-                    if (Application.isPlaying)
-                    {
-                        UnityEngine.Object.Destroy(seat);
-                    }
-                    else
-                    {
-                        UnityEngine.Object.DestroyImmediate(seat);
-                    }
-
-                    figure = null;
-                    return false;
-                }
-            }
-
-            presentation.Advance(0f, false, true);
-            presentations.Add(presentation);
-            figure = registry.transform;
-            return true;
-        }
-
-        private static void DisableNpcPhysicsAndLights(GameObject figure)
-        {
-            Collider[] colliders =
-                figure.GetComponentsInChildren<Collider>(true);
-            for (int index = 0; index < colliders.Length; index++)
-            {
-                colliders[index].enabled = false;
-            }
-
-            Light[] lights = figure.GetComponentsInChildren<Light>(true);
-            for (int index = 0; index < lights.Length; index++)
-            {
-                lights[index].enabled = false;
-            }
-        }
-
-        private static Transform BuildFallbackFigure(
-            Transform parent,
-            TableauSpec spec,
-            Vector3 position,
-            Quaternion rotation)
-        {
-            Transform root = new GameObject(
-                spec.Name + " Low-Poly Fallback").transform;
-            root.SetParent(parent, false);
-            root.position = position;
-            root.rotation = rotation;
-            Color coat = spec.Name.IndexOf(
-                    "Attendant",
-                    StringComparison.Ordinal) >= 0
-                ? new Color(0.68f, 0.66f, 0.54f, 1f)
-                : new Color(0.12f + spec.PaletteVariant * 0.035f,
-                    0.13f,
-                    0.14f + spec.PaletteVariant * 0.025f,
-                    1f);
-            float hipHeight = spec.Seated ? 0.72f : 0.92f;
-            RuntimePrimitiveFactory.CreateBox(
-                "Fallback Torso",
-                root,
-                new Vector3(0f, hipHeight + 0.36f, 0f),
-                new Vector3(0.50f, 0.72f, 0.28f),
-                coat,
-                false);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Fallback Head",
-                root,
-                new Vector3(0f, hipHeight + 0.88f, 0f),
-                new Vector3(0.32f, 0.19f, 0.32f),
-                new Color(0.52f, 0.39f, 0.27f, 1f),
-                false);
-            if (spec.Seated)
-            {
-                RuntimePrimitiveFactory.CreateBox(
-                    "Fallback Seated Legs",
-                    root,
-                    new Vector3(0f, 0.47f, 0.20f),
-                    new Vector3(0.40f, 0.46f, 0.30f),
-                    coat * 0.72f,
-                    false);
-            }
-            else
-            {
-                RuntimePrimitiveFactory.CreateBox(
-                    "Fallback Standing Legs",
-                    root,
-                    new Vector3(0f, 0.46f, 0f),
-                    new Vector3(0.38f, 0.88f, 0.25f),
-                    coat * 0.72f,
-                    false);
-            }
-
-            return root;
+            MountainRoadCafeCastFactory.Create(
+                parent,
+                MountainRoadCafeCastPlan.Create(plan),
+                semanticAnchors,
+                StableSeed(plan.StableId));
         }
 
         private static Vector3[] GetFootprint(MountainRoadCafePlan plan)
@@ -1242,37 +988,6 @@ namespace BarPromenade
             public float Depth => MaximumForward - MinimumForward;
         }
 
-        private readonly struct TableauSpec
-        {
-            public TableauSpec(
-                string name,
-                string stableId,
-                float right,
-                float forward,
-                Vector3 facing,
-                bool seated,
-                int archetypeIndex,
-                int paletteVariant)
-            {
-                Name = name;
-                StableId = stableId;
-                Right = right;
-                Forward = forward;
-                Facing = facing;
-                Seated = seated;
-                ArchetypeIndex = archetypeIndex;
-                PaletteVariant = paletteVariant;
-            }
-
-            public string Name { get; }
-            public string StableId { get; }
-            public float Right { get; }
-            public float Forward { get; }
-            public Vector3 Facing { get; }
-            public bool Seated { get; }
-            public int ArchetypeIndex { get; }
-            public int PaletteVariant { get; }
-        }
     }
 
 }

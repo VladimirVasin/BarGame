@@ -61,6 +61,7 @@ MonoBehaviour:
   - {fileID: 6498270056755392365}
   - {fileID: 3627279124408523465}
   - {fileID: 125539622039208979}
+  - {fileID: 703194341265547792}
   - {fileID: 3246240093398258934}
   - {fileID: 4507219526572924475}
   - {fileID: 8212495550493172090}
@@ -102,18 +103,18 @@ MonoBehaviour:
     role: signature_silhouette
     paletteName: ferry_cap
     renderer: {fileID: 3145605603983069240}
-    baseColor: {r: 0.048, g: 0.05, b: 0.054, a: 1}
-    variantOneColor: {r: 0.040319998, g: 0.046, b: 0.05562, a: 1}
-    variantTwoColor: {r: 0.050399996, g: 0.044, b: 0.04212, a: 1}
-    variantThreeColor: {r: 0.04512, g: 0.05, b: 0.04644, a: 1}
+    baseColor: {r: 0.068, g: 0.071, b: 0.076, a: 1}
+    variantOneColor: {r: 0.057120003, g: 0.06532, b: 0.078279994, a: 1}
+    variantTwoColor: {r: 0.0714, g: 0.062480003, b: 0.059279997, a: 1}
+    variantThreeColor: {r: 0.063920006, g: 0.071, b: 0.06536, a: 1}
   - rendererName: ACC_CapCrown
     role: signature_silhouette
     paletteName: ferry_cap
     renderer: {fileID: 9209955350451527619}
-    baseColor: {r: 0.048, g: 0.05, b: 0.054, a: 1}
-    variantOneColor: {r: 0.040319998, g: 0.046, b: 0.05562, a: 1}
-    variantTwoColor: {r: 0.050399996, g: 0.044, b: 0.04212, a: 1}
-    variantThreeColor: {r: 0.04512, g: 0.05, b: 0.04644, a: 1}
+    baseColor: {r: 0.068, g: 0.071, b: 0.076, a: 1}
+    variantOneColor: {r: 0.057120003, g: 0.06532, b: 0.078279994, a: 1}
+    variantTwoColor: {r: 0.0714, g: 0.062480003, b: 0.059279997, a: 1}
+    variantThreeColor: {r: 0.063920006, g: 0.071, b: 0.06536, a: 1}
   - rendererName: ACC_Jaw
     role: face_detail
     paletteName: ferry_skin
@@ -150,146 +151,154 @@ MonoBehaviour:
     role: face_detail
     paletteName: ferry_coat_dark
     renderer: {fileID: 1916587358149580488}
-    baseColor: {r: 0.03, g: 0.032, b: 0.035, a: 1}
-    variantOneColor: {r: 0.025199998, g: 0.029440003, b: 0.03605, a: 1}
-    variantTwoColor: {r: 0.031499997, g: 0.028160002, b: 0.027299998, a: 1}
-    variantThreeColor: {r: 0.028199999, g: 0.032, b: 0.030100001, a: 1}
+    baseColor: {r: 0.046, g: 0.049, b: 0.053, a: 1}
+    variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
+    variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
+    variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
   - rendererName: CLO_CoatChest
     role: body
     paletteName: ferry_coat
     renderer: {fileID: 6498270056755392365}
-    baseColor: {r: 0.055, g: 0.058, b: 0.062, a: 1}
-    variantOneColor: {r: 0.0462, g: 0.05336, b: 0.06386, a: 1}
-    variantTwoColor: {r: 0.057749998, g: 0.051039997, b: 0.048359998, a: 1}
-    variantThreeColor: {r: 0.0517, g: 0.058, b: 0.05332, a: 1}
+    baseColor: {r: 0.078, g: 0.082, b: 0.088, a: 1}
+    variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
+    variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
+    variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
   - rendererName: CLO_CoatFacing
     role: clothing
     paletteName: ferry_coat_dark
     renderer: {fileID: 3627279124408523465}
-    baseColor: {r: 0.03, g: 0.032, b: 0.035, a: 1}
-    variantOneColor: {r: 0.025199998, g: 0.029440003, b: 0.03605, a: 1}
-    variantTwoColor: {r: 0.031499997, g: 0.028160002, b: 0.027299998, a: 1}
-    variantThreeColor: {r: 0.028199999, g: 0.032, b: 0.030100001, a: 1}
+    baseColor: {r: 0.046, g: 0.049, b: 0.053, a: 1}
+    variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
+    variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
+    variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
   - rendererName: CLO_CoatHem
     role: clothing
     paletteName: ferry_coat_dark
     renderer: {fileID: 125539622039208979}
-    baseColor: {r: 0.03, g: 0.032, b: 0.035, a: 1}
-    variantOneColor: {r: 0.025199998, g: 0.029440003, b: 0.03605, a: 1}
-    variantTwoColor: {r: 0.031499997, g: 0.028160002, b: 0.027299998, a: 1}
-    variantThreeColor: {r: 0.028199999, g: 0.032, b: 0.030100001, a: 1}
+    baseColor: {r: 0.046, g: 0.049, b: 0.053, a: 1}
+    variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
+    variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
+    variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+  - rendererName: CLO_CoatSeat
+    role: body
+    paletteName: ferry_coat_dark
+    renderer: {fileID: 703194341265547792}
+    baseColor: {r: 0.046, g: 0.049, b: 0.053, a: 1}
+    variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
+    variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
+    variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
   - rendererName: CLO_CoatWaist
     role: body
     paletteName: ferry_coat
     renderer: {fileID: 3246240093398258934}
-    baseColor: {r: 0.055, g: 0.058, b: 0.062, a: 1}
-    variantOneColor: {r: 0.0462, g: 0.05336, b: 0.06386, a: 1}
-    variantTwoColor: {r: 0.057749998, g: 0.051039997, b: 0.048359998, a: 1}
-    variantThreeColor: {r: 0.0517, g: 0.058, b: 0.05332, a: 1}
+    baseColor: {r: 0.078, g: 0.082, b: 0.088, a: 1}
+    variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
+    variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
+    variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
   - rendererName: CLO_Collar
     role: clothing
     paletteName: ferry_coat_dark
     renderer: {fileID: 4507219526572924475}
-    baseColor: {r: 0.03, g: 0.032, b: 0.035, a: 1}
-    variantOneColor: {r: 0.025199998, g: 0.029440003, b: 0.03605, a: 1}
-    variantTwoColor: {r: 0.031499997, g: 0.028160002, b: 0.027299998, a: 1}
-    variantThreeColor: {r: 0.028199999, g: 0.032, b: 0.030100001, a: 1}
+    baseColor: {r: 0.046, g: 0.049, b: 0.053, a: 1}
+    variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
+    variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
+    variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
   - rendererName: CLO_Sleeve.L
     role: clothing
     paletteName: ferry_coat
     renderer: {fileID: 8212495550493172090}
-    baseColor: {r: 0.055, g: 0.058, b: 0.062, a: 1}
-    variantOneColor: {r: 0.0462, g: 0.05336, b: 0.06386, a: 1}
-    variantTwoColor: {r: 0.057749998, g: 0.051039997, b: 0.048359998, a: 1}
-    variantThreeColor: {r: 0.0517, g: 0.058, b: 0.05332, a: 1}
+    baseColor: {r: 0.078, g: 0.082, b: 0.088, a: 1}
+    variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
+    variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
+    variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
   - rendererName: CLO_Sleeve.R
     role: clothing
     paletteName: ferry_coat
     renderer: {fileID: 1087937956071448624}
-    baseColor: {r: 0.055, g: 0.058, b: 0.062, a: 1}
-    variantOneColor: {r: 0.0462, g: 0.05336, b: 0.06386, a: 1}
-    variantTwoColor: {r: 0.057749998, g: 0.051039997, b: 0.048359998, a: 1}
-    variantThreeColor: {r: 0.0517, g: 0.058, b: 0.05332, a: 1}
+    baseColor: {r: 0.078, g: 0.082, b: 0.088, a: 1}
+    variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
+    variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
+    variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
   - rendererName: CLO_SleeveCuff.L
     role: clothing
     paletteName: ferry_coat_dark
     renderer: {fileID: 716423163308828763}
-    baseColor: {r: 0.03, g: 0.032, b: 0.035, a: 1}
-    variantOneColor: {r: 0.025199998, g: 0.029440003, b: 0.03605, a: 1}
-    variantTwoColor: {r: 0.031499997, g: 0.028160002, b: 0.027299998, a: 1}
-    variantThreeColor: {r: 0.028199999, g: 0.032, b: 0.030100001, a: 1}
+    baseColor: {r: 0.046, g: 0.049, b: 0.053, a: 1}
+    variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
+    variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
+    variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
   - rendererName: CLO_SleeveCuff.R
     role: clothing
     paletteName: ferry_coat_dark
     renderer: {fileID: 3782770885043098884}
-    baseColor: {r: 0.03, g: 0.032, b: 0.035, a: 1}
-    variantOneColor: {r: 0.025199998, g: 0.029440003, b: 0.03605, a: 1}
-    variantTwoColor: {r: 0.031499997, g: 0.028160002, b: 0.027299998, a: 1}
-    variantThreeColor: {r: 0.028199999, g: 0.032, b: 0.030100001, a: 1}
+    baseColor: {r: 0.046, g: 0.049, b: 0.053, a: 1}
+    variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
+    variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
+    variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
   - rendererName: CLO_SleeveLower.L
     role: clothing
     paletteName: ferry_coat
     renderer: {fileID: 3892028742357452412}
-    baseColor: {r: 0.055, g: 0.058, b: 0.062, a: 1}
-    variantOneColor: {r: 0.0462, g: 0.05336, b: 0.06386, a: 1}
-    variantTwoColor: {r: 0.057749998, g: 0.051039997, b: 0.048359998, a: 1}
-    variantThreeColor: {r: 0.0517, g: 0.058, b: 0.05332, a: 1}
+    baseColor: {r: 0.078, g: 0.082, b: 0.088, a: 1}
+    variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
+    variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
+    variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
   - rendererName: CLO_SleeveLower.R
     role: clothing
     paletteName: ferry_coat
     renderer: {fileID: 2804640602914410210}
-    baseColor: {r: 0.055, g: 0.058, b: 0.062, a: 1}
-    variantOneColor: {r: 0.0462, g: 0.05336, b: 0.06386, a: 1}
-    variantTwoColor: {r: 0.057749998, g: 0.051039997, b: 0.048359998, a: 1}
-    variantThreeColor: {r: 0.0517, g: 0.058, b: 0.05332, a: 1}
+    baseColor: {r: 0.078, g: 0.082, b: 0.088, a: 1}
+    variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
+    variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
+    variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
   - rendererName: CLO_TrouserLower.L
     role: clothing
     paletteName: ferry_coat_dark
     renderer: {fileID: 8794343375031907668}
-    baseColor: {r: 0.03, g: 0.032, b: 0.035, a: 1}
-    variantOneColor: {r: 0.025199998, g: 0.029440003, b: 0.03605, a: 1}
-    variantTwoColor: {r: 0.031499997, g: 0.028160002, b: 0.027299998, a: 1}
-    variantThreeColor: {r: 0.028199999, g: 0.032, b: 0.030100001, a: 1}
+    baseColor: {r: 0.046, g: 0.049, b: 0.053, a: 1}
+    variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
+    variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
+    variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
   - rendererName: CLO_TrouserLower.R
     role: clothing
     paletteName: ferry_coat_dark
     renderer: {fileID: 990946509818743707}
-    baseColor: {r: 0.03, g: 0.032, b: 0.035, a: 1}
-    variantOneColor: {r: 0.025199998, g: 0.029440003, b: 0.03605, a: 1}
-    variantTwoColor: {r: 0.031499997, g: 0.028160002, b: 0.027299998, a: 1}
-    variantThreeColor: {r: 0.028199999, g: 0.032, b: 0.030100001, a: 1}
+    baseColor: {r: 0.046, g: 0.049, b: 0.053, a: 1}
+    variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
+    variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
+    variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
   - rendererName: CLO_TrouserUpper.L
     role: clothing
     paletteName: ferry_coat_dark
     renderer: {fileID: 4214947396294885780}
-    baseColor: {r: 0.03, g: 0.032, b: 0.035, a: 1}
-    variantOneColor: {r: 0.025199998, g: 0.029440003, b: 0.03605, a: 1}
-    variantTwoColor: {r: 0.031499997, g: 0.028160002, b: 0.027299998, a: 1}
-    variantThreeColor: {r: 0.028199999, g: 0.032, b: 0.030100001, a: 1}
+    baseColor: {r: 0.046, g: 0.049, b: 0.053, a: 1}
+    variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
+    variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
+    variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
   - rendererName: CLO_TrouserUpper.R
     role: clothing
     paletteName: ferry_coat_dark
     renderer: {fileID: 4515841589450565005}
-    baseColor: {r: 0.03, g: 0.032, b: 0.035, a: 1}
-    variantOneColor: {r: 0.025199998, g: 0.029440003, b: 0.03605, a: 1}
-    variantTwoColor: {r: 0.031499997, g: 0.028160002, b: 0.027299998, a: 1}
-    variantThreeColor: {r: 0.028199999, g: 0.032, b: 0.030100001, a: 1}
+    baseColor: {r: 0.046, g: 0.049, b: 0.053, a: 1}
+    variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
+    variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
+    variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
   - rendererName: GEO_Boot.L
     role: body
     paletteName: ferry_boot
     renderer: {fileID: 7076453714381856582}
-    baseColor: {r: 0.058, g: 0.052, b: 0.046, a: 1}
-    variantOneColor: {r: 0.04872, g: 0.047840003, b: 0.04738, a: 1}
-    variantTwoColor: {r: 0.060899995, g: 0.045760002, b: 0.03588, a: 1}
-    variantThreeColor: {r: 0.05452, g: 0.052, b: 0.03956, a: 1}
+    baseColor: {r: 0.076, g: 0.068, b: 0.06, a: 1}
+    variantOneColor: {r: 0.063839994, g: 0.06256001, b: 0.061799996, a: 1}
+    variantTwoColor: {r: 0.079799995, g: 0.05984, b: 0.0468, a: 1}
+    variantThreeColor: {r: 0.07144, g: 0.068, b: 0.051599998, a: 1}
   - rendererName: GEO_Boot.R
     role: body
     paletteName: ferry_boot
     renderer: {fileID: 1114437390730657616}
-    baseColor: {r: 0.058, g: 0.052, b: 0.046, a: 1}
-    variantOneColor: {r: 0.04872, g: 0.047840003, b: 0.04738, a: 1}
-    variantTwoColor: {r: 0.060899995, g: 0.045760002, b: 0.03588, a: 1}
-    variantThreeColor: {r: 0.05452, g: 0.052, b: 0.03956, a: 1}
+    baseColor: {r: 0.076, g: 0.068, b: 0.06, a: 1}
+    variantOneColor: {r: 0.063839994, g: 0.06256001, b: 0.061799996, a: 1}
+    variantTwoColor: {r: 0.079799995, g: 0.05984, b: 0.0468, a: 1}
+    variantThreeColor: {r: 0.07144, g: 0.068, b: 0.051599998, a: 1}
   - rendererName: GEO_BootSole.L
     role: body
     paletteName: sole
@@ -349,10 +358,10 @@ MonoBehaviour:
   localBounds:
     m_Center: {x: -0.000000059604645, y: 0.875, z: 0.03699997}
     m_Extent: {x: 0.75900006, y: 0.875, z: 0.177}
-  sourceTriangleCount: 980
-  sourceGeneratorVersion: 3.1.0
+  sourceTriangleCount: 992
+  sourceGeneratorVersion: 3.2.0
   designId: last_route_ferryman_v1
-  buildSignature: ee555fe306a51aea815f62a520d3d89e24c25f48d390388fd349780612eeed1d
+  buildSignature: 68798cce76009731f299b05c0fe28245868b997d4181bf0a955e0fd6b6efffde
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -373,6 +382,7 @@ MonoBehaviour:
   coatHemAnchor: {fileID: 7139910872144190408}
   coatHemRenderer: {fileID: 125539622039208979}
   coatHemSize: {x: 0.392, y: 0.134}
+  perchPelvisDrop: 0.486308
 --- !u!1 &8042384279453589400
 GameObject:
   m_ObjectHideFlags: 0
@@ -587,6 +597,10 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: 3429778213823478985, guid: 04e0947c16146c549829d5580bbe07b6, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 4378110811552499729, guid: 04e0947c16146c549829d5580bbe07b6, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
@@ -632,6 +646,11 @@ PrefabInstance:
 --- !u!137 &125539622039208979 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 2874768829983136458, guid: 04e0947c16146c549829d5580bbe07b6, type: 3}
+  m_PrefabInstance: {fileID: 2763867229595426521}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &703194341265547792 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3429778213823478985, guid: 04e0947c16146c549829d5580bbe07b6, type: 3}
   m_PrefabInstance: {fileID: 2763867229595426521}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &716423163308828763 stripped

@@ -2180,7 +2180,8 @@ namespace BarPromenade.Editor
                 walk,
                 sit,
                 action,
-                manifest);
+                manifest,
+                animationManifest);
         }
 
         public static void ValidateOrThrow()
@@ -3027,7 +3028,8 @@ namespace BarPromenade.Editor
             AnimationClip walk,
             AnimationClip sit,
             AnimationClip action,
-            CityPedestrianManifest manifest)
+            CityPedestrianManifest manifest,
+            CityPedestrianAnimationManifest animationManifest)
         {
             GameObject prefabRoot = new GameObject(descriptor.PrefabRootName);
             try
@@ -3282,6 +3284,29 @@ namespace BarPromenade.Editor
                         pelvisBone,
                         LastRouteFerrymanRigAnchors.CoatHemAnchorName,
                         BindPoseTopCenter(hemRenderer));
+
+                    // The one number the runtime cannot measure for
+                    // itself. Blender walks the posed meshes and reports
+                    // how far the pelvis rides above the lowest of them;
+                    // at runtime the equivalent would need skinned bounds,
+                    // which Unity does not recompute for a manually driven
+                    // graph. So it is carried, and the build fails here if
+                    // the clip stopped reporting it.
+                    CityPedestrianAnimationManifestClip perchClip =
+                        animationManifest.clips.FirstOrDefault(candidate =>
+                            candidate != null &&
+                            string.Equals(
+                                candidate.name,
+                                descriptor.IdleClipName,
+                                StringComparison.Ordinal));
+                    if (perchClip == null ||
+                        perchClip.seated_drop_m <= 0f)
+                    {
+                        throw new InvalidOperationException(
+                            $"'{descriptor.DisplayName}' needs a measured " +
+                            "seated_drop_m on its perched idle clip.");
+                    }
+
                     prefabRoot
                         .AddComponent<LastRouteFerrymanRigAnchors>()
                         .Configure(
@@ -3289,7 +3314,8 @@ namespace BarPromenade.Editor
                             coinAnchor,
                             hemAnchor,
                             hemRenderer,
-                            BindPoseLateralSize(hemRenderer));
+                            BindPoseLateralSize(hemRenderer),
+                            perchClip.seated_drop_m);
                 }
 
                 if (descriptor.IsWheelchair)
@@ -4215,6 +4241,15 @@ namespace BarPromenade.Editor
             public int keyed_bone_count;
             public float loop_max_error;
             public float[] root_translation_range_m;
+
+            /// <summary>
+            /// For a perched clip: how far the pelvis bone rides above the
+            /// LOWEST drawn point of the posed model - his boot sole. The
+            /// runtime needs exactly this to set him down, because the
+            /// model origin is the sole plane of the BIND pose and a
+            /// perched pose lifts the feet well clear of it.
+            /// </summary>
+            public float seated_drop_m;
             public float wheel_ground_min_m;
             public float wheel_ground_max_contact_gap_m;
             public float footrest_min_clearance_m;

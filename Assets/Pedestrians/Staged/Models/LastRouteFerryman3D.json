@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.1.0",
+  "generator_version": "3.2.0",
   "blender_version": "5.0.1",
   "design_id": "last_route_ferryman_v1",
   "display_name": "Last Route Ferryman",
@@ -9,8 +9,8 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 32,
-  "triangle_count": 980,
+  "mesh_count": 33,
+  "triangle_count": 992,
   "triangle_budget": [
     900,
     2200
@@ -50,7 +50,7 @@
     0.5,
     0.52
   ],
-  "build_signature": "ee555fe306a51aea815f62a520d3d89e24c25f48d390388fd349780612eeed1d",
+  "build_signature": "68798cce76009731f299b05c0fe28245868b997d4181bf0a955e0fd6b6efffde",
   "bones": [
     {
       "name": "root",
@@ -553,9 +553,9 @@
       "bone": "head",
       "palette_name": "ferry_cap",
       "base_color": [
-        0.048,
-        0.05,
-        0.054,
+        0.068,
+        0.071,
+        0.076,
         1.0
       ],
       "vertices": 8,
@@ -567,9 +567,9 @@
       "bone": "head",
       "palette_name": "ferry_cap",
       "base_color": [
-        0.048,
-        0.05,
-        0.054,
+        0.068,
+        0.071,
+        0.076,
         1.0
       ],
       "vertices": 8,
@@ -637,9 +637,9 @@
       "bone": "head",
       "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.03,
-        0.032,
-        0.035,
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
       "vertices": 8,
@@ -651,9 +651,9 @@
       "bone": "chest",
       "palette_name": "ferry_coat",
       "base_color": [
-        0.055,
-        0.058,
-        0.062,
+        0.078,
+        0.082,
+        0.088,
         1.0
       ],
       "vertices": 8,
@@ -665,9 +665,9 @@
       "bone": "spine",
       "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.03,
-        0.032,
-        0.035,
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
       "vertices": 8,
@@ -679,9 +679,23 @@
       "bone": "pelvis",
       "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.03,
-        0.032,
-        0.035,
+        0.046,
+        0.049,
+        0.053,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_CoatSeat",
+      "role": "body",
+      "bone": "pelvis",
+      "palette_name": "ferry_coat_dark",
+      "base_color": [
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
       "vertices": 8,
@@ -693,9 +707,9 @@
       "bone": "spine",
       "palette_name": "ferry_coat",
       "base_color": [
-        0.055,
-        0.058,
-        0.062,
+        0.078,
+        0.082,
+        0.088,
         1.0
       ],
       "vertices": 8,
@@ -707,9 +721,9 @@
       "bone": "neck",
       "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.03,
-        0.032,
-        0.035,
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
       "vertices": 20,
@@ -721,9 +735,9 @@
       "bone": "upper_arm.L",
       "palette_name": "ferry_coat",
       "base_color": [
-        0.055,
-        0.058,
-        0.062,
+        0.078,
+        0.082,
+        0.088,
         1.0
       ],
       "vertices": 20,
@@ -735,9 +749,9 @@
       "bone": "upper_arm.R",
       "palette_name": "ferry_coat",
       "base_color": [
-        0.055,
-        0.058,
-        0.062,
+        0.078,
+        0.082,
+        0.088,
         1.0
       ],
       "vertices": 20,
@@ -749,9 +763,9 @@
       "bone": "forearm.L",
       "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.03,
-        0.032,
-        0.035,
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
       "vertices": 16,
@@ -763,9 +777,9 @@
       "bone": "forearm.R",
       "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.03,
-        0.032,
-        0.035,
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
       "vertices": 16,
@@ -777,9 +791,9 @@
       "bone": "forearm.L",
       "palette_name": "ferry_coat",
       "base_color": [
-        0.055,
-        0.058,
-        0.062,
+        0.078,
+        0.082,
+        0.088,
         1.0
       ],
       "vertices": 16,
@@ -791,9 +805,9 @@
       "bone": "forearm.R",
       "palette_name": "ferry_coat",
       "base_color": [
-        0.055,
-        0.058,
-        0.062,
+        0.078,
+        0.082,
+        0.088,
         1.0
       ],
       "vertices": 16,
@@ -805,9 +819,9 @@
       "bone": "shin.L",
       "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.03,
-        0.032,
-        0.035,
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
       "vertices": 16,
@@ -819,9 +833,9 @@
       "bone": "shin.R",
       "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.03,
-        0.032,
-        0.035,
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
       "vertices": 16,
@@ -833,9 +847,9 @@
       "bone": "thigh.L",
       "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.03,
-        0.032,
-        0.035,
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
       "vertices": 16,
@@ -847,9 +861,9 @@
       "bone": "thigh.R",
       "palette_name": "ferry_coat_dark",
       "base_color": [
-        0.03,
-        0.032,
-        0.035,
+        0.046,
+        0.049,
+        0.053,
         1.0
       ],
       "vertices": 16,
@@ -861,9 +875,9 @@
       "bone": "foot.L",
       "palette_name": "ferry_boot",
       "base_color": [
-        0.058,
-        0.052,
-        0.046,
+        0.076,
+        0.068,
+        0.06,
         1.0
       ],
       "vertices": 8,
@@ -875,9 +889,9 @@
       "bone": "foot.R",
       "palette_name": "ferry_boot",
       "base_color": [
-        0.058,
-        0.052,
-        0.046,
+        0.076,
+        0.068,
+        0.06,
         1.0
       ],
       "vertices": 8,

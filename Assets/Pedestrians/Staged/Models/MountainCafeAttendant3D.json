@@ -1,0 +1,1005 @@
+{
+  "generator": "tools/build-city-pedestrian-3d-model.py",
+  "generator_version": "3.2.0",
+  "blender_version": "5.0.1",
+  "design_id": "cafe_attendant_v1",
+  "display_name": "Cafe Attendant",
+  "seed": 1498303,
+  "height_m": 1.75,
+  "pose": "apose",
+  "forward_axis": "-Y",
+  "anatomical_left_axis": "+X",
+  "mesh_count": 35,
+  "triangle_count": 912,
+  "triangle_budget": [
+    900,
+    2000
+  ],
+  "staged": true,
+  "pool_eligible": false,
+  "wheel_radius_m": 0.0,
+  "pivot_names": [],
+  "bounds_min": [
+    -0.838,
+    -0.22,
+    0.0
+  ],
+  "bounds_max": [
+    0.767498,
+    0.1125,
+    1.75
+  ],
+  "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
+  "emissive": false,
+  "colliders": false,
+  "animation_count": 0,
+  "animations": [],
+  "shared_animation_source": "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx",
+  "shared_clips": [
+    "CafeAttendantIdle",
+    "CafeAttendantBeat"
+  ],
+  "rides_bus": false,
+  "seated_clearance_m": null,
+  "perch_seat_height_m": null,
+  "build_signature": "52bd173f9acdf967cd9972dac80d9510503a332978aa95063c82fd255f18fd52",
+  "bones": [
+    {
+      "name": "root",
+      "parent": "",
+      "head": [
+        0,
+        0,
+        0
+      ],
+      "tail": [
+        0,
+        0,
+        0.18
+      ],
+      "deform": false
+    },
+    {
+      "name": "pelvis",
+      "parent": "root",
+      "head": [
+        0,
+        0.008,
+        0.7
+      ],
+      "tail": [
+        0,
+        0.004,
+        0.9
+      ],
+      "deform": true
+    },
+    {
+      "name": "spine",
+      "parent": "pelvis",
+      "head": [
+        0,
+        0.004,
+        0.9
+      ],
+      "tail": [
+        0,
+        0,
+        1.12
+      ],
+      "deform": true
+    },
+    {
+      "name": "chest",
+      "parent": "spine",
+      "head": [
+        0,
+        0,
+        1.12
+      ],
+      "tail": [
+        0,
+        -0.01,
+        1.335
+      ],
+      "deform": true
+    },
+    {
+      "name": "neck",
+      "parent": "chest",
+      "head": [
+        0,
+        -0.01,
+        1.335
+      ],
+      "tail": [
+        0,
+        -0.025,
+        1.43
+      ],
+      "deform": true
+    },
+    {
+      "name": "head",
+      "parent": "neck",
+      "head": [
+        0,
+        -0.025,
+        1.43
+      ],
+      "tail": [
+        0,
+        -0.05,
+        1.675
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.eye.L",
+      "parent": "head",
+      "head": [
+        0.052,
+        -0.147,
+        1.581
+      ],
+      "tail": [
+        0.052,
+        -0.147,
+        1.599
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.eye.R",
+      "parent": "head",
+      "head": [
+        -0.052,
+        -0.147,
+        1.581
+      ],
+      "tail": [
+        -0.052,
+        -0.147,
+        1.599
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.brow.L",
+      "parent": "head",
+      "head": [
+        0.082,
+        -0.154,
+        1.627
+      ],
+      "tail": [
+        0.027,
+        -0.157,
+        1.621
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.brow.R",
+      "parent": "head",
+      "head": [
+        -0.082,
+        -0.154,
+        1.625
+      ],
+      "tail": [
+        -0.027,
+        -0.157,
+        1.619
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.mouth",
+      "parent": "head",
+      "head": [
+        -0.036,
+        -0.151,
+        1.477
+      ],
+      "tail": [
+        0.048,
+        -0.151,
+        1.477
+      ],
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Mouth",
+      "parent": "head",
+      "head": [
+        0.006,
+        -0.158,
+        1.477
+      ],
+      "tail": [
+        0.006,
+        -0.218,
+        1.477
+      ],
+      "deform": false
+    },
+    {
+      "name": "clavicle.L",
+      "parent": "chest",
+      "head": [
+        0,
+        -0.008,
+        1.325
+      ],
+      "tail": [
+        0.208,
+        -0.004,
+        1.292
+      ],
+      "deform": false
+    },
+    {
+      "name": "upper_arm.L",
+      "parent": "clavicle.L",
+      "head": [
+        0.208,
+        -0.004,
+        1.292
+      ],
+      "tail": [
+        0.47,
+        -0.01,
+        1.175
+      ],
+      "deform": true
+    },
+    {
+      "name": "forearm.L",
+      "parent": "upper_arm.L",
+      "head": [
+        0.47,
+        -0.01,
+        1.175
+      ],
+      "tail": [
+        0.68,
+        -0.018,
+        1.075
+      ],
+      "deform": true
+    },
+    {
+      "name": "hand.L",
+      "parent": "forearm.L",
+      "head": [
+        0.68,
+        -0.018,
+        1.075
+      ],
+      "tail": [
+        0.755,
+        -0.022,
+        1.035
+      ],
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Grip.L",
+      "parent": "hand.L",
+      "head": [
+        0.734,
+        -0.02088,
+        1.0462
+      ],
+      "tail": [
+        0.734,
+        -0.07588,
+        1.0462
+      ],
+      "deform": false
+    },
+    {
+      "name": "SOCKET_Vessel.L",
+      "parent": "hand.L",
+      "head": [
+        0.734,
+        -0.02088,
+        1.0462
+      ],
+      "tail": [
+        0.734,
+        -0.02088,
+        0.9612
+      ],
+      "deform": false
+    },
+    {
+      "name": "clavicle.R",
+      "parent": "chest",
+      "head": [
+        0,
+        -0.008,
+        1.325
+      ],
+      "tail": [
+        -0.208,
+        0.004,
+        1.292
+      ],
+      "deform": false
+    },
+    {
+      "name": "upper_arm.R",
+      "parent": "clavicle.R",
+      "head": [
+        -0.208,
+        0.004,
+        1.292
+      ],
+      "tail": [
+        -0.47,
+        -0.01,
+        1.175
+      ],
+      "deform": true
+    },
+    {
+      "name": "forearm.R",
+      "parent": "upper_arm.R",
+      "head": [
+        -0.47,
+        -0.01,
+        1.175
+      ],
+      "tail": [
+        -0.68,
+        -0.018,
+        1.075
+      ],
+      "deform": true
+    },
+    {
+      "name": "hand.R",
+      "parent": "forearm.R",
+      "head": [
+        -0.68,
+        -0.018,
+        1.075
+      ],
+      "tail": [
+        -0.755,
+        -0.022,
+        1.035
+      ],
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Grip.R",
+      "parent": "hand.R",
+      "head": [
+        -0.734,
+        -0.02088,
+        1.0462
+      ],
+      "tail": [
+        -0.734,
+        -0.07588,
+        1.0462
+      ],
+      "deform": false
+    },
+    {
+      "name": "SOCKET_Cigarette.R",
+      "parent": "hand.R",
+      "head": [
+        -0.734,
+        -0.03088,
+        1.0582
+      ],
+      "tail": [
+        -0.734,
+        -0.10588,
+        1.0582
+      ],
+      "deform": false
+    },
+    {
+      "name": "SOCKET_Bottle.R",
+      "parent": "hand.R",
+      "head": [
+        -0.734,
+        -0.02088,
+        1.0462
+      ],
+      "tail": [
+        -0.734,
+        -0.02088,
+        0.9612
+      ],
+      "deform": false
+    },
+    {
+      "name": "thigh.L",
+      "parent": "pelvis",
+      "head": [
+        0.083,
+        0.012,
+        0.75
+      ],
+      "tail": [
+        0.103,
+        -0.012,
+        0.354
+      ],
+      "deform": true
+    },
+    {
+      "name": "shin.L",
+      "parent": "thigh.L",
+      "head": [
+        0.103,
+        -0.012,
+        0.354
+      ],
+      "tail": [
+        0.112,
+        -0.026,
+        0.095
+      ],
+      "deform": true
+    },
+    {
+      "name": "foot.L",
+      "parent": "shin.L",
+      "head": [
+        0.112,
+        -0.026,
+        0.095
+      ],
+      "tail": [
+        0.112,
+        -0.23,
+        0.045
+      ],
+      "deform": true
+    },
+    {
+      "name": "thigh.R",
+      "parent": "pelvis",
+      "head": [
+        -0.083,
+        -0.004,
+        0.75
+      ],
+      "tail": [
+        -0.103,
+        0.012,
+        0.354
+      ],
+      "deform": true
+    },
+    {
+      "name": "shin.R",
+      "parent": "thigh.R",
+      "head": [
+        -0.103,
+        0.012,
+        0.354
+      ],
+      "tail": [
+        -0.112,
+        0.018,
+        0.095
+      ],
+      "deform": true
+    },
+    {
+      "name": "foot.R",
+      "parent": "shin.R",
+      "head": [
+        -0.112,
+        0.018,
+        0.095
+      ],
+      "tail": [
+        -0.112,
+        -0.188,
+        0.045
+      ],
+      "deform": true
+    }
+  ],
+  "parts": [
+    {
+      "name": "ACC_Eye.L",
+      "role": "face_detail",
+      "bone": "head",
+      "palette_name": "cafe_skin_shadow",
+      "base_color": [
+        0.245,
+        0.15,
+        0.115,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Eye.R",
+      "role": "face_detail",
+      "bone": "head",
+      "palette_name": "cafe_skin_shadow",
+      "base_color": [
+        0.245,
+        0.15,
+        0.115,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Mouth",
+      "role": "face_detail",
+      "bone": "head",
+      "palette_name": "cafe_skin_shadow",
+      "base_color": [
+        0.245,
+        0.15,
+        0.115,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Nose",
+      "role": "face_detail",
+      "bone": "head",
+      "palette_name": "cafe_skin",
+      "base_color": [
+        0.455,
+        0.315,
+        0.235,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_PaperCapCrown",
+      "role": "signature_silhouette",
+      "bone": "head",
+      "palette_name": "cafe_ivory_light",
+      "base_color": [
+        0.755,
+        0.72,
+        0.57,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_PaperCapFold",
+      "role": "signature_silhouette",
+      "bone": "head",
+      "palette_name": "cafe_ivory_dark",
+      "base_color": [
+        0.315,
+        0.33,
+        0.285,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_ServiceTowel",
+      "role": "held_prop",
+      "bone": "hand.R",
+      "palette_name": "cafe_towel",
+      "base_color": [
+        0.445,
+        0.465,
+        0.42,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_UniformButton.01",
+      "role": "surface_detail",
+      "bone": "chest",
+      "palette_name": "button",
+      "base_color": [
+        0.155,
+        0.145,
+        0.115,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_UniformButton.02",
+      "role": "surface_detail",
+      "bone": "chest",
+      "palette_name": "button",
+      "base_color": [
+        0.155,
+        0.145,
+        0.115,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_UniformButton.03",
+      "role": "surface_detail",
+      "bone": "spine",
+      "palette_name": "button",
+      "base_color": [
+        0.155,
+        0.145,
+        0.115,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_ApronBib",
+      "role": "clothing",
+      "bone": "chest",
+      "palette_name": "cafe_ivory",
+      "base_color": [
+        0.61,
+        0.585,
+        0.47,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_Chest",
+      "role": "body",
+      "bone": "chest",
+      "palette_name": "cafe_ivory",
+      "base_color": [
+        0.61,
+        0.585,
+        0.47,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_CollarPoint.L",
+      "role": "clothing_detail",
+      "bone": "chest",
+      "palette_name": "cafe_ivory_light",
+      "base_color": [
+        0.755,
+        0.72,
+        0.57,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_CollarPoint.R",
+      "role": "clothing_detail",
+      "bone": "chest",
+      "palette_name": "cafe_ivory_light",
+      "base_color": [
+        0.755,
+        0.72,
+        0.57,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_LongApron",
+      "role": "clothing",
+      "bone": "spine",
+      "palette_name": "cafe_ivory_light",
+      "base_color": [
+        0.755,
+        0.72,
+        0.57,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_RolledCuff.L",
+      "role": "clothing_detail",
+      "bone": "forearm.L",
+      "palette_name": "cafe_ivory_dark",
+      "base_color": [
+        0.315,
+        0.33,
+        0.285,
+        1.0
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "CLO_RolledCuff.R",
+      "role": "clothing_detail",
+      "bone": "forearm.R",
+      "palette_name": "cafe_ivory_dark",
+      "base_color": [
+        0.315,
+        0.33,
+        0.285,
+        1.0
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "CLO_Seat",
+      "role": "body",
+      "bone": "pelvis",
+      "palette_name": "cafe_ivory_dark",
+      "base_color": [
+        0.315,
+        0.33,
+        0.285,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_Shin.L",
+      "role": "clothing",
+      "bone": "shin.L",
+      "palette_name": "cafe_ivory_dark",
+      "base_color": [
+        0.315,
+        0.33,
+        0.285,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "CLO_Shin.R",
+      "role": "clothing",
+      "bone": "shin.R",
+      "palette_name": "cafe_ivory_dark",
+      "base_color": [
+        0.315,
+        0.33,
+        0.285,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "CLO_SleeveLower.L",
+      "role": "clothing",
+      "bone": "forearm.L",
+      "palette_name": "cafe_ivory_light",
+      "base_color": [
+        0.755,
+        0.72,
+        0.57,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "CLO_SleeveLower.R",
+      "role": "clothing",
+      "bone": "forearm.R",
+      "palette_name": "cafe_ivory_light",
+      "base_color": [
+        0.755,
+        0.72,
+        0.57,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "CLO_SleeveUpper.L",
+      "role": "clothing",
+      "bone": "upper_arm.L",
+      "palette_name": "cafe_ivory",
+      "base_color": [
+        0.61,
+        0.585,
+        0.47,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "CLO_SleeveUpper.R",
+      "role": "clothing",
+      "bone": "upper_arm.R",
+      "palette_name": "cafe_ivory",
+      "base_color": [
+        0.61,
+        0.585,
+        0.47,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "CLO_Thigh.L",
+      "role": "clothing",
+      "bone": "thigh.L",
+      "palette_name": "cafe_ivory_dark",
+      "base_color": [
+        0.315,
+        0.33,
+        0.285,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "CLO_Thigh.R",
+      "role": "clothing",
+      "bone": "thigh.R",
+      "palette_name": "cafe_ivory_dark",
+      "base_color": [
+        0.315,
+        0.33,
+        0.285,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "CLO_Waist",
+      "role": "body",
+      "bone": "spine",
+      "palette_name": "cafe_ivory_dark",
+      "base_color": [
+        0.315,
+        0.33,
+        0.285,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Hand.L",
+      "role": "body",
+      "bone": "hand.L",
+      "palette_name": "cafe_skin",
+      "base_color": [
+        0.455,
+        0.315,
+        0.235,
+        1.0
+      ],
+      "vertices": 42,
+      "triangles": 80
+    },
+    {
+      "name": "GEO_Hand.R",
+      "role": "body",
+      "bone": "hand.R",
+      "palette_name": "cafe_skin",
+      "base_color": [
+        0.455,
+        0.315,
+        0.235,
+        1.0
+      ],
+      "vertices": 42,
+      "triangles": 80
+    },
+    {
+      "name": "GEO_Head",
+      "role": "body",
+      "bone": "head",
+      "palette_name": "cafe_skin",
+      "base_color": [
+        0.455,
+        0.315,
+        0.235,
+        1.0
+      ],
+      "vertices": 62,
+      "triangles": 120
+    },
+    {
+      "name": "GEO_Neck",
+      "role": "body",
+      "bone": "neck",
+      "palette_name": "cafe_skin",
+      "base_color": [
+        0.455,
+        0.315,
+        0.235,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "GEO_Shoe.L",
+      "role": "body",
+      "bone": "foot.L",
+      "palette_name": "cafe_shoe",
+      "base_color": [
+        0.03,
+        0.028,
+        0.027,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Shoe.R",
+      "role": "body",
+      "bone": "foot.R",
+      "palette_name": "cafe_shoe",
+      "base_color": [
+        0.03,
+        0.028,
+        0.027,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Sole.L",
+      "role": "footwear_detail",
+      "bone": "foot.L",
+      "palette_name": "sole",
+      "base_color": [
+        0.018,
+        0.019,
+        0.017,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Sole.R",
+      "role": "footwear_detail",
+      "bone": "foot.R",
+      "palette_name": "sole",
+      "base_color": [
+        0.018,
+        0.019,
+        0.017,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    }
+  ]
+}

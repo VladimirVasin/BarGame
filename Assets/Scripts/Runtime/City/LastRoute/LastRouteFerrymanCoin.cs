@@ -36,23 +36,41 @@ namespace BarPromenade
         /// </summary>
         public const int FlipsPerToss = 3;
 
-        /// <summary>How high above the palm the arc peaks.</summary>
-        public const float ApexMeters = 0.42f;
+        /// <summary>
+        /// How high above the palm the arc peaks. Tuned to carry it up
+        /// past his own face rather than to be physically modest: the
+        /// throw is the character, and the top of the arc is the frame
+        /// where a player who has just walked up notices it.
+        /// </summary>
+        public const float ApexMeters = 0.50f;
 
         /// <summary>
         /// And how far it drifts sideways from release to catch. Small but
         /// not zero: a real toss is never perfectly vertical, and a
         /// perfectly vertical one reads as a machine.
         /// </summary>
-        public const float DriftMeters = 0.055f;
+        public const float DriftMeters = 0.070f;
 
-        public const float DiameterMeters = 0.032f;
-        public const float ThicknessMeters = 0.004f;
+        /// <summary>
+        /// Deliberately a large coin - a five-kopeck piece rather than a
+        /// realistic one.
+        ///
+        /// The first pass drew it at 32 mm, which is what a coin actually
+        /// measures and which is also under one pixel of the 640x360
+        /// composite this game renders at any distance a player looks at
+        /// him from. Being right about the diameter and invisible is the
+        /// wrong trade for the one prop that carries the whole read of
+        /// the character, so it is drawn at the size it needs to be seen
+        /// at instead.
+        /// </summary>
+        public const float DiameterMeters = 0.054f;
+        public const float ThicknessMeters = 0.009f;
 
-        /// <summary>Old brass, kept bright. See the class docstring for
-        /// why it is the lightest thing on the island.</summary>
+        /// <summary>Old brass, kept bright - and brighter still since the
+        /// coat around it was lifted. See the class docstring for why it
+        /// is the lightest thing on the island.</summary>
         public static readonly Color CoinColor =
-            new Color(0.82f, 0.72f, 0.38f, 1f);
+            new Color(0.96f, 0.86f, 0.52f, 1f);
 
         private LastRouteFerrymanPresentation presentation;
         private Transform palmAnchor;

@@ -35,6 +35,7 @@ namespace BarPromenade
         [SerializeField] private Transform coatHemAnchor;
         [SerializeField] private Renderer coatHemRenderer;
         [SerializeField] private Vector2 coatHemSize;
+        [SerializeField] private float perchPelvisDrop;
 
         public CityPedestrianAssetRegistry PedestrianRegistry =>
             pedestrianRegistry;
@@ -65,18 +66,36 @@ namespace BarPromenade
         /// </summary>
         public Vector2 CoatHemSize => coatHemSize;
 
+        /// <summary>
+        /// How far his pelvis bone rides above the lowest drawn point of
+        /// the perched pose - his boot sole - measured in Blender off the
+        /// posed meshes and carried here.
+        ///
+        /// The runtime cannot work this out for itself. The model origin
+        /// is the sole plane of the BIND pose, standing straight, and the
+        /// perch has both knees up on a car bonnet: the feet leave that
+        /// plane entirely. Unity will not recompute skinned bounds for a
+        /// manually driven PlayableGraph, and the ankle bone is no
+        /// substitute because the perch draws one boot back onto its toe.
+        /// So the number crosses from the generator that measured it, and
+        /// the presentation sets him down by it.
+        /// </summary>
+        public float PerchPelvisDrop => perchPelvisDrop;
+
         public void Configure(
             CityPedestrianAssetRegistry configuredPedestrianRegistry,
             Transform configuredCoinRestAnchor,
             Transform configuredCoatHemAnchor,
             Renderer configuredCoatHemRenderer,
-            Vector2 configuredCoatHemSize)
+            Vector2 configuredCoatHemSize,
+            float configuredPerchPelvisDrop)
         {
             pedestrianRegistry = configuredPedestrianRegistry;
             coinRestAnchor = configuredCoinRestAnchor;
             coatHemAnchor = configuredCoatHemAnchor;
             coatHemRenderer = configuredCoatHemRenderer;
             coatHemSize = configuredCoatHemSize;
+            perchPelvisDrop = configuredPerchPelvisDrop;
         }
     }
 }

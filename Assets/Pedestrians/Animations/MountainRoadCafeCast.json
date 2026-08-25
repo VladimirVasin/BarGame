@@ -1,0 +1,224 @@
+{
+  "generator": "tools/build-city-pedestrian-3d-model.py",
+  "generator_version": "3.2.0",
+  "blender_version": "5.0.1",
+  "skeleton_source": "PlayerCharacter3D exact A-pose v2.5.0",
+  "bone_count": 31,
+  "fps": 24,
+  "root_motion": false,
+  "mesh_count": 0,
+  "clip_count": 8,
+  "clips": [
+    {
+      "name": "CafeLoneIdle",
+      "archetype": "cafe_lone_patron_v1",
+      "duration_seconds": 12.0,
+      "frame_start": 0,
+      "frame_end": 288,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "seated alone with a broad back to the room, forearms low at the counter",
+      "gait": "two slow breaths and one slight shoulder sink without a backward glance",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "perched": true,
+      "perch_seat_height_min_m": 0.473026,
+      "perch_seat_height_max_m": 0.473026,
+      "perch_pelvis_lift_m": 0.022173,
+      "perch_contact_parts": [
+        "GEO_Sole.R"
+      ],
+      "seated_drop_m": 0.495199
+    },
+    {
+      "name": "CafeLoneBeat",
+      "archetype": "cafe_lone_patron_v1",
+      "duration_seconds": 5.0,
+      "frame_start": 0,
+      "frame_end": 120,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "seated alone with the face held beneath the fedora brim",
+      "gait": "one hand shifts a few centimetres toward the cup, pauses, and returns unfinished",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "perched": true,
+      "perch_seat_height_min_m": 0.473026,
+      "perch_seat_height_max_m": 0.473026,
+      "perch_pelvis_lift_m": 0.022173,
+      "perch_contact_parts": [
+        "GEO_Sole.R"
+      ],
+      "seated_drop_m": 0.495199
+    },
+    {
+      "name": "CafeManIdle",
+      "archetype": "cafe_couple_man_v1",
+      "duration_seconds": 10.0,
+      "frame_start": 0,
+      "frame_end": 240,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "narrow seated silhouette inclined toward the woman beside him",
+      "gait": "three shallow breaths with the eyes held down at the counter",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "perched": true,
+      "perch_seat_height_min_m": 0.462947,
+      "perch_seat_height_max_m": 0.462948,
+      "perch_pelvis_lift_m": 0.022406,
+      "perch_contact_parts": [
+        "GEO_Sole.R"
+      ],
+      "seated_drop_m": 0.485353
+    },
+    {
+      "name": "CafeManBeat",
+      "archetype": "cafe_couple_man_v1",
+      "duration_seconds": 4.0,
+      "frame_start": 0,
+      "frame_end": 96,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "seated toward the woman with the near forearm resting low",
+      "gait": "the near hand approaches hers, stops short of contact and retracts",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "perched": true,
+      "perch_seat_height_min_m": 0.462947,
+      "perch_seat_height_max_m": 0.462948,
+      "perch_pelvis_lift_m": 0.022406,
+      "perch_contact_parts": [
+        "GEO_Sole.R"
+      ],
+      "seated_drop_m": 0.485353
+    },
+    {
+      "name": "CafeWomanIdle",
+      "archetype": "cafe_couple_woman_v1",
+      "duration_seconds": 11.0,
+      "frame_start": 0,
+      "frame_end": 264,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "seated in red, folded paper held near the cheek and gaze lowered",
+      "gait": "two uneven breaths while the paper remains suspended before use",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "perched": true,
+      "perch_seat_height_min_m": 0.464774,
+      "perch_seat_height_max_m": 0.464774,
+      "perch_pelvis_lift_m": 0.022785,
+      "perch_contact_parts": [
+        "GEO_Sole.R"
+      ],
+      "seated_drop_m": 0.487559
+    },
+    {
+      "name": "CafeWomanBeat",
+      "archetype": "cafe_couple_woman_v1",
+      "duration_seconds": 4.5,
+      "frame_start": 0,
+      "frame_end": 108,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "seated in red with one elbow held near the counter",
+      "gait": "the paper turns slowly, the head lowers, and the motion resets before a bite",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "perched": true,
+      "perch_seat_height_min_m": 0.464774,
+      "perch_seat_height_max_m": 0.464774,
+      "perch_pelvis_lift_m": 0.022785,
+      "perch_contact_parts": [
+        "GEO_Sole.R"
+      ],
+      "seated_drop_m": 0.487559
+    },
+    {
+      "name": "CafeAttendantIdle",
+      "archetype": "cafe_attendant_v1",
+      "duration_seconds": 13.0,
+      "frame_start": 0,
+      "frame_end": 312,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "standing behind the counter, pale uniform pitched toward the pair",
+      "gait": "three restrained breaths separated by a too-long mechanical stillness",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "CafeAttendantBeat",
+      "archetype": "cafe_attendant_v1",
+      "duration_seconds": 5.0,
+      "frame_start": 0,
+      "frame_end": 120,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "standing behind the counter with a towel in the right hand",
+      "gait": "two identical short wiping strokes over one fixed patch, then the exact starting pose",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    }
+  ],
+  "build_signature": "d0b3b8172ebd435ab174fcee513561404b58d6bdb6569b0749f78f9a9e9e7976"
+}

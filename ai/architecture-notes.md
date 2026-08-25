@@ -1338,7 +1338,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   gap nor a transverse collider lip interrupts a future car. A reserved
   `7.5 m` centre circle keeps the arrival usable by that car. The left landmark
   is a same-scene, physically enterable five-sided glass cafe with a `1.6 m`
-  open door, four silent tableau figures and exactly two practical Spots. The
+  open door and exactly two practical Spots. Its tableau is a dedicated staged
+  subsystem rather than part of the pedestrian pool: one lone patron, one
+  couple and one attendant use four distinct Generic prefabs and an isolated
+  eight-clip cafe library. Two stools stay deliberately empty. A seeded
+  controller holds `18-32 s` global pauses, enforces `35-55 s` per-role
+  cooldowns and permits at most one gesture episode; the couple begins its
+  paired beat together. NPC voices and free ambience are deliberately absent.
+  The
   right landmark is a `58 m` cableway: four colliderless cabins traverse one
   continuous up/turn/down loop over three grounded colliderless remote supports;
   only its lower station is physical and its upper return is hidden behind the

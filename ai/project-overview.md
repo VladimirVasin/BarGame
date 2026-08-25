@@ -77,8 +77,10 @@ The vertical slice contains:
   `8.7 m`; its last `5 m` are level and share the actual road-mesh entry
   vertices with an irregular roughly `42 x 27 m` terminal plateau, so there is
   no height step, open seam or transverse collider wall. Its centre reserves a
-  `7.5 m` turning circle; the left side owns an enterable glass cafe and the
-  right side an operating `58 m` cableway with four cabins. At the normal
+  `7.5 m` turning circle; the left side owns an enterable glass cafe with a
+  bespoke silent four-role cast (lone patron, couple and attendant), two
+  deliberate empty stools and rare deterministic gesture beats. The right
+  side owns an operating `58 m` cableway with four cabins. At the normal
   `2.6 m/s` walk speed the route takes about `31.8 s`; vehicle control remains
   separate future work. Larger layered forest and grounded roadside misc,
   middle ridges and far snowy peaks
@@ -986,8 +988,11 @@ The vertical slice contains:
   the map does not infer them from runtime GameObjects. The physical terminal
   keeps a clear `7.5 m` vehicle circle on its irregular roughly `42 x 27 m`
   plateau. On the left, one five-sided Nighthawks-inspired glass cafe is
-  enterable without a scene load and stages four silent figures around its
-  counter. On the right, a `58 m` continuously looping cableway moves four
+  enterable without a scene load. Its lone patron, neighbouring couple and
+  attendant are four dedicated staged models rather than pedestrian-pool
+  substitutes; two stools remain empty. Long seeded rests separate short
+  single-episode gestures, with the couple synchronized and no NPC voice bed.
+  On the right, a `58 m` continuously looping cableway moves four
   colliderless cabins over three grounded supports while its upper return is
   hidden by a real snowy ridge. The cafe interior and lower station participate
   in the shared weather-shelter query. With the

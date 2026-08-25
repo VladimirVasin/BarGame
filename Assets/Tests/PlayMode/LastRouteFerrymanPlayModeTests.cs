@@ -34,6 +34,15 @@ namespace BarPromenade.Tests.PlayMode
         private const int CoinSteps = 300;
 
         /// <summary>
+        /// And long enough to cover the wait loop even at the slowest
+        /// playback speed his stance may be seeded with - the kicks are
+        /// two events in four authored seconds, so a window that only
+        /// usually contains them would be a flaky test rather than a
+        /// contract.
+        /// </summary>
+        private const int IdleSteps = 520;
+
+        /// <summary>
         /// Batch mode runs frames as fast as it can, which makes
         /// `Time.deltaTime` a millisecond or two and turns "wait 240
         /// frames" into "wait most of a second". Everything about this
@@ -68,14 +77,41 @@ namespace BarPromenade.Tests.PlayMode
                     ferryman.Phase,
                     Is.EqualTo(LastRouteFerrymanPhase.Waiting));
 
-                // On the bumper his boots were authored for, not floating
-                // beside it.
+                // Sitting ON the bonnet, proved against the car's OWN seat
+                // anchor rather than against the placement maths.
+                //
+                // The model origin is the sole plane of the bind pose, and
+                // the perch is not the bind pose - his knees are up on a
+                // car - so putting the root on the soles anchor left him
+                // hanging in the air with his coat draped on nothing. The
+                // independent check is his pelvis: the drawn pose keeps the
+                // underside of his hips 0.5077 m over his soles and the car
+                // draws its bonnet 0.505 m over its bumper, so if the boots
+                // are down where they belong the backside lands on the
+                // metal. A few centimetres of tolerance for the pelvis
+                // bone riding just inside the hips.
+                var registry = ferryman
+                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
+                        true);
+                Assert.That(registry, Is.Not.Null);
                 Assert.That(
-                    Vector3.Distance(
-                        ferryman.transform.position,
-                        harness.Car.PerchSolesAnchor.position),
-                    Is.LessThan(0.001f),
-                    "His root is his soles and they belong on the bumper.");
+                    Mathf.Abs(
+                        registry.Pelvis.position.y -
+                        harness.Car.PerchSeatAnchor.position.y),
+                    Is.LessThan(0.06f),
+                    $"He is perched at {registry.Pelvis.position.y:0.###} " +
+                    $"while the bonnet is at " +
+                    $"{harness.Car.PerchSeatAnchor.position.y:0.###}.");
+
+                // And his boots are on the bumper, not above it.
+                Assert.That(
+                    Mathf.Abs(
+                        Mathf.Min(
+                            registry.LeftFoot.position.y,
+                            registry.RightFoot.position.y) -
+                        harness.Car.PerchSolesAnchor.position.y),
+                    Is.LessThan(0.20f),
+                    "His ankles must sit a boot's height over the bumper.");
 
                 // Facing out over the nose, which is the side a player
                 // walks up on.
@@ -331,6 +367,98 @@ namespace BarPromenade.Tests.PlayMode
                     "floor pan.");
 
                 yield return null;
+            }
+            finally
+            {
+                Object.Destroy(root);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator HeSwingsOneLegAtATimeUnderHisOwnLamp()
+        {
+            var root = new GameObject("Ferryman Idle Test");
+            try
+            {
+                Harness harness = BuildHarness(root.transform);
+                var registry = harness.Ferryman
+                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
+                        true);
+                float bumper = harness.Car.PerchSolesAnchor.position.y;
+
+                // Every staged pedestrian ships as CullUpdateTransforms,
+                // which is right in the city and useless here: batch mode
+                // draws nothing, so the Animator declines to write a
+                // single bone and the whole rig reads back in its bind
+                // pose. That is not a harmless quirk to work around - it
+                // is the reason a pose assertion can look green while
+                // proving nothing, because the bind ankles happen to sit
+                // at exactly equal height. Off for this instance only.
+                registry.Animator.cullingMode =
+                    AnimatorCullingMode.AlwaysAnimate;
+
+                // The lamp. He is the darkest thing in the game sitting on
+                // an unlit lot, so without a fixture of his own he reads as
+                // a hole rather than as a man - and it has to hang OUTSIDE
+                // the staged art, which is validated to carry no lights at
+                // all.
+                Transform ferrymanRoot = harness.Ferryman.transform.parent;
+                Assert.That(ferrymanRoot, Is.Not.Null);
+                Light[] lights =
+                    ferrymanRoot.GetComponentsInChildren<Light>(true);
+                Assert.That(
+                    lights.Length,
+                    Is.EqualTo(1),
+                    "The Ferryman is meant to have exactly one lamp.");
+                Light lamp = lights[0];
+                Assert.That(lamp.type, Is.EqualTo(LightType.Point));
+                Assert.That(lamp.shadows, Is.EqualTo(LightShadows.None));
+                Assert.That(
+                    harness.Ferryman
+                        .GetComponentInChildren<Light>(true),
+                    Is.Null,
+                    "The staged art must stay passive; the lamp belongs " +
+                    "to the runtime root beside it.");
+
+                // Above his cap rather than under it: the design draws no
+                // eyes and leans on the cap brim's own shadow, and a lamp
+                // from below is the one angle that would argue with it.
+                Assert.That(
+                    lamp.transform.position.y,
+                    Is.GreaterThan(registry.Head.position.y),
+                    "The lamp has to rake down over the brim.");
+
+                // And the legs. He kicks one boot off the bumper at a
+                // time, which is what lets the perch stay measured against
+                // the other one - so across a whole wait loop the LOWER of
+                // the two boots must never rise off the metal, while the
+                // higher one must, repeatedly.
+                float worstPlanted = 0f;
+                float bestSwing = 0f;
+                for (int step = 0; step < IdleSteps; step++)
+                {
+                    yield return null;
+
+                    float left = registry.LeftFoot.position.y - bumper;
+                    float right = registry.RightFoot.position.y - bumper;
+                    float planted = Mathf.Min(left, right);
+                    float swung = Mathf.Max(left, right);
+                    worstPlanted = Mathf.Max(worstPlanted, planted);
+                    bestSwing = Mathf.Max(bestSwing, swung - planted);
+                }
+
+                // Ankles, not soles, so the tolerance is a boot's height
+                // plus a centimetre of slack rather than zero.
+                Assert.That(
+                    worstPlanted,
+                    Is.LessThan(0.20f),
+                    $"His lower boot rose {worstPlanted:0.###} m over the " +
+                    "bumper: both legs are swinging at once.");
+                Assert.That(
+                    bestSwing,
+                    Is.GreaterThan(0.03f),
+                    $"The legs only ever parted by {bestSwing:0.###} m - " +
+                    "he has stopped swinging them.");
             }
             finally
             {

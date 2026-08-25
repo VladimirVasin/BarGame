@@ -8,12 +8,12 @@ namespace BarPromenade
     /// director and no spawn band: he keeps the bonnet of his own car for
     /// as long as the City lives, or he is absent along with the car.
     ///
-    /// Four things are added around the staged prefab rather than into it,
-    /// and all four for the same reason: that prefab is validated passive,
+    /// Five things are added around the staged prefab rather than into it,
+    /// and all five for the same reason: that prefab is validated passive,
     /// with no collider, light, audio or interaction anywhere in it. The
-    /// coin, the cloth coat, the attention magnet and the talk trigger are
-    /// each raised separately, so the art stays art and the guard keeps
-    /// working.
+    /// coin, the cloth coat, the lamp over him, the attention magnet and
+    /// the talk trigger are each raised separately, so the art stays art
+    /// and the guard keeps working.
     /// </summary>
     public static class LastRouteFerrymanFactory
     {
@@ -38,6 +38,44 @@ namespace BarPromenade
         /// so lower than a standing man's - measured off the authored
         /// bonnet pose rather than guessed.</summary>
         public const float FocusHeightMeters = 1.42f;
+
+        /// <summary>
+        /// The one lamp on the island that exists for a person rather
+        /// than for a place.
+        ///
+        /// He is a man in the darkest coat in the game, sitting on an
+        /// unlit lot under ExpSquared fog, and the two things that carry
+        /// him - the coin and the hands throwing it - are the two
+        /// smallest. Without this he is a silhouette with a bright chip
+        /// somewhere in it, which is what he was. The cemetery lodge's
+        /// porch bulb is the precedent and the same registry carries
+        /// both: a fixture that never switches off, only drops to a
+        /// floor by day, because the point is that he is lit whenever
+        /// anybody walks up.
+        ///
+        /// Unlike the porch bulb there is NO drawn fixture and no fog
+        /// halo, and that is on purpose. A halo is the blurred ball of a
+        /// lamp, and there is no lamp here to blur - the warmth is the
+        /// throw of his own burning headlights coming back off the mist
+        /// in front of the car. So it lights him and draws nothing.
+        /// </summary>
+        public static readonly Color LampColor =
+            new Color(1.00f, 0.87f, 0.66f);
+
+        public const float LampNightIntensity = 70f;
+        public const float LampDayIntensity = 22f;
+        public const float LampRangeMeters = 5.2f;
+
+        /// <summary>
+        /// Where it hangs: in front of him and above his cap, so the
+        /// light rakes DOWN over the brim. That direction is load
+        /// bearing - the design draws no eyes and relies on the brim's
+        /// own near-black shadow slab to keep the face unreadable, and
+        /// lighting him from below would be the one angle that argues
+        /// with it.
+        /// </summary>
+        public const float LampReachOutMeters = 1.50f;
+        public const float LampHeightMeters = 2.10f;
 
         public static LastRouteFerrymanPresentation Create(
             Transform parent,
@@ -133,7 +171,7 @@ namespace BarPromenade
 
             var presentation = instance
                 .AddComponent<LastRouteFerrymanPresentation>();
-            presentation.Initialize(registry, stance, car);
+            presentation.Initialize(registry, anchors, stance, car);
 
             // The coin and the coat are both children of the ROOT rather
             // than of any bone: the imported hierarchy carries Unity's 100x
@@ -152,6 +190,8 @@ namespace BarPromenade
             coatObject.AddComponent<LastRouteFerrymanCoat>().Initialize(
                 anchors,
                 instance.transform);
+
+            InstallLamp(root, stance);
 
             // Colliderless like every staged NPC.
             var magnet = instance.AddComponent<PlayerAttentionMagnet>();
@@ -186,6 +226,40 @@ namespace BarPromenade
                 GameLog.Field("position_x", stance.Position.x),
                 GameLog.Field("position_z", stance.Position.z));
             return presentation;
+        }
+
+        /// <summary>
+        /// Hangs the one lamp that exists to make him readable. See
+        /// <see cref="LampColor"/> for why it has no drawn fixture.
+        ///
+        /// It is a child of the runtime root rather than of the art, so
+        /// the staged prefab stays the passive thing the guard below
+        /// insists it is.
+        /// </summary>
+        private static void InstallLamp(
+            Transform root,
+            LastRouteFerrymanStance stance)
+        {
+            var emitter = new GameObject("Ferryman Lamp");
+            emitter.transform.SetParent(root, false);
+            emitter.transform.position =
+                stance.Position +
+                Vector3.up * LampHeightMeters +
+                stance.Facing * LampReachOutMeters;
+
+            Light light = emitter.AddComponent<Light>();
+            light.type = LightType.Point;
+            light.color = LampColor;
+            light.intensity = LampNightIntensity;
+            light.range = LampRangeMeters;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
+            CityNightSiteLightRegistry.Register(
+                light,
+                LampNightIntensity,
+                LampDayIntensity,
+                null);
         }
 
         /// <summary>

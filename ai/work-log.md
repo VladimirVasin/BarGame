@@ -6,6 +6,132 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-25 — The mountain cafe has its own silent cast
+
+- Replaced the four generic static counter figures with four isolated staged
+  roles: a lone patron, a neighbouring man/woman couple and an attendant. Each
+  owns a distinct low-poly model and two in-place Generic clips in the dedicated
+  `MountainRoadCafeCast` animation library; the prefabs and serialized provider
+  stay outside the ordinary pedestrian pool.
+- The immutable cast plan preserves semantic role IDs, leaves two stools empty
+  and aligns only the three occupied places with cups. A seeded controller keeps
+  long `18-32 s` global rests, `35-55 s` per-role cooldowns, one active beat at
+  most and one synchronized couple beat. It adds no voices, physics, lights or
+  ambient emitters.
+- Blender's cafe-only validator rebuilt the four models and eight-clip library,
+  proved all three seated contacts against the `0.46 m` stool and the attendant
+  against the floor, and exported a reviewed four-role contact sheet. Unity's
+  asset setup imported the passive prefabs/provider successfully. A live batch
+  import also exposed a rebuild ping-pong: the cafe postprocessor had treated
+  shared Player assets as cafe-owned source triggers, so neighbouring setup
+  pipelines could repeatedly force-import one another. Only the dedicated cafe
+  models/manifests/library now trigger an automatic rebuild; a clean setup run
+  exits once with code `0`. Focused `MountainRoadCafeCastTests` passed `13/13`
+  after the final import; the full suites were intentionally not run in fast
+  mode.
+
+## 2026-08-25 — Five things wrong with the Ferryman, from a screenshot
+
+- **You could see through his hips.** He is the only design whose drawn
+  hem is a placeholder: `LastRouteFerrymanCoat` hides `CLO_CoatHem` the
+  moment the cloth skirt that replaces it exists. Everything above that
+  box hangs off the spine and everything below it off the thighs, so
+  hiding it left `0.146 m` of nothing where his pelvis is — visible clean
+  through the coat, and invisible to the whole suite because the model on
+  disk was complete. The body under the placeholder is now its own part,
+  `CLO_CoatSeat`: deliberately narrower than the stub (`0.336` against
+  `0.392`, so the cloth flaps at `0.180 m` keep `12 mm` of air) and
+  stopping at the hip line, so the lowest drawn point of the pelvis group
+  stays the mooring coil and the perch measurement does not move.
+- **The coin was under one pixel.** Drawn at a realistic `32 mm`, which
+  at the `640x360` composite is nothing from any distance a player looks
+  at him from. Now `54 mm`, brighter brass, and thrown `0.50 m` instead
+  of `0.42` so the arc carries past his own face.
+- **He swings his legs now**, and that took a contract rather than a
+  keyframe. The perch validator measures his seat against the lowest
+  drawn point of the model in EVERY frame, and on this design that point
+  is a boot sole — so two legs up at once would move the seat by the full
+  amplitude. The two boots were levelled to `1 mm` of each other (the
+  left had been hanging `73 mm` high), and the loop kicks one leg at a
+  time on keys whose neighbours leave that leg at rest: right at `0.25`,
+  left at `0.625`, a half-hearted right at `0.875`. Measured across all
+  `97` baked frames the seat travels `0.5097-0.5106 m` — a millimetre —
+  while the swinging ankle rises `76 mm`.
+- **He was staring at the sky.** Twelve degrees of backward lean with the
+  chin up to match. Four degrees came out of the pelvis and the spine and
+  four out of the neck and the head. Both things that lean carries had to
+  be re-swept: the thighs (`-56/-60` now) to keep the boots on the bumper,
+  and the bracing arm (`upper_arm.R` Z `-70` to `-62`) to keep the palm on
+  the bonnet — it now sits `3 mm` into the metal against `26 mm` before.
+- **And he is lit.** One warm shadowless point light on the runtime root
+  beside the art, `70` at night dropping to `22` by day through
+  `CityNightSiteLightRegistry` — the cemetery porch bulb's contract, for
+  the same reason it exists there. No fixture and no fog halo: the warmth
+  is his own headlights coming back off the mist, and a halo is the blur
+  of a lamp that would not be there. It hangs above his cap so the light
+  rakes DOWN over the brim, because the design draws no eyes and leans on
+  the brim's own shadow slab. His coat palette came up about forty percent
+  with it (`0.055` to `0.078`); at the old value no lamp made any
+  difference. The near-black under the brim is deliberately not lifted.
+- **A test can look green and prove nothing.** Every staged pedestrian
+  ships `CullUpdateTransforms`, so in batch mode — which draws nothing —
+  the Animator declines to write a single bone and the whole rig reads
+  back in its BIND pose. The first leg-swing assertion failed with the two
+  ankles `8.9e-08 m` apart, which is not a swing bug: the bind ankles sit
+  at exactly equal height. Any PlayMode assertion on a staged NPC's POSE
+  has to set `AlwaysAnimate` on the instance first, or it is measuring the
+  bind pose. The two existing pose assertions beside it pass either way,
+  which is how this went unnoticed.
+- **Note for whoever picks this up:** the Mountain Road cafe cast was
+  being built in the same working tree at the same time, and a full
+  `--archetype all` run currently dies inside `cafe_lone_patron`
+  (`892` triangles against a `900-1900` budget). The shared locomotion
+  library was therefore rebuilt at its shipped `36`-clip set with the four
+  cafe designs held back — they were never in it; they have their own
+  `MountainRoadCafeCast` library. One clean full run once that design
+  passes puts everything back in step.
+- Verification: `blender --background --factory-startup --python
+  tools/build-city-pedestrian-3d-model.py -- --archetype
+  last_route_ferryman` (`33` meshes, `992` triangles) plus a
+  library-only run reporting `perched FerrymanWait: seat 0.5097-0.5106 m
+  over the soles, ground contact GEO_BootSole.L, GEO_BootSole.R`;
+  `Unity.exe -executeMethod CityPedestrianAssetSetup.RunLastRouteFerryman`;
+  EditMode selection over `LastRouteFerrymanAssetTests`,
+  `LastRouteFerrymanTests`, `LastRouteCarPlacementTests`,
+  `CityPedestrianRuntimeTests`, `ParkChessPlayerTests` and
+  `ParkCheckersPlayerTests` — `65/65`, including the two new contracts;
+  `LastRouteFerrymanPlayModeTests` — `6/6`.
+
+## 2026-08-25 — The Ferryman was sitting on nothing
+
+- He was hanging in the air over the bonnet with his cloth coat spread
+  under him, which is what made it look like he was perched on some extra
+  prop. The cause: the art contract puts the model origin on the sole
+  plane of the BIND pose - standing straight - and the perch has both
+  knees up on a car, so the feet leave that plane entirely. Placing the
+  root on the car's soles anchor therefore left him a leg's-worth too
+  high.
+- The runtime cannot measure the correction itself. Unity does not
+  recompute skinned bounds for a manually driven PlayableGraph, and the
+  ankle bone is no substitute - the perch deliberately draws one boot back
+  onto its toe, so an ankle-based solve landed `19.5 cm` short. Blender
+  already measures the right number for the validator it prints
+  (`seated_drop_m`, the pelvis above the lowest drawn point of the posed
+  model: `0.485715 m`), so that number now rides the animation manifest
+  into the prefab and the presentation places the PELVIS that far above
+  the bumper - the same shape as the driver's seat solve beside it.
+- The new test proves it against the car's own `PerchSeatAnchor` rather
+  than against the placement arithmetic: the drawn pose keeps the
+  underside of his hips `0.5077 m` over his soles and the car draws its
+  bonnet `0.505 m` over its bumper, so boots on the bumper means backside
+  on the metal. Measured after the fix: pelvis `1.0607` against a bonnet
+  at `1.08`, which is the authored `-0.022 m` pelvis lift to the
+  millimetre.
+- Verification: `LastRouteFerrymanPlayModeTests` `5/5`; EditMode
+  pedestrian, fisherman, both park players and the Ferryman asset
+  contracts `65/65`; full PlayMode `177 passed, 0 failed, 1 skipped`.
+  Renders from four angles confirm he is on the metal.
+
 ## 2026-08-25 — The twenty reds, and the four real bugs behind them
 
 - Took the full PlayMode suite from `20` failures to `0`

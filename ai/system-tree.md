@@ -118,6 +118,8 @@ Assets/
       StairwellCatProvider.asset      serialized link to the passive 3D cat prefab
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
+    MountainRoad/
+      MountainRoadCafeCastProvider.asset  four isolated staged cafe prefab links
     Localization/
       ru.json
       en.json
@@ -144,12 +146,15 @@ Assets/
     Animations/
       CityPedestrianLocomotion.fbx      fourteen production loops + two staged Pipeback loops
       CityPedestrianLocomotion.json     gait/contact/clearance/apex + staged wheel-contact manifest
+      MountainRoadCafeCast.{fbx,json}   isolated eight-clip silent cafe cast library
     Staged/
       Models/
         PipebackRoller3D.fbx            passive 31-bone wheelchair NPC model
         PipebackRoller3D.json           staged geometry/rig/passive-anchor manifest
+        MountainCafe*3D.{fbx,json}      four distinct passive cafe role models/manifests
       Prefabs/
         PipebackRoller3D.prefab         passive asset outside Resources and the runtime pool
+        MountainCafe*3D.prefab          four cafe roles outside Resources/pedestrian pool
   Vehicles/
     Models/
       CityBus3D.fbx                     real-scale exterior + modeled passenger cabin
@@ -251,7 +256,8 @@ Assets/
         MountainRoad{Planner,Validator}.cs deterministic geometry and invariants
         MountainRoadTerminal{Plan,Planner,Validator}.cs vehicle/cafe/cableway terminal contract
         MountainRoad{Terrain,Surface,Scenery}*.cs continuous climb + layered forest/mountains
-        MountainRoadCafe{WorldBuilder,WorldResult,Geometry,TableauAnimator}.cs enterable glass cafe
+        MountainRoadCafe{WorldBuilder,WorldResult,Geometry}.cs enterable glass cafe
+        MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs four-role silent cast
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
         MountainRoadWalkableArea.cs route/plateau movement boundary
         MountainRoadWorldBuilder.cs separate mountain-only runtime composition
@@ -581,6 +587,7 @@ Assets/
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
+      MountainRoadCafeCastAssetSetup.cs  isolated model/clip import, validation + provider setup
       Player3D/       deterministic model/animation/portrait import + prefab setup
       City/NPC/       production/staged pedestrian Generic import, validation + prefab setup
       City/Traffic/   bus/driver FBX import, shared materials + Resources prefab setup
@@ -619,6 +626,7 @@ Assets/
       CityTunnelShelterTests.cs          portal-depth/lateral shelter hysteresis
       MountainRoadTests.cs               route length/rise/hairpins/plateau/world contracts
       MountainRoadTerminalTests.cs       apron, landmarks, terrain blend + cabin clearance
+      MountainRoadCafeCastTests.cs       roles/gaps/passive assets/clip blend/world ownership
       MountainCablewayTests.cs            loop continuity, world ownership and causal audio
       AreaTravelContractTests.cs         destination mapping and one-shot arrival state
       CityMapAreaPresentationTests.cs    tabs, player visibility + mountain schematic
@@ -686,7 +694,7 @@ ArtSource/
     Blender/                    generated bus .blend and deterministic preview
     Drivers/Blender/            generated driver .blend and deterministic preview
   Pedestrians/
-    Blender/                    five production + one staged model .blends/previews and shared locomotion contact sheet
+    Blender/                    production/staged model sources, previews and animation contact sheets
   Player/
     PlayerDirectionalTurntable.png  retired 2D design source / visual lineage
     Blender/                    production .blend, transparent preview and authoring notes
