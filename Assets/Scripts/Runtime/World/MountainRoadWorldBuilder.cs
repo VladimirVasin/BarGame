@@ -13,8 +13,10 @@ namespace BarPromenade
             GameObject physicalRoot,
             GameObject backdropRoot,
             GameObject roadSurface,
+            GameObject terminalApron,
             GameObject terrainRoot,
             MountainRoadWalkableArea walkableArea,
+            MountainRoadBridgeWorldResult bridge,
             MountainRoadCafeWorldResult cafe,
             MountainCablewayWorldResult cableway,
             IDictionary<string, Transform> semanticObjects)
@@ -26,10 +28,13 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(backdropRoot));
             RoadSurface = roadSurface ??
                 throw new ArgumentNullException(nameof(roadSurface));
+            TerminalApron = terminalApron ??
+                throw new ArgumentNullException(nameof(terminalApron));
             TerrainRoot = terrainRoot ??
                 throw new ArgumentNullException(nameof(terrainRoot));
             WalkableArea = walkableArea ??
                 throw new ArgumentNullException(nameof(walkableArea));
+            Bridge = bridge ?? throw new ArgumentNullException(nameof(bridge));
             Cafe = cafe ?? throw new ArgumentNullException(nameof(cafe));
             Cableway = cableway ??
                 throw new ArgumentNullException(nameof(cableway));
@@ -43,8 +48,10 @@ namespace BarPromenade
         public GameObject PhysicalRoot { get; }
         public GameObject BackdropRoot { get; }
         public GameObject RoadSurface { get; }
+        public GameObject TerminalApron { get; }
         public GameObject TerrainRoot { get; }
         public MountainRoadWalkableArea WalkableArea { get; }
+        public MountainRoadBridgeWorldResult Bridge { get; }
         public MountainRoadCafeWorldResult Cafe { get; }
         public MountainCablewayWorldResult Cableway { get; }
         public IReadOnlyDictionary<string, Transform> SemanticObjects { get; }
@@ -58,6 +65,8 @@ namespace BarPromenade
     {
         private static readonly Color RoadColor =
             new Color(0.115f, 0.125f, 0.118f, 1f);
+        private static readonly Color TerminalApronColor =
+            new Color(0.075f, 0.084f, 0.080f, 1f);
         private static readonly Color SoilColor =
             new Color(0.17f, 0.18f, 0.155f, 1f);
         private static readonly Color SnowColor =
@@ -114,6 +123,22 @@ namespace BarPromenade
                 RoadColor,
                 true,
                 ShadowCastingMode.On);
+            GameObject terminalApron = CreateMeshObject(
+                "Visible Terminal Vehicle Apron",
+                physicalRoot.transform,
+                MountainRoadSurfaceMeshFactory.CreateTerminalApron(
+                    plan.Terminal.VehicleApron),
+                TerminalApronColor,
+                false,
+                ShadowCastingMode.Off);
+            terminalApron.GetComponent<MeshRenderer>().receiveShadows = false;
+            MountainRoadBridgeWorldResult bridge =
+                MountainRoadBridgeWorldBuilder.Build(
+                    physicalRoot.transform,
+                    plan.Bridge);
+            MergeSemanticObjects(
+                semanticObjects,
+                bridge.SemanticObjects);
             BuildTunnel(physicalRoot.transform, plan.Tunnel);
             MountainRoadCafeWorldResult cafe =
                 MountainRoadCafeWorldBuilder.Build(
@@ -141,8 +166,10 @@ namespace BarPromenade
                 physicalRoot,
                 backdropRoot,
                 road,
+                terminalApron,
                 terrainRoot,
                 new MountainRoadWalkableArea(plan),
+                bridge,
                 cafe,
                 cableway,
                 semanticObjects);
@@ -173,7 +200,7 @@ namespace BarPromenade
             }
 
             camera.nearClipPlane = Mathf.Min(camera.nearClipPlane, 0.06f);
-            camera.farClipPlane = 120f;
+            camera.farClipPlane = RuntimeSceneSetup.MountainRoadFarClipPlane;
         }
 
         private static GameObject BuildTerrain(

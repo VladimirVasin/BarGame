@@ -115,23 +115,34 @@ together. The ordinary map has switchable City/Mountain Road tabs; confirming
 the other area unloads the source into `AreaLoading` and then loads the chosen
 destination. `MountainRoad` generates a pure City layout only for the City tab,
 never City GameObjects. Its hero starts `6 m` inside a `9 m` exit tunnel and
-follows an `82.7 m` continuous narrow uphill road (about `31.8 s` at the normal
-`2.6 m/s`). The ribbon is now dimensioned around the `4.83 x 1.80 m`
-LastRouteCar: ordinary stretches are `4.8 m` wide and two `7.5 m`-radius
-hairpins widen to `6.4 m`. Its `8.7 m` physical rise ends through one level,
-shared-vertex automotive apron on an irregular roughly `42 x 27 m` mountain
-terminal with a protected `7.5 m` turning circle. An enterable five-sided
-glass cafe occupies the left side; a continuously operating `58 m` cableway
-with three supports and four cabins climbs from the right side into an occluding
-snow ridge. Both are built inside the Mountain Road world, not as additional
-scenes, and add only sounds owned by visible appliances, machinery and roller
-crossings. Their cafe/cableway landmarks come from the same terminal plan used
-by the map. Layered larger forest dressing, grounded melancholy roadside
-objects, mid ridges and far snowy mountains make the climb read higher than its
-local rise. Five earlier causal road sound anchors remain, and one tunnel lamp
+follows a `600 m` continuous car-scale ascent (about `230.8 s`, or `3 min
+51 s`, at the normal `2.6 m/s`). The ribbon rises `26.1 m` at no more than an
+`8%` grade: ordinary stretches are `4.8 m` wide and ten `7.5 m`-radius
+hairpins widen to `6.4 m`; the final `5 m` are level. Midway, the route must
+cross one `50 m`-long high mountain bridge with a `5.8 m` structural deck around
+the `4.8 m` clear roadway. Its terrain mask opens a real gorge to world
+`Y=-16`, preserving at least a `25 m` visible drop below both bridge ends.
+The climb still ends through one level, shared-vertex automotive apron on the
+same irregular roughly `42 x 27 m` mountain terminal with a protected `7.5 m`
+turning circle. A separate colliderless asphalt overlay makes the complete
+entry and turning pocket visible just above the shared road/plateau collision.
+The terrain margin is `76 m`; ordinary mid/far ridges ring the outer perimeter
+of the route-wide envelope, ground their bases from the minimum terrain under
+each footprint and keep those footprints clear of the road and trees. An
+enterable five-sided glass cafe with its dedicated silent four-role cast
+occupies the left side; a continuously operating `58 m`
+cableway with three supports and four cabins climbs from the right side into an
+occluding snow ridge. Cafe and cableway heights are now based on the raised
+terminal instead of old absolute world heights. Both are built inside the
+Mountain Road world, not as additional scenes, and add only sounds owned by
+visible appliances, machinery and roller crossings. Their landmarks come from
+the same terminal plan used by the map, which now shows all ten hairpins and
+the bridge. Layered forest, grounded melancholy roadside objects, mid ridges
+and far snowy mountains are distributed over the full route. Five causal road
+sound anchors remain, including the loose bridge rail, and one tunnel lamp
 visibly flickers.
 For now the City tunnel still refuses passage; only the map invokes this area
-transfer.
+transfer. LastRouteCar still has no Mountain Road driving controller.
 
 The runtime places one visually
 distinct player home beside a bar street and one deterministic street-front

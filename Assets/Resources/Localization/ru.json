@@ -525,6 +525,30 @@
       "value": "Карта променада"
     },
     {
+      "key": "map.point.title",
+      "value": "ТОЧКА НА КАРТЕ"
+    },
+    {
+      "key": "map.point.select",
+      "value": "Выберите точку на карте"
+    },
+    {
+      "key": "map.point.coordinates",
+      "value": "Мировые координаты\nX {0:0.0}      Z {1:0.0}"
+    },
+    {
+      "key": "map.point.teleport",
+      "value": "Телепорт сюда"
+    },
+    {
+      "key": "map.point.teleport_elsewhere",
+      "value": "Точка в другой области"
+    },
+    {
+      "key": "map.point.select_hint",
+      "value": "ЛКМ / ← → / D-PAD — выбрать"
+    },
+    {
       "key": "map.area.city",
       "value": "Город"
     },
@@ -555,6 +579,10 @@
     {
       "key": "map.mountain_road.hairpin",
       "value": "Виток серпантина {0}"
+    },
+    {
+      "key": "map.mountain_road.bridge",
+      "value": "Горный мост"
     },
     {
       "key": "map.mountain_road.cafe",

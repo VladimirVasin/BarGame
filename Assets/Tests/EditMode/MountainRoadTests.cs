@@ -8,7 +8,7 @@ namespace BarPromenade.Tests.EditMode
     {
         [Test]
         [Category("MountainRoad")]
-        public void DefaultPlan_BuildsLongGroundedTwoHairpinWorld()
+        public void DefaultPlan_BuildsAbsurdHighTenHairpinBridgeWorld()
         {
             MountainRoadPlan first = MountainRoadPlanner.Create(
                 GameSessionState.DefaultCitySeed);
@@ -19,13 +19,22 @@ namespace BarPromenade.Tests.EditMode
                 MountainRoadValidator.ValidateOrThrow(first));
             Assert.That(
                 first.Route.Length,
-                Is.EqualTo(82.7f).Within(0.01f));
+                Is.EqualTo(MountainRoadPlanner.OutdoorRouteLength)
+                    .Within(0.01f));
             Assert.That(
                 first.Route.ElevationGain,
-                Is.EqualTo(8.7f).Within(0.01f));
+                Is.EqualTo(26.1f).Within(0.01f));
             Assert.That(MountainRoadPlanner.RoadWidth, Is.EqualTo(4.8f));
             Assert.That(MountainRoadPlanner.HairpinWidth, Is.EqualTo(6.4f));
             Assert.That(MountainRoadPlanner.HairpinRadius, Is.EqualTo(7.5f));
+            Assert.That(
+                first.Route.Hairpins,
+                Has.Count.EqualTo(MountainRoadPlanner.HairpinCount));
+            Assert.That(first.Bridge.Length, Is.InRange(45f, 55f));
+            Assert.That(
+                Mathf.Min(first.Bridge.Start.y, first.Bridge.End.y) -
+                first.Bridge.GorgeFloorY,
+                Is.GreaterThanOrEqualTo(25f));
             Assert.That(
                 first.SpawnPosition,
                 Is.EqualTo(new Vector3(0f, 0f, -6f)));
@@ -42,7 +51,7 @@ namespace BarPromenade.Tests.EditMode
                     MountainRoadTerrainSampler.RoadBedClearance).Within(0.001f));
             Assert.That(
                 first.Route.Length / 2.6f,
-                Is.InRange(31f, 33f));
+                Is.InRange(230f, 232f));
             Assert.That(
                 first.Forest.Min(item => item.Height),
                 Is.GreaterThanOrEqualTo(7f));
@@ -52,15 +61,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 first.Forest.Count(item =>
                     item.Layer == MountainRoadForestLayer.Physical),
-                Is.EqualTo(46));
+                Is.EqualTo(92));
             Assert.That(
                 first.Forest.Count(item =>
                     item.Layer == MountainRoadForestLayer.Mid),
-                Is.EqualTo(84));
+                Is.EqualTo(142));
             Assert.That(
                 first.Forest.Count(item =>
                     item.Layer == MountainRoadForestLayer.Far),
-                Is.EqualTo(112));
+                Is.EqualTo(186));
             Assert.That(first.SoundAnchors, Has.Count.EqualTo(5));
             Assert.That(
                 first.SoundAnchors.All(sound =>
@@ -142,20 +151,45 @@ namespace BarPromenade.Tests.EditMode
                 Is.LessThan(0.03f),
                 "Terrain must stay continuous below the driving seam.");
 
+            float gorgeFloor = MountainRoadTerrainSampler.SampleHeight(
+                first.Route,
+                first.Plateau,
+                new Vector2(
+                    first.Bridge.Center.x,
+                    first.Bridge.Center.z));
+            Assert.That(
+                gorgeFloor,
+                Is.EqualTo(first.Bridge.GorgeFloorY).Within(0.4f),
+                "The terrain must open into a real gorge below the bridge.");
+            Assert.That(
+                first.Bridge.Center.y - gorgeFloor,
+                Is.GreaterThanOrEqualTo(25f),
+                "The bridge no longer communicates a high exposed drop.");
+
+            for (int index = 0;
+                 index < first.Route.Hairpins.Count;
+                 index++)
+            {
+                MountainRoadHairpinDescriptor hairpin =
+                    first.Route.Hairpins[index];
+                Vector3 hole = new Vector3(
+                    hairpin.CenterXZ.x,
+                    hairpin.ApexPosition.y,
+                    hairpin.CenterXZ.y);
+                Assert.That(
+                    walkable.Contains(hole, 0.32f),
+                    Is.False,
+                    $"Hairpin {index} centre became a route shortcut.");
+            }
+
+            MountainRoadHairpinDescriptor firstHairpin =
+                first.Route.Hairpins[0];
             Vector3 firstHole = new Vector3(
-                MountainRoadPlanner.HairpinRadius,
-                2.5f,
-                16f);
-            Vector3 secondStart = first.Route.Sample(
-                first.Route.SecondHairpinStart).Position;
-            Vector3 secondHole = new Vector3(
-                secondStart.x + MountainRoadPlanner.HairpinRadius,
-                secondStart.y,
-                secondStart.z);
-            Assert.That(walkable.Contains(firstHole, 0.32f), Is.False);
-            Assert.That(walkable.Contains(secondHole, 0.32f), Is.False);
+                firstHairpin.CenterXZ.x,
+                firstHairpin.ApexPosition.y,
+                firstHairpin.CenterXZ.y);
             Vector3 constrained = walkable.Constrain(
-                first.Route.Sample(first.Route.FirstHairpinStart - 1f).Position,
+                first.Route.Sample(firstHairpin.StartDistance - 1f).Position,
                 firstHole,
                 0.32f);
             Assert.That(walkable.Contains(constrained, 0.319f), Is.True);
@@ -169,7 +203,7 @@ namespace BarPromenade.Tests.EditMode
             MountainRoadTerrainMeshes terrainMeshes =
                 MountainRoadTerrainMeshFactory.Create(first);
             Mesh roadMesh = MountainRoadSurfaceMeshFactory.Create(first);
-            Assert.That(roadMesh.vertexCount, Is.GreaterThan(150));
+            Assert.That(roadMesh.vertexCount, Is.GreaterThan(2000));
             Assert.That(
                 roadMesh.vertices.Count(vertex =>
                     Vector3.Distance(vertex, entryLeft) < 0.001f),
@@ -189,6 +223,7 @@ namespace BarPromenade.Tests.EditMode
                 "at spawn.");
             Assert.That(terrainMeshes.Soil.triangles.Length, Is.GreaterThan(0));
             Assert.That(terrainMeshes.Snow.triangles.Length, Is.GreaterThan(0));
+            AssertRidgesGroundedAndSeparated(first);
 
             var parent = new GameObject("Mountain Road Test Parent");
             var cameraObject = new GameObject("Mountain Road Test Camera");
@@ -203,6 +238,125 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(result.PhysicalRoot, Is.Not.Null);
                 Assert.That(result.BackdropRoot, Is.Not.Null);
                 Assert.That(result.WalkableArea, Is.Not.Null);
+                Assert.That(result.TerminalApron, Is.Not.Null);
+                Assert.That(
+                    result.TerminalApron.transform.parent,
+                    Is.EqualTo(result.PhysicalRoot.transform));
+                Assert.That(
+                    result.TerminalApron
+                        .GetComponentsInChildren<Collider>(true),
+                    Is.Empty,
+                    "The visible apron must reuse the continuous road and " +
+                    "plateau collision instead of adding a second skin.");
+                Mesh apronMesh = result.TerminalApron
+                    .GetComponent<MeshFilter>().sharedMesh;
+                MountainRoadVehicleApronPlan apron =
+                    first.Terminal.VehicleApron;
+                Assert.That(apronMesh.vertexCount, Is.GreaterThan(24));
+                Assert.That(
+                    apronMesh.vertices.Min(vertex => Vector3.Dot(
+                        vertex - apron.EntryCenter,
+                        apron.Forward)),
+                    Is.LessThanOrEqualTo(
+                        -MountainRoadSurfaceMeshFactory
+                            .TerminalApronEntryOverlap + 0.001f),
+                    "The visible apron must overlap the road seam.");
+                Assert.That(
+                    apronMesh.vertices.Max(vertex => Vector3.Dot(
+                        vertex - apron.Center,
+                        apron.Forward)),
+                    Is.GreaterThan(apron.TurningRadius - 0.08f),
+                    "The paved terminal marking must expose the full " +
+                    "turning pocket.");
+                Assert.That(
+                    apronMesh.vertices.All(vertex => Mathf.Abs(
+                        vertex.y - apron.Center.y -
+                        MountainRoadSurfaceMeshFactory
+                            .TerminalApronSurfaceOffset) < 0.001f),
+                    Is.True,
+                    "The apron overlay must stay just above the shared " +
+                    "driving surface.");
+                Assert.That(result.Bridge, Is.Not.Null);
+                Assert.That(
+                    result.Bridge.Root.transform.parent,
+                    Is.EqualTo(result.PhysicalRoot.transform));
+                Assert.That(
+                    result.Bridge.Root.transform.position,
+                    Is.EqualTo(first.Bridge.Center));
+                Assert.That(result.Bridge.Piers, Has.Count.EqualTo(2));
+                Assert.That(result.Bridge.Rails, Has.Count.EqualTo(2));
+                Assert.That(
+                    result.Bridge.ActiveColliderCount,
+                    Is.EqualTo(
+                        MountainRoadBridgeValidator
+                            .MaximumActiveColliderCount));
+                Assert.That(
+                    result.Bridge.RendererCount,
+                    Is.LessThanOrEqualTo(
+                        MountainRoadBridgeValidator.MaximumRendererCount));
+
+                Transform deck = result.Bridge.StructuralDeck.transform;
+                Vector3 bridgeSpan = first.Bridge.End - first.Bridge.Start;
+                Assert.That(
+                    Vector3.Dot(deck.forward, bridgeSpan.normalized),
+                    Is.GreaterThan(0.999f),
+                    "The structural deck must follow the climbing road.");
+                Vector3 deckTop = deck.position +
+                                  deck.up *
+                                  (deck.lossyScale.y * 0.5f);
+                Assert.That(
+                    Vector3.Distance(
+                        deckTop,
+                        first.Bridge.Center - deck.up *
+                        MountainRoadBridgeWorldBuilder
+                            .StructuralDeckSurfaceClearance),
+                    Is.LessThan(0.002f),
+                    "The bridge deck must support the asphalt without a " +
+                    "coplanar surface.");
+                for (int index = 0;
+                     index < result.Bridge.Piers.Count;
+                     index++)
+                {
+                    Collider pierCollider = result.Bridge.Piers[index]
+                        .GetComponentsInChildren<Collider>(true)
+                        .Single(collider => collider.enabled);
+                    Vector3 pierPosition =
+                        result.Bridge.Piers[index].position;
+                    float pierTerrain = MountainRoadTerrainSampler.SampleHeight(
+                        first.Route,
+                        first.Plateau,
+                        new Vector2(pierPosition.x, pierPosition.z));
+                    Assert.That(
+                        pierCollider.bounds.min.y,
+                        Is.LessThanOrEqualTo(pierTerrain - 0.05f),
+                        $"Bridge pier {index} must be embedded in the " +
+                        "uneven gorge floor.");
+                }
+
+                MeshFilter roadFilter =
+                    result.RoadSurface.GetComponent<MeshFilter>();
+                MeshCollider roadCollider =
+                    result.RoadSurface.GetComponent<MeshCollider>();
+                Assert.That(roadCollider, Is.Not.Null);
+                Assert.That(
+                    roadCollider.sharedMesh,
+                    Is.SameAs(roadFilter.sharedMesh),
+                    "The visible road and its collider must share one mesh.");
+                MeshFilter[] terrainFilters = result.TerrainRoot
+                    .GetComponentsInChildren<MeshFilter>(true);
+                for (int index = 0;
+                     index < terrainFilters.Length;
+                     index++)
+                {
+                    MeshCollider terrainCollider =
+                        terrainFilters[index].GetComponent<MeshCollider>();
+                    Assert.That(terrainCollider, Is.Not.Null);
+                    Assert.That(
+                        terrainCollider.sharedMesh,
+                        Is.SameAs(terrainFilters[index].sharedMesh),
+                        "Visible terrain and collision must not diverge.");
+                }
+
                 string[] requiredSemanticIds = first.SoundAnchors
                     .Select(sound => sound.SourceObjectStableId)
                     .Concat(new[]
@@ -221,6 +375,7 @@ namespace BarPromenade.Tests.EditMode
                         node => node.StableId))
                     .Concat(first.Terminal.Cableway.Cabins.Select(
                         cabin => cabin.StableId))
+                    .Concat(result.Bridge.SemanticObjects.Keys)
                     .Distinct()
                     .ToArray();
                 for (int index = 0;
@@ -240,7 +395,9 @@ namespace BarPromenade.Tests.EditMode
                         Is.True,
                         $"World semantic object '{stableId}' is null.");
                 }
-                Assert.That(camera.farClipPlane, Is.EqualTo(120f));
+                Assert.That(
+                    camera.farClipPlane,
+                    Is.EqualTo(RuntimeSceneSetup.MountainRoadFarClipPlane));
 
                 int cafePhysicalColliders = result.Cafe.PhysicalRoot
                     .GetComponentsInChildren<Collider>(true)
@@ -287,6 +444,61 @@ namespace BarPromenade.Tests.EditMode
                 Object.DestroyImmediate(terrainMeshes.Soil);
                 Object.DestroyImmediate(terrainMeshes.Snow);
                 Object.DestroyImmediate(roadMesh);
+            }
+        }
+
+        private static void AssertRidgesGroundedAndSeparated(
+            MountainRoadPlan plan)
+        {
+            for (int ridgeIndex = 0;
+                 ridgeIndex < plan.Ridges.Count;
+                 ridgeIndex++)
+            {
+                MountainRoadRidgeDescriptor ridge = plan.Ridges[ridgeIndex];
+                float expectedBase = MountainRoadPlanner.CalculateRidgeBaseY(
+                    plan.Route,
+                    plan.Plateau,
+                    new Vector2(ridge.Center.x, ridge.Center.z),
+                    ridge.Size,
+                    ridge.YawDegrees);
+                Assert.That(
+                    ridge.Center.y - ridge.Size.y * 0.5f,
+                    Is.EqualTo(expectedBase).Within(0.001f),
+                    $"{ridge.StableId} floats above its local terrain.");
+
+                for (int routeIndex = 0;
+                     routeIndex < plan.Route.Samples.Count;
+                     routeIndex++)
+                {
+                    MountainRoadRouteSample sample =
+                        plan.Route.Samples[routeIndex];
+                    Assert.That(
+                        MountainRoadRidgeGeometry.DistanceToFootprint(
+                            new Vector2(
+                                sample.Position.x,
+                                sample.Position.z),
+                            ridge),
+                        Is.GreaterThanOrEqualTo(
+                            sample.Width * 0.5f +
+                            MountainRoadPlanner.RidgeRoadClearance - 0.03f),
+                        $"{ridge.StableId} crosses {sample.StableId}.");
+                }
+
+                for (int treeIndex = 0;
+                     treeIndex < plan.Forest.Count;
+                     treeIndex++)
+                {
+                    MountainRoadForestDescriptor tree =
+                        plan.Forest[treeIndex];
+                    Assert.That(
+                        MountainRoadRidgeGeometry.DistanceToFootprint(
+                            new Vector2(tree.Position.x, tree.Position.z),
+                            ridge),
+                        Is.GreaterThanOrEqualTo(
+                            tree.CrownRadius +
+                            MountainRoadPlanner.RidgeTreeClearance - 0.03f),
+                        $"{ridge.StableId} clips {tree.StableId}.");
+                }
             }
         }
 

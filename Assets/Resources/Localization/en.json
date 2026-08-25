@@ -525,6 +525,30 @@
       "value": "Promenade Map"
     },
     {
+      "key": "map.point.title",
+      "value": "MAP POINT"
+    },
+    {
+      "key": "map.point.select",
+      "value": "Select a point on the map"
+    },
+    {
+      "key": "map.point.coordinates",
+      "value": "World coordinates\nX {0:0.0}      Z {1:0.0}"
+    },
+    {
+      "key": "map.point.teleport",
+      "value": "Teleport here"
+    },
+    {
+      "key": "map.point.teleport_elsewhere",
+      "value": "Point is in another area"
+    },
+    {
+      "key": "map.point.select_hint",
+      "value": "LMB / ← → / D-PAD — select"
+    },
+    {
       "key": "map.area.city",
       "value": "City"
     },
@@ -555,6 +579,10 @@
     {
       "key": "map.mountain_road.hairpin",
       "value": "Hairpin {0}"
+    },
+    {
+      "key": "map.mountain_road.bridge",
+      "value": "Mountain bridge"
     },
     {
       "key": "map.mountain_road.cafe",

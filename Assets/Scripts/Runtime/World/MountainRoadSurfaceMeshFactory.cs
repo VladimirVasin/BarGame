@@ -9,6 +9,10 @@ namespace BarPromenade
     {
         public const float SurfaceThickness = 0.18f;
         public const float MetersPerTile = 3.5f;
+        public const float TerminalApronSurfaceOffset = 0.025f;
+        public const float TerminalApronEntryOverlap = 0.45f;
+
+        private const int TerminalApronArcSegments = 28;
 
         private readonly struct Row
         {
@@ -72,6 +76,78 @@ namespace BarPromenade
                 uvs,
                 triangles);
             return CreateMesh("Mountain Road Surface", vertices, uvs, triangles);
+        }
+
+        public static Mesh CreateTerminalApron(
+            MountainRoadVehicleApronPlan apron)
+        {
+            if (apron == null)
+            {
+                throw new ArgumentNullException(nameof(apron));
+            }
+
+            float halfWidth = apron.EntryWidth * 0.5f;
+            float chordForward = -Mathf.Sqrt(
+                apron.TurningRadius * apron.TurningRadius -
+                halfWidth * halfWidth);
+            float startAngle = Mathf.Atan2(chordForward, -halfWidth);
+            float endAngle = Mathf.Atan2(chordForward, halfWidth) -
+                             Mathf.PI * 2f;
+            Vector3 surfaceCenter = apron.Center +
+                                    Vector3.up * TerminalApronSurfaceOffset;
+            var outline = new List<Vector3>(TerminalApronArcSegments + 3)
+            {
+                apron.EntryCenter -
+                apron.Forward * TerminalApronEntryOverlap -
+                apron.Right * halfWidth +
+                Vector3.up * TerminalApronSurfaceOffset
+            };
+            for (int index = 0;
+                 index <= TerminalApronArcSegments;
+                 index++)
+            {
+                float angle = Mathf.Lerp(
+                    startAngle,
+                    endAngle,
+                    index / (float)TerminalApronArcSegments);
+                outline.Add(surfaceCenter +
+                    apron.Right * (Mathf.Cos(angle) * apron.TurningRadius) +
+                    apron.Forward * (Mathf.Sin(angle) * apron.TurningRadius));
+            }
+
+            outline.Add(
+                apron.EntryCenter -
+                apron.Forward * TerminalApronEntryOverlap +
+                apron.Right * halfWidth +
+                Vector3.up * TerminalApronSurfaceOffset);
+
+            var vertices = new List<Vector3>(outline.Count + 1)
+            {
+                surfaceCenter
+            };
+            vertices.AddRange(outline);
+            var uvs = new List<Vector2>(vertices.Count);
+            for (int index = 0; index < vertices.Count; index++)
+            {
+                Vector3 local = vertices[index] - surfaceCenter;
+                uvs.Add(new Vector2(
+                    Vector3.Dot(local, apron.Right),
+                    Vector3.Dot(local, apron.Forward)) / MetersPerTile);
+            }
+
+            var triangles = new List<int>(outline.Count * 3);
+            for (int index = 0; index < outline.Count; index++)
+            {
+                triangles.Add(0);
+                triangles.Add(index + 1);
+                triangles.Add((index + 1) % outline.Count + 1);
+            }
+
+            return CreateMesh(
+                "Mountain Road Terminal Apron",
+                vertices,
+                uvs,
+                triangles);
         }
 
         private static List<Row> CreateRows(MountainRoadPlan plan)

@@ -128,10 +128,10 @@ namespace BarPromenade
             float[] heights =
             {
                 lower.y,
-                27f,
-                32f,
-                35.5f,
-                37.5f
+                lower.y + 14.3f,
+                lower.y + 19.3f,
+                lower.y + 22.8f,
+                lower.y + 24.8f
             };
             var nodes = new List<MountainCablewayNodeDescriptor>(
                 distances.Length);

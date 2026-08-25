@@ -87,7 +87,10 @@ namespace BarPromenade
             MoveBar,
             ClearRoute,
             SelectMapObject,
-            ConfirmDebugTeleport
+            ConfirmDebugTeleport,
+            ToggleMapPointInspection,
+            SelectMapPoint,
+            ConfirmMapPointTeleport
         }
 
         private readonly struct PendingCommand
@@ -265,6 +268,7 @@ namespace BarPromenade
                 ? -1
                 : Mathf.Clamp(SelectedBarIndex, 0, bars.Count - 1);
             SelectedMapObjectIndex = -1;
+            RebuildMapPointCatalogs();
 
             View = GetComponent<CityMapView>();
             if (View == null)
@@ -457,6 +461,7 @@ namespace BarPromenade
             }
 
             IsOpen = false;
+            ResetMapPointInspection();
             modalLock.Restore();
 
             if (playSound)
@@ -778,6 +783,18 @@ namespace BarPromenade
 
             DebugTeleportEnabled = enabled;
             SelectedMapObjectIndex = -1;
+            if (!enabled)
+            {
+                // Leaving debug mode takes the point inspector with it:
+                // the coordinate readout and the point teleport are both
+                // debug tools and neither should outlive the switch that
+                // turned them on. Turning debug mode ON no longer resets
+                // the inspector, because the two are meant to be used
+                // TOGETHER - pick the exact point, read its coordinates,
+                // go there.
+                ResetMapPointInspection();
+            }
+
             GameLog.Info(
                 "map",
                 "debug_teleport_mode_changed",
@@ -1046,6 +1063,26 @@ namespace BarPromenade
                 new PendingCommand(CommandType.ConfirmDebugTeleport));
         }
 
+        public void QueueToggleMapPointInspection()
+        {
+            pendingCommands.Enqueue(
+                new PendingCommand(CommandType.ToggleMapPointInspection));
+        }
+
+        public void QueueSelectMapPoint(int pointIndex)
+        {
+            pendingCommands.Enqueue(
+                new PendingCommand(
+                    CommandType.SelectMapPoint,
+                    barIndex: pointIndex));
+        }
+
+        public void QueueConfirmMapPointTeleport()
+        {
+            pendingCommands.Enqueue(
+                new PendingCommand(CommandType.ConfirmMapPointTeleport));
+        }
+
         private void Update()
         {
             ProcessAreaMapCommands();
@@ -1084,10 +1121,31 @@ namespace BarPromenade
                 return;
             }
 
+            if (WasMapPointInspectionTogglePressed())
+            {
+                SetMapPointInspectionEnabled(
+                    !MapPointInspectionEnabled);
+                return;
+            }
+
             int areaDelta = ReadAreaSelectionDelta();
             if (areaDelta != 0)
             {
                 MoveAreaSelection(areaDelta);
+                return;
+            }
+
+            int selectionDelta = ReadSelectionDelta();
+            if (MapPointInspectionEnabled)
+            {
+                if (selectionDelta != 0)
+                {
+                    MoveMapPointSelection(selectionDelta);
+                }
+
+                // Coordinate mode is intentionally observational: route
+                // editing, travel and debug teleport stay behind their own
+                // explicit modes and cannot be triggered by a stale focus.
                 return;
             }
 
@@ -1099,7 +1157,6 @@ namespace BarPromenade
                 return;
             }
 
-            int selectionDelta = ReadSelectionDelta();
             if (IsCityMapInteractionActive && selectionDelta != 0)
             {
                 if (DebugTeleportEnabled)
@@ -1196,6 +1253,24 @@ namespace BarPromenade
                         break;
                     case CommandType.ConfirmDebugTeleport:
                         ConfirmDebugTeleport();
+                        break;
+                    case CommandType.ToggleMapPointInspection:
+                        if (IsOpen)
+                        {
+                            SetMapPointInspectionEnabled(
+                                !MapPointInspectionEnabled);
+                        }
+
+                        break;
+                    case CommandType.SelectMapPoint:
+                        if (IsOpen)
+                        {
+                            SelectMapPoint(command.BarIndex);
+                        }
+
+                        break;
+                    case CommandType.ConfirmMapPointTeleport:
+                        ConfirmMapPointTeleport();
                         break;
                 }
             }

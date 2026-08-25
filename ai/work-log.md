@@ -6,6 +6,226 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-25 — The Ferryman's own lamp was blowing him out
+
+- Halved it: `70/22` night/day to `38/12`, range unchanged at `5.2 m`. That
+  makes it the dimmest registered site light in the city by some way, which is
+  correct — it is the only one that is not a lamp.
+- The number was wrong for a reason worth keeping. At `70` it sat between the
+  pier hand lamp (`46` at `11 m`) and the porch bulb (`110` at `8 m`), which
+  reads as reasonable until you notice the RANGE: `5.2 m` concentrates all of
+  it on one man, and at his face it delivered about what standing directly
+  under a street practical does. He is also the only lit thing on an unlit
+  lot, so there is nothing beside him for the eye to normalise against, and
+  through ACES and bloom at `640x360` that is a cut-out rather than a man in
+  the dark. **Intensity cannot be judged against another fixture's intensity
+  without its range and what else is lit near it.**
+- It is safe to take this much out because the same pass that fitted the lamp
+  also lifted his coat palette forty percent (`0.055` to `0.078`). The lamp no
+  longer has to carry him on its own, so it can go back to being what the
+  design says it is: not a fixture, but his own headlights coming off the mist.
+- The range is untouched on purpose. The tight falloff is what keeps the
+  warmth on HIM rather than washing the car and the paving, which is the
+  difference between a lit man and a lit lot.
+- Verification: `dotnet build` on Runtime, `0` errors. Nothing pins these
+  constants — no test and no manifest reads them — so there was nothing to
+  re-baseline; the judgement is the neighbour table above, per the standing
+  rule that light intensities are never tuned from edit-mode captures.
+
+## 2026-08-25 — The map inspector teleports, and stopped eating the debug teleport
+
+- Follow-up to the XYZ inspector below, correcting two things about it.
+- **The inspector and the debug teleport cancelled each other, and that
+  removed the teleport.** `SetMapPointInspectionEnabled(true)` cleared
+  `DebugTeleportEnabled` and the reverse cleared the inspection. The reasoning
+  was half right — one map click cannot mean both "select this lot" and
+  "select this point" — but the exclusion was applied to the MODES rather than
+  to the click, so opening the coordinate readout silently switched debug mode
+  off and there was no way to have both. Only the LOT SELECTION is dropped
+  now; the click stays unambiguous because while the inspector is on the
+  markers pick points and the whole-lot buttons go quiet. Leaving debug mode
+  still closes the inspector, because it is a debug tool.
+- **A point is now a teleport destination.** `ConfirmMapPointTeleport` sends
+  the player to the selected point rather than to the middle of the region
+  containing it — which is the whole complaint: a precinct like the cemetery
+  or the yards is ONE entry in `MapObjects` covering a whole area, so
+  confirming it could only ever mean "somewhere in there". Every open-area
+  target already had a point of its own, so nothing new had to be catalogued.
+  The arrival is clamped to walkable ground exactly as the area teleport
+  clamps its own, and a point that cannot be clamped is refused and logged
+  rather than dropping the hero into scenery. Points on the other tab are
+  refused outright: that is a different scene, and the area-travel button
+  owns that trip.
+- **The readout lost its height.** `X/Y/Z` became `X/Z`. A plan view has two
+  coordinates; the third is the one number the projection cannot show, nobody
+  navigates by it, and on a city graded everywhere it is noise beside the two
+  that locate the point. `map.point.coordinates` now carries two placeholders
+  and the catalog test asserts there is no third.
+- Verification: focused EditMode over `CityMapAreaPresentationTests` and
+  `LocalizationCatalogTests` — `16/16`, including two new contracts
+  (`PointInspection_KeepsDebugTeleportAndOffersThePointItself`,
+  `PointCoordinates_ReadOutXAndZOnly`).
+
+## 2026-08-25 — Both map tabs gain an observational XYZ inspector
+
+- Added a shared stable-ID `CityMapPointDescriptor` catalog and an ordinary
+  coordinate-inspection mode to the full-screen City/Mountain Road map. The
+  `XYZ` panel button, keyboard `C` or gamepad north/`Y` toggles it; click picks
+  the foreground-first target under the pointer, while Left/Right or D-pad
+  Left/Right cycles deterministically and recentres the viewport. The selected
+  point keeps a visible outline, and the side panel shows its localized name,
+  area and invariant world `X/Y/Z` to one decimal place.
+- City's catalog contains every canonical `BuildingLot`, every open-area
+  arrival, all bus stops, the current player, the city mountain-tunnel portal
+  and the boat-station hut. Special lots replace their anonymous entry instead
+  of appearing twice: bars use `ReturnPosition`, home and supermarket use
+  `Center`, and POIs keep their authored point.
+- Mountain Road catalogs the current player, exit tunnel, all ten authored
+  hairpin apexes, bridge centre, plateau endpoint, cafe and cableway. Road and
+  itinerary polylines, intermediate route samples and mountain hatches remain
+  decorative and cannot be selected.
+- Inspection is observational and mutually exclusive with debug teleport. It
+  consumes the map's action input without editing the bar route, requesting
+  area travel or confirming a teleport; the player must close `XYZ` before
+  using those actions.
+- Verification: focused EditMode
+  `CityMapAreaPresentationTests.MapPointInspection_CoversBothTabsWithoutRequestingTravel`
+  passed `1/1` in `1.11 s`; both localization JSON catalogs parse with matching
+  point keys. The remaining EditMode suite, PlayMode, a player build and a
+  manual visual smoke were intentionally not run in fast mode.
+
+## 2026-08-25 — Mountain terminal asphalt and ridges stop disappearing
+
+- Materialized the terminal's visible asphalt entry and full R`7.5 m` turning
+  pocket as a dedicated mesh `0.025 m` above the authoritative road/plateau
+  surface, overlapping the road seam by `0.45 m`. The overlay is deliberately
+  colliderless: the existing continuous road and plateau remain the single
+  physical driving surface, so visibility no longer costs a second physics
+  skin or creates a coplanar seam.
+- Expanded the terrain margin to `76 m`. Generic mid and far-snow ridges now
+  sample the outer perimeter of the global route/plateau envelope. Every
+  oriented base is placed from the minimum terrain sampled beneath its complete
+  footprint and buried by `1.5 m`; ridge footprints are validated clear of the
+  road corridor, plateau and every tree crown.
+- Verification: the focused EditMode regression
+  `MountainRoadTests.DefaultPlan_BuildsAbsurdHighTenHairpinBridgeWorld` was
+  `Passed`, `1/1`, in `14.662368 s`. Complete suites, a player build and manual
+  smoke remain outside fast mode.
+
+## 2026-08-25 — Mountain Road becomes an absurd high serpentine
+
+- Replaced the former `82.7 m` / `8.7 m` two-turn climb with a deterministic
+  `600 m` route that gains `26.1 m`: ten `7.5 m`-radius hairpins widen the
+  ordinary `4.8 m` road to `6.4 m`, sampled grade stays at or below `8%`, and
+  the final `5 m` remain level. At the ordinary `2.6 m/s` player speed the
+  complete ascent now takes about `230.8 s`, or `3 min 51 s`. The pure route
+  model owns ordered sections and hairpin descriptors rather than two fixed
+  turn fields; LastRouteCar driving remains outside this feature.
+- Inserted one mandatory `50 m` high-gorge bridge between the fifth and sixth
+  hairpins. Its descriptor holds the `4.8 m` clear road, `5.8 m` deck,
+  `0.72 m` slab, `1.1 m` rails and world-`Y=-16` gorge floor, with at least
+  `25 m` below both deck ends. A focused bridge builder adds the sloped
+  structural deck beneath the authoritative asphalt, batched girders and
+  crossbeams, two abutments, two floor-grounded bridge piers and open two-beam
+  rails backed by continuous physical collision. It is bounded to seven
+  renderers and six enabled colliders and creates no light or audio source.
+  The existing loose-guardrail sound now belongs to a visible bridge rail.
+- Terrain lookup skips suspended road samples and carves the dedicated gorge;
+  forest, road dressing, snow poles and ridge layers now sample the whole route.
+  The existing `42 x 27 m` terminal, silent four-role cafe and four-cabin
+  cableway remain intact, while cable heights are rebased from the raised
+  plateau. The map copies all ten hairpin apexes and the bridge centre from the
+  same plan and draws a separately localized bridge marker.
+- Verification: focused EditMode
+  `MountainRoadTests.DefaultPlan_BuildsAbsurdHighTenHairpinBridgeWorld` passed
+  `1/1` in `8.87 s`; focused EditMode
+  `CityMapAreaPresentationTests.MountainRoadOverlay_FromPlanOwnsHairpinsBridgeAndLandmarks`
+  passed `1/1` in `0.59 s`; `git diff --check` covers the final handoff.
+  Complete suites, a player build and a manual scene smoke were intentionally
+  not run in fast mode.
+
+## 2026-08-25 — The Ferryman gets out of his car before he gets into it
+
+- "Уехать из города? — Да" used to be `0.75 s` of `Vector3.Lerp` from the
+  bonnet to the driver's seat, straight through the bodywork. It is now a
+  four-phase beat: he shoves off the metal and drops onto the lot, the car
+  comes up on its springs, he walks round the nose, stops at his own door,
+  pulls the handle, gets in and shuts it behind him. About seven and a half
+  seconds, of which the player controls himself for six.
+- **The menu closes when his boots land, not when the door shuts.** The
+  answer is over the moment he moves; holding a dialogue open across a walk
+  round a car would make the payoff feel like a cutscene the player is
+  locked out of.
+- **One new clip, not four.** `FerrymanDismount` (`1.0 s`) opens on the exact
+  base pose of `FerrymanWait` and closes on the exact base pose of
+  `FerrymanTrudge`; `FerrymanBoard` was re-authored from `0.75 s` to `2.5 s`
+  and now opens on the trudge's base and closes on the drive's, carrying the
+  handle, the step back, the way in and the door shut inside one clip. The
+  walk is `FerrymanTrudge`, authored months ago and never once played until
+  today. He is the library's second one-shot as well as its first, so
+  `IsOneShotClip` had to stop inferring the shape from `ActionClipName` and
+  start naming both.
+- **His arms were solved, not posed.** Three hand targets swept in Blender
+  against the rig - `0.43 m` in front of him at the car's waist for the
+  handle, drawn back and across for the pull, `0.63 m` out to his left for
+  the door edge from the seat. The left hand, because the car is left-hand
+  drive and the rig faces its own `-Y`, which puts the driver's door on his
+  left. Every first guess about this shoulder has been inverted for two
+  sessions running; the sweep took one Blender run and settled all three.
+- **The doors open, and that broke the handle.** Both leaves were authored on
+  hinge pivots in `build-last-route-car-3d-model.py` specifically so that "he
+  opens the door" would one day be a rotation - but the front handle was
+  drawn into the flank's trim mesh, which is invisible for exactly as long as
+  nothing moves and a chrome bar hanging in an empty doorway the moment
+  something does. It now rides its own leaf. The rear handles stay on the
+  body; those doors never open.
+- **The docks had to move, and nothing would have told us.** A `1.51 m` leaf
+  on a hinge at the A-pillar sweeps every bearing between shut and open, and
+  the hero's dock stood `0.99 m` from that hinge - the door would have swung
+  clean through him. There is no angle that helps: the only safe place is
+  outside the blade's radius. Both docks are now `1.85 m` out and a metre
+  back along the flank, which is also where a person actually stands to open
+  a car door. `LastRouteCarDoors.MeasureSwingClearance` states the rule and
+  two EditMode tests hold both docks to it - plus one that proves neither
+  dock leaves the island on the production seed, because the bay placement
+  only ever guaranteed `0.40 m` of clearance.
+- **Springs, as a kick rather than a road wave.** The bus samples its
+  suspension from distance travelled; this car never moves again, so what it
+  needs is an impulse and two seconds of settling. A pure three-channel
+  damped oscillator (`ζ = 0.35`, ~`1.1 Hz`) drives a sprung body slipped
+  between the imported node and its parent, with the four wheel pivots lifted
+  out of it - the bus's own trick, because the generator hangs the wheels off
+  `ROOT_Body` beside the panels and rocking that drives the tyres into the
+  ground. The nose lifts about `4 cm` when his weight leaves the bonnet.
+- **The passenger seat is his to offer.** The hero could already sit in the
+  car - prompt, clips and all - at any time, including while the man who owns
+  it was still sitting on the bonnet. It is now gated on
+  `presentation.IsDriving`, attached after the fact the way the watchman's
+  gravedigging is, because the car is built before the Ferryman is. The
+  passenger door swings for him too, timed against the shared bus transfer
+  rather than a bespoke hero clip, and his seated pelvis is bound to the seat
+  anchor so he rides the rocking body instead of floating over it.
+- **His lamp goes with him.** It was a fixed point beside the bonnet, which
+  was right for as long as he never left it. A man in the darkest coat in the
+  game walking out of the only light on an unlit island simply disappears for
+  four seconds. The offset is captured rather than re-authored, so the perch
+  is pixel-identical and only the walk gains anything.
+- Verification: `blender --background --factory-startup --python
+  tools/build-last-route-car-3d-model.py` (`36` meshes, `1992` triangles) and
+  the same for the pedestrian generator at `--archetype all` (`37` clips,
+  `perched FerrymanWait: seat 0.5097-0.5106 m` unchanged, all five Ferryman
+  clips grounded); `LastRouteCarAssetSetup.BuildOrThrow` and
+  `CityPedestrianAssetSetup.RunLastRouteFerryman` headless; EditMode
+  `LastRouteCarDoorTests`, `LastRouteFerrymanBoardingTests`,
+  `LastRouteCarPlacementTests`, `LastRouteFerrymanTests` and
+  `CityPedestrianRuntimeTests` — `58/58`, plus `LastRouteFerrymanAssetTests`,
+  both park players and the canopy rag — `21/21`.
+- **Note for whoever picks this up:** the city map UI is being rewritten in
+  the same working tree at the same time, and for a while its EditMode
+  fixture would not compile, which blocks every Unity run in the project
+  rather than just its own. If a batch run aborts with "Scripts have compiler
+  errors" in `CityMapAreaPresentationTests.cs`, it is not this pass.
+
 ## 2026-08-25 — The mountain cafe has its own silent cast
 
 - Replaced the four generic static counter figures with four isolated staged
@@ -64,7 +284,7 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   and the bracing arm (`upper_arm.R` Z `-70` to `-62`) to keep the palm on
   the bonnet — it now sits `3 mm` into the metal against `26 mm` before.
 - **And he is lit.** One warm shadowless point light on the runtime root
-  beside the art, `70` at night dropping to `22` by day through
+  beside the art, `38` at night dropping to `12` by day through
   `CityNightSiteLightRegistry` — the cemetery porch bulb's contract, for
   the same reason it exists there. No fixture and no fog halo: the warmth
   is his own headlights coming back off the mist, and a halo is the blur

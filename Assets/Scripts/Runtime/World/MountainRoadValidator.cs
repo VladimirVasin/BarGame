@@ -78,7 +78,7 @@ namespace BarPromenade
 
         private static void ValidateRoute(MountainRoadRoutePlan route)
         {
-            if (route == null || route.Samples.Count < 60)
+            if (route == null || route.Samples.Count < 500)
             {
                 throw new InvalidOperationException(
                     "Mountain road needs a densely sampled authored route.");
@@ -96,9 +96,14 @@ namespace BarPromenade
                 MountainRoadPlanner.ElevationGain,
                 "Route elevation gain");
 
+            if (route.Hairpins.Count != MountainRoadPlanner.HairpinCount)
+            {
+                throw new InvalidOperationException(
+                    "Mountain road must expose every authored hairpin.");
+            }
+
             var ids = new HashSet<string>(StringComparer.Ordinal);
-            int firstHairpinSamples = 0;
-            int secondHairpinSamples = 0;
+            var hairpinSamples = new int[route.Hairpins.Count];
             float maximumGap = 0f;
             float previousDistance = -1f;
             float previousY = float.NegativeInfinity;
@@ -138,80 +143,167 @@ namespace BarPromenade
                     maximumGap = Mathf.Max(
                         maximumGap,
                         sample.Distance - previousDistance);
+                    MountainRoadRouteSample previous =
+                        route.Samples[index - 1];
+                    float planar = Vector2.Distance(
+                        ToXZ(previous.Position),
+                        ToXZ(sample.Position));
+                    if (planar <= 0.0001f)
+                    {
+                        throw new InvalidOperationException(
+                            "Route samples must advance in the XZ plane.");
+                    }
+
+                    float grade = Mathf.Abs(
+                        sample.Position.y - previous.Position.y) / planar;
+                    if (grade > MountainRoadPlanner.MaximumGrade + 0.002f)
+                    {
+                        throw new InvalidOperationException(
+                            $"{sample.StableId} exceeds the gradual-climb " +
+                            $"grade: {grade:P1}.");
+                    }
                 }
 
-                if (sample.HairpinIndex == 0)
+                if (sample.HairpinIndex >= 0 &&
+                    sample.HairpinIndex < hairpinSamples.Length)
                 {
-                    firstHairpinSamples++;
-                }
-                else if (sample.HairpinIndex == 1)
-                {
-                    secondHairpinSamples++;
+                    hairpinSamples[sample.HairpinIndex]++;
                 }
                 else if (sample.HairpinIndex != -1)
                 {
                     throw new InvalidOperationException(
-                        "Only the two authored hairpin indices are valid.");
+                        "Route sample references an unknown hairpin.");
                 }
 
                 previousDistance = sample.Distance;
                 previousY = sample.Position.y;
             }
 
-            if (maximumGap > 1.08f ||
-                firstHairpinSamples < 17 ||
-                secondHairpinSamples < 17)
+            if (maximumGap > 1.08f)
             {
                 throw new InvalidOperationException(
                     "Route sampling is too sparse for a continuous ribbon.");
             }
 
-            ValidateHairpin(
-                route,
-                0,
-                route.FirstHairpinStart,
-                route.FirstHairpinEnd);
-            ValidateHairpin(
-                route,
-                1,
-                route.SecondHairpinStart,
-                route.SecondHairpinEnd);
+            var hairpinIds = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < route.Hairpins.Count; index++)
+            {
+                MountainRoadHairpinDescriptor hairpin = route.Hairpins[index];
+                if (hairpin.Index != index ||
+                    string.IsNullOrWhiteSpace(hairpin.StableId) ||
+                    !hairpinIds.Add(hairpin.StableId) ||
+                    hairpinSamples[index] < 17)
+                {
+                    throw new InvalidOperationException(
+                        "Hairpin descriptors must be ordered, unique and " +
+                        "densely sampled.");
+                }
+
+                ValidateHairpin(route, hairpin);
+            }
+
+            ValidateBridge(route);
             ValidateNoNonAdjacentRoadOverlap(route);
         }
 
         private static void ValidateHairpin(
             MountainRoadRoutePlan route,
-            int hairpinIndex,
-            float startDistance,
-            float endDistance)
+            MountainRoadHairpinDescriptor hairpin)
         {
             RequireApproximately(
-                endDistance - startDistance,
+                hairpin.EndDistance - hairpin.StartDistance,
                 Mathf.PI * MountainRoadPlanner.HairpinRadius,
-                $"Hairpin {hairpinIndex} arc length");
-            MountainRoadRouteSample start = route.Sample(startDistance);
+                $"Hairpin {hairpin.Index} arc length");
+            MountainRoadRouteSample start = route.Sample(
+                hairpin.StartDistance);
             MountainRoadRouteSample middle = route.Sample(
-                (startDistance + endDistance) * 0.5f);
-            MountainRoadRouteSample end = route.Sample(endDistance);
-            Vector2 center = new Vector2(
-                (start.Position.x + end.Position.x) * 0.5f,
-                (start.Position.z + end.Position.z) * 0.5f);
+                (hairpin.StartDistance + hairpin.EndDistance) * 0.5f);
+            MountainRoadRouteSample end = route.Sample(
+                hairpin.EndDistance);
             RequireApproximately(
                 Vector2.Distance(
                     new Vector2(middle.Position.x, middle.Position.z),
-                    center),
+                    hairpin.CenterXZ),
                 MountainRoadPlanner.HairpinRadius,
-                $"Hairpin {hairpinIndex} radius");
+                $"Hairpin {hairpin.Index} radius");
+            if (Vector3.Distance(middle.Position, hairpin.ApexPosition) >
+                PositionTolerance)
+            {
+                throw new InvalidOperationException(
+                    $"Hairpin {hairpin.Index} apex detached from route.");
+            }
+
             if (Vector3.Dot(start.Forward, end.Forward) > -0.98f)
             {
                 throw new InvalidOperationException(
-                    $"Hairpin {hairpinIndex} does not reverse the road.");
+                    $"Hairpin {hairpin.Index} does not reverse the road.");
             }
 
             if (middle.Width < MountainRoadPlanner.HairpinWidth - 0.01f)
             {
                 throw new InvalidOperationException(
-                    $"Hairpin {hairpinIndex} is not widened at its apex.");
+                    $"Hairpin {hairpin.Index} is not widened at its apex.");
+            }
+        }
+
+        private static void ValidateBridge(MountainRoadRoutePlan route)
+        {
+            MountainRoadBridgeDescriptor bridge = route.Bridge;
+            RequireFinite(bridge.Start, "Bridge start");
+            RequireFinite(bridge.End, "Bridge end");
+            RequireFinite(bridge.Center, "Bridge center");
+            RequireNormalized(bridge.Forward, "Bridge forward");
+            RequireNormalized(bridge.Right, "Bridge right");
+            if (string.IsNullOrWhiteSpace(bridge.StableId) ||
+                bridge.Length < 45f ||
+                bridge.Length > 55f ||
+                bridge.ClearWidth < MountainRoadPlanner.RoadWidth - 0.01f ||
+                bridge.DeckWidth < bridge.ClearWidth + 0.5f ||
+                bridge.DeckThickness < 0.5f ||
+                bridge.RailHeight < 1f ||
+                Mathf.Min(bridge.Start.y, bridge.End.y) -
+                    bridge.GorgeFloorY < 25f ||
+                bridge.GorgeHalfWidth < 10f ||
+                bridge.AbutmentBlendLength < 4f)
+            {
+                throw new InvalidOperationException(
+                    "Mountain bridge lacks its automotive deck or high gorge.");
+            }
+
+            MountainRoadRouteSample start = route.Sample(
+                bridge.StartDistance);
+            MountainRoadRouteSample end = route.Sample(bridge.EndDistance);
+            if (Vector3.Distance(start.Position, bridge.Start) >
+                    PositionTolerance ||
+                Vector3.Distance(end.Position, bridge.End) > PositionTolerance)
+            {
+                throw new InvalidOperationException(
+                    "Mountain bridge endpoints detached from the route.");
+            }
+
+            Vector2 bridgeStart = ToXZ(bridge.Start);
+            Vector2 bridgeForward = new Vector2(
+                bridge.Forward.x,
+                bridge.Forward.z);
+            for (int index = 0; index < route.Samples.Count; index++)
+            {
+                MountainRoadRouteSample sample = route.Samples[index];
+                if (sample.Distance <= bridge.StartDistance + 0.001f ||
+                    sample.Distance > bridge.EndDistance + 0.001f)
+                {
+                    continue;
+                }
+
+                Vector2 delta = ToXZ(sample.Position) - bridgeStart;
+                float along = Vector2.Dot(delta, bridgeForward);
+                Vector2 lateral = delta - bridgeForward * along;
+                if (sample.Section != MountainRoadRouteSection.Bridge ||
+                    lateral.magnitude > PositionTolerance ||
+                    sample.Width < bridge.ClearWidth - 0.01f)
+                {
+                    throw new InvalidOperationException(
+                        "Bridge route must stay straight, continuous and wide.");
+                }
             }
         }
 
@@ -406,9 +498,9 @@ namespace BarPromenade
                 }
             }
 
-            if (physical < 40 || physical > 50 ||
-                mid < 70 || mid > 100 ||
-                far < 90 || far > 140)
+            if (physical < 88 || physical > 100 ||
+                mid < 135 || mid > 155 ||
+                far < 180 || far > 200)
             {
                 throw new InvalidOperationException(
                     "Forest layer budgets drifted outside the authored range.");
@@ -502,6 +594,17 @@ namespace BarPromenade
 
                 RequireFinite(ridge.Center, ridge.StableId);
                 RequirePositive(ridge.Size, ridge.StableId + " size");
+                float expectedBase = MountainRoadPlanner.CalculateRidgeBaseY(
+                    plan.Route,
+                    plan.Plateau,
+                    ToXZ(ridge.Center),
+                    ridge.Size,
+                    ridge.YawDegrees);
+                RequireApproximately(
+                    ridge.Center.y - ridge.Size.y * 0.5f,
+                    expectedBase,
+                    ridge.StableId + " terrain-grounded base");
+                ValidateRidgeClearance(plan, ridge);
                 if (ridge.Layer == MountainRoadRidgeLayer.Mid)
                 {
                     mid++;
@@ -523,15 +626,88 @@ namespace BarPromenade
             }
         }
 
+        private static void ValidateRidgeClearance(
+            MountainRoadPlan plan,
+            MountainRoadRidgeDescriptor ridge)
+        {
+            for (int index = 0; index < plan.Route.Samples.Count; index++)
+            {
+                MountainRoadRouteSample sample = plan.Route.Samples[index];
+                float required = sample.Width * 0.5f +
+                                 MountainRoadPlanner.RidgeRoadClearance;
+                if (MountainRoadRidgeGeometry.DistanceToFootprint(
+                        ToXZ(sample.Position),
+                        ridge) + PositionTolerance < required)
+                {
+                    throw new InvalidOperationException(
+                        $"{ridge.StableId} intersects the playable road " +
+                        $"near {sample.StableId}.");
+                }
+            }
+
+            if (MountainRoadRidgeGeometry.DistanceToFootprint(
+                    ToXZ(plan.Plateau.Center),
+                    ridge) < MountainRoadPlanner.RidgeRoadClearance)
+            {
+                throw new InvalidOperationException(
+                    $"{ridge.StableId} intersects the terminal plateau.");
+            }
+
+            for (int index = 0;
+                 index < plan.Plateau.VerticesXZ.Count;
+                 index++)
+            {
+                if (MountainRoadRidgeGeometry.DistanceToFootprint(
+                        plan.Plateau.VerticesXZ[index],
+                        ridge) < MountainRoadPlanner.RidgeRoadClearance)
+                {
+                    throw new InvalidOperationException(
+                        $"{ridge.StableId} intersects the terminal plateau.");
+                }
+            }
+
+            for (int index = 0; index < plan.Forest.Count; index++)
+            {
+                MountainRoadForestDescriptor tree = plan.Forest[index];
+                float required = tree.CrownRadius +
+                                 MountainRoadPlanner.RidgeTreeClearance;
+                if (MountainRoadRidgeGeometry.DistanceToFootprint(
+                        ToXZ(tree.Position),
+                        ridge) + PositionTolerance < required)
+                {
+                    throw new InvalidOperationException(
+                        $"{ridge.StableId} overlaps the crown of " +
+                        $"{tree.StableId}.");
+                }
+            }
+        }
+
         private static void ValidateBounds(MountainRoadPlan plan)
         {
             if (plan.TerrainBoundsXZ.width < 50f ||
                 plan.TerrainBoundsXZ.height < 50f ||
                 !Contains(plan.WorldBounds, plan.SpawnPosition) ||
-                !Contains(plan.WorldBounds, plan.Route.End))
+                !Contains(plan.WorldBounds, plan.Route.End) ||
+                !Contains(
+                    plan.WorldBounds,
+                    new Vector3(
+                        plan.Bridge.Center.x,
+                        plan.Bridge.GorgeFloorY,
+                        plan.Bridge.Center.z)))
             {
                 throw new InvalidOperationException(
                     "Mountain-road world bounds do not contain the playable area.");
+            }
+
+            for (int index = 0; index < plan.Route.Samples.Count; index++)
+            {
+                Vector3 sample = plan.Route.Samples[index].Position;
+                if (!Contains(plan.WorldBounds, sample) ||
+                    !plan.TerrainBoundsXZ.Contains(ToXZ(sample)))
+                {
+                    throw new InvalidOperationException(
+                        $"Mountain-road bounds omit route sample {index}.");
+                }
             }
 
             for (int index = 0;
@@ -569,14 +745,36 @@ namespace BarPromenade
 
             for (int index = 0; index < plan.Ridges.Count; index++)
             {
-                if (!ContainsRidgeEnvelope(
-                        plan.WorldBounds,
-                        plan.Ridges[index]))
+                MountainRoadRidgeDescriptor ridge = plan.Ridges[index];
+                if (!ContainsRidgeEnvelope(plan.WorldBounds, ridge))
                 {
                     throw new InvalidOperationException(
                         "Mountain-road bounds omit a mountain ridge.");
                 }
+
+                if (!ContainsRidgeFootprint(plan.TerrainBoundsXZ, ridge))
+                {
+                    throw new InvalidOperationException(
+                        "Mountain terrain does not continue below a ridge.");
+                }
             }
+        }
+
+        private static bool ContainsRidgeFootprint(
+            Rect bounds,
+            MountainRoadRidgeDescriptor ridge)
+        {
+            Vector3 halfSize = ridge.Size * 0.5f;
+            float yaw = ridge.YawDegrees * Mathf.Deg2Rad;
+            float halfX = Mathf.Abs(Mathf.Cos(yaw)) * halfSize.x +
+                          Mathf.Abs(Mathf.Sin(yaw)) * halfSize.z;
+            float halfZ = Mathf.Abs(Mathf.Sin(yaw)) * halfSize.x +
+                          Mathf.Abs(Mathf.Cos(yaw)) * halfSize.z;
+            const float tolerance = 0.01f;
+            return ridge.Center.x - halfX >= bounds.xMin - tolerance &&
+                   ridge.Center.x + halfX <= bounds.xMax + tolerance &&
+                   ridge.Center.z - halfZ >= bounds.yMin - tolerance &&
+                   ridge.Center.z + halfZ <= bounds.yMax + tolerance;
         }
 
         private static bool ContainsRidgeEnvelope(

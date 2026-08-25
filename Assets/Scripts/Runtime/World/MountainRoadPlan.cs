@@ -8,10 +8,11 @@ namespace BarPromenade
     public enum MountainRoadRouteSection
     {
         LowerClimb = 0,
-        FirstHairpin = 1,
-        MiddleShelf = 2,
-        SecondHairpin = 3,
-        UpperApproach = 4
+        Hairpin = 1,
+        BridgeApproach = 2,
+        Bridge = 3,
+        UpperClimb = 4,
+        UpperApproach = 5
     }
 
     public enum MountainRoadForestLayer
@@ -81,35 +82,116 @@ namespace BarPromenade
         public MountainRoadRouteSection Section { get; }
         public int HairpinIndex { get; }
         public bool IsHairpin => HairpinIndex >= 0;
+        public bool IsBridge => Section == MountainRoadRouteSection.Bridge;
+    }
+
+    public readonly struct MountainRoadHairpinDescriptor
+    {
+        internal MountainRoadHairpinDescriptor(
+            string stableId,
+            int index,
+            float startDistance,
+            float endDistance,
+            Vector2 centerXZ,
+            Vector3 apexPosition,
+            int turnSide)
+        {
+            StableId = stableId ?? string.Empty;
+            Index = index;
+            StartDistance = startDistance;
+            EndDistance = endDistance;
+            CenterXZ = centerXZ;
+            ApexPosition = apexPosition;
+            TurnSide = turnSide;
+        }
+
+        public string StableId { get; }
+        public int Index { get; }
+        public float StartDistance { get; }
+        public float EndDistance { get; }
+        public Vector2 CenterXZ { get; }
+        public Vector3 ApexPosition { get; }
+        public int TurnSide { get; }
+    }
+
+    public sealed class MountainRoadBridgeDescriptor
+    {
+        internal MountainRoadBridgeDescriptor(
+            string stableId,
+            float startDistance,
+            float endDistance,
+            Vector3 start,
+            Vector3 end,
+            float clearWidth,
+            float deckWidth,
+            float deckThickness,
+            float railHeight,
+            float gorgeFloorY,
+            float gorgeHalfWidth,
+            float abutmentBlendLength)
+        {
+            StableId = stableId ?? string.Empty;
+            StartDistance = startDistance;
+            EndDistance = endDistance;
+            Start = start;
+            End = end;
+            ClearWidth = clearWidth;
+            DeckWidth = deckWidth;
+            DeckThickness = deckThickness;
+            RailHeight = railHeight;
+            GorgeFloorY = gorgeFloorY;
+            GorgeHalfWidth = gorgeHalfWidth;
+            AbutmentBlendLength = abutmentBlendLength;
+
+            Vector3 delta = end - start;
+            Vector3 planar = new Vector3(delta.x, 0f, delta.z);
+            Forward = planar.normalized;
+            Right = Vector3.Cross(Vector3.up, Forward).normalized;
+            Center = (start + end) * 0.5f;
+        }
+
+        public string StableId { get; }
+        public float StartDistance { get; }
+        public float EndDistance { get; }
+        public float Length => EndDistance - StartDistance;
+        public Vector3 Start { get; }
+        public Vector3 End { get; }
+        public Vector3 Center { get; }
+        public Vector3 Forward { get; }
+        public Vector3 Right { get; }
+        public float ClearWidth { get; }
+        public float DeckWidth { get; }
+        public float DeckThickness { get; }
+        public float RailHeight { get; }
+        public float GorgeFloorY { get; }
+        public float GorgeHalfWidth { get; }
+        public float AbutmentBlendLength { get; }
     }
 
     public sealed class MountainRoadRoutePlan
     {
         private readonly ReadOnlyCollection<MountainRoadRouteSample> samples;
+        private readonly ReadOnlyCollection<MountainRoadHairpinDescriptor>
+            hairpins;
 
         internal MountainRoadRoutePlan(
             IList<MountainRoadRouteSample> sourceSamples,
             float length,
-            float firstHairpinStart,
-            float firstHairpinEnd,
-            float secondHairpinStart,
-            float secondHairpinEnd)
+            IList<MountainRoadHairpinDescriptor> sourceHairpins,
+            MountainRoadBridgeDescriptor bridge)
         {
             samples = new ReadOnlyCollection<MountainRoadRouteSample>(
                 new List<MountainRoadRouteSample>(sourceSamples));
+            hairpins = new ReadOnlyCollection<MountainRoadHairpinDescriptor>(
+                new List<MountainRoadHairpinDescriptor>(sourceHairpins));
             Length = length;
-            FirstHairpinStart = firstHairpinStart;
-            FirstHairpinEnd = firstHairpinEnd;
-            SecondHairpinStart = secondHairpinStart;
-            SecondHairpinEnd = secondHairpinEnd;
+            Bridge = bridge ?? throw new ArgumentNullException(nameof(bridge));
         }
 
         public IReadOnlyList<MountainRoadRouteSample> Samples => samples;
+        public IReadOnlyList<MountainRoadHairpinDescriptor> Hairpins => hairpins;
+        public MountainRoadBridgeDescriptor Bridge { get; }
         public float Length { get; }
-        public float FirstHairpinStart { get; }
-        public float FirstHairpinEnd { get; }
-        public float SecondHairpinStart { get; }
-        public float SecondHairpinEnd { get; }
         public Vector3 Start => samples[0].Position;
         public Vector3 End => samples[samples.Count - 1].Position;
         public float ElevationGain => End.y - Start.y;
@@ -370,6 +452,28 @@ namespace BarPromenade
         public int Seed { get; }
     }
 
+    internal static class MountainRoadRidgeGeometry
+    {
+        internal static float DistanceToFootprint(
+            Vector2 point,
+            MountainRoadRidgeDescriptor ridge)
+        {
+            Vector3 worldOffset = new Vector3(
+                point.x - ridge.Center.x,
+                0f,
+                point.y - ridge.Center.z);
+            Vector3 localOffset =
+                Quaternion.Euler(0f, -ridge.YawDegrees, 0f) * worldOffset;
+            float outsideX = Mathf.Max(
+                0f,
+                Mathf.Abs(localOffset.x) - ridge.Size.x * 0.5f);
+            float outsideZ = Mathf.Max(
+                0f,
+                Mathf.Abs(localOffset.z) - ridge.Size.z * 0.5f);
+            return Mathf.Sqrt(outsideX * outsideX + outsideZ * outsideZ);
+        }
+    }
+
     public sealed class MountainRoadPlan
     {
         private readonly ReadOnlyCollection<MountainRoadForestDescriptor> forest;
@@ -409,6 +513,7 @@ namespace BarPromenade
         public MountainRoadRoutePlan Route { get; }
         public MountainRoadPlateauDescriptor Plateau { get; }
         public MountainRoadTerminalPlan Terminal { get; }
+        public MountainRoadBridgeDescriptor Bridge => Route.Bridge;
         public Rect TerrainBoundsXZ { get; }
         public Bounds WorldBounds { get; }
         public Vector3 SpawnPosition => Tunnel.SpawnPosition;

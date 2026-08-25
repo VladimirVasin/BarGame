@@ -7,23 +7,32 @@ namespace BarPromenade
     public static class MountainRoadPlanner
     {
         public const int DefaultSeed = 19081987;
-        public const float OutdoorRouteLength = 82.7f;
-        public const float ElevationGain = 8.7f;
+        public const float OutdoorRouteLength = 600f;
+        public const float ElevationGain = 26.1f;
         public const float HairpinRadius = 7.5f;
+        public const int HairpinCount = 10;
         public const float RoadWidth = 4.8f;
         public const float HairpinWidth = 6.4f;
+        public const float MaximumGrade = 0.08f;
         public const float SpawnDepth = 6f;
         public const float TunnelVisualDepth = 9f;
-        public const float TerrainMargin = 30f;
+        public const float TerrainMargin = 76f;
+        public const float RidgeTerrainBurial = 1.5f;
+        public const float RidgeRoadClearance = 1.5f;
+        public const float RidgeTreeClearance = 0.75f;
 
-        private const float LowerRunLength = 16f;
-        private const float MiddleShelfEnd = 45f;
-        private const float FirstHairpinEndY = 3.2f;
-        private const float MiddleShelfEndY = 4.4f;
-        private const float SecondHairpinEndY = 7.2f;
+        private const float LowerRunLength = 25f;
+        private const float LowerShelfLength = 26f;
+        private const float UpperShelfLength = 33f;
+        private const int LowerHairpinCount = 5;
+        private const float BridgeApproachLength = 10f;
+        private const float BridgeLength = 50f;
         private const float PlateauEntryLead = 5f;
         private const float ForestRoadClearance = 0.75f;
         private const float RoadsidePropClearance = 0.8f;
+        private const float MidRidgeEnvelopeOffset = 44f;
+        private const float FarRidgeEnvelopeOffset = 62f;
+        private const int RidgeGroundingStationCount = 6;
 
         private sealed class MutablePoint
         {
@@ -56,25 +65,27 @@ namespace BarPromenade
                 route,
                 plateau,
                 terminal);
-            List<MountainRoadForestDescriptor> forest =
-                CreateForest(
-                    seed,
-                    route,
-                    plateau,
-                    terminal,
-                    terrainBounds);
-            List<MountainRoadMiscDescriptor> misc =
-                CreateMisc(seed, tunnel, route, plateau);
-            List<MountainRoadSoundAnchor> sounds =
-                CreateSoundAnchors(misc);
             List<MountainRoadRidgeDescriptor> ridges =
                 CreateRidges(
                     seed,
                     route,
                     plateau,
                     terminal);
+            List<MountainRoadForestDescriptor> forest =
+                CreateForest(
+                    seed,
+                    route,
+                    plateau,
+                    terminal,
+                    terrainBounds,
+                    ridges);
+            List<MountainRoadMiscDescriptor> misc =
+                CreateMisc(seed, tunnel, route, plateau);
+            List<MountainRoadSoundAnchor> sounds =
+                CreateSoundAnchors(misc);
             Bounds worldBounds = CalculateWorldBounds(
                 terrainBounds,
+                route,
                 terminal,
                 ridges);
             var plan = new MountainRoadPlan(
@@ -95,12 +106,15 @@ namespace BarPromenade
 
         private static Bounds CalculateWorldBounds(
             Rect terrainBounds,
+            MountainRoadRoutePlan route,
             MountainRoadTerminalPlan terminal,
             IReadOnlyList<MountainRoadRidgeDescriptor> ridges)
         {
             float minimumX = terrainBounds.xMin;
             float maximumX = terrainBounds.xMax;
-            float minimumY = -12f;
+            float minimumY = Mathf.Min(
+                -12f,
+                route.Bridge.GorgeFloorY - 2f);
             float maximumY = terminal.Cableway.UpperCableCenter.y + 6f;
             float minimumZ = terrainBounds.yMin;
             float maximumZ = terrainBounds.yMax;
@@ -143,12 +157,7 @@ namespace BarPromenade
 
         private static MountainRoadRoutePlan CreateRoute()
         {
-            float arcLength = Mathf.PI * HairpinRadius;
-            float firstArcStart = LowerRunLength;
-            float firstArcEnd = firstArcStart + arcLength;
-            float secondArcStart = MiddleShelfEnd;
-            float secondArcEnd = secondArcStart + arcLength;
-            var points = new List<MutablePoint>(90)
+            var points = new List<MutablePoint>(720)
             {
                 new MutablePoint(
                     0f,
@@ -156,99 +165,117 @@ namespace BarPromenade
                     MountainRoadRouteSection.LowerClimb,
                     -1)
             };
+            var hairpins = new List<MountainRoadHairpinDescriptor>(
+                HairpinCount);
+            Vector3 forward = Vector3.forward;
 
-            AppendLine(
+            AppendStraight(
                 points,
-                new Vector3(0f, 1.8f, LowerRunLength),
                 LowerRunLength,
-                16,
+                forward,
                 MountainRoadRouteSection.LowerClimb);
-            AppendArc(
+            for (int index = 0; index < LowerHairpinCount; index++)
+            {
+                hairpins.Add(AppendHairpin(points, ref forward, index));
+                if (index < LowerHairpinCount - 1)
+                {
+                    AppendStraight(
+                        points,
+                        LowerShelfLength,
+                        forward,
+                        MountainRoadRouteSection.LowerClimb);
+                }
+            }
+
+            AppendStraight(
                 points,
-                new Vector2(HairpinRadius, LowerRunLength),
-                Mathf.PI,
-                0f,
-                FirstHairpinEndY,
-                firstArcEnd,
-                24,
-                MountainRoadRouteSection.FirstHairpin,
-                0);
-            AppendLine(
+                BridgeApproachLength,
+                forward,
+                MountainRoadRouteSection.BridgeApproach);
+            MutablePoint bridgeStart = points[points.Count - 1];
+            AppendStraight(
                 points,
-                new Vector3(
-                    HairpinRadius * 2f,
-                    MiddleShelfEndY,
-                    LowerRunLength - (MiddleShelfEnd - firstArcEnd)),
-                MiddleShelfEnd,
-                15,
-                MountainRoadRouteSection.MiddleShelf);
-            Vector3 secondStart = points[points.Count - 1].Position;
-            AppendArc(
+                BridgeLength,
+                forward,
+                MountainRoadRouteSection.Bridge);
+            MutablePoint bridgeEnd = points[points.Count - 1];
+            var bridge = new MountainRoadBridgeDescriptor(
+                "mountain-bridge",
+                bridgeStart.Distance,
+                bridgeEnd.Distance,
+                bridgeStart.Position,
+                bridgeEnd.Position,
+                RoadWidth,
+                5.8f,
+                0.72f,
+                1.1f,
+                -16f,
+                12f,
+                6f);
+            AppendStraight(
                 points,
-                new Vector2(
-                    secondStart.x + HairpinRadius,
-                    secondStart.z),
-                Mathf.PI,
-                Mathf.PI * 2f,
-                SecondHairpinEndY,
-                secondArcEnd,
-                24,
-                MountainRoadRouteSection.SecondHairpin,
-                1);
-            Vector3 secondEnd = points[points.Count - 1].Position;
-            AppendLine(
+                BridgeApproachLength,
+                forward,
+                MountainRoadRouteSection.BridgeApproach);
+
+            for (int index = LowerHairpinCount;
+                 index < HairpinCount;
+                 index++)
+            {
+                hairpins.Add(AppendHairpin(points, ref forward, index));
+                if (index < HairpinCount - 1)
+                {
+                    AppendStraight(
+                        points,
+                        UpperShelfLength,
+                        forward,
+                        MountainRoadRouteSection.UpperClimb);
+                }
+            }
+
+            float climbDistance = OutdoorRouteLength -
+                                  PlateauEntryLead -
+                                  points[points.Count - 1].Distance;
+            AppendStraight(
                 points,
-                new Vector3(
-                    secondEnd.x,
-                    ElevationGain,
-                    secondEnd.z +
-                    OutdoorRouteLength - PlateauEntryLead - secondArcEnd),
-                OutdoorRouteLength - PlateauEntryLead,
-                10,
-                MountainRoadRouteSection.UpperApproach);
-            Vector3 plateauEntry = points[points.Count - 1].Position;
-            AppendLine(
+                climbDistance,
+                forward,
+                MountainRoadRouteSection.UpperClimb);
+            AppendStraight(
                 points,
-                new Vector3(
-                    plateauEntry.x,
-                    ElevationGain,
-                    plateauEntry.z + PlateauEntryLead),
-                OutdoorRouteLength,
-                5,
+                PlateauEntryLead,
+                forward,
                 MountainRoadRouteSection.UpperApproach);
 
             var samples = new List<MountainRoadRouteSample>(points.Count);
             for (int index = 0; index < points.Count; index++)
             {
                 MutablePoint point = points[index];
-                Vector3 forward;
+                Vector3 tangent;
                 if (index == 0)
                 {
-                    forward = points[1].Position - point.Position;
+                    tangent = points[1].Position - point.Position;
                 }
                 else if (index == points.Count - 1)
                 {
-                    forward = point.Position - points[index - 1].Position;
+                    tangent = point.Position - points[index - 1].Position;
                 }
                 else
                 {
-                    forward = points[index + 1].Position -
+                    tangent = points[index + 1].Position -
                               points[index - 1].Position;
                 }
 
-                forward.y = 0f;
-                forward.Normalize();
+                tangent.y = 0f;
+                tangent.Normalize();
                 samples.Add(new MountainRoadRouteSample(
                     $"mountain-route-{index:000}",
                     point.Distance,
                     point.Position,
-                    forward,
+                    tangent,
                     EvaluateWidth(
                         point.Distance,
-                        firstArcStart,
-                        firstArcEnd,
-                        secondArcStart,
-                        secondArcEnd),
+                        hairpins),
                     point.Section,
                     point.HairpinIndex));
             }
@@ -256,21 +283,21 @@ namespace BarPromenade
             return new MountainRoadRoutePlan(
                 samples,
                 OutdoorRouteLength,
-                firstArcStart,
-                firstArcEnd,
-                secondArcStart,
-                secondArcEnd);
+                hairpins,
+                bridge);
         }
 
-        private static void AppendLine(
-            ICollection<MutablePoint> target,
-            Vector3 end,
-            float endDistance,
-            int divisions,
+        private static void AppendStraight(
+            List<MutablePoint> target,
+            float length,
+            Vector3 forward,
             MountainRoadRouteSection section)
         {
-            var list = (List<MutablePoint>)target;
-            MutablePoint start = list[list.Count - 1];
+            MutablePoint start = target[target.Count - 1];
+            float endDistance = start.Distance + length;
+            Vector3 end = start.Position + forward * length;
+            end.y = EvaluateElevation(endDistance);
+            int divisions = Mathf.Max(1, Mathf.CeilToInt(length));
             for (int step = 1; step <= divisions; step++)
             {
                 float t = step / (float)divisions;
@@ -282,47 +309,81 @@ namespace BarPromenade
             }
         }
 
-        private static void AppendArc(
-            ICollection<MutablePoint> target,
-            Vector2 centerXZ,
-            float startAngle,
-            float endAngle,
-            float endY,
-            float endDistance,
-            int divisions,
-            MountainRoadRouteSection section,
+        private static MountainRoadHairpinDescriptor AppendHairpin(
+            List<MutablePoint> target,
+            ref Vector3 forward,
             int hairpinIndex)
         {
-            var list = (List<MutablePoint>)target;
-            MutablePoint start = list[list.Count - 1];
+            const int divisions = 24;
+            MutablePoint start = target[target.Count - 1];
+            Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
+            int turnSide = right.x >= 0f ? 1 : -1;
+            Vector3 center = start.Position +
+                             right * (turnSide * HairpinRadius);
+            Vector3 radial = start.Position - center;
+            radial.y = 0f;
+            float endDistance = start.Distance + Mathf.PI * HairpinRadius;
+            Vector3 apex = start.Position;
             for (int step = 1; step <= divisions; step++)
             {
                 float t = step / (float)divisions;
-                float angle = Mathf.Lerp(startAngle, endAngle, t);
+                float distance = Mathf.Lerp(
+                    start.Distance,
+                    endDistance,
+                    t);
+                Vector3 offset = Quaternion.AngleAxis(
+                    turnSide * 180f * t,
+                    Vector3.up) * radial;
+                Vector3 position = center + offset;
+                position.y = EvaluateElevation(distance);
                 target.Add(new MutablePoint(
-                    Mathf.Lerp(start.Distance, endDistance, t),
-                    new Vector3(
-                        centerXZ.x + Mathf.Cos(angle) * HairpinRadius,
-                        Mathf.Lerp(start.Position.y, endY, t),
-                        centerXZ.y + Mathf.Sin(angle) * HairpinRadius),
-                    section,
+                    distance,
+                    position,
+                    MountainRoadRouteSection.Hairpin,
                     hairpinIndex));
+                if (step == divisions / 2)
+                {
+                    apex = position;
+                }
             }
+
+            forward = -forward;
+            return new MountainRoadHairpinDescriptor(
+                $"mountain-hairpin-{hairpinIndex:00}",
+                hairpinIndex,
+                start.Distance,
+                endDistance,
+                new Vector2(center.x, center.z),
+                apex,
+                turnSide);
         }
 
         private static float EvaluateWidth(
             float distance,
-            float firstStart,
-            float firstEnd,
-            float secondStart,
-            float secondEnd)
+            IReadOnlyList<MountainRoadHairpinDescriptor> hairpins)
         {
-            float first = HairpinWeight(distance, firstStart, firstEnd);
-            float second = HairpinWeight(distance, secondStart, secondEnd);
+            float weight = 0f;
+            for (int index = 0; index < hairpins.Count; index++)
+            {
+                weight = Mathf.Max(
+                    weight,
+                    HairpinWeight(
+                        distance,
+                        hairpins[index].StartDistance,
+                        hairpins[index].EndDistance));
+            }
+
             return Mathf.Lerp(
                 RoadWidth,
                 HairpinWidth,
-                Mathf.Max(first, second));
+                weight);
+        }
+
+        private static float EvaluateElevation(float distance)
+        {
+            float climbLength = OutdoorRouteLength - PlateauEntryLead;
+            float t = Mathf.Clamp01(distance / climbLength);
+            return ElevationGain * Mathf.SmoothStep(0f, 1f, t);
         }
 
         private static float HairpinWeight(
@@ -419,9 +480,10 @@ namespace BarPromenade
             MountainRoadRoutePlan route,
             MountainRoadPlateauDescriptor plateau,
             MountainRoadTerminalPlan terminal,
-            Rect terrainBounds)
+            Rect terrainBounds,
+            IReadOnlyList<MountainRoadRidgeDescriptor> ridges)
         {
-            var result = new List<MountainRoadForestDescriptor>(242);
+            var result = new List<MountainRoadForestDescriptor>(420);
             AppendForestLayer(
                 result,
                 seed,
@@ -429,8 +491,9 @@ namespace BarPromenade
                 plateau,
                 terminal,
                 terrainBounds,
+                ridges,
                 MountainRoadForestLayer.Physical,
-                46,
+                92,
                 6.2f,
                 14f,
                 3.4f);
@@ -441,8 +504,9 @@ namespace BarPromenade
                 plateau,
                 terminal,
                 terrainBounds,
+                ridges,
                 MountainRoadForestLayer.Mid,
-                84,
+                142,
                 11f,
                 21f,
                 2.5f);
@@ -453,8 +517,9 @@ namespace BarPromenade
                 plateau,
                 terminal,
                 terrainBounds,
+                ridges,
                 MountainRoadForestLayer.Far,
-                112,
+                186,
                 17f,
                 28f,
                 1.9f);
@@ -468,6 +533,7 @@ namespace BarPromenade
             MountainRoadPlateauDescriptor plateau,
             MountainRoadTerminalPlan terminal,
             Rect terrainBounds,
+            IReadOnlyList<MountainRoadRidgeDescriptor> ridges,
             MountainRoadForestLayer layer,
             int count,
             float minimumOffset,
@@ -483,6 +549,41 @@ namespace BarPromenade
                 float distance = Unit(seed, attempt, 0x44495354u) *
                                  route.Length;
                 MountainRoadRouteSample sample = route.Sample(distance);
+                if (sample.IsBridge &&
+                    layer != MountainRoadForestLayer.Far)
+                {
+                    continue;
+                }
+
+                float progress = distance / route.Length;
+                float upperRetention;
+                switch (layer)
+                {
+                    case MountainRoadForestLayer.Physical:
+                        upperRetention = 0.28f;
+                        break;
+                    case MountainRoadForestLayer.Mid:
+                        upperRetention = 0.48f;
+                        break;
+                    case MountainRoadForestLayer.Far:
+                        upperRetention = 0.72f;
+                        break;
+                    default:
+                        throw new ArgumentOutOfRangeException(nameof(layer));
+                }
+
+                float retention = Mathf.Lerp(
+                    1f,
+                    upperRetention,
+                    Mathf.SmoothStep(0f, 1f, Mathf.InverseLerp(
+                        0.54f,
+                        0.94f,
+                        progress)));
+                if (Unit(seed, attempt, 0x54524545u) > retention)
+                {
+                    continue;
+                }
+
                 float side = (Hash(seed, attempt, 0x53494445u) & 1u) == 0u
                     ? -1f
                     : 1f;
@@ -518,6 +619,7 @@ namespace BarPromenade
                     out float radius);
                 if (roadDistance <
                         halfWidth + radius + ForestRoadClearance ||
+                    IntersectsRidgeFootprint(point, radius, ridges) ||
                     !HasSpacing(accepted, point, spacing))
                 {
                     continue;
@@ -591,16 +693,37 @@ namespace BarPromenade
             return true;
         }
 
+        private static bool IntersectsRidgeFootprint(
+            Vector2 point,
+            float crownRadius,
+            IReadOnlyList<MountainRoadRidgeDescriptor> ridges)
+        {
+            float clearance = crownRadius + RidgeTreeClearance;
+            for (int index = 0; index < ridges.Count; index++)
+            {
+                if (MountainRoadRidgeGeometry.DistanceToFootprint(
+                        point,
+                        ridges[index]) < clearance)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private static List<MountainRoadMiscDescriptor> CreateMisc(
             int seed,
             MountainRoadTunnelDescriptor tunnel,
             MountainRoadRoutePlan route,
             MountainRoadPlateauDescriptor plateau)
         {
-            var result = new List<MountainRoadMiscDescriptor>(72);
-            for (int index = 0; index < 22; index++)
+            var result = new List<MountainRoadMiscDescriptor>(180);
+            const int boulderCount = 54;
+            for (int index = 0; index < boulderCount; index++)
             {
-                float distance = 3f + Unit(seed, index, 0x424F554Cu) * 65f;
+                float distance = 3f + Unit(seed, index, 0x424F554Cu) *
+                                 (route.Length - 18f);
                 float side = (index & 1) == 0 ? -1f : 1f;
                 float lateral = 4.2f + Unit(seed, index, 0x4C415445u) * 4f;
                 Vector3 size = new Vector3(
@@ -620,14 +743,16 @@ namespace BarPromenade
                     Unit(seed, index, 0x42594157u) * 360f));
             }
 
-            for (int index = 0; index < 9; index++)
+            const int logCount = 24;
+            for (int index = 0; index < logCount; index++)
             {
                 result.Add(PlaceMisc(
                     $"misc-fallen-log-{index:00}",
                     MountainRoadMiscKind.FallenLog,
                     route,
                     plateau,
-                    7f + index * 7.7f,
+                    7f + index *
+                    ((route.Length - 37f) / (logCount - 1f)),
                     (index & 1) == 0 ? -1f : 1f,
                     6.2f + (index % 3) * 0.8f,
                     new Vector3(0.68f, 0.68f, 4.6f + (index % 2) * 0.9f),
@@ -635,14 +760,16 @@ namespace BarPromenade
                     index * 37f + 18f));
             }
 
-            for (int index = 0; index < 11; index++)
+            const int stumpCount = 28;
+            for (int index = 0; index < stumpCount; index++)
             {
                 result.Add(PlaceMisc(
                     $"misc-stump-{index:00}",
                     MountainRoadMiscKind.Stump,
                     route,
                     plateau,
-                    4f + index * 6.2f,
+                    4f + index *
+                    ((route.Length - 28f) / (stumpCount - 1f)),
                     (index & 1) == 0 ? 1f : -1f,
                     5.4f + (index % 4) * 0.7f,
                     new Vector3(0.88f, 1.05f, 0.88f),
@@ -650,14 +777,16 @@ namespace BarPromenade
                     index * 29f));
             }
 
-            for (int index = 0; index < 6; index++)
+            const int deadTreeCount = 16;
+            for (int index = 0; index < deadTreeCount; index++)
             {
                 result.Add(PlaceMisc(
                     $"misc-dead-tree-{index:00}",
                     MountainRoadMiscKind.DeadTree,
                     route,
                     plateau,
-                    21f + index * 9.4f,
+                    21f + index *
+                    ((route.Length - 55f) / (deadTreeCount - 1f)),
                     (index & 1) == 0 ? -1f : 1f,
                     7.8f,
                     new Vector3(0.72f, 8.2f + index * 0.45f, 0.72f),
@@ -688,7 +817,7 @@ namespace BarPromenade
                 MountainRoadMiscKind.Culvert,
                 route,
                 plateau,
-                11.5f,
+                route.Length * 0.10f,
                 -1f,
                 4.2f,
                 new Vector3(2.2f, 1.3f, 2.6f),
@@ -699,7 +828,7 @@ namespace BarPromenade
                 MountainRoadMiscKind.ConvexMirror,
                 route,
                 plateau,
-                route.FirstHairpinStart + 1.3f,
+                route.Hairpins[0].StartDistance + 1.3f,
                 -1f,
                 4.8f,
                 new Vector3(1.05f, 3f, 0.28f),
@@ -710,7 +839,7 @@ namespace BarPromenade
                 MountainRoadMiscKind.UtilityCabinet,
                 route,
                 plateau,
-                42f,
+                route.Length * 0.66f,
                 1f,
                 4.2f,
                 new Vector3(1.2f, 1.8f, 0.75f),
@@ -721,7 +850,7 @@ namespace BarPromenade
                 MountainRoadMiscKind.UtilityCable,
                 route,
                 plateau,
-                44f,
+                route.Length * 0.67f,
                 1f,
                 5.4f,
                 new Vector3(8.5f, 7.2f, 0.16f),
@@ -732,22 +861,21 @@ namespace BarPromenade
                 MountainRoadMiscKind.AbandonedChair,
                 route,
                 plateau,
-                45.5f,
+                route.Length * 0.42f,
                 -1f,
                 4.1f,
                 new Vector3(0.82f, 1.1f, 0.82f),
                 true,
                 172f));
 
-            float[] guardDistances = { 20f, 24.2f, 53f, 57.2f };
-            for (int index = 0; index < guardDistances.Length; index++)
+            for (int index = 0; index < route.Hairpins.Count; index++)
             {
                 result.Add(PlaceMisc(
                     $"misc-guardrail-{index}",
                     MountainRoadMiscKind.GuardRail,
                     route,
                     plateau,
-                    guardDistances[index],
+                    route.Hairpins[index].StartDistance + 4.2f,
                     -1f,
                     4.2f,
                     new Vector3(0.22f, 1.05f, 6.4f),
@@ -755,14 +883,29 @@ namespace BarPromenade
                     0f));
             }
 
-            for (int index = 0; index < 8; index++)
+            MountainRoadBridgeDescriptor bridge = route.Bridge;
+            Vector3 looseRailPosition = bridge.Center +
+                bridge.Right * (bridge.DeckWidth * 0.5f - 0.12f) +
+                Vector3.up * (bridge.RailHeight * 0.5f);
+            result.Add(new MountainRoadMiscDescriptor(
+                "misc-bridge-loose-rail",
+                MountainRoadMiscKind.GuardRail,
+                looseRailPosition,
+                Quaternion.LookRotation(bridge.Forward, Vector3.up),
+                new Vector3(0.22f, bridge.RailHeight, 6.4f),
+                true));
+
+            const int snowPoleCount = 20;
+            for (int index = 0; index < snowPoleCount; index++)
             {
                 result.Add(PlaceMisc(
                     $"misc-snow-pole-{index}",
                     MountainRoadMiscKind.SnowPole,
                     route,
                     plateau,
-                    58f + index * 1.6f,
+                    route.Length * 0.74f +
+                    index * (route.Length * 0.20f /
+                             (snowPoleCount - 1f)),
                     (index & 1) == 0 ? -1f : 1f,
                     3.5f,
                     new Vector3(0.14f, 3f, 0.14f),
@@ -832,13 +975,13 @@ namespace BarPromenade
                     "misc-culvert", 9f),
                 CreateSound(byId, "sound-loose-guardrail",
                     MountainRoadSoundAnchorKind.LooseGuardRail,
-                    "misc-guardrail-1", 7f),
+                    "misc-bridge-loose-rail", 7f),
                 CreateSound(byId, "sound-utility-cable",
                     MountainRoadSoundAnchorKind.UtilityCable,
                     "misc-utility-cable", 8f),
                 CreateSound(byId, "sound-snow-pole",
                     MountainRoadSoundAnchorKind.SnowPole,
-                    "misc-snow-pole-6", 6f)
+                    "misc-snow-pole-16", 6f)
             };
         }
 
@@ -881,80 +1024,198 @@ namespace BarPromenade
             }
 
             Rect scenicBounds = Rect.MinMaxRect(
-                scenicXMin - TerrainMargin,
-                scenicZMin - TerrainMargin,
-                scenicXMax + TerrainMargin,
-                scenicZMax + TerrainMargin);
+                scenicXMin,
+                scenicZMin,
+                scenicXMax,
+                scenicZMax);
             for (int index = 0; index < 8; index++)
             {
-                float t = index / 7f;
-                Vector3 center = index < 4
-                    ? new Vector3(
-                        Mathf.Lerp(scenicBounds.xMin, scenicBounds.xMax, t),
-                        7f + index * 0.8f,
-                        scenicBounds.yMax - 2f)
-                    : new Vector3(
-                        index % 2 == 0
-                            ? scenicBounds.xMin + 2f
-                            : scenicBounds.xMax - 2f,
-                        8f + index * 0.55f,
-                        Mathf.Lerp(scenicBounds.yMin, scenicBounds.yMax, t));
-                result.Add(new MountainRoadRidgeDescriptor(
+                Vector2 center = SampleExpandedPerimeter(
+                    scenicBounds,
+                    MidRidgeEnvelopeOffset,
+                    (index + 0.18f) / 8f,
+                    out float tangentYaw);
+                Vector3 size = new Vector3(
+                    20f + (index % 3) * 5f,
+                    18f,
+                    10f);
+                float yaw = tangentYaw +
+                            (Unit(seed, index, 0x4D494459u) - 0.5f) * 14f;
+                result.Add(CreateGroundedRidge(
                     $"mid-ridge-{index:00}",
                     MountainRoadRidgeLayer.Mid,
                     center,
-                    new Vector3(16f + (index % 3) * 4f, 13f, 8f),
-                    index * 31f,
+                    size,
+                    yaw,
+                    route,
+                    plateau,
                     seed + index * 97));
             }
 
-            for (int index = 0; index < 12; index++)
+            const int genericSnowRidgeCount = 11;
+            for (int index = 0; index < genericSnowRidgeCount; index++)
             {
-                float angle = Mathf.Lerp(-120f, 120f, index / 11f) *
-                              Mathf.Deg2Rad;
-                float radius = 66f + (index % 3) * 6f;
-                Vector3 direction = new Vector3(
-                    Mathf.Sin(angle),
-                    0f,
-                    Mathf.Cos(angle));
-                Vector3 center = plateau.Center + direction * radius;
-                center.y = 19f + (index % 4) * 2.6f;
-                bool cablewayOccluder = index == 7;
-                if (cablewayOccluder)
-                {
-                    Vector3 cableEnd = terminal.Cableway.UpperCableCenter;
-                    center = new Vector3(
-                        cableEnd.x -
-                        terminal.Cableway.LineForward.x * 1.8f,
-                        28f,
-                        cableEnd.z -
-                        terminal.Cableway.LineForward.z * 1.8f);
-                }
-
-                result.Add(new MountainRoadRidgeDescriptor(
-                    cablewayOccluder
-                        ? terminal.Cableway.UpperOccluderStableId
-                        : $"far-snow-ridge-{index:00}",
+                Vector2 center = SampleExpandedPerimeter(
+                    scenicBounds,
+                    FarRidgeEnvelopeOffset,
+                    (index + 0.33f) / genericSnowRidgeCount,
+                    out float tangentYaw);
+                Vector3 size = new Vector3(
+                    25f + (index % 3) * 5f,
+                    24f + (index % 4) * 3f,
+                    10f);
+                float yaw = tangentYaw +
+                            (Unit(seed, index, 0x46415259u) - 0.5f) * 12f;
+                result.Add(CreateGroundedRidge(
+                    $"far-snow-ridge-{index:00}",
                     MountainRoadRidgeLayer.FarSnow,
                     center,
-                    cablewayOccluder
-                        ? new Vector3(30f, 33f, 10f)
-                        : new Vector3(
-                            25f + (index % 3) * 5f,
-                            24f + (index % 4) * 3f,
-                            10f),
-                    cablewayOccluder
-                        ? Mathf.Atan2(
-                            -terminal.Cableway.LineForward.x,
-                            -terminal.Cableway.LineForward.z) * Mathf.Rad2Deg
-                        : Mathf.Atan2(-direction.x, -direction.z) *
-                          Mathf.Rad2Deg,
-                    cablewayOccluder
-                        ? seed + 4099
-                        : seed + 2000 + index * 131));
+                    size,
+                    yaw,
+                    route,
+                    plateau,
+                    seed + 2000 + index * 131));
             }
 
+            MountainRoadCablewayPlan cableway = terminal.Cableway;
+            Vector3 cableEnd = cableway.UpperCableCenter;
+            Vector2 occluderCenter = new Vector2(
+                cableEnd.x - cableway.LineForward.x * 1.8f,
+                cableEnd.z - cableway.LineForward.z * 1.8f);
+            float occluderYaw = Mathf.Atan2(
+                -cableway.LineForward.x,
+                -cableway.LineForward.z) * Mathf.Rad2Deg;
+            Vector3 occluderSize = new Vector3(30f, 33f, 10f);
+            float occluderBase = CalculateRidgeBaseY(
+                route,
+                plateau,
+                occluderCenter,
+                occluderSize,
+                occluderYaw);
+            occluderSize.y = Mathf.Max(
+                occluderSize.y,
+                cableEnd.y + 2f - occluderBase);
+            result.Add(new MountainRoadRidgeDescriptor(
+                cableway.UpperOccluderStableId,
+                MountainRoadRidgeLayer.FarSnow,
+                new Vector3(
+                    occluderCenter.x,
+                    occluderBase + occluderSize.y * 0.5f,
+                    occluderCenter.y),
+                occluderSize,
+                occluderYaw,
+                seed + 4099));
+
             return result;
+        }
+
+        private static MountainRoadRidgeDescriptor CreateGroundedRidge(
+            string stableId,
+            MountainRoadRidgeLayer layer,
+            Vector2 centerXZ,
+            Vector3 size,
+            float yawDegrees,
+            MountainRoadRoutePlan route,
+            MountainRoadPlateauDescriptor plateau,
+            int ridgeSeed)
+        {
+            float baseY = CalculateRidgeBaseY(
+                route,
+                plateau,
+                centerXZ,
+                size,
+                yawDegrees);
+            return new MountainRoadRidgeDescriptor(
+                stableId,
+                layer,
+                new Vector3(
+                    centerXZ.x,
+                    baseY + size.y * 0.5f,
+                    centerXZ.y),
+                size,
+                yawDegrees,
+                ridgeSeed);
+        }
+
+        internal static float CalculateRidgeBaseY(
+            MountainRoadRoutePlan route,
+            MountainRoadPlateauDescriptor plateau,
+            Vector2 centerXZ,
+            Vector3 size,
+            float yawDegrees)
+        {
+            Quaternion rotation = Quaternion.Euler(0f, yawDegrees, 0f);
+            float minimumGround = MountainRoadTerrainSampler.SampleHeight(
+                route,
+                plateau,
+                centerXZ);
+            for (int depth = 0; depth < 2; depth++)
+            {
+                float localZ = (depth == 0 ? -0.5f : 0.5f) * size.z;
+                for (int station = 0;
+                     station < RidgeGroundingStationCount;
+                     station++)
+                {
+                    float localX = Mathf.Lerp(
+                        -0.5f,
+                        0.5f,
+                        station / (float)(RidgeGroundingStationCount - 1)) *
+                        size.x;
+                    Vector3 worldOffset = rotation * new Vector3(
+                        localX,
+                        0f,
+                        localZ);
+                    minimumGround = Mathf.Min(
+                        minimumGround,
+                        MountainRoadTerrainSampler.SampleHeight(
+                            route,
+                            plateau,
+                            centerXZ + new Vector2(
+                                worldOffset.x,
+                                worldOffset.z)));
+                }
+            }
+
+            return minimumGround - RidgeTerrainBurial;
+        }
+
+        private static Vector2 SampleExpandedPerimeter(
+            Rect bounds,
+            float offset,
+            float normalizedDistance,
+            out float tangentYaw)
+        {
+            float minimumX = bounds.xMin - offset;
+            float maximumX = bounds.xMax + offset;
+            float minimumZ = bounds.yMin - offset;
+            float maximumZ = bounds.yMax + offset;
+            float width = maximumX - minimumX;
+            float depth = maximumZ - minimumZ;
+            float perimeter = (width + depth) * 2f;
+            float distance = Mathf.Repeat(normalizedDistance, 1f) * perimeter;
+            if (distance < width)
+            {
+                tangentYaw = 0f;
+                return new Vector2(minimumX + distance, minimumZ);
+            }
+
+            distance -= width;
+            if (distance < depth)
+            {
+                tangentYaw = 90f;
+                return new Vector2(maximumX, minimumZ + distance);
+            }
+
+            distance -= depth;
+            if (distance < width)
+            {
+                tangentYaw = 0f;
+                return new Vector2(maximumX - distance, maximumZ);
+            }
+
+            distance -= width;
+            tangentYaw = 90f;
+            return new Vector2(minimumX, maximumZ - distance);
         }
 
         private static uint Hash(int seed, int index, uint salt)

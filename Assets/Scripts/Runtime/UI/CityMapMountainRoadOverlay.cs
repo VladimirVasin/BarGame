@@ -41,6 +41,8 @@ namespace BarPromenade
             IList<Vector3> hairpinPositions,
             IList<CityMapMountainHatchSegment> mountainHatches,
             IList<MountainRoadTerminalLandmark> terminalLandmarks,
+            bool hasBridge,
+            Vector3 bridgePosition,
             Rect plateauBounds,
             Rect displayWorldXZBounds)
         {
@@ -55,6 +57,8 @@ namespace BarPromenade
                 new ReadOnlyCollection<MountainRoadTerminalLandmark>(
                     new List<MountainRoadTerminalLandmark>(
                         terminalLandmarks));
+            HasBridge = hasBridge;
+            BridgePosition = bridgePosition;
             PlateauBounds = plateauBounds;
             DisplayWorldXZBounds = displayWorldXZBounds;
         }
@@ -65,6 +69,8 @@ namespace BarPromenade
             HairpinPositions = NoPoints;
             MountainHatches = NoHatches;
             TerminalLandmarks = NoTerminalLandmarks;
+            HasBridge = false;
+            BridgePosition = Vector3.zero;
             PlateauBounds = Rect.zero;
             DisplayWorldXZBounds = new Rect(-1f, -1f, 2f, 2f);
         }
@@ -82,6 +88,8 @@ namespace BarPromenade
         public IReadOnlyList<MountainRoadTerminalLandmark>
             TerminalLandmarks { get; }
 
+        public bool HasBridge { get; }
+        public Vector3 BridgePosition { get; }
         public Rect PlateauBounds { get; }
         public Rect DisplayWorldXZBounds { get; }
         public bool IsEmpty => RoutePoints.Count < 2;
@@ -96,6 +104,7 @@ namespace BarPromenade
         private const float DuplicateTolerance = 0.05f;
         private const float DisplayPadding = 9f;
         private const float MinimumHairpinRouteSeparation = 18f;
+        private const float PlanRouteChartSpacing = 4f;
         private const int MountainHatchCount = 18;
 
         private readonly struct TurnCandidate
@@ -117,7 +126,10 @@ namespace BarPromenade
             return Create(
                 routeSamples,
                 plateauBounds,
-                Array.Empty<MountainRoadTerminalLandmark>());
+                Array.Empty<MountainRoadTerminalLandmark>(),
+                null,
+                false,
+                Vector3.zero);
         }
 
         public static CityMapMountainRoadOverlay Create(
@@ -128,24 +140,102 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(plan));
             }
 
-            IReadOnlyList<MountainRoadRouteSample> routeSamples =
-                plan.Route.Samples;
-            var positions = new List<Vector3>(routeSamples.Count);
-            for (int index = 0; index < routeSamples.Count; index++)
+            List<Vector3> positions = CreatePlanRoutePoints(plan.Route);
+
+            var hairpins = new List<Vector3>(plan.Route.Hairpins.Count);
+            for (int index = 0;
+                 index < plan.Route.Hairpins.Count;
+                 index++)
             {
-                positions.Add(routeSamples[index].Position);
+                hairpins.Add(plan.Route.Hairpins[index].ApexPosition);
             }
 
             return Create(
                 positions,
                 plan.Plateau.BoundsXZ,
-                plan.Terminal.Landmarks);
+                plan.Terminal.Landmarks,
+                hairpins,
+                true,
+                plan.Bridge.Center);
+        }
+
+        private static List<Vector3> CreatePlanRoutePoints(
+            MountainRoadRoutePlan route)
+        {
+            int regularCount = Mathf.CeilToInt(
+                route.Length / PlanRouteChartSpacing) + 1;
+            var distances = new List<float>(
+                regularCount + route.Hairpins.Count * 3 + 2);
+            for (float distance = 0f;
+                 distance < route.Length;
+                 distance += PlanRouteChartSpacing)
+            {
+                distances.Add(distance);
+            }
+
+            distances.Add(route.Length);
+            for (int index = 0; index < route.Hairpins.Count; index++)
+            {
+                MountainRoadHairpinDescriptor hairpin =
+                    route.Hairpins[index];
+                distances.Add(hairpin.StartDistance);
+                distances.Add(
+                    (hairpin.StartDistance + hairpin.EndDistance) * 0.5f);
+                distances.Add(hairpin.EndDistance);
+            }
+
+            distances.Add(route.Bridge.StartDistance);
+            distances.Add(route.Bridge.EndDistance);
+            distances.Sort();
+
+            var positions = new List<Vector3>(distances.Count);
+            float previous = float.NegativeInfinity;
+            for (int index = 0; index < distances.Count; index++)
+            {
+                float distance = distances[index];
+                if (distance - previous <= DuplicateTolerance)
+                {
+                    continue;
+                }
+
+                positions.Add(route.Sample(distance).Position);
+                previous = distance;
+            }
+
+            return positions;
         }
 
         public static CityMapMountainRoadOverlay Create(
             IReadOnlyList<Vector3> routeSamples,
             Rect plateauBounds,
             IReadOnlyList<MountainRoadTerminalLandmark> terminalLandmarks)
+        {
+            if (routeSamples == null)
+            {
+                throw new ArgumentNullException(nameof(routeSamples));
+            }
+
+            if (terminalLandmarks == null)
+            {
+                throw new ArgumentNullException(nameof(terminalLandmarks));
+            }
+
+            return Create(
+                routeSamples,
+                plateauBounds,
+                terminalLandmarks,
+                null,
+                false,
+                Vector3.zero);
+        }
+
+        private static CityMapMountainRoadOverlay Create(
+            IReadOnlyList<Vector3> routeSamples,
+            Rect plateauBounds,
+            IReadOnlyList<MountainRoadTerminalLandmark> terminalLandmarks,
+            IReadOnlyList<Vector3> authoredHairpins,
+            bool hasBridge,
+            Vector3 bridgePosition)
         {
             if (routeSamples == null)
             {
@@ -177,11 +267,25 @@ namespace BarPromenade
 
             List<MountainRoadTerminalLandmark> landmarks =
                 CopyFiniteLandmarks(terminalLandmarks);
+            List<Vector3> hairpins = authoredHairpins == null
+                ? FindHairpins(route)
+                : CopyFinitePositions(
+                    authoredHairpins,
+                    "Mountain-road hairpin positions must be finite.");
+            if (hasBridge && !IsFinite(bridgePosition))
+            {
+                throw new ArgumentException(
+                    "Mountain-road bridge position must be finite.",
+                    nameof(bridgePosition));
+            }
+
             Rect displayBounds = CreateDisplayBounds(
                 route,
                 plateauBounds,
-                landmarks);
-            List<Vector3> hairpins = FindHairpins(route);
+                landmarks,
+                hairpins,
+                hasBridge,
+                bridgePosition);
             List<CityMapMountainHatchSegment> hatches =
                 CreateMountainHatches(displayBounds);
             return new CityMapMountainRoadOverlay(
@@ -189,8 +293,29 @@ namespace BarPromenade
                 hairpins,
                 hatches,
                 landmarks,
+                hasBridge,
+                bridgePosition,
                 plateauBounds,
                 displayBounds);
+        }
+
+        private static List<Vector3> CopyFinitePositions(
+            IReadOnlyList<Vector3> source,
+            string errorMessage)
+        {
+            var positions = new List<Vector3>(source.Count);
+            for (int index = 0; index < source.Count; index++)
+            {
+                Vector3 position = source[index];
+                if (!IsFinite(position))
+                {
+                    throw new ArgumentException(errorMessage, nameof(source));
+                }
+
+                positions.Add(position);
+            }
+
+            return positions;
         }
 
         private static List<MountainRoadTerminalLandmark>
@@ -246,7 +371,10 @@ namespace BarPromenade
         private static Rect CreateDisplayBounds(
             IReadOnlyList<Vector3> route,
             Rect plateau,
-            IReadOnlyList<MountainRoadTerminalLandmark> landmarks)
+            IReadOnlyList<MountainRoadTerminalLandmark> landmarks,
+            IReadOnlyList<Vector3> hairpins,
+            bool hasBridge,
+            Vector3 bridgePosition)
         {
             float minimumX = plateau.xMin;
             float maximumX = plateau.xMax;
@@ -267,6 +395,23 @@ namespace BarPromenade
                 maximumX = Mathf.Max(maximumX, position.x);
                 minimumZ = Mathf.Min(minimumZ, position.z);
                 maximumZ = Mathf.Max(maximumZ, position.z);
+            }
+
+            for (int index = 0; index < hairpins.Count; index++)
+            {
+                Vector3 position = hairpins[index];
+                minimumX = Mathf.Min(minimumX, position.x);
+                maximumX = Mathf.Max(maximumX, position.x);
+                minimumZ = Mathf.Min(minimumZ, position.z);
+                maximumZ = Mathf.Max(maximumZ, position.z);
+            }
+
+            if (hasBridge)
+            {
+                minimumX = Mathf.Min(minimumX, bridgePosition.x);
+                maximumX = Mathf.Max(maximumX, bridgePosition.x);
+                minimumZ = Mathf.Min(minimumZ, bridgePosition.z);
+                maximumZ = Mathf.Max(maximumZ, bridgePosition.z);
             }
 
             return Rect.MinMaxRect(

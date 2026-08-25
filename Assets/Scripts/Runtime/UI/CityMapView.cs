@@ -1,5 +1,6 @@
 using System;
 using System.Collections.Generic;
+using System.Globalization;
 using UnityEngine;
 using UnityEngine.InputSystem;
 
@@ -78,18 +79,21 @@ namespace BarPromenade
                 Rect hitbox,
                 Vector2 anchor,
                 string label,
-                int priority)
+                int priority,
+                int mapPointIndex = -1)
             {
                 Hitbox = hitbox;
                 Anchor = anchor;
                 Label = label ?? string.Empty;
                 Priority = priority;
+                MapPointIndex = mapPointIndex;
             }
 
             public Rect Hitbox { get; }
             public Vector2 Anchor { get; }
             public string Label { get; }
             public int Priority { get; }
+            public int MapPointIndex { get; }
         }
 
         private static readonly Color Backdrop =
@@ -203,6 +207,7 @@ namespace BarPromenade
 
         private CityMapController controller;
         private bool wasOpen;
+        private int lastMapPointFocusRevision = -1;
         private bool isPointerPanning;
         private int pointerPanButton = -1;
         private Vector2 previousPanPointer;
@@ -348,6 +353,21 @@ namespace BarPromenade
                     lastPresentedArea = controller.SelectedArea;
                 }
 
+                if (controller.MapPointInspectionEnabled &&
+                    lastMapPointFocusRevision !=
+                    controller.MapPointFocusRevision &&
+                    controller.TryGetSelectedMapPoint(
+                        out _,
+                        out Vector3 selectedPointPosition))
+                {
+                    mapViewport.CenterOnWorld(
+                        selectedPointPosition,
+                        controller.ActiveDisplayWorldXZBounds);
+                }
+
+                lastMapPointFocusRevision =
+                    controller.MapPointFocusRevision;
+
                 HandlePointerScrolling(mapArea, logicalPointer);
                 hoverTargets.Clear();
                 hoverBlockRect = Rect.zero;
@@ -394,6 +414,7 @@ namespace BarPromenade
             if (controller.SelectedArea == GameAreaId.MountainRoad)
             {
                 DrawMountainRoadMap(projection);
+                DrawMapPointInspectionPass(projection);
                 return;
             }
 
@@ -425,6 +446,7 @@ namespace BarPromenade
             DrawMountainTunnelMarker(projection);
             DrawBusLegend();
             DrawAreaSelectionPass(projection);
+            DrawMapPointInspectionPass(projection);
         }
 
         /// <summary>
@@ -501,6 +523,104 @@ namespace BarPromenade
                 {
                     controller.QueueSelectMapObject(selectionIndex);
                 }
+            }
+        }
+
+        private void DrawMapPointInspectionPass(MapProjection projection)
+        {
+            if (!controller.MapPointInspectionEnabled)
+            {
+                return;
+            }
+
+            IReadOnlyList<CityMapPointDescriptor> points =
+                controller.ActiveMapPoints;
+            int selectedIndex = controller.SelectedMapPointIndex;
+            for (int index = 0; index < points.Count; index++)
+            {
+                CityMapPointDescriptor point = points[index];
+                Vector3 worldPosition =
+                    controller.ResolveMapPointWorldPosition(point);
+                Vector2 anchor = projection.WorldToScreen(worldPosition);
+                Rect hitbox;
+                if (point.UsesWorldHitBounds)
+                {
+                    hitbox = ProjectWorldRect(
+                        projection,
+                        point.WorldXZHitBounds);
+                    hitbox.width = Mathf.Max(4f, hitbox.width);
+                    hitbox.height = Mathf.Max(4f, hitbox.height);
+                }
+                else
+                {
+                    Vector2 size = point.ScreenHitSize;
+                    hitbox = CreateCenteredRect(
+                        anchor,
+                        Mathf.Max(11f, size.x),
+                        Mathf.Max(11f, size.y));
+                }
+
+                // The city tunnel can sit beyond the authored city chart.
+                // Match its clamped visible marker for picking while keeping
+                // the descriptor's real portal coordinate in the card.
+                if (point.Area == GameAreaId.City &&
+                    point.Kind == CityMapPointKind.Tunnel)
+                {
+                    CityMountainTunnelDescriptor tunnel =
+                        controller.MountainBoundaryPlan.Tunnel;
+                    Vector3 displayPosition =
+                        tunnel.PortalGroundCenter +
+                        FlattenMountainAxis(tunnel.Axis) *
+                        (tunnel.MapDisplayDepth * 0.45f);
+                    anchor = projection.WorldToScreen(displayPosition);
+                    hitbox = CreateMountainTunnelMarkerRect(
+                        anchor,
+                        mapLineClipRect);
+                    anchor = hitbox.center;
+                }
+
+                RegisterHoverTarget(
+                    hitbox,
+                    anchor,
+                    point.Label,
+                    point.Priority,
+                    index);
+                if (index == selectedIndex)
+                {
+                    if (point.UsesWorldHitBounds)
+                    {
+                        RetroUiTheme.StrokeRect(
+                            hitbox,
+                            2f,
+                            RetroUiTheme.AccentPale);
+                    }
+
+                    DrawOpenOctagonOutline(
+                        anchor,
+                        11f,
+                        2f,
+                        RetroUiTheme.AccentPale);
+                }
+            }
+
+            Event current = Event.current;
+            Vector2 globalPointer =
+                current.mousePosition + hoverCoordinateOffset;
+            bool clicked = GUI.Button(
+                mapLineClipRect,
+                GUIContent.none,
+                GUIStyle.none);
+            if (!clicked || hoverBlockRect.Contains(globalPointer))
+            {
+                return;
+            }
+
+            int pointIndex = ResolveMapPointIndex(
+                hoverTargets,
+                globalPointer);
+            if (pointIndex >= 0)
+            {
+                controller.QueueSelectMapPoint(pointIndex);
             }
         }
 
@@ -1826,7 +1946,20 @@ namespace BarPromenade
                 Color previousContentColor = GUI.contentColor;
                 GUI.contentColor = RetroUiTheme.Text;
                 string markerLabel = GetNumberLabel(index + 1);
-                if (GUI.Button(marker, markerLabel, markerButtonStyle))
+                bool pressed = false;
+                if (controller.MapPointInspectionEnabled)
+                {
+                    GUI.Label(marker, markerLabel, markerButtonStyle);
+                }
+                else
+                {
+                    pressed = GUI.Button(
+                        marker,
+                        markerLabel,
+                        markerButtonStyle);
+                }
+
+                if (pressed)
                 {
                     if (controller.DebugTeleportEnabled)
                     {
@@ -2067,7 +2200,8 @@ namespace BarPromenade
             Rect hitbox,
             Vector2 anchor,
             string label,
-            int priority)
+            int priority,
+            int mapPointIndex = -1)
         {
             if (string.IsNullOrWhiteSpace(label))
             {
@@ -2091,7 +2225,8 @@ namespace BarPromenade
                     clippedHitbox,
                     anchor + hoverCoordinateOffset,
                     label,
-                    priority));
+                    priority,
+                    mapPointIndex));
         }
 
         private static Rect Intersect(Rect left, Rect right)
@@ -2184,6 +2319,64 @@ namespace BarPromenade
                     int.MinValue,
                     ForegroundHoverPriorityFloor - 1)
                 : label;
+        }
+
+        internal static int ResolveMapPointIndex(
+            IReadOnlyList<MapHoverTarget> targets,
+            Vector2 pointer)
+        {
+            if (targets == null)
+            {
+                return -1;
+            }
+
+            int index = ResolveMapPointIndex(
+                targets,
+                pointer,
+                ForegroundHoverPriorityFloor,
+                int.MaxValue);
+            return index >= 0
+                ? index
+                : ResolveMapPointIndex(
+                    targets,
+                    pointer,
+                    int.MinValue,
+                    ForegroundHoverPriorityFloor - 1);
+        }
+
+        private static int ResolveMapPointIndex(
+            IReadOnlyList<MapHoverTarget> targets,
+            Vector2 pointer,
+            int minimumPriority,
+            int maximumPriority)
+        {
+            int bestIndex = -1;
+            float bestDistance = float.PositiveInfinity;
+            int bestPriority = int.MinValue;
+            for (int index = 0; index < targets.Count; index++)
+            {
+                MapHoverTarget target = targets[index];
+                if (target.MapPointIndex < 0 ||
+                    target.Priority < minimumPriority ||
+                    target.Priority > maximumPriority ||
+                    !target.Hitbox.Contains(pointer))
+                {
+                    continue;
+                }
+
+                float distance =
+                    (target.Anchor - pointer).sqrMagnitude;
+                if (distance < bestDistance ||
+                    (Mathf.Approximately(distance, bestDistance) &&
+                     target.Priority > bestPriority))
+                {
+                    bestIndex = target.MapPointIndex;
+                    bestDistance = distance;
+                    bestPriority = target.Priority;
+                }
+            }
+
+            return bestIndex;
         }
 
         private static string ResolveHoveredLabel(
@@ -2285,15 +2478,24 @@ namespace BarPromenade
                 true,
                 2f,
                 1f);
+            if (controller.MapPointInspectionEnabled)
+            {
+                DrawMapPointPanel(panel);
+                DrawMapPointModeButton(panel);
+                return;
+            }
+
             if (!controller.IsCityMapInteractionActive)
             {
                 DrawAreaTravelPanel(panel);
+                DrawMapPointModeButton(panel);
                 return;
             }
 
             if (controller.DebugTeleportEnabled)
             {
                 DrawDebugTeleportPanel(panel);
+                DrawMapPointModeButton(panel);
                 return;
             }
 
@@ -2301,7 +2503,7 @@ namespace BarPromenade
                 new Rect(
                     panel.x + 6f,
                     panel.y + 5f,
-                    panel.width - 12f,
+                    panel.width - 58f,
                     18f),
                 LocalizationService.Get("map.route_title"),
                 subtitleStyle);
@@ -2361,6 +2563,179 @@ namespace BarPromenade
             }
 
             GUI.enabled = previousEnabled;
+            DrawMapPointModeButton(panel);
+        }
+
+        private void DrawMapPointPanel(Rect panel)
+        {
+            GUI.Label(
+                new Rect(
+                    panel.x + 6f,
+                    panel.y + 5f,
+                    panel.width - 58f,
+                    18f),
+                LocalizationService.Get("map.point.title"),
+                subtitleStyle);
+
+            GUI.Label(
+                new Rect(
+                    panel.x + 8f,
+                    panel.y + 27f,
+                    panel.width - 16f,
+                    16f),
+                controller.GetAreaLabel(controller.SelectedArea),
+                pointOfInterestItemStyle);
+
+            if (!controller.TryGetSelectedMapPoint(
+                    out CityMapPointDescriptor point,
+                    out Vector3 worldPosition))
+            {
+                GUI.Label(
+                    new Rect(
+                        panel.x + 10f,
+                        panel.y + 67f,
+                        panel.width - 20f,
+                        56f),
+                    LocalizationService.Get("map.point.select"),
+                    centeredStyle);
+            }
+            else
+            {
+                GUI.Label(
+                    new Rect(
+                        panel.x + 9f,
+                        panel.y + 50f,
+                        panel.width - 18f,
+                        42f),
+                    point.Label,
+                    centeredStyle);
+                GUI.Label(
+                    new Rect(
+                        panel.x + 9f,
+                        panel.y + 101f,
+                        panel.width - 18f,
+                        48f),
+                    FormatMapPointCoordinates(worldPosition),
+                    centeredStyle);
+                GUI.Label(
+                    new Rect(
+                        panel.x + 9f,
+                        panel.y + 154f,
+                        panel.width - 18f,
+                        16f),
+                    string.Format(
+                        CultureInfo.InvariantCulture,
+                        "{0} / {1}",
+                        controller.SelectedMapPointIndex + 1,
+                        controller.ActiveMapPoints.Count),
+                    pointOfInterestItemStyle);
+
+                DrawMapPointTeleportButton(panel, point);
+            }
+
+            GUI.Label(
+                new Rect(
+                    panel.x + 8f,
+                    panel.yMax - 43f,
+                    panel.width - 16f,
+                    35f),
+                LocalizationService.Get("map.point.select_hint"),
+                centeredStyle);
+        }
+
+        /// <summary>
+        /// Go to the point that is selected, not to the middle of the region
+        /// that contains it.
+        ///
+        /// Only in debug mode, and only for the tab the player is actually
+        /// standing in. The other tab's points chart somewhere else, and
+        /// getting there is a scene transition rather than a teleport - the
+        /// area travel button already owns that.
+        /// </summary>
+        private void DrawMapPointTeleportButton(
+            Rect panel,
+            CityMapPointDescriptor point)
+        {
+            if (!controller.DebugTeleportEnabled)
+            {
+                return;
+            }
+
+            var button = new Rect(
+                panel.x + 18f,
+                panel.y + 176f,
+                panel.width - 36f,
+                24f);
+            bool reachable = controller.CanTeleportToSelectedMapPoint;
+            RetroUiTheme.DrawPanel(
+                button,
+                RetroUiTheme.PanelRaised,
+                reachable ? RetroUiTheme.Good : RetroUiTheme.BorderMuted,
+                reachable,
+                2f,
+                1f);
+            if (!reachable)
+            {
+                GUI.Label(
+                    button,
+                    LocalizationService.Get("map.point.teleport_elsewhere"),
+                    hintStyle);
+                return;
+            }
+
+            if (GUI.Button(
+                    button,
+                    LocalizationService.Get("map.point.teleport"),
+                    hintStyle))
+            {
+                controller.QueueConfirmMapPointTeleport();
+            }
+        }
+
+        private void DrawMapPointModeButton(Rect panel)
+        {
+            Rect button = new Rect(
+                panel.xMax - 45f,
+                panel.y + 4f,
+                39f,
+                19f);
+            RetroUiTheme.DrawPanel(
+                button,
+                controller.MapPointInspectionEnabled
+                    ? RetroUiTheme.Accent
+                    : RetroUiTheme.PanelRaised,
+                controller.MapPointInspectionEnabled
+                    ? RetroUiTheme.AccentPale
+                    : RetroUiTheme.BorderMuted,
+                controller.MapPointInspectionEnabled,
+                1f,
+                1f);
+            if (GUI.Button(button, "XYZ", smallButtonStyle))
+            {
+                controller.QueueToggleMapPointInspection();
+            }
+        }
+
+        /// <summary>
+        /// The two coordinates a map actually has.
+        ///
+        /// The readout used to print all three, which is a debug dump rather
+        /// than a chart: height is the one number a plan view cannot show,
+        /// nobody navigates by it, and on a city whose ground is graded
+        /// everywhere it is noise beside the two that locate the point.
+        /// </summary>
+        internal static string FormatMapPointCoordinates(Vector3 position)
+        {
+            return string.Format(
+                CultureInfo.InvariantCulture,
+                LocalizationService.Get("map.point.coordinates"),
+                NormalizeMapCoordinate(position.x),
+                NormalizeMapCoordinate(position.z));
+        }
+
+        private static float NormalizeMapCoordinate(float value)
+        {
+            return Mathf.Abs(value) < 0.05f ? 0f : value;
         }
 
         private void DrawDebugTeleportPanel(Rect panel)
@@ -2369,7 +2744,7 @@ namespace BarPromenade
                 new Rect(
                     panel.x + 6f,
                     panel.y + 5f,
-                    panel.width - 12f,
+                    panel.width - 58f,
                     18f),
                 LocalizationService.Get("map.teleport.title"),
                 subtitleStyle);

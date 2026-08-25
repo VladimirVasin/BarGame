@@ -59,6 +59,7 @@ namespace BarPromenade
             FindClosest(
                 route,
                 point,
+                true,
                 out float distance,
                 out Vector3 center,
                 out Vector3 right,
@@ -73,7 +74,14 @@ namespace BarPromenade
             float roadBank = center.y - RoadBedClearance +
                              shoulderDistance * bankSlope;
 
-            float macro = point.x * 0.30f + point.y * 0.035f - 0.55f;
+            float horizontalRise = Mathf.Max(
+                1f,
+                route.End.x - route.Start.x);
+            float macro = route.Start.y +
+                          (point.x - route.Start.x) *
+                          (route.ElevationGain / horizontalRise) +
+                          point.y * 0.012f -
+                          0.55f;
             float undulation = Mathf.Sin(point.x * 0.31f + point.y * 0.17f) *
                                0.20f +
                                Mathf.Sin(point.x * -0.11f + point.y * 0.27f) *
@@ -81,11 +89,12 @@ namespace BarPromenade
             float blend = Mathf.SmoothStep(
                 0f,
                 1f,
-                Mathf.InverseLerp(7f, 14f, distance));
+                Mathf.InverseLerp(4.8f, 7f, distance));
             float terrain = Mathf.Lerp(
                 roadBank,
                 macro + undulation,
                 blend);
+            terrain = ApplyBridgeGorge(route.Bridge, point, terrain);
             float plateauDistance = DistanceToPolygonEdge(
                 plateau.VerticesXZ,
                 point);
@@ -144,6 +153,25 @@ namespace BarPromenade
             out Vector3 right,
             out float halfWidth)
         {
+            FindClosest(
+                route,
+                point,
+                false,
+                out distance,
+                out center,
+                out right,
+                out halfWidth);
+        }
+
+        private static void FindClosest(
+            MountainRoadRoutePlan route,
+            Vector2 point,
+            bool skipBridgeSegments,
+            out float distance,
+            out Vector3 center,
+            out Vector3 right,
+            out float halfWidth)
+        {
             float bestSqr = float.PositiveInfinity;
             center = route.Start;
             right = route.Samples[0].Right;
@@ -152,6 +180,15 @@ namespace BarPromenade
             {
                 MountainRoadRouteSample first = route.Samples[index - 1];
                 MountainRoadRouteSample second = route.Samples[index];
+                float segmentDistance =
+                    (first.Distance + second.Distance) * 0.5f;
+                if (skipBridgeSegments &&
+                    segmentDistance > route.Bridge.StartDistance + 0.05f &&
+                    segmentDistance < route.Bridge.EndDistance - 0.05f)
+                {
+                    continue;
+                }
+
                 Vector2 a = new Vector2(first.Position.x, first.Position.z);
                 Vector2 b = new Vector2(second.Position.x, second.Position.z);
                 Vector2 ab = b - a;
@@ -177,6 +214,54 @@ namespace BarPromenade
             }
 
             distance = Mathf.Sqrt(bestSqr);
+        }
+
+        private static float ApplyBridgeGorge(
+            MountainRoadBridgeDescriptor bridge,
+            Vector2 point,
+            float terrainHeight)
+        {
+            Vector2 start = new Vector2(bridge.Start.x, bridge.Start.z);
+            Vector2 forward = new Vector2(
+                bridge.Forward.x,
+                bridge.Forward.z);
+            Vector2 right = new Vector2(bridge.Right.x, bridge.Right.z);
+            Vector2 delta = point - start;
+            float along = Vector2.Dot(delta, forward);
+            if (along <= 0f || along >= bridge.Length)
+            {
+                return terrainHeight;
+            }
+
+            float lateral = Mathf.Abs(Vector2.Dot(delta, right));
+            if (lateral >= bridge.GorgeHalfWidth)
+            {
+                return terrainHeight;
+            }
+
+            float enter = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.Clamp01(along / bridge.AbutmentBlendLength));
+            float exit = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.Clamp01(
+                    (bridge.Length - along) /
+                    bridge.AbutmentBlendLength));
+            float lateralCore = bridge.DeckWidth * 0.5f + 1.2f;
+            float lateralWeight = 1f - Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.InverseLerp(
+                    lateralCore,
+                    bridge.GorgeHalfWidth,
+                    lateral));
+            float weight = Mathf.Min(enter, exit) * lateralWeight;
+            float floor = bridge.GorgeFloorY +
+                          Mathf.Sin(point.x * 0.29f + point.y * 0.21f) *
+                          0.35f;
+            return Mathf.Lerp(terrainHeight, floor, weight);
         }
     }
 }

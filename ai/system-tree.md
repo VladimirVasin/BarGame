@@ -252,10 +252,11 @@ Assets/
         CityFringeYardValidator.cs bands/gaps/all-safe-seams/corridors/vocabulary/budget invariants
         CityFringeYard{WorldBuilder,WorldResult}.cs 48 m batches, emissive anchors, no new Lights
         CityFringePracticalAnchor.cs runtime pose passed to the fixed night-light pool
-        MountainRoadPlan.cs       route samples, tunnel/plateau, scenery + sound anchors
-        MountainRoad{Planner,Validator}.cs deterministic geometry and invariants
+        MountainRoadPlan.cs       typed 600 m route, ten hairpins, bridge, tunnel/plateau + dressing
+        MountainRoad{Planner,Validator}.cs route/bridge + ridge envelope/footprint invariants
+        MountainRoadBridge{WorldBuilder,Validator}.cs deck/beams/piers/open rails + bounded physics
         MountainRoadTerminal{Plan,Planner,Validator}.cs vehicle/cafe/cableway terminal contract
-        MountainRoad{Terrain,Surface,Scenery}*.cs continuous climb + layered forest/mountains
+        MountainRoad{Terrain,Surface,Scenery}*.cs 76 m terrain, gorge, road + colliderless terminal apron
         MountainRoadCafe{WorldBuilder,WorldResult,Geometry}.cs enterable glass cafe
         MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs four-role silent cast
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
@@ -570,12 +571,12 @@ Assets/
         SupermarketCashierInteraction.cs   E talk stub on its own trigger
       UI/            retro UI, pause/inventory, segmented HUD, district/bus map and F9 debug
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
-        CityMapAreaController.cs    City/MountainRoad tab state + cross-area request
-        CityMapAreaView.cs          tab strip and travel confirmation presentation
-        CityMapMountainRoadOverlay.cs tunnel/serpentine/terminal landmark schematic
+        CityMapAreaController.cs    tabs + stable two-area point catalog/XYZ selection
+        CityMapAreaView.cs          tabs, mountain markers and travel presentation
+        CityMapMountainRoadOverlay.cs full serpentine, ten apexes, bridge + terminal landmarks
         CityMapBusOverlay.cs        simplified blue loop + ordered localized stop markers
-        CityMapController.cs        bus overlay, canonical lots, debug teleport + bar route
-        CityMapView.cs              bus/stop legend plus shop/POI/bar map presentation
+        CityMapController.cs        map input, city catalog, debug teleport + bar route
+        CityMapView.cs              unified point hit/highlight/XYZ plus map presentation
         PauseMenuModel.cs           pure main/confirmation navigation and actions
         PauseMenuController.cs      shared-lock time/audio/input pause ownership + IMGUI
         InventoryController.cs      modal inventory, selection and atomic Eat/Drink input
@@ -754,20 +755,31 @@ startup Wake or accepted Home F9 debug skip -> session time 06:00
                                   -> HomeDayNightController
 City/MountainRoad map -> CityMapAreaController -> City / Mountain Road tabs
                                                -> current-area player marker only
+                                               -> XYZ / C / gamepad Y inspection
+                                                  -> deterministic per-area point catalog
+                                                  -> click or Left/Right / D-pad selection
+                                                     -> persistent highlight
+                                                     -> area + localized name + world XYZ
+                                                  -> no route/travel/teleport action
                                                -> other-area confirmation
                                                   -> AreaTravelService
                                                      -> AreaLoading (Single)
                                                         -> black progress bar
                                                         -> destination (Single)
-MountainRoadRoot -> MountainRoadPlanner -> validated 82.7 m continuous climb
+MountainRoadRoot -> MountainRoadPlanner -> validated 600 m continuous climb
                                       -> 9 m exit tunnel, spawn at 6 m
-                                      -> 4.8 m road / two 6.4 m, R7.5 m hairpins
-                                      -> +8.7 m rise -> joined ~42 x 27 m terminal
-                                         -> clear R7.5 m automotive apron
+                                      -> 4.8 m road / ten 6.4 m, R7.5 m hairpins
+                                      -> <=8% grade / +26.1 m rise / final 5 m level
+                                      -> lower five -> 50 m bridge -> upper five
+                                         -> 5.8 m deck / >=25 m gorge
+                                      -> joined ~42 x 27 m terminal
+                                         -> visible colliderless R7.5 m apron on shared collision
                                          -> enterable five-sided glass cafe on left
-                                         -> 58 m operating cableway on right
-                                      -> car-scale forest/misc + middle/far snowy layers
-                                      -> five positioned sound anchors + one faulty lamp
+                                         -> 58 m relative-height cableway on right
+                                      -> route-wide forest/misc + middle/far snowy layers
+                                         -> 76 m terrain + grounded perimeter ridges
+                                         -> ridge footprints clear route and trees
+                                      -> five positioned sounds incl. loose bridge rail
                   -> pure City plan for the City map tab only
 blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                           -> stable area IDs + categories/profiles

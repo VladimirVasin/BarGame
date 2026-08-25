@@ -15,6 +15,8 @@ namespace BarPromenade
             new Color32(174, 183, 179, 255);
         private static readonly Color MountainRoadHairpin =
             new Color32(211, 163, 89, 255);
+        private static readonly Color MountainRoadBridge =
+            new Color32(190, 207, 201, 255);
         private static readonly Color MountainRoadCafeGlow =
             new Color32(226, 199, 116, 255);
         private static readonly Color MountainRoadCableway =
@@ -115,6 +117,7 @@ namespace BarPromenade
             DrawMountainRoadHatches(projection, overlay);
             DrawMountainRoadPlateau(projection, overlay);
             DrawMountainRoadRoute(projection, overlay);
+            DrawMountainRoadBridge(projection, overlay);
             DrawMountainRoadHairpins(projection, overlay);
             DrawMountainRoadTerminalLandmarks(projection, overlay);
             DrawMountainRoadTunnel(projection, overlay);
@@ -207,6 +210,52 @@ namespace BarPromenade
                         index + 1),
                     LandmarkHoverPriority);
             }
+        }
+
+        private void DrawMountainRoadBridge(
+            MapProjection projection,
+            CityMapMountainRoadOverlay overlay)
+        {
+            if (!overlay.HasBridge)
+            {
+                return;
+            }
+
+            Vector2 center = projection.WorldToScreen(
+                overlay.BridgePosition);
+            Rect marker = CreateCenteredRect(center, 24f, 16f);
+            DrawSolidRect(
+                new Rect(marker.x + 1f, marker.y + 5f, marker.width - 2f, 6f),
+                RetroUiTheme.Ink);
+            DrawSolidRect(
+                new Rect(marker.x + 3f, marker.y + 7f, marker.width - 6f, 2f),
+                MountainRoadBridge);
+            DrawLine(
+                new Vector2(marker.x + 4f, marker.y + 2f),
+                new Vector2(marker.x + 4f, marker.yMax - 2f),
+                2f,
+                MountainRoadBridge);
+            DrawLine(
+                new Vector2(marker.xMax - 4f, marker.y + 2f),
+                new Vector2(marker.xMax - 4f, marker.yMax - 2f),
+                2f,
+                MountainRoadBridge);
+            DrawLine(
+                new Vector2(marker.x + 4f, marker.y + 3f),
+                new Vector2(marker.xMax - 4f, marker.y + 3f),
+                1f,
+                MountainRoadBridge);
+            DrawLine(
+                new Vector2(marker.x + 4f, marker.yMax - 3f),
+                new Vector2(marker.xMax - 4f, marker.yMax - 3f),
+                1f,
+                MountainRoadBridge);
+
+            RegisterHoverTarget(
+                Expand(marker, 3f),
+                center,
+                LocalizationService.Get("map.mountain_road.bridge"),
+                LandmarkHoverPriority);
         }
 
         private void DrawMountainRoadTerminalLandmarks(
@@ -330,7 +379,8 @@ namespace BarPromenade
                 LocalizationService.Get(
                     "map.mountain_road.tunnel_exit"),
                 LandmarkHoverPriority);
-            if (!controller.IsSelectedAreaCurrent &&
+            if (!controller.MapPointInspectionEnabled &&
+                !controller.IsSelectedAreaCurrent &&
                 GUI.Button(marker, GUIContent.none, GUIStyle.none))
             {
                 controller.QueueRequestAreaTravel(GameAreaId.MountainRoad);
@@ -345,7 +395,7 @@ namespace BarPromenade
                 new Rect(
                     panel.x + 6f,
                     panel.y + 5f,
-                    panel.width - 12f,
+                    panel.width - 58f,
                     18f),
                 areaName,
                 subtitleStyle);

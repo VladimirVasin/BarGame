@@ -68,7 +68,7 @@ namespace BarPromenade
                     Vector3 center =
                         (vertices[a] + vertices[b] + vertices[c] + vertices[d]) *
                         0.25f;
-                    IList<int> target = IsSnowCell(center)
+                    IList<int> target = IsSnowCell(plan, center)
                         ? snowTriangles
                         : soilTriangles;
                     target.Add(a);
@@ -85,16 +85,24 @@ namespace BarPromenade
                 CreateMesh("Mountain Road Snow", vertices, uvs, snowTriangles));
         }
 
-        private static bool IsSnowCell(Vector3 center)
+        private static bool IsSnowCell(
+            MountainRoadPlan plan,
+            Vector3 center)
         {
-            if (center.y < 6.35f || center.x < 13f)
+            float snowLine = plan.Route.Start.y +
+                             plan.Route.ElevationGain * 0.72f;
+            float horizontalProgress = Mathf.InverseLerp(
+                plan.Route.Start.x,
+                plan.Route.End.x,
+                center.x);
+            if (center.y < snowLine - 0.3f || horizontalProgress < 0.62f)
             {
                 return false;
             }
 
             float brokenEdge = Mathf.Sin(center.x * 0.67f) +
                                Mathf.Cos(center.z * 0.49f);
-            return center.y + brokenEdge * 0.32f > 6.65f;
+            return center.y + brokenEdge * 0.32f > snowLine;
         }
 
         private static Mesh CreateMesh(

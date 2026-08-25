@@ -71,24 +71,35 @@ The vertical slice contains:
   naturally pauses wherever gameplay sets `timeScale` to zero. The Home clock
   and inventory Status panel both show its current `HH:MM`;
 - a separately runtime-composed `MountainRoad` area. The hero arrives `6 m`
-  inside a `9 m` exit tunnel, then follows one continuous `82.7 m` uphill road
+  inside a `9 m` exit tunnel, then follows one continuous `600 m` uphill road
   ribbon dimensioned for the `4.83 x 1.80 m` LastRouteCar: `4.8 m` wide on
-  ordinary stretches and `6.4 m` through two `7.5 m` hairpins. It rises
-  `8.7 m`; its last `5 m` are level and share the actual road-mesh entry
-  vertices with an irregular roughly `42 x 27 m` terminal plateau, so there is
-  no height step, open seam or transverse collider wall. Its centre reserves a
-  `7.5 m` turning circle; the left side owns an enterable glass cafe with a
+  ordinary stretches and `6.4 m` through ten `7.5 m`-radius hairpins. It rises
+  `26.1 m` at no more than an `8%` grade. After five lower hairpins the
+  mandatory route crosses a `50 m`-long high mountain bridge whose `5.8 m`
+  deck surrounds the `4.8 m` clear roadway; the terrain opens to a gorge floor
+  at world `Y=-16`, at least `25 m` below both bridge ends. Its last `5 m` are
+  level and share the actual road-mesh entry vertices with the same irregular
+  roughly `42 x 27 m` terminal plateau, so there is no height step, open seam
+  or transverse collider wall. A separate dark asphalt mesh, offset `0.025 m`
+  above that shared physical surface and extended `0.45 m` back over the road
+  seam, makes the whole entry and R`7.5 m` turning pocket visible without
+  adding a second collider. The terrain envelope keeps a `76 m` margin.
+  Generic middle/far ridges sit around the outer perimeter of the complete
+  route bounds, ground their bases against the minimum sampled terrain beneath
+  each oriented footprint and reserve those footprints from both the road
+  corridor and tree crowns. The left side owns an enterable glass cafe with a
   bespoke silent four-role cast (lone patron, couple and attendant), two
   deliberate empty stools and rare deterministic gesture beats. The right
-  side owns an operating `58 m` cableway with four cabins. At the normal
-  `2.6 m/s` walk speed the route takes about `31.8 s`; vehicle control remains
-  separate future work. Larger layered forest and grounded roadside misc,
-  middle ridges and far snowy peaks
-  provide the longer perceived climb without expanding the physical ascent.
-  Five causal positional sound anchors belong to identifiable visible sources;
-  one tunnel practical visibly flickers. Its root may generate the pure City
-  layout/mountain plan needed by the City map tab, but it never calls a City
-  world builder or creates City GameObjects;
+  side owns an operating `58 m`
+  cableway with four cabins, with every cable height rebased from the raised
+  terminal rather than old absolute world heights. At the normal `2.6 m/s`
+  walk speed the route takes about `230.8 s`, or `3 min 51 s`; vehicle control
+  remains separate future work. Layered forest, grounded roadside misc, middle
+  ridges and far snowy peaks are distributed over the complete climb. Five
+  causal positional sound anchors belong to identifiable visible sources,
+  including one loose bridge rail; one tunnel practical visibly flickers. Its
+  root may generate the pure City layout/mountain plan needed by the City map
+  tab, but it never calls a City world builder or creates City GameObjects;
 - a finite, seed-reproducible coastal city driven by one immutable blueprint:
   the default preserves all 144 former road-and-lot cells inside a `13 x 12`
   urban envelope, using the added central column for a north-south river and
@@ -978,14 +989,32 @@ The vertical slice contains:
   compact legend. The map deliberately has no live bus marker. With the
   ordinary area tabs, City and Mountain Road can each be inspected as a
   separate schematic; the player marker is drawn only on the current area's
-  tab. Confirming the other area requests a map arrival, Single-loads the black
+  tab. An ordinary observational `XYZ` mode is available on both tabs through
+  the panel button, keyboard `C` or gamepad north/`Y`. A click selects the
+  point under the pointer; Left/Right or D-pad Left/Right cycle the complete
+  active-area catalog, persistently highlight the selection and automatically
+  centre keyboard-picked points. The side panel gives the localized point
+  name, its area and invariant world `X/Y/Z` to one decimal place.
+  City's catalog owns every `BuildingLot`, every open-area arrival, every bus
+  stop, the current player, the city mountain-tunnel portal and the boat
+  station hut. Special lots replace rather than duplicate their generic lot:
+  bars expose `ReturnPosition`, home and supermarket expose `Center`, and each
+  district POI exposes its authored position. Mountain Road owns the current
+  player, tunnel, every authored hairpin apex, bridge centre, plateau endpoint,
+  cafe and cableway. Road and itinerary polylines, intermediate route samples
+  and mountain hatches remain decorative. Point inspection is mutually
+  exclusive with debug teleport and suppresses route editing, area travel and
+  teleport confirmation until the player exits `XYZ` mode. Confirming the
+  other area requests a map arrival, Single-loads the black
   `AreaLoading` scene, advances its progress bar and only then Single-loads the
   destination. The source area is therefore unloaded before the destination
   world is composed: City and Mountain Road are never resident or rendered
-  together. Mountain Road is drawn as its exit tunnel, winding route, two
-  hairpins, enlarged endpoint terminal and surrounding mountain hatch. Its
-  terminal plan also supplies distinct localized cafe and cableway landmarks;
-  the map does not infer them from runtime GameObjects. The physical terminal
+  together. Mountain Road is drawn as its exit tunnel, complete winding route,
+  all ten authored hairpins, distinct mountain bridge, enlarged endpoint
+  terminal and surrounding mountain hatch. Hairpins and bridge come from the
+  same pure route plan used by the world. The terminal plan also supplies
+  distinct localized cafe and cableway landmarks; the map does not infer them
+  from runtime GameObjects. The physical terminal
   keeps a clear `7.5 m` vehicle circle on its irregular roughly `42 x 27 m`
   plateau. On the left, one five-sided Nighthawks-inspired glass cafe is
   enterable without a scene load. Its lone patron, neighbouring couple and

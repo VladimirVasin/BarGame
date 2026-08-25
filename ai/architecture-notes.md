@@ -1329,14 +1329,35 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   warm/cold lighting treatment and does not own persistent gameplay state.
 - **Accepted — Mountain Road is a separate runtime-composed area:** Build index
   `7` starts the hero `6 m` inside a `9 m` exit tunnel and builds one continuous
-  `82.7 m` uphill road ribbon sized against the `4.83 x 1.80 m` LastRouteCar.
-  Ordinary width is `4.8 m`; two `7.5 m`-radius hairpins widen to `6.4 m`.
-  The physical climb is `8.7 m`; the final `5 m` are level and enter an
-  irregular roughly `42 x 27 m` terminal plateau after about `31.8 s`
-  at `PlayerMotor`'s `2.6 m/s` forward speed. The road and plateau reuse the
-  same entry vertices, terrain height and open lower edge, so neither a visual
-  gap nor a transverse collider lip interrupts a future car. A reserved
-  `7.5 m` centre circle keeps the arrival usable by that car. The left landmark
+  `600 m` uphill road ribbon sized against the `4.83 x 1.80 m` LastRouteCar.
+  Ordinary width is `4.8 m`; ten `7.5 m`-radius hairpins widen to `6.4 m`.
+  The physical climb is `26.1 m`, exactly three times its former rise, and the
+  pure route validator caps every sampled grade at `8%`. The final `5 m` are
+  level and enter the unchanged irregular roughly `42 x 27 m` terminal plateau
+  after about `230.8 s` (`3 min 51 s`) at `PlayerMotor`'s `2.6 m/s` forward
+  speed. `MountainRoadRoutePlan` owns the ordered samples, all ten typed
+  hairpin descriptors and one mandatory bridge descriptor instead of exposing
+  two fixed turns. The first five hairpins form the lower forest chapter, the
+  last five form the upper climb, and route-relative placement spreads forest,
+  roadside misc, snow poles and ridge dressing across the full distance.
+- **Accepted — The Mountain Road crosses one real high bridge:** The middle
+  chapter contains a straight `50 m` road crossing whose continuous `4.8 m`
+  clear roadway sits on a `5.8 m` structural deck with a `0.72 m` slab and
+  `1.1 m` physical side rails. The route surface remains continuous at both
+  abutments. Terrain sampling ignores the suspended route while shaping the
+  approaches and applies a dedicated gorge mask with its floor at world
+  `Y=-16`; both deck ends retain at least `25 m` of exposed drop. The deck,
+  beams, abutments and repeated rail members are runtime-composed from the same
+  validated descriptor. Each open rail leaves a deliberate `2.4 m` midpoint
+  viewing gap while a continuous overlapping collider preserves the physical
+  barrier. The loose bridge rail replaces the old roadside guardrail as one of
+  the five causal sound owners. The map reads the bridge centre and every
+  hairpin apex from that same route plan.
+- **Accepted — The raised Mountain Road keeps its existing terminal chapter:**
+  The road and plateau reuse the same entry vertices, terrain height and open
+  lower edge, so neither a visual gap nor a transverse collider lip interrupts
+  a future car. A reserved `7.5 m` centre circle keeps the arrival usable by
+  that car. The left landmark
   is a same-scene, physically enterable five-sided glass cafe with a `1.6 m`
   open door and exactly two practical Spots. Its tableau is a dedicated staged
   subsystem rather than part of the pedestrian pool: one lone patron, one
@@ -1349,10 +1370,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   right landmark is a `58 m` cableway: four colliderless cabins traverse one
   continuous up/turn/down loop over three grounded colliderless remote supports;
   only its lower station is physical and its upper return is hidden behind the
-  authored snow-ridge occluder. The terminal is deliberately not a transition,
-  and the car still has no driving controller. Continuous road/terrain geometry
-  and a smooth exterior apron blend avoid coplanar patchwork or a shoulder lip;
-  larger grounded forest and roadside misc form the close layer,
+  authored snow-ridge occluder. Cable nodes now derive all vertical offsets
+  from the raised terminal anchor rather than retaining absolute world heights.
+  The terminal is deliberately not a transition, and the car still has no
+  driving controller. Continuous road/plateau geometry remains the only driving
+  collider. A separate colliderless asphalt apron at `+0.025 m` overlaps the
+  entry by `0.45 m` and exposes the complete R`7.5 m` turning pocket without a
+  second physics skin, coplanar patchwork or a shoulder lip. Larger grounded
+  forest and roadside misc form the close layer,
   middle ridges carry the perceived elevation, and far snowy mountains close
   the view. Five positional road sound anchors remain causal and attributable
   to visible fixtures or structures rather than free ambience; one tunnel lamp
@@ -1360,6 +1385,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   cafe adds three short-range appliance voices, and the cableway adds only a
   visible reducer motor plus roller-crossing clacks. Cafe/cableway map landmarks
   and rain shelter volumes are read from the same validated terminal plan.
+- **Accepted — Mountain ridge dressing follows the complete route envelope:**
+  The terrain bounds retain a `76 m` margin around the road, plateau and upper
+  cableway reach. Ordinary mid and far-snow ridges sample the outer perimeter
+  of the global route/plateau envelope instead of clustering around individual
+  samples. Each oriented ridge base takes the minimum terrain height measured
+  beneath its footprint and buries another `1.5 m`, so the complete silhouette
+  stays grounded over uneven terrain. Plan and validator both keep every ridge
+  footprint clear of the road corridor, plateau and tree crowns; the dedicated
+  cableway return occluder remains separately positioned by the terminal plan.
 - **Accepted — Cross-area map travel is a hard Single-mode scene boundary:**
   the ordinary map owns City and Mountain Road tabs, draws the hero only on the
   current area's tab and asks for confirmation before an other-area transfer.
@@ -1828,7 +1862,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and temporarily suspends motor, interaction, camera orbit, cinematic camera
   motion and the HUD. It consumes `CityLayout.DistrictPointsOfInterest`
   directly, draws those lots as open public ground and gives the waterworks,
-  drying yard, weighbridge and last-route island distinct non-interactive
+  drying yard, weighbridge and last-route island distinct non-route
   marker shapes plus a localized name legend. The same overlay reads the
   canonical `CityLayout.Supermarket`, draws it as a non-route grocery-shop
   landmark and resolves pointer hover across bars, home, shop and POIs by
@@ -1849,7 +1883,27 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   toe-to-outer strips describe the ridge mass, the narrow visible river
   approach ends in its dark mountain mouth without drawing the hidden cave as
   open territory, and the tunnel is an uncrossed open arch with only its first
-  `12 m` drawn rather than a selectable destination.
+  `12 m` drawn rather than a traversable destination.
+- **Accepted — Observational two-area map-point inspection:**
+  `CityMapPointDescriptor` is the common stable-ID, area, kind, localized-label
+  and world-position contract for semantic points on both map tabs. The `XYZ`
+  panel button, keyboard `C` and gamepad north/`Y` toggle a normal map mode;
+  click resolves the same foreground-first nearest/priority target as hover,
+  while Left/Right or D-pad Left/Right cycle a deterministic catalog and centre
+  keyboard-selected points. Selection persists as an outline, and the side
+  panel reports its localized name, area and invariant world `X/Y/Z` to one
+  decimal place. City contributes exactly one descriptor for every
+  `BuildingLot`, every open-area arrival, each bus stop, the current player,
+  the mountain tunnel's real portal and the boat-station hut. A bar replaces
+  its generic lot at `ReturnPosition`; home and supermarket replace theirs at
+  `Center`; a district POI replaces its lot at the authored POI position.
+  Mountain Road contributes the current player, tunnel, all authored hairpin
+  apexes, bridge centre, plateau endpoint and terminal cafe/cableway landmarks.
+  Road/itinerary polylines, intermediate route samples and mountain hatches are
+  presentation, not catalog points. Inspection never treats a coordinate as a
+  safe spawn: it is mutually exclusive with debug teleport and consumes map
+  selection input without editing the bar route, requesting cross-area travel
+  or confirming a teleport. Those actions return only after `XYZ` is closed.
 - **Accepted — Shared-lock gameplay pause:** City, MountainRoad, BarInterior,
   SupermarketInterior, HomeInterior and StairwellInterior each attach one
   runtime `PauseMenuController` to their existing UI root. Escape or gamepad

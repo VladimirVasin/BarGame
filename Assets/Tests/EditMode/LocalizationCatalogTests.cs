@@ -257,6 +257,12 @@ namespace BarPromenade.Tests.EditMode
             "drink_shop.failure.maximum_intoxication",
             "drink_shop.failure.not_offered",
             "map.title",
+            "map.point.title",
+            "map.point.select",
+            "map.point.coordinates",
+            "map.point.teleport",
+            "map.point.teleport_elsewhere",
+            "map.point.select_hint",
             "map.area.city",
             "map.area.mountain_road",
             "map.area.current",
@@ -265,6 +271,7 @@ namespace BarPromenade.Tests.EditMode
             "map.mountain_road.tunnel_exit",
             "map.mountain_road.plateau",
             "map.mountain_road.hairpin",
+            "map.mountain_road.bridge",
             "map.mountain_road.cafe",
             "map.mountain_road.cableway",
             "map.route_title",
@@ -410,6 +417,19 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 valuesByKey["supermarket.shop.price"],
                 Does.Contain("{0}"));
+            // Two placeholders, not three. A plan view has two
+            // coordinates; the readout printed height for a while, which is
+            // a debug dump rather than a chart.
+            Assert.That(
+                valuesByKey["map.point.coordinates"],
+                Does.Contain("{0:0.0}"));
+            Assert.That(
+                valuesByKey["map.point.coordinates"],
+                Does.Contain("{1:0.0}"));
+            Assert.That(
+                valuesByKey["map.point.coordinates"],
+                Does.Not.Contain("{2"),
+                "The map cannot show a height, and nobody navigates by one.");
             Assert.That(
                 valuesByKey["inventory.cash"],
                 Does.Not.Contain("₽"));
