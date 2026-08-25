@@ -18,6 +18,12 @@ namespace BarPromenade.Tests.EditMode
         private const float CarLength = 4.83f;
         private const float CarWidth = 1.80f;
 
+        // Where the man sits and where his boots rest, mirrored from
+        // `PERCH_SEAT` and `PERCH_SOLES` in
+        // `tools/build-last-route-car-3d-model.py`.
+        private const float PerchLead = 2.02f;
+        private const float PerchSolesLead = 2.44f;
+
         private static CityLayout GenerateLayout(int seed)
         {
             return CityLayoutGenerator.Generate(
@@ -365,18 +371,23 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// The light that lands on him is a FIXTURE, and it is aimed.
+        /// The light that lands on him is a FIXTURE, it is aimed, and it is
+        /// IN FRONT OF HIM.
         ///
-        /// He used to carry a bare Point with nothing drawn for it, hung
-        /// beside him and rewritten every frame so it walked the lot at his
-        /// shoulder. What replaced it is a second head on the island's own
-        /// route mast - which means it cannot be authored as an offset,
-        /// because the car's bay is fitted per seed and is in a different
-        /// direction on every city. So the thing worth proving is that the
-        /// head actually points at the car it is there to light.
+        /// All three have been wrong in turn. He carried a bare Point with
+        /// nothing drawn for it, hung beside him and rewritten every frame
+        /// so it walked the lot at his shoulder. That was replaced by a
+        /// second head on the island's own route mast, which fixed the
+        /// fixture and broke the light: the mast stands by the paving
+        /// circle and the car is fitted per seed up to seven metres away
+        /// with its nose pointing OUT, so the throw arrived from behind him
+        /// across ten metres of inverse square. The post is now fitted to
+        /// the bay it serves, and what is worth proving is the geometry
+        /// that makes it work - close, ahead of the perch, above his cap,
+        /// and pointed at him.
         /// </summary>
         [Test]
-        public void MastFloodlight_TurnsItsSecondHeadOnTheCar()
+        public void FerrymanLamp_StandsInFrontOfHisCarAndIsAimedAtHim()
         {
             CityLayout layout =
                 GenerateLayout(GameSessionState.DefaultCitySeed);
@@ -389,8 +400,69 @@ namespace BarPromenade.Tests.EditMode
                         out CityDryingYardNpcStance stance),
                 Is.True,
                 "The production seed is meant to park the car.");
+            Assert.That(
+                CityDistrictPointOfInterestWorldBuilder
+                    .TryDescribeFerrymanLampStance(
+                        island,
+                        out Vector3 post,
+                        out Vector3 aim),
+                Is.True,
+                "The production seed is meant to find room for the post; " +
+                "the mast fallback is for hostile bays, not for this one.");
 
-            var root = new GameObject("Ferryman Floodlight Test");
+            // In front of the man, not of the car: he sits on the bonnet
+            // roughly two metres ahead of the middle of it.
+            Vector3 facing = stance.Facing.normalized;
+            Vector3 perch = stance.Position + (facing * PerchLead);
+            Vector3 toPost = post - perch;
+            toPost.y = 0f;
+            Assert.That(
+                Vector3.Dot(toPost, facing),
+                Is.GreaterThan(0.4f),
+                $"The post stands {toPost} from a man looking {facing}. " +
+                "Behind him is where the mast head already was.");
+            Assert.That(
+                toPost.magnitude,
+                Is.LessThan(4.5f),
+                "Close enough that inverse square is not the whole story.");
+
+            // Off the paving and inside the lot, like everything else on
+            // this island. The bay fitter's own two rules.
+            Assert.That(
+                Vector2.Distance(
+                    new Vector2(post.x, post.z),
+                    new Vector2(island.Center.x, island.Center.z)),
+                Is.GreaterThan(PavingRadius),
+                "The island's empty middle is authored, not incidental.");
+            Assert.That(
+                island.PublicBounds.Contains(new Vector2(post.x, post.z)),
+                Is.True,
+                "A post outside the lot is a post in the street.");
+            foreach (CityDistrictPointOfInterestAccessDescriptor access in
+                     island.Accesses)
+            {
+                Assert.That(
+                    access.ApproachBounds.Contains(
+                        new Vector2(post.x, post.z)),
+                    Is.False,
+                    "A post in a way in is the one thing the walkable " +
+                    "mask would never report.");
+            }
+
+            // And it does not stand where the Ferryman's boots land when he
+            // drops off his own bumper.
+            Vector3 landing = stance.Position +
+                (facing *
+                 (PerchSolesLead +
+                  LastRouteFerrymanBoardingPlan.LandingReach));
+            Assert.That(
+                Vector2.Distance(
+                    new Vector2(post.x, post.z),
+                    new Vector2(landing.x, landing.z)),
+                Is.GreaterThan(0.7f),
+                "He would walk into it on the way down.");
+
+            var root = new GameObject("Ferryman Lamp Test");
             try
             {
                 CityDistrictPointOfInterestWorldBuilder.Build(
@@ -403,43 +475,62 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     head,
                     Is.Not.Null,
-                    "The mast carries no head for the car.");
+                    "Nothing was built to light him.");
+                Transform postObject = FindDescendant(
+                    root.transform,
+                    "Ferryman Lamp Post");
+                Assert.That(
+                    postObject,
+                    Is.Not.Null,
+                    "The head has to hang off something drawn. A light " +
+                    "with no fixture is the thing this replaced.");
 
                 Light[] lights = head.GetComponentsInChildren<Light>(true);
                 Assert.That(lights.Length, Is.EqualTo(1));
                 Assert.That(
                     lights[0].type,
                     Is.EqualTo(LightType.Spot),
-                    "A directed fixture, not a bare bulb: the narrow cone " +
-                    "is what keeps the warmth on him rather than on the lot.");
+                    "A directed fixture, not a bare bulb: the cone is " +
+                    "what keeps the warmth on him rather than on the lot.");
                 Assert.That(
                     lights[0].shadows,
                     Is.EqualTo(LightShadows.None));
+                Assert.That(
+                    lights[0].range,
+                    Is.LessThan(12f),
+                    "A short throw now that it is standing next to him; a " +
+                    "long one only spills onto the paving the mast owns.");
 
-                // Aimed at the car, and from ABOVE it. The height is load
-                // bearing: he is drawn no eyes and leans on the cap brim's
-                // own shadow, so the throw has to rake down over the brim.
+                // Above his cap, because the design draws him no eyes and
+                // leans on the brim's own shadow. Lighting that face from
+                // below is the one angle that argues with it.
                 Assert.That(
                     head.position.y,
                     Is.GreaterThan(stance.Position.y + 2.0f),
-                    "The head has to sit well above his cap.");
+                    "The head has to rake down over the brim.");
 
-                Vector3 toCar = stance.Position - head.position;
+                Vector3 toMan = aim - head.position;
                 Assert.That(
-                    Vector3.Angle(head.forward, toCar),
+                    Vector3.Angle(head.forward, toMan),
                     Is.LessThan(12f),
-                    $"The head points {head.forward} while the car it is " +
-                    $"there to light is {toCar.normalized} away. The recipe " +
-                    "root is SCALED horizontally, so an aim that forgets " +
-                    "to undo that scale lands beside the car rather than " +
-                    "on it.");
+                    $"The head points {head.forward} while the man it is " +
+                    $"there to light is {toMan.normalized} away. The " +
+                    "recipe root is SCALED horizontally, so an aim that " +
+                    "forgets to undo that scale lands beside the car.");
 
-                // The mast base already owns the obstacle collider; a light
-                // may not quietly add another thing to walk into.
+                // The post is a thing standing in the middle of a lot, so
+                // unlike the mast head it owns an obstacle. The head still
+                // owns none.
                 Assert.That(
                     head.GetComponentsInChildren<Collider>(true),
                     Is.Empty,
                     "The head must not add a collider of its own.");
+                Assert.That(
+                    FindDescendant(
+                        root.transform,
+                        "Ferryman Lamp Post Collider"),
+                    Is.Not.Null,
+                    "A post people can walk through is not a post.");
 
                 // And nothing about him emits any more.
                 Assert.That(
@@ -451,6 +542,60 @@ namespace BarPromenade.Tests.EditMode
             {
                 Object.DestroyImmediate(root);
             }
+        }
+
+        /// <summary>
+        /// The post is fitted rather than authored, so the thing that can
+        /// quietly rot is how often it fits at all: a ladder that misses on
+        /// most seeds leaves most cities back on the dim mast head with
+        /// nothing failing anywhere. This walks a spread of seeds and holds
+        /// the fit rate.
+        /// </summary>
+        [Test]
+        public void FerrymanLamp_FitsOnAlmostEverySeedThatParksTheCar()
+        {
+            int parked = 0;
+            int lit = 0;
+            for (int seed = 1; seed <= 40; seed++)
+            {
+                CityLayout layout = GenerateLayout(seed);
+                CityDistrictPointOfInterestDescriptor island = null;
+                foreach (CityDistrictPointOfInterestDescriptor descriptor in
+                         layout.DistrictPointsOfInterest)
+                {
+                    if (descriptor.Kind ==
+                        CityDistrictPointOfInterestKind
+                            .NightlifeLastRouteIsland)
+                    {
+                        island = descriptor;
+                        break;
+                    }
+                }
+
+                if (island == null ||
+                    !CityDistrictPointOfInterestWorldBuilder
+                        .TryDescribeFerrymanCarStance(island, out _))
+                {
+                    continue;
+                }
+
+                parked++;
+                if (CityDistrictPointOfInterestWorldBuilder
+                        .TryDescribeFerrymanLampStance(island, out _, out _))
+                {
+                    lit++;
+                }
+            }
+
+            Assert.That(
+                parked,
+                Is.GreaterThan(4),
+                "Too few seeds parked the car for this to prove anything.");
+            Assert.That(
+                lit,
+                Is.GreaterThanOrEqualTo(Mathf.CeilToInt(parked * 0.75f)),
+                $"Only {lit} of {parked} parked cars found room for a " +
+                "post. The mast fallback is meant to be the exception.");
         }
 
         private static Transform FindDescendant(Transform parent, string name)

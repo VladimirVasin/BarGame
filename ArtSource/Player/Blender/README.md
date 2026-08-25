@@ -111,6 +111,8 @@ library contains:
 - smoking: `SmokeEnter`, `SmokeLoop`, `SmokeExit`;
 - cat feeding: `CatFeedEnter`, `CatFeedLoop`, `CatFeedExit`;
 - bus riding: `BusBoardEnter`, `BusRideLoop`, `BusAlightExit`;
+- the Ferryman's car: `CarBoardEnter`, `CarAlightExit`, which share
+  `BusRideLoop` as their seated middle;
 - park game tables: `ChessSeatEnter`, `ChessSeatPlayLoop`,
   `ChessSeatExit`.
 
@@ -199,6 +201,23 @@ and a breath, on an exact full-rig seam. `ChessSeatExit` reverses the
 entry to `Relaxed`. Both boards wear the same three Actions; only the
 men on them differ.
 
+`CarBoardEnter` and `CarAlightExit` are the Ferryman's own boarding beat
+authored on this rig, on his key grid: reach, pull the leaf, step back
+under its swing, in under the roofline with a hand up on the door frame,
+down into the seat, and the door hauled shut afterwards. Four of those
+times are a contract with `LastRouteFerrymanBoardingTimeline`, which the
+passenger leaf's angle is a pure function of. They are hands-mirrored
+against his: the hero docks at the PASSENGER door already facing the way
+the car points, so the car is on his left the whole way in and the leaf
+only becomes the thing on his right once he is through it and sitting
+down. Both open and close on `bus_seated`, so `BusRideLoop` is still the
+loop between them and the car's roof height in
+`tools/build-last-route-car-3d-model.py` still governs the head
+clearance. Every arm in the pair is aimed with `armature_direction`
+rather than `target_direction`: the second is relative to the parent's
+own delta, so an arm authored against a bowed spine swings forward with
+it, and the first pass had him reaching for a handle at his own hip.
+
 The Actions intentionally contain no gameplay events or root motion. Unity's
 deterministic interaction timelines own exact playback, terminal holds,
 inventory commits and cancellation.
@@ -225,12 +244,13 @@ Before saving, the script fails with a non-zero Blender exit code unless:
   rest, and brings it within `25 mm` with socket-axis alignment above `0.85`
   during the inhale;
 - the bus boarding, seated loop and alighting Actions keep the root fixed and
-  match across the complete `Relaxed -> seated -> Relaxed` endpoint chain;
+  match across the complete `Relaxed -> seated -> Relaxed` endpoint chain, and
+  the car pair is held to the same chain over the same seated loop;
 - the door-use trio keeps both feet planted while the chest inclines and the
   physical right hand makes one short forward press before returning exactly
   to `Relaxed`;
 - presentation-only objects cannot enter an export selection.
 
 The production model currently builds as 73 independent mesh objects, 31 bones
-(including six sockets), 32 Actions and `1,534` triangles. Exact counts are
+(including six sockets), 37 Actions and `1,534` triangles. Exact counts are
 reported by the script and manifest.

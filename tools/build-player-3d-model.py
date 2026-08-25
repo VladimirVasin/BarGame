@@ -251,6 +251,8 @@ REQUIRED_ACTIONS = (
     "BusBoardEnter",
     "BusRideLoop",
     "BusAlightExit",
+    "CarBoardEnter",
+    "CarAlightExit",
     "ChessSeatEnter",
     "ChessSeatPlayLoop",
     "ChessSeatExit",
@@ -4632,6 +4634,261 @@ class CharacterBuilder:
             ),
         )
 
+        # And the same body getting into a CAR, which is not a bus with a
+        # narrower door. The Ferryman has had this beat since he was given
+        # somewhere to go - reach, pull, in under the roofline, down into
+        # the seat, and the leaf hauled shut after him - while the hero was
+        # still playing the bus's in-place two-step at the passenger door
+        # with his hands empty, beside a leaf that swung itself open on a
+        # timer. These two Actions are that choreography authored on this
+        # rig, on the same key grid, so the two men get into the same car
+        # the same way.
+        #
+        # Handedness is the one thing that does NOT copy across, and it is
+        # not a preference. The Ferryman takes his own door with his left
+        # hand because the car is left-hand drive and the wheel is on his
+        # side. The hero docks at the PASSENGER door standing outboard of
+        # it, already facing the way the car points, because
+        # `LastRouteCarSeatPlan` backs him onto that seat exactly as it
+        # backs him onto a bench. So the whole car is on his LEFT for the
+        # entire way in, and only becomes the thing on his right once he is
+        # through the door and sitting down. Left hand on the handle, left
+        # hand up on the door frame going under the roofline, and the RIGHT
+        # one reaching back out for the leaf once he is down.
+        #
+        # Every arm here is aimed with `armature_direction` and not with
+        # `target_direction`, and that is not a style choice either. The
+        # second is relative to the parent's own delta, so an arm authored
+        # against a spine that is bowed forty degrees swings forward with
+        # it - the first pass of these poses had him reaching for a handle
+        # at his own hip and bracing on a door frame that was behind his
+        # knees. Absolute armature-space aims were then probed against
+        # printed wrist positions, the way `ai/` says to.
+        #
+        # The seated endpoint is `bus_seated` itself rather than a pose of
+        # its own, and that is load bearing twice. `BusRideLoop` goes on
+        # being the loop between these two Actions, and the car's roof
+        # height in `tools/build-last-route-car-3d-model.py` was chosen
+        # against this rig's seated head clearance in exactly that pose.
+        car_door_reach = self.merge_pose(
+            relaxed,
+            {
+                # He leans into it. He has to: the dock stands 1.85 m off
+                # the car's centre line because that is the only place
+                # outside the leaf's own swing, so the handle is the better
+                # part of a metre away and a reach authored from a straight
+                # spine is a hand waving at nothing.
+                "pelvis": BonePose(
+                    rotation_degrees=(3.0, -6.0, 0.0),
+                    location_m=(0.0, -0.01, 0.0),
+                ),
+                "spine": BonePose(rotation_degrees=(14.0, -10.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-2.0, -12.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-2.0, -4.0, 0.0)),
+                "head": BonePose(rotation_degrees=(4.0, -14.0, 0.0)),
+                # Probed: this pair puts the fingertips at roughly
+                # (0.59, -0.52, 1.03) in armature space - out to his left,
+                # forward, at the waist line of a saloon.
+                "upper_arm.L": BonePose(
+                    armature_direction=(0.52, -0.30, -0.62)
+                ),
+                "forearm.L": BonePose(
+                    armature_direction=(0.55, -0.58, -0.32)
+                ),
+                "hand.L": BonePose(rotation_degrees=(4.0, -8.0, 6.0)),
+                "thigh.L": BonePose(rotation_degrees=(-8.0, 0.0, 4.0)),
+                "shin.L": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(5.0, 0.0, -2.0)),
+                "shin.R": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+            },
+        )
+        car_door_pull = self.merge_pose(
+            relaxed,
+            {
+                # And back out of it as the leaf comes. The weight goes
+                # onto the outboard foot and the whole torso unwinds the
+                # other way: a man who hauls a door open without moving is
+                # a man opening a door that weighs nothing.
+                "pelvis": BonePose(
+                    rotation_degrees=(1.0, 4.0, 0.0),
+                    location_m=(0.0, -0.02, 0.035),
+                ),
+                "spine": BonePose(rotation_degrees=(6.0, 7.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-1.0, 9.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-2.0, -3.0, 0.0)),
+                "head": BonePose(rotation_degrees=(2.0, -10.0, 0.0)),
+                # Probed: the fingertips come back to about
+                # (0.46, -0.40, 0.79), a quarter of a metre nearer his own
+                # hip than the reach and lower with it.
+                "upper_arm.L": BonePose(
+                    armature_direction=(0.62, -0.12, -0.42)
+                ),
+                "forearm.L": BonePose(
+                    armature_direction=(0.05, -0.30, -0.55)
+                ),
+                "hand.L": BonePose(rotation_degrees=(6.0, -10.0, 4.0)),
+                "thigh.L": BonePose(rotation_degrees=(10.0, 0.0, 3.0)),
+                "shin.L": BonePose(rotation_degrees=(15.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-8.0, 0.0, -3.0)),
+                "shin.R": BonePose(rotation_degrees=(14.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+            },
+        )
+        car_door_clear = self.merge_pose(
+            relaxed,
+            {
+                # Open, and his hand off it. He looks into the cabin he is
+                # about to fold himself into rather than at the door he has
+                # finished with.
+                "pelvis": BonePose(rotation_degrees=(1.0, -3.0, 0.0)),
+                "spine": BonePose(rotation_degrees=(6.0, -5.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-2.0, -6.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-2.0, -4.0, 0.0)),
+                "head": BonePose(rotation_degrees=(8.0, -14.0, 0.0)),
+                "upper_arm.L": BonePose(
+                    armature_direction=(0.16, -0.14, -0.72)
+                ),
+                "forearm.L": BonePose(
+                    armature_direction=(0.14, -0.30, -0.62)
+                ),
+                "hand.L": BonePose(rotation_degrees=(4.0, -8.0, 4.0)),
+                "thigh.L": BonePose(rotation_degrees=(-12.0, 0.0, 4.0)),
+                "shin.L": BonePose(rotation_degrees=(19.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-5.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(3.0, 0.0, -2.0)),
+                "shin.R": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+            },
+        )
+        car_seat_step = self.merge_pose(
+            bus_seat_prepare,
+            {
+                # In under the roofline. The duck is real but bounded: the
+                # car gives 1.04 m of roof over a seated pelvis and nothing
+                # at all over a standing one, so the head has to come down
+                # about as far as a doorway makes a tall man stoop and no
+                # further - a body folded to the horizontal reads as a bow,
+                # not as getting into a car.
+                "pelvis": BonePose(
+                    rotation_degrees=(7.0, -5.0, 0.0),
+                    location_m=(0.0, 0.02, -0.03),
+                ),
+                "spine": BonePose(rotation_degrees=(19.0, -5.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(4.0, -4.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(1.0, -2.0, 0.0)),
+                "head": BonePose(rotation_degrees=(10.0, -6.0, 0.0)),
+                # The left hand up on the door frame, which is both what a
+                # person does going through a car door and what keeps that
+                # arm out of the opening he is stepping into. Probed as an
+                # absolute aim; the same pose written against the parent
+                # put his palm on his own knee.
+                "upper_arm.L": BonePose(
+                    armature_direction=(0.66, -0.20, 0.18)
+                ),
+                "forearm.L": BonePose(
+                    armature_direction=(0.34, -0.20, 0.62)
+                ),
+                "hand.L": BonePose(rotation_degrees=(2.0, -6.0, 10.0)),
+                "upper_arm.R": BonePose(
+                    armature_direction=(-0.16, -0.06, -0.80)
+                ),
+                "forearm.R": BonePose(
+                    armature_direction=(-0.12, -0.20, -0.78)
+                ),
+                "thigh.L": BonePose(rotation_degrees=(-48.0, 0.0, 9.0)),
+                "shin.L": BonePose(rotation_degrees=(58.0, 0.0, 0.0)),
+                "foot.L": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+                "thigh.R": BonePose(rotation_degrees=(-6.0, 0.0, -3.0)),
+                "shin.R": BonePose(rotation_degrees=(21.0, 0.0, 0.0)),
+                "foot.R": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+            },
+        )
+        car_seat_settle = self.merge_pose(
+            bus_seat_lower,
+            {
+                "spine": BonePose(rotation_degrees=(14.0, -3.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-3.0, -2.0, 0.0)),
+                "head": BonePose(rotation_degrees=(6.0, -3.0, 0.0)),
+                "upper_arm.L": BonePose(
+                    armature_direction=(0.30, -0.28, -0.58)
+                ),
+                "forearm.L": BonePose(
+                    armature_direction=(0.26, -0.46, -0.42)
+                ),
+            },
+        )
+        car_seat_down = self.merge_pose(
+            bus_seated,
+            {
+                "pelvis": BonePose(
+                    rotation_degrees=(-4.0, 0.0, 0.0),
+                    location_m=(0.0, 0.095, -0.275),
+                ),
+                "spine": BonePose(rotation_degrees=(8.0, -1.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(-3.0, -1.0, 0.0)),
+                "head": BonePose(rotation_degrees=(4.0, -2.0, -0.4)),
+            },
+        )
+        car_door_shut = self.merge_pose(
+            bus_seated,
+            {
+                # Down, and the leaf still standing open on his outboard
+                # side. The right arm goes out after it and hauls it in;
+                # the same beat the Ferryman plays with the other arm at
+                # the other door.
+                "spine": BonePose(rotation_degrees=(7.0, 12.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(0.0, 14.0, 0.0)),
+                "neck": BonePose(rotation_degrees=(-1.0, 4.0, 0.0)),
+                "head": BonePose(rotation_degrees=(3.0, 16.0, -0.4)),
+                "upper_arm.R": BonePose(
+                    armature_direction=(-0.58, -0.22, -0.42)
+                ),
+                "forearm.R": BonePose(
+                    armature_direction=(-0.62, -0.42, -0.12)
+                ),
+                "hand.R": BonePose(rotation_degrees=(4.0, 10.0, -6.0)),
+            },
+        )
+        # The key grid is `FerrymanBoard`'s, and four of these times are a
+        # CONTRACT with `LastRouteFerrymanBoardingTimeline`, which the car
+        # seat now drives the passenger leaf from: the leaf starts moving
+        # at 0.16 and stands open at 0.34, and it is pulled shut between
+        # 0.84 and 0.98. Re-time this grid without re-timing those and the
+        # hero mimes a handle on a door that is already open.
+        self._create_action(
+            "CarBoardEnter", "car_ride", 3.0, False, 36, 12,
+            (
+                (0.0, relaxed),
+                (0.10, car_door_reach),
+                (0.22, car_door_pull),
+                (0.34, car_door_clear),
+                (0.52, car_seat_step),
+                (0.66, car_seat_settle),
+                (0.78, car_seat_down),
+                (0.90, car_door_shut),
+                (1.0, bus_seated),
+            ),
+        )
+        # And back out of it, which is those beats read backwards with one
+        # difference: the leaf is shoved open from INSIDE, so the arm that
+        # opens it is the arm that shut it, and it is pushed to rather than
+        # pulled - he is already walking away from it by the time it meets
+        # the pillar.
+        self._create_action(
+            "CarAlightExit", "car_ride", 3.0, False, 36, 12,
+            (
+                (0.0, bus_seated),
+                (0.10, car_door_shut),
+                (0.24, car_seat_down),
+                (0.38, car_seat_settle),
+                (0.52, car_seat_step),
+                (0.68, car_door_clear),
+                (0.84, car_door_pull),
+                (0.94, car_door_reach),
+                (1.0, relaxed),
+            ),
+        )
+
         # The park chess planks. A bus seat is backed onto from in
         # front; these have a stone table standing exactly there, so the
         # body goes in past the end of the plank instead and works its
@@ -6318,6 +6575,18 @@ def validate_result(
         "BusBoardEnter",
         "BusRideLoop",
         "BusAlightExit",
+    )
+    # The car pair hangs off the bus's own seated loop rather than one of
+    # its own, so this call proves the four seams that matters most:
+    # Relaxed -> CarBoardEnter -> BusRideLoop -> CarAlightExit -> Relaxed.
+    # A car clip that drifted off that seated pose would also drift off the
+    # head clearance the car's roof height was chosen against.
+    validate_interaction_pose(
+        result,
+        errors,
+        "CarBoardEnter",
+        "BusRideLoop",
+        "CarAlightExit",
     )
     validate_interaction_pose(
         result,

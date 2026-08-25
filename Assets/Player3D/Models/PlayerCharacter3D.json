@@ -12,7 +12,7 @@
   "object_count": 75,
   "mesh_count": 73,
   "triangle_count": 1534,
-  "action_count": 35,
+  "action_count": 37,
   "socket_count": 6,
   "bounds_min": [
     -0.773908,
@@ -151,6 +151,28 @@
       "source_fps": 8,
       "frame_start": 0.0,
       "frame_end": 48.0,
+      "root_motion": false
+    },
+    {
+      "name": "CarAlightExit",
+      "category": "car_ride",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false
+    },
+    {
+      "name": "CarBoardEnter",
+      "category": "car_ride",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
       "root_motion": false
     },
     {

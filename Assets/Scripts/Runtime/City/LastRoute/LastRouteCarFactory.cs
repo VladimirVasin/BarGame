@@ -224,7 +224,7 @@ namespace BarPromenade
 
             seatObject
                 .AddComponent<LastRouteCarSeatInteraction>()
-                .Initialize(player, controller, seatPlan, registry);
+                .Initialize(player, controller, seatPlan, registry, camera);
         }
 
         /// <summary>

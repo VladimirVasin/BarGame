@@ -53,6 +53,78 @@ Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
   `CityMapMountainPresentationTests`: `23/23` green. Full EditMode suite run
   afterwards because a route-length constant reaches every mountain consumer.
 
+## 2026-08-25 — The hero gets into the car the way the Ferryman does, and rides it from inside his own head
+
+- **The light was in the wrong place, and it was the second wrong place.** The
+  Ferryman's lamp began as a bare Point with no fixture, parented beside him
+  and rewritten every frame; that was replaced by a second head on the
+  island's route mast, which fixed the fiction and broke the light. The mast
+  stands beside the paving circle, the bay is fitted per seed up to `7 m` away
+  and the man on the bonnet faces OUT at the way in — so the throw arrived
+  from behind him across ten metres of inverse square. It now stands on a
+  `3.30 m` post of its own, fitted in front of the car and turned back down
+  the bonnet: night `45` / day `15` over `9 m` at `44` degrees, roughly `3.7 m`
+  of slant range instead of ten, calibrated against the drying yard's
+  floodlight rather than guessed.
+- **The post is fitted, not authored, because the bay is.** `TryDescribeFerrymanLampStance`
+  walks a ladder of places ahead of the car and REJECTS rather than nudges —
+  inside the lot, off the paving, out of every approach strip, clear of the
+  bodywork, and clear of the two points of ground the Ferryman walks through
+  on his way round the nose. The paving clearance is `0.85 m` and that number
+  is measured off the CANOPY, not the paving: the five broken segments carry
+  roofs whose outer corners reach about `6.05 m` from the middle of the island
+  and hang at `3.49`, which a `3.30 m` post would thread its head through.
+  The old mast bracket survives as the fallback for a bay that leaves nowhere
+  to stand one; `FerrymanLamp_FitsOnAlmostEverySeedThatParksTheCar` holds that
+  to the exception it is meant to be.
+- **The hero was still boarding a bus.** The Ferryman has had a real door beat
+  since he was given somewhere to go, and the hero played `BusBoardEnter` at
+  the passenger door with his hands by his sides while a leaf swung itself
+  open on a `MoveTowards` timer that started when he was told to walk over.
+  `CarBoardEnter` and `CarAlightExit` are that beat authored on the hero's rig
+  on the Ferryman's own key grid, hands mirrored: the hero docks at the
+  PASSENGER door already facing the way the car points, so the car is on his
+  left the whole way in and the leaf only becomes the thing on his right once
+  he is through it and sitting down.
+- **The leaf is now a pure function of the clip that is pulling it** —
+  `LastRouteFerrymanBoardingTimeline.EvaluateDoorOpenness` on the way in,
+  reused verbatim, and this side's own curve on the way out because he never
+  gets out. The free-running door timer is gone.
+- **Sitting in the car switches to first person**, the park boards'
+  arrangement rather than the bus's: the bus puts its lens behind and inboard
+  of a passenger, which reads in a room and would be the back of his own head
+  in a `1.4 m` cabin. `LastRouteCarSeatViewPlan` puts the eye `0.78 m` over the
+  seat pelvis anchor and `0.12` in front of it, `62` degrees, `±105` of yaw so
+  he can turn and look at the man at the wheel; `Player3DHeadVisibility` takes
+  the head off while the lens is inside it and his hands and knees stay in
+  frame. The camera is taken at the moment his hips leave the doorway and
+  given back a third of the way through standing up, so the walk in and the
+  climb out are both seen from outside.
+- **`target_direction` is not usable in a pose that bends the spine, and that
+  cost two probe rounds.** It is relative to the parent's own delta, so an arm
+  authored against a chest bowed forty degrees swings forward with it: the
+  first pass had the hero reaching for a door handle at his own hip and
+  bracing on a door frame behind his knees. Every arm in the two car Actions
+  is now an absolute `armature_direction`, probed against printed wrist
+  positions and rendered from two angles before export — the front view is
+  the one that reads a lateral reach, and the first probe camera was aimed
+  straight down the reach and showed nothing at all.
+- **Player Action library: `35 -> 37`.** Both car clips open and close on
+  `bus_seated`, so `BusRideLoop` is still the seated middle and the car's roof
+  height in `tools/build-last-route-car-3d-model.py` still governs the head
+  clearance; `validate_interaction_pose` holds the whole
+  `Relaxed -> CarBoardEnter -> BusRideLoop -> CarAlightExit -> Relaxed` chain.
+  The model FBX, the preview and the portrait came back geometrically
+  identical and were restored, so only the animation FBX, the `.blend` and the
+  manifest carry the change.
+- Verification: `tools/build-player-3d-model.py` through Blender (`37` Actions,
+  all validators green), `Player3DAssetSetup.Run` headless, and an EditMode
+  selection over `LastRouteCarPlacementTests`, `LastRouteCarDoorTests`,
+  `LastRouteCarSeatViewTests`, `Player3DAssetImportTests`,
+  `CityPointOfInterestSurfaceAppearanceTests` and
+  `LastRouteFerrymanBoardingTests`. Not run, and deliberately: the PlayMode
+  suites and any player build.
+
 ## 2026-08-25 — The whole map is squares now, and the mountain road can be walked into
 
 - **The chart was only a destination where something happened to stand.** The

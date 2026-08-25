@@ -859,6 +859,16 @@ MonoBehaviour:
     clip: {fileID: 7783172126181339155, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 2
     looping: 1
+  - clipName: CarAlightExit
+    category: car_ride
+    clip: {fileID: -4781757418146699472, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 3
+    looping: 0
+  - clipName: CarBoardEnter
+    category: car_ride
+    clip: {fileID: -8803463652883169735, guid: d422d4befc223294aabace05eb97a274, type: 3}
+    authoredDuration: 3
+    looping: 0
   - clipName: CatFeedEnter
     category: cat_feeding
     clip: {fileID: -3362603890314664099, guid: d422d4befc223294aabace05eb97a274, type: 3}
@@ -1023,7 +1033,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 2.8.0
   sourcePose: apose
   sourceTriangleCount: 1534
-  buildSignature: 5729f0a21159134e484bf89d1960e7cc
+  buildSignature: 87a59f0ff187ae8eeb06e88ab630e0db
   applyPaletteOnEnable: 1
 --- !u!1001 &6417608413615941791
 PrefabInstance:

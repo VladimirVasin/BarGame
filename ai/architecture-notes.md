@@ -1580,7 +1580,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `Resources/Player/Player3D` prefab in all six gameplay roots. Its Generic
   Animator uses no root motion; the prefab contains a 31-bone armature with six
   non-deforming sockets, while `Player3DAssetRegistry` serializes 73 mesh
-  bindings, 16 required anatomical parts, metrics and 32 in-place Actions.
+  bindings, 16 required anatomical parts, metrics and 37 in-place Actions.
   `Player3DCharacterPresentation` owns locomotion, face,
   intoxication/balance and authored fall sampling, including the full-body
   side-down-to-all-fours-to-stand Rise actions; the companion ragdoll owns only

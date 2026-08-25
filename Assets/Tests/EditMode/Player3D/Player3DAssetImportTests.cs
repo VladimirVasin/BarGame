@@ -44,7 +44,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.parts, Has.Length.EqualTo(manifest.mesh_count));
             Assert.That(manifest.triangle_count, Is.InRange(1, 4500));
             Assert.That(manifest.actions, Has.Length.EqualTo(manifest.action_count));
-            Assert.That(manifest.action_count, Is.EqualTo(35));
+            Assert.That(manifest.action_count, Is.EqualTo(37));
             Assert.That(manifest.forward_axis, Is.EqualTo("-Y"));
             Assert.That(manifest.anatomical_left_axis, Is.EqualTo("+X"));
             // HomeBedInteraction builds its timeline from these same frame
@@ -118,6 +118,27 @@ namespace BarPromenade.Tests.EditMode
                 manifest,
                 "BusAlightExit",
                 "bus_ride",
+                3f,
+                false,
+                36,
+                12f);
+            // The hero's own way into the Ferryman's car, which is the
+            // Ferryman's beat rather than the bus's: the frame counts are
+            // a contract with LastRouteCarSeatInteraction, and the door
+            // phases it drives the passenger leaf from are the boarding
+            // timeline's own.
+            AssertActionMetadata(
+                manifest,
+                "CarBoardEnter",
+                "car_ride",
+                3f,
+                false,
+                36,
+                12f);
+            AssertActionMetadata(
+                manifest,
+                "CarAlightExit",
+                "car_ride",
                 3f,
                 false,
                 36,

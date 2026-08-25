@@ -203,6 +203,21 @@ namespace BarPromenade
         public int FrameIndex => timeline != null
             ? timeline.FrameIndex
             : -1;
+
+        /// <summary>
+        /// How far through the current phase, in `[0, 1]`. Zero while idle
+        /// or while the hero is still walking to the dock, because
+        /// positioning has no clip to be a fraction of.
+        ///
+        /// Published so a contextual interaction can hang its own moving
+        /// parts off the clip that is moving the hands, rather than off a
+        /// second free-running timer beside it. The Ferryman's car door is
+        /// the first caller and the rule is his: the leaf belongs to the
+        /// beat that pulls it.
+        /// </summary>
+        public float PhaseProgress => !isPositioning && timeline != null
+            ? timeline.PhaseProgress
+            : 0f;
         public bool IsActive => isPositioning ||
                                 (timeline != null && timeline.IsActive);
         public float ExitDurationMultiplier => timeline != null

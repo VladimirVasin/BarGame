@@ -128,7 +128,7 @@ Assets/
       PlayerCharacter3D.fbx             production Generic model
       PlayerCharacter3D.json            deterministic parts/bones/actions manifest
     Animations/
-      PlayerCharacter3DAnimations.fbx   32 in-place Actions; Rise, bus, chess-seat + door-use trios
+      PlayerCharacter3DAnimations.fbx   37 in-place Actions; Rise, bus, car-door, chess-seat + door-use sets
     Materials/
       Player3DLit.mat                   shared URP/Lit hero material
   Pedestrians/
@@ -469,6 +469,18 @@ Assets/
         (World) CityCemeterySegmentFrameWorldBuilder.cs  the outline round the square the spade is aimed at
       Park/          the two old men's boards, once somebody sits down at one
         CityBoardGameController.cs  seat hookup, seated camera ownership, pointer/cursor input, opponent think clock + every board state as a spoken cue
+      LastRoute/     the island's parked car and the one man still waiting by it
+        LastRouteCarPlan.cs        where the car stands, off the paving and clear of every way in
+        LastRouteCarFactory.cs     the staged car, its doors, springs, halos and the passenger seat
+        LastRouteCarDoors.cs       leaves that swing on their own hinges, and the swing-clearance rule both docks obey
+        LastRouteCarSuspension{,Model}.cs  the body on springs, kicked by dismounts and seatings
+        LastRouteCarSeatPlan.cs    the hero's dock, doorway waypoint and seated hip, all off drawn anchors
+        LastRouteCarSeatViewPlan.cs  the seated eye, its look limits and the level-horizon rule
+        LastRouteCarSeatInteraction.cs  the offer, the clip-driven passenger leaf and first-person camera ownership
+        LastRouteFerryman{Plan,Factory,Provider}.cs  the one authored man, read off the car that was actually placed
+        LastRouteFerrymanPresentation.cs  five postures on one manual graph, and the metres the clips do not carry
+        LastRouteFerrymanBoarding{Plan,Timeline}.cs  the drop, the walk round the nose and the door-open-sit-shut clock
+        LastRouteFerryman{Coin,Coat,RigAnchors,Quips,Interaction}.cs  the toss, the hem, the sockets, the twelve lines and the one question
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
         CityBusPlanner.cs          grade-safe Street graph, 3D samples + full-body clearance proof
@@ -986,7 +998,7 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> below orange player route; no live bus marker
 six gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
-                                      -> 32 Generic in-place Actions
+                                      -> 37 Generic in-place Actions
                                          -> Idle/Walk/face/status/fall
                                          -> 50-frame full-body Rise via all fours
                                          -> DoorUseEnter/DoorUseLoop/DoorUseExit

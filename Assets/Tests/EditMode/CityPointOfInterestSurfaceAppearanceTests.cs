@@ -691,13 +691,16 @@ namespace BarPromenade.Tests.EditMode
 
                 Assert.That(light.enabled, Is.True);
 
-                // The floodlight adds no collider of its own: the
-                // mast base already owns the island's obstacle.
+                // The mast's service head adds no collider of its own:
+                // the mast base already owns the island's obstacle. Its
+                // neighbour is not on the mast any more - it stands on a
+                // post of its own in front of the car - and that post does
+                // own one, because it is a thing to walk into.
                 foreach (Collider collider in
                          island.GetComponentsInChildren<Collider>(true))
                 {
                     Assert.That(
-                        collider.name.Contains("Floodlight"),
+                        collider.name.Contains("Island Floodlight"),
                         Is.False,
                         "The island floodlight must reuse the mast " +
                         "collider instead of adding its own.");
@@ -708,12 +711,13 @@ namespace BarPromenade.Tests.EditMode
                     return;
                 }
 
-                // The second head. Same mast, same recipe, two deliberate
-                // differences: a narrow cone, because it has to land as a
-                // pool on one man rather than wash a lot, and a daytime
-                // floor, because the Ferryman has to be lit whenever
-                // anybody walks up to him. That floor is inherited from
-                // the light he used to carry around with him.
+                // The Ferryman's own lamp: same recipe, its own post in
+                // front of his car, and two deliberate differences from
+                // the service head above. A narrow cone, because it has to
+                // land as a pool on one man rather than wash a lot, and a
+                // daytime floor, because he has to be lit whenever anybody
+                // walks up to him. That floor is inherited from the light
+                // he used to carry around with him.
                 Light carLight = FindSiteLight(
                     root,
                     "Ferryman Car Floodlight Light");
@@ -733,7 +737,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     carLight.transform.IsChildOf(island),
                     Is.True,
-                    "It hangs off the island's mast, not off the man.");
+                    "It hangs off a fixture on the island, not off the " +
+                    "man - that is the whole difference from the light he " +
+                    "used to carry.");
 
                 try
                 {

@@ -245,60 +245,150 @@ namespace BarPromenade
         private const float MastLocalZ = -1.25f;
         private const float MastHalfWidth = 0.17f;
 
-        // The SECOND head on that mast - the one that exists for a person
-        // rather than for a place.
+        // The one lamp on this island that exists for a person rather than
+        // for a place.
         //
-        // The Ferryman used to carry his own light: a bare Point with no
+        // It has now been in three places, and the third is the first one
+        // that works. He began carrying his own: a bare Point with no
         // fixture drawn anywhere, parented beside him and rewritten every
-        // frame so it walked the lot with him. It read as what it was, a
-        // patch of warmth following a man around in the dark with nothing
-        // casting it. This is the same job done by something that exists:
-        // a working head bolted to the one working fixture on the island,
-        // turned on the car.
+        // frame so it walked the lot with him - warmth following a man in
+        // the dark with nothing casting it. That was replaced by a second
+        // head bolted to the island's route mast, which fixed the fiction
+        // and broke the light: the mast stands beside the paving circle,
+        // the car is fitted per seed at up to 7 m from it, and the man on
+        // its bonnet faces OUT at the way in. So the throw arrived from
+        // behind him, across ten metres of inverse square, and what
+        // reached his face was almost nothing.
         //
-        // Warm against its neighbour's cold service white, because the two
-        // are doing different jobs - that one serves the empty middle, this
-        // one serves the only man left on the island.
+        // This is the same fixture stood where it can do the job: a lamp
+        // post of its own, fitted in front of the car and pointed back
+        // down the bonnet at the man on it. Roughly three metres instead
+        // of ten, and on the side he is looking at.
+        //
+        // Warm, against the service head's cold white on the mast: those
+        // two are doing different jobs. That one serves the empty middle
+        // of an abandoned island; this one serves the only man left on it.
         private static readonly Color FerrymanFloodlightLightColor =
             new Color(1.00f, 0.87f, 0.66f);
         private static readonly Color FerrymanFloodlightGlow =
             new Color(3.90f, 3.39f, 2.57f);
 
         /// <summary>
-        /// Between the door bulb (64-110 over 7-8 m) and the communal
-        /// floodlight (150 over 16 m), which is where a head that has to
-        /// throw the width of a lot but land as a POOL belongs. The narrow
-        /// cone below is what keeps the old lamp's one real virtue - the
-        /// warmth stays on him instead of washing the whole lot.
+        /// Sized for the throw it actually has now. The old head needed
+        /// floodlight wattage because it was ten metres away; from `3.7 m`
+        /// the same number would be a blown-out white blob on a man in a
+        /// black coat. Calibrated against the drying yard's communal
+        /// floodlight instead - `150` over `16 m` landing on things about
+        /// `7 m` out - so the pool on his face carries about the same
+        /// energy as that one does on the wash line, through the same fog
+        /// and the same night grade.
         /// </summary>
-        private const float FerrymanFloodlightNightIntensity = 78f;
+        private const float FerrymanFloodlightNightIntensity = 45f;
 
         /// <summary>
         /// It does not switch off at dawn, and that is inherited rather
         /// than invented: the light he used to carry held a daytime floor
         /// for the stated reason that he has to be lit whenever anybody
         /// walks up to him. The cemetery lodge's porch bulb is the same
-        /// argument. Its neighbour on this mast stays night-only.
+        /// argument. Its neighbour on the mast stays night-only.
         /// </summary>
-        private const float FerrymanFloodlightDayIntensity = 26f;
-        private const float FerrymanFloodlightRange = 14f;
-        private const float FerrymanFloodlightSpotAngle = 34f;
-        private const float FerrymanFloodlightInnerSpotAngle = 18f;
+        private const float FerrymanFloodlightDayIntensity = 15f;
 
         /// <summary>
-        /// Below the service head at 4.42 and well above his cap. The
-        /// height is the load-bearing part: the design draws him no eyes
-        /// and leans on the cap brim's own shadow, so the light has to
-        /// rake DOWN over the brim. Lighting him from below is the one
-        /// angle that would argue with the face.
+        /// Short, because everything it has to light is inside `6 m` of
+        /// it: the perch, the bonnet, the driver's flank and the door he
+        /// walks to. A longer range on this wattage only spills onto the
+        /// paving the mast head already owns.
         /// </summary>
-        private const float FerrymanFloodlightHeadHeight = 3.95f;
-        private const float FerrymanFloodlightBracketReach = 0.55f;
+        private const float FerrymanFloodlightRange = 9f;
+        private const float FerrymanFloodlightSpotAngle = 44f;
+        private const float FerrymanFloodlightInnerSpotAngle = 22f;
 
-        /// <summary>Aimed at the bonnet he sits on rather than at the
-        /// paving, so the pool contains the perch, the driver's flank and
-        /// the door he walks to.</summary>
-        private const float FerrymanFloodlightAimHeight = 1.05f;
+        /// <summary>
+        /// How high the head rides over the lot, and how thick the post
+        /// under it is.
+        ///
+        /// The height is load bearing rather than decorative: the design
+        /// draws him no eyes and leans on the cap brim's own shadow, so
+        /// the light has to rake DOWN over that brim. Lighting a face with
+        /// no eyes from below is the one angle that argues with it. At
+        /// `3.30 m` over a head about `2 m` up and roughly `3 m` away the
+        /// throw comes in some `20` degrees above his eye line, which is a
+        /// street lamp's angle and not a torch's.
+        /// </summary>
+        private const float FerrymanFloodlightHeadHeight = 3.30f;
+        private const float FerrymanLampPostWidth = 0.22f;
+        private const float FerrymanLampPostColliderWidth = 0.30f;
+        private const float FerrymanLampBracketReach = 0.42f;
+
+        /// <summary>
+        /// And the bracket on the route mast this head used to hang from,
+        /// kept only as the fallback for a bay that leaves nowhere to
+        /// stand a post of its own. It is the worse light - that is the
+        /// entire reason the fixture moved - but a dim man is better than
+        /// a post standing in a doorway.
+        /// </summary>
+        private const float MastFerrymanHeadHeight = 3.95f;
+        private const float MastFerrymanBracketReach = 0.55f;
+
+        /// <summary>Aimed at his chest rather than at the paving, so the
+        /// pool contains the man before it contains the ground: the head
+        /// is high enough that the light reaches the lot anyway.</summary>
+        private const float FerrymanFloodlightAimHeight = 1.25f;
+
+        /// <summary>
+        /// Where the man is, along the car's own nose. Mirrored from
+        /// `PERCH_SEAT` in `tools/build-last-route-car-3d-model.py`, which
+        /// puts his backside on the bonnet skin `2.02 m` ahead of the
+        /// car's middle - the same reason the bay dimensions above are
+        /// mirrored rather than measured.
+        /// </summary>
+        private const float FerrymanPerchLeadMeters = 2.02f;
+
+        /// <summary>And where his boots are: `PERCH_SOLES`, out over the
+        /// bumper. `LastRouteFerrymanBoardingPlan` steps forward from that
+        /// point rather than from the seat, so the ground the post must
+        /// keep clear of is measured from here.</summary>
+        private const float FerrymanPerchSolesLeadMeters = 2.44f;
+
+        /// <summary>
+        /// The ladder of places the post is allowed to stand, as a
+        /// distance ahead of the car's middle and an offset across it,
+        /// tried in this order and REJECTED rather than nudged - the bay
+        /// fitter's own idiom, for the same reason. The lot is `18 m`
+        /// across with a paved circle in the middle of it and a way in on
+        /// at least one side, and a post is a thing people walk into.
+        ///
+        /// Both signs of the offset are tried at each step, so the post
+        /// takes whichever flank of the nose the lot leaves room on. None
+        /// of the candidates sits on the car's centre line: that is where
+        /// the Ferryman's boots land when he drops off the bumper.
+        /// </summary>
+        private static readonly float[] FerrymanLampLeadSteps =
+            { 3.85f, 3.35f, 2.95f, 2.60f };
+        private static readonly float[] FerrymanLampSideSteps =
+            { 1.95f, 2.45f, 2.95f, 3.45f };
+
+        /// <summary>How much daylight the post keeps between itself and
+        /// everything already on the lot: the paved circle, the ways in,
+        /// the bodywork, and the two points on the ground the Ferryman
+        /// walks through on his way round the nose.</summary>
+        private const float FerrymanLampLotInset = 0.55f;
+
+        /// <summary>
+        /// Measured off the canopy rather than off the paving it is named
+        /// for. The five broken canopy segments stand on a ring of `4.70`
+        /// in the recipe's own space and carry roofs `3.45` long by `1.25`
+        /// deep, so an outer roof CORNER reaches about `6.05 m` from the
+        /// middle of the island once the recipe's horizontal scale is
+        /// applied. The post is `3.30 m` tall and those roofs hang at
+        /// `3.49`, so a post inside that radius would be threading its
+        /// head through a canopy by a couple of centimetres.
+        /// </summary>
+        private const float FerrymanLampPavingClearance = 0.85f;
+        private const float FerrymanLampApproachClearance = 0.70f;
+        private const float FerrymanLampBodyClearance = 0.85f;
+        private const float FerrymanLampWalkClearance = 0.75f;
 
         /// <summary>Underside of the broken canopy roof slabs, where
         /// the torn rags hang from.</summary>
@@ -2037,7 +2127,11 @@ namespace BarPromenade
                 projection: SurfaceProjection.BoxXZ);
 
             BuildIslandMastFloodlight(parent, homeExterior);
-            BuildFerrymanCarFloodlight(parent, descriptor, homeExterior);
+            BuildFerrymanCarFloodlight(
+                parent,
+                descriptor,
+                colliders,
+                homeExterior);
 
             if (colliders)
             {
@@ -2198,20 +2292,212 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The mast's second head, turned on the Ferryman's car.
+        /// Where the Ferryman's lamp post stands and what it is turned on.
         ///
-        /// Absent with the car, which is the whole point of hanging it off
-        /// a bearing rather than off a typed offset: the bay is fitted per
-        /// seed, so where the light has to point is a different direction
-        /// on every city and on some there is nothing to point at.
+        /// Both in world space, because that is the only space the rules
+        /// are stated in: the lot, the paved circle and the ways in are
+        /// all descriptor geometry, and the car is placed in world space
+        /// at uniform scale rather than in the recipe's stretched one.
         ///
-        /// The vista keeps the bracket, the housing and the dead lens for
-        /// the same reason its neighbour does, and the mast base already
-        /// owns the obstacle collider, so this adds none.
+        /// The post is fitted rather than authored for exactly the reason
+        /// the bay it serves is. It has to end up IN FRONT of a car whose
+        /// own place is decided per seed, without standing on the paving
+        /// the island's empty middle is made of, in a way in, in the
+        /// bodywork, or on the two points of ground the Ferryman walks
+        /// through on his way round the nose to his own door. Candidates
+        /// are tried furthest-forward first and rejected rather than
+        /// nudged; a nudged post is a post inside something.
+        ///
+        /// False when the car is absent, and also when a bay was found
+        /// that leaves nowhere to stand a post - a lot with two ways in
+        /// can pin the car against a corner. The caller falls back to the
+        /// mast bracket there, which is dimmer but is at least somewhere.
+        /// </summary>
+        public static bool TryDescribeFerrymanLampStance(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            out Vector3 postBase,
+            out Vector3 aimTarget)
+        {
+            postBase = Vector3.zero;
+            aimTarget = Vector3.zero;
+            if (!TryDescribeFerrymanCarStance(
+                    descriptor,
+                    out CityDryingYardNpcStance stance))
+            {
+                return false;
+            }
+
+            Vector3 facing = Vector3.ProjectOnPlane(
+                stance.Facing,
+                Vector3.up);
+            if (facing.sqrMagnitude < 0.0001f)
+            {
+                return false;
+            }
+
+            facing = facing.normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, facing);
+
+            // The man, not the car: he sits on the bonnet with his boots
+            // over the bumper, a good two metres ahead of the middle of
+            // the thing he is sitting on.
+            Vector3 perch = stance.Position +
+                (facing * FerrymanPerchLeadMeters);
+            aimTarget = new Vector3(
+                perch.x,
+                stance.Position.y + FerrymanFloodlightAimHeight,
+                perch.z);
+
+            foreach (float lead in FerrymanLampLeadSteps)
+            {
+                foreach (float side in FerrymanLampSideSteps)
+                {
+                    for (int sign = 1; sign >= -1; sign -= 2)
+                    {
+                        Vector3 candidate = stance.Position +
+                            (facing * lead) +
+                            (right * (side * sign));
+                        candidate.y = stance.Position.y;
+                        if (!IsFerrymanLampClear(
+                                descriptor,
+                                stance,
+                                facing,
+                                right,
+                                candidate))
+                        {
+                            continue;
+                        }
+
+                        postBase = candidate;
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        /// <summary>
+        /// A post is clear when it is inside the lot, off the paving, out
+        /// of every way in, outside the bodywork, and off the ground the
+        /// Ferryman walks over between the bumper and his door.
+        /// </summary>
+        private static bool IsFerrymanLampClear(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            CityDryingYardNpcStance stance,
+            Vector3 facing,
+            Vector3 right,
+            Vector3 candidate)
+        {
+            Rect lot = descriptor.PublicBounds;
+            if (candidate.x < lot.xMin + FerrymanLampLotInset ||
+                candidate.x > lot.xMax - FerrymanLampLotInset ||
+                candidate.z < lot.yMin + FerrymanLampLotInset ||
+                candidate.z > lot.yMax - FerrymanLampLotInset)
+            {
+                return false;
+            }
+
+            if (Vector2.Distance(
+                    new Vector2(candidate.x, candidate.z),
+                    new Vector2(descriptor.Center.x, descriptor.Center.z)) <
+                CarBayPavingRadius + FerrymanLampPavingClearance)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < descriptor.Accesses.Count; index++)
+            {
+                Rect approach = descriptor.Accesses[index].ApproachBounds;
+                if (candidate.x >
+                        approach.xMin - FerrymanLampApproachClearance &&
+                    candidate.x <
+                        approach.xMax + FerrymanLampApproachClearance &&
+                    candidate.z >
+                        approach.yMin - FerrymanLampApproachClearance &&
+                    candidate.z <
+                        approach.yMax + FerrymanLampApproachClearance)
+                {
+                    return false;
+                }
+            }
+
+            // The bodywork, as the oriented box the bay fitter uses.
+            Vector3 offset = candidate - stance.Position;
+            float along = Mathf.Clamp(
+                Vector3.Dot(offset, facing),
+                -CarBayLength * 0.5f,
+                CarBayLength * 0.5f);
+            float across = Mathf.Clamp(
+                Vector3.Dot(offset, right),
+                -CarBayWidth * 0.5f,
+                CarBayWidth * 0.5f);
+            Vector3 nearest = stance.Position +
+                (facing * along) +
+                (right * across);
+            if (Vector2.Distance(
+                    new Vector2(candidate.x, candidate.z),
+                    new Vector2(nearest.x, nearest.z)) <
+                FerrymanLampBodyClearance)
+            {
+                return false;
+            }
+
+            // And his walk. The landing point is straight off the bumper;
+            // the rounding corner is off one front wing or the other, and
+            // which one depends on anchors this side cannot see, so both
+            // are kept clear.
+            Vector3 landing = stance.Position +
+                (facing *
+                 (FerrymanPerchSolesLeadMeters +
+                  LastRouteFerrymanBoardingPlan.LandingReach));
+            if (Vector2.Distance(
+                    new Vector2(candidate.x, candidate.z),
+                    new Vector2(landing.x, landing.z)) <
+                FerrymanLampWalkClearance)
+            {
+                return false;
+            }
+
+            float cornerLead = (CarBayLength * 0.5f) +
+                LastRouteFerrymanBoardingPlan.CornerLead;
+            for (int sign = 1; sign >= -1; sign -= 2)
+            {
+                Vector3 corner = stance.Position +
+                    (facing * cornerLead) +
+                    (right *
+                     (LastRouteFerrymanBoardingPlan.DockStandoff * sign));
+                if (Vector2.Distance(
+                        new Vector2(candidate.x, candidate.z),
+                        new Vector2(corner.x, corner.z)) <
+                    FerrymanLampWalkClearance)
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// The lamp that lights the Ferryman: a post of its own stood in
+        /// front of his car, with the old mast bracket kept as the
+        /// fallback for a bay that leaves nowhere to stand one.
+        ///
+        /// Absent with the car, which is the whole point of fitting it to
+        /// a bearing rather than to a typed offset: the bay is chosen per
+        /// seed, so where the light has to be is a different place on
+        /// every city and on some there is nothing to light.
+        ///
+        /// The vista keeps the post, the housing and the dead lens for the
+        /// same reason its neighbour on the mast does. Unlike that one
+        /// this fixture stands on the ground in the middle of a lot, so it
+        /// owns an obstacle of its own rather than leaning on the mast's.
         /// </summary>
         private static void BuildFerrymanCarFloodlight(
             Transform parent,
             CityDistrictPointOfInterestDescriptor descriptor,
+            bool colliders,
             bool homeExterior)
         {
             if (!TryDescribeFerrymanCarStance(
@@ -2221,34 +2507,105 @@ namespace BarPromenade
                 return;
             }
 
-            var mast = new Vector3(
-                MastLocalX,
-                FerrymanFloodlightHeadHeight,
-                MastLocalZ);
-            Vector3 target = ToRecipeLocal(descriptor, stance.Position);
-            target.y = FerrymanFloodlightAimHeight;
-
-            var bearing = new Vector3(target.x - mast.x, 0f, target.z - mast.z);
-            if (bearing.sqrMagnitude < 0.0001f)
+            Vector3 head;
+            Vector3 target;
+            if (TryDescribeFerrymanLampStance(
+                    descriptor,
+                    out Vector3 worldPost,
+                    out Vector3 worldAim))
             {
-                // The bay can never be inside the mast - it is fitted clear
-                // of the paving circle - but a normalize of a projected
-                // vector has silently returned identity on this file once
-                // already, and the hero rode a car facing world +Z for it.
-                return;
-            }
+                Vector3 post = ToRecipeLocal(descriptor, worldPost);
+                target = ToRecipeLocal(descriptor, worldAim);
+                head = new Vector3(
+                    post.x,
+                    FerrymanFloodlightHeadHeight,
+                    post.z);
+                AddCylinder(parent, "Ferryman Lamp Post",
+                    post.x,
+                    FerrymanFloodlightHeadHeight * 0.5f,
+                    post.z,
+                    FerrymanLampPostWidth,
+                    FerrymanFloodlightHeadHeight * 0.5f,
+                    FerrymanLampPostWidth,
+                    NightlifeFrame, false, homeExterior,
+                    CityPointOfInterestSurfaceKind.PaintedMetal);
 
-            bearing.Normalize();
-            Vector3 head = mast + (bearing * FerrymanFloodlightBracketReach);
-            float yaw = Mathf.Atan2(bearing.x, bearing.z) * Mathf.Rad2Deg;
-            Vector3 arm = mast + (bearing * (MastHalfWidth +
-                (FerrymanFloodlightBracketReach - MastHalfWidth) * 0.5f));
-            AddBox(parent, "Ferryman Floodlight Bracket",
-                arm.x, arm.y, arm.z,
-                0.12f, 0.12f, FerrymanFloodlightBracketReach - MastHalfWidth,
-                NightlifeFrame, false, homeExterior,
-                yaw,
-                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+                // A short arm off the top, so the head hangs over the car
+                // instead of balancing on the post like a bird.
+                var bearing = new Vector3(
+                    target.x - head.x,
+                    0f,
+                    target.z - head.z);
+                if (bearing.sqrMagnitude > 0.0001f)
+                {
+                    bearing.Normalize();
+                    Vector3 arm = head +
+                        (bearing * (FerrymanLampBracketReach * 0.5f));
+                    AddBox(parent, "Ferryman Floodlight Bracket",
+                        arm.x, arm.y, arm.z,
+                        0.10f, 0.10f, FerrymanLampBracketReach,
+                        NightlifeFrame, false, homeExterior,
+                        Mathf.Atan2(bearing.x, bearing.z) * Mathf.Rad2Deg,
+                        surface: CityPointOfInterestSurfaceKind
+                            .PaintedMetal);
+                    head += bearing * FerrymanLampBracketReach;
+                }
+
+                if (colliders && !homeExterior)
+                {
+                    AddObstacleCollider(
+                        parent,
+                        "Ferryman Lamp Post Collider",
+                        new Vector3(
+                            post.x,
+                            FerrymanFloodlightHeadHeight * 0.5f,
+                            post.z),
+                        new Vector3(
+                            FerrymanLampPostColliderWidth,
+                            FerrymanFloodlightHeadHeight,
+                            FerrymanLampPostColliderWidth));
+                }
+            }
+            else
+            {
+                // Nowhere to stand a post: back to the second head on the
+                // island's own mast. It is a worse light and it is the
+                // reason this whole fixture moved, but a dim man is better
+                // than a post through a doorway.
+                var mast = new Vector3(
+                    MastLocalX,
+                    MastFerrymanHeadHeight,
+                    MastLocalZ);
+                target = ToRecipeLocal(descriptor, new Vector3(
+                    stance.Position.x,
+                    stance.Position.y + FerrymanFloodlightAimHeight,
+                    stance.Position.z));
+                var bearing = new Vector3(
+                    target.x - mast.x,
+                    0f,
+                    target.z - mast.z);
+                if (bearing.sqrMagnitude < 0.0001f)
+                {
+                    // The bay can never be inside the mast - it is fitted
+                    // clear of the paving circle - but a normalize of a
+                    // projected vector has silently returned identity on
+                    // this file once already, and the hero rode a car
+                    // facing world +Z for it.
+                    return;
+                }
+
+                bearing.Normalize();
+                head = mast + (bearing * MastFerrymanBracketReach);
+                Vector3 arm = mast + (bearing * (MastHalfWidth +
+                    (MastFerrymanBracketReach - MastHalfWidth) * 0.5f));
+                AddBox(parent, "Ferryman Floodlight Bracket",
+                    arm.x, arm.y, arm.z,
+                    0.12f, 0.12f,
+                    MastFerrymanBracketReach - MastHalfWidth,
+                    NightlifeFrame, false, homeExterior,
+                    Mathf.Atan2(bearing.x, bearing.z) * Mathf.Rad2Deg,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+            }
 
             Transform headRoot = new GameObject(
                 "Ferryman Floodlight Head").transform;
@@ -2273,7 +2630,7 @@ namespace BarPromenade
                 SurfaceProjection.BoxXY,
                 NightlifeFrame);
 
-            // The hood. A bare lens on a mast reads as a chip of light; the
+            // The hood. A bare lens on a post reads as a chip of light; the
             // shade is what says the throw is deliberate and downward.
             GameObject hood = RuntimePrimitiveFactory.CreateBox(
                 "Ferryman Floodlight Hood",
@@ -2291,14 +2648,13 @@ namespace BarPromenade
                 NightlifeFrame);
 
             // Deliberately NOT registered in CityNightGlowRegistry, unlike
-            // its neighbour on this same mast. That registry lerps a
-            // registered emissive down to a tenth of itself under a day
-            // sky, which is right for a fixture that switches off and
-            // wrong for one that does not - and this one keeps a daytime
-            // floor, so the glass would read dead at noon while the head
-            // was still throwing light on him. The park chess lamp, the
-            // pier lantern and the yard spotlight all sit outside it for
-            // exactly this reason.
+            // its neighbour on the mast. That registry lerps a registered
+            // emissive down to a tenth of itself under a day sky, which is
+            // right for a fixture that switches off and wrong for one that
+            // does not - and this one keeps a daytime floor, so the glass
+            // would read dead at noon while the head was still throwing
+            // light on him. The park chess lamp, the pier lantern and the
+            // yard spotlight all sit outside it for exactly this reason.
             GameObject lens = RuntimePrimitiveFactory.CreateBox(
                 "Ferryman Floodlight Lens",
                 headRoot,
