@@ -71,16 +71,19 @@ The vertical slice contains:
   naturally pauses wherever gameplay sets `timeScale` to zero. The Home clock
   and inventory Status panel both show its current `HH:MM`;
 - a separately runtime-composed `MountainRoad` area. The hero arrives `6 m`
-  inside a `9 m` exit tunnel, then follows one continuous `600 m` uphill road
+  inside a `9 m` exit tunnel, then follows one continuous `620 m` uphill road
   ribbon dimensioned for the `4.83 x 1.80 m` LastRouteCar: `4.8 m` wide on
   ordinary stretches and `6.4 m` through ten `7.5 m`-radius hairpins. It rises
   `26.1 m` at no more than an `8%` grade. After five lower hairpins the
   mandatory route crosses a `50 m`-long high mountain bridge whose `5.8 m`
   deck surrounds the `4.8 m` clear roadway; the terrain opens to a gorge floor
-  at world `Y=-16`, at least `25 m` below both bridge ends. Its last `5 m` are
-  level and share the actual road-mesh entry vertices with the same irregular
-  roughly `42 x 27 m` terminal plateau, so there is no height step, open seam
-  or transverse collider wall. A separate dark asphalt mesh, offset `0.025 m`
+  at world `Y=-16`, at least `25 m` below both bridge ends. Its last `25 m`
+  are level - a `20 m` terrace run that carries the road out of the switchback
+  field before the `5 m` entry lead - and share the actual road-mesh entry
+  vertices with the same irregular roughly `42 x 27 m` terminal plateau, so
+  there is no height step, open seam or transverse collider wall. The terrace
+  run keeps the raised pad off the climbing road: parked any closer, its rim
+  reached over the outer arc of the ninth switchback and buried it in snow. A separate dark asphalt mesh, offset `0.025 m`
   above that shared physical surface and extended `0.45 m` back over the road
   seam, makes the whole entry and R`7.5 m` turning pocket visible without
   adding a second collider. The terrain envelope keeps a `76 m` margin.

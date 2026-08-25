@@ -6,6 +6,53 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-25 — The cafe terrace was parked on top of the last switchback
+
+- **The report was one coordinate, and it was exact.** `X 127.5 Z -4.5` is the
+  apex of hairpin `8`, the last switchback before the road turns back down to
+  hairpin `9`. The road ribbon is drawn there perfectly; what stops the car is
+  the terrain. `MountainRoadTerrainSampler` snaps every point inside the
+  terminal plateau to the pad height, and the pad's rim ran from `X 129` down
+  through `(130, -9.6)` and `(135, -14.1)` — straight across the outer arc of
+  that hairpin. From `500 m` to `512 m` of route distance the ground sat up to
+  `1.54 m` ABOVE the asphalt, with a `MeshCollider` on it. The road was still
+  there, under the snow.
+- **Nothing was checking for it, which is why it shipped.** Trees, roadside
+  props and backdrop ridges all have validated road clearance; the plateau had
+  none. The route grew from `82.7 m` to `600 m` in `458d4de` (carried in as
+  unverified neighbouring-session work), the switchback field grew with it to
+  `X 138`, and the `42 x 27 m` pad centred on `X 150` reaches back to `X 129`.
+  The existing corridor test only asked the WALKABLE MASK, which is built from
+  the ribbon and answered yes the whole way up.
+- **The pad moved, along the road, and the climb did not change by a
+  millimetre.** `TerminalTerraceRun = 20 m` is appended as a level
+  `UpperApproach` run before the `5 m` entry lead, and `ClimbLength` subtracts
+  both, so `EvaluateElevation` still divides by `595` — every sample up to
+  `595 m` keeps its exact former position, width and grade, and the hairpins,
+  the bridge and the gorge are untouched. Only `route.End` slides `+20 m` in Z,
+  and the pad, cafe, cableway and apron ride along with it because they are all
+  authored in pad-local coordinates. `OutdoorRouteLength` is `620 m`; the walk
+  is `238.5 s`. Pad rim to road edge went from `-3.10 m` (three metres INSIDE
+  the ribbon) to `+8.69 m`, and the bank beside the hairpin is now a `1.5 m`
+  rise over `8 m` of ground instead of a wall at the kerb.
+- **The invariant is now enforced, not just satisfied.**
+  `ValidateTerminalPadClearsTheClimb` holds every plateau rim edge `4 m` clear
+  of every route segment that is not part of the terminal approach, using the
+  validator's existing segment-distance helper — `16` edges against `620`
+  segments, cheap enough to run on every plan.
+  `TunnelToCafe_IsOneUnbrokenDrivableSurface` is the behavioural half: it walks
+  all `620 m`, probes nine lanes across the full ribbon width at every sample
+  and asserts the ground stays at least `0.1 m` below the driving surface, then
+  drives the car corridor from the tunnel through the apron to the cafe door.
+- **Verification.** Proved the new test is wired to the bug: reverted the
+  planner, disabled the new validator hook, re-ran, and it failed with
+  `The road is buried at mountain-route-504 (500.2 m, Hairpin) near X 130.3
+  Z -1.7: the ground sits at 25.86 and the surface at 24.32` — the user's spot.
+  Restored, then `MountainRoadTests`, `MountainRoadTerminalTests`,
+  `MountainCablewayTests`, `MountainRoadCafeCastTests` and
+  `CityMapMountainPresentationTests`: `23/23` green. Full EditMode suite run
+  afterwards because a route-length constant reaches every mountain consumer.
+
 ## 2026-08-25 — The whole map is squares now, and the mountain road can be walked into
 
 - **The chart was only a destination where something happened to stand.** The

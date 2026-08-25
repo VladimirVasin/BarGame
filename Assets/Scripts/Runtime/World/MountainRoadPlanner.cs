@@ -7,7 +7,7 @@ namespace BarPromenade
     public static class MountainRoadPlanner
     {
         public const int DefaultSeed = 19081987;
-        public const float OutdoorRouteLength = 600f;
+        public const float OutdoorRouteLength = 620f;
         public const float ElevationGain = 26.1f;
         public const float HairpinRadius = 7.5f;
         public const int HairpinCount = 10;
@@ -28,6 +28,7 @@ namespace BarPromenade
         private const float BridgeApproachLength = 10f;
         private const float BridgeLength = 50f;
         private const float PlateauEntryLead = 5f;
+        private const float TerminalTerraceRun = 20f;
         private const float ForestRoadClearance = 0.75f;
         private const float RoadsidePropClearance = 0.8f;
         private const float MidRidgeEnvelopeOffset = 44f;
@@ -233,17 +234,21 @@ namespace BarPromenade
                 }
             }
 
-            float climbDistance = OutdoorRouteLength -
-                                  PlateauEntryLead -
+            float climbDistance = ClimbLength -
                                   points[points.Count - 1].Distance;
             AppendStraight(
                 points,
                 climbDistance,
                 forward,
                 MountainRoadRouteSection.UpperClimb);
+
+            // The climb stops beside the last switchback, but the terminal
+            // pad must not: its rim is a raised terrace and would bury the
+            // outer arc of hairpin 8 in snow. The road leaves the switchback
+            // field on a level terrace run before the plateau mouth.
             AppendStraight(
                 points,
-                PlateauEntryLead,
+                TerminalTerraceRun + PlateauEntryLead,
                 forward,
                 MountainRoadRouteSection.UpperApproach);
 
@@ -379,10 +384,12 @@ namespace BarPromenade
                 weight);
         }
 
+        private static float ClimbLength =>
+            OutdoorRouteLength - TerminalTerraceRun - PlateauEntryLead;
+
         private static float EvaluateElevation(float distance)
         {
-            float climbLength = OutdoorRouteLength - PlateauEntryLead;
-            float t = Mathf.Clamp01(distance / climbLength);
+            float t = Mathf.Clamp01(distance / ClimbLength);
             return ElevationGain * Mathf.SmoothStep(0f, 1f, t);
         }
 

@@ -51,7 +51,7 @@ namespace BarPromenade.Tests.EditMode
                     MountainRoadTerrainSampler.RoadBedClearance).Within(0.001f));
             Assert.That(
                 first.Route.Length / 2.6f,
-                Is.InRange(230f, 232f));
+                Is.InRange(238f, 240f));
             Assert.That(
                 first.Forest.Min(item => item.Height),
                 Is.GreaterThanOrEqualTo(7f));
@@ -444,6 +444,112 @@ namespace BarPromenade.Tests.EditMode
                 Object.DestroyImmediate(terrainMeshes.Soil);
                 Object.DestroyImmediate(terrainMeshes.Snow);
                 Object.DestroyImmediate(roadMesh);
+            }
+        }
+
+        [Test]
+        [Category("MountainRoad")]
+        public void TunnelToCafe_IsOneUnbrokenDrivableSurface()
+        {
+            const float carHalfWidth = 1.05f;
+            const float minimumRoadBed = 0.1f;
+            MountainRoadPlan plan = MountainRoadPlanner.Create(
+                GameSessionState.DefaultCitySeed);
+            var walkable = new MountainRoadWalkableArea(plan);
+
+            // The ribbon mesh is only half the road: the terrain carries the
+            // collision the car actually rests on and drives past. Wherever
+            // the ground rises above the asphalt the road is buried, and no
+            // amount of correct ribbon geometry gets a car through it.
+            for (int index = 0; index < plan.Route.Samples.Count; index++)
+            {
+                MountainRoadRouteSample sample = plan.Route.Samples[index];
+                for (int lane = -4; lane <= 4; lane++)
+                {
+                    Vector3 probe = sample.Position +
+                        sample.Right * (sample.Width * 0.5f * (lane / 4f));
+                    float ground = MountainRoadTerrainSampler.SampleHeight(
+                        plan.Route,
+                        plan.Plateau,
+                        new Vector2(probe.x, probe.z));
+                    Assert.That(
+                        ground,
+                        Is.LessThanOrEqualTo(
+                            sample.Position.y - minimumRoadBed),
+                        $"The road is buried at {sample.StableId} " +
+                        $"({sample.Distance:0.0} m, {sample.Section}) near " +
+                        $"X {probe.x:0.0} Z {probe.z:0.0}: the ground sits " +
+                        $"at {ground:0.00} and the surface at " +
+                        $"{sample.Position.y:0.00}.");
+                }
+            }
+
+            // The reported break: the terminal pad used to reach back over
+            // the outer arc of the last switchback.
+            MountainRoadHairpinDescriptor last =
+                plan.Route.Hairpins[plan.Route.Hairpins.Count - 2];
+            Assert.That(
+                plan.Plateau.Contains(new Vector2(
+                    last.ApexPosition.x,
+                    last.ApexPosition.z)),
+                Is.False,
+                "The terminal pad swallowed the last switchback apex.");
+            for (int index = 0; index < plan.Route.Samples.Count; index++)
+            {
+                MountainRoadRouteSample sample = plan.Route.Samples[index];
+                if (sample.Section ==
+                    MountainRoadRouteSection.UpperApproach)
+                {
+                    continue;
+                }
+
+                Assert.That(
+                    plan.Plateau.Contains(new Vector2(
+                        sample.Position.x,
+                        sample.Position.z)),
+                    Is.False,
+                    $"The terminal pad covers {sample.StableId}, which is " +
+                    "climbing road and not its own approach.");
+            }
+
+            // ...and the whole drive, tunnel mouth to cafe door.
+            for (float distance = 0f;
+                 distance <= plan.Route.Length;
+                 distance += 1f)
+            {
+                Assert.That(
+                    walkable.Contains(
+                        plan.Route.Sample(distance).Position,
+                        carHalfWidth),
+                    Is.True,
+                    $"The car corridor breaks at {distance:0.0} m.");
+            }
+
+            MountainRoadCafePlan cafe = plan.Terminal.Cafe;
+            Vector3 apronEntry = plan.Terminal.VehicleApron.EntryCenter;
+            Vector3 doorApproach = new Vector3(
+                cafe.DoorCenter.x,
+                cafe.FloorY,
+                cafe.DoorCenter.z) - cafe.DoorForward * carHalfWidth;
+            for (int step = 0; step <= 32; step++)
+            {
+                Vector3 point = Vector3.Lerp(
+                    apronEntry,
+                    doorApproach,
+                    step / 32f);
+                Assert.That(
+                    walkable.Contains(point, carHalfWidth),
+                    Is.True,
+                    $"The drive from the apron to the cafe door breaks at " +
+                    $"step {step}.");
+                float ground = MountainRoadTerrainSampler.SampleHeight(
+                    plan.Route,
+                    plan.Plateau,
+                    new Vector2(point.x, point.z));
+                Assert.That(
+                    ground,
+                    Is.LessThanOrEqualTo(cafe.FloorY - minimumRoadBed),
+                    $"The terminal pad is buried at step {step}.");
             }
         }
 

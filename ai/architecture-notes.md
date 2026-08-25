@@ -1329,13 +1329,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   warm/cold lighting treatment and does not own persistent gameplay state.
 - **Accepted — Mountain Road is a separate runtime-composed area:** Build index
   `7` starts the hero `6 m` inside a `9 m` exit tunnel and builds one continuous
-  `600 m` uphill road ribbon sized against the `4.83 x 1.80 m` LastRouteCar.
+  `620 m` uphill road ribbon sized against the `4.83 x 1.80 m` LastRouteCar.
   Ordinary width is `4.8 m`; ten `7.5 m`-radius hairpins widen to `6.4 m`.
   The physical climb is `26.1 m`, exactly three times its former rise, and the
-  pure route validator caps every sampled grade at `8%`. The final `5 m` are
-  level and enter the unchanged irregular roughly `42 x 27 m` terminal plateau
-  after about `230.8 s` (`3 min 51 s`) at `PlayerMotor`'s `2.6 m/s` forward
-  speed. `MountainRoadRoutePlan` owns the ordered samples, all ten typed
+  pure route validator caps every sampled grade at `8%`. The climb itself ends
+  at `595 m`; the final `25 m` are level, a `20 m` terrace run that carries the
+  road clear of the switchback field plus the `5 m` plateau entry lead. They
+  enter the unchanged irregular roughly `42 x 27 m` terminal plateau after
+  about `238.5 s` (`3 min 58 s`) at `PlayerMotor`'s `2.6 m/s` forward speed.
+  The terrace run exists because the pad is a raised terrace and the terrain
+  sampler snaps everything inside it to the pad height: parked where the climb
+  stopped, its rim reached back across the outer arc of hairpin `8` and buried
+  that road under `1.5 m` of collidered snow. `MountainRoadValidator` now holds
+  the pad off every stretch of climbing road by `4 m` beyond the ribbon's own
+  half-width; only its own `UpperApproach` may touch the road. `MountainRoadRoutePlan` owns the ordered samples, all ten typed
   hairpin descriptors and one mandatory bridge descriptor instead of exposing
   two fixed turns. The first five hairpins form the lower forest chapter, the
   last five form the upper climb, and route-relative placement spreads forest,

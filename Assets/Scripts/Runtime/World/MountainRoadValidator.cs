@@ -9,6 +9,7 @@ namespace BarPromenade
         private const float PositionTolerance = 0.03f;
         private const float GroundTolerance = 0.015f;
         private const float MinimumTreeRoadClearance = 0.65f;
+        private const float PlateauRoadClearance = 4f;
 
         public static void ValidateOrThrow(MountainRoadPlan plan)
         {
@@ -20,6 +21,7 @@ namespace BarPromenade
             ValidateTunnel(plan);
             ValidateRoute(plan.Route);
             ValidatePlateau(plan);
+            ValidateTerminalPadClearsTheClimb(plan);
             ValidateForest(plan);
             ValidateMiscAndSounds(plan);
             ValidateRidges(plan);
@@ -405,6 +407,58 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The road ribbon must share both entry corners with " +
                     "the terminal plateau.");
+            }
+        }
+
+        /// <summary>
+        /// The terminal pad is a raised terrace, and the terrain sampler
+        /// snaps every point inside it to the pad height. Where the rim
+        /// reaches across the climbing ribbon the road is therefore buried
+        /// under a metre and a half of collidered snow, with the asphalt
+        /// still drawn underneath it - the car simply stops. Only the pad's
+        /// own approach may touch the road; the switchbacks must stay clear.
+        /// </summary>
+        private static void ValidateTerminalPadClearsTheClimb(
+            MountainRoadPlan plan)
+        {
+            IReadOnlyList<Vector2> rim = plan.Plateau.VerticesXZ;
+            IReadOnlyList<MountainRoadRouteSample> samples =
+                plan.Route.Samples;
+            for (int index = 1; index < samples.Count; index++)
+            {
+                MountainRoadRouteSample first = samples[index - 1];
+                MountainRoadRouteSample second = samples[index];
+                if (first.Section ==
+                        MountainRoadRouteSection.UpperApproach ||
+                    second.Section ==
+                        MountainRoadRouteSection.UpperApproach)
+                {
+                    continue;
+                }
+
+                Vector2 start = ToXZ(first.Position);
+                Vector2 end = ToXZ(second.Position);
+                float required = Mathf.Max(first.Width, second.Width) * 0.5f +
+                                 PlateauRoadClearance;
+                for (int edge = 0; edge < rim.Count; edge++)
+                {
+                    float distance = SegmentDistance(
+                        start,
+                        end,
+                        rim[edge],
+                        rim[(edge + 1) % rim.Count]);
+                    if (distance >= required)
+                    {
+                        continue;
+                    }
+
+                    throw new InvalidOperationException(
+                        "The terminal plateau reaches across the climbing " +
+                        $"road at {first.StableId}: rim edge {edge} is " +
+                        $"{distance:0.###} m away, {required:0.###} m is " +
+                        "required, and the road there would be buried " +
+                        "under the pad.");
+                }
             }
         }
 

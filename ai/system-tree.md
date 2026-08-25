@@ -252,7 +252,7 @@ Assets/
         CityFringeYardValidator.cs bands/gaps/all-safe-seams/corridors/vocabulary/budget invariants
         CityFringeYard{WorldBuilder,WorldResult}.cs 48 m batches, emissive anchors, no new Lights
         CityFringePracticalAnchor.cs runtime pose passed to the fixed night-light pool
-        MountainRoadPlan.cs       typed 600 m route, ten hairpins, bridge, tunnel/plateau + dressing
+        MountainRoadPlan.cs       typed 620 m route, ten hairpins, bridge, tunnel/plateau + dressing
         MountainRoad{Planner,Validator}.cs route/bridge + ridge envelope/footprint invariants
         MountainRoadBridge{WorldBuilder,Validator}.cs deck/beams/piers/open rails + bounded physics
         MountainRoadTerminal{Plan,Planner,Validator}.cs vehicle/cafe/cableway terminal contract
@@ -766,7 +766,7 @@ City/MountainRoad map -> CityMapAreaController -> City / Mountain Road tabs
                                                      -> AreaLoading (Single)
                                                         -> black progress bar
                                                         -> destination (Single)
-MountainRoadRoot -> MountainRoadPlanner -> validated 600 m continuous climb
+MountainRoadRoot -> MountainRoadPlanner -> validated 620 m continuous climb
                                       -> 9 m exit tunnel, spawn at 6 m
                                       -> 4.8 m road / ten 6.4 m, R7.5 m hairpins
                                       -> <=8% grade / +26.1 m rise / final 5 m level
