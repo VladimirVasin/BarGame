@@ -5628,9 +5628,10 @@ ACTION_SPECS = (
         "FerrymanWait", "last_route_ferryman_v1", 4.0, 96,
         "perched on the car's bonnet, right hand braced behind the hip, "
         "left forearm up with the palm open",
-        "four slow breaths, one coin flicked up and caught - released at "
-        "1/16 of the loop and caught at 5/16 - and three idle kicks of "
-        "one leg at a time off the bumper",
+        "four slow breaths, one coin thrown with the whole arm and caught "
+        "- wound down to the hip, released at 1/16 of the loop and caught "
+        "at 5/16 on an arm at full stretch - and three idle kicks of one "
+        "leg at a time off the bumper",
         seated=True,
         perched=True,
     ),
@@ -7764,34 +7765,93 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     # ------------------------------------------------------- ferryman
     ferry_wait = ferryman_base_pose()
     ferry_wait_inhale = ferry_breath(ferry_wait, 1.0)
-    # The flick: the whole throw is in the wrist and a few degrees of
-    # forearm. A big arm swing would read as a man throwing something
-    # away rather than one amusing himself.
-    ferry_wait_flick = merge_pose(
+    # The throw, and it is a throw now.
+    #
+    # It used to live entirely in the wrist: fourteen degrees of elbow,
+    # thirty-six of hand, and the shoulder and clavicle not keyed at all.
+    # The reasoning was that a big swing would read as a man throwing
+    # something away rather than one amusing himself, and at the size he
+    # is drawn that bought nothing - the coin moved and the man did not,
+    # so it read as a chip of light jumping beside a statue. It is now
+    # the whole arm: down to the hip, up on a nearly straight one, and
+    # giving on the catch. The hand travels 0.78 m instead of 0.06 m.
+    #
+    # Every angle below is MEASURED off the rig rather than posed by eye.
+    # The rest pose is a T, the eulers are bone-local, and none of this is
+    # derivable from the numbers already in this file: on `upper_arm.L`,
+    # MORE NEGATIVE X raises the hand (-90 puts it at his hip, -195 half
+    # a metre above his shoulder) and +Z carries it out away from the
+    # ribs, which is what stops the raised arm folding back beside his cap
+    # like a salute. Sweep it again before changing it.
+    #
+    # `chest`, `spine` and `pelvis` are deliberately absent. His RIGHT
+    # palm braces on the bonnet with three millimetres to spare and hangs
+    # off `clavicle.R` on the chest, so turning the torso into the throw
+    # would take that hand off the metal. The whole body of the gesture
+    # goes through `clavicle.L`, which is on the free side.
+    def ferry_toss(
+        base: dict[str, BonePose],
+        clavicle: tuple[float, float, float],
+        upper_arm: tuple[float, float, float],
+        forearm: tuple[float, float, float],
+        hand: tuple[float, float, float],
+        head: tuple[float, float, float],
+    ) -> dict[str, BonePose]:
+        return merge_pose(
+            base,
+            {
+                "clavicle.L": BonePose(rotation_degrees=clavicle),
+                "upper_arm.L": BonePose(rotation_degrees=upper_arm),
+                "forearm.L": BonePose(rotation_degrees=forearm),
+                "hand.L": BonePose(rotation_degrees=hand),
+                "head": BonePose(rotation_degrees=head),
+            },
+        )
+
+    # Wind-up: the arm swings down and the open palm carries the coin to
+    # his hip. The coin is not airborne until the next key, so it rides
+    # the hand all the way down.
+    ferry_wait_windup = ferry_toss(
         ferry_wait,
-        {
-            "forearm.L": BonePose(rotation_degrees=(-70.0, 40.0, 8.0)),
-            "hand.L": BonePose(rotation_degrees=(-16.0, 20.0, -10.0)),
-            "head": BonePose(rotation_degrees=(-6.0, -6.0, 2.0)),
-        },
+        (8.0, -4.0, 14.0), (-90.0, 4.0, 66.0), (-34.0, 40.0, 8.0),
+        (28.0, 20.0, -10.0), (4.0, -6.0, 2.0),
     )
-    # Hand raised to meet the coin at the top of its arc.
-    ferry_wait_reach = merge_pose(
+    # Release, on the way up and moving. The wrist snaps through here;
+    # everything after it is the arm following the coin.
+    ferry_wait_flick = ferry_toss(
         ferry_wait,
-        {
-            "forearm.L": BonePose(rotation_degrees=(-84.0, 40.0, 8.0)),
-            "hand.L": BonePose(rotation_degrees=(4.0, 20.0, -10.0)),
-            "head": BonePose(rotation_degrees=(-8.0, -5.0, 2.0)),
-        },
+        (4.0, -4.0, 10.0), (-116.0, 4.0, 74.0), (-54.0, 40.0, 8.0),
+        (-34.0, 20.0, -10.0), (-2.0, -6.0, 2.0),
+    )
+    # Still rising, with the coin above him. This key used to be the
+    # plain inhale, which is built off the BASE pose - so the forearm and
+    # the wrist snapped back to rest in mid-flight, within a frame or two
+    # of the coin reaching the top of its arc.
+    ferry_wait_lift = ferry_toss(
+        ferry_wait_inhale,
+        (-2.0, -4.0, 2.0), (-158.0, 4.0, 88.0), (-62.0, 40.0, 8.0),
+        (-10.0, 20.0, -10.0), (-9.0, -6.0, 2.0),
+    )
+    # Full extension, waiting for it: half a metre above his own shoulder
+    # on an almost straight arm, and clear of the cap by 0.38 m.
+    ferry_wait_reach = ferry_toss(
+        ferry_wait,
+        (-6.0, -4.0, -2.0), (-195.0, 4.0, 94.0), (-45.0, 40.0, 8.0),
+        (6.0, 20.0, -10.0), (-15.0, -5.0, 2.0),
     )
     # And gives with the catch, the way a caught weight is absorbed.
-    ferry_wait_catch = merge_pose(
+    ferry_wait_catch = ferry_toss(
         ferry_wait,
-        {
-            "forearm.L": BonePose(rotation_degrees=(-72.0, 40.0, 8.0)),
-            "hand.L": BonePose(rotation_degrees=(20.0, 20.0, -10.0)),
-            "head": BonePose(rotation_degrees=(0.0, -7.0, 2.0)),
-        },
+        (-4.0, -4.0, 0.0), (-176.0, 4.0, 92.0), (-58.0, 40.0, 8.0),
+        (32.0, 20.0, -10.0), (-6.0, -7.0, 2.0),
+    )
+    # The arm coming back down to where it rests. Formerly a plain inhale
+    # too, and for the same reason it could not stay one: it would snap
+    # the whole arm home inside a single frame.
+    ferry_wait_settle = ferry_toss(
+        ferry_wait_inhale,
+        (2.0, -4.0, 6.0), (-160.0, 4.0, 80.0), (-84.0, 40.0, 8.0),
+        (16.0, 20.0, -10.0), (-2.0, -6.0, 2.0),
     )
     # Once a loop he looks up from the coin at the island instead.
     ferry_wait_glance = merge_pose(
@@ -8276,14 +8336,24 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         # bumper. Right, left, and a half-hearted right on the way out:
         # unevenly spaced on purpose, because a man idling his feet is
         # not a metronome.
+        # The release and the catch keys are a CONTRACT with
+        # `LastRouteFerrymanPresentation.TossReleasePhase` and
+        # `TossCatchPhase` (1/16 and 5/16), which is where the runtime
+        # hands the coin over to its own arc and takes it back. Those two
+        # times may not move. The wind-up before the release and the three
+        # keys carrying the arm up and back down between them are free,
+        # and the throw needs all of them: the arm covers 0.78 m, and on
+        # the old four-key grid it did that in two frames and snapped back
+        # to rest in the middle of the coin's flight.
         "FerrymanWait": (
             (0.0, ferry_wait),
+            (1.0 / 24.0, ferry_wait_windup),
             (0.0625, ferry_wait_flick),
-            (0.125, ferry_wait_inhale),
+            (0.125, ferry_wait_lift),
             (0.25, merge_pose(
                 ferry_wait_reach, ferry_kick(ferry_wait, "R", 1.0))),
             (0.3125, ferry_wait_catch),
-            (0.375, ferry_wait_inhale),
+            (0.375, ferry_wait_settle),
             (0.5, ferry_wait),
             (0.625, merge_pose(
                 ferry_wait_inhale, ferry_kick(ferry_wait, "L", 1.0))),

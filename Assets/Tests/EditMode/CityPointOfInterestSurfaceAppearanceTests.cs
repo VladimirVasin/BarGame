@@ -612,12 +612,31 @@ namespace BarPromenade.Tests.EditMode
                         parent.transform,
                         layout);
 
+                // The island mast carries a SECOND head, turned on the
+                // Ferryman's car - and only when there is a car to turn it
+                // on, because the bay is fitted per seed and some cities
+                // have nowhere to park.
+                bool hasCar = false;
+                foreach (CityDistrictPointOfInterestDescriptor descriptor in
+                         layout.DistrictPointsOfInterest)
+                {
+                    if (descriptor.Kind !=
+                        CityDistrictPointOfInterestKind
+                            .NightlifeLastRouteIsland)
+                    {
+                        continue;
+                    }
+
+                    hasCar = CityDistrictPointOfInterestWorldBuilder
+                        .TryDescribeFerrymanCarStance(descriptor, out _);
+                }
+
                 Assert.That(
                     root.GetComponentsInChildren<Light>(true),
-                    Has.Length.EqualTo(2),
-                    "The district points of interest carry exactly " +
-                    "two realtime lights: the drying yard and island " +
-                    "floodlights.");
+                    Has.Length.EqualTo(hasCar ? 3 : 2),
+                    "The district points of interest carry the drying " +
+                    "yard floodlight, the island's service head, and the " +
+                    "Ferryman's car head when there is a car.");
                 Light light = FindSiteLight(
                     root,
                     "Island Mast Floodlight Light");
@@ -682,6 +701,53 @@ namespace BarPromenade.Tests.EditMode
                         Is.False,
                         "The island floodlight must reuse the mast " +
                         "collider instead of adding its own.");
+                }
+
+                if (!hasCar)
+                {
+                    return;
+                }
+
+                // The second head. Same mast, same recipe, two deliberate
+                // differences: a narrow cone, because it has to land as a
+                // pool on one man rather than wash a lot, and a daytime
+                // floor, because the Ferryman has to be lit whenever
+                // anybody walks up to him. That floor is inherited from
+                // the light he used to carry around with him.
+                Light carLight = FindSiteLight(
+                    root,
+                    "Ferryman Car Floodlight Light");
+                Assert.That(carLight.type, Is.EqualTo(LightType.Spot));
+                Assert.That(
+                    carLight.shadows,
+                    Is.EqualTo(LightShadows.None));
+                Assert.That(
+                    carLight.spotAngle,
+                    Is.LessThan(light.spotAngle),
+                    "A pool, not a wash: the car head's cone has to be " +
+                    "tighter than the service head's.");
+                Assert.That(
+                    carLight.GetComponentInChildren<CityLightHalo>(true),
+                    Is.Not.Null,
+                    "Every city realtime light owns a fog halo.");
+                Assert.That(
+                    carLight.transform.IsChildOf(island),
+                    Is.True,
+                    "It hangs off the island's mast, not off the man.");
+
+                try
+                {
+                    CityNightSiteLightRegistry.SetNightFactor(0f);
+                    Assert.That(
+                        carLight.enabled,
+                        Is.True,
+                        "Unlike its neighbour this one keeps a daytime " +
+                        "floor - he has to be lit whenever anybody walks " +
+                        "up, not only after dark.");
+                }
+                finally
+                {
+                    CityNightSiteLightRegistry.SetNightFactor(1f);
                 }
             }
             finally

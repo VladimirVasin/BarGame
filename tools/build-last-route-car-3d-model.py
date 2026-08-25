@@ -86,6 +86,7 @@ ROOF_UNDERSIDE_Z = 1.56
 SEAT_PELVIS_Z = 0.52
 SEAT_Y = -0.40          # pelvis row, centred in the door opening
 SEAT_HALF_SPAN_X = 0.44
+SEAT_CUSHION_WIDTH = 0.52  # also where the rocker has to stop, inboard
 
 # The contact contract shared with tools/build-city-pedestrian-3d-model.py.
 # The Ferryman does not lean on this car, he sits on its bonnet with his
@@ -115,6 +116,20 @@ STEERING_GRIP_AXIS_OFFSET = 0.018
 
 DOOR_HINGE_Y = -1.17    # the A-pillar base; the door opens forward of it
 DOOR_HINGE_Z = 0.73
+DOOR_LEAF_LENGTH = 1.51
+# How far the shut leaf laps the jamb it sits against. The leaf is a skin
+# hung OUTBOARD of the flank rather than a plug in the hole, so this only
+# has to beat the grazing angle at which a coincident edge shows a seam.
+DOOR_LEAF_LAP = 0.03
+# The hole in the bodywork that the leaf covers - stated here, in the same
+# breath as the leaf, because the two drifting apart is exactly the failure
+# this is fixing. For a whole build the flank had no hole at all: opening a
+# door revealed thirteen centimetres of bodywork filling the whole doorway.
+DOORWAY_FRONT_Y = DOOR_HINGE_Y + DOOR_LEAF_LAP
+DOORWAY_REAR_Y = DOOR_HINGE_Y + DOOR_LEAF_LENGTH - DOOR_LEAF_LAP
+# The front-lower corner of that doorway opens onto the front wheel arch,
+# so cutting it also has to line the arch - see `_build_interior`.
+ARCH_REAR_Y = FRONT_AXLE_Y + ARCH_HALF_LENGTH
 # The front handle, in the hinge's own space, so it swings with the leaf it
 # belongs to. Derived from the waist line rather than typed twice.
 DOOR_HANDLE_Y = -0.62 - DOOR_HINGE_Y
@@ -128,12 +143,30 @@ DOOR_SPECS = (
 
 # Damage the user asked for, each its own mesh so a validator can prove it is
 # still there and so it reads in silhouette rather than relying on texture.
+#
+# Anything that lands within a FRONT leaf's footprint has to ride that leaf
+# instead - see DOOR_DENT_SPECS below. The rear-door crease stays here
+# because the rear doors never open.
 DENT_SPECS = (
-    ((0.902, -0.20, 0.74), (0.045, 0.52, 0.30)),
     ((-0.902, 1.05, 0.80), (0.045, 0.46, 0.26)),
     ((0.55, REAR_Y + 0.02, 0.86), (0.60, 0.06, 0.22)),
     ((-0.40, FRONT_Y - 0.01, 0.70), (0.52, 0.05, 0.20)),
 )
+
+# How far proud of the leaf's own skin door-mounted damage sits. The skin's
+# outer face is at local x 0.035; rust straddles it the way rust does, and
+# the crease stands as far out as it once stood of the flank.
+DOOR_RUST_PROUD_X = 0.035
+DOOR_DENT_PROUD_X = 0.037
+
+# The crease down the driver's door, keyed by the leaf it belongs to. It was
+# drawn into the body's GEO_Dents, which made it invisible from the day the
+# leaf was fitted over it and would have left it hanging in the empty doorway
+# from the day the leaf could move - the stranded-handle bug for the third
+# time. See the comment in `_build_doors`.
+DOOR_DENT_SPECS = {
+    "Driver": (((0.902, -0.20, 0.74), (0.045, 0.52, 0.30)),),
+}
 def _rust_run(
     x: float,
     start_y: float,
@@ -157,21 +190,50 @@ def _rust_run(
     return tuple(run)
 
 
+def _onto_door_leaf(
+    boxes: Sequence[tuple[tuple[float, float, float], tuple[float, float, float]]],
+    side: float,
+    proud_x: float,
+) -> tuple[tuple[tuple[float, float, float], tuple[float, float, float]], ...]:
+    """Re-express flank decoration in a front door hinge's own space.
+
+    Only the height and the length carry over; the lateral coordinate is
+    replaced outright, because a box authored against the flank at +/-0.905
+    ends up buried inside the leaf that was later hung over it at 0.880-0.930.
+    """
+    return tuple(
+        (
+            (side * proud_x, center[1] - DOOR_HINGE_Y, center[2] - DOOR_HINGE_Z),
+            size,
+        )
+        for center, size in boxes
+    )
+
+
 RUST_SPECS = (
-    # Along both sills, worst behind the front arches.
-    *_rust_run(0.905, -0.95, ((0.26, 0.10, 0.50), (0.17, 0.07, 0.53),
-                              (0.31, 0.12, 0.49), (0.14, 0.06, 0.55))),
-    *_rust_run(-0.905, -0.90, ((0.22, 0.09, 0.51), (0.28, 0.11, 0.48),
-                               (0.15, 0.06, 0.54))),
     # Around the rear arches, where the road throws everything.
     *_rust_run(0.905, 0.86, ((0.24, 0.13, 0.76), (0.19, 0.09, 0.72),
                              (0.30, 0.15, 0.78))),
     *_rust_run(-0.905, 0.92, ((0.27, 0.12, 0.74), (0.21, 0.08, 0.70))),
-    # The boot lip, and a bloom creeping along the underside seam.
+    # The boot lip, and a bloom creeping along the underside seam. The seam
+    # run sits just UNDER the cabin floor: it used to be swallowed by the
+    # rocker slab, and with that slab gone it would otherwise surface as a
+    # rust stripe laid across the cabin carpet.
     ((0.24, REAR_Y - 0.02, 0.60), (0.34, 0.024, 0.09)),
     ((-0.34, REAR_Y - 0.02, 0.58), (0.26, 0.024, 0.07)),
-    ((-0.58, 0.10, 0.315), (0.30, 1.20, 0.020)),
+    ((-0.58, 0.10, FLOOR_Z - 0.045), (0.30, 1.20, 0.020)),
 )
+
+# Along both sills, worst behind the front arches - which is to say, along
+# the bottom of both front doors. These ride their leaves for the same
+# reason the handles do.
+DOOR_RUST_SPECS = {
+    "Driver": _rust_run(0.905, -0.95, ((0.26, 0.10, 0.50), (0.17, 0.07, 0.53),
+                                       (0.31, 0.12, 0.49), (0.14, 0.06, 0.55))),
+    "Passenger": _rust_run(-0.905, -0.90, ((0.22, 0.09, 0.51),
+                                           (0.28, 0.11, 0.48),
+                                           (0.15, 0.06, 0.54))),
+}
 
 UV_TILE_METERS_DEFAULT = 1.10
 UV_TILE_METERS = {
@@ -230,6 +292,13 @@ class BuildResult:
     parts: tuple[Part, ...]
     pivots: tuple[Pivot, ...]
     source_objects: tuple[bpy.types.Object, ...]
+    # The body shell's boxes as authored, kept so the validator can prove
+    # the door openings are still openings. Once the shell is a mesh there
+    # is no cheap way to ask whether a hole in it is still a hole, and this
+    # design has already shipped once with both doorways bricked up.
+    shell_boxes: tuple[
+        tuple[tuple[float, float, float], tuple[float, float, float]], ...
+    ] = ()
 
 
 @dataclass(frozen=True)
@@ -587,6 +656,9 @@ class LastRouteCarBuilder:
         }
         self.parts: list[Part] = []
         self.pivots: list[Pivot] = []
+        self.shell_boxes: tuple[
+            tuple[tuple[float, float, float], tuple[float, float, float]], ...
+        ] = ()
         self.root = create_empty(ROOT_NAME, self.collection, None, display_size=0.30)
         self.body = create_empty(BODY_NAME, self.collection, self.root, display_size=0.26)
         self.body["bp_role"] = "body_root"
@@ -682,6 +754,7 @@ class LastRouteCarBuilder:
             tuple(sorted(self.parts, key=lambda part: part.obj.name)),
             tuple(sorted(self.pivots, key=lambda pivot: pivot.obj.name)),
             tuple(self.collection.objects),
+            self.shell_boxes,
         )
 
     # ------------------------------------------------------------------
@@ -695,13 +768,20 @@ class LastRouteCarBuilder:
         real edge - it is the rail the Ferryman rests his forearm on, and the
         line the rust follows.
         """
-        # Two cuts, both stated by what is left out, because a box cannot
+        # Three cuts, all stated by what is left out, because a box cannot
         # be hollowed. Vertically the flank exists only between the arches
         # and at the overhangs, so the wheels stand in open arches instead of
         # behind a wall. Laterally the cabin is drawn as two side panels
         # rather than a slab, so the floor, the seats and the wheel are
         # inside a room instead of buried in solid bodywork - the hero will
         # be sitting in there looking out.
+        #
+        # And the third: each cabin panel STOPS at the doorway and starts
+        # again behind it. For a whole build it did not, and the room was
+        # sealed - the leaf swung open on thirteen centimetres of bodywork
+        # filling the entire opening. The gap between these boxes IS the
+        # door, exactly as the gaps in the bus's passenger flank are its
+        # doors. The 0.13 m panel gives the cut edge a real jamb for free.
         midsection = ARCH_HALF_LENGTH  # half-length of the belt between arches
         overhang_length = REAR_Y - (REAR_AXLE_Y + ARCH_HALF_LENGTH)
         overhang_y = REAR_AXLE_Y + ARCH_HALF_LENGTH + overhang_length * 0.5
@@ -709,62 +789,99 @@ class LastRouteCarBuilder:
         upper_mid_z = (WHEEL_TOP_Z + WAIST_Z) * 0.5
         panel_thickness = 0.13
         panel_x = BODY_HALF_WIDTH - panel_thickness * 0.5
-        cabin_length = CABIN_REAR_Y - CABIN_FRONT_Y
-        cabin_y = (CABIN_FRONT_Y + CABIN_REAR_Y) * 0.5
         bay_length = CABIN_FRONT_Y - FRONT_Y
         bay_y = (FRONT_Y + CABIN_FRONT_Y) * 0.5
         boot_length = REAR_Y - CABIN_REAR_Y
         boot_y = (CABIN_REAR_Y + REAR_Y) * 0.5
+        # What is left of each cabin panel once the doorway is taken out of
+        # it: a sliver of A-pillar root ahead of the opening, and the rear
+        # door's own flank behind it. The rear doors never open, so that
+        # half stays solid.
+        jamb_front_length = DOORWAY_FRONT_Y - CABIN_FRONT_Y
+        jamb_front_y = (CABIN_FRONT_Y + DOORWAY_FRONT_Y) * 0.5
+        jamb_rear_length = CABIN_REAR_Y - DOORWAY_REAR_Y
+        jamb_rear_y = (DOORWAY_REAR_Y + CABIN_REAR_Y) * 0.5
+        # The lower belt only ever reached the arches, so its share of the
+        # doorway is just the stretch behind it.
+        lower_rear_length = midsection - DOORWAY_REAR_Y
+        lower_rear_y = (DOORWAY_REAR_Y + midsection) * 0.5
+        # The rocker, which used to be a slab of bodywork right across the
+        # cabin from the floor line up to the sill. That slab was the thing
+        # a sitter sank into: the drawn floor tops out at FLOOR_Z + 0.025
+        # and the slab's face was 0.14 m ABOVE it, so a seated man's boots
+        # went through it and the manifest's own `cabin_floor_drop_m` was
+        # fiction. It is now what it is called - two rockers under the two
+        # door openings, stopping inboard at the seat cushion.
+        sill_outer_x = BODY_HALF_WIDTH - 0.02
+        sill_inner_x = SEAT_HALF_SPAN_X + SEAT_CUSHION_WIDTH * 0.5
+        sill_width = sill_outer_x - sill_inner_x
+        sill_x = (sill_inner_x + sill_outer_x) * 0.5
+        sill_length = midsection - ARCH_REAR_Y
+        sill_y = (ARCH_REAR_Y + midsection) * 0.5
+        sill_bottom_z = FLOOR_Z - 0.04
+        front_lip_length = DOORWAY_FRONT_Y - (FRONT_AXLE_Y - ARCH_HALF_LENGTH)
+        front_lip_y = (FRONT_AXLE_Y - ARCH_HALF_LENGTH) + front_lip_length * 0.5
+        shell_boxes = (
+            # Rockers under each doorway, and nothing between them.
+            ((sill_x, sill_y, (sill_bottom_z + SILL_Z) * 0.5),
+             (sill_width, sill_length, SILL_Z - sill_bottom_z)),
+            ((-sill_x, sill_y, (sill_bottom_z + SILL_Z) * 0.5),
+             (sill_width, sill_length, SILL_Z - sill_bottom_z)),
+            # Lower flank between the arches, behind the doorway.
+            ((panel_x, lower_rear_y, lower_mid_z),
+             (panel_thickness, lower_rear_length, WHEEL_TOP_Z - SILL_Z)),
+            ((-panel_x, lower_rear_y, lower_mid_z),
+             (panel_thickness, lower_rear_length, WHEEL_TOP_Z - SILL_Z)),
+            # Lower flank ahead of and behind the arches.
+            ((0.0, -overhang_y, lower_mid_z),
+             (WIDTH, overhang_length, WHEEL_TOP_Z - SILL_Z)),
+            ((0.0, overhang_y, lower_mid_z),
+             (WIDTH, overhang_length, WHEEL_TOP_Z - SILL_Z)),
+            # Upper flank: solid over the engine bay and the boot,
+            # side panels along the cabin - each in two pieces with the
+            # door opening between them.
+            ((0.0, bay_y, upper_mid_z),
+             (WIDTH, bay_length, WAIST_Z - WHEEL_TOP_Z)),
+            ((0.0, boot_y, upper_mid_z),
+             (WIDTH, boot_length, WAIST_Z - WHEEL_TOP_Z)),
+            ((panel_x, jamb_front_y, upper_mid_z),
+             (panel_thickness, jamb_front_length, WAIST_Z - WHEEL_TOP_Z)),
+            ((-panel_x, jamb_front_y, upper_mid_z),
+             (panel_thickness, jamb_front_length, WAIST_Z - WHEEL_TOP_Z)),
+            ((panel_x, jamb_rear_y, upper_mid_z),
+             (panel_thickness, jamb_rear_length, WAIST_Z - WHEEL_TOP_Z)),
+            ((-panel_x, jamb_rear_y, upper_mid_z),
+             (panel_thickness, jamb_rear_length, WAIST_Z - WHEEL_TOP_Z)),
+            # Bonnet and boot lid.
+            ((0.0, -1.78, (WAIST_Z + BONNET_Z) * 0.5),
+             (WIDTH - 0.14, 1.05, BONNET_Z - WAIST_Z)),
+            ((0.0, 1.86, (WAIST_Z + BONNET_Z) * 0.5),
+             (WIDTH - 0.14, 0.98, BONNET_Z - WAIST_Z)),
+            # Nose and tail panels.
+            ((0.0, FRONT_Y + 0.06, upper_mid_z),
+             (WIDTH - 0.10, 0.16, WAIST_Z - WHEEL_TOP_Z)),
+            ((0.0, REAR_Y - 0.06, upper_mid_z),
+             (WIDTH - 0.10, 0.16, WAIST_Z - WHEEL_TOP_Z)),
+            # Arch lips over each wheel. The FRONT pair stops at the door
+            # shut line instead of running the full arch, which is both
+            # what a saloon does and what keeps an eyebrow of bodywork from
+            # crossing the open doorway at chest height.
+            ((TRACK_HALF + 0.10, front_lip_y, WHEEL_TOP_Z + 0.04),
+             (0.11, front_lip_length, 0.08)),
+            ((-(TRACK_HALF + 0.10), front_lip_y, WHEEL_TOP_Z + 0.04),
+             (0.11, front_lip_length, 0.08)),
+            ((TRACK_HALF + 0.10, REAR_AXLE_Y, WHEEL_TOP_Z + 0.04),
+             (0.11, ARCH_HALF_LENGTH * 2.0, 0.08)),
+            ((-(TRACK_HALF + 0.10), REAR_AXLE_Y, WHEEL_TOP_Z + 0.04),
+             (0.11, ARCH_HALF_LENGTH * 2.0, 0.08)),
+            # Aprons closing the overhangs under the bumpers.
+            ((0.0, FRONT_Y + 0.10, 0.40), (WIDTH - 0.16, 0.32, 0.20)),
+            ((0.0, REAR_Y - 0.10, 0.40), (WIDTH - 0.16, 0.32, 0.20)),
+        )
+        self.shell_boxes = shell_boxes
         self.add_boxes(
             "GEO_BodyShell",
-            (
-                # Rocker and floorpan, between the arches only.
-                ((0.0, 0.0, (FLOOR_Z + SILL_Z) * 0.5),
-                 (WIDTH - 0.08, midsection * 2.0, SILL_Z - FLOOR_Z)),
-                # Lower flank between the arches - side panels, because
-                # the cabin floor and the seat bases live between them.
-                ((panel_x, 0.0, lower_mid_z),
-                 (panel_thickness, midsection * 2.0, WHEEL_TOP_Z - SILL_Z)),
-                ((-panel_x, 0.0, lower_mid_z),
-                 (panel_thickness, midsection * 2.0, WHEEL_TOP_Z - SILL_Z)),
-                # Lower flank ahead of and behind the arches.
-                ((0.0, -overhang_y, lower_mid_z),
-                 (WIDTH, overhang_length, WHEEL_TOP_Z - SILL_Z)),
-                ((0.0, overhang_y, lower_mid_z),
-                 (WIDTH, overhang_length, WHEEL_TOP_Z - SILL_Z)),
-                # Upper flank: solid over the engine bay and the boot,
-                # side panels along the cabin.
-                ((0.0, bay_y, upper_mid_z),
-                 (WIDTH, bay_length, WAIST_Z - WHEEL_TOP_Z)),
-                ((0.0, boot_y, upper_mid_z),
-                 (WIDTH, boot_length, WAIST_Z - WHEEL_TOP_Z)),
-                ((panel_x, cabin_y, upper_mid_z),
-                 (panel_thickness, cabin_length, WAIST_Z - WHEEL_TOP_Z)),
-                ((-panel_x, cabin_y, upper_mid_z),
-                 (panel_thickness, cabin_length, WAIST_Z - WHEEL_TOP_Z)),
-                # Bonnet and boot lid.
-                ((0.0, -1.78, (WAIST_Z + BONNET_Z) * 0.5),
-                 (WIDTH - 0.14, 1.05, BONNET_Z - WAIST_Z)),
-                ((0.0, 1.86, (WAIST_Z + BONNET_Z) * 0.5),
-                 (WIDTH - 0.14, 0.98, BONNET_Z - WAIST_Z)),
-                # Nose and tail panels.
-                ((0.0, FRONT_Y + 0.06, upper_mid_z),
-                 (WIDTH - 0.10, 0.16, WAIST_Z - WHEEL_TOP_Z)),
-                ((0.0, REAR_Y - 0.06, upper_mid_z),
-                 (WIDTH - 0.10, 0.16, WAIST_Z - WHEEL_TOP_Z)),
-                # Arch lips over each wheel.
-                ((TRACK_HALF + 0.10, FRONT_AXLE_Y, WHEEL_TOP_Z + 0.04),
-                 (0.11, ARCH_HALF_LENGTH * 2.0, 0.08)),
-                ((-(TRACK_HALF + 0.10), FRONT_AXLE_Y, WHEEL_TOP_Z + 0.04),
-                 (0.11, ARCH_HALF_LENGTH * 2.0, 0.08)),
-                ((TRACK_HALF + 0.10, REAR_AXLE_Y, WHEEL_TOP_Z + 0.04),
-                 (0.11, ARCH_HALF_LENGTH * 2.0, 0.08)),
-                ((-(TRACK_HALF + 0.10), REAR_AXLE_Y, WHEEL_TOP_Z + 0.04),
-                 (0.11, ARCH_HALF_LENGTH * 2.0, 0.08)),
-                # Aprons closing the overhangs under the bumpers.
-                ((0.0, FRONT_Y + 0.10, 0.40), (WIDTH - 0.16, 0.32, 0.20)),
-                ((0.0, REAR_Y - 0.10, 0.40), (WIDTH - 0.16, 0.32, 0.20)),
-            ),
+            shell_boxes,
             "body_shell",
             "Body",
         )
@@ -904,11 +1021,14 @@ class LastRouteCarBuilder:
                 (side * (BODY_HALF_WIDTH - 0.005), DOOR_HINGE_Y, DOOR_HINGE_Z),
                 runtime_axis_local="+Z",
             )
+            leaf_y = DOOR_LEAF_LENGTH * 0.5
             self.add_boxes(
                 f"GEO_Door{name}Panel",
                 (
-                    ((side * 0.010, 0.755, 0.0), (0.050, 1.51, 0.58)),
-                    ((side * 0.016, 0.755, 0.30), (0.042, 1.51, 0.035)),
+                    ((side * 0.010, leaf_y, 0.0),
+                     (0.050, DOOR_LEAF_LENGTH, 0.58)),
+                    ((side * 0.016, leaf_y, 0.30),
+                     (0.042, DOOR_LEAF_LENGTH, 0.035)),
                 ),
                 "door_panel",
                 slot,
@@ -938,6 +1058,30 @@ class LastRouteCarBuilder:
                 "Chrome",
                 parent=hinge,
             )
+
+            # And so does the damage, for exactly the reason above. The sill
+            # rust and the driver's crease were authored against the flank
+            # at +/-0.905 and then a leaf was hung over them at 0.880-0.930,
+            # which buried both; cutting the doorway would have gone one
+            # worse and left them floating in the hole. Same runs, same
+            # heights, re-expressed on the leaf and standing proud of it.
+            self.add_boxes(
+                f"GEO_Door{name}Rust",
+                _onto_door_leaf(
+                    DOOR_RUST_SPECS[name], side, DOOR_RUST_PROUD_X),
+                "rust",
+                "Rust",
+                parent=hinge,
+            )
+            dents = DOOR_DENT_SPECS.get(name)
+            if dents:
+                self.add_boxes(
+                    f"GEO_Door{name}Dent",
+                    _onto_door_leaf(dents, side, DOOR_DENT_PROUD_X),
+                    "dents",
+                    slot,
+                    parent=hinge,
+                )
 
     def _build_wheels(self) -> None:
         """All four wheels are on. Three of the four hubcaps are not."""
@@ -1100,10 +1244,64 @@ class LastRouteCarBuilder:
 
     def _build_interior(self) -> None:
         """A real cabin: the glass is see-through and the hero will sit in it."""
+        # The floor's TOP is FLOOR_Z, not its middle. That plane is where a
+        # seated root stands - the drive pose hangs 0.2197 m of leg under a
+        # pelvis at 0.52, so the lowest drawn point of a sitter lands on
+        # 0.3003 - and the slab used to be centred a centimetre ABOVE it, so
+        # every sitter's boots went 2.5 cm into the carpet. Small next to the
+        # 14 cm the old rocker slab buried them by, and just as wrong.
         self.add_boxes(
             "GEO_CabinFloor",
-            (((0.0, -0.10, FLOOR_Z + 0.01), (1.52, 2.30, 0.03)),),
+            (((0.0, -0.10, FLOOR_Z - 0.015), (1.52, 2.30, 0.03)),),
             "cabin_floor",
+            "Interior",
+        )
+
+        # The room a real doorway now looks into.
+        #
+        # Cutting the hole in the flank exposed three things that were only
+        # ever hidden because the wall was solid: the front wheel arch,
+        # straight through the bottom corner of the opening and out at the
+        # road; the engine bay past the scuttle; and the OUTSIDE paint on
+        # the inner face of the far panel. The bus solves the same problem
+        # the same way, with an inner liner distinct from the outer shell.
+        tub_x = TRACK_HALF - WHEEL_WIDTH * 0.5 - 0.03
+        tub_thickness = 0.03
+        tub_length = ARCH_REAR_Y - CABIN_FRONT_Y
+        tub_y = (CABIN_FRONT_Y + ARCH_REAR_Y) * 0.5
+        tub_top_z = WHEEL_TOP_Z + 0.04
+        tub_mid_z = (FLOOR_Z + tub_top_z) * 0.5
+        tub_height = tub_top_z - FLOOR_Z
+        bulkhead_width = (tub_x + tub_thickness * 0.5) * 2.0
+        liner_x = BODY_HALF_WIDTH - 0.13 - 0.015
+        liner_length = CABIN_REAR_Y - DOORWAY_REAR_Y
+        liner_y = (DOORWAY_REAR_Y + CABIN_REAR_Y) * 0.5
+        self.add_boxes(
+            "GEO_InteriorShell",
+            (
+                # Wheel arch tubs. The footwell narrows round each front
+                # wheel, which is both what a saloon does and what stops
+                # the doorway's front-lower corner opening onto the road.
+                ((tub_x, tub_y, tub_mid_z),
+                 (tub_thickness, tub_length, tub_height)),
+                ((-tub_x, tub_y, tub_mid_z),
+                 (tub_thickness, tub_length, tub_height)),
+                # Scuttle bulkhead, between the tubs. Above the waist the
+                # engine bay's own solid flank already closes it.
+                ((0.0, CABIN_FRONT_Y + 0.02, tub_mid_z),
+                 (bulkhead_width, 0.04, tub_height)),
+                # And the parcel shelf behind the rear bench.
+                ((0.0, CABIN_REAR_Y - 0.04, tub_mid_z),
+                 (bulkhead_width, 0.04, tub_height)),
+                # Door cards on what is left of each cabin panel, so the
+                # far side of the room reads as trim rather than as the
+                # back of the paintwork.
+                ((liner_x, liner_y, (SILL_Z + WAIST_Z) * 0.5),
+                 (0.03, liner_length, WAIST_Z - SILL_Z)),
+                ((-liner_x, liner_y, (SILL_Z + WAIST_Z) * 0.5),
+                 (0.03, liner_length, WAIST_Z - SILL_Z)),
+            ),
+            "interior_shell",
             "Interior",
         )
         self.add_boxes(
@@ -1447,6 +1645,7 @@ REQUIRED_MESH_ROLES = (
     "hubcap",
     "headlight", "headlight_rim", "tail_light", "grille", "bumper",
     "exterior_trim", "exhaust", "number_plate", "cabin_floor",
+    "interior_shell",
     "driver_seat", "passenger_seat", "rear_bench", "dashboard",
     "steering_column", "steering_wheel", "interior_mirror",
 )
@@ -1507,6 +1706,64 @@ def validate_result(result: BuildResult) -> ValidationReport:
         errors.append(
             "Both headlights work now; a broken lens contradicts the design"
         )
+    # Both front doorways have to be HOLES. This design shipped with the
+    # cabin flank drawn as one unbroken panel from the scuttle to the parcel
+    # shelf, so opening a leaf revealed 0.13 m of bodywork filling the whole
+    # opening and the "visible interior" the manifest advertises was a room
+    # with no way into it. A hole in a merged mesh cannot be asked about
+    # afterwards, so the shell's boxes are checked as authored.
+    doorway = (
+        (DOORWAY_FRONT_Y, DOORWAY_REAR_Y),
+        (SILL_Z, WAIST_Z),
+    )
+    for side, name in ((1.0, "driver"), (-1.0, "passenger")):
+        near_x = min(side * SEAT_HALF_SPAN_X + side * SEAT_CUSHION_WIDTH * 0.5,
+                     side * BODY_HALF_WIDTH)
+        far_x = max(side * SEAT_HALF_SPAN_X + side * SEAT_CUSHION_WIDTH * 0.5,
+                    side * BODY_HALF_WIDTH)
+        for center, size in result.shell_boxes:
+            spans = (
+                (center[0] - size[0] * 0.5, center[0] + size[0] * 0.5),
+                (center[1] - size[1] * 0.5, center[1] + size[1] * 0.5),
+                (center[2] - size[2] * 0.5, center[2] + size[2] * 0.5),
+            )
+            limits = ((near_x, far_x), doorway[0], doorway[1])
+            if all(
+                min(span[1], limit[1]) - max(span[0], limit[0]) > 1e-4
+                for span, limit in zip(spans, limits)
+            ):
+                errors.append(
+                    f"Body shell box at {center} blocks the {name} doorway"
+                )
+
+    # And the room itself has to stay empty. `cabin_floor_drop_m` promises a
+    # seated pelvis 0.22 m of leg down to FLOOR_Z, and the Ferryman's own
+    # archetype is validated against that number - but for a whole build the
+    # rocker was a slab of bodywork right across the cabin whose face sat
+    # 0.14 m ABOVE the drawn floor, so both sitters went through it to the
+    # knee and the promise was fiction. Nothing structural belongs between
+    # the rockers, above the floor and below the waist.
+    cabin_clear = (
+        (-(SEAT_HALF_SPAN_X + SEAT_CUSHION_WIDTH * 0.5),
+         SEAT_HALF_SPAN_X + SEAT_CUSHION_WIDTH * 0.5),
+        (CABIN_FRONT_Y, CABIN_REAR_Y),
+        (FLOOR_Z + 0.03, WAIST_Z),
+    )
+    for center, size in result.shell_boxes:
+        spans = (
+            (center[0] - size[0] * 0.5, center[0] + size[0] * 0.5),
+            (center[1] - size[1] * 0.5, center[1] + size[1] * 0.5),
+            (center[2] - size[2] * 0.5, center[2] + size[2] * 0.5),
+        )
+        if all(
+            min(span[1], limit[1]) - max(span[0], limit[0]) > 1e-4
+            for span, limit in zip(spans, cabin_clear)
+        ):
+            errors.append(
+                f"Body shell box at {center} stands inside the cabin, "
+                "where the seats and the sitters are"
+            )
+
     door_panels = [part for part in result.parts if part.role == "door_panel"]
     if len(door_panels) != 2:
         errors.append("The car carries exactly two front door panels")
@@ -1661,11 +1918,25 @@ def validate_result(result: BuildResult) -> ValidationReport:
         child_roles = sorted(
             part.role for part in result.parts if part.obj.parent is pivot.obj
         )
-        if child_roles != ["door_glass", "door_handle", "door_panel"]:
-            errors.append(
-                f"Door leaf pivot {name} must own one panel, one glass "
-                "and the handle that opens it"
-            )
+        for required in ("door_panel", "door_glass", "door_handle"):
+            if child_roles.count(required) != 1:
+                errors.append(
+                    f"Door leaf pivot {name} must own exactly one "
+                    f"{required} - it is what swings"
+                )
+        # Anything ELSE the leaf owns has to be damage. The rule used to be
+        # an exact list of three, which was right until the flank's dents
+        # and rust had to move onto the leaves for the same reason the
+        # handle did: a doorway is a hole now, and a mark drawn on the body
+        # inside that hole hangs in mid-air the moment the door opens.
+        for role in child_roles:
+            if role not in (
+                "door_panel", "door_glass", "door_handle", "dents", "rust"
+            ):
+                errors.append(
+                    f"Door leaf pivot {name} owns an unexpected {role}; "
+                    "only the leaf itself and its damage may swing"
+                )
 
     bounds_min, bounds_max = mesh_world_bounds(part.obj for part in result.parts)
     size = bounds_max - bounds_min

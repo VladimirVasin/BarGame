@@ -410,6 +410,149 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// The boarding clip has to PLAY during the boarding, which sounds
+        /// like nothing to assert until it does not.
+        ///
+        /// Every clip hangs off one manual graph, and one Evaluate advances
+        /// all of them whether the mixer is listening or not. The board clip
+        /// used to be seeked to zero at the start of the DISMOUNT and then
+        /// left running through the dismount and the walk, so by the time
+        /// its own phase began it stood five seconds into two and a half and
+        /// was clamped on its last key - the seated drive pose. He finished
+        /// getting in before the door had opened, in mid-air, and then slid
+        /// into the car already sitting down.
+        ///
+        /// Nothing caught it: the timeline tests are pure arithmetic, and
+        /// the beat test above skips the root height during Boarding on
+        /// purpose. So this measures the POSE, against two references taken
+        /// from the same run rather than against typed constants.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Boarding_HeIsStillStandingWhenTheDoorReachesFullOpen()
+        {
+            var root = new GameObject("Ferryman Boarding Pose Test");
+            try
+            {
+                Harness harness = BuildHarness(root.transform);
+                LastRouteFerrymanPresentation ferryman = harness.Ferryman;
+                var registry = ferryman
+                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
+                        true);
+
+                // Batch mode draws nothing, and a culled Animator writes no
+                // bone at all - the entire rig reads back in its bind pose,
+                // which looks exactly like a clip with no keys. Every
+                // measurement below is meaningless without this line.
+                registry.Animator.cullingMode =
+                    AnimatorCullingMode.AlwaysAnimate;
+
+                Assert.That(ferryman.TryBeginBoarding(), Is.True);
+
+                // BOOTS, not the pelvis. Every pose in this library is
+                // authored as bone ROTATIONS, so the pelvis barely leaves
+                // its bind height whatever he is doing - measured, it moves
+                // 0.07 m between walking and driving, which is inside the
+                // walk's own bob and proves nothing. His feet move 0.46 m,
+                // because the drive pose puts them forward on the pedals
+                // while the stand pose has them on the sole plane. So the
+                // lower boot's height above his own root is the signal.
+                float plantedAnkle = float.MinValue;
+                float ankleAtOpenDoor = float.NaN;
+                float seatDistanceAtOpenDoor = float.NaN;
+                for (int step = 0;
+                     step < BoardingSteps && !ferryman.IsDriving;
+                     step++)
+                {
+                    yield return null;
+                    float ankle = Mathf.Min(
+                        registry.LeftFoot.position.y,
+                        registry.RightFoot.position.y) -
+                        ferryman.transform.position.y;
+                    if (ferryman.Phase ==
+                        LastRouteFerrymanPhase.WalkingToDoor)
+                    {
+                        // The highest the LOWER boot ever gets while he is
+                        // walking, so the reference is the top of a stride
+                        // rather than a lucky frame.
+                        plantedAnkle = Mathf.Max(plantedAnkle, ankle);
+                    }
+
+                    if (float.IsNaN(ankleAtOpenDoor) &&
+                        ferryman.Phase ==
+                            LastRouteFerrymanPhase.Boarding &&
+                        harness.Doors.DriverOpenness > 0.99f)
+                    {
+                        ankleAtOpenDoor = ankle;
+                        Vector3 toSeat =
+                            harness.Car.DriverSeatAnchor.position -
+                            ferryman.transform.position;
+                        toSeat.y = 0f;
+                        seatDistanceAtOpenDoor = toSeat.magnitude;
+                    }
+                }
+
+                Assert.That(ferryman.IsDriving, Is.True);
+                float pedalAnkle = Mathf.Min(
+                    registry.LeftFoot.position.y,
+                    registry.RightFoot.position.y) -
+                    ferryman.transform.position.y;
+
+                Assert.That(
+                    ankleAtOpenDoor,
+                    Is.Not.NaN,
+                    "The driver's door never reached full open, so there " +
+                    "is nothing to measure the pose against.");
+
+                // The two references have to be tellable apart, or
+                // everything below would pass on a rig that never moved -
+                // which is exactly what a culled Animator gives you.
+                float lift = pedalAnkle - plantedAnkle;
+                Assert.That(
+                    lift,
+                    Is.GreaterThan(0.10f),
+                    $"Walking ({plantedAnkle:0.###} m) and driving " +
+                    $"({pedalAnkle:0.###} m) put his boots at the same " +
+                    "height above his root, so this test cannot tell the " +
+                    "two poses apart - most likely the Animator wrote no " +
+                    "bones at all.");
+
+                // The door is fully open at phase 0.34 and the root does not
+                // start moving until 0.36, so at this instant he is still
+                // outside, on the lot, reaching for a door he has just
+                // pulled. Boots anywhere near the pedals here is the old
+                // bug: the clip clamped on its final key.
+                Assert.That(
+                    ankleAtOpenDoor,
+                    Is.LessThan(plantedAnkle + (lift * 0.25f)),
+                    $"When the door reached full open his boots were " +
+                    $"{ankleAtOpenDoor:0.###} m above his root, against " +
+                    $"{plantedAnkle:0.###} m on his feet and " +
+                    $"{pedalAnkle:0.###} m on the pedals: he is taking the " +
+                    "driving pose in mid-air before he has moved an inch " +
+                    "towards the car.");
+
+                // And he really had not moved yet - the complaint was that
+                // the pose arrives early, not that the metres do.
+                Assert.That(
+                    seatDistanceAtOpenDoor,
+                    Is.GreaterThan(1.0f),
+                    "He was already most of the way into the cabin by the " +
+                    "time the door finished opening.");
+
+                Assert.That(
+                    Vector3.Distance(
+                        registry.Pelvis.position,
+                        harness.Car.DriverSeatAnchor.position),
+                    Is.LessThan(SeatTolerance),
+                    "and he still has to end up on the drawn seat.");
+            }
+            finally
+            {
+                Object.Destroy(root);
+            }
+        }
+
         [UnityTest]
         public IEnumerator PassengerSeat_OpensOnlyOnceHeIsBehindTheWheel()
         {
@@ -570,8 +713,110 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// The throw is a THROW - the whole arm, not the wrist.
+        ///
+        /// It used to be fourteen degrees of elbow and thirty-six of
+        /// wrist, with the shoulder and clavicle not keyed at all, so the
+        /// coin moved and the man holding it did not. Nothing caught that,
+        /// because the only coin test compares the coin against the palm
+        /// anchor it is WRITTEN from - which agrees with itself whatever
+        /// the arm is doing, and agrees just as well when the Animator is
+        /// culled and the whole rig is sitting in its bind pose.
+        ///
+        /// So this measures the palm against the man: how far it travels
+        /// over a loop, and that the other hand does not move while it
+        /// happens.
+        /// </summary>
         [UnityTest]
-        public IEnumerator HeSwingsOneLegAtATimeUnderHisOwnLamp()
+        public IEnumerator Toss_SwingsTheWholeArmAndLeavesTheBraceOnTheBonnet()
+        {
+            var root = new GameObject("Ferryman Toss Test");
+            try
+            {
+                Harness harness = BuildHarness(root.transform);
+                var registry = harness.Ferryman
+                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
+                        true);
+                var anchors = harness.Ferryman
+                    .GetComponentInChildren<LastRouteFerrymanRigAnchors>(
+                        true);
+                Assert.That(anchors, Is.Not.Null);
+
+                // Without this the Animator writes no bone at all in batch
+                // mode and every sample below is the bind pose.
+                registry.Animator.cullingMode =
+                    AnimatorCullingMode.AlwaysAnimate;
+
+                Transform root3D = harness.Ferryman.transform;
+                float lowestPalm = float.MaxValue;
+                float highestPalm = float.MinValue;
+                float shoulderToPalmAtTop = 0f;
+                var braceSamples = new System.Collections.Generic.List<
+                    Vector3>();
+                for (int step = 0; step < IdleSteps; step++)
+                {
+                    yield return null;
+                    float palm = anchors.CoinRestAnchor.position.y -
+                                 root3D.position.y;
+                    if (palm > highestPalm)
+                    {
+                        highestPalm = palm;
+                        shoulderToPalmAtTop = palm;
+                    }
+
+                    lowestPalm = Mathf.Min(lowestPalm, palm);
+                    braceSamples.Add(
+                        registry.Pelvis.InverseTransformPoint(
+                            anchors.CoatHemAnchor.position));
+                }
+
+                // Half a metre of hand is the whole point of the change.
+                // The old wrist-only toss moved it about six centimetres.
+                float travel = highestPalm - lowestPalm;
+                Assert.That(
+                    travel,
+                    Is.GreaterThan(0.50f),
+                    $"His coin hand only travels {travel:0.###} m over a " +
+                    "whole wait loop. The toss is supposed to read as a " +
+                    "man throwing a coin, not as a man twitching a wrist.");
+
+                // And it goes UP, rather than merely being wide.
+                Assert.That(
+                    shoulderToPalmAtTop,
+                    Is.GreaterThan(registry.Head.position.y -
+                                   root3D.position.y - 0.25f),
+                    "At the top of the throw his palm should be up around " +
+                    "his own cap, not out at his side.");
+
+                // The right hand is braced on the bonnet with three
+                // millimetres to spare, and it hangs off the chest - so a
+                // throw that turns the torso takes it off the metal. It is
+                // measured in the pelvis's own space so his breathing does
+                // not read as drift.
+                Vector3 min = braceSamples[0];
+                Vector3 max = braceSamples[0];
+                foreach (Vector3 sample in braceSamples)
+                {
+                    min = Vector3.Min(min, sample);
+                    max = Vector3.Max(max, sample);
+                }
+
+                Assert.That(
+                    (max - min).magnitude,
+                    Is.LessThan(0.05f),
+                    $"His coat and therefore his hips wander {max - min} " +
+                    "during the toss: the throw has got into the torso, " +
+                    "and the bracing palm will be off the bonnet.");
+            }
+            finally
+            {
+                Object.Destroy(root);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator HeSwingsOneLegAtATimeAndCarriesNoLightOfHisOwn()
         {
             var root = new GameObject("Ferryman Idle Test");
             try
@@ -593,36 +838,21 @@ namespace BarPromenade.Tests.PlayMode
                 registry.Animator.cullingMode =
                     AnimatorCullingMode.AlwaysAnimate;
 
-                // The lamp. He is the darkest thing in the game sitting on
-                // an unlit lot, so without a fixture of his own he reads as
-                // a hole rather than as a man - and it has to hang OUTSIDE
-                // the staged art, which is validated to carry no lights at
-                // all.
+                // No light of his own, anywhere. He used to be handed a
+                // bare Point with no fixture drawn for it, parented beside
+                // him and rewritten every LateUpdate so it walked the lot
+                // at his shoulder - a patch of warmth following a man
+                // around in the dark with nothing casting it. What lights
+                // him now is a head on the island's own mast, built by
+                // CityDistrictPointOfInterestWorldBuilder and aimed at the
+                // car, so it belongs to the place and stays where it is.
                 Transform ferrymanRoot = harness.Ferryman.transform.parent;
                 Assert.That(ferrymanRoot, Is.Not.Null);
-                Light[] lights =
-                    ferrymanRoot.GetComponentsInChildren<Light>(true);
                 Assert.That(
-                    lights.Length,
-                    Is.EqualTo(1),
-                    "The Ferryman is meant to have exactly one lamp.");
-                Light lamp = lights[0];
-                Assert.That(lamp.type, Is.EqualTo(LightType.Point));
-                Assert.That(lamp.shadows, Is.EqualTo(LightShadows.None));
-                Assert.That(
-                    harness.Ferryman
-                        .GetComponentInChildren<Light>(true),
-                    Is.Null,
-                    "The staged art must stay passive; the lamp belongs " +
-                    "to the runtime root beside it.");
-
-                // Above his cap rather than under it: the design draws no
-                // eyes and leans on the cap brim's own shadow, and a lamp
-                // from below is the one angle that would argue with it.
-                Assert.That(
-                    lamp.transform.position.y,
-                    Is.GreaterThan(registry.Head.position.y),
-                    "The lamp has to rake down over the brim.");
+                    ferrymanRoot.GetComponentsInChildren<Light>(true),
+                    Is.Empty,
+                    "Nothing under the Ferryman may emit: his light is a " +
+                    "fixture on the lot, not a component on the man.");
 
                 // And the legs. He kicks one boot off the bumper at a
                 // time, which is what lets the perch stay measured against

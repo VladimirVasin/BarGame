@@ -1175,18 +1175,45 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 root.GetComponentsInChildren<Collider>(true).Length,
                 Is.GreaterThan(4));
-            // The two authored exceptions to the light-free public
-            // places: the drying yard's night-scaled pole floodlight
-            // and the last route island's mast floodlight, each with
-            // its fog halo.
+            // The authored exceptions to the light-free public places:
+            // the drying yard's night-scaled pole floodlight, the last
+            // route island's mast floodlight, and - only where the island
+            // found room to park the Ferryman's car - a second head on
+            // that same mast turned on it. Each with its fog halo.
             Light[] siteLights =
                 root.GetComponentsInChildren<Light>(true);
-            Assert.That(siteLights, Has.Length.EqualTo(2));
-            var expectedLightNames = new[]
+            var expectedLightNames = new List<string>
             {
                 "Drying Yard Floodlight Light",
                 "Island Mast Floodlight Light",
             };
+            // Asked of the LAYOUT rather than of the lights that turned up,
+            // or the count below would agree with whatever was built.
+            for (int index = 0;
+                 index < layout.DistrictPointsOfInterest.Count;
+                 index++)
+            {
+                CityDistrictPointOfInterestDescriptor island =
+                    layout.DistrictPointsOfInterest[index];
+                if (island.Kind !=
+                    CityDistrictPointOfInterestKind
+                        .NightlifeLastRouteIsland)
+                {
+                    continue;
+                }
+
+                if (CityDistrictPointOfInterestWorldBuilder
+                        .TryDescribeFerrymanCarStance(island, out _))
+                {
+                    expectedLightNames.Add("Ferryman Car Floodlight Light");
+                }
+            }
+
+            Assert.That(
+                siteLights,
+                Has.Length.EqualTo(expectedLightNames.Count),
+                "The public places carry no lights beyond the two mast " +
+                "floodlights and the drying yard pole.");
             var floodlightHalos = new List<CityLightHalo>();
             foreach (string expectedName in expectedLightNames)
             {
@@ -1217,9 +1244,15 @@ namespace BarPromenade.Tests.PlayMode
                 floodlightHalos.Add(floodlightHalo);
             }
 
+            // One fog halo per floodlight and nothing else emitting: the
+            // count follows the fixtures found above rather than a typed
+            // number, because the island's second head only exists where
+            // there is a car parked for it to light.
             ParticleSystem[] siteParticles =
                 root.GetComponentsInChildren<ParticleSystem>(true);
-            Assert.That(siteParticles, Has.Length.EqualTo(2));
+            Assert.That(
+                siteParticles,
+                Has.Length.EqualTo(floodlightHalos.Count));
             foreach (ParticleSystem particles in siteParticles)
             {
                 Assert.That(
@@ -1349,9 +1382,23 @@ namespace BarPromenade.Tests.PlayMode
                     "The last-route canopy must not retain neon strips.");
             }
 
-            // The island keeps no neon of its own; its single emissive
-            // surface is the mast service floodlight's lens, which
-            // dies by day with the rest of the electric glow.
+            // The island keeps no neon of its own. Its emissive surfaces
+            // are lamp lenses and nothing else: the mast's service
+            // floodlight, which dies by day with the rest of the electric
+            // glow, and - only where a car is parked for it to light - the
+            // second head on that same mast turned on the Ferryman. That
+            // one deliberately does NOT die by day, so its lens is kept
+            // out of the glow registry rather than reading dead at noon
+            // while the head is still throwing light on him.
+            bool hasCarHead =
+                recipe.Find("Ferryman Floodlight Head") != null;
+            string[] allowedLenses = hasCarHead
+                ? new[]
+                {
+                    "Island Floodlight Lens",
+                    "Ferryman Floodlight Lens"
+                }
+                : new[] { "Island Floodlight Lens" };
             Renderer[] renderers =
                 recipe.GetComponentsInChildren<Renderer>(true);
             Assert.That(renderers, Is.Not.Empty);
@@ -1363,8 +1410,8 @@ namespace BarPromenade.Tests.PlayMode
                 {
                     emissiveCount++;
                     Assert.That(
-                        renderers[index].name,
-                        Is.EqualTo("Island Floodlight Lens"),
+                        allowedLenses,
+                        Has.Member(renderers[index].name),
                         $"'{renderers[index].name}' must be " +
                         "non-emissive.");
                 }
@@ -1372,9 +1419,9 @@ namespace BarPromenade.Tests.PlayMode
 
             Assert.That(
                 emissiveCount,
-                Is.EqualTo(1),
-                "The mast floodlight lens is the island's only " +
-                "emissive surface.");
+                Is.EqualTo(allowedLenses.Length),
+                "The mast's floodlight lenses are the island's only " +
+                "emissive surfaces.");
 
             Transform board = AssertRequiredChild(
                 recipe,

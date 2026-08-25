@@ -239,6 +239,67 @@ namespace BarPromenade
         private static readonly Vector3 IslandFloodlightAimTarget =
             new Vector3(1.60f, 0.60f, 1.30f);
 
+        // The mast itself, so the second head can be hung off it without
+        // the three numbers being typed twice.
+        private const float MastLocalX = -2.75f;
+        private const float MastLocalZ = -1.25f;
+        private const float MastHalfWidth = 0.17f;
+
+        // The SECOND head on that mast - the one that exists for a person
+        // rather than for a place.
+        //
+        // The Ferryman used to carry his own light: a bare Point with no
+        // fixture drawn anywhere, parented beside him and rewritten every
+        // frame so it walked the lot with him. It read as what it was, a
+        // patch of warmth following a man around in the dark with nothing
+        // casting it. This is the same job done by something that exists:
+        // a working head bolted to the one working fixture on the island,
+        // turned on the car.
+        //
+        // Warm against its neighbour's cold service white, because the two
+        // are doing different jobs - that one serves the empty middle, this
+        // one serves the only man left on the island.
+        private static readonly Color FerrymanFloodlightLightColor =
+            new Color(1.00f, 0.87f, 0.66f);
+        private static readonly Color FerrymanFloodlightGlow =
+            new Color(3.90f, 3.39f, 2.57f);
+
+        /// <summary>
+        /// Between the door bulb (64-110 over 7-8 m) and the communal
+        /// floodlight (150 over 16 m), which is where a head that has to
+        /// throw the width of a lot but land as a POOL belongs. The narrow
+        /// cone below is what keeps the old lamp's one real virtue - the
+        /// warmth stays on him instead of washing the whole lot.
+        /// </summary>
+        private const float FerrymanFloodlightNightIntensity = 78f;
+
+        /// <summary>
+        /// It does not switch off at dawn, and that is inherited rather
+        /// than invented: the light he used to carry held a daytime floor
+        /// for the stated reason that he has to be lit whenever anybody
+        /// walks up to him. The cemetery lodge's porch bulb is the same
+        /// argument. Its neighbour on this mast stays night-only.
+        /// </summary>
+        private const float FerrymanFloodlightDayIntensity = 26f;
+        private const float FerrymanFloodlightRange = 14f;
+        private const float FerrymanFloodlightSpotAngle = 34f;
+        private const float FerrymanFloodlightInnerSpotAngle = 18f;
+
+        /// <summary>
+        /// Below the service head at 4.42 and well above his cap. The
+        /// height is the load-bearing part: the design draws him no eyes
+        /// and leans on the cap brim's own shadow, so the light has to
+        /// rake DOWN over the brim. Lighting him from below is the one
+        /// angle that would argue with the face.
+        /// </summary>
+        private const float FerrymanFloodlightHeadHeight = 3.95f;
+        private const float FerrymanFloodlightBracketReach = 0.55f;
+
+        /// <summary>Aimed at the bonnet he sits on rather than at the
+        /// paving, so the pool contains the perch, the driver's flank and
+        /// the door he walks to.</summary>
+        private const float FerrymanFloodlightAimHeight = 1.05f;
+
         /// <summary>Underside of the broken canopy roof slabs, where
         /// the torn rags hang from.</summary>
         private const float CanopyRagHangHeight = 3.49f;
@@ -1011,7 +1072,7 @@ namespace BarPromenade
                 descriptor.Center,
                 forward,
                 ResolveHorizontalScale(publicBounds));
-            BuildRecipe(recipe, descriptor.Kind, true, false);
+            BuildRecipe(recipe, descriptor, true, false);
         }
 
         private static void BuildHomeExteriorSite(
@@ -1058,7 +1119,7 @@ namespace BarPromenade
                 localCenter,
                 localForward,
                 ResolveHorizontalScale(localBounds));
-            BuildRecipe(recipe, descriptor.Kind, false, true);
+            BuildRecipe(recipe, descriptor, false, true);
         }
 
         private static Transform CreateSiteRoot(
@@ -1171,11 +1232,11 @@ namespace BarPromenade
 
         private static void BuildRecipe(
             Transform parent,
-            CityDistrictPointOfInterestKind kind,
+            CityDistrictPointOfInterestDescriptor descriptor,
             bool colliders,
             bool homeExterior)
         {
-            switch (kind)
+            switch (descriptor.Kind)
             {
                 case CityDistrictPointOfInterestKind
                     .OldTownWaterworksCourt:
@@ -1202,11 +1263,12 @@ namespace BarPromenade
                     .NightlifeLastRouteIsland:
                     BuildLastRouteIsland(
                         parent,
+                        descriptor,
                         colliders,
                         homeExterior);
                     return;
                 default:
-                    throw new ArgumentOutOfRangeException(nameof(kind));
+                    throw new ArgumentOutOfRangeException(nameof(descriptor));
             }
         }
 
@@ -1791,6 +1853,7 @@ namespace BarPromenade
 
         private static void BuildLastRouteIsland(
             Transform parent,
+            CityDistrictPointOfInterestDescriptor descriptor,
             bool colliders,
             bool homeExterior)
         {
@@ -1974,6 +2037,7 @@ namespace BarPromenade
                 projection: SurfaceProjection.BoxXZ);
 
             BuildIslandMastFloodlight(parent, homeExterior);
+            BuildFerrymanCarFloodlight(parent, descriptor, homeExterior);
 
             if (colliders)
             {
@@ -2107,6 +2171,186 @@ namespace BarPromenade
                     IslandFloodlightNightIntensity,
                     halo);
             }
+        }
+
+        /// <summary>
+        /// Re-expresses a world point in the recipe root's own space.
+        ///
+        /// Every box on this island is authored in that space, and the
+        /// recipe is not just moved and turned but SCALED horizontally to
+        /// the lot it landed on - so undoing that scale is the difference
+        /// between aiming at the car and aiming near it. Derived from the
+        /// descriptor rather than read off the transform because the home
+        /// exterior vista builds the same recipe somewhere else entirely.
+        /// </summary>
+        private static Vector3 ToRecipeLocal(
+            CityDistrictPointOfInterestDescriptor descriptor,
+            Vector3 worldPoint)
+        {
+            float scale = ResolveHorizontalScale(descriptor.PublicBounds);
+            Vector3 delta =
+                Quaternion.Inverse(
+                    Quaternion.LookRotation(
+                        ResolveForward(descriptor),
+                        Vector3.up)) *
+                (worldPoint - descriptor.Center);
+            return new Vector3(delta.x / scale, delta.y, delta.z / scale);
+        }
+
+        /// <summary>
+        /// The mast's second head, turned on the Ferryman's car.
+        ///
+        /// Absent with the car, which is the whole point of hanging it off
+        /// a bearing rather than off a typed offset: the bay is fitted per
+        /// seed, so where the light has to point is a different direction
+        /// on every city and on some there is nothing to point at.
+        ///
+        /// The vista keeps the bracket, the housing and the dead lens for
+        /// the same reason its neighbour does, and the mast base already
+        /// owns the obstacle collider, so this adds none.
+        /// </summary>
+        private static void BuildFerrymanCarFloodlight(
+            Transform parent,
+            CityDistrictPointOfInterestDescriptor descriptor,
+            bool homeExterior)
+        {
+            if (!TryDescribeFerrymanCarStance(
+                    descriptor,
+                    out CityDryingYardNpcStance stance))
+            {
+                return;
+            }
+
+            var mast = new Vector3(
+                MastLocalX,
+                FerrymanFloodlightHeadHeight,
+                MastLocalZ);
+            Vector3 target = ToRecipeLocal(descriptor, stance.Position);
+            target.y = FerrymanFloodlightAimHeight;
+
+            var bearing = new Vector3(target.x - mast.x, 0f, target.z - mast.z);
+            if (bearing.sqrMagnitude < 0.0001f)
+            {
+                // The bay can never be inside the mast - it is fitted clear
+                // of the paving circle - but a normalize of a projected
+                // vector has silently returned identity on this file once
+                // already, and the hero rode a car facing world +Z for it.
+                return;
+            }
+
+            bearing.Normalize();
+            Vector3 head = mast + (bearing * FerrymanFloodlightBracketReach);
+            float yaw = Mathf.Atan2(bearing.x, bearing.z) * Mathf.Rad2Deg;
+            Vector3 arm = mast + (bearing * (MastHalfWidth +
+                (FerrymanFloodlightBracketReach - MastHalfWidth) * 0.5f));
+            AddBox(parent, "Ferryman Floodlight Bracket",
+                arm.x, arm.y, arm.z,
+                0.12f, 0.12f, FerrymanFloodlightBracketReach - MastHalfWidth,
+                NightlifeFrame, false, homeExterior,
+                yaw,
+                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+
+            Transform headRoot = new GameObject(
+                "Ferryman Floodlight Head").transform;
+            headRoot.SetParent(parent, false);
+            headRoot.localPosition = head;
+            headRoot.localRotation = Quaternion.LookRotation(
+                (target - head).normalized,
+                Vector3.up);
+
+            GameObject housing = RuntimePrimitiveFactory.CreateBox(
+                "Ferryman Floodlight Housing",
+                headRoot,
+                new Vector3(0f, 0f, -0.14f),
+                new Vector3(0.38f, 0.26f, 0.34f),
+                NightlifeFrame,
+                RuntimePrimitiveFactory.DefaultMaterial,
+                false);
+            ConfigureRenderer(housing, homeExterior);
+            CityPointOfInterestSurfaceAppearance.Apply(
+                housing.GetComponent<Renderer>(),
+                CityPointOfInterestSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXY,
+                NightlifeFrame);
+
+            // The hood. A bare lens on a mast reads as a chip of light; the
+            // shade is what says the throw is deliberate and downward.
+            GameObject hood = RuntimePrimitiveFactory.CreateBox(
+                "Ferryman Floodlight Hood",
+                headRoot,
+                new Vector3(0f, 0.15f, 0.06f),
+                new Vector3(0.44f, 0.04f, 0.30f),
+                NightlifeFrame,
+                RuntimePrimitiveFactory.DefaultMaterial,
+                false);
+            ConfigureRenderer(hood, homeExterior);
+            CityPointOfInterestSurfaceAppearance.Apply(
+                hood.GetComponent<Renderer>(),
+                CityPointOfInterestSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXY,
+                NightlifeFrame);
+
+            // Deliberately NOT registered in CityNightGlowRegistry, unlike
+            // its neighbour on this same mast. That registry lerps a
+            // registered emissive down to a tenth of itself under a day
+            // sky, which is right for a fixture that switches off and
+            // wrong for one that does not - and this one keeps a daytime
+            // floor, so the glass would read dead at noon while the head
+            // was still throwing light on him. The park chess lamp, the
+            // pier lantern and the yard spotlight all sit outside it for
+            // exactly this reason.
+            GameObject lens = RuntimePrimitiveFactory.CreateBox(
+                "Ferryman Floodlight Lens",
+                headRoot,
+                new Vector3(0f, 0f, 0.04f),
+                new Vector3(0.30f, 0.19f, 0.03f),
+                FerrymanFloodlightGlow,
+                CityNightResources.EmissiveMaterial,
+                false);
+            ConfigureRenderer(lens, homeExterior);
+
+            if (homeExterior)
+            {
+                return;
+            }
+
+            GameObject emitter = new GameObject(
+                "Ferryman Car Floodlight Light");
+            emitter.transform.SetParent(headRoot, false);
+            Light light = emitter.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = FerrymanFloodlightLightColor;
+            light.intensity = FerrymanFloodlightNightIntensity;
+            light.range = FerrymanFloodlightRange;
+            light.spotAngle = FerrymanFloodlightSpotAngle;
+            light.innerSpotAngle = FerrymanFloodlightInnerSpotAngle;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
+
+            GameObject haloObject = new GameObject(
+                "Ferryman Floodlight Source Halo");
+            haloObject.transform.SetParent(emitter.transform, false);
+            CityLightHalo halo = haloObject.AddComponent<CityLightHalo>();
+            halo.Initialize(
+                CityNightResources.AtmosphereMaterial,
+                0.52f,
+                1.55f,
+                new Color(
+                    FerrymanFloodlightLightColor.r * 4.2f,
+                    FerrymanFloodlightLightColor.g * 4.2f,
+                    FerrymanFloodlightLightColor.b * 4.2f,
+                    0.18f),
+                new Color(
+                    FerrymanFloodlightLightColor.r * 2.1f,
+                    FerrymanFloodlightLightColor.g * 2.1f,
+                    FerrymanFloodlightLightColor.b * 2.1f,
+                    0.05f));
+            CityNightSiteLightRegistry.Register(
+                light,
+                FerrymanFloodlightNightIntensity,
+                FerrymanFloodlightDayIntensity,
+                halo);
         }
 
         private static void BuildCanopyRags(

@@ -271,11 +271,11 @@ namespace BarPromenade
             graph = PlayableGraph.Create("Last Route Ferryman");
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
             mixer = AnimationMixerPlayable.Create(graph, InputCount);
-            waitPlayable = CreateClipPlayable(wait);
-            dismountPlayable = CreateClipPlayable(dismount);
-            walkPlayable = CreateClipPlayable(walk);
-            boardPlayable = CreateClipPlayable(board);
-            drivePlayable = CreateClipPlayable(drive);
+            waitPlayable = CreateClipPlayable(wait, false);
+            dismountPlayable = CreateClipPlayable(dismount, true);
+            walkPlayable = CreateClipPlayable(walk, true);
+            boardPlayable = CreateClipPlayable(board, true);
+            drivePlayable = CreateClipPlayable(drive, true);
             graph.Connect(waitPlayable, 0, mixer, WaitInput);
             graph.Connect(dismountPlayable, 0, mixer, DismountInput);
             graph.Connect(walkPlayable, 0, mixer, WalkInput);
@@ -326,9 +326,11 @@ namespace BarPromenade
                 dismountLengthSeconds,
                 walkSeconds,
                 boardLengthSeconds);
-            dismountPlayable.SetTime(0.0);
-            walkPlayable.SetTime(0.0);
-            boardPlayable.SetTime(0.0);
+            // Each clip is rewound by EnterPhase when its OWN beat starts.
+            // Rewinding all three here is what broke the boarding: the walk
+            // and the board were seeked a dismount and a walk too early and
+            // then left running, so both arrived at their phase already
+            // spent.
             EnterPhase(LastRouteFerrymanPhase.Dismounting);
             return true;
         }
@@ -477,12 +479,43 @@ namespace BarPromenade
                              (targetPelvisY - registry.Pelvis.position.y));
         }
 
-        private AnimationClipPlayable CreateClipPlayable(AnimationClip clip)
+        /// <summary>
+        /// Every clip but the wait loop is PARKED at speed zero until its
+        /// own beat begins.
+        ///
+        /// The graph is manual, and one <c>Evaluate</c> advances every
+        /// playable hanging off it whether the mixer is listening to it or
+        /// not. So a clip left running from Initialize is not waiting its
+        /// turn - it is playing to itself in the dark, and by the time the
+        /// mixer crosses into it, it is wherever that dead time left it.
+        ///
+        /// The board clip is 2.5 s long and its beat starts about 5 s in,
+        /// after the dismount and the walk round the car. It therefore used
+        /// to arrive CLAMPED ON ITS LAST KEY - the seated drive pose - so he
+        /// finished getting in before the door had finished opening, and
+        /// then slid into the car already sitting down. Every authored beat
+        /// between (reach, pull, duck under the roofline, fold into the
+        /// seat, pull the door shut) was skipped, and the three seat blends
+        /// the clip was authored around - 0.22 / 0.70 / 0.97, matched by
+        /// hand to this timeline's own 0.198 / 0.675 / 0.974 - never ran.
+        ///
+        /// <see cref="EnterPhase"/> rewinds and unparks each clip as its
+        /// phase begins, which is the idiom the park chess player already
+        /// uses for its one-shot.
+        /// </summary>
+        private AnimationClipPlayable CreateClipPlayable(
+            AnimationClip clip,
+            bool parked)
         {
             AnimationClipPlayable playable =
                 AnimationClipPlayable.Create(graph, clip);
             playable.SetApplyFootIK(false);
             playable.SetApplyPlayableIK(false);
+            if (parked)
+            {
+                playable.SetSpeed(0.0);
+            }
+
             return playable;
         }
 
@@ -492,6 +525,41 @@ namespace BarPromenade
             previousInput = currentInput;
             currentInput = ResolveInput(phase);
             blendElapsedSeconds = 0f;
+            StartClipForInput(currentInput);
+        }
+
+        /// <summary>
+        /// Rewinds the incoming clip to its first frame and lets it run.
+        ///
+        /// The OUTGOING clip is deliberately left where it stands rather
+        /// than parked or rewound: the crossfade still needs a pose to
+        /// blend out of for <see cref="BoardBlendSeconds"/>. The dismount
+        /// ends exactly on its own last frame, and the walk loop should
+        /// hold the stride it was in rather than snap to a base pose
+        /// halfway through a blend. Nothing needs re-parking afterwards
+        /// because the phases only ever run forwards, once each.
+        /// </summary>
+        private void StartClipForInput(int input)
+        {
+            switch (input)
+            {
+                case DismountInput:
+                    dismountPlayable.SetTime(0.0);
+                    dismountPlayable.SetSpeed(1.0);
+                    break;
+                case WalkInput:
+                    walkPlayable.SetTime(0.0);
+                    walkPlayable.SetSpeed(1.0);
+                    break;
+                case BoardInput:
+                    boardPlayable.SetTime(0.0);
+                    boardPlayable.SetSpeed(1.0);
+                    break;
+                case DriveInput:
+                    drivePlayable.SetTime(0.0);
+                    drivePlayable.SetSpeed(1.0);
+                    break;
+            }
         }
 
         private static int ResolveInput(LastRouteFerrymanPhase phase)

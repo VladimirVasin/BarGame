@@ -364,6 +364,109 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// The light that lands on him is a FIXTURE, and it is aimed.
+        ///
+        /// He used to carry a bare Point with nothing drawn for it, hung
+        /// beside him and rewritten every frame so it walked the lot at his
+        /// shoulder. What replaced it is a second head on the island's own
+        /// route mast - which means it cannot be authored as an offset,
+        /// because the car's bay is fitted per seed and is in a different
+        /// direction on every city. So the thing worth proving is that the
+        /// head actually points at the car it is there to light.
+        /// </summary>
+        [Test]
+        public void MastFloodlight_TurnsItsSecondHeadOnTheCar()
+        {
+            CityLayout layout =
+                GenerateLayout(GameSessionState.DefaultCitySeed);
+            CityDistrictPointOfInterestDescriptor island =
+                RequireIsland(layout);
+            Assert.That(
+                CityDistrictPointOfInterestWorldBuilder
+                    .TryDescribeFerrymanCarStance(
+                        island,
+                        out CityDryingYardNpcStance stance),
+                Is.True,
+                "The production seed is meant to park the car.");
+
+            var root = new GameObject("Ferryman Floodlight Test");
+            try
+            {
+                CityDistrictPointOfInterestWorldBuilder.Build(
+                    root.transform,
+                    layout);
+
+                Transform head = FindDescendant(
+                    root.transform,
+                    "Ferryman Floodlight Head");
+                Assert.That(
+                    head,
+                    Is.Not.Null,
+                    "The mast carries no head for the car.");
+
+                Light[] lights = head.GetComponentsInChildren<Light>(true);
+                Assert.That(lights.Length, Is.EqualTo(1));
+                Assert.That(
+                    lights[0].type,
+                    Is.EqualTo(LightType.Spot),
+                    "A directed fixture, not a bare bulb: the narrow cone " +
+                    "is what keeps the warmth on him rather than on the lot.");
+                Assert.That(
+                    lights[0].shadows,
+                    Is.EqualTo(LightShadows.None));
+
+                // Aimed at the car, and from ABOVE it. The height is load
+                // bearing: he is drawn no eyes and leans on the cap brim's
+                // own shadow, so the throw has to rake down over the brim.
+                Assert.That(
+                    head.position.y,
+                    Is.GreaterThan(stance.Position.y + 2.0f),
+                    "The head has to sit well above his cap.");
+
+                Vector3 toCar = stance.Position - head.position;
+                Assert.That(
+                    Vector3.Angle(head.forward, toCar),
+                    Is.LessThan(12f),
+                    $"The head points {head.forward} while the car it is " +
+                    $"there to light is {toCar.normalized} away. The recipe " +
+                    "root is SCALED horizontally, so an aim that forgets " +
+                    "to undo that scale lands beside the car rather than " +
+                    "on it.");
+
+                // The mast base already owns the obstacle collider; a light
+                // may not quietly add another thing to walk into.
+                Assert.That(
+                    head.GetComponentsInChildren<Collider>(true),
+                    Is.Empty,
+                    "The head must not add a collider of its own.");
+
+                // And nothing about him emits any more.
+                Assert.That(
+                    FindDescendant(root.transform, "Ferryman Lamp"),
+                    Is.Null,
+                    "The light that followed him around should be gone.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        private static Transform FindDescendant(Transform parent, string name)
+        {
+            foreach (Transform child in
+                     parent.GetComponentsInChildren<Transform>(true))
+            {
+                if (child.name == name)
+                {
+                    return child;
+                }
+            }
+
+            return null;
+        }
+
         private static void AssertOnTheIsland(
             CityDistrictPointOfInterestDescriptor island,
             Vector3 position,

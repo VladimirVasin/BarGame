@@ -587,7 +587,7 @@
       "one_shot": false,
       "in_place": true,
       "authored_posture": "perched on the car's bonnet, right hand braced behind the hip, left forearm up with the palm open",
-      "gait": "four slow breaths, one coin flicked up and caught - released at 1/16 of the loop and caught at 5/16 - and three idle kicks of one leg at a time off the bumper",
+      "gait": "four slow breaths, one coin thrown with the whole arm and caught - wound down to the hip, released at 1/16 of the loop and caught at 5/16 on an arm at full stretch - and three idle kicks of one leg at a time off the bumper",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
@@ -844,5 +844,5 @@
       "seated_drop_m": 0.602997
     }
   ],
-  "build_signature": "0327cd5d363b0ef6fe37d9b018cf46de2c3b1574fcc48a85932c2a278bcd1436"
+  "build_signature": "54877d04fbdd4156615599c293e2f5f1bbe6c5b73da4b983fa75ac771272bd24"
 }

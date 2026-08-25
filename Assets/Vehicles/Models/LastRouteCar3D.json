@@ -15,10 +15,10 @@
     "wheelbase": 2.7,
     "wheel_radius": 0.34
   },
-  "mesh_count": 36,
-  "triangle_count": 1992,
+  "mesh_count": 40,
+  "triangle_count": 2100,
   "bounds_min": [
-    -0.932,
+    -0.94,
     -2.53,
     0.0
   ],
@@ -45,15 +45,15 @@
   "perch_drop_m": 0.505,
   "seated_headroom_m": 1.04,
   "cabin_floor_drop_m": 0.22,
-  "build_signature": "e607bdaf5dda26477657a3c870cfb57d791e0040a36b2fb21929fcbe60c41358",
+  "build_signature": "d76e171b2023d167ddd0592b25fdbbcfae1517a0b25b5fb181f19def70df042f",
   "parts": [
     {
       "name": "GEO_BodyShell",
       "role": "body_shell",
       "material_slot": "Body",
       "parent": "ROOT_Body",
-      "vertices": 152,
-      "triangles": 228
+      "vertices": 176,
+      "triangles": 264
     },
     {
       "name": "GEO_Bumpers",
@@ -92,8 +92,16 @@
       "role": "dents",
       "material_slot": "Body",
       "parent": "ROOT_Body",
-      "vertices": 32,
-      "triangles": 48
+      "vertices": 24,
+      "triangles": 36
+    },
+    {
+      "name": "GEO_DoorDriverDent",
+      "role": "dents",
+      "material_slot": "Body",
+      "parent": "PIVOT_DoorDriver",
+      "vertices": 8,
+      "triangles": 12
     },
     {
       "name": "GEO_DoorDriverGlass",
@@ -120,6 +128,14 @@
       "triangles": 24
     },
     {
+      "name": "GEO_DoorDriverRust",
+      "role": "rust",
+      "material_slot": "Rust",
+      "parent": "PIVOT_DoorDriver",
+      "vertices": 32,
+      "triangles": 48
+    },
+    {
       "name": "GEO_DoorPassengerGlass",
       "role": "door_glass",
       "material_slot": "Glass",
@@ -142,6 +158,14 @@
       "parent": "PIVOT_DoorPassenger",
       "vertices": 16,
       "triangles": 24
+    },
+    {
+      "name": "GEO_DoorPassengerRust",
+      "role": "rust",
+      "material_slot": "Rust",
+      "parent": "PIVOT_DoorPassenger",
+      "vertices": 24,
+      "triangles": 36
     },
     {
       "name": "GEO_Exhaust",
@@ -224,6 +248,14 @@
       "triangles": 12
     },
     {
+      "name": "GEO_InteriorShell",
+      "role": "interior_shell",
+      "material_slot": "Interior",
+      "parent": "ROOT_Body",
+      "vertices": 48,
+      "triangles": 72
+    },
+    {
       "name": "GEO_NumberPlate",
       "role": "number_plate",
       "material_slot": "Plate",
@@ -244,8 +276,8 @@
       "role": "rust",
       "material_slot": "Rust",
       "parent": "ROOT_Body",
-      "vertices": 120,
-      "triangles": 180
+      "vertices": 64,
+      "triangles": 96
     },
     {
       "name": "GEO_SeatDriver",
