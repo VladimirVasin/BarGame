@@ -421,9 +421,9 @@ MonoBehaviour:
     m_Center: {x: -0.000000059604645, y: 0.8749999, z: 0.033499986}
     m_Extent: {x: 0.75900006, y: 0.8749999, z: 0.18550003}
   sourceTriangleCount: 960
-  sourceGeneratorVersion: 3.1.0
+  sourceGeneratorVersion: 3.2.0
   designId: weigh_attendant_v1
-  buildSignature: 504d1ab2c8d33aa9172e75fe4abacffab8c4c3208ac3d9a940efd07c5d45b4e1
+  buildSignature: af3e4ffcdac371e24c50b3db42debfe4ce38625807c1a35ae1c3f827e9ee7312
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0

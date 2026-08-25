@@ -11,32 +11,49 @@ namespace BarPromenade
         /// for twenty years and where he stays unless asked.</summary>
         Waiting = 0,
 
-        /// <summary>Off the metal and round into the driver's seat. Three
-        /// quarters of a second, once, and not reversible.</summary>
-        Boarding = 1,
+        /// <summary>Off the metal and down onto the lot, with the car
+        /// coming up on its springs behind him.</summary>
+        Dismounting = 1,
 
-        /// <summary>Behind the wheel, waiting again.</summary>
-        Driving = 2
+        /// <summary>Round the nose to his own door, at the pace of a man
+        /// who has already waited twenty years.</summary>
+        WalkingToDoor = 2,
+
+        /// <summary>The handle, the door, the seat, and the door again.
+        /// Once, and not reversible.</summary>
+        Boarding = 3,
+
+        /// <summary>Behind the wheel, waiting again - now for a
+        /// passenger.</summary>
+        Driving = 4
     }
 
     /// <summary>
-    /// Drives the Ferryman through his three postures on one manual
+    /// Drives the Ferryman through his five postures on one manual
     /// PlayableGraph - the watchman/fisherman idiom, with a mixer instead
     /// of a single clip because he has somewhere to go.
     ///
     /// The clip library contains no root motion by contract, so the body
-    /// motion of the board transition is authored and the METRE it covers
-    /// is not: this component carries the root from the bonnet to the
-    /// driver's seat while the clip plays. Neither pose is a constant.
-    /// The perch comes from the car's own soles anchor and the seat is
-    /// solved by measuring where this rig actually puts its pelvis in the
-    /// drive pose and offsetting the root until that lands on the car's
-    /// seat anchor. Both therefore survive either generator moving.
+    /// motion of every transition is authored and the METRES it covers are
+    /// not: this component carries the root off the bonnet, round the car
+    /// and into the driver's seat while the clips play. None of those
+    /// places is a constant. The perch comes from the car's own soles
+    /// anchor, the walk from <see cref="LastRouteFerrymanBoardingPlan"/>
+    /// (which reads the car's anchors and rays the ground under each
+    /// point), and the seat is solved by measuring where this rig actually
+    /// puts its pelvis in the drive pose and offsetting the root until that
+    /// lands on the car's seat anchor. All of them therefore survive either
+    /// generator moving.
+    ///
+    /// The door is his too, and for the same reason the coin is: it has to
+    /// belong to the hand that is pulling it rather than to a second
+    /// free-running timer. Openness is a pure function of the board clip's
+    /// own progress, exactly as the coin's arc is a pure function of the
+    /// wait loop's.
     ///
     /// It also publishes the wait loop's own phase, because the coin has to
-    /// belong to the hand that is throwing it rather than to a second
-    /// free-running timer, and the only way to guarantee that is to read it
-    /// off the clip that is moving the hand.
+    /// belong to the hand that is throwing it, and the only way to
+    /// guarantee that is to read it off the clip that is moving the hand.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class LastRouteFerrymanPresentation : MonoBehaviour
@@ -67,20 +84,45 @@ namespace BarPromenade
         public const float TossReleasePhase = 0.0625f;
         public const float TossCatchPhase = 0.3125f;
 
-        /// <summary>How long the wait blends into the board transition.
-        /// Short: he is supposed to move the instant he is asked.</summary>
+        /// <summary>
+        /// How long one posture blends into the next. Short: he is supposed
+        /// to move the instant he is asked, and the two seams that need it
+        /// at all - the stand into the walk cycle, and the walk cycle into
+        /// the door - are a stride apart rather than a posture apart.
+        ///
+        /// The board does NOT blend out into the drive. That clip is
+        /// authored to close on the drive loop's own base pose, so there is
+        /// nothing at the far end to blend.
+        /// </summary>
         public const float BoardBlendSeconds = 0.12f;
 
+        /// <summary>
+        /// The pace of the walk round the car, in metres per second. A
+        /// shade quicker than the mourner's 1.05: she is grieving and he
+        /// has just been told yes.
+        /// </summary>
+        public const float WalkSpeedMetersPerSecond = 1.3f;
+
+        /// <summary>How much of the walk's last stretch is spent turning to
+        /// square up with the door.</summary>
+        public const float DockTurnFraction = 0.16f;
+
         private const int WaitInput = 0;
-        private const int BoardInput = 1;
-        private const int DriveInput = 2;
+        private const int DismountInput = 1;
+        private const int WalkInput = 2;
+        private const int BoardInput = 3;
+        private const int DriveInput = 4;
+        private const int InputCount = 5;
 
         private PlayableGraph graph;
         private AnimationMixerPlayable mixer;
         private AnimationClipPlayable waitPlayable;
+        private AnimationClipPlayable dismountPlayable;
+        private AnimationClipPlayable walkPlayable;
         private AnimationClipPlayable boardPlayable;
         private AnimationClipPlayable drivePlayable;
         private float waitLengthSeconds = 1f;
+        private float dismountLengthSeconds = 1f;
         private float boardLengthSeconds = 1f;
         private float playbackSpeed = 1f;
         private bool hasGraph;
@@ -89,18 +131,38 @@ namespace BarPromenade
         private Quaternion perchRotation;
         private Vector3 drivePosition;
         private Quaternion driveRotation;
-        private float boardElapsedSeconds;
+        private LastRouteFerrymanBoardingPlan boardingPlan;
+        private LastRouteFerrymanBoardingTimeline boarding;
+        private LastRouteCarDoors doors;
+        private LastRouteCarSuspension suspension;
+        private Quaternion landingRotation;
+        private Quaternion dockRotation;
+        private float firstLegLength;
+        private float secondLegLength;
         private float blendElapsedSeconds;
+        private int previousInput = WaitInput;
+        private int currentInput = WaitInput;
 
         public bool IsInitialized { get; private set; }
         public LastRouteFerrymanPhase Phase { get; private set; }
         public bool IsWaiting => Phase == LastRouteFerrymanPhase.Waiting;
         public bool IsDriving => Phase == LastRouteFerrymanPhase.Driving;
 
+        /// <summary>True once his boots are off the car - the moment the
+        /// answer has visibly been given and the menu has nothing left to
+        /// hold the player for.</summary>
+        public bool HasLeftTheBonnet =>
+            Phase != LastRouteFerrymanPhase.Waiting &&
+            (Phase != LastRouteFerrymanPhase.Dismounting ||
+             (boarding != null &&
+              boarding.PhaseProgress >=
+                  LastRouteFerrymanBoardingTimeline.LandingPhase));
+
+        public LastRouteFerrymanBoardingPlan BoardingPlan => boardingPlan;
+
         /// <summary>
         /// The wait loop's own position, in `[0, 1)`. Zero before the graph
-        /// exists and frozen once he boards, so a reader never has to
-        /// special-case either.
+        /// exists, so a reader never has to special-case it.
         /// </summary>
         public float NormalizedTime
         {
@@ -184,16 +246,21 @@ namespace BarPromenade
             }
 
             AnimationClip wait = registry.IdleClip;
+            AnimationClip walk = registry.WalkClip;
             AnimationClip board = registry.ActionClip;
             AnimationClip drive = registry.SitClip;
-            if (wait == null || board == null || drive == null)
+            AnimationClip dismount = anchors.DismountClip;
+            if (wait == null || walk == null || board == null ||
+                drive == null || dismount == null)
             {
                 throw new InvalidOperationException(
-                    "The Ferryman prefab needs its wait loop, its board " +
-                    "transition and its driving loop.");
+                    "The Ferryman prefab needs its wait loop, his drop off " +
+                    "the bonnet, his walk, his board transition and his " +
+                    "driving loop.");
             }
 
             waitLengthSeconds = Mathf.Max(0.0001f, wait.length);
+            dismountLengthSeconds = Mathf.Max(0.0001f, dismount.length);
             boardLengthSeconds = Mathf.Max(0.0001f, board.length);
             playbackSpeed = Mathf.Max(0.05f, stance.PlaybackSpeed);
             registry.ApplyPaletteVariant(stance.PaletteVariant);
@@ -203,11 +270,15 @@ namespace BarPromenade
 
             graph = PlayableGraph.Create("Last Route Ferryman");
             graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
-            mixer = AnimationMixerPlayable.Create(graph, 3);
+            mixer = AnimationMixerPlayable.Create(graph, InputCount);
             waitPlayable = CreateClipPlayable(wait);
+            dismountPlayable = CreateClipPlayable(dismount);
+            walkPlayable = CreateClipPlayable(walk);
             boardPlayable = CreateClipPlayable(board);
             drivePlayable = CreateClipPlayable(drive);
             graph.Connect(waitPlayable, 0, mixer, WaitInput);
+            graph.Connect(dismountPlayable, 0, mixer, DismountInput);
+            graph.Connect(walkPlayable, 0, mixer, WalkInput);
             graph.Connect(boardPlayable, 0, mixer, BoardInput);
             graph.Connect(drivePlayable, 0, mixer, DriveInput);
             AnimationPlayableOutput
@@ -217,8 +288,13 @@ namespace BarPromenade
             hasGraph = true;
 
             SolveDriverSeat(registry, car);
+            ResolveCarMechanisms(car);
+            SolveWalk(car);
 
-            SetWeights(1f, 0f, 0f);
+            previousInput = WaitInput;
+            currentInput = WaitInput;
+            blendElapsedSeconds = BoardBlendSeconds;
+            ApplyWeights();
             waitPlayable.SetTime(
                 Mathf.Repeat(stance.PhaseOffsetSeconds, wait.length));
             graph.Evaluate(0f);
@@ -231,8 +307,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// He said yes. Off the bonnet and into the car - once; a second
-        /// call is ignored rather than restarting the jump.
+        /// He said yes. Off the bonnet, round the car and into it - once; a
+        /// second call is ignored rather than restarting the walk.
         /// </summary>
         public bool TryBeginBoarding()
         {
@@ -242,10 +318,18 @@ namespace BarPromenade
                 return false;
             }
 
-            Phase = LastRouteFerrymanPhase.Boarding;
-            boardElapsedSeconds = 0f;
-            blendElapsedSeconds = 0f;
+            float walkSeconds = WalkSpeedMetersPerSecond > 0f
+                ? (firstLegLength + secondLegLength) /
+                  WalkSpeedMetersPerSecond
+                : 0f;
+            boarding = new LastRouteFerrymanBoardingTimeline(
+                dismountLengthSeconds,
+                walkSeconds,
+                boardLengthSeconds);
+            dismountPlayable.SetTime(0.0);
+            walkPlayable.SetTime(0.0);
             boardPlayable.SetTime(0.0);
+            EnterPhase(LastRouteFerrymanPhase.Dismounting);
             return true;
         }
 
@@ -286,7 +370,7 @@ namespace BarPromenade
 
             Vector3 previousPosition = transform.position;
             Quaternion previousRotation = transform.rotation;
-            SetWeights(0f, 0f, 1f);
+            SetWeightsForInput(DriveInput);
             drivePlayable.SetTime(0.0);
             transform.SetPositionAndRotation(Vector3.zero, driveRotation);
             graph.Evaluate(0f);
@@ -302,6 +386,55 @@ namespace BarPromenade
             transform.SetPositionAndRotation(
                 previousPosition,
                 previousRotation);
+        }
+
+        /// <summary>
+        /// The doors and the springs belong to the car, not to him - but
+        /// the moments they move belong to his clips, so he holds a
+        /// reference to each. Both are optional: a car raised straight from
+        /// its prefab, as the placement fixtures do, has neither, and he
+        /// still gets in.
+        /// </summary>
+        private void ResolveCarMechanisms(LastRouteCarAssetRegistry car)
+        {
+            doors = car.GetComponentInParent<LastRouteCarDoors>();
+            suspension = car.GetComponentInParent<LastRouteCarSuspension>();
+        }
+
+        /// <summary>
+        /// The three places he stands between the two seats, and the two
+        /// legs of walk between them.
+        /// </summary>
+        private void SolveWalk(LastRouteCarAssetRegistry car)
+        {
+            boardingPlan = LastRouteFerrymanBoardingPlan.Create(
+                car,
+                car.transform.position.y);
+            if (!boardingPlan.IsPresent)
+            {
+                // No plan means no walk: he drops where he stands and gets
+                // in from there. Degraded rather than broken, because a
+                // Ferryman who cannot board at all is a dead end in the
+                // one conversation the island has.
+                landingRotation = perchRotation;
+                dockRotation = driveRotation;
+                firstLegLength = 0f;
+                secondLegLength = 0f;
+                return;
+            }
+
+            landingRotation = Quaternion.LookRotation(
+                boardingPlan.LandingFacing,
+                Vector3.up);
+            dockRotation = Quaternion.LookRotation(
+                boardingPlan.DoorDockFacing,
+                Vector3.up);
+            firstLegLength = Vector3.Distance(
+                boardingPlan.LandingPosition,
+                boardingPlan.ApproachCorner);
+            secondLegLength = Vector3.Distance(
+                boardingPlan.ApproachCorner,
+                boardingPlan.DoorDockPosition);
         }
 
         /// <summary>
@@ -353,11 +486,59 @@ namespace BarPromenade
             return playable;
         }
 
-        private void SetWeights(float wait, float board, float drive)
+        private void EnterPhase(LastRouteFerrymanPhase phase)
         {
-            mixer.SetInputWeight(WaitInput, wait);
-            mixer.SetInputWeight(BoardInput, board);
-            mixer.SetInputWeight(DriveInput, drive);
+            Phase = phase;
+            previousInput = currentInput;
+            currentInput = ResolveInput(phase);
+            blendElapsedSeconds = 0f;
+        }
+
+        private static int ResolveInput(LastRouteFerrymanPhase phase)
+        {
+            switch (phase)
+            {
+                case LastRouteFerrymanPhase.Dismounting:
+                    return DismountInput;
+                case LastRouteFerrymanPhase.WalkingToDoor:
+                    return WalkInput;
+                case LastRouteFerrymanPhase.Boarding:
+                    return BoardInput;
+                case LastRouteFerrymanPhase.Driving:
+                    return DriveInput;
+                default:
+                    return WaitInput;
+            }
+        }
+
+        private void SetWeightsForInput(int input)
+        {
+            for (int index = 0; index < InputCount; index++)
+            {
+                mixer.SetInputWeight(index, index == input ? 1f : 0f);
+            }
+        }
+
+        private void ApplyWeights()
+        {
+            float blend = BoardBlendSeconds > 0f
+                ? Mathf.Clamp01(blendElapsedSeconds / BoardBlendSeconds)
+                : 1f;
+            for (int index = 0; index < InputCount; index++)
+            {
+                float weight = 0f;
+                if (index == currentInput)
+                {
+                    weight += blend;
+                }
+
+                if (index == previousInput)
+                {
+                    weight += 1f - blend;
+                }
+
+                mixer.SetInputWeight(index, weight);
+            }
         }
 
         private void LateUpdate()
@@ -369,48 +550,156 @@ namespace BarPromenade
 
             float step =
                 Mathf.Min(Time.deltaTime, MaximumStepSeconds) * playbackSpeed;
-            if (Phase == LastRouteFerrymanPhase.Boarding)
+            if (boarding != null && !boarding.IsDone)
             {
                 AdvanceBoarding(step);
             }
 
+            blendElapsedSeconds += step;
+            ApplyWeights();
             graph.Evaluate(step);
         }
 
         private void AdvanceBoarding(float step)
         {
-            boardElapsedSeconds += step;
-            blendElapsedSeconds += step;
+            LastRouteFerrymanPhase before = boarding.Phase;
+            boarding.Advance(step);
+            if (boarding.Phase != before)
+            {
+                EnterPhase(boarding.Phase);
+            }
 
-            // The wait hands over to the transition quickly, and the
-            // transition to the drive not at all: the board clip is
-            // authored to CLOSE on the drive clip's own base pose, so
-            // there is nothing to blend at the far end.
-            float boardWeight = BoardBlendSeconds > 0f
-                ? Mathf.Clamp01(blendElapsedSeconds / BoardBlendSeconds)
-                : 1f;
+            switch (boarding.Phase)
+            {
+                case LastRouteFerrymanPhase.Dismounting:
+                    ApplyDrop();
+                    break;
+                case LastRouteFerrymanPhase.WalkingToDoor:
+                    ApplyWalk();
+                    break;
+                case LastRouteFerrymanPhase.Boarding:
+                    ApplyBoard();
+                    break;
+                default:
+                    transform.SetPositionAndRotation(
+                        drivePosition,
+                        driveRotation);
+                    doors?.SetDriverOpenness(0f);
+                    break;
+            }
 
-            float travel = Mathf.Clamp01(
-                boardElapsedSeconds / boardLengthSeconds);
+            if (boarding.ConsumeLandingCue())
+            {
+                suspension?.NudgeForDismount();
+            }
+
+            if (boarding.ConsumeSeatCue())
+            {
+                // He gets in on the driver's side, which is the flank the
+                // passenger anchor is NOT on. Asked of the drawn anchors
+                // rather than assumed, because which side of a car the
+                // wheel is on is exactly the kind of thing that gets
+                // mirrored in a generator one day.
+                suspension?.NudgeForSeating(IsDriverSideCarRight());
+            }
+        }
+
+        private void ApplyDrop()
+        {
+            Vector3 target = boardingPlan.IsPresent
+                ? boardingPlan.LandingPosition
+                : drivePosition;
+            var planar = new Vector3(
+                Mathf.Lerp(perchPosition.x, target.x, boarding.DropTravel),
+                Mathf.Lerp(perchPosition.y, target.y, boarding.DropFall),
+                Mathf.Lerp(perchPosition.z, target.z, boarding.DropTravel));
             transform.SetPositionAndRotation(
-                Vector3.Lerp(
-                    perchPosition,
-                    drivePosition,
-                    Mathf.SmoothStep(0f, 1f, travel)),
+                planar,
                 Quaternion.Slerp(
                     perchRotation,
-                    driveRotation,
-                    Mathf.SmoothStep(0f, 1f, travel)));
+                    landingRotation,
+                    boarding.DropTravel));
+        }
 
-            if (travel < 1f)
+        private void ApplyWalk()
+        {
+            if (!boardingPlan.IsPresent)
             {
-                SetWeights(1f - boardWeight, boardWeight, 0f);
                 return;
             }
 
-            SetWeights(0f, 0f, 1f);
-            Phase = LastRouteFerrymanPhase.Driving;
-            transform.SetPositionAndRotation(drivePosition, driveRotation);
+            float total = firstLegLength + secondLegLength;
+            float travelled = boarding.PhaseProgress * total;
+            Vector3 position;
+            Vector3 heading;
+            if (travelled <= firstLegLength && firstLegLength > 0.0001f)
+            {
+                position = Vector3.Lerp(
+                    boardingPlan.LandingPosition,
+                    boardingPlan.ApproachCorner,
+                    travelled / firstLegLength);
+                heading = boardingPlan.ApproachCorner -
+                          boardingPlan.LandingPosition;
+            }
+            else if (secondLegLength > 0.0001f)
+            {
+                position = Vector3.Lerp(
+                    boardingPlan.ApproachCorner,
+                    boardingPlan.DoorDockPosition,
+                    (travelled - firstLegLength) / secondLegLength);
+                heading = boardingPlan.DoorDockPosition -
+                          boardingPlan.ApproachCorner;
+            }
+            else
+            {
+                position = boardingPlan.DoorDockPosition;
+                heading = boardingPlan.DoorDockFacing;
+            }
+
+            heading.y = 0f;
+            Quaternion facing = heading.sqrMagnitude > 0.000001f
+                ? Quaternion.LookRotation(heading.normalized, Vector3.up)
+                : dockRotation;
+
+            // The last stretch is spent squaring up with the door, so he
+            // arrives already looking at it instead of snapping round on
+            // the first frame of the board clip.
+            float turn = DockTurnFraction > 0f
+                ? Mathf.InverseLerp(
+                    1f - DockTurnFraction,
+                    1f,
+                    boarding.PhaseProgress)
+                : 0f;
+            transform.SetPositionAndRotation(
+                position,
+                Quaternion.Slerp(
+                    facing,
+                    dockRotation,
+                    Mathf.SmoothStep(0f, 1f, turn)));
+        }
+
+        private void ApplyBoard()
+        {
+            Vector3 dock = boardingPlan.IsPresent
+                ? boardingPlan.DoorDockPosition
+                : perchPosition;
+            float travel = boarding.SeatTravel;
+            transform.SetPositionAndRotation(
+                Vector3.Lerp(dock, drivePosition, travel),
+                Quaternion.Slerp(dockRotation, driveRotation, travel));
+            doors?.SetDriverOpenness(boarding.DriverDoorOpenness);
+        }
+
+        private bool IsDriverSideCarRight()
+        {
+            if (suspension == null)
+            {
+                return false;
+            }
+
+            Transform car = suspension.transform;
+            Vector3 toSeat = drivePosition - car.position;
+            return Vector3.Dot(toSeat, car.right) >= 0f;
         }
 
         private void OnDestroy()

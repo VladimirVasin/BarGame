@@ -78,6 +78,7 @@ namespace BarPromenade
 
             ValidatePassivePresentation(instance);
             AddObstacleCollider(root.gameObject, registry);
+            InstallMechanisms(root, registry);
             InstallHeadlightHalos(root, registry);
             InstallPassengerSeat(root, registry, plan, player, camera);
 
@@ -87,6 +88,37 @@ namespace BarPromenade
                 GameLog.Field("x", plan.Position.x),
                 GameLog.Field("z", plan.Position.z));
             return registry;
+        }
+
+        /// <summary>
+        /// Gives the car the two things it can actually do: open its front
+        /// doors and sit on its springs.
+        ///
+        /// Both live on the runtime root beside the obstacle box rather
+        /// than in the art, for the reason everything else here does - the
+        /// prefab is validated pure presentation and stays that way. Both
+        /// are also raised whether or not anybody will ever use them,
+        /// because the Ferryman finds them by walking up his own parents
+        /// and a car with half its mechanisms is worse than one with none.
+        /// </summary>
+        public static void InstallMechanisms(
+            Transform root,
+            LastRouteCarAssetRegistry registry)
+        {
+            if (root == null || registry == null || !registry.IsBound)
+            {
+                return;
+            }
+
+            // Springs first. It re-parents the body under a sprung empty and
+            // lifts the wheels out of it, so anything that caches a leaf's
+            // closed LOCAL pose has to be told afterwards.
+            root.gameObject
+                .AddComponent<LastRouteCarSuspension>()
+                .Initialize(registry);
+            root.gameObject
+                .AddComponent<LastRouteCarDoors>()
+                .Initialize(registry);
         }
 
         /// <summary>
@@ -192,7 +224,7 @@ namespace BarPromenade
 
             seatObject
                 .AddComponent<LastRouteCarSeatInteraction>()
-                .Initialize(player, controller, seatPlan);
+                .Initialize(player, controller, seatPlan, registry);
         }
 
         /// <summary>

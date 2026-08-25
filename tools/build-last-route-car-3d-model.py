@@ -115,6 +115,10 @@ STEERING_GRIP_AXIS_OFFSET = 0.018
 
 DOOR_HINGE_Y = -1.17    # the A-pillar base; the door opens forward of it
 DOOR_HINGE_Z = 0.73
+# The front handle, in the hinge's own space, so it swings with the leaf it
+# belongs to. Derived from the waist line rather than typed twice.
+DOOR_HANDLE_Y = -0.62 - DOOR_HINGE_Y
+DOOR_HANDLE_Z = (WAIST_Z - 0.11) - DOOR_HINGE_Z
 DOOR_SPECS = (
     ("Driver", 1.0, "driver_door_leaf", "Body"),
     # The passenger door came off another car and never got repainted. It is
@@ -917,6 +921,23 @@ class LastRouteCarBuilder:
                 "Glass",
                 parent=hinge,
             )
+            # The handle rides the leaf. It used to be drawn into the
+            # flank's trim mesh, which was harmless for exactly as long as
+            # the door never moved: the moment it opens, a handle left on
+            # the body hangs in the empty doorway with nothing behind it.
+            # Same box, same place, expressed in the hinge's own space.
+            self.add_boxes(
+                f"GEO_Door{name}Handle",
+                (
+                    (
+                        (side * 0.019, DOOR_HANDLE_Y, DOOR_HANDLE_Z),
+                        (0.030, 0.15, 0.035),
+                    ),
+                ),
+                "door_handle",
+                "Chrome",
+                parent=hinge,
+            )
 
     def _build_wheels(self) -> None:
         """All four wheels are on. Three of the four hubcaps are not."""
@@ -1026,12 +1047,16 @@ class LastRouteCarBuilder:
                     (side * (BODY_HALF_WIDTH + 0.004), seam_y, 0.73),
                     (0.012, 0.020, 0.56),
                 )
-            # Door handles, one per door.
-            for handle_y in (-0.62, 0.62):
-                trim.add_box(
-                    (side * (BODY_HALF_WIDTH + 0.014), handle_y, WAIST_Z - 0.11),
-                    (0.030, 0.15, 0.035),
-                )
+            # The REAR door handle only. The front one is not trim: it is
+            # the thing the Ferryman pulls, so it belongs to the leaf that
+            # swings and is built with it in `_build_doors`. Left in this
+            # mesh it stayed bolted to the flank while the door opened -
+            # a chrome bar hanging in an empty doorway - which nobody saw
+            # for as long as nothing ever opened the door.
+            trim.add_box(
+                (side * (BODY_HALF_WIDTH + 0.014), 0.62, WAIST_Z - 0.11),
+                (0.030, 0.15, 0.035),
+            )
         # Wing mirror on the driver's side only, and two wipers parked low.
         trim.add_cylinder_between(
             (0.86, -1.05, WAIST_Z + 0.02),
@@ -1418,7 +1443,8 @@ def parse_args() -> argparse.Namespace:
 
 REQUIRED_MESH_ROLES = (
     "body_shell", "greenhouse", "pillars", "glass", "cracked_glass",
-    "dents", "rust", "door_panel", "door_glass", "wheel", "hubcap",
+    "dents", "rust", "door_panel", "door_glass", "door_handle", "wheel",
+    "hubcap",
     "headlight", "headlight_rim", "tail_light", "grille", "bumper",
     "exterior_trim", "exhaust", "number_plate", "cabin_floor",
     "driver_seat", "passenger_seat", "rear_bench", "dashboard",
@@ -1635,8 +1661,11 @@ def validate_result(result: BuildResult) -> ValidationReport:
         child_roles = sorted(
             part.role for part in result.parts if part.obj.parent is pivot.obj
         )
-        if child_roles != ["door_glass", "door_panel"]:
-            errors.append(f"Door leaf pivot {name} must own one panel and one glass mesh")
+        if child_roles != ["door_glass", "door_handle", "door_panel"]:
+            errors.append(
+                f"Door leaf pivot {name} must own one panel, one glass "
+                "and the handle that opens it"
+            )
 
     bounds_min, bounds_max = mesh_world_bounds(part.obj for part in result.parts)
     size = bounds_max - bounds_min

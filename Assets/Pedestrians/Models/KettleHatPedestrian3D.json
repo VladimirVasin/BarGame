@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.1.0",
+  "generator_version": "3.2.0",
   "blender_version": "5.0.1",
   "design_id": "kettle_hat_walker_v1",
   "display_name": "Kettle Hat Walker",
@@ -46,7 +46,7 @@
     1.09
   ],
   "perch_seat_height_m": null,
-  "build_signature": "9403821a25b0cb3bc8dea9a3f2512be8146b3395220d9903d2548eba7438a595",
+  "build_signature": "05aa7b836878f769c7c7619a3ad5e5cfce4399f9d0e3a8806abbbc766cf3625a",
   "bones": [
     {
       "name": "root",

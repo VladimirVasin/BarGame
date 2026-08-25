@@ -297,6 +297,86 @@ namespace BarPromenade.Tests.EditMode
                 "pose is authored against.");
         }
 
+        [Test]
+        public void Docks_StayInsideTheIslandOnTheProductionSeed()
+        {
+            // Moving the hero's dock clear of the swinging passenger door
+            // pushed it from 1.52 m out to 1.85 m out and a metre back along
+            // the flank, and the bay placement only ever guaranteed 0.40 m
+            // of clearance inside the lot. A dock that ends up off the
+            // island is not a visible bug: the prompt simply never appears,
+            // because the hero can never stand there.
+            CityLayout layout =
+                GenerateLayout(GameSessionState.DefaultCitySeed);
+            LastRouteCarPlan plan = LastRouteCarPlan.Create(layout);
+            Assert.That(
+                plan.IsPresent,
+                Is.True,
+                "The production seed parks the car.");
+
+            CityDistrictPointOfInterestDescriptor island =
+                RequireIsland(layout);
+            GameObject prefab = LastRouteCarAssetRegistry.LoadPrefab();
+            Assert.That(prefab, Is.Not.Null);
+            var root = new GameObject("Dock Placement Car");
+            try
+            {
+                root.transform.SetPositionAndRotation(
+                    plan.Position,
+                    Quaternion.LookRotation(plan.Facing, Vector3.up));
+                GameObject instance =
+                    Object.Instantiate(prefab, root.transform);
+                instance.transform.localPosition = Vector3.zero;
+                instance.transform.localRotation = Quaternion.identity;
+                var registry = instance
+                    .GetComponentInChildren<LastRouteCarAssetRegistry>(true);
+
+                LastRouteCarSeatPlan seat = LastRouteCarSeatPlan.Create(
+                    registry,
+                    plan.Position.y);
+                Assert.That(seat.IsPresent, Is.True);
+                AssertOnTheIsland(
+                    island,
+                    seat.EntryRootPosition,
+                    "the hero's passenger dock");
+
+                LastRouteFerrymanBoardingPlan boarding =
+                    LastRouteFerrymanBoardingPlan.Create(
+                        registry,
+                        plan.Position.y);
+                Assert.That(boarding.IsPresent, Is.True);
+                AssertOnTheIsland(
+                    island,
+                    boarding.LandingPosition,
+                    "where the Ferryman lands");
+                AssertOnTheIsland(
+                    island,
+                    boarding.ApproachCorner,
+                    "the corner he rounds");
+                AssertOnTheIsland(
+                    island,
+                    boarding.DoorDockPosition,
+                    "where he stands to open his own door");
+            }
+            finally
+            {
+                Object.DestroyImmediate(root);
+            }
+        }
+
+        private static void AssertOnTheIsland(
+            CityDistrictPointOfInterestDescriptor island,
+            Vector3 position,
+            string what)
+        {
+            Assert.That(
+                island.PublicBounds.Contains(
+                    new Vector2(position.x, position.z)),
+                Is.True,
+                $"On the production seed {what} lands at {position}, " +
+                $"outside the island's own {island.PublicBounds}.");
+        }
+
         private static IEnumerable<Vector3> Corners(
             CityDryingYardNpcStance stance)
         {

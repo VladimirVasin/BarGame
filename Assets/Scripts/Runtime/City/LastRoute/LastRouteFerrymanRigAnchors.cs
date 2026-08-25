@@ -36,6 +36,7 @@ namespace BarPromenade
         [SerializeField] private Renderer coatHemRenderer;
         [SerializeField] private Vector2 coatHemSize;
         [SerializeField] private float perchPelvisDrop;
+        [SerializeField] private AnimationClip dismountClip;
 
         public CityPedestrianAssetRegistry PedestrianRegistry =>
             pedestrianRegistry;
@@ -82,13 +83,27 @@ namespace BarPromenade
         /// </summary>
         public float PerchPelvisDrop => perchPelvisDrop;
 
+        /// <summary>
+        /// His drop off the bonnet - the fifth clip, and the reason this
+        /// component carries one at all.
+        ///
+        /// `CityPedestrianAssetRegistry` has exactly four clip slots (idle,
+        /// walk, sit, action) and this design already fills all four with
+        /// his wait, his trudge, his driving loop and his board transition.
+        /// He is the only pedestrian with a fifth posture, so the fifth clip
+        /// rides the component that is already his alone rather than
+        /// widening a type every other design shares.
+        /// </summary>
+        public AnimationClip DismountClip => dismountClip;
+
         public void Configure(
             CityPedestrianAssetRegistry configuredPedestrianRegistry,
             Transform configuredCoinRestAnchor,
             Transform configuredCoatHemAnchor,
             Renderer configuredCoatHemRenderer,
             Vector2 configuredCoatHemSize,
-            float configuredPerchPelvisDrop)
+            float configuredPerchPelvisDrop,
+            AnimationClip configuredDismountClip)
         {
             pedestrianRegistry = configuredPedestrianRegistry;
             coinRestAnchor = configuredCoinRestAnchor;
@@ -96,6 +111,7 @@ namespace BarPromenade
             coatHemRenderer = configuredCoatHemRenderer;
             coatHemSize = configuredCoatHemSize;
             perchPelvisDrop = configuredPerchPelvisDrop;
+            dismountClip = configuredDismountClip;
         }
     }
 }

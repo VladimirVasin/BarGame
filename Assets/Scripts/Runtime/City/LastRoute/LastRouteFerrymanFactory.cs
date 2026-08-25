@@ -62,8 +62,35 @@ namespace BarPromenade
         public static readonly Color LampColor =
             new Color(1.00f, 0.87f, 0.66f);
 
-        public const float LampNightIntensity = 70f;
-        public const float LampDayIntensity = 22f;
+        /// <summary>
+        /// Deliberately the dimmest registered site light in the city, and
+        /// by some way.
+        ///
+        /// It started at `70/22`, which is a LAMP - between the pier's hand
+        /// lamp (`46` at `11 m`) and the cemetery porch bulb (`110` at
+        /// `8 m`), but at a `5.2 m` range that concentrates all of it on one
+        /// man. At his face that delivered about as much as standing
+        /// directly under a street practical, and he is the only lit thing
+        /// on an unlit lot, so there is nothing beside him for the eye to
+        /// normalise against: through ACES and bloom at `640x360` he read as
+        /// a cut-out rather than as a man in the dark.
+        ///
+        /// This is not a lamp. There is no fixture and no halo because the
+        /// warmth is his own headlights coming back off the mist in front of
+        /// the car, and a bounce is weak. Halved to `38/12`, which is under
+        /// every practical in the city and still well clear of the silhouette
+        /// he used to be - his coat carries forty percent more value than it
+        /// did when the lamp was first fitted, so the light no longer has to
+        /// do all of the work.
+        /// </summary>
+        public const float LampNightIntensity = 38f;
+        public const float LampDayIntensity = 12f;
+
+        /// <summary>
+        /// Unchanged, and load bearing. The tight range is what keeps the
+        /// warmth ON HIM instead of washing the car and the paving around
+        /// him, which is the difference between a lit man and a lit lot.
+        /// </summary>
         public const float LampRangeMeters = 5.2f;
 
         /// <summary>
@@ -191,7 +218,7 @@ namespace BarPromenade
                 anchors,
                 instance.transform);
 
-            InstallLamp(root, stance);
+            InstallLamp(root, stance, instance.transform);
 
             // Colliderless like every staged NPC.
             var magnet = instance.AddComponent<PlayerAttentionMagnet>();
@@ -238,7 +265,8 @@ namespace BarPromenade
         /// </summary>
         private static void InstallLamp(
             Transform root,
-            LastRouteFerrymanStance stance)
+            LastRouteFerrymanStance stance,
+            Transform bearer)
         {
             var emitter = new GameObject("Ferryman Lamp");
             emitter.transform.SetParent(root, false);
@@ -260,6 +288,13 @@ namespace BarPromenade
                 LampNightIntensity,
                 LampDayIntensity,
                 null);
+
+            // And it goes with him. The offset it captures is the one just
+            // written above, so the perch is unchanged and only the walk
+            // gains anything.
+            emitter
+                .AddComponent<LastRouteFerrymanLamp>()
+                .Initialize(bearer);
         }
 
         /// <summary>

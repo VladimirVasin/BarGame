@@ -530,9 +530,9 @@ MonoBehaviour:
     m_Center: {x: -0.000000059604645, y: 0.87499994, z: 0.10249993}
     m_Extent: {x: 0.82500005, y: 0.875, z: 0.5075}
   sourceTriangleCount: 2388
-  sourceGeneratorVersion: 3.1.0
+  sourceGeneratorVersion: 3.2.0
   designId: pipeback_roller_v1
-  buildSignature: d9f60151c1a74c7714f7b99e25ae31a2448380e54ebceed2c9b7ae45a3bced98
+  buildSignature: 1cf84c621ebafc7c4883cfbca32cf8a32463ad87e9479a675ca6bf7b6eb770ba
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0

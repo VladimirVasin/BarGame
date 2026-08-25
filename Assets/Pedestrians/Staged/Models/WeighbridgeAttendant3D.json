@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.1.0",
+  "generator_version": "3.2.0",
   "blender_version": "5.0.1",
   "design_id": "weigh_attendant_v1",
   "display_name": "Weigh Attendant",
@@ -42,7 +42,7 @@
   "rides_bus": false,
   "seated_clearance_m": null,
   "perch_seat_height_m": null,
-  "build_signature": "504d1ab2c8d33aa9172e75fe4abacffab8c4c3208ac3d9a940efd07c5d45b4e1",
+  "build_signature": "af3e4ffcdac371e24c50b3db42debfe4ce38625807c1a35ae1c3f827e9ee7312",
   "bones": [
     {
       "name": "root",

@@ -32,20 +32,27 @@ namespace BarPromenade.Tests.EditMode
         // Fisherman contribute two staged loops each. The two park
         // players carry three: an idle, a trudge held for a later pass,
         // and the authored shout they throw at each other. The Ferryman
-        // carries four, because he is the only design with two seats: a
-        // wait on his bonnet, a trudge held for later, the transition off
-        // the bonnet, and the driving loop it arrives at.
+        // carries FIVE, because he is the only design with two seats and
+        // the only one that walks between them: a wait on his bonnet, the
+        // drop off it, the trudge round the car that this is finally for,
+        // the transition in through his own door, and the driving loop it
+        // arrives at.
         private const int StagedLocomotionClipCount =
-            (6 * 2) + (2 * 3) + 4;
+            (6 * 2) + (2 * 3) + 5;
 
         /// <summary>
-        /// The library's only clip that is not a loop. Named here rather
-        /// than asked of the editor pipeline because this assembly does
-        /// not reference it - and naming it is in keeping with the clip
-        /// list below, which is spelled out by hand for the same reason:
-        /// a contract nobody has to look up.
+        /// The library's two clips that are not loops, both the
+        /// Ferryman's: the drop off his bonnet and the way in through his
+        /// own door. Named here rather than asked of the editor pipeline
+        /// because this assembly does not reference it - and naming them
+        /// is in keeping with the clip list below, which is spelled out by
+        /// hand for the same reason: a contract nobody has to look up.
         /// </summary>
-        private const string OneShotTransitionClipName = "FerrymanBoard";
+        private static readonly string[] OneShotTransitionClipNames =
+        {
+            "FerrymanDismount",
+            "FerrymanBoard"
+        };
         private const string LocomotionManifestPath =
             "Assets/Pedestrians/Animations/" +
             "CityPedestrianLocomotion.json";
@@ -190,6 +197,7 @@ namespace BarPromenade.Tests.EditMode
                     "CheckersJeer",
                     "FerrymanWait",
                     "FerrymanTrudge",
+                    "FerrymanDismount",
                     "FerrymanBoard",
                     "LampshadeSit",
                     "ChairCarrierSit",
@@ -217,15 +225,15 @@ namespace BarPromenade.Tests.EditMode
             // Every clip loops except a transition between two postures,
             // and a transition that DID loop would be the bug: loop-pose
             // normalisation drags its last frame back towards its first,
-            // and the Ferryman's board clip is authored to end exactly on
-            // the driving pose the runtime crosses into.
+            // and the Ferryman's two are each authored to end exactly on
+            // the base pose of the clip the runtime crosses into - his
+            // walk, and then his driving loop.
             foreach (AnimationClip clip in locomotionClips)
             {
                 string name = NormalizeAnimationClipName(clip.name);
-                bool oneShot = string.Equals(
-                    name,
-                    OneShotTransitionClipName,
-                    StringComparison.Ordinal);
+                bool oneShot = System.Array.IndexOf(
+                    OneShotTransitionClipNames,
+                    name) >= 0;
                 Assert.That(
                     clip.isLooping,
                     Is.EqualTo(!oneShot),

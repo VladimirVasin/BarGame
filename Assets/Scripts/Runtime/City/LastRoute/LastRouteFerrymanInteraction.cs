@@ -178,13 +178,19 @@ namespace BarPromenade
         {
             if (!ownsExecution ||
                 presentation == null ||
-                !presentation.IsDriving)
+                !presentation.HasLeftTheBonnet)
             {
                 return;
             }
 
-            // He is behind the wheel. Nothing is said about it - him
-            // sitting there IS the answer - so the menu simply closes.
+            // His boots are on the ground. Nothing is said about it - him
+            // getting off that bonnet IS the answer - so the menu closes.
+            //
+            // It closes HERE, and not seven seconds later when he finally
+            // shuts his door, because the rest of it is a walk round a car
+            // and the player should be watching it rather than holding a
+            // dialogue open through it. The beat that had to be owned was
+            // the answer, and the answer is over the moment he moves.
             ownsExecution = false;
             targetInteraction.CompleteExecution();
         }

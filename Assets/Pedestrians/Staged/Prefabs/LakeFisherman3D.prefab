@@ -467,9 +467,9 @@ MonoBehaviour:
     m_Center: {x: 0.0022049546, y: 0.875, z: 0.91545016}
     m_Extent: {x: 0.7642051, y: 0.875, z: 1.0834502}
   sourceTriangleCount: 1052
-  sourceGeneratorVersion: 3.1.0
+  sourceGeneratorVersion: 3.2.0
   designId: lake_fisherman_v1
-  buildSignature: 4798e7c91fc6d383ab91643d7d0913c694b51a00f92eb34437a711171cbdf9a3
+  buildSignature: 312f908ddea811b33f4bd776a10a1bcf23c2a6d790ad065dd20daa362c9fd897
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0

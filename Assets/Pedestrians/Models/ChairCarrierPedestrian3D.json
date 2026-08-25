@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.1.0",
+  "generator_version": "3.2.0",
   "blender_version": "5.0.1",
   "design_id": "chair_carrier_v1",
   "display_name": "Chair Carrier",
@@ -46,7 +46,7 @@
     1.1
   ],
   "perch_seat_height_m": null,
-  "build_signature": "764b04063716c75e2452c6c22b0f204631f0500f03208a1478d7e6d94d93f776",
+  "build_signature": "6f8f2fa87168516b8b976d959835d0176084a169dae1089c2dded619e9119ece",
   "bones": [
     {
       "name": "root",

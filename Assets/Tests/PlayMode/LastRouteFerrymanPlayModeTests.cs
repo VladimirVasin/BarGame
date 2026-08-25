@@ -24,7 +24,13 @@ namespace BarPromenade.Tests.PlayMode
         /// larger would be hiding a real offset.</summary>
         private const float SeatTolerance = 0.02f;
 
-        private const int BoardingSteps = 240;
+        /// <summary>
+        /// Ten seconds at the pinned rate. Getting into the car is no longer
+        /// a three-quarter-second cut: it is a one-second drop, a walk of
+        /// four or so round the nose, and two and a half seconds of door,
+        /// seat and door again.
+        /// </summary>
+        private const int BoardingSteps = 600;
 
         /// <summary>
         /// Long enough to cover the whole four-second wait loop at the
@@ -277,20 +283,99 @@ namespace BarPromenade.Tests.PlayMode
 
                 Assert.That(
                     harness.Ferryman.Phase,
-                    Is.EqualTo(LastRouteFerrymanPhase.Boarding),
+                    Is.EqualTo(LastRouteFerrymanPhase.Dismounting),
                     "Saying yes must get him off the bonnet immediately.");
 
+                // Everything the beat is made of, watched as it happens:
+                // the four phases in order, his boots reaching the ground,
+                // the car answering on its springs, and the driver's door
+                // actually opening and actually shutting again.
+                var seen = new System.Collections.Generic.List<
+                    LastRouteFerrymanPhase>
+                {
+                    LastRouteFerrymanPhase.Dismounting
+                };
+                float lowestRoot = float.MaxValue;
+                float peakRock = 0f;
+                float widestDoor = 0f;
+                float groundY = harness.Car.transform.position.y;
                 for (int step = 0;
                      step < BoardingSteps && !harness.Ferryman.IsDriving;
                      step++)
                 {
                     yield return null;
+                    LastRouteFerrymanPhase phase = harness.Ferryman.Phase;
+                    if (seen[seen.Count - 1] != phase)
+                    {
+                        seen.Add(phase);
+                    }
+
+                    // Only while he is on his own two feet. His seated root
+                    // is the BIND pose's sole plane and a seated pose has
+                    // no soles on it, so the driving root legitimately sits
+                    // 0.18 m under the floor pan - sampling it here would
+                    // measure the cabin rather than the lot.
+                    if (phase == LastRouteFerrymanPhase.Dismounting ||
+                        phase == LastRouteFerrymanPhase.WalkingToDoor)
+                    {
+                        lowestRoot = Mathf.Min(
+                            lowestRoot,
+                            harness.Ferryman.transform.position.y);
+                    }
+
+                    peakRock = Mathf.Max(
+                        peakRock,
+                        Mathf.Abs(
+                            harness.Suspension.Model.PitchDegrees));
+                    widestDoor = Mathf.Max(
+                        widestDoor,
+                        harness.Doors.DriverOpenness);
                 }
 
                 Assert.That(
                     harness.Ferryman.IsDriving,
                     Is.True,
                     "He never arrived behind the wheel.");
+                Assert.That(
+                    seen,
+                    Is.EqualTo(new[]
+                    {
+                        LastRouteFerrymanPhase.Dismounting,
+                        LastRouteFerrymanPhase.WalkingToDoor,
+                        LastRouteFerrymanPhase.Boarding,
+                        LastRouteFerrymanPhase.Driving
+                    }),
+                    "He drops onto the lot, walks round to his own door and " +
+                    "gets in - in that order and without skipping any of it.");
+
+                // He was on the ground, not gliding over it. The stand pose
+                // sits its soles on the root plane, so his root reaching the
+                // lot IS his boots reaching it.
+                Assert.That(
+                    lowestRoot,
+                    Is.EqualTo(groundY).Within(0.05f),
+                    "He never actually touched the ground between the " +
+                    "bonnet and the seat.");
+                Assert.That(
+                    peakRock,
+                    Is.GreaterThan(0.2f),
+                    "The car has to answer when his weight leaves the " +
+                    "bonnet and again when it lands in the seat.");
+                Assert.That(
+                    harness.Suspension.Model.IsSettled ||
+                    Mathf.Abs(harness.Suspension.Model.PitchDegrees) <
+                        peakRock,
+                    Is.True,
+                    "and it has to stop rocking afterwards.");
+                Assert.That(
+                    widestDoor,
+                    Is.GreaterThan(0.99f),
+                    "He opens the driver's door rather than passing " +
+                    "through it.");
+                Assert.That(
+                    harness.Doors.DriverOpenness,
+                    Is.LessThan(0.01f),
+                    "and shuts it behind him.");
 
                 // And he arrived ON the seat rather than beside it. This is
                 // the assertion the whole pelvis solve exists for.
@@ -318,6 +403,117 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     coin.transform.GetChild(0).gameObject.activeSelf,
                     Is.False);
+            }
+            finally
+            {
+                Object.Destroy(root);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator PassengerSeat_OpensOnlyOnceHeIsBehindTheWheel()
+        {
+            var root = new GameObject("Ferryman Passenger Seat Test");
+            try
+            {
+                Harness harness = BuildHarness(root.transform);
+                // Fetched before it is added, exactly as the car's own
+                // factory does it: the controller disallows duplicates, so
+                // a blind AddComponent on a hero who already has one hands
+                // back null rather than a second component.
+                //
+                // The camera comes from the harness by hand, too. Its
+                // Camera component is disabled so the test draws nothing,
+                // and a scene search for one therefore finds nothing.
+                var controller = harness.Player.GameObject
+                    .GetComponent<PlayerAnimatedInteractionController>();
+                if (controller == null)
+                {
+                    controller = harness.Player.GameObject
+                        .AddComponent<PlayerAnimatedInteractionController>();
+                }
+
+                controller.Initialize(harness.Player, harness.Camera);
+
+                LastRouteCarSeatPlan seat = LastRouteCarSeatPlan.Create(
+                    harness.Car,
+                    harness.Car.transform.position.y);
+                Assert.That(seat.IsPresent, Is.True);
+
+                var seatObject = new GameObject("Passenger Seat");
+                seatObject.transform.SetParent(root.transform, false);
+                var interaction = seatObject
+                    .AddComponent<LastRouteCarSeatInteraction>();
+                interaction.Initialize(
+                    harness.Player,
+                    controller,
+                    seat,
+                    harness.Car);
+                interaction.AttachFerryman(harness.Ferryman);
+
+                // The hero stands on the dock, so height is never the thing
+                // refusing him.
+                harness.Player.Motor.Teleport(seat.EntryRootPosition);
+                harness.Player.GameObject.transform.rotation =
+                    seat.EntryRotation;
+                yield return null;
+
+                Assert.That(
+                    interaction.IsInvited,
+                    Is.False,
+                    "The man who owns the car is still sitting on it.");
+                Assert.That(
+                    interaction.CanInteract(harness.Player.Interactor),
+                    Is.False,
+                    "The passenger seat is his to offer, and he has not " +
+                    "offered it.");
+
+                // He says yes, and the whole beat plays out.
+                Assert.That(
+                    harness.Ferryman.TryBeginBoarding(),
+                    Is.True);
+                for (int step = 0;
+                     step < BoardingSteps && !harness.Ferryman.IsDriving;
+                     step++)
+                {
+                    yield return null;
+                }
+
+                Assert.That(harness.Ferryman.IsDriving, Is.True);
+                Assert.That(interaction.IsInvited, Is.True);
+                Assert.That(
+                    interaction.CanInteract(harness.Player.Interactor),
+                    Is.True,
+                    "Once he is behind the wheel the seat beside him is " +
+                    "real.");
+
+                // And getting in opens the door he gets in through.
+                interaction.Interact(harness.Player.Interactor);
+                float widest = 0f;
+                for (int step = 0; step < BoardingSteps; step++)
+                {
+                    yield return null;
+                    widest = Mathf.Max(widest, harness.Doors.PassengerOpenness);
+                    if (interaction.IsSeated &&
+                        harness.Doors.PassengerOpenness <= 0f)
+                    {
+                        break;
+                    }
+                }
+
+                Assert.That(
+                    interaction.IsSeated,
+                    Is.True,
+                    "The hero never settled into the passenger seat.");
+                Assert.That(
+                    widest,
+                    Is.GreaterThan(0.99f),
+                    "The passenger door has to open for him the way the " +
+                    "driver's opens for the Ferryman.");
+                Assert.That(
+                    harness.Doors.PassengerOpenness,
+                    Is.LessThan(0.01f),
+                    "and be shut once he is sitting in the car.");
             }
             finally
             {
@@ -527,7 +723,10 @@ namespace BarPromenade.Tests.PlayMode
         {
             public PlayerRuntime Player;
             public InventoryTargetInteractionController TargetInteraction;
+            public Camera Camera;
             public LastRouteCarAssetRegistry Car;
+            public LastRouteCarDoors Doors;
+            public LastRouteCarSuspension Suspension;
             public LastRouteFerrymanPresentation Ferryman;
         }
 
@@ -584,12 +783,24 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(registry, Is.Not.Null);
             Assert.That(registry.IsBound, Is.True);
 
+            // The doors and the springs, raised the way the factory raises
+            // them. Skipping them would let every door assertion below pass
+            // against a car that has none.
+            LastRouteCarFactory.InstallMechanisms(car.transform, registry);
+
             var harness = new Harness
             {
                 Player = player,
+                Camera = camera,
                 TargetInteraction = targetInteraction,
-                Car = registry
+                Car = registry,
+                Doors = car.GetComponent<LastRouteCarDoors>(),
+                Suspension = car.GetComponent<LastRouteCarSuspension>()
             };
+            Assert.That(harness.Doors, Is.Not.Null);
+            Assert.That(harness.Doors.IsInitialized, Is.True);
+            Assert.That(harness.Suspension, Is.Not.Null);
+            Assert.That(harness.Suspension.IsInitialized, Is.True);
 
             if (!buildFerryman)
             {

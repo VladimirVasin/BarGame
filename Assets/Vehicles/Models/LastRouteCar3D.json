@@ -15,7 +15,7 @@
     "wheelbase": 2.7,
     "wheel_radius": 0.34
   },
-  "mesh_count": 34,
+  "mesh_count": 36,
   "triangle_count": 1992,
   "bounds_min": [
     -0.932,
@@ -45,7 +45,7 @@
   "perch_drop_m": 0.505,
   "seated_headroom_m": 1.04,
   "cabin_floor_drop_m": 0.22,
-  "build_signature": "b3b54438a99d6da8b219529662da67bbfc01a6410c6afdb869a08acd1634d92c",
+  "build_signature": "e607bdaf5dda26477657a3c870cfb57d791e0040a36b2fb21929fcbe60c41358",
   "parts": [
     {
       "name": "GEO_BodyShell",
@@ -104,6 +104,14 @@
       "triangles": 12
     },
     {
+      "name": "GEO_DoorDriverHandle",
+      "role": "door_handle",
+      "material_slot": "Chrome",
+      "parent": "PIVOT_DoorDriver",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
       "name": "GEO_DoorDriverPanel",
       "role": "door_panel",
       "material_slot": "Body",
@@ -115,6 +123,14 @@
       "name": "GEO_DoorPassengerGlass",
       "role": "door_glass",
       "material_slot": "Glass",
+      "parent": "PIVOT_DoorPassenger",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_DoorPassengerHandle",
+      "role": "door_handle",
+      "material_slot": "Chrome",
       "parent": "PIVOT_DoorPassenger",
       "vertices": 8,
       "triangles": 12
@@ -276,8 +292,8 @@
       "role": "exterior_trim",
       "material_slot": "Trim",
       "parent": "ROOT_Body",
-      "vertices": 140,
-      "triangles": 212
+      "vertices": 124,
+      "triangles": 188
     },
     {
       "name": "GEO_WheelFL",

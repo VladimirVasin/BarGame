@@ -681,6 +681,23 @@ namespace BarPromenade
                 LastRouteCar,
                 TargetInteraction,
                 GameSessionState.CitySeed);
+            // The passenger seat is his to offer, so it only opens once he
+            // has taken the driver's. It cannot be told at construction -
+            // the car is raised first because his whole stance is read off
+            // it - so the seat is attached afterwards, exactly as the
+            // watchman's gravedigging is above.
+            if (LastRouteCar != null && LastRouteFerryman != null)
+            {
+                // The seat is a sibling of the art under the car's runtime
+                // root, not a child of the registry, so the search starts a
+                // level up.
+                Transform carRoot = LastRouteCar.transform.parent != null
+                    ? LastRouteCar.transform.parent
+                    : LastRouteCar.transform;
+                carRoot
+                    .GetComponentInChildren<LastRouteCarSeatInteraction>(true)
+                    ?.AttachFerryman(LastRouteFerryman);
+            }
             BusRide = CityBusRideController.Create(
                 Bus,
                 Player,

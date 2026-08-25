@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.1.0",
+  "generator_version": "3.2.0",
   "blender_version": "5.0.1",
   "design_id": "lake_fisherman_v1",
   "display_name": "Lake Fisherman",
@@ -42,7 +42,7 @@
   "rides_bus": false,
   "seated_clearance_m": null,
   "perch_seat_height_m": null,
-  "build_signature": "4798e7c91fc6d383ab91643d7d0913c694b51a00f92eb34437a711171cbdf9a3",
+  "build_signature": "312f908ddea811b33f4bd776a10a1bcf23c2a6d790ad065dd20daa362c9fd897",
   "bones": [
     {
       "name": "root",

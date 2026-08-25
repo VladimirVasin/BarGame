@@ -383,6 +383,7 @@ MonoBehaviour:
   coatHemRenderer: {fileID: 125539622039208979}
   coatHemSize: {x: 0.392, y: 0.134}
   perchPelvisDrop: 0.486308
+  dismountClip: {fileID: 295545915668322158, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
 --- !u!1 &8042384279453589400
 GameObject:
   m_ObjectHideFlags: 0

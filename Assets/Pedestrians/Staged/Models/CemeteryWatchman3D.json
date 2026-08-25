@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.1.0",
+  "generator_version": "3.2.0",
   "blender_version": "5.0.1",
   "design_id": "cemetery_watchman_v1",
   "display_name": "Cemetery Watchman",
@@ -42,7 +42,7 @@
   "rides_bus": false,
   "seated_clearance_m": null,
   "perch_seat_height_m": null,
-  "build_signature": "d69349aaad07947300cdd49607038dd465c37f2dfd1266691afbb4389e10510b",
+  "build_signature": "45a50cf169c3df8036a1f2e0129ef601653a59cc5384db896d71aaaf7c6d952b",
   "bones": [
     {
       "name": "root",

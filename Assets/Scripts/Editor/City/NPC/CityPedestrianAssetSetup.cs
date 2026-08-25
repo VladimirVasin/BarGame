@@ -153,8 +153,9 @@ namespace BarPromenade.Editor
 
         /// <summary>
         /// An idle and a walk for every production or staged design, plus one
-        /// authored seated loop for each design that declares a Route 01 ride
-        /// and one authored beat for each design that declares an action.
+        /// authored seated loop for each design that declares a Route 01 ride,
+        /// one authored beat for each design that declares an action, and one
+        /// more for the single design that also has to get off a car.
         /// </summary>
         private static int ExpectedLocomotionClipCount
         {
@@ -169,6 +170,11 @@ namespace BarPromenade.Editor
                     }
 
                     if (Descriptors[index].HasAction)
+                    {
+                        count++;
+                    }
+
+                    if (Descriptors[index].HasDismount)
                     {
                         count++;
                     }
@@ -430,7 +436,11 @@ namespace BarPromenade.Editor
             //
             // His action clip is the transition between those two
             // seats rather than a beat on top of an idle, which is why
-            // it is three quarters of a second long and one-shot.
+            // it is one-shot. It is no longer three quarters of a
+            // second: it now starts standing at his own door, pulls the
+            // handle, gets in and shuts the door behind him, and the
+            // drop off the bonnet that used to open it has become a
+            // clip of its own with a walk in between.
             new PedestrianDescriptor(
                 "Last Route Ferryman",
                 "LastRouteFerryman3D",
@@ -448,8 +458,10 @@ namespace BarPromenade.Editor
                 sitClipName: "FerrymanDrive",
                 sitDuration: 3f,
                 actionClipName: "FerrymanBoard",
-                actionDuration: 0.75f,
-                carriesCoinRig: true)
+                actionDuration: 2.5f,
+                carriesCoinRig: true,
+                dismountClipName: "FerrymanDismount",
+                dismountDuration: 1f)
         };
 
         private static bool isBuilding;
@@ -602,7 +614,13 @@ namespace BarPromenade.Editor
         ///
         /// Declared as the one-shot ACTION of a design that also declares
         /// a seated loop, which is the shape of a transition between two
-        /// postures rather than a beat on top of an idle.
+        /// postures rather than a beat on top of an idle - and, since he
+        /// grew a walk in the middle of getting into his own car, as that
+        /// design's DISMOUNT as well. The dismount does not fit the action
+        /// shape and never will: it is a second transition on one design,
+        /// so it is named rather than inferred, and it needs the loop flags
+        /// off for exactly the same reason. Loop-pose on that clip would
+        /// drag his landing back towards the bonnet he just left.
         /// </summary>
         public static bool IsOneShotClip(string normalizedClipName)
         {
@@ -614,6 +632,16 @@ namespace BarPromenade.Editor
             for (int index = 0; index < Descriptors.Length; index++)
             {
                 PedestrianDescriptor descriptor = Descriptors[index];
+                if (descriptor.IsStaged &&
+                    descriptor.HasDismount &&
+                    string.Equals(
+                        normalizedClipName,
+                        descriptor.DismountClipName,
+                        StringComparison.Ordinal))
+                {
+                    return true;
+                }
+
                 if (!descriptor.HasAction ||
                     !descriptor.RidesBus ||
                     !descriptor.IsStaged)
@@ -2713,6 +2741,11 @@ namespace BarPromenade.Editor
                 {
                     clipOwners.Add(descriptor.ActionClipName, descriptor);
                 }
+
+                if (descriptor.HasDismount)
+                {
+                    clipOwners.Add(descriptor.DismountClipName, descriptor);
+                }
             }
 
             HashSet<string> names =
@@ -2733,10 +2766,11 @@ namespace BarPromenade.Editor
                         StringComparison.Ordinal) ||
                     // Almost every clip in this library loops, and asserting
                     // it is what catches a clip that drifts off its own
-                    // first frame. The Ferryman's board transition is the
-                    // one clip that MUST NOT: it starts on a car bonnet and
-                    // ends behind a steering wheel, so both the loop flag
-                    // and the seam error are meaningless for it. What holds
+                    // first frame. The Ferryman's two transitions are the
+                    // ones that MUST NOT: one starts on a car bonnet and
+                    // ends standing on the lot, the other starts at his own
+                    // door and ends behind the wheel, so both the loop flag
+                    // and the seam error are meaningless for them. What holds
                     // it together instead is that it opens and closes on
                     // the base poses of the clips either side, which the
                     // art generator states by reusing those pose functions
@@ -2791,6 +2825,14 @@ namespace BarPromenade.Editor
                              StringComparison.Ordinal))
                 {
                     expectedDuration = owner.ActionDuration;
+                }
+                else if (owner.HasDismount &&
+                         string.Equals(
+                             clip.name,
+                             owner.DismountClipName,
+                             StringComparison.Ordinal))
+                {
+                    expectedDuration = owner.DismountDuration;
                 }
                 else
                 {
@@ -3015,6 +3057,11 @@ namespace BarPromenade.Editor
             if (descriptor.HasAction)
             {
                 clips.Add(descriptor.ActionClipName);
+            }
+
+            if (descriptor.HasDismount)
+            {
+                clips.Add(descriptor.DismountClipName);
             }
 
             return clips.ToArray();
@@ -3307,6 +3354,24 @@ namespace BarPromenade.Editor
                             "seated_drop_m on its perched idle clip.");
                     }
 
+                    // And his fifth clip. The shared pedestrian registry
+                    // has four slots and this design fills all four, so the
+                    // drop off the bonnet rides the component that is
+                    // already his alone rather than widening a type every
+                    // other pedestrian shares.
+                    AnimationClip dismountClip = descriptor.HasDismount
+                        ? LoadLocomotionClip(
+                            descriptor.DismountClipName,
+                            descriptor.DismountDuration,
+                            animationManifest)
+                        : null;
+                    if (dismountClip == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"'{descriptor.DisplayName}' needs his drop off " +
+                            "the bonnet; without it he cannot leave it.");
+                    }
+
                     prefabRoot
                         .AddComponent<LastRouteFerrymanRigAnchors>()
                         .Configure(
@@ -3315,7 +3380,8 @@ namespace BarPromenade.Editor
                             hemAnchor,
                             hemRenderer,
                             BindPoseLateralSize(hemRenderer),
-                            perchClip.seated_drop_m);
+                            perchClip.seated_drop_m,
+                            dismountClip);
                 }
 
                 if (descriptor.IsWheelchair)
@@ -3682,6 +3748,40 @@ namespace BarPromenade.Editor
                     $"The coat hem measures " +
                     $"{anchors.CoatHemSize.x:0.###} m across; a waist " +
                     "is between 0.15 and 0.9 m.");
+            }
+
+            // His fifth clip, checked here because this component is the
+            // only thing that carries it. The loop flag is asserted the
+            // hard way round for the same reason the board transition's
+            // is: an import that quietly turned a drop off a bonnet back
+            // into a loop would normalise its landing towards the metal
+            // he just left, and nothing downstream would say so.
+            if (!descriptor.HasDismount)
+            {
+                if (anchors.DismountClip != null)
+                {
+                    throw new InvalidOperationException(
+                        $"'{descriptor.DisplayName}' declares no dismount " +
+                        "but its prefab carries one.");
+                }
+
+                return;
+            }
+
+            if (anchors.DismountClip == null ||
+                !string.Equals(
+                    NormalizeClipName(anchors.DismountClip.name),
+                    descriptor.DismountClipName,
+                    StringComparison.Ordinal) ||
+                anchors.DismountClip.isLooping ||
+                Mathf.Abs(
+                    anchors.DismountClip.length -
+                    descriptor.DismountDuration) > 1f / 24f)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' must bind the one-shot " +
+                    $"'{descriptor.DismountClipName}' at its approved " +
+                    "duration.");
             }
         }
 
@@ -4095,8 +4195,12 @@ namespace BarPromenade.Editor
                 bool carriesFishingRig = false,
                 string actionClipName = null,
                 float actionDuration = 0f,
-                bool carriesCoinRig = false)
+                bool carriesCoinRig = false,
+                string dismountClipName = null,
+                float dismountDuration = 0f)
             {
+                DismountClipName = dismountClipName;
+                DismountDuration = dismountDuration;
                 IsStaged = isStaged;
                 IsWheelchair = isWheelchair;
                 CarriesFishingRig = carriesFishingRig;
@@ -4151,6 +4255,19 @@ namespace BarPromenade.Editor
             public float ActionDuration { get; }
             public bool HasAction =>
                 !string.IsNullOrEmpty(ActionClipName);
+
+            /// <summary>
+            /// The design's second one-shot transition, or <c>null</c>.
+            /// Only the Ferryman declares one: he is the only man here who
+            /// has to LEAVE a seat under his own power before he can walk,
+            /// and a drop off a bonnet cannot be the tail of the clip that
+            /// gets him into a car - between them he has three metres of
+            /// pavement to cross.
+            /// </summary>
+            public string DismountClipName { get; }
+            public float DismountDuration { get; }
+            public bool HasDismount =>
+                !string.IsNullOrEmpty(DismountClipName);
             public int MinimumTriangleCount { get; }
             public int MaximumTriangleCount { get; }
 

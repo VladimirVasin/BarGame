@@ -115,6 +115,12 @@ class ArchetypeSpec:
     # over the idle on a two-input mixer, so the clip has to open and close on
     # the idle's own base pose or the seam shows.
     action_clip: str | None = None
+    # A SECOND one-shot transition, and so far only the Ferryman owns one.
+    # He is the only design that has to leave a seat under his own power and
+    # then walk somewhere before the next posture starts, so his drop off the
+    # bonnet cannot be the head of the clip that puts him behind the wheel -
+    # there are three metres of lot in between.
+    dismount_clip: str | None = None
     # A wheelchair stays grounded on its tyres rather than on the rider's
     # shoes. Declaring a radius switches the animation bake/validator to that
     # support contract and keeps the feet on the authored footrests.
@@ -288,6 +294,7 @@ ARCHETYPES = {
         pool_eligible=False,
         perch_seat_height_m=(0.50, 0.52),
         action_clip="FerrymanBoard",
+        dismount_clip="FerrymanDismount",
         # And his second seat, the one he leaves in. Both numbers are
         # the car's own rather than the bus's, read off
         # tools/build-last-route-car-3d-model.py: ROOF_UNDERSIDE_Z 1.56
@@ -5411,6 +5418,7 @@ def write_manifest(
             [spec.idle_clip, spec.walk_clip]
             + ([spec.sit_clip] if spec.sit_clip is not None else [])
             + ([spec.action_clip] if spec.action_clip is not None else [])
+            + ([spec.dismount_clip] if spec.dismount_clip is not None else [])
         ),
         "rides_bus": spec.sit_clip is not None,
         "seated_clearance_m": (
@@ -5631,18 +5639,34 @@ ACTION_SPECS = (
         "upright in the long coat with the collar up",
         "slow coat-heavy steps that do not hurry for anybody",
     ),
-    # Getting into his own car. Deliberately fast - three quarters of a
-    # second from the bonnet to behind the wheel - because the whole
-    # point of the beat is that a man who has waited twenty years moves
-    # immediately once somebody finally says yes. It opens on the exact
-    # base pose of FerrymanWait and closes on the exact base pose of
-    # FerrymanDrive, never re-typed numbers, so the runtime can cross
-    # from the wait into this and out into the drive without a seam.
+    # Getting OFF his own car. Deliberately fast - one second from the
+    # bonnet to both boots on the lot - because the whole point of the
+    # beat is that a man who has waited twenty years moves immediately
+    # once somebody finally says yes. It opens on the exact base pose of
+    # FerrymanWait and closes on the exact base pose of FerrymanTrudge,
+    # never re-typed numbers, so the runtime crosses out of the wait and
+    # into the walk without a seam at either end.
     ActionSpec(
-        "FerrymanBoard", "last_route_ferryman_v1", 0.75, 18,
-        "off the bonnet, one push from the bracing hand, into the seat",
-        "a hard shove down off the metal, a half turn, and a drop into "
-        "the driver's seat with both hands arriving on the wheel",
+        "FerrymanDismount", "last_route_ferryman_v1", 1.0, 24,
+        "off the bonnet, one push from the bracing hand, down onto the lot",
+        "a hard shove down off the metal, both legs reaching for the "
+        "ground, and a landing taken on bent knees",
+        seated=True,
+        leaves_seat=True,
+        one_shot=True,
+    ),
+    # And getting INTO it, which is now a separate thing with a walk in
+    # between: he stands at his own door, takes the handle, pulls it
+    # open, gets in and shuts it behind him. Two and a half seconds
+    # because four of those beats are real and the door is the one the
+    # player is watching. It opens on the exact base pose of
+    # FerrymanTrudge and closes on the exact base pose of FerrymanDrive.
+    ActionSpec(
+        "FerrymanBoard", "last_route_ferryman_v1", 2.5, 60,
+        "standing at the driver's door, reaching for its handle",
+        "a pull on the handle and a step back as the door comes, then in "
+        "under the roofline, down into the seat, and the door pulled shut "
+        "with both hands arriving on the wheel",
         seated=True,
         leaves_seat=True,
         one_shot=True,
@@ -7828,8 +7852,11 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         },
     )
     # The push off the metal: the bracing arm straightens hard and the
-    # hips leave the bonnet before anything else has moved.
-    ferry_board_push = merge_pose(
+    # hips leave the bonnet before anything else has moved. This used to
+    # open the board transition, back when getting off the car and getting
+    # into it were one three-quarter-second clip; it now opens the DROP,
+    # which is the only half of that it was ever really about.
+    ferry_drop_push = merge_pose(
         ferry_wait,
         {
             "pelvis": BonePose(rotation_degrees=(-2.0, 0.0, 0.0), location_m=(0, -0.04, 0.06)),
@@ -7840,19 +7867,105 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             "head": BonePose(rotation_degrees=(-2.0, -18.0, 2.0)),
         },
     )
-    ferry_board_turn = merge_pose(
-        ferry_drive,
+    # In the air. Sampled between the two authored postures rather than
+    # posed from scratch: both ends of this drop are converged shapes -
+    # the perch against the car's bumper, the stance against the ground -
+    # and anything hand-written in between would drift off the line they
+    # already describe. Only the legs and the bow get their own numbers,
+    # because they are what the drop is; the arms coming down off the
+    # brace are exactly the interpolation.
+    ferry_drop_air = interpolate_pose(ferry_wait, ferry_stand, 0.55)
+    # Boots down, knees taking it, head over the landing. Measured rather
+    # than eyeballed: this puts his soles 16 mm over the plane his stand
+    # pose sits on, which is a landing rather than a stamp, and the next
+    # two keys close that to nothing.
+    ferry_drop_land = merge_pose(
+        interpolate_pose(ferry_wait, ferry_stand, 0.90),
         {
-            "pelvis": BonePose(rotation_degrees=(4.0, 22.0, 0.0), location_m=(0, -0.02, 0.05)),
-            "spine": BonePose(rotation_degrees=(8.0, 14.0, 0.0)),
-            "head": BonePose(rotation_degrees=(-2.0, -22.0, 2.0)),
+            "spine": BonePose(rotation_degrees=(11.0, 0.0, 0.0)),
+            "chest": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+            "head": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+            "thigh.L": BonePose(rotation_degrees=(-26.0, 0.0, 3.0)),
+            "shin.L": BonePose(rotation_degrees=(30.0, 0.0, 0.0)),
+            "foot.L": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+            "thigh.R": BonePose(rotation_degrees=(-24.0, 0.0, -3.0)),
+            "shin.R": BonePose(rotation_degrees=(28.0, 0.0, 0.0)),
+            "foot.R": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
         },
     )
-    ferry_board_drop = merge_pose(
+    ferry_drop_rise = interpolate_pose(ferry_drop_land, ferry_stand, 0.60)
+
+    # ---------------------------------------------------- the door
+    # He takes the handle with his LEFT hand, and that is geometry rather
+    # than preference: the car is left-hand drive, so with the rig facing
+    # its own -Y the driver's door is on his left in the cabin and dead
+    # ahead of him on the way in.
+    #
+    # All three arm shapes below are SOLVED, not posed. This rig's
+    # shoulder Eulers are not guessable - the same trap the bracing arm
+    # of the perch fell into - so each one came out of a sweep against a
+    # hand target: 0.43 m in front of him at the car's waist line for the
+    # handle, drawn back and across for the pull, and 0.63 m out to his
+    # left for the door edge once he is sitting down. Re-pose any of them
+    # by eye and he mimes at air.
+    ferry_door_reach = merge_pose(
+        ferry_stand,
+        {
+            "spine": BonePose(rotation_degrees=(12.0, 6.0, 0.0)),
+            "chest": BonePose(rotation_degrees=(6.0, 8.0, 0.0)),
+            "upper_arm.L": BonePose(rotation_degrees=(-90.0, 0.0, 60.0)),
+            "forearm.L": BonePose(rotation_degrees=(-60.0, 0.0, 0.0)),
+            "hand.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
+        },
+    )
+    ferry_door_pull = merge_pose(
+        ferry_stand,
+        {
+            "spine": BonePose(rotation_degrees=(4.0, -8.0, 0.0)),
+            "chest": BonePose(rotation_degrees=(2.0, -10.0, 0.0)),
+            "upper_arm.L": BonePose(rotation_degrees=(-20.0, -10.0, 20.0)),
+            "forearm.L": BonePose(rotation_degrees=(-80.0, 0.0, 0.0)),
+            "hand.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
+            # Weight going back onto the rear foot as the door comes.
+            "thigh.L": BonePose(rotation_degrees=(10.0, 0.0, 3.0)),
+            "thigh.R": BonePose(rotation_degrees=(-8.0, 0.0, -3.0)),
+        },
+    )
+    ferry_door_clear = merge_pose(
+        ferry_stand,
+        {
+            "spine": BonePose(rotation_degrees=(2.0, -6.0, 0.0)),
+            "head": BonePose(rotation_degrees=(0.0, -8.0, 0.0)),
+        },
+    )
+    # Getting in. The three sampled amounts track the ROOT's own travel
+    # into the seat in LastRouteFerrymanBoardingTimeline - 0.22, 0.70 and
+    # 0.97 at the keys below - so the pose and the metres arrive together
+    # instead of him sitting down in mid-air and sliding in afterwards.
+    ferry_seat_step = merge_pose(
+        interpolate_pose(ferry_stand, ferry_drive, 0.22),
+        {
+            "spine": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
+            "chest": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+            "head": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+        },
+    )
+    ferry_seat_settle = merge_pose(
+        interpolate_pose(ferry_stand, ferry_drive, 0.70),
+        {
+            "spine": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+            "head": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        },
+    )
+    ferry_seat_down = interpolate_pose(ferry_stand, ferry_drive, 0.97)
+    ferry_door_shut = merge_pose(
         ferry_drive,
         {
-            "pelvis": BonePose(rotation_degrees=(6.0, 4.0, 0.0), location_m=(0, 0, -0.02)),
-            "spine": BonePose(rotation_degrees=(7.0, 2.0, 0.0)),
+            "spine": BonePose(rotation_degrees=(10.0, -14.0, 0.0)),
+            "chest": BonePose(rotation_degrees=(4.0, -16.0, 0.0)),
+            "upper_arm.L": BonePose(rotation_degrees=(-20.0, 0.0, 30.0)),
+            "forearm.L": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+            "hand.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
         },
     )
 
@@ -8186,13 +8299,37 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.75, ferry_pass_l),
             (1.0, ferry_step_l),
         ),
-        # Off the bonnet and into the seat. Front-loaded on purpose: the
-        # shove is over in the first third and the rest is him arriving.
-        "FerrymanBoard": (
+        # Off the bonnet and onto the lot. One second, and the landing key
+        # at 0.62 is a CONTRACT: the runtime drops his root on the same
+        # fraction and kicks the car's springs there, so a man whose boots
+        # touch at 0.5 would rock a car he is still falling past. Opens on
+        # the exact base pose of FerrymanWait and closes on the exact base
+        # pose of FerrymanTrudge, so the wait crosses in and the walk
+        # crosses out with nothing to blend at either end.
+        "FerrymanDismount": (
             (0.0, ferry_wait),
-            (0.22, ferry_board_push),
-            (0.55, ferry_board_turn),
-            (0.80, ferry_board_drop),
+            (0.18, ferry_drop_push),
+            (0.42, ferry_drop_air),
+            (0.62, ferry_drop_land),
+            (0.82, ferry_drop_rise),
+            (1.0, ferry_stand),
+        ),
+        # Standing at his own door, and then behind his own wheel. Four
+        # of these keys are contracts with
+        # LastRouteFerrymanBoardingTimeline rather than free choices: the
+        # leaf starts moving at 0.16 and is open at 0.34, the root leaves
+        # the standing point at 0.36 and arrives at 0.78, and the leaf is
+        # pulled shut between 0.84 and 0.98. Re-time the grid without
+        # re-timing those and he walks through his own door.
+        "FerrymanBoard": (
+            (0.0, ferry_stand),
+            (0.10, ferry_door_reach),
+            (0.22, ferry_door_pull),
+            (0.34, ferry_door_clear),
+            (0.48, ferry_seat_step),
+            (0.62, ferry_seat_settle),
+            (0.74, ferry_seat_down),
+            (0.88, ferry_door_shut),
             (1.0, ferry_drive),
         ),
         "FerrymanDrive": (

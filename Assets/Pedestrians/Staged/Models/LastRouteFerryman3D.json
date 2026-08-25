@@ -39,7 +39,8 @@
     "FerrymanWait",
     "FerrymanTrudge",
     "FerrymanDrive",
-    "FerrymanBoard"
+    "FerrymanBoard",
+    "FerrymanDismount"
   ],
   "rides_bus": true,
   "seated_clearance_m": [

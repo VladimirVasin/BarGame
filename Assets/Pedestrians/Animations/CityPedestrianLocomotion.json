@@ -7,7 +7,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 36,
+  "clip_count": 37,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -628,18 +628,37 @@
       "ground_max_contact_gap_m": 0.0
     },
     {
-      "name": "FerrymanBoard",
+      "name": "FerrymanDismount",
       "archetype": "last_route_ferryman_v1",
-      "duration_seconds": 0.75,
+      "duration_seconds": 1.0,
       "frame_start": 0,
-      "frame_end": 18,
+      "frame_end": 24,
       "loop": false,
       "one_shot": true,
       "in_place": true,
-      "authored_posture": "off the bonnet, one push from the bracing hand, into the seat",
-      "gait": "a hard shove down off the metal, a half turn, and a drop into the driver's seat with both hands arriving on the wheel",
+      "authored_posture": "off the bonnet, one push from the bracing hand, down onto the lot",
+      "gait": "a hard shove down off the metal, both legs reaching for the ground, and a landing taken on bent knees",
       "keyed_bone_count": 31,
-      "loop_max_error": 0.573442,
+      "loop_max_error": 0.679862,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "FerrymanBoard",
+      "archetype": "last_route_ferryman_v1",
+      "duration_seconds": 2.5,
+      "frame_start": 0,
+      "frame_end": 60,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "standing at the driver's door, reaching for its handle",
+      "gait": "a pull on the handle and a step back as the door comes, then in under the roofline, down into the seat, and the door pulled shut with both hands arriving on the wheel",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.662347,
       "root_translation_range_m": [
         0.0,
         0.0,
@@ -825,5 +844,5 @@
       "seated_drop_m": 0.602997
     }
   ],
-  "build_signature": "3ee6a4c4c1e4b5a608bc2685d63598d660317238973478c27c4e21a856126bc3"
+  "build_signature": "0327cd5d363b0ef6fe37d9b018cf46de2c3b1574fcc48a85932c2a278bcd1436"
 }

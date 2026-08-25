@@ -403,9 +403,9 @@ MonoBehaviour:
     m_Center: {x: 0.022249877, y: 0.875, z: 0.06824799}
     m_Extent: {x: 0.78275, y: 0.875, z: 0.30324802}
   sourceTriangleCount: 928
-  sourceGeneratorVersion: 3.1.0
+  sourceGeneratorVersion: 3.2.0
   designId: yard_babushka_v1
-  buildSignature: f0facc30463f0de86c8969212b0368e2b4d35492c9702027391e28b84eae300e
+  buildSignature: 616af2f9d508cd9d3f5ca5ff86da09614a2cc51940c73ad848bd727e44f20b7e
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0

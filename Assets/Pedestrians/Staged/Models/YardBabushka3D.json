@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.1.0",
+  "generator_version": "3.2.0",
   "blender_version": "5.0.1",
   "design_id": "yard_babushka_v1",
   "display_name": "Yard Babushka",
@@ -42,7 +42,7 @@
   "rides_bus": false,
   "seated_clearance_m": null,
   "perch_seat_height_m": null,
-  "build_signature": "f0facc30463f0de86c8969212b0368e2b4d35492c9702027391e28b84eae300e",
+  "build_signature": "616af2f9d508cd9d3f5ca5ff86da09614a2cc51940c73ad848bd727e44f20b7e",
   "bones": [
     {
       "name": "root",

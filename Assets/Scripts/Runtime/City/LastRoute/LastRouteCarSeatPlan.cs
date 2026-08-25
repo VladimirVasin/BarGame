@@ -14,9 +14,32 @@ namespace BarPromenade
     public readonly struct LastRouteCarSeatPlan
     {
         // How far out from the car's centreline the hero stands before he
-        // gets in. Half the body plus a walking radius plus a hand's width,
-        // so he is never inside his own obstacle box while docking.
-        public const float DockStandoff = 1.52f;
+        // gets in, and how far BACK along the flank.
+        //
+        // The standoff alone used to be 1.52 m at the door's own row, and
+        // that was wrong the moment the door became a thing that opens: the
+        // leaf is 1.51 m long on a hinge at the A-pillar, so a hero standing
+        // square to the doorway sits 0.99 m from that hinge and the door
+        // sweeps clean through him on its way to sixty-six degrees. Nothing
+        // caught it because until now nothing ever moved the leaf.
+        //
+        // A standing point is only ever safe OUTSIDE the blade's radius -
+        // the swept sector covers every bearing in between - so the dock
+        // moved out and, mostly, back. That is also where a person stands to
+        // open a car door: behind the swing, in the aperture, not in front
+        // of it. `LastRouteCarDoors.MeasureSwingClearance` states the rule
+        // and one EditMode test holds both docks to it.
+        public const float DockStandoff = 1.85f;
+        public const float DockRearwardShift = 1.00f;
+
+        /// <summary>
+        /// How far out the pelvis passes through the doorway on its way to
+        /// the seat. Its own constant rather than a fraction of the dock:
+        /// this one is a point in the door aperture and has to stay at the
+        /// door's row however far back the standing point moves.
+        /// </summary>
+        public const float DoorwayStandoff = 0.72f;
+
         public const float SeatClearance = 0.02f;
         // How far above the car's own ground the surface probe starts, and
         // therefore how much of a step up or down it can find.
@@ -78,7 +101,7 @@ namespace BarPromenade
         /// installed the island's slab, kerbs and props are all real
         /// colliders, and the only honest answer is the one physics gives.
         /// </summary>
-        private static float ResolveStandingHeight(
+        internal static float ResolveStandingHeight(
             Vector3 position,
             float fallbackGroundY)
         {
@@ -164,7 +187,8 @@ namespace BarPromenade
             Vector3 centreline = Vector3.ProjectOnPlane(
                 doorHipGround - car.position, right);
             Vector3 dock = car.position + centreline +
-                outward * DockStandoff;
+                (outward * DockStandoff) -
+                (forward * DockRearwardShift);
 
             // The dock's height has to be the height the hero will actually
             // stand at, not the car's own ground. The island's paving slab,
@@ -179,7 +203,7 @@ namespace BarPromenade
                 PlayerFactory.GroundedRootOffset;
 
             Vector3 doorwayGround = car.position + centreline +
-                outward * (DockStandoff * 0.45f);
+                (outward * DoorwayStandoff);
             doorwayGround.y = dock.y;
 
             var action = new Vector3(
