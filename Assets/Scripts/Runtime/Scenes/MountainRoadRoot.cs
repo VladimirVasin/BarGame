@@ -30,6 +30,7 @@ namespace BarPromenade
             private set;
         }
         public CityMapController Map { get; private set; }
+        public MinigameDebugWindow DebugWindow { get; private set; }
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
@@ -64,7 +65,9 @@ namespace BarPromenade
             // so consume it before any spawn decision or PlayerFactory call.
             HadAreaArrival = AreaTravelService.TryConsumeArrival(
                 GameAreaId.MountainRoad,
-                out AreaArrivalToken token);
+                out AreaArrivalToken token,
+                out Vector3 arrivalPoint,
+                out bool hasArrivalPoint);
             ArrivalToken = HadAreaArrival
                 ? token
                 : AreaArrivalToken.Default;
@@ -77,6 +80,29 @@ namespace BarPromenade
             Vector3 spawnPosition = Plan.SpawnPosition +
                                     Vector3.up *
                                     PlayerFactory.GroundedRootOffset;
+            string spawnSource = "tunnel";
+            if (HadAreaArrival &&
+                hasArrivalPoint &&
+                new CityMapMountainRoadTeleportGround(World.WalkableArea)
+                    .TryClampArrival(
+                        arrivalPoint,
+                        out Vector3 pointSpawn))
+            {
+                // The map asked for a place, not for the area. A point it
+                // cannot hold falls back to the tunnel rather than dropping
+                // the hero into rock.
+                spawnPosition = pointSpawn;
+                spawnSource = "map_point";
+            }
+
+            GameLog.Info(
+                "mountain_road",
+                "spawn_selected",
+                GameLog.Field("source", spawnSource),
+                GameLog.Field("arrival", ArrivalToken.ToString()),
+                GameLog.Field("x", spawnPosition.x),
+                GameLog.Field("y", spawnPosition.y),
+                GameLog.Field("z", spawnPosition.z));
             Player = PlayerFactory.Create(
                 transform,
                 spawnPosition,
@@ -173,11 +199,27 @@ namespace BarPromenade
                 null,
                 cityMountains,
                 null);
+            // The map is handed THIS scene's walkable mask. Without it the
+            // teleport would measure a mountain coordinate against the city
+            // layout above, which shares the same origin and answers with
+            // streets that are not in this scene.
             Map.ConfigureAreas(
                 GameAreaId.MountainRoad,
                 CityMapMountainRoadOverlayBuilder.Create(Plan),
-                (area, token) =>
-                    AreaTravelService.Request(area, token));
+                request => AreaTravelService.Request(request),
+                new CityMapMountainRoadTeleportGround(World.WalkableArea));
+
+            // Without this the mountain road had no way to switch the test
+            // teleport ON at all - the F9 window only ever existed in the
+            // City, and the flag lives on the map controller, which is built
+            // fresh per scene. So arriving here turned the teleport off and
+            // left no switch to turn it back on.
+            DebugWindow = ui.AddComponent<MinigameDebugWindow>();
+            DebugWindow.Initialize(
+                Player,
+                CameraFollow,
+                IntoxicationHud,
+                Map);
 
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(

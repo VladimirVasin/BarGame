@@ -159,7 +159,7 @@ namespace BarPromenade.Tests.EditMode
                 controller.ConfigureAreas(
                     GameAreaId.City,
                     mountainOverlay,
-                    (_, _) =>
+                    _ =>
                     {
                         travelRequestCount++;
                         return true;
@@ -415,10 +415,10 @@ namespace BarPromenade.Tests.EditMode
                 controller.ConfigureAreas(
                     GameAreaId.City,
                     overlay,
-                    (area, arrival) =>
+                    request =>
                     {
-                        requestedArea = area;
-                        requestedArrival = arrival;
+                        requestedArea = request.DestinationArea;
+                        requestedArrival = request.ArrivalToken;
                         requestCount++;
                         return true;
                     });
@@ -455,10 +455,10 @@ namespace BarPromenade.Tests.EditMode
         {
             var host = new GameObject("Rejected Two Area Map Test");
             var playerObject = new GameObject("Rejected Map Test Player");
+            CityMapController controller = null;
             try
             {
-                CityMapController controller =
-                    host.AddComponent<CityMapController>();
+                controller = host.AddComponent<CityMapController>();
                 PlayerInteractor interactor =
                     playerObject.AddComponent<PlayerInteractor>();
                 var player = new PlayerRuntime(
@@ -485,7 +485,7 @@ namespace BarPromenade.Tests.EditMode
                 controller.ConfigureAreas(
                     GameAreaId.City,
                     overlay,
-                    (_, _) =>
+                    _ =>
                     {
                         requestCount++;
                         return false;
@@ -515,6 +515,12 @@ namespace BarPromenade.Tests.EditMode
             }
             finally
             {
+                // This fixture ends with the map deliberately still open,
+                // and the map holds the shared modal lock - a plain object
+                // in a STATIC field, so it does not go null when its owner
+                // is destroyed. Every later fixture that opens anything
+                // would be refused with no error anywhere.
+                controller?.Close();
                 UnityEngine.Object.DestroyImmediate(host);
                 UnityEngine.Object.DestroyImmediate(playerObject);
             }
@@ -587,7 +593,7 @@ namespace BarPromenade.Tests.EditMode
                 controller.ConfigureAreas(
                     GameAreaId.City,
                     mountainOverlay,
-                    (_, _) => true);
+                    _ => true);
 
                 Assert.That(
                     controller.SetDebugTeleportEnabled(true),
@@ -607,14 +613,16 @@ namespace BarPromenade.Tests.EditMode
                     "The whole-lot selection does go, so one map click " +
                     "still means exactly one thing.");
 
-                // And the other way round: leaving debug mode takes the
-                // debug-only inspector with it.
+                // And the other way round: the inspector no longer belongs
+                // to debug mode either. It owns its own teleport, so a
+                // toggle in the F9 window has no business closing a mode it
+                // does not own - and the button stays.
                 Assert.That(
                     controller.SetDebugTeleportEnabled(false),
                     Is.True);
                 Assert.That(
                     controller.MapPointInspectionEnabled,
-                    Is.False);
+                    Is.True);
 
                 // Every open precinct is reachable as a POINT, which is the
                 // half the whole-lot teleport never had.
@@ -689,6 +697,499 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 text.Split('\n').Last().Count(character => character == 'Z'),
                 Is.EqualTo(1));
+        }
+
+        /// <summary>
+        /// The inspector carries its own teleport, with no second switch.
+        ///
+        /// It used to be hidden unless the F9 window had armed debug mode -
+        /// a switch in another window, and in the mountain-road scene one
+        /// that did not exist at all - so the mode read as broken: you pick
+        /// a point, you read its coordinates, and there is nothing to press.
+        /// Turning the inspector on is the decision; the area is the only
+        /// thing still checked.
+        /// </summary>
+        [Test]
+        public void PointInspection_TeleportsWithoutArmingDebugModeFirst()
+        {
+            var host = new GameObject("Inspector Teleport Test");
+            var playerObject = new GameObject("Inspector Teleport Player");
+            try
+            {
+                CityLayout layout = CityLayoutGenerator.Generate(
+                    CityGenerationSettings.Default,
+                    58021);
+                PlayerInteractor interactor =
+                    playerObject.AddComponent<PlayerInteractor>();
+                PlayerMotor motor =
+                    playerObject.AddComponent<PlayerMotor>();
+                var player = new PlayerRuntime(
+                    playerObject,
+                    motor,
+                    interactor,
+                    null);
+                CityMapController controller =
+                    host.AddComponent<CityMapController>();
+                controller.Initialize(layout, player, null, null);
+                controller.ConfigureAreas(
+                    GameAreaId.City,
+                    CityMapMountainRoadOverlayBuilder.Create(
+                        MountainRoadPlanner.Create(58021)),
+                    _ => true);
+
+                // A plain object in a static field: a fixture that leaves a
+                // map open and destroys it does not release the lock on its
+                // own, and everything modal in the game asks this first.
+                // Reading it retires a lock whose subject is gone.
+                Assert.That(
+                    BarMinigameModalLock.IsAnyLocked,
+                    Is.False,
+                    "Something before this fixture still holds the shared " +
+                    "modal lock.");
+                Assert.That(controller.Open(), Is.True);
+                Assert.That(
+                    controller.SetMapPointInspectionEnabled(true),
+                    Is.True);
+                Assert.That(
+                    controller.DebugTeleportEnabled,
+                    Is.False,
+                    "The whole point: nothing was armed anywhere else.");
+
+                int squareIndex = -1;
+                IReadOnlyList<CityMapPointDescriptor> points =
+                    controller.ActiveMapPoints;
+                for (int index = 0; index < points.Count; index++)
+                {
+                    if (points[index].Kind ==
+                        CityMapPointKind.GroundSquare)
+                    {
+                        squareIndex = index;
+                        break;
+                    }
+                }
+
+                Assert.That(
+                    squareIndex,
+                    Is.GreaterThanOrEqualTo(0),
+                    "The inspector charts the lattice when it opens.");
+                Assert.That(
+                    controller.SelectMapPoint(squareIndex),
+                    Is.True);
+                Assert.That(
+                    controller.CanTeleportToSelectedMapPoint,
+                    Is.True);
+
+                Assert.That(
+                    controller.TryGetSelectedMapPoint(
+                        out _,
+                        out Vector3 destination),
+                    Is.True);
+                Assert.That(
+                    controller.ConfirmMapPointTeleport(),
+                    Is.True);
+                Assert.That(
+                    new Vector2(
+                        playerObject.transform.position.x -
+                        destination.x,
+                        playerObject.transform.position.z -
+                        destination.z).magnitude,
+                    Is.LessThanOrEqualTo(0.01f));
+                Assert.That(
+                    controller.IsOpen,
+                    Is.False,
+                    "Arriving closes the chart.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+                UnityEngine.Object.DestroyImmediate(playerObject);
+            }
+        }
+
+        /// <summary>
+        /// Picking a place on the other tab starts the trip there and
+        /// carries the coordinate.
+        ///
+        /// "Point is in another area" was a statement of fact standing in
+        /// for an answer. It is true that the other tab is a scene which is
+        /// not loaded and that reaching it is a transition rather than a
+        /// `Motor.Teleport` - and the map is what starts that transition,
+        /// so it can say where in it to come out.
+        /// </summary>
+        [Test]
+        [Category("MountainRoad")]
+        public void MapPointOnTheOtherTab_TravelsCarryingTheCoordinate()
+        {
+            var host = new GameObject("Cross Area Point Test");
+            var playerObject = new GameObject("Cross Area Point Player");
+            CityMapController controller = null;
+            try
+            {
+                CityLayout layout = CityLayoutGenerator.Generate(
+                    CityGenerationSettings.Default,
+                    58021);
+                PlayerInteractor interactor =
+                    playerObject.AddComponent<PlayerInteractor>();
+                var player = new PlayerRuntime(
+                    playerObject,
+                    null,
+                    interactor,
+                    null);
+                controller = host.AddComponent<CityMapController>();
+                controller.Initialize(layout, player, null, null);
+
+                MountainRoadPlan plan = MountainRoadPlanner.Create(58021);
+                AreaTravelRequest captured = default;
+                int requestCount = 0;
+                controller.ConfigureAreas(
+                    GameAreaId.City,
+                    CityMapMountainRoadOverlayBuilder.Create(plan),
+                    request =>
+                    {
+                        captured = request;
+                        requestCount++;
+                        return true;
+                    });
+
+                Assert.That(
+                    BarMinigameModalLock.IsAnyLocked,
+                    Is.False,
+                    "Something before this fixture still holds the shared " +
+                    "modal lock.");
+                Assert.That(controller.Open(), Is.True);
+                Assert.That(
+                    controller.SetMapPointInspectionEnabled(true),
+                    Is.True);
+                Assert.That(
+                    controller.SelectArea(GameAreaId.MountainRoad),
+                    Is.True);
+
+                IReadOnlyList<CityMapPointDescriptor> mountainPoints =
+                    controller.GetMapPoints(GameAreaId.MountainRoad);
+                int plateauIndex = -1;
+                for (int index = 0; index < mountainPoints.Count; index++)
+                {
+                    if (mountainPoints[index].Kind ==
+                        CityMapPointKind.Plateau)
+                    {
+                        plateauIndex = index;
+                        break;
+                    }
+                }
+
+                Assert.That(plateauIndex, Is.GreaterThanOrEqualTo(0));
+                Assert.That(
+                    controller.SelectMapPoint(plateauIndex),
+                    Is.True);
+                Assert.That(
+                    controller.CanTeleportToSelectedMapPoint,
+                    Is.False,
+                    "A different scene is never a Motor.Teleport.");
+                Assert.That(
+                    controller.CanTravelToSelectedMapPoint,
+                    Is.True);
+                Assert.That(controller.ConfirmMapPointTravel(), Is.True);
+
+                Assert.That(requestCount, Is.EqualTo(1));
+                Assert.That(
+                    captured.DestinationArea,
+                    Is.EqualTo(GameAreaId.MountainRoad));
+                Assert.That(
+                    captured.ArrivalToken,
+                    Is.EqualTo(AreaArrivalToken.MapPoint));
+                Assert.That(captured.HasArrivalPosition, Is.True);
+                Assert.That(captured.IsValid, Is.True);
+                Assert.That(
+                    captured.ArrivalPosition,
+                    Is.EqualTo(
+                        mountainPoints[plateauIndex].WorldPosition));
+
+                // And the destination holds it to its own ground rather
+                // than spawning wherever the chart happened to draw.
+                var ground = new CityMapMountainRoadTeleportGround(plan);
+                Assert.That(
+                    ground.TryClampArrival(
+                        captured.ArrivalPosition,
+                        out Vector3 spawn),
+                    Is.True);
+                Assert.That(
+                    new MountainRoadWalkableArea(plan).Contains(
+                        spawn,
+                        CityGroundTraversalPlanner.MaximumAgentRadius),
+                    Is.True);
+                Assert.That(
+                    controller.IsOpen,
+                    Is.False,
+                    "Leaving closes the chart.");
+            }
+            finally
+            {
+                controller?.Close();
+                UnityEngine.Object.DestroyImmediate(host);
+                UnityEngine.Object.DestroyImmediate(playerObject);
+            }
+        }
+
+        /// <summary>
+        /// The mountain road is charted into even squares, and every square
+        /// the lattice keeps is somewhere the hero can actually be put down:
+        /// the whole serpentine and the plateau at the top of it, not only
+        /// the handful of places a landmark happens to name.
+        /// </summary>
+        [Test]
+        [Category("MountainRoad")]
+        public void MountainTeleportLattice_CoversTheWholeRoadAndPlateau()
+        {
+            MountainRoadPlan plan = MountainRoadPlanner.Create(58021);
+            var walkable = new MountainRoadWalkableArea(plan);
+            var ground = new CityMapMountainRoadTeleportGround(walkable);
+            CityMapMountainRoadOverlay overlay =
+                CityMapMountainRoadOverlayBuilder.Create(plan);
+
+            CityMapTeleportLattice lattice =
+                CityMapTeleportLatticeBuilder.Create(
+                    overlay.DisplayWorldXZBounds,
+                    Vector2.zero,
+                    CityMapController.MountainRoadTeleportCellSize,
+                    ground);
+
+            Assert.That(lattice.Area, Is.EqualTo(GameAreaId.MountainRoad));
+            Assert.That(lattice.Squares, Is.Not.Empty);
+            float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            for (int index = 0; index < lattice.Squares.Count; index++)
+            {
+                CityMapTeleportSquare square = lattice.Squares[index];
+                Assert.That(
+                    square.WorldBounds.Contains(new Vector2(
+                        square.StandingPosition.x,
+                        square.StandingPosition.z)),
+                    Is.True,
+                    $"Square {square.Cell} lands outside itself, so the " +
+                    "chart would send the player to its neighbour.");
+                Assert.That(
+                    walkable.Contains(square.StandingPosition, radius),
+                    Is.True,
+                    $"Square {square.Cell} is not walkable ground.");
+            }
+
+            // Every twenty metres of the real route has a square of its own,
+            // which is what "anywhere along the road" has to mean.
+            for (float distance = 0f;
+                 distance <= plan.Route.Length;
+                 distance += 20f)
+            {
+                Vector3 position = plan.Route.Sample(distance).Position;
+                Assert.That(
+                    lattice.TryGetSquareIndexAt(
+                        new Vector2(position.x, position.z),
+                        out int routeSquare),
+                    Is.True,
+                    $"The road at {distance:0} m has no square.");
+                Assert.That(
+                    Mathf.Abs(
+                        lattice.Squares[routeSquare].StandingPosition.y -
+                        position.y),
+                    Is.LessThanOrEqualTo(2.5f),
+                    "A road square must stand on the road, not on the " +
+                    "terrain the road is cut into.");
+            }
+
+            Vector2 plateauCenter = new Vector2(
+                plan.Plateau.Center.x,
+                plan.Plateau.Center.z);
+            Assert.That(
+                lattice.TryGetSquareIndexAt(
+                    plateauCenter,
+                    out int plateauSquare),
+                Is.True,
+                "The plateau at the top is the one place the road leads.");
+            Assert.That(
+                lattice.Squares[plateauSquare].StandingPosition.y,
+                Is.EqualTo(
+                    plan.Plateau.Center.y +
+                    PlayerFactory.GroundedRootOffset).Within(0.01f));
+        }
+
+        /// <summary>
+        /// The two areas share a coordinate system - the mountain route
+        /// starts at the world origin, on top of the city - so a mountain
+        /// arrival measured against the city's mask is not refused, it is
+        /// quietly answered with a street that is not in that scene. The map
+        /// clamps against the ground of the area the player is standing in.
+        /// </summary>
+        [Test]
+        [Category("MountainRoad")]
+        public void MountainMap_ClampsAgainstMountainGroundNotTheCity()
+        {
+            var host = new GameObject("Mountain Lattice Map Test");
+            var playerObject = new GameObject("Mountain Lattice Player");
+            try
+            {
+                CityLayout layout = CityLayoutGenerator.Generate(
+                    CityGenerationSettings.Default,
+                    58021);
+                PlayerInteractor interactor =
+                    playerObject.AddComponent<PlayerInteractor>();
+                var player = new PlayerRuntime(
+                    playerObject,
+                    null,
+                    interactor,
+                    null);
+                CityMapController controller =
+                    host.AddComponent<CityMapController>();
+                controller.Initialize(layout, player, null, null);
+
+                MountainRoadPlan plan = MountainRoadPlanner.Create(58021);
+                controller.ConfigureAreas(
+                    GameAreaId.MountainRoad,
+                    CityMapMountainRoadOverlayBuilder.Create(plan),
+                    _ => true,
+                    new CityMapMountainRoadTeleportGround(plan));
+
+                Assert.That(
+                    controller.ActiveTeleportLattice.IsEmpty,
+                    Is.True,
+                    "Charting the lattice costs thousands of mask probes, " +
+                    "so nobody pays for it until the inspector asks.");
+
+                Assert.That(
+                    controller.SetDebugTeleportEnabled(true),
+                    Is.True);
+                Assert.That(
+                    controller.SetMapPointInspectionEnabled(true),
+                    Is.True);
+
+                CityMapTeleportLattice lattice =
+                    controller.ActiveTeleportLattice;
+                Assert.That(lattice.Squares, Is.Not.Empty);
+                Assert.That(
+                    lattice.CellSize,
+                    Is.EqualTo(
+                        CityMapController.MountainRoadTeleportCellSize)
+                        .Within(0.001f));
+
+                IReadOnlyList<CityMapPointDescriptor> mountainPoints =
+                    controller.GetMapPoints(GameAreaId.MountainRoad);
+                Assert.That(
+                    mountainPoints.Count(
+                        point => point.Kind ==
+                                 CityMapPointKind.GroundSquare),
+                    Is.EqualTo(lattice.Squares.Count));
+                AssertUniqueFinitePoints(
+                    mountainPoints,
+                    GameAreaId.MountainRoad);
+                Assert.That(
+                    controller.GetMapPoints(GameAreaId.City).Any(
+                        point => point.Kind ==
+                                 CityMapPointKind.GroundSquare),
+                    Is.False,
+                    "The other tab charts a scene that is not loaded; " +
+                    "reaching it is a transition, not a teleport.");
+
+                // The pointer lands on ground, and the ground answers.
+                var plateauCenter = new Vector2(
+                    plan.Plateau.Center.x,
+                    plan.Plateau.Center.z);
+                Assert.That(
+                    controller.TryGetTeleportSquarePointIndex(
+                        plateauCenter,
+                        out int pointIndex),
+                    Is.True);
+                Assert.That(
+                    controller.SelectMapPoint(pointIndex),
+                    Is.True);
+                Assert.That(
+                    controller.TryGetSelectedMapPoint(
+                        out CityMapPointDescriptor selected,
+                        out Vector3 worldPosition),
+                    Is.True);
+                Assert.That(
+                    selected.Kind,
+                    Is.EqualTo(CityMapPointKind.GroundSquare));
+                Assert.That(
+                    worldPosition.y,
+                    Is.EqualTo(
+                        plan.Plateau.Center.y +
+                        PlayerFactory.GroundedRootOffset).Within(0.01f),
+                    "Clamped against the city mask this would have been " +
+                    "sampled off a street lying under the mountain.");
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(host);
+                UnityEngine.Object.DestroyImmediate(playerObject);
+            }
+        }
+
+        /// <summary>
+        /// In the city the lattice is the city's own cell grid, so a square
+        /// never cuts a block in half - and because the carriageway runs
+        /// along the SEAM between two squares rather than through the middle
+        /// of one, a square is answered from its edges as well as its
+        /// middle. Without that every street would be off the chart and
+        /// every block square would arrive inside its own building.
+        /// </summary>
+        [Test]
+        public void CityTeleportLattice_TurnsTheStreetsThemselvesIntoPlaces()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityGenerationSettings.Default,
+                58021);
+            var ground = new CityMapCityTeleportGround(layout);
+
+            CityMapTeleportLattice lattice =
+                CityMapTeleportLatticeBuilder.Create(
+                    layout.MapWorldXZBounds,
+                    new Vector2(layout.WorldOrigin.x, layout.WorldOrigin.z),
+                    Mathf.Min(
+                        layout.NodeSpacing.x,
+                        layout.NodeSpacing.y),
+                    ground);
+
+            Assert.That(lattice.Area, Is.EqualTo(GameAreaId.City));
+            Assert.That(lattice.Squares.Count, Is.GreaterThan(20));
+            for (int index = 0; index < lattice.Squares.Count; index++)
+            {
+                CityMapTeleportSquare square = lattice.Squares[index];
+                var landing = new Vector2(
+                    square.StandingPosition.x,
+                    square.StandingPosition.z);
+                Assert.That(
+                    square.WorldBounds.Contains(landing),
+                    Is.True,
+                    $"Square {square.Cell} lands outside itself.");
+                foreach (BuildingLot lot in layout.BuildingLots)
+                {
+                    if (!lot.HasBuilding)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(
+                        Mathf.Abs(landing.x - lot.Center.x) <
+                        lot.Size.x * 0.5f &&
+                        Mathf.Abs(landing.y - lot.Center.z) <
+                        lot.Size.y * 0.5f,
+                        Is.False,
+                        $"Square {square.Cell} arrives inside the building " +
+                        $"on {lot.Cell}. The walkable mask allows it - the " +
+                        "ground under a block is walkable and the building " +
+                        "is a collider standing on it - and it is still " +
+                        "not a place to be put down.");
+                }
+            }
+
+            // A square exists for the middle of a real street, which is the
+            // part of the city no marker ever covered.
+            RoadEdge edge = layout.RoadEdges[layout.RoadEdges.Count / 2];
+            Vector3 midpoint = (layout.GetNodeWorldPosition(edge.A) +
+                                layout.GetNodeWorldPosition(edge.B)) * 0.5f;
+            Assert.That(
+                lattice.TryGetSquareIndexAt(
+                    new Vector2(midpoint.x, midpoint.z),
+                    out _),
+                Is.True,
+                "The street between two junctions has no square.");
         }
 
         private static void AssertPoint(

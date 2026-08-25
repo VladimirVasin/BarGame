@@ -22,7 +22,14 @@ namespace BarPromenade
         Bridge,
         Plateau,
         Cafe,
-        Cableway
+        Cableway,
+
+        /// <summary>
+        /// One square of the map's even teleport lattice. It names no
+        /// landmark - it is the ground itself, offered so the whole chart is
+        /// a destination and not only the places something happens to stand.
+        /// </summary>
+        GroundSquare
     }
 
     /// <summary>
@@ -102,8 +109,7 @@ namespace BarPromenade
         private readonly List<CityMapPointDescriptor> mountainMapPoints =
             new List<CityMapPointDescriptor>(20);
 
-        private Func<GameAreaId, AreaArrivalToken, bool>
-            areaTravelRequested;
+        private Func<AreaTravelRequest, bool> areaTravelRequested;
         private bool areaTabsConfigured;
         private GameAreaId currentArea = GameAreaId.City;
         private GameAreaId selectedArea = GameAreaId.City;
@@ -111,6 +117,26 @@ namespace BarPromenade
             CityMapMountainRoadOverlay.Empty;
         private int selectedMapPointIndex = -1;
         private int mapPointFocusRevision;
+
+        // The ground of the area the player is STANDING in. Only that one is
+        // ever needed: the other tab charts a scene that is not loaded, and
+        // reaching it is a transition rather than a teleport.
+        private ICityMapTeleportGround currentAreaGround;
+        private CityMapTeleportLattice teleportLattice =
+            CityMapTeleportLattice.Empty;
+        private bool teleportLatticeBuilt;
+
+        // Where the lattice squares begin inside the current area's point
+        // catalog, so a pointer that lands on empty ground can be turned
+        // into a point index without searching.
+        private int teleportSquarePointOffset = -1;
+
+        /// <summary>
+        /// One mountain-road square in metres. The city takes its own cell
+        /// spacing instead, so a square there is a city cell and the lattice
+        /// never cuts a block in half.
+        /// </summary>
+        public const float MountainRoadTeleportCellSize = 8f;
 
         public bool AreaTabsConfigured => areaTabsConfigured;
         public IReadOnlyList<GameAreaId> AreaTabs => MapAreas;
@@ -143,13 +169,51 @@ namespace BarPromenade
         public Vector2 ActiveMapReferenceWorldSize =>
             selectedArea == GameAreaId.City && Layout != null
                 ? Layout.NodeSpacing
-                : new Vector2(8f, 8f);
+                : new Vector2(
+                    MountainRoadTeleportCellSize,
+                    MountainRoadTeleportCellSize);
+
+        /// <summary>
+        /// The side of one teleport square on the selected tab. It is the
+        /// same length the viewport keeps readable, so a square is never
+        /// smaller on screen than a comfortable click.
+        /// </summary>
+        public float ActiveTeleportCellSize
+        {
+            get
+            {
+                Vector2 reference = ActiveMapReferenceWorldSize;
+                return Mathf.Max(
+                    CityMapTeleportLatticeBuilder.MinimumCellSize,
+                    Mathf.Min(reference.x, reference.y));
+            }
+        }
+
+        /// <summary>
+        /// What the lattice lines are measured from, so they land on the
+        /// features the chart already draws: the city's own world origin,
+        /// and the tunnel portal on the mountain road.
+        /// </summary>
+        public Vector2 ActiveTeleportOriginAnchor =>
+            selectedArea == GameAreaId.City && Layout != null
+                ? new Vector2(Layout.WorldOrigin.x, Layout.WorldOrigin.z)
+                : Vector2.zero;
+
+        /// <summary>
+        /// The squares of the selected tab that are real destinations. Empty
+        /// on the tab the player is not standing in, and empty until the
+        /// point inspector asks for it.
+        /// </summary>
+        public CityMapTeleportLattice ActiveTeleportLattice =>
+            selectedArea == currentArea
+                ? teleportLattice
+                : CityMapTeleportLattice.Empty;
 
         public void ConfigureAreas(
             GameAreaId activeArea,
             IReadOnlyList<Vector3> mountainRouteSamples,
             Rect mountainPlateauBounds,
-            Func<GameAreaId, AreaArrivalToken, bool> travelRequested)
+            Func<AreaTravelRequest, bool> travelRequested)
         {
             ConfigureAreas(
                 activeArea,
@@ -162,7 +226,8 @@ namespace BarPromenade
         public void ConfigureAreas(
             GameAreaId activeArea,
             CityMapMountainRoadOverlay mountainPresentation,
-            Func<GameAreaId, AreaArrivalToken, bool> travelRequested)
+            Func<AreaTravelRequest, bool> travelRequested,
+            ICityMapTeleportGround activeAreaGround = null)
         {
             if (activeArea != GameAreaId.City &&
                 activeArea != GameAreaId.MountainRoad)
@@ -179,6 +244,14 @@ namespace BarPromenade
                     nameof(mountainPresentation));
             }
 
+            if (activeAreaGround != null &&
+                activeAreaGround.Area != activeArea)
+            {
+                throw new ArgumentException(
+                    "The teleport ground must belong to the active area.",
+                    nameof(activeAreaGround));
+            }
+
             areaTravelRequested = travelRequested;
             currentArea = activeArea;
             selectedArea = activeArea;
@@ -186,6 +259,8 @@ namespace BarPromenade
             pendingAreaMapCommands.Clear();
             SelectedMapObjectIndex = -1;
             selectedMapPointIndex = -1;
+            currentAreaGround = activeAreaGround;
+            ResetTeleportLattice();
             RebuildMapPointCatalogs();
         }
 
@@ -223,19 +298,26 @@ namespace BarPromenade
 
         public bool RequestAreaTravel(GameAreaId destinationArea)
         {
+            return RequestAreaTravel(
+                new AreaTravelRequest(
+                    destinationArea,
+                    AreaArrivalToken.MapTeleport),
+                "area_travel");
+        }
+
+        private bool RequestAreaTravel(
+            AreaTravelRequest request,
+            string closeReason)
+        {
             if (!areaTabsConfigured ||
-                !IsKnownArea(destinationArea) ||
-                destinationArea == currentArea ||
+                !IsKnownArea(request.DestinationArea) ||
+                request.DestinationArea == currentArea ||
                 areaTravelRequested == null)
             {
                 return false;
             }
 
-            Func<GameAreaId, AreaArrivalToken, bool> callback =
-                areaTravelRequested;
-            if (!callback(
-                    destinationArea,
-                    AreaArrivalToken.MapTeleport))
+            if (!areaTravelRequested(request))
             {
                 GameLog.Warning(
                     "map",
@@ -243,16 +325,16 @@ namespace BarPromenade
                     GameLog.Field("from_area", currentArea.ToString()),
                     GameLog.Field(
                         "to_area",
-                        destinationArea.ToString()),
+                        request.DestinationArea.ToString()),
                     GameLog.Field(
                         "arrival",
-                        AreaArrivalToken.MapTeleport.ToString()));
+                        request.ArrivalToken.ToString()));
                 return false;
             }
 
             if (IsOpen)
             {
-                Close(false, "area_travel");
+                Close(false, closeReason);
             }
 
             RetroAudio.Play(RetroSfxId.UiConfirm);
@@ -260,10 +342,17 @@ namespace BarPromenade
                 "map",
                 "area_travel_requested",
                 GameLog.Field("from_area", currentArea.ToString()),
-                GameLog.Field("to_area", destinationArea.ToString()),
+                GameLog.Field(
+                    "to_area",
+                    request.DestinationArea.ToString()),
                 GameLog.Field(
                     "arrival",
-                    AreaArrivalToken.MapTeleport.ToString()));
+                    request.ArrivalToken.ToString()),
+                GameLog.Field(
+                    "has_point",
+                    request.HasArrivalPosition),
+                GameLog.Field("x", request.ArrivalPosition.x),
+                GameLog.Field("z", request.ArrivalPosition.z));
             return true;
         }
 
@@ -324,6 +413,12 @@ namespace BarPromenade
             mapPointFocusRevision++;
             if (enabled)
             {
+                // The lattice is charted the first time somebody asks to
+                // see it, not at Initialize: it probes the walkable mask a
+                // few thousand times, and a player who never opens the
+                // inspector should never pay for it.
+                EnsureTeleportLattice();
+
                 // Only the LOT selection is dropped, not debug mode itself.
                 // The two used to cancel each other on the grounds that a
                 // map click cannot mean two things at once - which is true
@@ -347,6 +442,23 @@ namespace BarPromenade
 
         public bool SelectMapPoint(int pointIndex)
         {
+            return SelectMapPoint(pointIndex, true);
+        }
+
+        /// <summary>
+        /// Picks a point, and says whether the chart should be pulled back
+        /// under it.
+        ///
+        /// Key cycling has to recentre - the next point is usually off
+        /// screen and there is no other way to see where it went. A POINTER
+        /// pick must not: the square is already under the cursor, and
+        /// dragging the map out from under the hand on every click is the
+        /// difference between choosing a square and chasing one. That did
+        /// not matter while every point was a landmark and clicks were rare;
+        /// with a lattice, clicking is the whole interaction.
+        /// </summary>
+        public bool SelectMapPoint(int pointIndex, bool recentre)
+        {
             IReadOnlyList<CityMapPointDescriptor> points = ActiveMapPoints;
             if (!MapPointInspectionEnabled ||
                 pointIndex < 0 ||
@@ -359,7 +471,11 @@ namespace BarPromenade
             selectedMapPointIndex = pointIndex;
             if (changed)
             {
-                mapPointFocusRevision++;
+                if (recentre)
+                {
+                    mapPointFocusRevision++;
+                }
+
                 RetroAudio.Play(RetroSfxId.UiMove);
                 CityMapPointDescriptor point = points[pointIndex];
                 Vector3 position = ResolveMapPointWorldPosition(point);
@@ -396,18 +512,24 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Whether the selected point is somewhere the debug teleport can
-        /// actually put the player right now.
+        /// Whether the selected point is somewhere the map can actually put
+        /// the player right now.
         ///
-        /// Two things have to hold. Debug mode has to be on, because this is
-        /// a debug tool and not a fast-travel system. And the point has to
-        /// belong to the area the player is standing in: the other tab's
-        /// points are a chart of somewhere else, and moving between areas is
-        /// a scene transition rather than a `Motor.Teleport` - that is what
+        /// This used to demand debug mode ON TOP of the inspector, on the
+        /// grounds that it is a debug tool and not a fast-travel system.
+        /// That gate cost more than it bought. The inspector is already a
+        /// mode nobody enters by accident, and the second switch lived in
+        /// another window in another scene - so the mode simply looked
+        /// broken: you pick a point, you read its coordinates, and there is
+        /// nothing to press. Turning the inspector on IS the decision.
+        ///
+        /// What still has to hold is the area. The other tab's points chart
+        /// somewhere else, and moving between areas is a scene transition
+        /// rather than a `Motor.Teleport` - that is what
         /// <see cref="RequestAreaTravel"/> is for.
         /// </summary>
         public bool CanTeleportToSelectedMapPoint =>
-            DebugTeleportEnabled &&
+            MapPointInspectionEnabled &&
             IsOpen &&
             player.GameObject != null &&
             player.Motor != null &&
@@ -470,6 +592,64 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>
+        /// Whether the selected point is on the OTHER tab and the trip there
+        /// can be started.
+        ///
+        /// The panel used to stop at "point is in another area", which is a
+        /// statement of fact standing in for an answer. Getting there is a
+        /// scene transition rather than a `Motor.Teleport` - that part was
+        /// always right - but the transition is a thing the map can start,
+        /// and it can carry the coordinate with it.
+        /// </summary>
+        public bool CanTravelToSelectedMapPoint =>
+            MapPointInspectionEnabled &&
+            IsOpen &&
+            areaTabsConfigured &&
+            areaTravelRequested != null &&
+            TryGetSelectedMapPoint(
+                out CityMapPointDescriptor travelPoint,
+                out _) &&
+            travelPoint.Area != currentArea &&
+            IsKnownArea(travelPoint.Area);
+
+        /// <summary>
+        /// Loads the other area and arrives ON the selected point.
+        ///
+        /// The destination root clamps the coordinate to its own ground
+        /// before spawning, because a chart draws places and does not
+        /// promise a capsule fits in them - and if that fails it falls back
+        /// to its ordinary front door rather than dropping the hero into
+        /// scenery.
+        /// </summary>
+        public bool ConfirmMapPointTravel()
+        {
+            if (!CanTravelToSelectedMapPoint ||
+                !TryGetSelectedMapPoint(
+                    out CityMapPointDescriptor point,
+                    out Vector3 worldPosition))
+            {
+                return false;
+            }
+
+            if (!RequestAreaTravel(
+                    AreaTravelRequest.ToPoint(point.Area, worldPosition),
+                    "map_point_travel"))
+            {
+                return false;
+            }
+
+            GameLog.Info(
+                "map",
+                "map_point_travel_requested",
+                GameLog.Field("from_area", currentArea.ToString()),
+                GameLog.Field("to_area", point.Area.ToString()),
+                GameLog.Field("point_id", point.StableId),
+                GameLog.Field("x", worldPosition.x),
+                GameLog.Field("z", worldPosition.z));
+            return true;
+        }
+
         public Vector3 ResolveMapPointWorldPosition(
             CityMapPointDescriptor point)
         {
@@ -512,11 +692,158 @@ namespace BarPromenade
             cityMapPoints.Clear();
             mountainMapPoints.Clear();
             selectedMapPointIndex = -1;
+            teleportSquarePointOffset = -1;
             mapPointFocusRevision++;
 
             BuildCityMapPoints();
             BuildMountainMapPoints();
         }
+
+        internal void ResetTeleportLattice()
+        {
+            teleportLattice = CityMapTeleportLattice.Empty;
+            teleportLatticeBuilt = false;
+            teleportSquarePointOffset = -1;
+        }
+
+        /// <summary>
+        /// The ground of the area the player is standing in.
+        ///
+        /// A scene root hands its own in, because only it knows what its
+        /// world is made of. The City is the exception and needs no wiring:
+        /// its ground is the layout the map already holds, so an unwired
+        /// controller in the City still teleports exactly as it always did.
+        /// </summary>
+        private ICityMapTeleportGround EnsureCurrentAreaGround()
+        {
+            if (currentAreaGround != null &&
+                currentAreaGround.Area == currentArea)
+            {
+                return currentAreaGround;
+            }
+
+            if (currentArea != GameAreaId.City || Layout == null)
+            {
+                return null;
+            }
+
+            currentAreaGround = new CityMapCityTeleportGround(Layout);
+            return currentAreaGround;
+        }
+
+        /// <summary>
+        /// Charts every square of the current area that a capsule can be put
+        /// down in, and appends them to that area's point catalog behind the
+        /// named markers.
+        /// </summary>
+        private void EnsureTeleportLattice()
+        {
+            if (teleportLatticeBuilt)
+            {
+                return;
+            }
+
+            teleportLatticeBuilt = true;
+            ICityMapTeleportGround ground = EnsureCurrentAreaGround();
+            if (ground == null)
+            {
+                return;
+            }
+
+            Rect chart = currentArea == GameAreaId.MountainRoad
+                ? mountainRoadOverlay.DisplayWorldXZBounds
+                : DisplayWorldXZBounds;
+            float cellSize = currentArea == GameAreaId.City &&
+                             Layout != null
+                ? Mathf.Max(
+                    CityMapTeleportLatticeBuilder.MinimumCellSize,
+                    Mathf.Min(
+                        Layout.NodeSpacing.x,
+                        Layout.NodeSpacing.y))
+                : MountainRoadTeleportCellSize;
+            Vector2 anchor = currentArea == GameAreaId.City &&
+                             Layout != null
+                ? new Vector2(Layout.WorldOrigin.x, Layout.WorldOrigin.z)
+                : Vector2.zero;
+
+            teleportLattice = CityMapTeleportLatticeBuilder.Create(
+                chart,
+                anchor,
+                cellSize,
+                ground);
+            RebuildMapPointCatalogs();
+            GameLog.Info(
+                "map",
+                "teleport_lattice_built",
+                GameLog.Field("area", currentArea.ToString()),
+                GameLog.Field("cell_size", cellSize),
+                GameLog.Field("square_count", teleportLattice.Squares.Count));
+        }
+
+        /// <summary>
+        /// The lattice square under a chart coordinate, as an index into the
+        /// active point catalog. This is the map's last-resort pick: the
+        /// view only asks after every named marker has missed, so a square
+        /// can never swallow a click meant for a bar, a stop or a landmark.
+        /// </summary>
+        public bool TryGetTeleportSquarePointIndex(
+            Vector2 worldXZ,
+            out int pointIndex)
+        {
+            pointIndex = -1;
+            CityMapTeleportLattice lattice = ActiveTeleportLattice;
+            if (teleportSquarePointOffset < 0 ||
+                lattice.IsEmpty ||
+                !lattice.TryGetSquareIndexAt(worldXZ, out int squareIndex))
+            {
+                return false;
+            }
+
+            pointIndex = teleportSquarePointOffset + squareIndex;
+            return pointIndex < ActiveMapPoints.Count;
+        }
+
+        private void AppendTeleportSquares(
+            List<CityMapPointDescriptor> destination,
+            GameAreaId area,
+            string stableIdPrefix)
+        {
+            if (teleportLattice.IsEmpty ||
+                teleportLattice.Area != area ||
+                area != currentArea)
+            {
+                return;
+            }
+
+            teleportSquarePointOffset = destination.Count;
+            string labelFormat = LocalizationService.Get("map.point.square");
+            IReadOnlyList<CityMapTeleportSquare> squares =
+                teleportLattice.Squares;
+            for (int index = 0; index < squares.Count; index++)
+            {
+                CityMapTeleportSquare square = squares[index];
+                AddMapPoint(
+                    destination,
+                    $"{stableIdPrefix}:square:{square.Cell.x}:{square.Cell.y}",
+                    area,
+                    CityMapPointKind.GroundSquare,
+                    string.Format(
+                        labelFormat,
+                        square.Cell.x,
+                        square.Cell.y),
+                    square.StandingPosition,
+                    GroundSquarePriority,
+                    Vector2.zero,
+                    square.WorldBounds,
+                    true);
+            }
+        }
+
+        /// <summary>
+        /// Under everything, including the precinct names: the ground is
+        /// what the map reports when nothing else is there.
+        /// </summary>
+        private const int GroundSquarePriority = -20;
 
         private void BuildCityMapPoints()
         {
@@ -680,6 +1007,8 @@ namespace BarPromenade
                     bounds,
                     true);
             }
+
+            AppendTeleportSquares(cityMapPoints, GameAreaId.City, "city");
         }
 
         private void BuildMountainMapPoints()
@@ -776,6 +1105,11 @@ namespace BarPromenade
                     30,
                     new Vector2(24f, 24f));
             }
+
+            AppendTeleportSquares(
+                mountainMapPoints,
+                GameAreaId.MountainRoad,
+                "mountain-road");
         }
 
         private void AddSpecialLotPoint(

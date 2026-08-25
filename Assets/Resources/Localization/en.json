@@ -533,12 +533,20 @@
       "value": "Select a point on the map"
     },
     {
+      "key": "map.point.square",
+      "value": "Square {0}:{1}"
+    },
+    {
       "key": "map.point.coordinates",
       "value": "World coordinates\nX {0:0.0}      Z {1:0.0}"
     },
     {
       "key": "map.point.teleport",
       "value": "Teleport here"
+    },
+    {
+      "key": "map.point.travel",
+      "value": "Travel to this point"
     },
     {
       "key": "map.point.teleport_elsewhere",

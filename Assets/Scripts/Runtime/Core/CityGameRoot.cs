@@ -335,8 +335,34 @@ namespace BarPromenade
             Vector3 arrivalForward = Vector3.zero;
             bool hasAreaArrival = AreaTravelService.TryConsumeArrival(
                 GameAreaId.City,
-                out AreaArrivalToken areaArrivalToken);
-            if (hasAreaArrival)
+                out AreaArrivalToken areaArrivalToken,
+                out Vector3 areaArrivalPoint,
+                out bool hasAreaArrivalPoint);
+            var arrivalGround = new CityMapCityTeleportGround(Layout);
+            if (hasAreaArrival &&
+                hasAreaArrivalPoint &&
+                // Resolve the height from the ground under the coordinate
+                // first: a chart point carries whatever Y suited the thing
+                // it names - a bar's road anchor sits at zero - and a spawn
+                // has to stand on the street, not in it. The plain clamp is
+                // the fallback for ground the surface sampler will not
+                // answer for, such as the seacoast decks over water cells.
+                (arrivalGround.TryResolveStandingPosition(
+                     new Vector2(areaArrivalPoint.x, areaArrivalPoint.z),
+                     out Vector3 pointSpawn) ||
+                 arrivalGround.TryClampArrival(
+                     areaArrivalPoint,
+                     out pointSpawn)))
+            {
+                // The map asked for a place on this tab, not for the city.
+                // The height is already the one the chart resolved, so this
+                // arrival is finished and must not take the road-top lift
+                // the default spawn gets.
+                spawnPosition = pointSpawn;
+                spawnOnSidewalk = true;
+                spawnSource = "area_map_point";
+            }
+            else if (hasAreaArrival)
             {
                 if (World.FringeYardPlan.HasTunnelForecourt)
                 {
@@ -879,8 +905,7 @@ namespace BarPromenade
             Map.ConfigureAreas(
                 GameAreaId.City,
                 CityMapMountainRoadOverlayBuilder.Create(mountainMapPlan),
-                (area, token) =>
-                    AreaTravelService.Request(area, token));
+                request => AreaTravelService.Request(request));
             DebugWindow = ui.AddComponent<MinigameDebugWindow>();
             DebugWindow.Initialize(
                 Player,

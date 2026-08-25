@@ -90,7 +90,8 @@ namespace BarPromenade
             ConfirmDebugTeleport,
             ToggleMapPointInspection,
             SelectMapPoint,
-            ConfirmMapPointTeleport
+            ConfirmMapPointTeleport,
+            ConfirmMapPointTravel
         }
 
         private readonly struct PendingCommand
@@ -134,11 +135,6 @@ namespace BarPromenade
 
         private IReadOnlyList<CityMapAreaRegion> areaRegions =
             Array.Empty<CityMapAreaRegion>();
-
-        // Built on the first debug teleport, not at Initialize: it is the
-        // same mask CityWorldBuilder makes, and rebuilding it costs a full
-        // layout validation nobody needs unless a teleport happens.
-        private RoadWalkableArea walkableArea;
 
         private PlayerRuntime player;
         private PlayerCameraFollow cameraFollow;
@@ -246,7 +242,8 @@ namespace BarPromenade
             DisplayWorldXZBounds = CreateDisplayWorldXZBounds(
                 Layout.MapWorldXZBounds,
                 MountainBoundaryPlan);
-            walkableArea = null;
+            currentAreaGround = null;
+            ResetTeleportLattice();
             mapObjectLabelCache = null;
             barLabelCache = null;
             busStopLabelCache = null;
@@ -783,17 +780,14 @@ namespace BarPromenade
 
             DebugTeleportEnabled = enabled;
             SelectedMapObjectIndex = -1;
-            if (!enabled)
-            {
-                // Leaving debug mode takes the point inspector with it:
-                // the coordinate readout and the point teleport are both
-                // debug tools and neither should outlive the switch that
-                // turned them on. Turning debug mode ON no longer resets
-                // the inspector, because the two are meant to be used
-                // TOGETHER - pick the exact point, read its coordinates,
-                // go there.
-                ResetMapPointInspection();
-            }
+            // Leaving debug mode used to take the point inspector with it,
+            // on the grounds that the inspector was a debug tool that should
+            // not outlive the switch which armed it. It no longer is one -
+            // the inspector owns its own teleport and its own gate - so
+            // toggling debug mode in the F9 window has no business closing a
+            // mode it does not own. The two modes are simply independent
+            // now: debug mode picks whole lots and precincts, the inspector
+            // picks exact points and squares.
 
             GameLog.Info(
                 "map",
@@ -891,44 +885,28 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Holds an arrival to ground the player can actually stand on.
-        /// The mask, not the colliders, is the real boundary of the city,
-        /// and it is tested one rectangle at a time - so a point the
-        /// authored gate says is inside can still fall in a hole the river
-        /// cut. Where that happens the nearest legal point is used, and
-        /// its height re-sampled, rather than dropping the player in.
+        /// Holds an arrival to ground the player can actually stand on, in
+        /// the area the player is actually standing in.
+        ///
+        /// It used to clamp against the city's mask unconditionally, which
+        /// is right in the City and nonsense on the mountain road: the two
+        /// worlds share a coordinate system - the mountain route starts at
+        /// the world origin, on top of the city - so a mountain arrival was
+        /// silently measured against city streets and either refused or
+        /// dragged onto a pavement that is not in that scene.
         /// </summary>
         private bool TryClampToWalkableGround(
             Vector3 arrival,
             out Vector3 destination)
         {
-            walkableArea ??= RoadWalkableArea.FromLayout(Layout);
-            destination = arrival;
-            if (walkableArea.Contains(
-                    arrival,
-                    CityGroundTraversalPlanner.MaximumAgentRadius))
+            ICityMapTeleportGround ground = EnsureCurrentAreaGround();
+            if (ground == null)
             {
-                return true;
-            }
-
-            Vector3 nearest = walkableArea.ClosestPoint(
-                arrival,
-                CityGroundTraversalPlanner.MaximumAgentRadius);
-            if (!CityTerrainSurfacePlan.TrySampleGroundTop(
-                    Layout,
-                    new Vector2(nearest.x, nearest.z),
-                    out float groundTop,
-                    out CitySurfaceDescriptor surface) ||
-                surface.IsWater)
-            {
+                destination = arrival;
                 return false;
             }
 
-            destination = new Vector3(
-                nearest.x,
-                groundTop + PlayerFactory.GroundedRootOffset,
-                nearest.z);
-            return true;
+            return ground.TryClampArrival(arrival, out destination);
         }
 
         private Vector3 ResolveDebugTeleportDestination(
@@ -1071,16 +1049,28 @@ namespace BarPromenade
 
         public void QueueSelectMapPoint(int pointIndex)
         {
+            QueueSelectMapPoint(pointIndex, true);
+        }
+
+        public void QueueSelectMapPoint(int pointIndex, bool recentre)
+        {
             pendingCommands.Enqueue(
                 new PendingCommand(
                     CommandType.SelectMapPoint,
-                    barIndex: pointIndex));
+                    barIndex: pointIndex,
+                    direction: recentre ? 1 : 0));
         }
 
         public void QueueConfirmMapPointTeleport()
         {
             pendingCommands.Enqueue(
                 new PendingCommand(CommandType.ConfirmMapPointTeleport));
+        }
+
+        public void QueueConfirmMapPointTravel()
+        {
+            pendingCommands.Enqueue(
+                new PendingCommand(CommandType.ConfirmMapPointTravel));
         }
 
         private void Update()
@@ -1265,12 +1255,17 @@ namespace BarPromenade
                     case CommandType.SelectMapPoint:
                         if (IsOpen)
                         {
-                            SelectMapPoint(command.BarIndex);
+                            SelectMapPoint(
+                                command.BarIndex,
+                                command.Direction != 0);
                         }
 
                         break;
                     case CommandType.ConfirmMapPointTeleport:
                         ConfirmMapPointTeleport();
+                        break;
+                    case CommandType.ConfirmMapPointTravel:
+                        ConfirmMapPointTravel();
                         break;
                 }
             }

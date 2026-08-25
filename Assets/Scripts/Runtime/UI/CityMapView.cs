@@ -23,6 +23,10 @@ namespace BarPromenade
         // goes to the hero.
         private const int PlayerHoverPriority = 40;
         private const float MinimumMapCellPixels = 22f;
+        // A backstop, not a budget: the lattice step comes from the same
+        // world size the viewport keeps readable, so a tab can only ask for
+        // more lines than this if that contract has been broken.
+        private const int MaximumLatticeLinesPerAxis = 512;
         private const float KeyboardPanSpeed = 116f;
         private const float MouseWheelStep = 18f;
         private const float MountainTunnelMarkerWidth = 19f;
@@ -70,6 +74,27 @@ namespace BarPromenade
                         ScreenRect.yMax,
                         ScreenRect.yMin,
                         normalizedZ));
+            }
+
+            /// <summary>
+            /// The chart coordinate a screen point sits over. Clamped to the
+            /// chart on purpose: the drawn map is the whole world the tab
+            /// has, so a pointer beyond its edge names the edge rather than
+            /// inventing ground outside it.
+            /// </summary>
+            public Vector2 ScreenToWorld(Vector2 screenPosition)
+            {
+                float normalizedX = Mathf.InverseLerp(
+                    ScreenRect.xMin,
+                    ScreenRect.xMax,
+                    screenPosition.x);
+                float normalizedZ = Mathf.InverseLerp(
+                    ScreenRect.yMax,
+                    ScreenRect.yMin,
+                    screenPosition.y);
+                return new Vector2(
+                    Mathf.Lerp(MinimumX, MaximumX, normalizedX),
+                    Mathf.Lerp(MinimumZ, MaximumZ, normalizedZ));
             }
         }
 
@@ -191,6 +216,19 @@ namespace BarPromenade
         private static readonly Color TooltipBackdrop =
             new Color32(19, 15, 25, 250);
 
+        // The even lattice the point inspector rules over the whole chart,
+        // and the scrim that puts out the squares nothing can stand in.
+        //
+        // Marking the DEAD squares rather than the live ones is deliberate:
+        // every square of the city is a destination, so tinting the live
+        // ones there would be a wash over the whole chart that says nothing.
+        // The mountain road keeps about two squares in five, and there the
+        // scrim is the whole answer.
+        private static readonly Color TeleportLatticeLine =
+            new Color32(151, 161, 148, 48);
+        private static readonly Color TeleportDeadSquareScrim =
+            new Color32(12, 14, 17, 92);
+
         internal static Color BusRouteColor => BusRoute;
 
         // Every marker plus one background target per visible area cell.
@@ -219,6 +257,10 @@ namespace BarPromenade
         private bool isMapLineContextActive;
         private Rect mapLineClipRect;
         private Vector2 mapLineGroupOffset;
+        // Kept from the map pass so the tooltip, drawn after the group has
+        // closed, can still say which square the pointer rests on.
+        private MapProjection lastInspectionProjection;
+        private bool hasInspectionProjection;
         private GUIStyle titleStyle;
         private GUIStyle subtitleStyle;
         private GUIStyle centeredStyle;
@@ -370,6 +412,7 @@ namespace BarPromenade
 
                 HandlePointerScrolling(mapArea, logicalPointer);
                 hoverTargets.Clear();
+                hasInspectionProjection = false;
                 hoverBlockRect = Rect.zero;
                 hoverCoordinateOffset = mapArea.position;
                 hoverClipRect = mapArea;
@@ -533,12 +576,33 @@ namespace BarPromenade
                 return;
             }
 
+            lastInspectionProjection = projection;
+            hasInspectionProjection = true;
+            DrawTeleportLattice(projection);
+
             IReadOnlyList<CityMapPointDescriptor> points =
                 controller.ActiveMapPoints;
             int selectedIndex = controller.SelectedMapPointIndex;
             for (int index = 0; index < points.Count; index++)
             {
                 CityMapPointDescriptor point = points[index];
+
+                // A ground square is the layer UNDER the markers, so it
+                // registers no hover target of its own. Registering one
+                // would put a whole square into the same distance-first
+                // contest a bar marker wins by being small and near, and a
+                // square is neither. The pointer finds it arithmetically
+                // instead, once everything named has missed.
+                if (point.Kind == CityMapPointKind.GroundSquare)
+                {
+                    if (index == selectedIndex)
+                    {
+                        DrawSelectedTeleportSquare(projection, point);
+                    }
+
+                    continue;
+                }
+
                 Vector3 worldPosition =
                     controller.ResolveMapPointWorldPosition(point);
                 Vector2 anchor = projection.WorldToScreen(worldPosition);
@@ -618,10 +682,179 @@ namespace BarPromenade
             int pointIndex = ResolveMapPointIndex(
                 hoverTargets,
                 globalPointer);
+            if (pointIndex < 0 &&
+                TryResolveTeleportSquarePoint(
+                    projection,
+                    current.mousePosition,
+                    out int squarePointIndex))
+            {
+                pointIndex = squarePointIndex;
+            }
+
             if (pointIndex >= 0)
             {
-                controller.QueueSelectMapPoint(pointIndex);
+                // No recentre on a pointer pick: what was clicked is already
+                // under the hand, and pulling the chart out from under it on
+                // every click makes choosing a square into chasing one.
+                controller.QueueSelectMapPoint(pointIndex, false);
             }
+        }
+
+        /// <summary>
+        /// The even lattice of squares the point inspector rules over the
+        /// whole chart, so that every part of the map is a place and not
+        /// only the parts something happens to stand on.
+        ///
+        /// Lines are ruled across the tab whatever the tab is. The scrim
+        /// belongs to the squares the area's own ground refused, and the tab
+        /// the player is not standing in gets none of it, because reaching
+        /// that scene is a transition rather than a teleport.
+        /// </summary>
+        private void DrawTeleportLattice(MapProjection projection)
+        {
+            float cellSize = controller.ActiveTeleportCellSize;
+            if (cellSize < CityMapTeleportLatticeBuilder.MinimumCellSize)
+            {
+                return;
+            }
+
+            Rect chart = controller.ActiveDisplayWorldXZBounds;
+            Vector2 firstCorner = projection.ScreenToWorld(
+                new Vector2(mapLineClipRect.xMin, mapLineClipRect.yMax));
+            Vector2 secondCorner = projection.ScreenToWorld(
+                new Vector2(mapLineClipRect.xMax, mapLineClipRect.yMin));
+            Rect visible = Intersect(
+                Rect.MinMaxRect(
+                    Mathf.Min(firstCorner.x, secondCorner.x),
+                    Mathf.Min(firstCorner.y, secondCorner.y),
+                    Mathf.Max(firstCorner.x, secondCorner.x),
+                    Mathf.Max(firstCorner.y, secondCorner.y)),
+                chart);
+            if (visible.width <= 0f || visible.height <= 0f)
+            {
+                return;
+            }
+
+            DrawDeadTeleportSquares(projection, visible);
+            Vector2 anchor = controller.ActiveTeleportOriginAnchor;
+            DrawTeleportLatticeLines(
+                projection,
+                visible,
+                anchor.x,
+                cellSize,
+                true);
+            DrawTeleportLatticeLines(
+                projection,
+                visible,
+                anchor.y,
+                cellSize,
+                false);
+        }
+
+        /// <summary>
+        /// Puts out the squares of the current area that no arrival fits in.
+        /// The tab the player is not standing in has no lattice at all, and
+        /// gets no scrim - an unbuilt chart is not the same claim as a chart
+        /// of dead ground.
+        /// </summary>
+        private void DrawDeadTeleportSquares(
+            MapProjection projection,
+            Rect visible)
+        {
+            CityMapTeleportLattice lattice =
+                controller.ActiveTeleportLattice;
+            if (lattice.IsEmpty)
+            {
+                return;
+            }
+
+            Vector2Int first = lattice.GetCell(visible.min);
+            Vector2Int last = lattice.GetCell(visible.max);
+            first = Vector2Int.Max(first, lattice.MinimumCell);
+            last = Vector2Int.Min(last, lattice.MaximumCell);
+            if (last.x - first.x > MaximumLatticeLinesPerAxis ||
+                last.y - first.y > MaximumLatticeLinesPerAxis)
+            {
+                return;
+            }
+
+            for (int cellZ = first.y; cellZ <= last.y; cellZ++)
+            {
+                for (int cellX = first.x; cellX <= last.x; cellX++)
+                {
+                    var cell = new Vector2Int(cellX, cellZ);
+                    if (lattice.TryGetSquareIndex(cell, out _))
+                    {
+                        continue;
+                    }
+
+                    DrawSolidRect(
+                        ProjectWorldRect(
+                            projection,
+                            lattice.GetCellWorldBounds(cell)),
+                        TeleportDeadSquareScrim);
+                }
+            }
+        }
+
+        private void DrawTeleportLatticeLines(
+            MapProjection projection,
+            Rect visible,
+            float anchor,
+            float cellSize,
+            bool vertical)
+        {
+            float minimum = vertical ? visible.xMin : visible.yMin;
+            float maximum = vertical ? visible.xMax : visible.yMax;
+            int first = Mathf.CeilToInt((minimum - anchor) / cellSize);
+            int last = Mathf.FloorToInt((maximum - anchor) / cellSize);
+            if (last - first > MaximumLatticeLinesPerAxis)
+            {
+                return;
+            }
+
+            for (int index = first; index <= last; index++)
+            {
+                float coordinate = anchor + index * cellSize;
+                Vector3 start = vertical
+                    ? new Vector3(coordinate, 0f, visible.yMin)
+                    : new Vector3(visible.xMin, 0f, coordinate);
+                Vector3 end = vertical
+                    ? new Vector3(coordinate, 0f, visible.yMax)
+                    : new Vector3(visible.xMax, 0f, coordinate);
+                DrawLine(
+                    projection.WorldToScreen(start),
+                    projection.WorldToScreen(end),
+                    1f,
+                    TeleportLatticeLine);
+            }
+        }
+
+        private void DrawSelectedTeleportSquare(
+            MapProjection projection,
+            CityMapPointDescriptor point)
+        {
+            Rect box = ProjectWorldRect(
+                projection,
+                point.WorldXZHitBounds);
+            RetroUiTheme.StrokeRect(box, 2f, RetroUiTheme.AccentPale);
+            DrawOpenOctagonOutline(
+                projection.WorldToScreen(point.WorldPosition),
+                7f,
+                2f,
+                RetroUiTheme.AccentPale);
+        }
+
+        private bool TryResolveTeleportSquarePoint(
+            MapProjection projection,
+            Vector2 localPointer,
+            out int pointIndex)
+        {
+            pointIndex = -1;
+            return projection.ScreenRect.Contains(localPointer) &&
+                   controller.TryGetTeleportSquarePointIndex(
+                       projection.ScreenToWorld(localPointer),
+                       out pointIndex);
         }
 
         private void HandlePointerScrolling(
@@ -2256,6 +2489,13 @@ namespace BarPromenade
                 logicalPointer);
             if (string.IsNullOrEmpty(label))
             {
+                // Nothing named is here, so the ground answers - the same
+                // last-resort square a click would pick.
+                label = ResolveHoveredTeleportSquareLabel(logicalPointer);
+            }
+
+            if (string.IsNullOrEmpty(label))
+            {
                 return;
             }
 
@@ -2293,6 +2533,33 @@ namespace BarPromenade
                     tooltip.height - 8f),
                 content,
                 tooltipStyle);
+        }
+
+        private string ResolveHoveredTeleportSquareLabel(
+            Vector2 logicalPointer)
+        {
+            if (!hasInspectionProjection ||
+                !hoverClipRect.Contains(logicalPointer))
+            {
+                return string.Empty;
+            }
+
+            // The map draws inside a GUI group, so the projection speaks in
+            // group-local coordinates while the tooltip runs after the group
+            // has closed.
+            if (!TryResolveTeleportSquarePoint(
+                    lastInspectionProjection,
+                    logicalPointer - hoverClipRect.position,
+                    out int pointIndex))
+            {
+                return string.Empty;
+            }
+
+            IReadOnlyList<CityMapPointDescriptor> points =
+                controller.ActiveMapPoints;
+            return pointIndex < points.Count
+                ? points[pointIndex].Label
+                : string.Empty;
         }
 
         internal static string ResolveHoveredLabel(
@@ -2647,33 +2914,54 @@ namespace BarPromenade
         /// Go to the point that is selected, not to the middle of the region
         /// that contains it.
         ///
-        /// Only in debug mode, and only for the tab the player is actually
-        /// standing in. The other tab's points chart somewhere else, and
-        /// getting there is a scene transition rather than a teleport - the
-        /// area travel button already owns that.
+        /// The button belongs to the inspector itself now rather than to
+        /// debug mode. It was hidden outright unless the F9 window had been
+        /// used to arm the teleport - a switch in another window, and in the
+        /// mountain-road scene one that did not exist at all - so the mode
+        /// read as broken: a point, its coordinates, and nothing to press.
+        ///
+        /// It still only reaches the tab the player is standing in. The
+        /// other tab charts somewhere else, and getting there is a scene
+        /// transition that the area travel button already owns.
         /// </summary>
         private void DrawMapPointTeleportButton(
             Rect panel,
             CityMapPointDescriptor point)
         {
-            if (!controller.DebugTeleportEnabled)
-            {
-                return;
-            }
-
             var button = new Rect(
                 panel.x + 18f,
                 panel.y + 176f,
                 panel.width - 36f,
                 24f);
             bool reachable = controller.CanTeleportToSelectedMapPoint;
+            bool travelable = !reachable &&
+                              controller.CanTravelToSelectedMapPoint;
             RetroUiTheme.DrawPanel(
                 button,
                 RetroUiTheme.PanelRaised,
-                reachable ? RetroUiTheme.Good : RetroUiTheme.BorderMuted,
-                reachable,
+                reachable || travelable
+                    ? RetroUiTheme.Good
+                    : RetroUiTheme.BorderMuted,
+                reachable || travelable,
                 2f,
                 1f);
+            if (travelable)
+            {
+                // The other tab is a scene that is not loaded, so this is a
+                // transition and not a teleport - which the panel used to
+                // report and then stop at. It is still a trip the map can
+                // start, and the coordinate rides along.
+                if (GUI.Button(
+                        button,
+                        LocalizationService.Get("map.point.travel"),
+                        hintStyle))
+                {
+                    controller.QueueConfirmMapPointTravel();
+                }
+
+                return;
+            }
+
             if (!reachable)
             {
                 GUI.Label(

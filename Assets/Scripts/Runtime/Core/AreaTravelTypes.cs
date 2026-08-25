@@ -1,4 +1,5 @@
 using System;
+using UnityEngine;
 
 namespace BarPromenade
 {
@@ -21,7 +22,14 @@ namespace BarPromenade
     {
         Default = 0,
         MapTeleport = 1,
-        Tunnel = 2
+        Tunnel = 2,
+
+        /// <summary>
+        /// The map was asked for a specific place on the other tab, so the
+        /// request carries a coordinate and the destination root is expected
+        /// to spawn on it instead of at its own front door.
+        /// </summary>
+        MapPoint = 3
     }
 
     public readonly struct AreaTravelRequest : IEquatable<AreaTravelRequest>
@@ -29,22 +37,66 @@ namespace BarPromenade
         public AreaTravelRequest(
             GameAreaId destinationArea,
             AreaArrivalToken arrivalToken = AreaArrivalToken.Default)
+            : this(destinationArea, arrivalToken, Vector3.zero, false)
+        {
+        }
+
+        private AreaTravelRequest(
+            GameAreaId destinationArea,
+            AreaArrivalToken arrivalToken,
+            Vector3 arrivalPosition,
+            bool hasArrivalPosition)
         {
             DestinationArea = destinationArea;
             ArrivalToken = arrivalToken;
+            ArrivalPosition = arrivalPosition;
+            HasArrivalPosition = hasArrivalPosition;
+        }
+
+        /// <summary>
+        /// Travel that ends somewhere in particular.
+        ///
+        /// Picking a place on the other tab and being put down at that
+        /// area's front door is not the same answer to the same question,
+        /// and the chart already knows the coordinate. The destination root
+        /// still clamps it to its own ground - the map draws places, it does
+        /// not promise a capsule fits there.
+        /// </summary>
+        public static AreaTravelRequest ToPoint(
+            GameAreaId destinationArea,
+            Vector3 arrivalPosition)
+        {
+            return new AreaTravelRequest(
+                destinationArea,
+                AreaArrivalToken.MapPoint,
+                arrivalPosition,
+                true);
         }
 
         public GameAreaId DestinationArea { get; }
         public AreaArrivalToken ArrivalToken { get; }
+        public Vector3 ArrivalPosition { get; }
+        public bool HasArrivalPosition { get; }
 
         public bool IsValid =>
             AreaSceneCatalog.IsSupported(DestinationArea) &&
-            Enum.IsDefined(typeof(AreaArrivalToken), ArrivalToken);
+            Enum.IsDefined(typeof(AreaArrivalToken), ArrivalToken) &&
+            (!HasArrivalPosition || IsFinite(ArrivalPosition));
 
         public bool Equals(AreaTravelRequest other)
         {
             return DestinationArea == other.DestinationArea &&
-                   ArrivalToken == other.ArrivalToken;
+                   ArrivalToken == other.ArrivalToken &&
+                   HasArrivalPosition == other.HasArrivalPosition &&
+                   (!HasArrivalPosition ||
+                    ArrivalPosition == other.ArrivalPosition);
+        }
+
+        private static bool IsFinite(Vector3 value)
+        {
+            return !float.IsNaN(value.x) && !float.IsInfinity(value.x) &&
+                   !float.IsNaN(value.y) && !float.IsInfinity(value.y) &&
+                   !float.IsNaN(value.z) && !float.IsInfinity(value.z);
         }
 
         public override bool Equals(object obj)
@@ -56,8 +108,11 @@ namespace BarPromenade
         {
             unchecked
             {
-                return ((int)DestinationArea * 397) ^
-                       (int)ArrivalToken;
+                int hash = ((int)DestinationArea * 397) ^
+                           (int)ArrivalToken;
+                return HasArrivalPosition
+                    ? (hash * 397) ^ ArrivalPosition.GetHashCode()
+                    : hash;
             }
         }
 

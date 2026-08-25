@@ -6,6 +6,108 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-25 — The whole map is squares now, and the mountain road can be walked into
+
+- **The chart was only a destination where something happened to stand.** The
+  point inspector could pick a bar, a stop, a precinct or a landmark, and the
+  gaps between them — every street, every shoulder, every switchback shelf —
+  were not addressable at all. `CityMapTeleportLattice` rules an even square
+  lattice over the whole tab and keeps the squares its area's ground answers
+  for; each kept square joins that area's point catalog, so selection, the
+  coordinate readout, key cycling and the existing teleport button all work on
+  it unchanged. Coverage measured on the default seed: the city keeps **all
+  196** of its squares, the mountain road **151 of 350** — the entire
+  serpentine including the bridge, and the whole plateau.
+- **The step is the size the viewport already keeps readable**, so a square is
+  never smaller on screen than a comfortable click: the city takes its own cell
+  spacing (`26 m`) anchored on `WorldOrigin`, so one square is one city cell and
+  the lattice cannot cut a block in half; the mountain road takes `8 m` from
+  the tunnel portal.
+- **A square is probed from its edges, not only its middle, and that is the
+  whole trick.** Anchoring on the city grid puts the carriageway on the SEAM
+  between two squares rather than through the middle of one, so a centre-only
+  probe would have left every street off the chart — and would have answered
+  each block square with a point inside its own building, because the walkable
+  mask counts the ground under a block as walkable and treats the building as
+  a collider standing on it. Nine probe points per square, footprints
+  subtracted, nearest-to-centre wins.
+- **The mountain teleport was measuring against the city.** `TryClampToWalkableGround`
+  built `RoadWalkableArea.FromLayout(Layout)` unconditionally — right in the
+  City, nonsense on the mountain road, and not a refusal but a wrong answer:
+  the two scenes share one coordinate system and the mountain route starts at
+  the world origin, directly on top of the city, so a hairpin or the cafe was
+  clamped onto a street that is not in that scene. The clamp is now
+  `ICityMapTeleportGround`, one per area; `MountainRoadRoot` hands the map its
+  own `World.WalkableArea`, the City needs no wiring and behaves exactly as
+  before. Mountain heights are derived rather than sampled — the road is its
+  own centreline samples, the plateau one flat slab, the tunnel the portal
+  floor — which also fixes landmarks whose authored Y belonged to a prop.
+- **Squares register no hover target, on purpose.** The map resolves hover and
+  clicks by distance first and priority only as a tie-break, so a whole square
+  would have outbid the small markers lying inside it. The pointer finds a
+  square arithmetically instead, and only after every named target has missed —
+  which also keeps the pass at ~14 rects and ~40 lines per repaint rather than
+  a few hundred hit boxes.
+- **A pointer pick no longer recentres the chart.** Key cycling still does, and
+  must — the next point is usually off screen. A click must not: the square is
+  already under the cursor, and pulling the map out from under the hand every
+  time is the difference between choosing a square and chasing one. It did not
+  matter while every point was a landmark; with a lattice, clicking is the
+  whole interaction.
+- The lattice is charted the first time the inspector is opened, not at
+  `Initialize`: it costs a few thousand mask probes and a player who never
+  presses `XYZ` should never pay for it.
+- **And none of it could have been reached.** The teleport button was hidden
+  outright unless `DebugTeleportEnabled` was armed — and the only switch for
+  that, `MinigameDebugWindow`, existed in `City` and `BarInterior` only, while
+  the flag lives on the map controller, which is rebuilt per scene. So
+  travelling to the mountain road turned the teleport off and left nothing to
+  turn it back on. Two changes: `MountainRoadRoot` now builds the same F9
+  window (it was already area-neutral), and **the inspector carries its own
+  teleport** — turning `XYZ` on IS the decision. The old gate was a second
+  switch in another window in another scene guarding a mode nobody enters by
+  accident, and its whole visible effect was to make the mode look broken:
+  pick a point, read its coordinates, nothing to press. The area check stays;
+  that one is real. Debug mode and the inspector are simply independent now,
+  so toggling F9 no longer closes a mode it does not own.
+- **And then the other tab said "point is in another area" and stopped.** That
+  is a statement of fact standing in for an answer. Both halves of it were
+  true — the other tab charts a scene that is not loaded, and reaching it is a
+  transition rather than a `Motor.Teleport` — and neither half implies the map
+  cannot start that transition. `AreaTravelRequest` now optionally carries an
+  arrival coordinate under a new `AreaArrivalToken.MapPoint`; the service arms
+  it with the token before destination activation, exactly where the old
+  comment said exact-position persistence belonged. The button reads "travel
+  to this point", the ordinary `AreaLoading` runs, and the destination root
+  spawns on the coordinate: `MountainRoadRoot` through its own walkable mask,
+  `CityGameRoot` by resolving the height from the ground under the point
+  first (a chart point carries whatever Y suited the thing it names — a bar's
+  road anchor sits at zero) and by the plain clamp for decks the surface
+  sampler will not answer for. Either failing falls back to that area's
+  ordinary front door rather than dropping the hero into scenery. The travel
+  callback became `Func<AreaTravelRequest, bool>` on the way, since a
+  `(area, token)` pair can no longer say what is being asked for.
+- **A leaked static came out of hiding on the way.**
+  `CrossAreaTravel_RejectionKeepsSelectionAndReportsFalse` ends with the map
+  deliberately still open and then destroys it, and `BarMinigameModalLock` is
+  a plain object in a static field — it does not go null when its owner dies.
+  Every earlier fixture happened to never open anything afterwards, so it
+  stayed invisible until a new fixture called `Open()` and was refused with no
+  error anywhere (green alone, red in the suite — the signature). Closed at
+  the source, and the new fixture reads `IsAnyLocked` first, which is the
+  property's own retire-a-dead-lock path.
+- Verification: focused EditMode over `CityMapAreaPresentationTests`,
+  `CityMapDistrictPresentationTests`, `LocalizationCatalogTests` and
+  `AreaTravelContractTests` — `61/61`, including five new contracts
+  (`MountainTeleportLattice_CoversTheWholeRoadAndPlateau`,
+  `MountainMap_ClampsAgainstMountainGroundNotTheCity`,
+  `CityTeleportLattice_TurnsTheStreetsThemselvesIntoPlaces`,
+  `PointInspection_TeleportsWithoutArmingDebugModeFirst`,
+  `MapPointOnTheOtherTab_TravelsCarryingTheCoordinate`). Coverage itself
+  was read off a throwaway probe that dumped both lattices as ASCII and was
+  then deleted — IMGUI cannot be captured headlessly, so the drawn grid and
+  scrim are unverified by machine and want an eye in the editor.
+
 ## 2026-08-25 — The Ferryman's own lamp was blowing him out
 
 - Halved it: `70/22` night/day to `38/12`, range unchanged at `5.2 m`. That

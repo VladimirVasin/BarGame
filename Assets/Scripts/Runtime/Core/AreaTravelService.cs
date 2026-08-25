@@ -21,6 +21,8 @@ namespace BarPromenade
         private static bool hasArrival;
         private static GameAreaId arrivalArea;
         private static AreaArrivalToken arrivalToken;
+        private static Vector3 arrivalPosition;
+        private static bool hasArrivalPosition;
         private static long operationSequence;
         private static string activeOperationId = string.Empty;
         private static string sourceScene = string.Empty;
@@ -50,6 +52,8 @@ namespace BarPromenade
             hasArrival = false;
             arrivalArea = default;
             arrivalToken = default;
+            arrivalPosition = default;
+            hasArrivalPosition = false;
             operationSequence = 0L;
             activeOperationId = string.Empty;
             sourceScene = string.Empty;
@@ -128,18 +132,39 @@ namespace BarPromenade
             GameAreaId area,
             out AreaArrivalToken token)
         {
+            return TryConsumeArrival(area, out token, out _, out _);
+        }
+
+        /// <summary>
+        /// The same single consumption, plus the coordinate the map asked
+        /// for when the trip was a point rather than an area. The
+        /// destination root owns what to do with it - the position is a
+        /// place the chart draws, not a promise that a capsule fits there.
+        /// </summary>
+        public static bool TryConsumeArrival(
+            GameAreaId area,
+            out AreaArrivalToken token,
+            out Vector3 position,
+            out bool hasPosition)
+        {
             if (!AreaSceneCatalog.IsSupported(area) ||
                 !hasArrival ||
                 arrivalArea != area)
             {
                 token = AreaArrivalToken.Default;
+                position = default;
+                hasPosition = false;
                 return false;
             }
 
             token = arrivalToken;
+            position = arrivalPosition;
+            hasPosition = hasArrivalPosition;
             hasArrival = false;
             arrivalArea = default;
             arrivalToken = default;
+            arrivalPosition = default;
+            hasArrivalPosition = false;
             return true;
         }
 
@@ -188,6 +213,8 @@ namespace BarPromenade
             hasArrival = false;
             arrivalArea = default;
             arrivalToken = default;
+            arrivalPosition = default;
+            hasArrivalPosition = false;
             Progress = 0f;
             IsTraveling = true;
 
@@ -300,6 +327,8 @@ namespace BarPromenade
             hasArrival = true;
             arrivalArea = request.DestinationArea;
             arrivalToken = request.ArrivalToken;
+            arrivalPosition = request.ArrivalPosition;
+            hasArrivalPosition = request.HasArrivalPosition;
             destinationOperation.allowSceneActivation = true;
             while (!destinationOperation.isDone)
             {
@@ -429,6 +458,8 @@ namespace BarPromenade
             hasArrival = false;
             arrivalArea = default;
             arrivalToken = default;
+            arrivalPosition = default;
+            hasArrivalPosition = false;
             ClearPending();
         }
 
@@ -481,6 +512,8 @@ namespace BarPromenade
                 hasArrival = false;
                 arrivalArea = default;
                 arrivalToken = default;
+                arrivalPosition = default;
+                hasArrivalPosition = false;
                 ClearPending();
             }
         }

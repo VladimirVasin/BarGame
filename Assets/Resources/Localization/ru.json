@@ -533,12 +533,20 @@
       "value": "Выберите точку на карте"
     },
     {
+      "key": "map.point.square",
+      "value": "Квадрат {0}:{1}"
+    },
+    {
       "key": "map.point.coordinates",
       "value": "Мировые координаты\nX {0:0.0}      Z {1:0.0}"
     },
     {
       "key": "map.point.teleport",
       "value": "Телепорт сюда"
+    },
+    {
+      "key": "map.point.travel",
+      "value": "Перейти в эту точку"
     },
     {
       "key": "map.point.teleport_elsewhere",
