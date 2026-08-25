@@ -29,7 +29,19 @@ namespace BarPromenade
         /// request carries a coordinate and the destination root is expected
         /// to spawn on it instead of at its own front door.
         /// </summary>
-        MapPoint = 3
+        MapPoint = 3,
+
+        /// <summary>
+        /// The hero did not walk here: he is sitting in the Ferryman's car,
+        /// which drove into the city's south tunnel and has to come out of the
+        /// mountain's one still moving, with him still in the seat.
+        ///
+        /// This is the only token that arrives with the player already inside
+        /// a contextual interaction, so <see cref="MountainRoadRoot"/> raises
+        /// the car before it decides where to put him and then hands him
+        /// straight back to it.
+        /// </summary>
+        Ferryman = 4
     }
 
     public readonly struct AreaTravelRequest : IEquatable<AreaTravelRequest>

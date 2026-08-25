@@ -37,6 +37,19 @@ namespace BarPromenade
         public AreaArrivalToken ArrivalToken { get; private set; }
         public bool HadAreaArrival { get; private set; }
 
+        /// <summary>The Ferryman's car, once it has been driven up here. Null
+        /// on every visit before that.</summary>
+        public LastRouteCarAssetRegistry LastRouteCar { get; private set; }
+        public LastRouteFerrymanPresentation LastRouteFerryman
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>The climb, while it is being driven. Null once the car has
+        /// stopped, and on any visit that did not arrive in it.</summary>
+        public LastRouteRideController Ride { get; private set; }
+
         private void Awake()
         {
             Initialize();
@@ -126,6 +139,10 @@ namespace BarPromenade
                 false);
             BuildAtmosphere(camera);
             BuildCommonUi(ui);
+            // After the camera follow, because arriving in the car takes the
+            // lens on its very first frame and the seat resolves the follow
+            // rig off the camera to do it.
+            BuildLastRoute(camera);
             IsInitialized = true;
 
             timer.Stop();
@@ -139,6 +156,92 @@ namespace BarPromenade
                 GameLog.Field("forest_count", Plan.Forest.Count),
                 GameLog.Field("misc_count", Plan.Misc.Count),
                 GameLog.Field("arrival", ArrivalToken.ToString()));
+        }
+
+        /// <summary>
+        /// The Ferryman's car, on whichever of its two terms this visit is.
+        ///
+        /// Arriving IN it builds it back inside the tunnel and sets it going;
+        /// coming back later finds it parked on the terminal apron with the
+        /// man on its bonnet, because that is where the session says it is.
+        /// Every other visit builds nothing at all - he is still on the island
+        /// in the city, and there has never been a copy of him in both places.
+        /// </summary>
+        private void BuildLastRoute(Camera camera)
+        {
+            bool arrivingByCar =
+                HadAreaArrival && ArrivalToken == AreaArrivalToken.Ferryman;
+            bool alreadyParked =
+                GameSessionState.FerrymanRide ==
+                LastRouteFerrymanRideStage.Arrived;
+            if (!arrivingByCar && !alreadyParked)
+            {
+                return;
+            }
+
+            Vector3 position;
+            Vector3 facing;
+            if (arrivingByCar)
+            {
+                LastRouteMountainDrivePlanner.ResolveArrivalPose(
+                    Plan,
+                    out position,
+                    out facing);
+            }
+            else
+            {
+                LastRouteMountainDrivePlanner.ResolveParkedPose(
+                    Plan,
+                    out position,
+                    out facing);
+            }
+
+            LastRouteCar = LastRouteCarFactory.Create(
+                transform,
+                LastRouteCarPlan.At(position, facing),
+                Player,
+                camera);
+            if (LastRouteCar == null)
+            {
+                GameLog.Warning("mountain_road", "last_route_car_missing");
+                return;
+            }
+
+            // No talk menu is handed in, so no talk trigger is built: see
+            // LastRouteFerrymanFactory. He has nothing to say up here yet.
+            LastRouteFerryman = LastRouteFerrymanFactory.Create(
+                transform,
+                LastRouteFerrymanPlan.Create(LastRouteCar),
+                LastRouteCar,
+                null,
+                GameSessionState.CitySeed);
+
+            Transform carRoot = LastRouteCar.transform.parent != null
+                ? LastRouteCar.transform.parent
+                : LastRouteCar.transform;
+            LastRouteCarSeatInteraction seat = carRoot
+                .GetComponentInChildren<LastRouteCarSeatInteraction>(true);
+            seat?.AttachFerryman(LastRouteFerryman);
+            if (!arrivingByCar)
+            {
+                // Parked and waiting. He is on the bonnet with his coin and
+                // the seat beside him is not on offer, because the offer was
+                // "leave the city" and the city is behind us.
+                return;
+            }
+
+            if (seat == null)
+            {
+                GameLog.Warning("mountain_road", "last_route_seat_missing");
+                return;
+            }
+
+            Ride = LastRouteRideController.CreateForMountain(
+                transform,
+                seat,
+                carRoot.GetComponent<LastRouteCarDriver>(),
+                LastRouteFerryman,
+                () => LastRouteMountainDrivePlanner.Create(Plan));
         }
 
         private void BuildAtmosphere(Camera camera)

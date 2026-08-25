@@ -103,12 +103,20 @@ namespace BarPromenade
         private LastRouteCarAssetRegistry car;
         private LastRouteCarDoors doors;
         private LastRouteCarSuspension suspension;
+        private LastRouteCarDriver driver;
         private LastRouteFerrymanPresentation ferryman;
         private Camera seatCamera;
         private PlayerCameraFollow cameraFollow;
         private Player3DHeadVisibility hiddenHead;
         private bool ownsActiveInteraction;
         private float doorOpenness;
+
+        private bool rootAttached;
+        private Vector3 rideRootLocalPosition;
+        private Quaternion rideRootLocalRotation;
+        private bool previousMotorEnabled;
+        private bool previousControllerEnabled;
+        private bool previousContactShadowEnabled;
 
         private ViewPhase viewPhase;
         private bool cameraOwned;
@@ -149,6 +157,21 @@ namespace BarPromenade
         /// <summary>True once the man who owns the car has taken his own
         /// seat and the offer is real.</summary>
         public bool IsInvited => ferryman != null && ferryman.IsDriving;
+
+        /// <summary>True while the hero's root is being carried by the car
+        /// rather than standing on the ground under its own controller.
+        /// </summary>
+        public bool IsAttachedToCar => rootAttached;
+
+        /// <summary>
+        /// Raised the frame he is in, the leaf is shut over him and the car
+        /// has taken his weight. The ride controller starts the engine on it.
+        /// </summary>
+        public event Action Seated;
+
+        /// <summary>Raised once he is out and standing on his own feet
+        /// again.</summary>
+        public event Action Alighted;
 
         /// <summary>
         /// Pure: how far open the leaf stands at a point in the alight
@@ -276,6 +299,245 @@ namespace BarPromenade
             ferryman = presentation;
         }
 
+        /// <summary>
+        /// Tells the seat which engine is under it. Attached the same way and
+        /// for the same reason as the Ferryman above: the driver is raised on
+        /// the runtime root after the seat has already been hung off it.
+        /// </summary>
+        public void AttachDriver(LastRouteCarDriver carDriver)
+        {
+            if (driver != null)
+            {
+                driver.Moved -= RefreshAttachedRootPose;
+            }
+
+            driver = carDriver;
+            if (driver != null)
+            {
+                // Written in the same call as the car rather than in a
+                // LateUpdate of our own: see LastRouteCarDriver.Moved for the
+                // frame this cost before it was wired this way.
+                driver.Moved += RefreshAttachedRootPose;
+            }
+        }
+
+        /// <summary>
+        /// Re-derives the dock, the doorway waypoint and the seated hip from
+        /// wherever the car is standing NOW.
+        ///
+        /// Everything in <see cref="LastRouteCarSeatPlan"/> is world-space and
+        /// was solved once, in the factory, against a car parked on the last
+        /// route island. Six hundred metres of mountain road later every one
+        /// of those points is wrong by a couple of hundred metres and twenty-
+        /// six of altitude - and <see cref="CanInteract"/> measures the hero
+        /// against `plan.EntryRootPosition.y` before it will offer anything,
+        /// so without this the door simply never opens again at the cafe.
+        /// </summary>
+        public bool RebuildPlanFromCar()
+        {
+            if (car == null)
+            {
+                return false;
+            }
+
+            Transform root = ResolveCarRoot();
+            if (root == null)
+            {
+                return false;
+            }
+
+            // The car was moved by a transform write this frame and the plan
+            // is about to raycast against it, so the physics scene has to be
+            // told first.
+            Physics.SyncTransforms();
+            LastRouteCarSeatPlan rebuilt = LastRouteCarSeatPlan.Create(
+                car,
+                root.position.y);
+            if (!rebuilt.IsPresent)
+            {
+                GameLog.Warning("lastroute", "car_seat_plan_rebuild_failed");
+                return false;
+            }
+
+            plan = rebuilt;
+            transform.SetPositionAndRotation(
+                plan.TriggerCenter,
+                plan.TriggerRotation);
+            return true;
+        }
+
+        /// <summary>
+        /// Puts the hero back in the seat he was already in, without playing
+        /// the way in again.
+        ///
+        /// This is the mountain road's arrival and nothing else. He got into
+        /// this car in another scene; that scene is gone, and the car, the man
+        /// and the seat have all been built again around him. Replaying
+        /// `CarBoardEnter` would have him climb into a moving car out of thin
+        /// air, so the shared controller is started in its LOOP instead - the
+        /// one entry point it has for exactly this.
+        /// </summary>
+        public bool ResumeSeated()
+        {
+            if (controller == null || !controller.IsInitialized || car == null)
+            {
+                return false;
+            }
+
+            // Put him where a boarded passenger's root actually stands first.
+            // The scene spawned him on his feet at the tunnel mouth, because
+            // that is what every other arrival wants; the seated arrangement
+            // leaves the capsule at the door dock with the drawn body aligned
+            // into the cabin, and starting the loop from six metres away would
+            // capture that offset and carry it all the way up the mountain.
+            if (playerRoot != null)
+            {
+                playerRoot.SetPositionAndRotation(
+                    plan.EntryRootPosition,
+                    plan.EntryRotation);
+                Physics.SyncTransforms();
+            }
+
+            if (!controller.BeginLooping(
+                    definition,
+                    plan.EntryHipPosition,
+                    plan.ActionHipPosition,
+                    plan.PelvisTransition))
+            {
+                GameLog.Warning("lastroute", "car_seat_resume_failed");
+                return false;
+            }
+
+            ownsActiveInteraction = true;
+            if (car.PassengerSeatAnchor != null)
+            {
+                controller.BindActionPelvisTarget(car.PassengerSeatAnchor);
+            }
+
+            ApplyDoorOpenness(0f);
+            BeginView();
+            // He is already looking out of the windscreen; there is nothing
+            // to blend from, because the frame before this was a loading
+            // screen.
+            viewBlendElapsed = ViewBlendSeconds;
+            Seated?.Invoke();
+            return true;
+        }
+
+        /// <summary>
+        /// Hands the hero's physical root to the car for the journey.
+        ///
+        /// The bus's own handoff, for the bus's own reasons: a
+        /// <see cref="CharacterController"/> left live on a body that is being
+        /// re-posed through street geometry at eight metres a second fights
+        /// every frame of it, and the contact shadow has no ground under a
+        /// moving car to find. Offsets are captured once, here, and rewritten
+        /// from the car's root each <c>LateUpdate</c> - never a reparent.
+        /// </summary>
+        public void BeginRideAttachment()
+        {
+            Transform root = ResolveCarRoot();
+            if (rootAttached || root == null || playerRoot == null)
+            {
+                return;
+            }
+
+            rideRootLocalPosition = root.InverseTransformPoint(
+                playerRoot.position);
+            rideRootLocalRotation =
+                Quaternion.Inverse(root.rotation) * playerRoot.rotation;
+
+            previousMotorEnabled = player.Motor != null && player.Motor.enabled;
+            if (player.Motor != null)
+            {
+                player.Motor.enabled = false;
+            }
+
+            var characterController =
+                player.GameObject.GetComponent<CharacterController>();
+            previousControllerEnabled = characterController != null &&
+                                        characterController.enabled;
+            if (characterController != null)
+            {
+                characterController.enabled = false;
+            }
+
+            previousContactShadowEnabled = player.ContactShadow != null &&
+                                           player.ContactShadow.enabled;
+            if (player.ContactShadow != null)
+            {
+                player.ContactShadow.enabled = false;
+            }
+
+            rootAttached = true;
+        }
+
+        /// <summary>
+        /// Gives it back. Idempotent, and safe to call when the ride never
+        /// started - which is what makes it usable from <c>OnDisable</c>.
+        /// </summary>
+        public void EndRideAttachment()
+        {
+            if (!rootAttached)
+            {
+                return;
+            }
+
+            rootAttached = false;
+            if (player.Motor != null)
+            {
+                player.Motor.enabled = previousMotorEnabled;
+            }
+
+            var characterController =
+                player.GameObject != null
+                    ? player.GameObject.GetComponent<CharacterController>()
+                    : null;
+            if (characterController != null)
+            {
+                characterController.enabled = previousControllerEnabled;
+            }
+
+            if (player.ContactShadow != null)
+            {
+                player.ContactShadow.enabled = previousContactShadowEnabled;
+            }
+
+            Physics.SyncTransforms();
+        }
+
+        private Transform ResolveCarRoot()
+        {
+            if (driver != null)
+            {
+                return driver.transform;
+            }
+
+            if (car == null)
+            {
+                return null;
+            }
+
+            // The seat trigger is a sibling of the art under the car's runtime
+            // root, so its own parent is that root.
+            return transform.parent != null ? transform.parent : car.transform;
+        }
+
+        private void RefreshAttachedRootPose()
+        {
+            Transform root = ResolveCarRoot();
+            if (!rootAttached || root == null || playerRoot == null)
+            {
+                return;
+            }
+
+            playerRoot.SetPositionAndRotation(
+                root.TransformPoint(rideRootLocalPosition),
+                root.rotation * rideRootLocalRotation);
+            controller?.RefreshActiveClipAlignment();
+            Physics.SyncTransforms();
+        }
+
         public static PlayerAnimatedInteractionDefinition CreateDefinition()
         {
             return new PlayerAnimatedInteractionDefinition(
@@ -309,9 +571,12 @@ namespace BarPromenade
             if (ownsActiveInteraction &&
                 phase == PlayerAnimatedInteractionPhase.Looping)
             {
-                // Getting back out is never gated. Whatever he agreed to,
-                // he can change his mind about.
-                return true;
+                // Getting back out was never gated - until the car moved.
+                // While it is driving there is nowhere to get out to, and
+                // saying yes to this man was never reversible anyway: he is
+                // already off his bonnet and will not go back to it until the
+                // journey is over.
+                return driver == null || !driver.IsDriving;
             }
 
             return phase == PlayerAnimatedInteractionPhase.Idle && IsInvited;
@@ -375,10 +640,13 @@ namespace BarPromenade
                     // He is in and the door is shut over him: the car takes
                     // his weight on the side he got in on.
                     suspension?.NudgeForSeating(IsPassengerSideCarRight());
+                    Seated?.Invoke();
                     break;
                 default:
                     ownsActiveInteraction = false;
+                    EndRideAttachment();
                     ReleaseView();
+                    Alighted?.Invoke();
                     break;
             }
 
@@ -404,6 +672,11 @@ namespace BarPromenade
 
         private void LateUpdate()
         {
+            // Before the camera, because the lens is read off the car's live
+            // seat anchor and the hero's rig is aligned to the same body: a
+            // frame in which one has moved and the other has not is a frame
+            // in which he is looking out of the wrong part of the car.
+            RefreshAttachedRootPose();
             UpdateOwnedCamera(Time.unscaledDeltaTime);
         }
 
@@ -793,12 +1066,19 @@ namespace BarPromenade
 
         private void OnDisable()
         {
+            EndRideAttachment();
             ReleaseView();
         }
 
         private void OnDestroy()
         {
+            EndRideAttachment();
             ReleaseView();
+            if (driver != null)
+            {
+                driver.Moved -= RefreshAttachedRootPose;
+            }
+
             if (controller != null)
             {
                 controller.PhaseChanged -= HandlePhaseChanged;

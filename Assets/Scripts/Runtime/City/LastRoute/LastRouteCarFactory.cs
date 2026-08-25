@@ -119,6 +119,14 @@ namespace BarPromenade
             root.gameObject
                 .AddComponent<LastRouteCarDoors>()
                 .Initialize(registry);
+            // And the engine. Raised whether or not anybody will ever ask it
+            // to drive - the same rule as the two above, because a car with
+            // half its mechanisms is worse than one with none - and idle
+            // until it is handed a road, so a seed whose island has no
+            // passenger pays one disabled component for it.
+            root.gameObject
+                .AddComponent<LastRouteCarDriver>()
+                .Initialize(registry);
         }
 
         /// <summary>

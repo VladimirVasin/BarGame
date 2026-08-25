@@ -27,6 +27,27 @@ namespace BarPromenade
         public static LastRouteCarPlan Absent =>
             new LastRouteCarPlan(false, Vector3.zero, Vector3.forward);
 
+        /// <summary>
+        /// The same car, stood somewhere the city layout knows nothing about.
+        ///
+        /// The mountain road has no blueprint, no points of interest and no
+        /// island - but once the hero has said yes, it is where this car is.
+        /// Everything downstream is already area-agnostic: the factory only
+        /// reads a position and a facing, and the Ferryman's own stance comes
+        /// off the car's drawn anchors rather than off any layout.
+        /// </summary>
+        public static LastRouteCarPlan At(Vector3 position, Vector3 facing)
+        {
+            Vector3 planar = facing;
+            planar.y = 0f;
+            if (planar.sqrMagnitude < 0.000001f)
+            {
+                return Absent;
+            }
+
+            return new LastRouteCarPlan(true, position, planar.normalized);
+        }
+
         public static LastRouteCarPlan Create(CityLayout layout)
         {
             if (layout == null)

@@ -819,6 +819,7 @@ namespace BarPromenade
         {
             if (!DebugTeleportEnabled ||
                 !IsOpen ||
+                GameSessionState.IsRidingTheFerryman ||
                 player.GameObject == null ||
                 player.Motor == null ||
                 !IsValidMapObjectIndex(SelectedMapObjectIndex))

@@ -46,14 +46,38 @@ namespace BarPromenade
         public const float SeatPitchImpulse = -1.1f;
         public const float SeatRollImpulse = 3.4f;
 
+        /// <summary>
+        /// Degrees of nose lift per metre per second squared of drive. Pulling
+        /// away lifts it and braking dips it; at the drive model's `2.6 m/s²`
+        /// of braking this is about a degree, which is the whole travel the
+        /// springs have.
+        /// </summary>
+        public const float DriveLoadPitchPerAcceleration = 0.34f;
+
+        /// <summary>
+        /// Degrees of lean per metre per second squared across the car. A car
+        /// turning right throws its weight left, so the sign is inverted here
+        /// rather than at the call site.
+        /// </summary>
+        public const float DriveLoadRollPerAcceleration = -0.30f;
+
+        /// <summary>How fast the body settles into a new steady load. Slower
+        /// than the springs ring, so a corner leans in rather than snaps.
+        /// </summary>
+        public const float DriveLoadResponsePerSecond = 5.5f;
+
         private readonly LastRouteCarSuspensionModel model =
             new LastRouteCarSuspensionModel();
 
         private LastRouteCarAssetRegistry registry;
         private Transform sprungBody;
-        private Vector3 restPosition;
-        private Quaternion restRotation;
+        private Vector3 restLocalPosition;
+        private Quaternion restLocalRotation;
         private float pivotHeight;
+        private float targetLoadPitch;
+        private float targetLoadRoll;
+        private float loadPitch;
+        private float loadRoll;
 
         public bool IsInitialized { get; private set; }
         public LastRouteCarSuspensionModel Model => model;
@@ -80,8 +104,14 @@ namespace BarPromenade
                 return;
             }
 
-            restPosition = sprungBody.position;
-            restRotation = sprungBody.rotation;
+            // Kept in the ROOT's own space, not the world's. For the years
+            // this car was parked those were the same thing; once it drives,
+            // a world-space rest pose would leave the bodywork standing on
+            // the last route island while the wheels went up the mountain.
+            Transform car = registry.transform;
+            restLocalPosition = car.InverseTransformPoint(sprungBody.position);
+            restLocalRotation =
+                Quaternion.Inverse(car.rotation) * sprungBody.rotation;
 
             // The body rocks about the axle line, not about the ground and
             // not about its own origin: a car pitching about its wheel
@@ -112,6 +142,30 @@ namespace BarPromenade
                 SeatHeaveImpulse,
                 SeatPitchImpulse,
                 towardsCarRight ? SeatRollImpulse : -SeatRollImpulse);
+        }
+
+        /// <summary>
+        /// Somebody got back OUT of a seat. Exactly the seating kick inverted:
+        /// the body rises and the side he was on comes back up.
+        /// </summary>
+        public void NudgeForUnseating(bool fromCarRight)
+        {
+            model.Nudge(
+                -SeatHeaveImpulse,
+                -SeatPitchImpulse,
+                fromCarRight ? -SeatRollImpulse : SeatRollImpulse);
+        }
+
+        /// <summary>
+        /// A man's weight arriving back on the bonnet - the dismount
+        /// inverted, so the nose goes DOWN.
+        /// </summary>
+        public void NudgeForMount()
+        {
+            model.Nudge(
+                -DismountHeaveImpulse,
+                -DismountPitchImpulse,
+                0f);
         }
 
         private bool TryCreateSprungBody()
@@ -151,6 +205,31 @@ namespace BarPromenade
             wheel.SetParent(bodyParent, true);
         }
 
+        /// <summary>
+        /// What the road is doing to the body right now, as opposed to what
+        /// somebody getting in or out did to it a moment ago.
+        ///
+        /// The model underneath is a struck oscillator with no forcing term,
+        /// and it stays that way - a steady lean is not something a kick can
+        /// express. So the sustained part of driving lives here, as an offset
+        /// eased on top of the ringing, and the two add.
+        /// </summary>
+        public void SetDriveLoad(
+            float longitudinalAcceleration,
+            float lateralAcceleration)
+        {
+            targetLoadPitch = Sanitize(longitudinalAcceleration) *
+                              DriveLoadPitchPerAcceleration;
+            targetLoadRoll = Sanitize(lateralAcceleration) *
+                             DriveLoadRollPerAcceleration;
+        }
+
+        public void ClearDriveLoad()
+        {
+            targetLoadPitch = 0f;
+            targetLoadRoll = 0f;
+        }
+
         private void LateUpdate()
         {
             if (!IsInitialized)
@@ -158,7 +237,12 @@ namespace BarPromenade
                 return;
             }
 
-            model.Advance(Mathf.Min(Time.deltaTime, MaximumStepSeconds));
+            float step = Mathf.Min(Time.deltaTime, MaximumStepSeconds);
+            model.Advance(step);
+            float response = Mathf.Clamp01(
+                step * DriveLoadResponsePerSecond);
+            loadPitch = Mathf.Lerp(loadPitch, targetLoadPitch, response);
+            loadRoll = Mathf.Lerp(loadRoll, targetLoadRoll, response);
             Apply();
         }
 
@@ -170,18 +254,33 @@ namespace BarPromenade
             }
 
             Transform car = registry.transform;
+            float pitch = Mathf.Clamp(
+                model.PitchDegrees + loadPitch,
+                -LastRouteCarSuspensionModel.MaximumPitchDegrees * 2f,
+                LastRouteCarSuspensionModel.MaximumPitchDegrees * 2f);
+            float roll = Mathf.Clamp(
+                model.RollDegrees + loadRoll,
+                -LastRouteCarSuspensionModel.MaximumRollDegrees * 2f,
+                LastRouteCarSuspensionModel.MaximumRollDegrees * 2f);
+
             // Positive pitch tips the nose UP and positive roll dips the
             // car's own right, so both angles are applied negated about the
             // root's axes. Resolved against the ROOT, never against the
             // imported body node.
             Quaternion rock =
-                Quaternion.AngleAxis(-model.PitchDegrees, car.right) *
-                Quaternion.AngleAxis(-model.RollDegrees, car.forward);
+                Quaternion.AngleAxis(-pitch, car.right) *
+                Quaternion.AngleAxis(-roll, car.forward);
+            Vector3 rest = car.TransformPoint(restLocalPosition);
             Vector3 pivot = car.position + (car.up * pivotHeight);
-            Vector3 rocked = pivot + (rock * (restPosition - pivot));
+            Vector3 rocked = pivot + (rock * (rest - pivot));
             sprungBody.SetPositionAndRotation(
                 rocked + (car.up * model.Heave),
-                rock * restRotation);
+                rock * (car.rotation * restLocalRotation));
+        }
+
+        private static float Sanitize(float value)
+        {
+            return float.IsNaN(value) || float.IsInfinity(value) ? 0f : value;
         }
     }
 }

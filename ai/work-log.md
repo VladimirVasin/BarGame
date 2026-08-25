@@ -6,6 +6,151 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-26 — The arrival threw the passenger out of his own car
+
+Two reports, one cause, and the second one hid the first.
+
+- **`MountainRoadRoot.Awake` runs INSIDE the area transition, not after it.**
+  `AreaTravelService` sets `allowSceneActivation = true`, the destination
+  scene wakes, and the coroutine then keeps yielding on
+  `while (!destinationOperation.isDone)` before `Complete` finally clears the
+  flag. Through that whole window `AreaTravelService.IsTraveling` — and
+  therefore `SceneTransitionService.IsTransitioning` — is still **true**, and
+  `PlayerAnimatedInteractionController.Update` force-completes any running
+  interaction while it is. So the mountain arrival seated the hero and the
+  very next `Update` tore it down: he was dumped on the tunnel floor at the
+  exit pose and his car drove the six hundred metres to the cafe without him.
+  `LastRouteRideController.CreateForMountain` now only ARMS the leg;
+  `AwaitMountainStart` holds it — under a screen already painted fully black —
+  until the service has genuinely finished, which is a frame or two.
+  **The general rule: a destination root's `Awake` is not "after the load".**
+  Anything that starts an interaction, or anything else that
+  `IsTransitioning` tears down, has to wait for it to clear.
+- **And that is why the map was dead.** The chart was gated on the ride stage
+  being `InTransit`, which was meant to be transient — but with the hero
+  ejected, nothing ever advanced it, and a gate on *opening the map at all*
+  turned one bug into "the player has no map". The gate was too blunt anyway:
+  reading the chart while the car drives is worth having, and watching your
+  own marker climb the mountain is a small gift. `CityMapController.Open` no
+  longer consults the ride; what refuses instead is the three things that
+  would actually MOVE him — `ConfirmDebugTeleport`,
+  `CanTeleportToSelectedMapPoint` and the private `RequestAreaTravel` — all
+  through one named predicate, `GameSessionState.IsRidingTheFerryman`.
+  **Gate the action, not the window onto it.**
+- **Verification.** `Ride_WaitsForTheAreaLoadBeforeSeatingHim` reproduces the
+  window rather than approximating it: it drives
+  `AreaTravelService.IsTraveling` through its private setter by reflection,
+  holds it true for twenty frames while asserting the hero is neither seated
+  nor ejected, releases it, and then checks he stays seated for thirty more.
+  Both it and the deferral assertion in
+  `Ride_CarriesTheHeroAndOnlyLetsHimOutWhenItStops` were confirmed RED against
+  the old one-line `CreateForMountain` before the fix went back in, and both
+  named the defect. Full suite below.
+
+## 2026-08-25 — The Ferryman drives, and the tunnel finally goes somewhere
+
+- **What existed already did most of it.** `MountainRoadRoutePlan.Sample` is a
+  centreline parameterised by arc length with the drivable surface height in
+  it, and `TunnelToCafe_IsOneUnbrokenDrivableSurface` has been asserting a
+  `1.05 m` half-width corridor over all `620 m` since the terrace moved. So the
+  mountain leg is that route read out at a metre into one polyline, plus a
+  lead-in from inside the tunnel and `5.5 m` onto the apron - and it inherits
+  the proof. `AreaArrivalToken.Tunnel` had sat unused in the enum since area
+  travel shipped; `Ferryman` is its first real caller.
+- **The city leg routes on the LAYOUT's edges, and the obvious choice was
+  wrong.** `CityBusPlan.Nodes`/`.Links` look like the city's street graph -
+  baked turn arcs, lane offset applied, clearance-swept for a body `8.25 m`
+  long - and they are not. They are Route 01 itself: one closed, directed,
+  right-hand circuit. Routing the departure on it meant only ever going the way
+  the bus goes, and the first measurement came back **`4842 m` and over ten
+  minutes** - two hundred and ninety-one of the loop's three hundred and
+  forty-six links, eighty-four per cent of the way round `5.6 km`, to reach a
+  portal `170 m` away. Every geometric assertion in the suite passed while it
+  did; what caught it was a test that simply drove the path and printed the
+  clock. `CityLayout.RoadEdges` is the real grid, undirected and with no
+  timetable: `289 m` in `52.6 s`, and the giveaway in hindsight was
+  `Links.Count == Nodes.Count == 346` against a reported
+  `ClearanceAcceptedLinkCount` of `1218`. **Measure the thing the player
+  experiences, not only the geometry of it.**
+- **The lane and the corners are this file's own.** Junction centres are
+  pushed `1.5 m` into the right-hand lane along the bisector of their two
+  segments (mitred, so the two halves of a corner meet), each square junction
+  is cut into a `4.5 m` arc, and only THEN is the whole thing subdivided at
+  `1.5 m` - rounding after subdividing would cap every cut at half a short
+  segment and leave the arcs barely bent. The two ends are the pieces no
+  street graph knows: the pull-away off the lot (a quadratic through a control
+  point out along the car's own nose, so it leaves the way it is pointing) and
+  the forecourt corridor, which `CityFringeYardPlanner` already keeps clear as
+  `DriveClearBounds`.
+- **Speed is a forward sweep of a backward pass.** For every vertex inside the
+  braking horizon, work out how fast the car may be going here and still be
+  down to that vertex's cornering speed on arrival, and take the lowest answer.
+  That is what makes it lift off BEFORE a hairpin instead of discovering it
+  from inside one. The `R7.5 m` bends pull it to about `3.5 m/s` on their own,
+  with no authored slow-down anywhere.
+- **Three things would have shipped broken and none of them throws.**
+  `LastRouteCarSuspension` cached its rest pose as a WORLD point, which was
+  free for as long as the car never moved and would have left the bodywork
+  standing on the island while the wheels went up the mountain; it is in the
+  root's own space now. `LastRouteFerrymanPresentation` solved the driving seat
+  once at `Initialize` and then stopped writing his root at all once the
+  boarding timeline finished, so he would have stayed at the world position
+  that solved him; the seat is re-derived every frame from the same two drawn
+  anchors. And `LastRouteCarSeatPlan` is entirely world-space and was worked
+  out against a parked car - six hundred metres and twenty-six metres of
+  altitude later `CanInteract`'s own vertical-tolerance check against
+  `plan.EntryRootPosition.y` would have refused to let the hero out at all, so
+  the seat re-solves its whole plan when the car stops.
+- **The way back out needed no new animation.** Every one-shot in the library
+  is authored to END on the base pose of the clip the runtime crosses into, so
+  played backwards it BEGINS there - which is exactly what a reverse beat wants
+  at its seam. `FerrymanBoard` and `FerrymanDismount` run in reverse by written
+  `SetTime` on clips parked at speed zero (no negative playable speeds), and
+  the door curve is symmetric enough to reuse verbatim at `1 - progress`. Only
+  the trudge is different: the PATH is reversed and the walk cycle still plays
+  forwards, because a walk run backwards is a man moonwalking round a car.
+- **The car parks nose-in and deliberately does not use the turning pocket.**
+  The apron is a turning circle and the temptation is obvious, but the cafe's
+  nearest corner stands `8.24 m` from the apron centre against a validated
+  clearance of `TurningRadius + 0.55 = 8.05` - nineteen centimetres - and a
+  U-turn of any usable radius sweeps through either the cafe or the cableway
+  station. `MountainPath_NeverDrivesThroughTheCafe` probes the body's own
+  half-width to either side of the last forty metres and holds that.
+- **No new gate was needed on the tunnel refusal.**
+  `CityTunnelTravelController.CanEngage` already requires
+  `Motor.InputEnabled`, and a seated passenger has none - so the walk-back
+  boundary simply never arms for a hero in a car. The map did need one:
+  `CityMapController.Open` now refuses while the ride stage is `InTransit`,
+  beside the two clauses it already had for scene transitions and area travel.
+- **Two more that only a running frame loop could have found.** The hero was
+  written from the seat's own `LateUpdate` and sat exactly one frame's travel -
+  `8.7 cm` at tunnel-exit speed - behind the car on the frame the engine
+  started, because a component added during a scene build can have its first
+  `Update` deferred against one that already existed. He is now written from
+  `LastRouteCarDriver.Moved`, in the same call as the car, where there is no
+  ordering to get wrong. And the arrival re-solved the seat plan *after*
+  handing the hero his `CharacterController` back - so the plan's ground probe,
+  which raycasts down at the dock, hit **him** and put the entry root `1.61 m`
+  up; `CanInteract`'s vertical tolerance then refused to open the door at all.
+  The whole ride worked and ended with the passenger sealed in. The re-solve
+  now happens before the controller comes back.
+- **Verification.** `LastRouteCarDriveTests` + `LastRouteRideTests`: 24 passed,
+  including the real default-seed city path (starts at the parked car, ends
+  `15 m` inside the portal, no seam over `2.5 m`, no corner the car cannot
+  take, and the drive clock pinned to `35-75 s`) and the mountain path walked
+  against `MountainRoadWalkableArea` at car half-width and probed to either
+  side of the last forty metres for the cafe. Regression over the seven
+  existing `LastRoute*` EditMode classes plus `GameSessionStateTests`,
+  `AreaTravelContractTests` and the two map-area fixtures: 150 passed.
+  `LastRouteFerrymanPlayModeTests`: 9 passed - the whole boarding beat still
+  works under the presentation changes. `LastRouteCarRidePlayModeTests` is new,
+  runs the mountain arrival end to end, and both of its failures above were
+  real defects it named precisely.
+- **Still missing, and worth saying plainly:** the car is silent. The bus has
+  `CityBusAudio`; this has nothing, so a `620 m` climb plays out with no engine
+  under it. That is the obvious next piece and it is a soundscape job rather
+  than a driving one.
+
 ## 2026-08-25 — The cafe terrace was parked on top of the last switchback
 
 - **The report was one coordinate, and it was exact.** `X 127.5 Z -4.5` is the

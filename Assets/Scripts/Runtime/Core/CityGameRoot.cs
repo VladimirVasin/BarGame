@@ -32,6 +32,13 @@ namespace BarPromenade
         public CitySoundscapeDirector Soundscape { get; private set; }
         public PlayerRuntime Player { get; private set; }
         public CityTunnelTravelController TunnelTravel { get; private set; }
+
+        /// <summary>
+        /// The one journey out of the city, armed while the Ferryman's car is
+        /// still on the island. Null on a seed with no car, and null once the
+        /// journey has already been made.
+        /// </summary>
+        public LastRouteRideController Ride { get; private set; }
         public CityTunnelLightingController TunnelLighting { get; private set; }
         public CityTunnelShelterController TunnelShelter { get; private set; }
         public CityPedestrianPlan PedestrianPlan { get; private set; }
@@ -477,9 +484,13 @@ namespace BarPromenade
                         arrivalForward.normalized,
                         Vector3.up);
             }
-            if (CityTunnelTravelPlanner.TryCreate(
-                    World.MountainBoundaryPlan,
-                    out CityTunnelTravelPlan tunnelTravelPlan))
+            // Hoisted out of the `if` below because the Ferryman's departure
+            // needs the tunnel's floor height to drive the last fifteen
+            // metres at, and it is raised much further down this method.
+            bool hasTunnelTravel = CityTunnelTravelPlanner.TryCreate(
+                World.MountainBoundaryPlan,
+                out CityTunnelTravelPlan tunnelTravelPlan);
+            if (hasTunnelTravel)
             {
                 TunnelTravel = CityTunnelTravelController.Create(
                     transform,
@@ -610,11 +621,20 @@ namespace BarPromenade
             // A car waits beside the paving instead, off the circle and
             // clear of every way in - and absent altogether on a seed that
             // leaves nowhere to park without blocking one.
-            LastRouteCar = LastRouteCarFactory.Create(
-                transform,
-                LastRouteCarPlan.Create(Layout),
-                Player,
-                camera);
+            //
+            // Unless he has already been taken up: the car and the man are a
+            // pure function of one stage on the session, and once that journey
+            // is made they stand on the terrace by the mountain cafe instead.
+            // Nothing is left behind on the island - he drove away in it.
+            if (GameSessionState.FerrymanRide ==
+                LastRouteFerrymanRideStage.NotTaken)
+            {
+                LastRouteCar = LastRouteCarFactory.Create(
+                    transform,
+                    LastRouteCarPlan.Create(Layout),
+                    Player,
+                    camera);
+            }
             // The park kept a place for company and two men still keep
             // it: an old player at each of the two chess tables, on
             // seats that are each other's rotated 180 degrees about the
@@ -701,12 +721,15 @@ namespace BarPromenade
             // on the bumper, throwing a coin, facing whoever walks up. He
             // comes after the car because his whole stance is read off it,
             // and after the menu above because saying yes to him opens it.
-            LastRouteFerryman = LastRouteFerrymanFactory.Create(
-                transform,
-                LastRouteFerrymanPlan.Create(LastRouteCar),
-                LastRouteCar,
-                TargetInteraction,
-                GameSessionState.CitySeed);
+            if (LastRouteCar != null)
+            {
+                LastRouteFerryman = LastRouteFerrymanFactory.Create(
+                    transform,
+                    LastRouteFerrymanPlan.Create(LastRouteCar),
+                    LastRouteCar,
+                    TargetInteraction,
+                    GameSessionState.CitySeed);
+            }
             // The passenger seat is his to offer, so it only opens once he
             // has taken the driver's. It cannot be told at construction -
             // the car is raised first because his whole stance is read off
@@ -720,9 +743,37 @@ namespace BarPromenade
                 Transform carRoot = LastRouteCar.transform.parent != null
                     ? LastRouteCar.transform.parent
                     : LastRouteCar.transform;
-                carRoot
-                    .GetComponentInChildren<LastRouteCarSeatInteraction>(true)
-                    ?.AttachFerryman(LastRouteFerryman);
+                LastRouteCarSeatInteraction carSeat = carRoot
+                    .GetComponentInChildren<LastRouteCarSeatInteraction>(true);
+                carSeat?.AttachFerryman(LastRouteFerryman);
+
+                // And the journey itself, which is armed here and does
+                // nothing at all until the hero actually sits down. The path
+                // is built lazily for the same reason: on most runs nobody
+                // ever answers this man, and walking the whole street graph
+                // to the south portal to find that out would be work done for
+                // nothing on every city build.
+                if (carSeat != null && hasTunnelTravel &&
+                    World.FringeYardPlan.HasTunnelForecourt)
+                {
+                    LastRouteCarPlan departurePlan =
+                        LastRouteCarPlan.At(
+                            carRoot.position,
+                            carRoot.forward);
+                    CityTunnelForecourtDescriptor forecourt =
+                        World.FringeYardPlan.TunnelForecourt;
+                    float tunnelFloorY = tunnelTravelPlan.FloorSurfaceY;
+                    Ride = LastRouteRideController.CreateForCity(
+                        transform,
+                        carSeat,
+                        carRoot.GetComponent<LastRouteCarDriver>(),
+                        LastRouteFerryman,
+                        () => LastRouteCityDeparturePlanner.Create(
+                            departurePlan,
+                            Layout,
+                            forecourt,
+                            tunnelFloorY));
+                }
             }
             BusRide = CityBusRideController.Create(
                 Bus,

@@ -162,6 +162,29 @@ namespace BarPromenade
         /// and not yet closed with a stone at the head.</summary>
         public static int UnfinishedGraveWorkCount =>
             graveWork.UnfinishedCount;
+
+        /// <summary>
+        /// How far the one journey out of the city has got. Both areas build
+        /// the Ferryman and his car from this and nothing else, so he is never
+        /// in two places and never in none.
+        /// </summary>
+        public static LastRouteFerrymanRideStage FerrymanRide
+        {
+            get;
+            private set;
+        } = LastRouteFerrymanRideStage.NotTaken;
+
+        /// <summary>
+        /// True while the hero is sitting in the Ferryman's moving car.
+        ///
+        /// The map may be opened and read throughout - watching your own
+        /// marker climb the mountain is worth having - but nothing that MOVES
+        /// him may fire: he is strapped into a scene, and a teleport out of a
+        /// car doing eight metres a second leaves the car, the driver and the
+        /// journey behind without him.
+        /// </summary>
+        public static bool IsRidingTheFerryman =>
+            FerrymanRide == LastRouteFerrymanRideStage.InTransit;
         public static float BalanceCheckDelayRemaining { get; private set; }
         public static int BalanceCheckSequence { get; private set; }
         public static IReadOnlyList<string> PlannedBarRoute =>
@@ -263,6 +286,7 @@ namespace BarPromenade
             DrinksConsumed = 0;
             CashBalance = DefaultCash;
             graveWork.Reset();
+            FerrymanRide = LastRouteFerrymanRideStage.NotTaken;
             gameTime.Reset();
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;
@@ -358,6 +382,31 @@ namespace BarPromenade
                 TryCompleteQuest(QuestId.DigTheGrave);
             }
 
+            return true;
+        }
+
+        /// <summary>
+        /// Moves the one journey out of the city one rung up its ladder.
+        /// Refuses anything that is not forward, for the graves' own reason:
+        /// both areas are rebuilt from this value alone, so a stage that could
+        /// go back would be a car that arrives at the cafe and then reappears
+        /// on the island it left.
+        /// </summary>
+        public static bool TryAdvanceFerrymanRide(
+            LastRouteFerrymanRideStage stage)
+        {
+            if (stage <= FerrymanRide)
+            {
+                return false;
+            }
+
+            LastRouteFerrymanRideStage previous = FerrymanRide;
+            FerrymanRide = stage;
+            GameLog.Info(
+                "lastroute",
+                "ferryman_ride_advanced",
+                GameLog.Field("previous_stage", previous.ToString()),
+                GameLog.Field("stage", stage.ToString()));
             return true;
         }
 

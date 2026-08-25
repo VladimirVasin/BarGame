@@ -148,6 +148,7 @@ namespace BarPromenade
         public bool CanRequestSelectedAreaTravel =>
             areaTabsConfigured &&
             selectedArea != currentArea &&
+            !GameSessionState.IsRidingTheFerryman &&
             areaTravelRequested != null;
         public bool IsCityMapInteractionActive =>
             selectedArea == GameAreaId.City &&
@@ -312,8 +313,11 @@ namespace BarPromenade
             if (!areaTabsConfigured ||
                 !IsKnownArea(request.DestinationArea) ||
                 request.DestinationArea == currentArea ||
+                GameSessionState.IsRidingTheFerryman ||
                 areaTravelRequested == null)
             {
+                // The ride is itself an area travel already in flight. A
+                // second one asked for from the chart would race it.
                 return false;
             }
 
@@ -531,6 +535,7 @@ namespace BarPromenade
         public bool CanTeleportToSelectedMapPoint =>
             MapPointInspectionEnabled &&
             IsOpen &&
+            !GameSessionState.IsRidingTheFerryman &&
             player.GameObject != null &&
             player.Motor != null &&
             TryGetSelectedMapPoint(

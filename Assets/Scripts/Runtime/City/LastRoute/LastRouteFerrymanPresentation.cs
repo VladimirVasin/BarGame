@@ -25,7 +25,21 @@ namespace BarPromenade
 
         /// <summary>Behind the wheel, waiting again - now for a
         /// passenger.</summary>
-        Driving = 4
+        Driving = 4,
+
+        /// <summary>
+        /// The journey is over and the hero is out. The door again, and the
+        /// climb out of the seat - `FerrymanBoard` run backwards.
+        /// </summary>
+        Alighting = 5,
+
+        /// <summary>Back round the nose the way he came, at the same pace.
+        /// </summary>
+        WalkingToBonnet = 6,
+
+        /// <summary>Up onto the bonnet - `FerrymanDismount` run backwards -
+        /// after which he is <see cref="Waiting"/> again, for good.</summary>
+        Mounting = 7
     }
 
     /// <summary>
@@ -133,6 +147,11 @@ namespace BarPromenade
         private Quaternion driveRotation;
         private LastRouteFerrymanBoardingPlan boardingPlan;
         private LastRouteFerrymanBoardingTimeline boarding;
+        private LastRouteFerrymanAlightingTimeline alighting;
+        private Vector3 drivePelvisOffset;
+        private float perchPelvisLift;
+        private float walkSeconds;
+        private LastRouteCarAssetRegistry carRegistry;
         private LastRouteCarDoors doors;
         private LastRouteCarSuspension suspension;
         private Quaternion landingRotation;
@@ -147,6 +166,18 @@ namespace BarPromenade
         public LastRouteFerrymanPhase Phase { get; private set; }
         public bool IsWaiting => Phase == LastRouteFerrymanPhase.Waiting;
         public bool IsDriving => Phase == LastRouteFerrymanPhase.Driving;
+
+        /// <summary>
+        /// True from the moment he starts climbing back out at the far end.
+        /// He waits on his bonnet again afterwards, but he does not take
+        /// anybody anywhere a second time.
+        /// </summary>
+        public bool HasCompletedJourney { get; private set; }
+
+        /// <summary>True while he is getting out, walking back or climbing on
+        /// - the whole way home.</summary>
+        public bool IsAlighting =>
+            alighting != null && !alighting.IsDone;
 
         /// <summary>True once his boots are off the car - the moment the
         /// answer has visibly been given and the menu has nothing left to
@@ -313,15 +344,17 @@ namespace BarPromenade
         public bool TryBeginBoarding()
         {
             if (!IsInitialized ||
-                Phase != LastRouteFerrymanPhase.Waiting)
+                Phase != LastRouteFerrymanPhase.Waiting ||
+                HasCompletedJourney)
             {
+                // He is back on a bonnet, but it is the bonnet at the cafe and
+                // the route he ran is over. Without this the wait loop coming
+                // back would put the offer back up with it, and answering it
+                // would drive him off the mountain terrace to a tunnel that is
+                // six hundred metres downhill.
                 return false;
             }
 
-            float walkSeconds = WalkSpeedMetersPerSecond > 0f
-                ? (firstLegLength + secondLegLength) /
-                  WalkSpeedMetersPerSecond
-                : 0f;
             boarding = new LastRouteFerrymanBoardingTimeline(
                 dismountLengthSeconds,
                 walkSeconds,
@@ -333,6 +366,105 @@ namespace BarPromenade
             // spent.
             EnterPhase(LastRouteFerrymanPhase.Dismounting);
             return true;
+        }
+
+        /// <summary>
+        /// Puts him behind the wheel with no beat at all, already driving.
+        ///
+        /// One caller, one moment: the mountain road finishing its load. He
+        /// got into this car in a scene that no longer exists, and the whole
+        /// island - car, man and coin - has just been built again around a
+        /// hero who never left the passenger seat. Playing the boarding beat
+        /// here would have him climb into a moving car out of the air.
+        /// </summary>
+        public bool BeginSeatedAtTheWheel()
+        {
+            if (!IsInitialized || Phase != LastRouteFerrymanPhase.Waiting)
+            {
+                return false;
+            }
+
+            boarding = new LastRouteFerrymanBoardingTimeline(
+                dismountLengthSeconds,
+                walkSeconds,
+                boardLengthSeconds);
+            boarding.Advance(
+                dismountLengthSeconds + walkSeconds + boardLengthSeconds + 1f);
+            EnterPhase(LastRouteFerrymanPhase.Driving);
+            // The springs are not kicked and the door is never opened: from
+            // the player's side he has been sitting here for a minute.
+            boarding.ConsumeLandingCue();
+            boarding.ConsumeSeatCue();
+            RefreshDriverSeat();
+            transform.SetPositionAndRotation(drivePosition, driveRotation);
+            doors?.SetDriverOpenness(0f);
+            return true;
+        }
+
+        /// <summary>
+        /// The journey is over and the passenger is out. He gets out himself,
+        /// walks back round the nose and sits up onto the bonnet, and there he
+        /// stays.
+        ///
+        /// Once only, and only from behind the wheel - a second call while he
+        /// is already climbing out is ignored rather than restarting him.
+        /// </summary>
+        public bool TryBeginAlighting()
+        {
+            if (!IsInitialized || Phase != LastRouteFerrymanPhase.Driving)
+            {
+                return false;
+            }
+
+            RefreshDriverSeat();
+            RefreshPerchFromCar();
+            HasCompletedJourney = true;
+            alighting = new LastRouteFerrymanAlightingTimeline(
+                boardLengthSeconds,
+                walkSeconds,
+                dismountLengthSeconds);
+            EnterPhase(LastRouteFerrymanPhase.Alighting);
+            return true;
+        }
+
+        /// <summary>
+        /// Re-reads the walk and the bonnet off the car where it now stands.
+        ///
+        /// Everything the boarding beat used was solved on the island: the
+        /// landing point, the corner he rounds, the door dock and the perch
+        /// are all world-space and all six hundred metres and twenty-six
+        /// metres of altitude out of date by the time he gets out at the cafe.
+        /// The perch in particular is re-derived exactly as
+        /// <see cref="SolvePerch"/> did it, from the car's own soles anchor
+        /// plus the measured pelvis drop, so he lands on the metal rather than
+        /// above or through it.
+        /// </summary>
+        private void RefreshPerchFromCar()
+        {
+            if (carRegistry == null)
+            {
+                return;
+            }
+
+            SolveWalk(carRegistry);
+            if (carRegistry.PerchSolesAnchor == null ||
+                carRegistry.PerchSeatAnchor == null)
+            {
+                return;
+            }
+
+            Vector3 facing = carRegistry.PerchSolesAnchor.position -
+                             carRegistry.PerchSeatAnchor.position;
+            facing.y = 0f;
+            if (facing.sqrMagnitude > 0.000001f)
+            {
+                perchRotation = Quaternion.LookRotation(
+                    facing.normalized,
+                    Vector3.up);
+            }
+
+            perchPosition = carRegistry.PerchSolesAnchor.position +
+                            (Vector3.up * perchPelvisLift);
         }
 
         /// <summary>
@@ -385,9 +517,49 @@ namespace BarPromenade
             drivePosition =
                 car.DriverSeatAnchor.position - rotatedPelvisOffset;
 
+            // Kept unrotated as well, because this car no longer stands
+            // still. Once it is driving, the seat anchor and the wheel move
+            // every frame and his root has to be re-solved from them; with
+            // the offset in the pose's own frame that is the same two lines
+            // as above rather than a second solve.
+            drivePelvisOffset =
+                Quaternion.Inverse(driveRotation) * rotatedPelvisOffset;
+
             transform.SetPositionAndRotation(
                 previousPosition,
                 previousRotation);
+        }
+
+        /// <summary>
+        /// The driving pose against wherever the car is NOW.
+        ///
+        /// While it was parked this was solved once and never asked again.
+        /// A car that drives six hundred metres makes that a man left standing
+        /// on the island, so the seat is re-derived every frame he is in it -
+        /// from the same two drawn anchors, so it cannot drift from the solve
+        /// that placed him there.
+        /// </summary>
+        private void RefreshDriverSeat()
+        {
+            if (carRegistry == null ||
+                carRegistry.DriverSeatAnchor == null ||
+                carRegistry.SteeringWheelPivot == null)
+            {
+                return;
+            }
+
+            Vector3 toWheel = carRegistry.SteeringWheelPivot.position -
+                              carRegistry.DriverSeatAnchor.position;
+            toWheel.y = 0f;
+            if (toWheel.sqrMagnitude > 0.000001f)
+            {
+                driveRotation = Quaternion.LookRotation(
+                    toWheel.normalized,
+                    Vector3.up);
+            }
+
+            drivePosition = carRegistry.DriverSeatAnchor.position -
+                            (driveRotation * drivePelvisOffset);
         }
 
         /// <summary>
@@ -399,6 +571,7 @@ namespace BarPromenade
         /// </summary>
         private void ResolveCarMechanisms(LastRouteCarAssetRegistry car)
         {
+            carRegistry = car;
             doors = car.GetComponentInParent<LastRouteCarDoors>();
             suspension = car.GetComponentInParent<LastRouteCarSuspension>();
         }
@@ -437,6 +610,10 @@ namespace BarPromenade
             secondLegLength = Vector3.Distance(
                 boardingPlan.ApproachCorner,
                 boardingPlan.DoorDockPosition);
+            walkSeconds = WalkSpeedMetersPerSecond > 0f
+                ? (firstLegLength + secondLegLength) /
+                  WalkSpeedMetersPerSecond
+                : 0f;
         }
 
         /// <summary>
@@ -474,9 +651,13 @@ namespace BarPromenade
 
             float targetPelvisY =
                 stance.Position.y + anchors.PerchPelvisDrop;
+            // Kept as the LIFT rather than only as the answer, so getting
+            // back onto the bonnet at the far end of the mountain road can
+            // re-derive the same seat from the car's soles anchor without a
+            // second evaluation of the pose.
+            perchPelvisLift = targetPelvisY - registry.Pelvis.position.y;
             perchPosition = stance.Position +
-                            (Vector3.up *
-                             (targetPelvisY - registry.Pelvis.position.y));
+                            (Vector3.up * perchPelvisLift);
         }
 
         /// <summary>
@@ -526,6 +707,46 @@ namespace BarPromenade
             currentInput = ResolveInput(phase);
             blendElapsedSeconds = 0f;
             StartClipForInput(currentInput);
+            if (alighting != null)
+            {
+                // The way back out runs its one-shots BACKWARDS, and it does
+                // it by writing their time rather than by giving a playable a
+                // negative speed. Parking the incoming clip at zero speed here
+                // is what leaves the applier in sole charge of where it
+                // stands, and it is the same idiom that keeps every one-shot
+                // on this graph from playing to itself in the dark.
+                ParkClipForInput(currentInput);
+            }
+        }
+
+        private void ParkClipForInput(int input)
+        {
+            switch (input)
+            {
+                case DismountInput:
+                    dismountPlayable.SetSpeed(0.0);
+                    break;
+                case BoardInput:
+                    boardPlayable.SetSpeed(0.0);
+                    break;
+            }
+        }
+
+        private void SetReversedClipTime(
+            int input,
+            float reversedPhase,
+            float length)
+        {
+            double time = Mathf.Clamp01(reversedPhase) * length;
+            switch (input)
+            {
+                case DismountInput:
+                    dismountPlayable.SetTime(time);
+                    break;
+                case BoardInput:
+                    boardPlayable.SetTime(time);
+                    break;
+            }
         }
 
         /// <summary>
@@ -571,9 +792,14 @@ namespace BarPromenade
                 case LastRouteFerrymanPhase.WalkingToDoor:
                     return WalkInput;
                 case LastRouteFerrymanPhase.Boarding:
+                case LastRouteFerrymanPhase.Alighting:
                     return BoardInput;
                 case LastRouteFerrymanPhase.Driving:
                     return DriveInput;
+                case LastRouteFerrymanPhase.WalkingToBonnet:
+                    return WalkInput;
+                case LastRouteFerrymanPhase.Mounting:
+                    return DismountInput;
                 default:
                     return WaitInput;
             }
@@ -618,14 +844,73 @@ namespace BarPromenade
 
             float step =
                 Mathf.Min(Time.deltaTime, MaximumStepSeconds) * playbackSpeed;
-            if (boarding != null && !boarding.IsDone)
+            if (alighting != null)
+            {
+                AdvanceAlighting(step);
+            }
+            else if (boarding != null && !boarding.IsDone)
             {
                 AdvanceBoarding(step);
+            }
+            else if (Phase == LastRouteFerrymanPhase.Driving)
+            {
+                // He is at the wheel of a car that is now capable of going
+                // somewhere. The boarding timeline is finished and no longer
+                // writes his root, so without this he would sit at the world
+                // position the island left him at while the car drove up a
+                // mountain without him.
+                RefreshDriverSeat();
+                transform.SetPositionAndRotation(drivePosition, driveRotation);
             }
 
             blendElapsedSeconds += step;
             ApplyWeights();
             graph.Evaluate(step);
+        }
+
+        private void AdvanceAlighting(float step)
+        {
+            LastRouteFerrymanPhase before = alighting.Phase;
+            if (!alighting.IsDone)
+            {
+                alighting.Advance(step);
+            }
+
+            if (alighting.Phase != before)
+            {
+                EnterPhase(alighting.Phase);
+            }
+
+            switch (alighting.Phase)
+            {
+                case LastRouteFerrymanPhase.Alighting:
+                    ApplyAlight();
+                    break;
+                case LastRouteFerrymanPhase.WalkingToBonnet:
+                    ApplyWalkBack();
+                    break;
+                case LastRouteFerrymanPhase.Mounting:
+                    ApplyMount();
+                    break;
+                default:
+                    transform.SetPositionAndRotation(
+                        perchPosition,
+                        perchRotation);
+                    doors?.SetDriverOpenness(0f);
+                    break;
+            }
+
+            if (alighting.ConsumeUnseatCue())
+            {
+                // His weight leaving the seat is the seating kick inverted:
+                // that side of the car comes back up.
+                suspension?.NudgeForUnseating(IsDriverSideCarRight());
+            }
+
+            if (alighting.ConsumeMountCue())
+            {
+                suspension?.NudgeForMount();
+            }
         }
 
         private void AdvanceBoarding(float step)
@@ -756,6 +1041,115 @@ namespace BarPromenade
                 Vector3.Lerp(dock, drivePosition, travel),
                 Quaternion.Slerp(dockRotation, driveRotation, travel));
             doors?.SetDriverOpenness(boarding.DriverDoorOpenness);
+        }
+
+        /// <summary>
+        /// The climb out: the board clip played backwards, the leaf on its own
+        /// reversed curve, and the root carried from the seat back to the door
+        /// dock along the exact line it came in on.
+        /// </summary>
+        private void ApplyAlight()
+        {
+            RefreshDriverSeat();
+            Vector3 dock = boardingPlan.IsPresent
+                ? boardingPlan.DoorDockPosition
+                : perchPosition;
+            float travel = alighting.SeatTravel;
+            transform.SetPositionAndRotation(
+                Vector3.Lerp(dock, drivePosition, travel),
+                Quaternion.Slerp(dockRotation, driveRotation, travel));
+            doors?.SetDriverOpenness(alighting.DriverDoorOpenness);
+            SetReversedClipTime(
+                BoardInput,
+                alighting.ReversedClipPhase,
+                boardLengthSeconds);
+        }
+
+        /// <summary>
+        /// The same two legs as the walk in, walked the other way. The clip
+        /// itself plays FORWARDS - a walk cycle run backwards is a man moon-
+        /// walking round a car - and only the path is reversed.
+        /// </summary>
+        private void ApplyWalkBack()
+        {
+            if (!boardingPlan.IsPresent)
+            {
+                return;
+            }
+
+            float total = firstLegLength + secondLegLength;
+            float travelled = alighting.PhaseProgress * total;
+            Vector3 position;
+            Vector3 heading;
+            if (travelled <= secondLegLength && secondLegLength > 0.0001f)
+            {
+                position = Vector3.Lerp(
+                    boardingPlan.DoorDockPosition,
+                    boardingPlan.ApproachCorner,
+                    travelled / secondLegLength);
+                heading = boardingPlan.ApproachCorner -
+                          boardingPlan.DoorDockPosition;
+            }
+            else if (firstLegLength > 0.0001f)
+            {
+                position = Vector3.Lerp(
+                    boardingPlan.ApproachCorner,
+                    boardingPlan.LandingPosition,
+                    (travelled - secondLegLength) / firstLegLength);
+                heading = boardingPlan.LandingPosition -
+                          boardingPlan.ApproachCorner;
+            }
+            else
+            {
+                position = boardingPlan.LandingPosition;
+                heading = boardingPlan.LandingFacing;
+            }
+
+            heading.y = 0f;
+            Quaternion facing = heading.sqrMagnitude > 0.000001f
+                ? Quaternion.LookRotation(heading.normalized, Vector3.up)
+                : landingRotation;
+
+            // He squares up with the bumper over the last stretch, the mirror
+            // of squaring up with the door on the way in.
+            float turn = DockTurnFraction > 0f
+                ? Mathf.InverseLerp(
+                    1f - DockTurnFraction,
+                    1f,
+                    alighting.PhaseProgress)
+                : 0f;
+            transform.SetPositionAndRotation(
+                position,
+                Quaternion.Slerp(
+                    facing,
+                    landingRotation,
+                    Mathf.SmoothStep(0f, 1f, turn)));
+        }
+
+        /// <summary>
+        /// Up onto the bonnet: the drop played backwards, with the rise held
+        /// separate from the carry for the same reason the fall is - he pushes
+        /// himself up rather than floating.
+        /// </summary>
+        private void ApplyMount()
+        {
+            Vector3 from = boardingPlan.IsPresent
+                ? boardingPlan.LandingPosition
+                : drivePosition;
+            var planar = new Vector3(
+                Mathf.Lerp(from.x, perchPosition.x, alighting.MountTravel),
+                Mathf.Lerp(from.y, perchPosition.y, alighting.MountRise),
+                Mathf.Lerp(from.z, perchPosition.z, alighting.MountTravel));
+            transform.SetPositionAndRotation(
+                planar,
+                Quaternion.Slerp(
+                    landingRotation,
+                    perchRotation,
+                    alighting.MountTravel));
+            SetReversedClipTime(
+                DismountInput,
+                alighting.ReversedClipPhase,
+                dismountLengthSeconds);
         }
 
         private bool IsDriverSideCarRight()

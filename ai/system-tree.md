@@ -469,8 +469,8 @@ Assets/
         (World) CityCemeterySegmentFrameWorldBuilder.cs  the outline round the square the spade is aimed at
       Park/          the two old men's boards, once somebody sits down at one
         CityBoardGameController.cs  seat hookup, seated camera ownership, pointer/cursor input, opponent think clock + every board state as a spoken cue
-      LastRoute/     the island's parked car and the one man still waiting by it
-        LastRouteCarPlan.cs        where the car stands, off the paving and clear of every way in
+      LastRoute/     the island's car, the one man waiting by it, and the journey out
+        LastRouteCarPlan.cs        where the car stands, off the paving and clear of every way in - or anywhere at all, once it has driven
         LastRouteCarFactory.cs     the staged car, its doors, springs, halos and the passenger seat
         LastRouteCarDoors.cs       leaves that swing on their own hinges, and the swing-clearance rule both docks obey
         LastRouteCarSuspension{,Model}.cs  the body on springs, kicked by dismounts and seatings
@@ -481,6 +481,13 @@ Assets/
         LastRouteFerrymanPresentation.cs  five postures on one manual graph, and the metres the clips do not carry
         LastRouteFerrymanBoarding{Plan,Timeline}.cs  the drop, the walk round the nose and the door-open-sit-shut clock
         LastRouteFerryman{Coin,Coat,RigAnchors,Quips,Interaction}.cs  the toss, the hem, the sockets, the twelve lines and the one question
+        LastRouteFerrymanAlightingTimeline.cs  the same three beats run backwards, to get him out at the far end
+        LastRouteFerrymanRideStage.cs  the monotone ladder both areas build him from
+        LastRouteCarDrive{Path,Model}.cs  one drivable centreline, and how fast a car will take it
+        LastRouteCarDriver.cs      the engine on the runtime root: pose, steering, wheel roll and what the road does to the springs
+        LastRouteCityDeparturePlanner.cs  the lot exit, a Dijkstra over the bus graph, and the run into the tunnel
+        LastRouteMountainDrivePlanner.cs  the climb read out at a metre, from inside the tunnel to the middle of the apron
+        LastRouteRideController.cs  who owns the beat: seat, engine, blackout, area load, arrival and the man getting back out
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
         CityBusPlanner.cs          grade-safe Street graph, 3D samples + full-body clearance proof

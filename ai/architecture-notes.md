@@ -1412,8 +1412,30 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   seeded City layout and mountain-boundary plan for its City tab, but must not
   invoke a City world builder or instantiate City GameObjects. Door transitions
   retain their separate authored `DoorTransition` chain. The physical City
-  tunnel remains an unavailable refusal boundary until a later feature wires
-  it to this destination; for now only the map can request mountain travel.
+  tunnel is an unavailable refusal boundary **on foot** and stays one; what
+  crosses it is the Ferryman's car, through `AreaArrivalToken.Ferryman` — the
+  first caller the token set has ever had beyond the map. The refusal needs no
+  new gate for that: `CityTunnelTravelController.CanEngage` already requires
+  `Motor.InputEnabled`, which a seated passenger does not have.
+- **Normative — a destination root's `Awake` is INSIDE the transition, not
+  after it:** `AreaTravelService` sets `allowSceneActivation`, the destination
+  wakes, and only after `destinationOperation.isDone` does `Complete` clear
+  the flag. Through that window `SceneTransitionService.IsTransitioning` is
+  still true, and `PlayerAnimatedInteractionController.Update` force-completes
+  every running interaction while it is. Anything an arrival wants to START —
+  and a contextual interaction above all — must wait for it to clear rather
+  than run in `Awake`. `LastRouteRideController.AwaitMountainStart` is the
+  worked example; it holds under a black screen for the frame or two involved.
+- **Accepted — The Ferryman's journey is one session stage, not two worlds:**
+  `LastRouteFerrymanRideStage` (`NotTaken -> InTransit -> Arrived`) is a
+  monotone ladder on `GameSessionState`, the cemetery ladder's own shape, and
+  both areas build the car and the man from it and from nothing else. So he is
+  never in two places and never in none: the City raises him only while the
+  stage is `NotTaken`, and `MountainRoadRoot` raises him parked on the terminal
+  apron once it is `Arrived`. `CityMapController.Open` refuses while the stage
+  is `InTransit` for the same reason it refuses while the area service is
+  travelling — the hero is between two places rather than standing in either,
+  and a chart with a teleport on it would let him step out of a moving car.
 - **Accepted — Compact separate home interior:** `HomeInterior` owns a
   validated `10 x 8 x 3.4 m` runtime-composed main room and bathroom with six
   main-room furniture footprints plus toilet, shower and sink, protected

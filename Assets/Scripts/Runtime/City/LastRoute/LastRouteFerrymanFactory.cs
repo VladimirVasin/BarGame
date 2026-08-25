@@ -167,26 +167,36 @@ namespace BarPromenade
 
             // The talk trigger docks in front of him, which for once is the
             // side the player arrives on.
-            var trigger = new GameObject("Ferryman Talk Trigger");
-            trigger.transform.SetParent(root, false);
-            trigger.transform.SetPositionAndRotation(
-                stance.Position +
-                Vector3.up * 0.9f +
-                stance.Facing * TriggerReachOutMeters,
-                Quaternion.LookRotation(stance.Facing, Vector3.up));
-            var collider = trigger.AddComponent<BoxCollider>();
-            collider.isTrigger = true;
-            collider.size = new Vector3(
-                TriggerSpan,
-                TriggerHeight,
-                TriggerReach);
-            trigger
-                .AddComponent<LastRouteFerrymanInteraction>()
-                .Initialize(
-                    stance.Position,
-                    citySeed,
-                    presentation,
-                    targetInteraction);
+            //
+            // It is skipped altogether when no menu is handed in, and that is
+            // the mountain terrace: his whole repertoire is twelve lines of a
+            // man waiting on an island and one question - leave the city? -
+            // and at the far end of the road out of it, every one of them is
+            // nonsense. He waits there in silence until he is given something
+            // to say.
+            if (targetInteraction != null)
+            {
+                var trigger = new GameObject("Ferryman Talk Trigger");
+                trigger.transform.SetParent(root, false);
+                trigger.transform.SetPositionAndRotation(
+                    stance.Position +
+                    Vector3.up * 0.9f +
+                    stance.Facing * TriggerReachOutMeters,
+                    Quaternion.LookRotation(stance.Facing, Vector3.up));
+                var collider = trigger.AddComponent<BoxCollider>();
+                collider.isTrigger = true;
+                collider.size = new Vector3(
+                    TriggerSpan,
+                    TriggerHeight,
+                    TriggerReach);
+                trigger
+                    .AddComponent<LastRouteFerrymanInteraction>()
+                    .Initialize(
+                        stance.Position,
+                        citySeed,
+                        presentation,
+                        targetInteraction);
+            }
 
             GameLog.Info(
                 "city",
