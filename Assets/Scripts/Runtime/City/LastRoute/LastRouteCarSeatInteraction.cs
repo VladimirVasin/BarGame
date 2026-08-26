@@ -333,6 +333,20 @@ namespace BarPromenade
         /// against `plan.EntryRootPosition.y` before it will offer anything,
         /// so without this the door simply never opens again at the cafe.
         /// </summary>
+        /// <summary>
+        /// Where he stands beside the car, off the plan as it reads NOW. One
+        /// place builds it, because every point in it is world-space and the
+        /// car moves: getting in, getting out and resuming all have to mean
+        /// the same dock, and the arrival re-solves the plan under them.
+        /// </summary>
+        private PlayerAnimatedInteractionPose BuildDockPose()
+        {
+            return new PlayerAnimatedInteractionPose(
+                plan.EntryRootPosition,
+                plan.EntryRotation,
+                plan.EntryHipPosition);
+        }
+
         public bool RebuildPlanFromCar()
         {
             if (car == null)
@@ -398,10 +412,18 @@ namespace BarPromenade
                 Physics.SyncTransforms();
             }
 
-            if (!controller.BeginLooping(
+            // A POSITIONED loop, not the plain one. The plain `BeginLooping`
+            // is for a body that resumes a loop and then stands up where it
+            // sat down; it does not own the root, so `BindActionPelvisTarget`
+            // below silently refuses and the drawn hero stays pinned to the
+            // world point the tunnel solved - riding six hundred metres up a
+            // mountain the capsule went up without him. Nobody saw it because
+            // the camera is his own eyes and his head is hidden; it showed up
+            // at the far end, as a door opening over an empty seat.
+            if (!controller.BeginPositionedLoop(
                     definition,
-                    plan.EntryHipPosition,
                     plan.ActionHipPosition,
+                    BuildDockPose(),
                     plan.PelvisTransition))
             {
                 GameLog.Warning("lastroute", "car_seat_resume_failed");
@@ -409,9 +431,13 @@ namespace BarPromenade
             }
 
             ownsActiveInteraction = true;
-            if (car.PassengerSeatAnchor != null)
+            if (car.PassengerSeatAnchor != null &&
+                !controller.BindActionPelvisTarget(car.PassengerSeatAnchor))
             {
-                controller.BindActionPelvisTarget(car.PassengerSeatAnchor);
+                // Never seen now that the loop is positioned, and worth a
+                // breadcrumb if it ever comes back: this refusal is exactly
+                // what left him in the tunnel.
+                GameLog.Warning("lastroute", "car_seat_anchor_bind_refused");
             }
 
             ApplyDoorOpenness(0f);
@@ -592,14 +618,28 @@ namespace BarPromenade
             if (ownsActiveInteraction &&
                 controller.Phase == PlayerAnimatedInteractionPhase.Looping)
             {
+                // Out onto the dock beside the car as it stands NOW. On the
+                // city island that is where he got in, so either overload
+                // answers the same; at the cafe the car is six hundred metres
+                // and twenty-six of altitude from where the loop began, and
+                // the plain `RequestExit` would walk him out into the tunnel
+                // he left. `plan` was re-solved by the arrival.
+                if (car != null &&
+                    car.PassengerSeatAnchor != null &&
+                    controller.RequestExit(
+                        BuildDockPose(),
+                        car.PassengerSeatAnchor.position,
+                        1f,
+                        plan.PelvisTransition))
+                {
+                    return;
+                }
+
                 controller.RequestExit();
                 return;
             }
 
-            var dockPose = new PlayerAnimatedInteractionPose(
-                plan.EntryRootPosition,
-                plan.EntryRotation,
-                plan.EntryHipPosition);
+            PlayerAnimatedInteractionPose dockPose = BuildDockPose();
             if (!controller.BeginPositioned(
                     definition,
                     dockPose,

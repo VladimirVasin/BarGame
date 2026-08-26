@@ -352,6 +352,52 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void SkipHint_SaysNothingUntilItIsGivenALineToSay()
+        {
+            var host = new GameObject("Skip Hint Test");
+            try
+            {
+                LastRouteRideSkipHintView hint =
+                    host.AddComponent<LastRouteRideSkipHintView>();
+
+                Assert.That(
+                    hint.ShouldRender,
+                    Is.False,
+                    "A hint that has not been offered must not draw.");
+                Assert.That(hint.DisplayedText, Is.Empty);
+
+                hint.Show(LastRouteRideController.SkipPromptKey);
+                Assert.That(hint.Visible, Is.True);
+                Assert.That(hint.ShouldRender, Is.True);
+
+                // The line has to be a real catalogue entry, not the key
+                // echoed back: `LocalizationService.Get` returns the key
+                // itself for a miss, so a typo shows the player
+                // `lastroute.ride.skip` in the corner of his screen.
+                Assert.That(
+                    hint.DisplayedText,
+                    Is.Not.EqualTo(LastRouteRideController.SkipPromptKey),
+                    "The skip line is missing from the catalogue.");
+                Assert.That(
+                    hint.DisplayedText,
+                    Does.Contain("F10"),
+                    "The line has to name the key it is about; that is the " +
+                    "whole of how the player finds it.");
+
+                hint.Hide();
+                Assert.That(hint.ShouldRender, Is.False);
+
+                // Everything measured inside `OnGUI` is unavailable in batch
+                // mode - no game view, so it never runs - which is exactly
+                // why the state above lives outside it.
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
         public void CityDeparture_TurnsOffWhereTheTunnelIsAndNotPastIt()
         {
             CreateCityContext(

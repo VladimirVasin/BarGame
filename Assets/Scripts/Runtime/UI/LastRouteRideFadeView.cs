@@ -69,14 +69,31 @@ namespace BarPromenade
 
         public void FadeOut()
         {
-            target = 1f;
-            rate = FadeOutSeconds > 0f ? 1f / FadeOutSeconds : 1f;
+            FadeOut(FadeOutSeconds);
         }
 
         public void FadeIn()
         {
+            FadeIn(FadeInSeconds);
+        }
+
+        /// <summary>
+        /// The same black at a pace the caller chooses. The two defaults are
+        /// the tunnel's, and the tunnel is deliberately slow - it is the car
+        /// being swallowed. A player who has just pressed a key to skip
+        /// something is not watching an event, he is waiting, and the same
+        /// second and a half reads as the game hesitating.
+        /// </summary>
+        public void FadeOut(float seconds)
+        {
+            target = 1f;
+            rate = seconds > 0f ? 1f / seconds : 1f;
+        }
+
+        public void FadeIn(float seconds)
+        {
             target = 0f;
-            rate = FadeInSeconds > 0f ? 1f / FadeInSeconds : 1f;
+            rate = seconds > 0f ? 1f / seconds : 1f;
         }
 
         private void Update()

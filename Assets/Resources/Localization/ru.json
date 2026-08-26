@@ -161,6 +161,10 @@
       "value": "E — присесть на лавочку"
     },
     {
+      "key": "lastroute.ride.skip",
+      "value": "F10 — пропустить поездку"
+    },
+    {
       "key": "interaction.sit_ferry_car",
       "value": "E — сесть в машину"
     },

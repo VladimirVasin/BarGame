@@ -119,6 +119,35 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Puts the car at the end of its road, stopped, in one frame.
+        ///
+        /// The whole of a skip. It moves the DISTANCE and nothing else, so
+        /// everything that follows is the ordinary arrival: the next
+        /// <see cref="Update"/> writes the pose, raises <see cref="Moved"/> -
+        /// which is what carries the passenger - finds the road run out, and
+        /// raises <see cref="Arrived"/>. Every world-space thing that would
+        /// otherwise go stale (the seat plan, the springs, the man at the
+        /// wheel) is already re-solved by that arrival, because a car that
+        /// drives there slowly has exactly the same problem.
+        /// </summary>
+        public bool SkipToEnd()
+        {
+            if (!IsDriving || model == null || model.HasArrived)
+            {
+                return false;
+            }
+
+            float from = model.Distance;
+            model.Resume(0f, model.Path.Length);
+            GameLog.Info(
+                "lastroute",
+                "car_drive_skipped",
+                GameLog.Field("from", from),
+                GameLog.Field("length", model.Path.Length));
+            return true;
+        }
+
+        /// <summary>
         /// Puts the car back on its handbrake wherever it happens to be. Safe
         /// to call when it was never driving.
         /// </summary>

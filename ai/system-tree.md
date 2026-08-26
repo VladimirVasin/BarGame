@@ -490,7 +490,7 @@ Assets/
         LastRouteCarGiveWay{,Model}.cs  wait or go at the turn across the road: the pure clock and commit rule, and the live look for an oncoming bus or anyone walking over the mouth
         LastRouteCityDeparturePlanner.cs  the lot exit, a Dijkstra over the layout's own street edges (NEVER the bus graph - that is Route 01's one-way loop), the turn off where the forecourt opens, and the run into the tunnel
         LastRouteMountainDrivePlanner.cs  the climb read out at a metre, from inside the tunnel to the middle of the apron
-        LastRouteRideController.cs  who owns the beat: seat, engine, blackout, area load, arrival and the man getting back out
+        LastRouteRideController.cs  who owns the beat: seat, engine, blackout, area load, arrival, the F10 skip and the man getting back out
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
         CityBusPlan.cs             immutable ordered Route 01 loop, target-owned stops + occurrences
         CityBusPlanner.cs          grade-safe Street graph, 3D samples + full-body clearance proof

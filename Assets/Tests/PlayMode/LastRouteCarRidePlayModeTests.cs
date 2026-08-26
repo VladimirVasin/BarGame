@@ -82,6 +82,22 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3 capturedOffset =
                     carRoot.InverseTransformPoint(heroRoot.position);
 
+                // His DRAWN body, which is a different question from his
+                // capsule and the one that was wrong. The seated pelvis is
+                // pinned to a world point, and on the mountain leg the bind
+                // that keeps that point on the car's live seat anchor was
+                // silently refused - `BeginLooping` does not own the root, so
+                // `BindActionPelvisTarget` returned false and nobody read it.
+                // The capsule rode the car; the model stayed in the tunnel.
+                // Invisible from inside his own hidden head, and it surfaced
+                // at the far end as a door opening over an empty seat.
+                var visual = (Player3DCharacterPresentation)
+                    harness.Player.Visual;
+                Transform pelvis = visual.Registry.Anchors.Pelvis;
+                Vector3 capturedPelvisOffset =
+                    carRoot.InverseTransformPoint(pelvis.position);
+                float furthestPelvisDrift = 0f;
+
                 Assert.That(
                     harness.Seat.IsSeated,
                     Is.True,
@@ -119,6 +135,14 @@ namespace BarPromenade.Tests.PlayMode
                         furthestDrift,
                         Vector3.Distance(offset, capturedOffset));
 
+                    Vector3 pelvisOffset =
+                        carRoot.InverseTransformPoint(pelvis.position);
+                    furthestPelvisDrift = Mathf.Max(
+                        furthestPelvisDrift,
+                        Vector3.Distance(
+                            pelvisOffset,
+                            capturedPelvisOffset));
+
                     if (!harness.Seat.CanInteract(harness.Player.Interactor))
                     {
                         sawTheExitRefused = true;
@@ -146,6 +170,13 @@ namespace BarPromenade.Tests.PlayMode
                     "any frame including the first. This caught a real one: " +
                     "written from a LateUpdate of its own he sat exactly one " +
                     "frame's travel behind on the frame the engine started.");
+                Assert.That(
+                    furthestPelvisDrift,
+                    Is.LessThan(CarryTolerance),
+                    $"His drawn body drifts {furthestPelvisDrift:0.00} m " +
+                    "from the car it is sitting in. The capsule rides and " +
+                    "the model does not, so the seat empties out underneath " +
+                    "him while the camera in his own head sees nothing.");
                 Assert.That(
                     heroRoot.position.z,
                     Is.GreaterThan(RoadLength * 0.5f),
@@ -176,6 +207,259 @@ namespace BarPromenade.Tests.PlayMode
                     "And the door opens again - which it only can because the " +
                     "seat re-solved its plan against a car that is nowhere " +
                     "near where that plan was worked out.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(scene);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator Alighting_ClimbsOutBesideTheCarWhereItActuallyStopped()
+        {
+            Harness harness = BuildHarness(out GameObject scene);
+            try
+            {
+                Transform heroRoot = harness.Player.GameObject.transform;
+                yield return null;
+
+                int steps = 0;
+                while (harness.Driver.IsDriving && steps < MaximumSteps)
+                {
+                    yield return null;
+                    steps++;
+                }
+
+                yield return null;
+                Assert.That(harness.Driver.HasArrived, Is.True);
+
+                Vector3 dock = harness.Seat.Plan.EntryRootPosition;
+                Assert.That(
+                    harness.Seat.CanInteract(harness.Player.Interactor),
+                    Is.True);
+                harness.Seat.Interact(harness.Player.Interactor);
+
+                var visual = (Player3DCharacterPresentation)
+                    harness.Player.Visual;
+                Transform pelvis = visual.Registry.Anchors.Pelvis;
+
+                // Walked for a FIXED window rather than `while (IsSeated)`:
+                // the loop ends on the frame the exit is requested, so a
+                // seated-gated loop never runs a single iteration and every
+                // maximum below stays at zero. That is not a hypothetical -
+                // the first draft of this test passed against the very bug it
+                // was written for.
+                //
+                // The exit clip is 24 frames at 12 fps, so 2.0 s; the clock
+                // is pinned at 1/60, so 150 frames covers it with room.
+                const int exitFrames = 150;
+                Vector3 seatedAt = pelvis.position;
+                float furthestFromDock = 0f;
+                float furthestFromSeat = 0f;
+                for (int frame = 0; frame < exitFrames; frame++)
+                {
+                    yield return null;
+                    furthestFromDock = Mathf.Max(
+                        furthestFromDock,
+                        Vector3.Distance(pelvis.position, dock));
+                    furthestFromSeat = Mathf.Max(
+                        furthestFromSeat,
+                        Vector3.Distance(pelvis.position, seatedAt));
+                }
+
+                Assert.That(
+                    furthestFromSeat,
+                    Is.GreaterThan(0.3f),
+                    "His body never left the seat, so nothing below was " +
+                    "measured against a climb that happened.");
+                Assert.That(
+                    harness.Seat.IsSeated,
+                    Is.False,
+                    $"He never finished getting out in {exitFrames} frames.");
+
+                // The whole point: he is on his way OUT, and out is beside
+                // this car rather than beside the one that drove off. The
+                // exit used to aim at the pelvis the loop began on, which on
+                // the mountain is the tunnel - seventy metres back down this
+                // test's own road, six hundred in the real one.
+                Assert.That(
+                    furthestFromDock,
+                    Is.LessThan(6f),
+                    $"His body went {furthestFromDock:0.0} m from the dock " +
+                    "on the way out of the car. Climbing out is a step, not " +
+                    "a journey back to where the ride began.");
+                Assert.That(
+                    Vector3.Distance(heroRoot.position, dock),
+                    Is.LessThan(0.5f),
+                    "And he ends up standing on the dock beside the car.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(scene);
+            }
+        }
+
+        [UnityTest]
+        public IEnumerator Skip_PutsTheCarAtTheCafeWithBothMenStillInIt()
+        {
+            Harness harness = BuildHarness(out GameObject scene);
+            try
+            {
+                Transform carRoot = harness.CarRoot;
+                Transform heroRoot = harness.Player.GameObject.transform;
+                yield return null;
+
+                Assert.That(harness.Driver.IsDriving, Is.True);
+                Assert.That(
+                    harness.Ride.CanSkipRide,
+                    Is.True,
+                    "A climb that is under way is one that can be cut short.");
+
+                // A few metres of real driving first, so the skip is a jump
+                // from somewhere rather than from the starting line.
+                int steps = 0;
+                while (harness.Driver.Distance < 5f && steps < MaximumSteps)
+                {
+                    yield return null;
+                    steps++;
+                }
+
+                var visual = (Player3DCharacterPresentation)
+                    harness.Player.Visual;
+                Transform pelvis = visual.Registry.Anchors.Pelvis;
+                Vector3 heroOffset =
+                    carRoot.InverseTransformPoint(heroRoot.position);
+                Vector3 pelvisOffset =
+                    carRoot.InverseTransformPoint(pelvis.position);
+                Transform ferrymanRoot = harness.Ferryman.transform;
+                Vector3 carBefore = carRoot.position;
+                Vector3 ferrymanBefore = ferrymanRoot.position;
+                float remaining = harness.Driver.Model.Remaining;
+                Assert.That(remaining, Is.GreaterThan(10f));
+
+                Assert.That(harness.Ride.TrySkipRide(), Is.True);
+
+                // Nothing may move yet. Six hundred metres in one frame is a
+                // glitch in any framing, so the screen goes under FIRST and
+                // the car is put at the cafe from inside the black.
+                Assert.That(
+                    harness.Ride.IsSkipping,
+                    Is.True,
+                    "The skip was over before it began. It is meant to wait " +
+                    "for the screen, not to take the car the moment the key " +
+                    "goes down.");
+                Assert.That(
+                    harness.Driver.HasArrived,
+                    Is.False,
+                    "The car jumped before the screen had gone under.");
+                Assert.That(
+                    harness.Ride.Fade.IsClear,
+                    Is.False,
+                    "The skip has to take the screen down with it.");
+
+                // Sampled at the TOP of each turn, while the skip is still
+                // pending. The jump lands inside the controller's own Update,
+                // and the fade view runs after it at order 400 - so by the
+                // time the coroutine resumes on that frame the screen has
+                // already started coming back up and a check made afterwards
+                // would find neither the black nor the un-jumped car.
+                bool sawFullyBlack = false;
+                steps = 0;
+                while (steps < MaximumSteps)
+                {
+                    if (!harness.Ride.IsSkipping)
+                    {
+                        break;
+                    }
+
+                    Assert.That(
+                        harness.Driver.HasArrived,
+                        Is.False,
+                        "The car arrived while the screen was still coming " +
+                        $"down, at opacity {harness.Ride.Fade.Opacity:0.00}.");
+                    sawFullyBlack |= harness.Ride.Fade.IsFullyBlack;
+                    yield return null;
+                    steps++;
+                }
+
+                Assert.That(
+                    sawFullyBlack,
+                    Is.True,
+                    "The jump was taken before the black was complete.");
+
+                Assert.That(
+                    harness.Driver.HasArrived,
+                    Is.True,
+                    "The skip has to finish the road, not merely shorten it.");
+
+                // And the screen comes back on its own, or the player is left
+                // sitting in the dark on a terrace he cannot see.
+                steps = 0;
+                while (!harness.Ride.Fade.IsClear && steps < MaximumSteps)
+                {
+                    yield return null;
+                    steps++;
+                }
+
+                Assert.That(
+                    harness.Ride.Fade.IsClear,
+                    Is.True,
+                    $"The screen never came back in {steps} frames.");
+                Assert.That(
+                    harness.Ride.CanSkipRide,
+                    Is.False,
+                    "And it cannot be taken twice.");
+
+                // Both men came with it. This is the half a teleport gets
+                // wrong: the car is written by the driver, and everything
+                // riding it follows only because the driver says it moved.
+                Assert.That(
+                    Vector3.Distance(
+                        carRoot.InverseTransformPoint(heroRoot.position),
+                        heroOffset),
+                    Is.LessThan(CarryTolerance),
+                    "The hero was left on the road behind the skip.");
+                Assert.That(
+                    Vector3.Distance(
+                        carRoot.InverseTransformPoint(pelvis.position),
+                        pelvisOffset),
+                    Is.LessThan(CarryTolerance),
+                    "The hero's drawn body was left behind the skip.");
+                // The Ferryman is measured by DISPLACEMENT rather than by a
+                // frozen offset from the car: unlike the two passengers he is
+                // re-solved every frame from his own sampled driving pose, so
+                // his root moves a few centimetres against the bodywork while
+                // he sits there holding the wheel. Pinning that to a
+                // centimetre asserts he stops breathing, not that he came
+                // along - the failure this has to catch is a man standing on
+                // the road sixty metres back.
+                Vector3 carJump = carRoot.position - carBefore;
+                Vector3 ferrymanJump = ferrymanRoot.position - ferrymanBefore;
+                Assert.That(
+                    carJump.magnitude,
+                    Is.GreaterThan(10f),
+                    "The car did not actually jump anywhere.");
+                Assert.That(
+                    Vector3.Distance(ferrymanJump, carJump),
+                    Is.LessThan(0.5f),
+                    "The Ferryman did not travel the jump his own car took.");
+                Assert.That(
+                    Vector3.Distance(
+                        ferrymanRoot.position,
+                        carRoot.position),
+                    Is.LessThan(3f),
+                    "And he has to end up inside it, not beside it.");
+
+                // And the ordinary arrival ran, rather than a second one
+                // written for the skip.
+                Assert.That(
+                    GameSessionState.FerrymanRide,
+                    Is.EqualTo(LastRouteFerrymanRideStage.Arrived));
+                Assert.That(harness.Seat.IsAttachedToCar, Is.False);
+                Assert.That(
+                    harness.Seat.CanInteract(harness.Player.Interactor),
+                    Is.True,
+                    "The seat re-solved against where the car actually is.");
             }
             finally
             {

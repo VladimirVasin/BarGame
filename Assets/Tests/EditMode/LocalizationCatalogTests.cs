@@ -77,6 +77,7 @@ namespace BarPromenade.Tests.EditMode
             "park.board.checkers.again.01",
             "park.board.checkers.again.02",
             "interaction.stand_up",
+            "lastroute.ride.skip",
             "interaction.use_phone_booth",
             "interaction.search_dumpster",
             "city.phone_booth.placeholder",

@@ -374,6 +374,74 @@ namespace BarPromenade
                 transition: transition);
         }
 
+        /// <summary>
+        /// Starts already looping, at a pelvis the caller owns, with an exit
+        /// pose it can re-aim later.
+        ///
+        /// <see cref="BeginLooping(PlayerAnimatedInteractionDefinition,
+        /// Vector3, Vector3, PlayerAnimatedInteractionPelvisTransition)"/>
+        /// exists for a body that resumes a loop it never left and then
+        /// stands up in the same place - a bench somebody was already sitting
+        /// on. It deliberately does not own the root: `placeAtExitOnCompletion`
+        /// is false, the exit pelvis is just the entry one, and the loop's
+        /// pelvis cannot be re-bound.
+        ///
+        /// That is wrong for a MOVING seat. The Ferryman's arrival resumes a
+        /// loop inside the mountain tunnel and then drives six hundred metres
+        /// and twenty-six of altitude, and both of the things the plain
+        /// overload refuses are what that needs: the pelvis has to follow the
+        /// live seat anchor (or the drawn body stays in the tunnel while the
+        /// capsule rides the car), and getting out has to end somewhere other
+        /// than where getting in began.
+        /// </summary>
+        public bool BeginPositionedLoop(
+            PlayerAnimatedInteractionDefinition definition,
+            Vector3 actionHipPosition,
+            PlayerAnimatedInteractionPose authoredExitPose,
+            PlayerAnimatedInteractionPelvisTransition? transition = null)
+        {
+            authoredExitPose.Validate(nameof(authoredExitPose));
+            transition?.Validate(nameof(transition));
+            if (!TryPrepareInternal(
+                    definition,
+                    authoredExitPose.HipPosition,
+                    actionHipPosition,
+                    authoredExitPose.HipPosition))
+            {
+                return false;
+            }
+
+            var nextTimeline =
+                new PlayerAnimatedInteractionTimeline(definition);
+            if (!nextTimeline.BeginLooping())
+            {
+                return false;
+            }
+
+            // The entry pose is the exit pose here and is never travelled to:
+            // this body did not walk in, it was already sitting down when the
+            // area was built around it.
+            entryPose = authoredExitPose;
+            exitPose = authoredExitPose;
+            standHip = authoredExitPose.HipPosition;
+            actionHip = actionHipPosition;
+            exitHip = authoredExitPose.HipPosition;
+            SetPelvisTransition(transition);
+            timeline = nextTimeline;
+            isPositioning = false;
+            placeAtExitOnCompletion = true;
+            entryPoseSettled = false;
+            entryPoseSettledFrame = -1;
+            approachWaypoints.Clear();
+            approachWaypointIndex = 0;
+            CapturePlayerState();
+            player.Visual.SetInteractionHandoffLocked(true);
+            ApplyInputForPhase(timeline.Phase);
+            ApplyCurrentPresentation();
+            PhaseChanged?.Invoke(timeline.Phase);
+            return true;
+        }
+
         public bool BeginPositioned(
             PlayerAnimatedInteractionDefinition definition,
             PlayerAnimatedInteractionPose authoredEntryPose,

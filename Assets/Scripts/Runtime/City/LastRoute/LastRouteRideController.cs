@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.InputSystem;
 
 namespace BarPromenade
 {
@@ -45,6 +46,26 @@ namespace BarPromenade
         /// </summary>
         public const float MountainEntrySpeed = 5.2f;
 
+        /// <summary>
+        /// The line offered while the climb is running, and the key that
+        /// takes it. `F10` because it is one of the few genuinely unbound
+        /// keys left - `E`, `Space`, `Enter` and `Escape` are all spoken for
+        /// several times over, and `F8`/`F9` belong to the debug window and
+        /// the Home shortcut. The hint names the key, so it does not have to
+        /// be guessable.
+        /// </summary>
+        public const string SkipPromptKey = "lastroute.ride.skip";
+
+        /// <summary>
+        /// How long the screen takes to go under for a skip, and to come
+        /// back. Brisker than the tunnel's own `1.4`/`0.9`, which is a car
+        /// being swallowed and is meant to be watched: this is a player who
+        /// has pressed a key and is waiting for the game to get on with it.
+        /// </summary>
+        public const float SkipFadeOutSeconds = 0.6f;
+
+        public const float SkipFadeInSeconds = 0.8f;
+
         private enum Leg
         {
             City,
@@ -64,6 +85,8 @@ namespace BarPromenade
         private bool warnedTravelRefused;
         private bool awaitingMountainStart;
         private float awaitedSeconds;
+        private bool skipRequested;
+        private bool skipApplied;
 
         public bool IsRiding { get; private set; }
 
@@ -79,6 +102,99 @@ namespace BarPromenade
         /// on the mountain leg and until the hero sits down.
         /// </summary>
         public LastRouteCarGiveWay GiveWay { get; private set; }
+
+        /// <summary>The corner line telling the player he can skip the climb.
+        /// </summary>
+        public LastRouteRideSkipHintView SkipHint { get; private set; }
+
+        /// <summary>The black the journey passes through, exposed so a test
+        /// can watch the skip go under rather than infer it.</summary>
+        public LastRouteRideFadeView Fade => fade;
+
+        /// <summary>
+        /// True while the climb can be cut short: the mountain leg, actually
+        /// driving, with road left to cover, and not already being cut short.
+        /// </summary>
+        public bool CanSkipRide =>
+            leg == Leg.Mountain &&
+            IsRiding &&
+            !skipRequested &&
+            driver != null &&
+            driver.IsDriving &&
+            driver.Model != null &&
+            !driver.Model.HasArrived;
+
+        /// <summary>True from the moment the key is pressed until the car is
+        /// at the cafe and the screen is on its way back.</summary>
+        public bool IsSkipping => skipRequested && !skipApplied;
+
+        /// <summary>
+        /// Asks for the rest of the climb to be given up.
+        ///
+        /// It does not move anything. The screen goes under first and the car
+        /// is put at the cafe from inside the black, because the jump is six
+        /// hundred metres in a single frame and there is no framing in which
+        /// that is not a glitch: the mountain would visibly change shape
+        /// around a car that did not turn.
+        /// </summary>
+        public bool TrySkipRide()
+        {
+            if (!CanSkipRide)
+            {
+                return false;
+            }
+
+            skipRequested = true;
+            SkipHint?.Hide();
+            fade?.FadeOut(SkipFadeOutSeconds);
+            GameLog.Info(
+                "lastroute",
+                "ride_skip_requested",
+                GameLog.Field("distance", driver.Distance));
+
+            // A scene with no fade of its own has nothing to wait for.
+            if (fade == null)
+            {
+                ApplySkip();
+            }
+
+            return true;
+        }
+
+        /// <summary>
+        /// The jump itself, from under a screen that is already fully black.
+        ///
+        /// It moves the DISTANCE and nothing else, so what follows is the
+        /// ordinary arrival rather than a second one written for the skip:
+        /// the driver writes the pose, raises `Moved` - which is what carries
+        /// the hero - runs out of road and raises `Arrived`. Everything
+        /// world-space that would go stale is re-solved there already,
+        /// because a car that drives the whole way has the same problem.
+        /// </summary>
+        private void ApplySkip()
+        {
+            skipApplied = true;
+
+            // The car may have finished the road on its own while the screen
+            // was going down, in which case there is nothing to move and the
+            // arrival has already run. Either way the screen comes back.
+            driver?.SkipToEnd();
+            fade?.FadeIn(SkipFadeInSeconds);
+            GameLog.Info("lastroute", "ride_skipped");
+        }
+
+        private void UpdateSkip()
+        {
+            if (!skipRequested || skipApplied || fade == null)
+            {
+                return;
+            }
+
+            if (fade.IsFullyBlack)
+            {
+                ApplySkip();
+            }
+        }
 
         /// <summary>
         /// The city half: armed and waiting for the hero to actually sit
@@ -170,6 +286,8 @@ namespace BarPromenade
             controller.driver = carDriver;
             controller.ferryman = ferrymanPresentation;
             controller.fade = LastRouteRideFadeView.Create(host.transform);
+            controller.SkipHint =
+                LastRouteRideSkipHintView.Create(host.transform);
             carSeat.AttachDriver(carDriver);
             carSeat.Alighted += controller.HandleAlighted;
             carDriver.Arrived += controller.HandleArrived;
@@ -287,6 +405,47 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// The house idiom for a hotkey: keyboard, null-guarded, and the
+        /// effect behind a public method so it can be exercised without an
+        /// `Update` tick. `Keyboard.current` is null in batch mode until a
+        /// test supplies a device.
+        /// </summary>
+        private static bool WasSkipPressed()
+        {
+            Keyboard keyboard = Keyboard.current;
+            return keyboard != null && keyboard.f10Key.wasPressedThisFrame;
+        }
+
+        private void UpdateSkipOffer()
+        {
+            if (SkipHint == null)
+            {
+                return;
+            }
+
+            if (!CanSkipRide)
+            {
+                SkipHint.Hide();
+                return;
+            }
+
+            // Not while the screen is still black over the area load: a hint
+            // offered to a player who cannot see the road yet is a hint he
+            // takes before he has seen anything at all.
+            if (fade != null && !fade.IsClear)
+            {
+                SkipHint.Hide();
+                return;
+            }
+
+            SkipHint.Show(SkipPromptKey);
+            if (WasSkipPressed())
+            {
+                TrySkipRide();
+            }
+        }
+
         private void Update()
         {
             if (awaitingMountainStart)
@@ -295,6 +454,8 @@ namespace BarPromenade
                 return;
             }
 
+            UpdateSkip();
+            UpdateSkipOffer();
             if (leg != Leg.City || !IsRiding || travelRequested)
             {
                 return;

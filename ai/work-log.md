@@ -123,6 +123,86 @@ model's own tests caught a real defect while being written: the free-run
 branch fired on `!hasHeldBack` alone, so a crossing blocked the whole way in
 never stopped the car at all.
 
+## 2026-08-26 — The hero rode the mountain in the tunnel, and the climb can be skipped
+
+Reported as "he gets out of the car with no animation". The clip was running
+fine. **His drawn body was seventy metres away.**
+
+`ResumeSeated` starts the mountain leg with `BeginLooping`, which is the
+overload for a body that resumes a loop it never left and stands up where it
+sat down — a bench. It sets `placeAtExitOnCompletion = false`, and that one
+flag gates three things:
+
+- `BindActionPelvisTarget(car.PassengerSeatAnchor)` returns `false`
+  (`IsPositionedEntryOrLoopActive` → `if (!placeAtExitOnCompletion …) return
+  false`), and `ResumeSeated` **ignored the return value**. So `actionHip`
+  stayed at the pelvis point the tunnel solved, and
+  `Player3DCharacterPresentation` pins `ModelRoot` to it absolutely, every
+  frame. The capsule rode the car; the model stayed in the tunnel. Nobody saw
+  it because the camera is his own eyes and his head is hidden by rig rule.
+- `exitHip = standHipPosition` — the tunnel dock — and `RequestExit()` never
+  rewrites it. So `CarAlightExit` played, correctly, six hundred metres away.
+- The moving-platform `RequestExit(authoredExitPose, …)` that exists for
+  exactly this refuses outright on the same flag.
+
+New `BeginPositionedLoop(definition, actionHip, authoredExitPose, transition)`
+starts a loop that OWNS the root; `ResumeSeated` uses it and now logs if the
+anchor bind is ever refused again; `Interact` re-aims the exit at the dock as
+the plan reads now (`RebuildPlanFromCar` has already re-solved it by then),
+falling back to the plain overload. One `BuildDockPose()` builds that pose in
+all three places, because every point in the plan is world-space and the car
+moves.
+
+**And the climb can now be cut short.** `F10` — one of the few genuinely
+unbound keys; `E`, `Space`, `Enter`, `Escape` are spoken for many times over
+and `F8`/`F9` belong to the debug window and the Home shortcut. The hint names
+the key, in a corner label of its own: not the interaction prompt, because
+`PlayerInteractor` rewrites that every frame and clears its timed channel the
+moment input is taken away — which is the first thing a ride does.
+
+The skip goes THROUGH THE BLACK. Six hundred metres in one frame is a glitch
+in any framing — the mountain visibly changes shape around a car that did not
+turn — so `TrySkipRide` moves nothing: it takes the screen down at `0.6 s`
+(the tunnel's own `1.4` is a car being swallowed and is meant to be watched;
+a player who has pressed a key is waiting), and `UpdateSkip` applies the jump
+from inside `IsFullyBlack`, then brings the screen back at `0.8 s`.
+`LastRouteRideFadeView` gained `FadeOut(float)`/`FadeIn(float)` for that.
+
+The jump itself moves the DISTANCE and nothing else:
+`LastRouteCarDriver.SkipToEnd()` → `model.Resume(0f, path.Length)`. What
+follows is the ordinary arrival rather than a second one written for the skip
+— the driver writes the pose, raises `Moved` (which is what carries the hero),
+runs out of road and raises `Arrived`, so the seat re-solve, the springs and
+the man at the wheel are all handled by code that already existed for a car
+that drives the whole way.
+
+Verification, and the first draft of it was worthless. `Alighting_ClimbsOut…`
+was written as `while (harness.Seat.IsSeated)`, but the loop ends on the frame
+the exit is requested — so it never ran an iteration, every maximum stayed at
+zero, and **it passed against the very bug it was written for**. Rewritten to
+walk a fixed 150-frame window (the exit is 24 frames at 12 fps = 2.0 s, clock
+pinned at 1/60) with a liveness assert that his body left the seat at all.
+Re-run against the old `BeginLooping`, all three now go red: `His body went
+70,0 m from the dock`, `His drawn body drifts 70,00 m from the car it is
+sitting in`, `The hero's drawn body was left behind the skip`.
+
+The skip test samples the black at the TOP of each turn, while the skip is
+still pending: the jump lands inside the controller's `Update` (order 320) and
+the fade view runs after it at `400`, so by the time the coroutine resumes on
+that frame the screen has already started coming back and a check made
+afterwards finds neither the black nor the un-jumped car. Verified red against
+an instant jump.
+
+One test of mine was also wrong in KIND: the skip's Ferryman assertion pinned
+his offset from the car to a centimetre and failed at `0.107 m`. That is not
+him being left behind — unlike the two passengers he is re-solved every frame
+from his own sampled driving pose, so his root moves against the bodywork
+while he sits there holding the wheel. Measured by displacement instead: he
+has to travel the jump his car took.
+
+EditMode `1671/1672` (the one red is the pre-existing `homeyard-booth`),
+PlayMode `187` passed / `1` skipped.
+
 ## 2026-08-26 — The headlights were emitting from inside the cabin
 
 Second look at the pulled blackout, and the diagnosis in the entry below is

@@ -161,6 +161,10 @@
       "value": "E — sit on the bench"
     },
     {
+      "key": "lastroute.ride.skip",
+      "value": "F10 - skip the drive"
+    },
+    {
       "key": "interaction.sit_ferry_car",
       "value": "E — Sit in the car"
     },
