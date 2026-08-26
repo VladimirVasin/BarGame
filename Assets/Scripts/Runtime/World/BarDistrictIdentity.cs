@@ -4,8 +4,9 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// The mood a district's bar answers to, per the zone art bible:
-    /// four ways of living with one tiredness.
+    /// The authored mood profiles supported by the bar catalog. Production
+    /// currently uses the Residential profile; explicit layouts can use the
+    /// remaining variants.
     /// </summary>
     public enum BarDistrictMood
     {
@@ -39,7 +40,7 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// One district bar's authored character sheet: the technical
+    /// One supported district profile's authored character sheet: the technical
     /// hooks every consumer (interior palette, lights, signage,
     /// soundscape, naming) reads from one place.
     /// </summary>
@@ -119,8 +120,8 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Resolves which of the four bar districts a lot belongs to and
-    /// serves its identity. Districts that carry no bar (park, river
+    /// Resolves which supported district profile a lot belongs to and serves
+    /// its identity. Districts that carry no bar (park, river
     /// banks, service kinds) normalize to Nightlife — the safe
     /// default the direct-loaded bar scene has always effectively
     /// been.

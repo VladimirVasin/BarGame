@@ -618,11 +618,11 @@
     },
     {
       "key": "map.route_title",
-      "value": "Bar Route"
+      "value": "Home Bar"
     },
     {
       "key": "map.route_empty",
-      "value": "Choose bars on the map in visiting order"
+      "value": "Select The Ogonyok on the map to plot a route"
     },
     {
       "key": "map.bar_name",

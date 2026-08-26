@@ -94,7 +94,7 @@ namespace BarPromenade
             CityBlueprintBuilder builder = CreateUrbanCoreBuilder(
                 DefaultBlueprintId,
                 settings,
-                true,
+                CityDistrictKind.Residential,
                 out bool hasPark);
             if (!hasPark)
             {
@@ -189,7 +189,7 @@ namespace BarPromenade
             CityBlueprintBuilder builder = CreateUrbanCoreBuilder(
                 LegacyBlueprintId,
                 settings,
-                false,
+                null,
                 out bool hasPark);
             return builder.Build(hasPark, false);
         }
@@ -266,7 +266,7 @@ namespace BarPromenade
         private static CityBlueprintBuilder CreateUrbanCoreBuilder(
             string blueprintId,
             CityGenerationSettings settings,
-            bool requiresBars,
+            CityDistrictKind? requiredBarDistrict,
             out bool hasPark)
         {
             bool hasRiver = string.Equals(
@@ -289,25 +289,25 @@ namespace BarPromenade
                 CityDistrictKind.OldTown,
                 "map.district.old_town",
                 OldTownMapColor,
-                requiresBars);
+                requiredBarDistrict == CityDistrictKind.OldTown);
             CityAreaDefinition residential = CreateUrbanArea(
                 "residential",
                 CityDistrictKind.Residential,
                 "map.district.residential",
                 ResidentialMapColor,
-                requiresBars);
+                requiredBarDistrict == CityDistrictKind.Residential);
             CityAreaDefinition industrial = CreateUrbanArea(
                 "industrial",
                 CityDistrictKind.Industrial,
                 "map.district.industrial",
                 IndustrialMapColor,
-                requiresBars);
+                requiredBarDistrict == CityDistrictKind.Industrial);
             CityAreaDefinition nightlife = CreateUrbanArea(
                 "nightlife",
                 CityDistrictKind.Nightlife,
                 "map.district.nightlife",
                 NightlifeMapColor,
-                requiresBars);
+                requiredBarDistrict == CityDistrictKind.Nightlife);
             CityAreaDefinition park = CreateCentralPark();
             var oldTownCells = new List<Vector2Int>();
             var residentialCells = new List<Vector2Int>();

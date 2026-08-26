@@ -977,45 +977,61 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void DefaultSettings_PlaceFourDistantBarsInUrbanDistricts()
+        public void DefaultCoastal_PlacesOneBarAcrossFromPlayerHome()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
                 CityGenerationSettings.Default,
                 GameSessionState.DefaultCitySeed);
             BuildingLot[] bars = layout.BuildingLots
                 .Where(lot => lot.IsBar)
                 .ToArray();
+            BuildingLot bar = bars.Single();
+            BuildingLot home = layout.PlayerHome;
 
-            Assert.That(bars, Has.Length.EqualTo(4));
+            Assert.That(bars, Has.Length.EqualTo(1));
             Assert.That(
-                bars.Select(bar => bar.District),
-                Is.Unique);
+                bar.District,
+                Is.EqualTo(CityDistrictKind.Residential));
             Assert.That(
-                bars.All(bar =>
-                    bar.HasBuilding &&
-                    !bar.IsPark &&
-                    layout.GetPathKind(
-                        RoadEdge.ForCellFrontage(
-                            bar.Cell,
-                            bar.FrontageDirection)) ==
-                    CityPathKind.Street),
+                bar.Cell,
+                Is.EqualTo(BarActivityAssignment.DefaultHomeBarCell));
+            Assert.That(
+                bar.BarId,
+                Is.EqualTo("bar-01352777-12-06"));
+            Assert.That(
+                bar.BarActivity,
+                Is.EqualTo(BarActivityAssignment.DefaultHomeBarActivity));
+            Assert.That(home.Cell, Is.EqualTo(new Vector2Int(12, 5)));
+            Assert.That(
+                layout.TryGetFrontageEdge(bar, out RoadEdge barFrontage),
                 Is.True);
-
-            for (int first = 0; first < bars.Length; first++)
+            Assert.That(
+                layout.TryGetFrontageEdge(home, out RoadEdge homeFrontage),
+                Is.True);
+            Assert.That(homeFrontage, Is.EqualTo(barFrontage));
+            Assert.That(home.ReturnPosition, Is.EqualTo(bar.ReturnPosition));
+            Vector2Int[] retiredBarCells =
             {
-                for (int second = first + 1;
-                     second < bars.Length;
-                     second++)
-                {
-                    Assert.That(
-                        CityTravelDistance.BetweenBars(
-                            layout,
-                            bars[first],
-                            bars[second]),
-                        Is.GreaterThanOrEqualTo(
-                            layout.MinimumBarRouteDistance - 0.001f));
-                }
+                new Vector2Int(2, 0),
+                new Vector2Int(8, 0),
+                new Vector2Int(0, 11)
+            };
+            for (int index = 0; index < retiredBarCells.Length; index++)
+            {
+                Vector2Int retiredCell = retiredBarCells[index];
+                BuildingLot retiredLot = layout.BuildingLots.Single(
+                    lot => lot.Cell == retiredCell);
+                Assert.That(
+                    retiredLot.IsOrdinaryBuilding,
+                    Is.True,
+                    $"Former bar lot {retiredCell} must return to " +
+                    "ordinary city housing.");
             }
+
+            Assert.That(
+                layout.BuildingLots.Count(lot => lot.IsOrdinaryBuilding),
+                Is.EqualTo(121));
         }
 
         [TestCase(GameSessionState.DefaultCitySeed)]
@@ -1149,27 +1165,24 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void DefaultSettings_CreateFourActivityBars()
+        public void DefaultLegacySettings_CreateOneCocktailBar()
         {
             CityGenerationSettings settings = CityGenerationSettings.Default;
 
-            Assert.That(settings.BarCount, Is.EqualTo(4));
+            Assert.That(
+                settings.BarCount,
+                Is.EqualTo(CityGenerationSettings.DefaultBarCount));
+            Assert.That(settings.BarCount, Is.EqualTo(1));
 
             CityLayout layout = CityLayoutGenerator.Generate(settings, 48125);
             Assert.That(
                 layout.BuildingLots.Count(lot => lot.IsBar),
-                Is.EqualTo(4));
+                Is.EqualTo(1));
             Assert.That(
                 layout.BuildingLots
                     .Where(lot => lot.IsBar)
                     .Select(lot => lot.BarActivity),
-                Is.EquivalentTo(new[]
-                {
-                    BarActivityKind.Cocktail,
-                    BarActivityKind.BeerPong,
-                    BarActivityKind.SplitTheG,
-                    BarActivityKind.TinctureMatch
-                }));
+                Is.EquivalentTo(new[] { BarActivityKind.Cocktail }));
         }
 
         [Test]

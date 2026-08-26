@@ -10,7 +10,8 @@ urban envelope to `13 x 12` while preserving all 144 former land-use lots.
 Two road bridges reconnect its outer edges; the 16-cell central park is split
 into two `2 x 4` halves joined by a timber footbridge, and four bank stairs
 reach lower waterside platforms. The city retains a reachable northern beach
-and water edge and four urban districts with four graph-separated bars. The
+and water edge, four urban districts and one Residential bar directly across
+the street from the player home. The
 default road footprint now has a mandatory uninterrupted outer Street circuit:
 the two road bridges and their continuous bank roads close it across the river,
 while only the interior street loops remain seed-optional. The
@@ -184,7 +185,7 @@ directional clip into a bounded runtime ragdoll and back into an authored rise,
 and derives first-person arms and the inventory portrait from the same
 production model. Ordinary building masses use a separate `36-52 m` height
 profile whose roofs fall below one-percent visibility in the fixed City fog;
-bars, the supermarket and the player home retain their original low-rise
+the bar, the supermarket and the player home retain their original low-rise
 heights. Building masses wear one of eight district wall albedos built by
 `tools/build-city-facade-textures.py`, tiled by the building's own bay and floor
 grid through `CityFacadeGrid` so the baked window band lands on the real panes

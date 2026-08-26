@@ -29,17 +29,17 @@ This is the first manual acceptance path for the vertical slice.
 7. Observe a large connected city with Old Town, Residential, Industrial and
    Nightlife districts surrounding a central park.
 8. Open the map and confirm that district labels, green park land, sand-colored
-   park paths, four widely separated bars and the labeled house icon are all
-   visible.
+   park paths, the one Residential bar and the labeled house directly across
+   its street are all visible.
 9. Move with `WASD` along streets (the arrows orbit the camera), enter any
    park gate and cross the
    lawn on foot to another side without leaving walkable space.
-10. Confirm that every bar approach, the home approach and each park gate has a
-   clear break in the low ochre rails.
+10. Confirm that the bar approach, the home approach and every park gate all
+   have a clear break in the low ochre rails.
 11. Re-enter the home with `E`/`Enter` and confirm it opens normally without
     replaying the startup menu or ringing the clock; leave and return to the
     same exterior approach.
-12. Approach one bar, press `E`/`Enter`, walk through its populated interior
+12. Approach the bar, press `E`/`Enter`, walk through its populated interior
     and use the exit.
 13. Confirm the same city and bar entrance are restored. Restart the build and
     confirm both the one-shot waking opening and the seeded districts, park,

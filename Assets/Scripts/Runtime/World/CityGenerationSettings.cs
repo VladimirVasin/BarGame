@@ -7,6 +7,7 @@ namespace BarPromenade
     public sealed class CityGenerationSettings
     {
         public const float DefaultRoadWidth = 8f;
+        public const int DefaultBarCount = 1;
         public const float DefaultMinimumOrdinaryBuildingHeight = 36f;
         public const float DefaultMaximumOrdinaryBuildingHeight = 52f;
         public const float FogHiddenRoofReferenceCameraHeight = 4f;
@@ -14,7 +15,7 @@ namespace BarPromenade
 
         [Min(1)] public int BlocksX = 12;
         [Min(1)] public int BlocksZ = 12;
-        [Min(0)] public int BarCount = 4;
+        [Min(0)] public int BarCount = DefaultBarCount;
         [Min(0)] public int ParkBlocksX = 4;
         [Min(0)] public int ParkBlocksZ = 4;
         [Min(0f)] public float MinimumBarRouteDistance = 120f;

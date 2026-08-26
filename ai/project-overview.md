@@ -34,8 +34,9 @@
 ## Implemented MVP
 
 A runtime-composed 3D coastal city and separately loaded mountain road in which
-one modular low-poly 3D hero walks the streets and climb, approaches interactive
-bars, a supermarket, his nearby home and the church north of the cemetery,
+one modular low-poly 3D hero walks the streets and climb, approaches the
+interactive home-adjacent bar, a supermarket, his home and the church north of
+the cemetery,
 enters separate interiors, and returns to the matching exterior entrance.
 
 The vertical slice contains:
@@ -860,7 +861,7 @@ The vertical slice contains:
   preserving the existing district bands inside it. From the conservative
   `4 m` maximum chase-camera height, the lowest roof is at least `32 m` deep
   and retains only about `0.66%` of its source colour under City's fixed
-  `0.070` Exp2 fog. Bars keep their former `5–13 m` envelope, the player home
+  `0.070` Exp2 fog. The bar keeps its former `5–13 m` envelope, the player home
   stays `8.8 m`, and the supermarket stays `6.4 m`; public places and the park
   remain open land rather than receiving a tall mass;
 - deterministic ochre guard rails, batched into `48 m` spatial chunks, only
@@ -877,15 +878,13 @@ The vertical slice contains:
   obstruction;
 - 144 land-use lots in the default urban core, including 16 park cells and
   4 open district points of interest, plus 34 northern beach/water surface
-  cells, 16 north-east yard cells and 6 cemetery cells. The core still contains exactly 4 reachable bars in four different
-  stable urban area IDs and one non-bar player home beside one bar street,
-  plus exactly one ordinary
-  street-front supermarket. Its deterministic selection prefers Residential,
-  then the shortest traversable route from the home, without consuming a bar,
-  public-place or primary-landmark lot. Every bar pair is at least `120 m`
-  apart by traversable graph distance, while stable row-major order assigns
-  each bar its interior activity flavour (dressing only — the minigames
-  themselves are cut);
+  cells, 16 north-east yard cells and 6 cemetery cells. The core contains
+  exactly one reachable Residential bar at `(12,6)`, one non-bar player home
+  across its shared street frontage at `(12,5)`, and exactly one ordinary
+  street-front supermarket. The retained bar keeps stable ID
+  `bar-01352777-12-06` and `SplitTheG` interior dressing; the former Industrial,
+  Nightlife and Old Town bar lots are ordinary buildings again. Custom
+  generated layouts may still request multiple graph-separated bars;
 - a default `8.8 m` player-home mass with a recognizable third-floor balcony,
   open door and window; the City facade uses the same balcony geometry as the
   Home interior's exterior opening;
@@ -1004,7 +1003,7 @@ The vertical slice contains:
   lighthouse island's dot pinned to the chart's north border at its
   true easting),
   plus separate map treatments for the Works, Mouth and timber bridges,
-  player/bar markers,
+  player/home-bar markers,
   a dedicated labeled home icon, a distinct
   grocery-shop marker and four kind-specific public-place
   markers with a localized legend. Hovering a bar, home, shop or public-place
@@ -1035,7 +1034,7 @@ The vertical slice contains:
   City's catalog owns every `BuildingLot`, every open-area arrival, every bus
   stop, the current player, the city mountain-tunnel portal and the boat
   station hut. Special lots replace rather than duplicate their generic lot:
-  bars expose `ReturnPosition`, home and supermarket expose `Center`, and each
+  the bar exposes `ReturnPosition`, home and supermarket expose `Center`, and each
   district POI exposes its authored position. Mountain Road owns the current
   player, tunnel, every authored hairpin apex, bridge centre, plateau endpoint,
   cafe, cableway and brink. Road and itinerary polylines, intermediate route samples

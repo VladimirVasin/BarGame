@@ -205,6 +205,7 @@ namespace BarPromenade.Tests.EditMode
         {
             CityGenerationSettings settings =
                 CityGenerationSettings.Default;
+            settings.BarCount = 4;
             settings.MinimumBarRouteDistance = 0f;
             return CityLayoutGenerator.Generate(settings, seed);
         }

@@ -120,6 +120,14 @@ namespace BarPromenade.Tests.EditMode
                     null,
                     null);
 
+                Assert.That(controller.Bars, Has.Count.EqualTo(1));
+                Assert.That(
+                    controller.GetBarLabel(0),
+                    Is.EqualTo(
+                        LocalizationService.Get(
+                            BarDistrictIdentityCatalog.Get(
+                                    controller.Bars[0].District)
+                                .DisplayNameKey)));
                 Assert.That(controller.PointsOfInterest.Count, Is.EqualTo(4));
                 Assert.That(
                     controller.PointsOfInterest.Count,

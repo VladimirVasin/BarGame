@@ -125,9 +125,10 @@ namespace BarPromenade
         private readonly List<CityMapAreaTarget> mapAreaTargets =
             new List<CityMapAreaTarget>();
 
-        // Labels never change once the layout is bound (bars are numbered,
-        // precincts and lots are stamped with fixed cells), while the map
-        // asks for them on every IMGUI event - so they are built once.
+        // Labels never change once the layout is bound (bars use authored
+        // district identities, precincts and lots are stamped with fixed
+        // cells), while the map asks for them on every IMGUI event - so they
+        // are built once.
         private string[] mapObjectLabelCache;
         private string[] barLabelCache;
         private string[] busStopLabelCache;
@@ -602,9 +603,10 @@ namespace BarPromenade
                 barLabelCache = new string[bars.Count];
             }
 
-            return barLabelCache[barIndex] ??= string.Format(
-                LocalizationService.Get("map.bar_name"),
-                barIndex + 1);
+            return barLabelCache[barIndex] ??=
+                LocalizationService.Get(
+                    BarDistrictIdentityCatalog.Get(
+                        bars[barIndex].District).DisplayNameKey);
         }
 
         /// <summary>

@@ -6,6 +6,32 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-27 — The production city keeps one bar beside the player home
+
+The default coastal blueprint now requires exactly one Residential bar. It
+keeps the authored home-frontage cell `(12,6)`, stable ID
+`bar-01352777-12-06`, shared road anchor with the home at `(12,5)` and its
+former `SplitTheG` dressing. The Industrial `(2,0)`, Nightlife `(8,0)` and Old
+Town `(0,11)` sites return to the ordinary-building pool, leaving `121`
+ordinary core buildings. Explicit test/authored layouts can still request
+multiple graph-separated bars and keep the ordinal activity resolver.
+
+One-bar selection now prefers a candidate with a real buildable lot directly
+across its street frontage. This preserves the home/bar pairing for the legacy
+generator across all four covered seeds rather than falling back to a merely
+nearby home. The map names the destination from its Residential identity
+(`The Ogonyok` / `«Огонёк»`), uses singular route copy and hides reorder arrows
+when only one stop exists. Night lighting remains inside the exact 12-Light
+budget as `1 bar + 11 street`, or `1 + 10 + 1` while a fringe practical leases
+a street slot.
+
+Focused EditMode verification passed `7/7`
+(`Logs/single-bar-editmode-results.xml`): canonical layout, legacy default,
+four home-pair seeds and the authored map label. The focused City bootstrap
+PlayMode proof passed in the two-test run, and the corrected exact night-budget
+reproduction passed `1/1` (`Logs/single-bar-night-rerun-results.xml`). Full
+suites and a player build were intentionally not run.
+
 ## 2026-08-26 — The City misc layer moves to Blender end to end
 
 The phased City pass is now one deterministic `city_misc_citywide_v3` source:

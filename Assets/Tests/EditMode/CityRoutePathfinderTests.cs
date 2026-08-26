@@ -302,8 +302,11 @@ namespace BarPromenade.Tests.EditMode
 
         private static CityLayout CreateLayout()
         {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            settings.BarCount = 4;
             return CityLayoutGenerator.Generate(
-                CityGenerationSettings.Default,
+                settings,
                 GameSessionState.DefaultCitySeed);
         }
 

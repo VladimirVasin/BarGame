@@ -36,7 +36,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator CityScene_BootstrapsGeneratedWorldPlayerAndFourBars()
+        public IEnumerator CityScene_BootstrapsGeneratedWorldPlayerAndOneHomeBar()
         {
             CityGameRoot cityRoot = null;
             yield return LoadSceneAndWaitForRoot<CityGameRoot>(
@@ -81,7 +81,7 @@ namespace BarPromenade.Tests.PlayMode
                 Is.True);
             Assert.That(
                 cityRoot.GetComponentsInChildren<BarEntrance>(true),
-                Has.Length.EqualTo(4));
+                Has.Length.EqualTo(1));
             Assert.That(cityRoot.Layout.PlayerHome, Is.Not.Null);
             Assert.That(cityRoot.World.PlayerHome, Is.Not.Null);
             Assert.That(
@@ -120,8 +120,16 @@ namespace BarPromenade.Tests.PlayMode
                 barDistricts.Add(lot.District);
             }
 
-            Assert.That(barLots, Has.Count.EqualTo(4));
-            Assert.That(barDistricts, Has.Count.EqualTo(4));
+            Assert.That(barLots, Has.Count.EqualTo(1));
+            Assert.That(
+                barDistricts,
+                Is.EquivalentTo(new[] { CityDistrictKind.Residential }));
+            Assert.That(
+                barLots[0].Cell,
+                Is.EqualTo(BarActivityAssignment.DefaultHomeBarCell));
+            Assert.That(
+                cityRoot.Layout.PlayerHome.Cell,
+                Is.EqualTo(new Vector2Int(12, 5)));
             Vector3 playerSpawn =
                 cityRoot.Player.GameObject.transform.position;
             Assert.That(
@@ -166,36 +174,9 @@ namespace BarPromenade.Tests.PlayMode
                         cityRoot.Layout.NodeSpacing.y) *
                      0.5f) +
                     cityRoot.Layout.RoadWidth));
-            for (int first = 0; first < barLots.Count; first++)
-            {
-                for (int second = first + 1;
-                     second < barLots.Count;
-                     second++)
-                {
-                    Assert.That(
-                        CityTravelDistance.BetweenBars(
-                            cityRoot.Layout,
-                            barLots[first],
-                            barLots[second]),
-                        Is.GreaterThanOrEqualTo(
-                            cityRoot.Layout
-                                .MinimumBarRouteDistance -
-                            0.001f));
-                }
-            }
-
             Assert.That(
                 cityRoot.World.Bars[0].BarActivity,
-                Is.EqualTo(BarActivityKind.Cocktail));
-            Assert.That(
-                cityRoot.World.Bars[1].BarActivity,
-                Is.EqualTo(BarActivityKind.BeerPong));
-            Assert.That(
-                cityRoot.World.Bars[2].BarActivity,
-                Is.EqualTo(BarActivityKind.SplitTheG));
-            Assert.That(
-                cityRoot.World.Bars[3].BarActivity,
-                Is.EqualTo(BarActivityKind.TinctureMatch));
+                Is.EqualTo(BarActivityAssignment.DefaultHomeBarActivity));
             Assert.That(cityRoot.Map, Is.Not.Null);
             Assert.That(cityRoot.Map.IsInitialized, Is.True);
             Assert.That(
@@ -495,7 +476,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator CityMap_IsModalAndBuildsAnOrderedRoadRoute()
+        public IEnumerator CityMap_IsModalAndBuildsTheHomeBarRoadRoute()
         {
             CityGameRoot cityRoot = null;
             yield return LoadSceneAndWaitForRoot<CityGameRoot>(
@@ -513,7 +494,7 @@ namespace BarPromenade.Tests.PlayMode
                 cityRoot.GetComponentInChildren<IntoxicationHudView>(true);
 
             Assert.That(map, Is.Not.Null);
-            Assert.That(map.Bars, Has.Count.EqualTo(4));
+            Assert.That(map.Bars, Has.Count.EqualTo(1));
             AssertMapPointsOfInterest(cityRoot, map);
             Assert.That(
                 GameSessionState.TryAddRouteStop("bar-from-another-city"),
@@ -538,9 +519,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(map.Open(), Is.True);
 
             Assert.That(map.ToggleBar(0), Is.True);
-            Assert.That(map.ToggleBar(1), Is.True);
             CollectionAssert.AreEqual(
-                new[] { map.Bars[0].BarId, map.Bars[1].BarId },
+                new[] { map.Bars[0].BarId },
                 GameSessionState.PlannedBarRoute);
             Assert.That(map.CurrentPath, Is.Not.Null);
             Assert.That(map.CurrentPath.IsEmpty, Is.False);
@@ -549,7 +529,7 @@ namespace BarPromenade.Tests.PlayMode
             Vector3 expectedStart =
                 cityRoot.Player.GameObject.transform.position;
             expectedStart.y = 0f;
-            Vector3 expectedEnd = map.Bars[1].ReturnPosition;
+            Vector3 expectedEnd = map.Bars[0].ReturnPosition;
             expectedEnd.y = 0f;
             // The route runs along roads, so it begins at the road anchor
             // NEAREST the player rather than under his feet - the exact
@@ -577,9 +557,9 @@ namespace BarPromenade.Tests.PlayMode
                         cityRoot.Layout.NodeSpacing.y)),
                 "The drawn route must end at the road outside the bar.");
 
-            Assert.That(map.MoveBar(map.Bars[1].BarId, -1), Is.True);
+            Assert.That(map.MoveBar(map.Bars[0].BarId, -1), Is.False);
             CollectionAssert.AreEqual(
-                new[] { map.Bars[1].BarId, map.Bars[0].BarId },
+                new[] { map.Bars[0].BarId },
                 GameSessionState.PlannedBarRoute);
 
             Assert.That(map.Close(), Is.True);
@@ -1327,10 +1307,9 @@ namespace BarPromenade.Tests.PlayMode
             firstCity.Music.AdvanceFade(MusicMix.FadeInSeconds);
             CityMusicPlayer outgoingCityMusic = firstCity.Music;
 
-            BarEntrance entrance = firstCity.World.Bars[1];
+            BarEntrance entrance = firstCity.World.Bars[0];
             string expectedBarId = entrance.BarId;
             BarActivityKind expectedBarActivity = entrance.BarActivity;
-            string remainingBarId = firstCity.World.Bars[0].BarId;
             Vector3 expectedReturn = entrance.ReturnPosition;
             int expectedSeed = firstCity.Layout.Seed;
             const int expectedIntoxication = 37;
@@ -1348,9 +1327,6 @@ namespace BarPromenade.Tests.PlayMode
                 expectedDrinkCount);
             Assert.That(
                 GameSessionState.TryAddRouteStop(expectedBarId),
-                Is.True);
-            Assert.That(
-                GameSessionState.TryAddRouteStop(remainingBarId),
                 Is.True);
             PlacePlayerAtDoor(firstCity.Player, entrance);
             entrance.Interact(firstCity.Player.Interactor);
@@ -1435,7 +1411,7 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.ActiveBarActivity,
                 Is.EqualTo(expectedBarActivity));
             CollectionAssert.AreEqual(
-                new[] { expectedBarId, remainingBarId },
+                new[] { expectedBarId },
                 GameSessionState.PlannedBarRoute);
 
             BarExit exit = interior.GetComponentInChildren<BarExit>(true);
@@ -1509,7 +1485,7 @@ namespace BarPromenade.Tests.PlayMode
                 GameSessionState.DrinksConsumed,
                 Is.EqualTo(expectedDrinkCount));
             CollectionAssert.AreEqual(
-                new[] { expectedBarId, remainingBarId },
+                new[] { expectedBarId },
                 GameSessionState.PlannedBarRoute);
         }
 

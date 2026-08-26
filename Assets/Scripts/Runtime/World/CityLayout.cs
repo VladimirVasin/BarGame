@@ -896,7 +896,11 @@ namespace BarPromenade
             for (int ordinal = 0; ordinal < bars.Count; ordinal++)
             {
                 BarActivityKind expected =
-                    BarActivityAssignment.Resolve(ordinal);
+                    BarActivityAssignment.Resolve(
+                        Blueprint.Id,
+                        Seed,
+                        bars[ordinal].Cell,
+                        ordinal);
                 if (bars[ordinal].BarActivity != expected)
                 {
                     throw new InvalidOperationException(
@@ -905,16 +909,15 @@ namespace BarPromenade
                         $"{ordinal} requires {expected}.");
                 }
 
-                // Only the standard four-bar configuration promises
-                // distinct areas; with more bars the generator may
-                // legally double up an area, and row-major order decides
-                // which four happen to be "first" - so the check stands
-                // down rather than fail a legal layout.
+                // Compact layouts of up to four bars keep every stop in a
+                // distinct area. With more bars the generator may legally
+                // double up an area, so the check stands down rather than
+                // reject a supported authored layout.
                 if (bars.Count <= 4 &&
                     !firstBarAreas.Add(bars[ordinal].AreaId))
                 {
                     throw new InvalidOperationException(
-                        "The four bars must occupy different city areas.");
+                        "Layouts of up to four bars require distinct city areas.");
                 }
             }
 

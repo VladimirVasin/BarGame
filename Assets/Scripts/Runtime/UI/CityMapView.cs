@@ -3276,7 +3276,10 @@ namespace BarPromenade
 
                 const float buttonWidth = 15f;
                 const float buttonGap = 2f;
-                float buttonsWidth = buttonWidth * 3f + buttonGap * 2f;
+                bool showReorderControls = route.Count > 1;
+                float buttonsWidth = showReorderControls
+                    ? buttonWidth * 3f + buttonGap * 2f
+                    : buttonWidth;
                 GUI.Label(
                     new Rect(
                         row.x + 5f,
@@ -3288,50 +3291,54 @@ namespace BarPromenade
 
                 float buttonX = row.xMax - buttonsWidth - 3f;
                 bool previousEnabled = GUI.enabled;
-                Rect upButton = new Rect(
-                    buttonX,
-                    row.y + 3f,
-                    buttonWidth,
-                    15f);
-                RetroUiTheme.DrawPanel(
-                    upButton,
-                    RetroUiTheme.PanelRaised,
-                    RetroUiTheme.BorderMuted,
-                    false,
-                    1f,
-                    1f);
-                GUI.enabled = routeIndex > 0;
-                if (GUI.Button(
-                    upButton,
-                    "\u25B2",
-                    smallButtonStyle))
+                if (showReorderControls)
                 {
-                    controller.QueueMoveBar(barId, -1);
+                    Rect upButton = new Rect(
+                        buttonX,
+                        row.y + 3f,
+                        buttonWidth,
+                        15f);
+                    RetroUiTheme.DrawPanel(
+                        upButton,
+                        RetroUiTheme.PanelRaised,
+                        RetroUiTheme.BorderMuted,
+                        false,
+                        1f,
+                        1f);
+                    GUI.enabled = routeIndex > 0;
+                    if (GUI.Button(
+                        upButton,
+                        "\u25B2",
+                        smallButtonStyle))
+                    {
+                        controller.QueueMoveBar(barId, -1);
+                    }
+
+                    buttonX += buttonWidth + buttonGap;
+                    Rect downButton = new Rect(
+                        buttonX,
+                        row.y + 3f,
+                        buttonWidth,
+                        15f);
+                    RetroUiTheme.DrawPanel(
+                        downButton,
+                        RetroUiTheme.PanelRaised,
+                        RetroUiTheme.BorderMuted,
+                        false,
+                        1f,
+                        1f);
+                    GUI.enabled = routeIndex < route.Count - 1;
+                    if (GUI.Button(
+                        downButton,
+                        "\u25BC",
+                        smallButtonStyle))
+                    {
+                        controller.QueueMoveBar(barId, 1);
+                    }
+
+                    buttonX += buttonWidth + buttonGap;
                 }
 
-                buttonX += buttonWidth + buttonGap;
-                Rect downButton = new Rect(
-                    buttonX,
-                    row.y + 3f,
-                    buttonWidth,
-                    15f);
-                RetroUiTheme.DrawPanel(
-                    downButton,
-                    RetroUiTheme.PanelRaised,
-                    RetroUiTheme.BorderMuted,
-                    false,
-                    1f,
-                    1f);
-                GUI.enabled = routeIndex < route.Count - 1;
-                if (GUI.Button(
-                    downButton,
-                    "\u25BC",
-                    smallButtonStyle))
-                {
-                    controller.QueueMoveBar(barId, 1);
-                }
-
-                buttonX += buttonWidth + buttonGap;
                 Rect removeButton = new Rect(
                     buttonX,
                     row.y + 3f,

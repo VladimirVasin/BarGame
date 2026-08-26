@@ -414,9 +414,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   collide; tracks, drains, cables and small traces do not.
   Four west/south anchors each expose one small emissive practical to
   `CityNightGlowRegistry`, but the fringe root creates no `Light`. When the
-  player comes within `20 m`, only the nearest supported anchor can lease the
-  eighth street Spot already owned by `CityNightAtmosphere`: the pool remains
-  `4` bar + `7` street + `1` fringe, still `12` total, and returns to `4+8`
+  player comes within `20 m`, only the nearest supported anchor can lease one
+  street Spot already owned by `CityNightAtmosphere`: the production pool is
+  `1` bar + `10` street + `1` fringe, still `12` total, and returns to `1+11`
   outside the activation radius. The tunnel lease is the deliberate stronger
   exception: a warm shadowless `150`-intensity, `16 m`, `72°`/`40°` Spot is
   moved from the crown to the faulty second ceiling fixture and retains a
@@ -470,11 +470,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   at constant intensity through day and night and never reads or tracks the
   runtime rider transform. The two `YardDeadLamp` geometry parts remain
   non-emissive and create no `Light`.
-- **Accepted — Graph-separated accessible bars:** Buildable lots get street
-  frontage and bar return points are validated against it. The default four
-  bars occupy different urban districts and every pair is separated by at
-  least `120 m` of weighted street/park-path travel rather than straight-line
-  distance.
+- **Accepted — One home-adjacent production bar:** Buildable lots get street
+  frontage and bar return points are validated against it. The default coastal
+  city creates exactly one Residential bar at cell `(12,6)`, directly across
+  the shared frontage from the player home at `(12,5)`. Its stable ID remains
+  `bar-01352777-12-06`, its activity dressing remains `SplitTheG`, and the
+  three former district bar lots return to ordinary building use. Explicit
+  custom multi-bar layouts remain supported; their separation still uses
+  weighted street/park-path travel rather than straight-line distance.
 - **Accepted — Bar-adjacent player home and fresh spawn:** With at least one
   generated bar, one non-bar building lot becomes the player home. Selection
   first prefers a residential lot across the selected bar's actual frontage,
@@ -2545,16 +2548,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   seams, while thunder is placed at its deterministic lightning azimuth. This
   is the boundary between diegetic ambience and filler:
   every localizable sound must answer what visible system emitted it.
-- **Accepted — Diegetic bar identity:** Bar lots keep their warm body color and
+- **Accepted — Diegetic bar identity:** Supported bar lots keep their warm body color and
   add amber windows, a framed canopy and one collider-free pixel mug sign.
   Active signs share one generated sprite and use the existing upright
   billboard behavior, so recognition does not depend on color alone. Inside,
   the validated shared layout and all circulation remain fixed while one
   `BarDistrictIdentity` recolours shell, floor, counter, upholstery, glass,
-  signs and practicals and adds one non-colliding wall-scale motif: Old Town
-  ledger/portraits, Residential worn surfaces and curtains, Industrial safety
-  band/pipes, or Nightlife cyan/magenta neon. This is four readable rooms over
-  one geometry contract, not four bespoke layouts.
+  signs and practicals. The shipped default uses the Residential worn-surface
+  and curtain profile; Old Town ledger/portraits, Industrial safety band/pipes
+  and Nightlife cyan/magenta neon remain authored compatibility variants for
+  explicit layouts, all over one geometry contract.
 - **Accepted — Both spade acts are a choice, not a swing:** Digging and
   filling ask the hero to pick one of six squares and press `E`; there is no
   timing bar in either. There was one, with five kinds of ground behind it

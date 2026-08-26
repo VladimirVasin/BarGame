@@ -975,7 +975,11 @@ namespace BarPromenade
                     if (isBar)
                     {
                         barActivity =
-                            BarActivityAssignment.Resolve(barOrdinal);
+                            BarActivityAssignment.Resolve(
+                                settings.Blueprint?.Id,
+                                seed,
+                                cell,
+                                barOrdinal);
                         barOrdinal++;
                     }
 
@@ -1360,7 +1364,7 @@ namespace BarPromenade
             out Vector2Int homeCell,
             out Vector2Int barFrontage)
         {
-            barCell = new Vector2Int(12, 6);
+            barCell = BarActivityAssignment.DefaultHomeBarCell;
             homeCell = new Vector2Int(12, 5);
             barFrontage = Vector2Int.down;
             return seed == GameSessionState.DefaultCitySeed &&
@@ -1393,6 +1397,7 @@ namespace BarPromenade
                 cell,
                 ResolveAreaId(settings, cell),
                 ResolveDistrict(settings, cell),
+                frontage,
                 RoadEdge.ForCellFrontage(cell, frontage),
                 center + (direction * roadDistance),
                 StableHash(seed, cell.x, cell.y, 0x42415253u));
@@ -1445,6 +1450,12 @@ namespace BarPromenade
                     candidates,
                     selectedLots,
                     selectedAreas);
+                bool preferHomePair = settings.BarCount == 1 &&
+                                      HasHomePairCandidate(
+                                          settings,
+                                          candidates,
+                                          selectedLots,
+                                          requiredArea);
                 BarCandidate best = default;
                 bool found = false;
                 float bestScore = float.NegativeInfinity;
@@ -1457,7 +1468,9 @@ namespace BarPromenade
                          !string.Equals(
                              candidate.AreaId,
                              requiredArea,
-                             StringComparison.Ordinal)))
+                             StringComparison.Ordinal)) ||
+                        (preferHomePair &&
+                         !HasHomeAcrossFrontage(settings, candidate)))
                     {
                         continue;
                     }
@@ -1513,6 +1526,45 @@ namespace BarPromenade
             }
 
             return selectedLots;
+        }
+
+        private static bool HasHomePairCandidate(
+            CityGenerationSettings settings,
+            IReadOnlyList<BarCandidate> candidates,
+            ISet<int> selectedLots,
+            string requiredArea)
+        {
+            for (int index = 0; index < candidates.Count; index++)
+            {
+                BarCandidate candidate = candidates[index];
+                if (selectedLots.Contains(candidate.LotIndex) ||
+                    (requiredArea != null &&
+                     !string.Equals(
+                         candidate.AreaId,
+                         requiredArea,
+                         StringComparison.Ordinal)))
+                {
+                    continue;
+                }
+
+                if (HasHomeAcrossFrontage(settings, candidate))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool HasHomeAcrossFrontage(
+            CityGenerationSettings settings,
+            BarCandidate candidate)
+        {
+            Vector2Int homeCell =
+                candidate.Cell + candidate.FrontageDirection;
+            return IsCellInsideGrid(settings, homeCell) &&
+                   settings.CreatesLot(homeCell) &&
+                   !settings.IsParkCell(homeCell);
         }
 
         private static string FindUnrepresentedArea(
@@ -2555,6 +2607,7 @@ namespace BarPromenade
                 Vector2Int cell,
                 string areaId,
                 CityDistrictKind district,
+                Vector2Int frontageDirection,
                 RoadEdge frontage,
                 Vector3 returnPosition,
                 uint rank)
@@ -2563,6 +2616,7 @@ namespace BarPromenade
                 Cell = cell;
                 AreaId = areaId ?? string.Empty;
                 District = district;
+                FrontageDirection = frontageDirection;
                 Frontage = frontage;
                 ReturnPosition = returnPosition;
                 Rank = rank;
@@ -2572,6 +2626,7 @@ namespace BarPromenade
             public Vector2Int Cell { get; }
             public string AreaId { get; }
             public CityDistrictKind District { get; }
+            public Vector2Int FrontageDirection { get; }
             public RoadEdge Frontage { get; }
             public Vector3 ReturnPosition { get; }
             public uint Rank { get; }

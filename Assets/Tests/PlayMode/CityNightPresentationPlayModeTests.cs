@@ -175,8 +175,9 @@ namespace BarPromenade.Tests.PlayMode
                 Is.SameAs(CityNightResources.AtmosphereMaterial));
             Assert.That(
                 atmosphere.RealtimeLightCount,
-                Is.LessThanOrEqualTo(
-                    CityNightAtmosphere.MaximumRealtimeLights));
+                Is.EqualTo(CityNightAtmosphere.MaximumRealtimeLights));
+            Assert.That(atmosphere.BarLights.Count, Is.EqualTo(1));
+            Assert.That(atmosphere.StreetLightPool.Count, Is.EqualTo(11));
             Light[] realtimeLights =
                 night.Root.GetComponentsInChildren<Light>(true);
             Assert.That(

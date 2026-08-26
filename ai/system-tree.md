@@ -869,8 +869,9 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                               -> bank roads + two road bridges close the loop
                                            -> four UrbanBuilt areas + central park
                                            -> typed surfaces + open-area accesses
-                                           -> distant bars via CityTravelDistance
-                                           -> player home beside one bar street
+                                           -> one Residential home-frontage bar
+                                              -> stable SplitTheG identity
+                                           -> player home across its shared street
                                            -> nearest eligible Residential supermarket
                                               -> branded facade + walkable apron
                                               -> stable City return point
