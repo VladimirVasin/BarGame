@@ -100,7 +100,7 @@ namespace BarPromenade
                 point);
             if (plateauDistance >= PlateauExteriorBlendDistance)
             {
-                return terrain;
+                return ApplyBrinkFall(plateau, point, terrain);
             }
 
             float exteriorBlend = Mathf.SmoothStep(
@@ -118,7 +118,44 @@ namespace BarPromenade
                     halfWidth + 0.3f,
                     halfWidth + 2f,
                     distance));
-            return Mathf.Lerp(terrain, plateauBlended, shoulderBlend);
+            return ApplyBrinkFall(
+                plateau,
+                point,
+                Mathf.Lerp(terrain, plateauBlended, shoulderBlend));
+        }
+
+        /// <summary>
+        /// Takes the ground away inside the brink's view corridor.
+        ///
+        /// It runs on the FINAL height rather than on the intermediate
+        /// macro terrain, and that ordering is the whole of it: applied
+        /// earlier, the plateau's own exterior blend would lift the cut
+        /// straight back up to pad height over the twelve metres nearest
+        /// the rim - which is exactly the stretch the cliff is made of.
+        /// The interior early return above still answers first, so the
+        /// pad, its seam with the road and the surface the car drives on
+        /// are untouched by construction rather than by tolerance.
+        /// </summary>
+        private static float ApplyBrinkFall(
+            MountainRoadPlateauDescriptor plateau,
+            Vector2 point,
+            float height)
+        {
+            MountainRoadBrinkDescriptor brink = plateau.Brink;
+            if (brink == null)
+            {
+                return height;
+            }
+
+            float weight = brink.Corridor.Weight(
+                point,
+                brink.EdgeBlendDistance);
+            if (weight <= 0f)
+            {
+                return height;
+            }
+
+            return height - brink.DropDepth * weight;
         }
 
         private static float DistanceToPolygonEdge(

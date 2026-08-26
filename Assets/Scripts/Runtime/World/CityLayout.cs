@@ -1189,7 +1189,8 @@ namespace BarPromenade
                 CityAreaFeatureKind feature = area.Definition.Feature;
                 if ((feature == CityAreaFeatureKind.NorthWaterfront ||
                      feature == CityAreaFeatureKind.Cemetery ||
-                     feature == CityAreaFeatureKind.Yard) &&
+                     feature == CityAreaFeatureKind.Yard ||
+                     feature == CityAreaFeatureKind.Church) &&
                     !areasWithAccess.Contains(area.Id))
                 {
                     throw new InvalidOperationException(

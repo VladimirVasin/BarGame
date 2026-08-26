@@ -6,6 +6,412 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-26 — The City misc layer moves to Blender end to end
+
+The phased City pass is now one deterministic `city_misc_citywide_v3` source:
+`61` semantic kinds, `91` assemblies, `177` role meshes and `32,642`
+triangles. It replaces passive visible geometry across all 24 ordinary
+decoration families and park landmarks, street lamps and traffic housings,
+Route 01 shelters and poles, the eastern yard, cemetery, seacoast, fringe
+service belt and the static shells of the four district points of interest.
+
+`CityMiscAssetProvider` binds kind/variant/role to imported mesh sub-assets;
+the existing builders retain their authored transforms and batching. World
+plans still own placement and terrain, and Unity keeps collision proxies,
+dynamic and interactive pieces, realtime lights and halos, cloth and NPCs.
+Tilted cemetery monuments intentionally remain on the legacy visual path
+because the current assembly contract is rigid.
+
+The final manifest signature is
+`3fff5efec42b67e97fe921c44bf22ec076523ae5dd6f0ddd87f6fd2a631c973a`;
+its wave-one and v2 compatibility subsets remain frozen. The full Blender
+export and the independent `--validate-only` pass both completed cleanly, and
+`CityMiscAssetSetup` imported/rebound all `177` provider entries against the
+same manifest without a contract error. The focused EditMode selection passed
+`65/65` (`Logs/city-misc-v3-rerun-results.xml`); its fringe proof records the
+expanded `144`-renderer budget against the built world's measured `129`.
+The exact night-City PlayMode proof passed `1/1`
+(`Logs/city-misc-v3-playmode-rerun-results.xml`). Its first headless run also
+exposed an older native URP failure in the fountain cubemap path; the reflection
+controller now skips `RenderToCubemap` only on Unity's Null graphics device,
+while ordinary rendered play keeps the mirror unchanged.
+
+## 2026-08-26 — The first Mountain Road misc wave moves to Blender
+
+The first deliberately bounded misc migration replaces the visible runtime
+primitives for fallen logs, stumps, dead trees, guard rails, snow poles, the
+convex mirror, utility cabinets and the abandoned chair. Together those are
+`102` of the default plan's `159` misc placements. One deterministic Blender
+source exports `15` assemblies as `19` mesh sub-assets (`2,516` triangles):
+three log variants, four stump variants, three dead-tree variants and the
+single or multipart meshes required by the other five kinds.
+
+`MountainRoadMiscAssetProvider` owns the import contract and deterministic
+stable-ID variant choice. `MountainRoadWorldBuilder` combines the selected
+meshes into exactly `12` renderers while preserving plan-authored transforms,
+stable semantic roots, loose-object sound targets and renderless box collision
+proxies. Dead-tree variants use uniform height scaling so their authored branch
+proportions survive. Boulder, culvert, utility cable and tunnel lamp remain on
+their legacy builders for later waves.
+
+Verification covered the Blender direct validator and deterministic rebuild,
+the Unity asset setup/import contract, and a focused EditMode run: `5/5`
+tests passed, including the full opaque-surface sweep and a default-world proof
+of all `102` migrated instances and `12` batches.
+
+## 2026-08-26 — Four things the bar migration proved were missing
+
+Not features. Each of these was paid for in the same session, in defects or
+in wasted runs.
+
+**Frames.** Three defects passed `1710` green tests and were caught only by
+looking at a rendered picture. `Assets/Tests/PlayMode/AreaCaptureFixture.cs`
+now photographs any world scene — city, bar, mountain road, home, stairwell,
+supermarket, church — through the scene's OWN main camera, so the frame
+carries the real lighting and the real post-processing rather than an
+edit-mode approximation of them. The captures are `[Explicit]`, because they
+are not tests and because running heavy scene-loading fixtures together
+already tripped `ExitPlayModeTask` here; run one area per invocation. A frame
+that comes out a single flat colour fails, since a folder of black rectangles
+otherwise looks exactly like success. `BarCaptureTool` was absorbed and
+deleted; one capture mechanism, not two.
+
+**Domain reload off.** `m_EnterPlayModeOptions` was `0` — the fast-enter
+feature was enabled but disabling nothing, so every Play paid a full assembly
+reload. An audit of all `677` runtime files found `8` holding mutable static
+state without a `SubsystemRegistration` reset, and no `static event` anywhere,
+which is what made the change safe. Six classes got the hook
+(`RuntimePrimitiveFactory`, `BarDrinkServiceResources`,
+`HomeOcclusionResources`, `CityBusAudio`, `LocalizationService`,
+`CityBlueprintCatalog`); `GameLog` was already routed through
+`GameLogRuntime.ResetStatics` and only needed its session id and sequence
+cleared; and two static fields added to `BarInteriorWorldBuilder` earlier that
+day were removed outright, being a channel between two methods that should
+have been a parameter.
+
+**One working copy per session.** Recorded in `AI.md`. Sharing one checkout
+between two agents cost three broken compilations, several aborted Unity runs
+and two foreign red tests in every report — including once during this very
+task. `Library/`, `Temp/` and `Logs/` are already gitignored, so
+`git worktree` is sufficient.
+
+**A full suite before "done".** The FAST budget in `ai/prompt-templates.md`
+said not to run complete suites. That is what let a summit rebuild be reported
+`81/81` green on a `MountainRoad*` filter while it had broken
+`CityMapAreaPresentationTests` outside it. The focused check stays for
+iteration; one complete EditMode run is now the condition for calling a task
+done. Recorded alongside it: `-testFilter` is a regular expression, and `"Bar"`
+matches the whole project through the `BarPromenade` namespace — always read
+`total` back.
+
+Deliberately not done: a golden snapshot of the city (valuable, but prevention
+rather than a cost already being paid), and baking the city (the seed is
+already a constant — `SetCitySeed` is never called outside tests — so there is
+only one city already; `77 000` lines across `160` `City*` files is a separate
+migration).
+
+The capture fixture caught two defects in ITSELF, both only by looking, which
+is the argument for it in miniature. The scene's main camera is the HERO's
+camera, so his head filled the middle of every frame; his renderers are now
+hidden for the duration and restored in a `finally`. And the first City frames
+were photographs of the inside of a wall, because the camera positions had
+been invented rather than measured. That second one was fixed by mechanism
+rather than by tuning numbers: a shot may now be declared as an offset in the
+hero's own frame, which is correct in any scene without measuring it, and that
+is what every area except the bar uses.
+
+Verified: `1705/1716` EditMode. Eleven failures, none of them from this work —
+nine share the verbatim cause `The City misc provider requires exactly 177
+mesh entries` from the concurrent city-decor migration (whose own test also
+reports `city_misc_citywide_v3` expected against `city_misc_all_decor_v2`
+present), and the remaining two are the same two church failures, with the
+same numbers, that were already red before this task began.
+
+PlayMode `11/15` across six fixtures, the four failures being the same misc
+provider again — every one of them a City-scene test. Those eleven passes are
+the real check on the domain-reload change: each test enters play mode again
+inside one editor session, so a static that failed to reset would surface on
+the second entry rather than the first. One honest gap: because the City scene
+cannot currently build, City-specific statics were not exercised, and that
+part of the change is unverified until the concurrent migration lands.
+
+## 2026-08-26 — The bar moves to Blender, inside and out
+
+The bar was `89` `RuntimePrimitiveFactory` calls across `1969` lines. It is
+now two authored models — an interior of `156` parts and `8484` triangles,
+a facade of `15` parts and `420` — and `864` lines of placer. Not one
+primitive remains in either builder.
+
+Nothing about the room's layout changed. Every dimension is the one
+`BarInteriorLayoutPlanner` publishes or the one the primitive it replaces
+used; the manifest records them and `BarModelContractTests` asserts the two
+still agree. What changed is what the geometry is made of. Edges are
+relieved, so a corner catches light instead of drawing one black line. The
+doorway is framed as piers and a lintel and has reveals. Cups, shades,
+glasses and tap handles taper. Bottles have necks. The counter has a
+recessed plinth and an overhanging top. The curtains hang in folds, the
+industrial dressing is pipes rather than flat cards, the jukebox crown is an
+arch, and the room meets its floor at a skirting.
+
+`tools/interior_kit.py` is the reusable half and the reason this was worth
+doing: wall runs framed around their openings, swept mouldings, chamfers,
+panelled leaves, turned legs. It holds no bar-specific value and is meant for
+the apartment, stairwell and supermarket next. `tools/bar_parts.py` holds the
+Unity-space authoring helpers, so the generator writes the same numbers the
+plan publishes instead of re-deriving each one by hand.
+
+Three defects, none of which review would have caught.
+
+The axis mapping was wrong: `bakeAxisConversion` swaps Y and Z without
+negating, so the door landed in the opposite wall and the counter station
+`9.5 m` away. Caught by asserting the model's anchor against
+`plan.CounterStationPosition`.
+
+Every cylinder in the room, and the skirting, had reversed winding: the same
+`(cos, sin)` traversal runs the opposite way in XZ from XY. Inverted normals
+are invisible in a wireframe, in a triangle count and in every dimension
+check; they show up only under a light. `signed_volume` now checks each solid
+at generation time.
+
+Worst: an imported FBX splits its unit conversion across the hierarchy — the
+authoring root arrives scaled `100` and every part scaled `0.01`. The placer
+flattens parts up into the room so `room.Find("Small Stage")` keeps working,
+and doing that without preserving world transforms dropped the root's factor.
+The entire room became a hundredth of its size while keeping correct anchors,
+correct collision and a correct manifest, because none of those come from the
+meshes. It surfaced only through a test asserting that a district's wall
+dressing is big enough to read at `640x360`. `BarAssetSetup` now measures the
+imported model against the manifest's bounds.
+
+Pipeline copied from the church: `-- --validate-only`, a SHA-256
+`build_signature` covering geometry AND the UV pitch table, `BarModelImporter`
+(`materialImportMode = None`, `addCollider = false`), and `BarAssetSetup`
+building both prefabs and refusing colliders, lights, cameras, rigidbodies and
+animators in either. Materials are not assets: two shared materials, lit and
+emissive, carry all `171` parts, and the sheet, district tint, smoothness and
+metallic arrive in a property block exactly as `BarSurfaceAppearance.Apply`
+delivers them to a primitive. That is what keeps district tinting working, and
+the model declares WHERE each tint comes from rather than the runtime carrying
+a sixty-case table.
+
+Collision stays authored: the manifest declares a box per collider, and they
+are the boxes the primitives had, so traversal is unchanged while the visible
+geometry is free to be re-cut. The facade is authored once facing `+X` and
+turned to face its lot, replacing two hand-written size triples per part that
+were the same box rotated ninety degrees.
+
+Also fixed here: `CityMapAreaPresentationTests` still expected two mountain
+terminal landmarks after the summit rebuild added the brink as a third.
+
+Verified: generator validates and runs twice to identical manifests; `57` bar
+and facade EditMode tests green. Two failures remain in the tree from the
+concurrent church work and were not touched. Nothing here has been seen
+rendered.
+
+## 2026-08-26 — A Catholic church north of the cemetery
+
+The eastern open land now has a dedicated `4 x 2` Church precinct directly
+north of the cemetery, while the remaining north-east Yard stays a rectangular
+`4 x 4`. The church selects one west Street frontage after the ordinary road
+graph is complete, so it does not perturb the seeded road network. Its central
+west door, approach, interaction dock and City return are all derived from the
+same typed exterior anchor; the model keeps at least `5 m` clear of the
+cemetery and has no gate through the cemetery fence.
+
+The building is an explicitly Roman Catholic provincial neo-Gothic church,
+not an Orthodox variant: a `44 x 23 x 32 m` basilica with a tall bell spire,
+Latin cross, buttresses, lancet windows, a rose window and pitched roofs. The
+separate interior contains an open narthex, nave and side aisles, four piers,
+ribbed vault, twelve pew halves, confessionals, a font, votive stands, a
+supported choir loft and organ, plus a sealed sanctuary with communion rail,
+altar, tabernacle and crucifix. The protected player routes keep a measured
+`2 m` clearance and the sanctuary remains physically inaccessible. City-map
+arrival also subtracts the church footprint, so it cannot place the player
+inside the exterior collider.
+
+One deterministic Blender source exports independent exterior and interior
+FBX payloads and accepted previews. Unity builds passive typed Resources
+prefabs from their shared manifest; gameplay plans, not the FBX files, own
+colliders, navigation, lighting, entry and return. The normal door-action flow
+now opens the appended `ChurchInterior` scene through `DoorTransition`, and
+exiting returns the player to the same exterior frontage.
+
+- Verification: Blender direct church validator passed (`6,412` exterior and
+  `8,804` interior triangles); Unity `ChurchAssetSetup.RunBatch` imported and
+  validated both prefabs; the focused rendered PlayMode door/scene round trip
+  passed `1/1`. `git diff --check` was clean apart from existing line-ending
+  warnings. Complete suites and a player build were not run.
+
+## 2026-08-26 — The summit stops being a turning circle with two things on it
+
+The terminal plateau was built in one pass in August and the work log
+called it an MVP at the time: a `42 x 27 m` polygon carrying a turning
+circle, a cafe on the left, a cable station on the right and nothing
+else at all. It is now a transfer yard — the place where the road ends
+and the cable starts — with a raised terrace, a cut edge, and a view.
+
+**The composition came from a measurement, not from a preference.** A
+throwaway probe swept every ridge and all `146` trees from a candidate
+eye on each rim. The ground already rises east (`+5.6 m` inside `45 m`)
+and falls west; and between `-44` and `-10` degrees off the back rim
+there is nothing at all inside the area's `120 m` far plane, while the
+ridges stand shoulder to shoulder on either side of it. So the cut face
+went on the east rim behind the cableway, the terrace closed the back
+rim, and the opening was aimed at the gap the ridges already leave. No
+ridge had to be moved, which matters: the validator requires at least
+six mid and ten far-snow, and there are eight and twelve.
+
+**The brink is a terrain mask, not authored rock.** The first plan said
+not to touch `MountainRoadTerrainSampler`; that was wrong. The terrain
+is one continuous `1.6 m` grid over the whole area, so its macro plane
+would have been drawn straight through any cliff hung off the rim. The
+cut follows `ApplyBridgeGorge`: a wedge from the rim, `-27` degrees,
+`9` degrees plus `3` of taper, taking the ground down `26 m` — roughly
+to the height of the tunnel he drove out of. It is applied to the FINAL
+returned height, after the plateau's own exterior blend, because
+applied earlier that blend lifts the cliff back to pad height over
+exactly the twelve metres the cliff is made of. The interior early
+return still answers first, so the pad, the road seam and the surface
+the car drives on are untouched by construction.
+
+**`MountainRoadViewCorridor.DepthInside` had a real bug, found by its
+own validator.** A point beyond the far arc reported its radial
+shortfall as if it were a lateral clearance, so a route sample `142 m`
+away was reported as standing `9.75 m` from the edge of the cut. It now
+answers the true distance to the sector.
+
+**The site is `85` parts in ten batches and adds no sheet.** Every style
+resolves to one of the fifteen surfaces the mountain already prints or
+borrows AND to a tint that surface's manifest already carries — a
+borrowed sheet's albedo compensation is fitted to the tints that
+multiply it, so a new colour would have meant re-solving that fit.
+
+**The connectivity pass is the test that earns its keep.** The
+retaining wall is the first thing in this world able to cut the
+terminal in two, and neither the walkable mask — a polygon that knows
+nothing about furniture — nor any existing validator would have
+noticed. It floods heights rather than a blocking flag, so a `0.66 m`
+wall stops the fill and the three `0.22 m` risers through it do not,
+which is the distinction the player's own `0.28 m` step offset makes.
+
+**Two things the tests deleted rather than fixed.** The painted
+shoulders framing the view were occluded by the real ground at their
+own lateral offset — so they went, because the walls of the cut are
+real snow under a real sun and a matte of them behind them was both
+hidden by them and worse than them. And the worn paths across the yard
+went too: the plateau slab is already asphalt, so there was no snow for
+a path to be worn through.
+
+**He speaks up here now, and only speaks.** A repertoire, not the
+island's menu: that menu's second option is "leave the city?" and its
+whole execution path drives boarding and the ride stage, none of which
+means anything six hundred metres above the city. The stub is
+`SeacoastFishermanInteraction`'s contract in the same trigger box and
+the same dock the factory already built.
+
+Also: a bench on the terrace and the cafe's middle empty stool, both on
+the shared city sit offer with no new clips, kind or prompt; the stool
+row's geometry published as constants so the offer and the timber
+cannot disagree; the attendant noticing somebody sit down, through the
+tableau's own scheduler rather than around it; one mercury practical
+over the freight dock, owned by the atmosphere beside the tunnel lamp;
+four more causal sounds; and a third map landmark.
+
+- **Not done, deliberately:** the cafe sign is a blank enamel board.
+  Lettering needs two new glyphs in the shared `CitySignLettering` and
+  is worth its own change.
+- **Found and not fixed:** the counter stools sit at `0.4675 m` under a
+  `1.02 m` counter. That is `0.3 m` low for a bar, but the three silent
+  patrons are already posed on them, so raising the row moves the cast
+  and belongs to its own pass. The hero sits at their height.
+- Verification: the focused EditMode `MountainRoad` selection, `81/81`.
+  Complete suites, a player build and a rendered smoke were not run.
+
+### The drive was hanging in the air, and the yard had nowhere to go
+
+**Nothing held the cableway machinery up.** The bullwheel is a `3.1 m`
+disc standing `4 m` over the pad and `4.5 m` FORWARD of the station
+centre — outside the canopy footprint altogether — and the reducer is a
+`1.35 x 0.92 m` box at `3.55 m`. A drive shaft ran between them, which
+tied the two to each other and neither of them to the ground. It now
+has a bearing pedestal from the pad to the hub with a housing under the
+disc and a concrete foot, four struts tying that outrigger back to the
+frame it stands proud of, and a machine deck slung between the two rear
+columns for the gearbox to stand on. Boarding happens under that deck,
+which is what a lower station looks like.
+
+**And the yard got a privy.** Single seat, plank, in the north-east
+pocket between the cable station and the cut: downwind of the working
+side, out of sight of the arrival, nowhere near the cafe door. Skids, a
+board floor, three walls, a lintel with jambs, a door ajar at `26` in
+two leaves with a slot between them — the cut-out every one of these
+doors has, made of the gap because nothing here can cut a hole. The
+roof STEPS rather than slopes: a site part carries a yaw and no pitch,
+and four boards falling six centimetres each read as a mono-pitch at
+this resolution while staying inside the batch. Inside it is the
+apartment bathroom's own porcelain pan, set INTO the bench rather than
+standing on it, built out of batch beside the cloth and the chains
+because the batch does only boxes. Somebody carried a real pan up six
+hundred metres of switchback and bolted it through a board, which was
+easier than getting a new one.
+
+**Note against the new Blender rule:** the privy predates it by about an
+hour and is exactly what it now covers — a new building made of runtime
+primitives. It is the obvious first candidate for the generator
+pipeline, and small enough to be a good one.
+
+### Corrections after the first look at it
+
+Three reported, and the third turned out to be the serious one.
+
+**The cafe threshold was crowded.** A bin `0.9 m` from one jamb, an ash
+post `0.5 m` from the other, and the fourth body of the plough bank
+reaching `right -15.6` — inside a doorway spanning `-17.0` to `-15.4`.
+The bank got there because the yaw of its last two bodies was MIRRORED
+off the rim they were meant to lie along: that edge runs at `42` degrees
+in this frame and they stood at `52`, across it. The fourth body is
+gone, the furniture is off the threshold, and a new
+`CheckApproachesStayClear` holds a box off the cafe door and both seat
+docks. It is a different question from the flood fill, which walks a
+`0.25 m` grid with no capsule inflation and therefore reads a two-cell
+slot between a bin and a snow bank as passable. Written naively the new
+rule also reported the bench's own planks as blocking the way to the
+bench, so an approach now starts PAST whatever forms it, and a seat's
+runs `1 m` rather than `3` — the parapet a metre in front of the brink
+bench is not in its way, it is the point of it.
+
+**The lighting was set on the wrong scale, and that was mine.** This
+area's fixtures run `1.65` to `16`; the documented CITY practicals run
+`31` to `240`. Reading the yard lamp off the city list put it at `38`,
+three and a half times the brightest thing on the mountain. It is
+`9.5` now. The cafe also threw no light at all outside itself — both
+its lamps stand indoors with `8.2 m` and `5.8 m` of range from `3.8 m`
+up, so the cone never left the building and from the yard the place
+read as a glowing box rather than something to steer towards. It has a
+third fixture now, OUTSIDE the fascia at the glazed chamfer, washing
+the doorstep, the parked car and its own walls; light on a wall is what
+says "building" at forty metres. And the cable station ran at `1.65`
+beside a cafe counter at `10.5`, which made the pair a lit window and a
+night-light: it is `7.2` now with a second flood on the outer canopy
+edge reaching the freight kerb, because one lamp under a canopy lights
+only what it hangs over.
+
+**Everything placed off the pad was twenty-six metres in the air.**
+`MountainRoadTerminalPlanner.LocalToWorld` takes an OFFSET for its
+`up`, and the cloth, the chains, the yard lamp and the brink bench were
+all handed `yardTop + something` — a height added to a height. Nothing
+saw it: not the flood fill, not the connectivity pass, not the seat
+test, because `CityBenchSitPlan` takes a plank dock's height from
+`GroundY` rather than from the seat, so the dock was correct, the
+prompt appeared, and sitting down would have thrown the hero
+twenty-six metres up. What caught it was the new lamp test asking
+whether the light and its own shade were still in the same place:
+`25.98 m` apart. Every placement now goes through a `Point` helper that
+sets the height ABSOLUTELY, the offset form is called from nowhere, and
+two tests pin the class — the seat is checked itself rather than
+through its dock, and every cloth anchor, chain end, practical and seat
+must lie within `[yard - 1, yard + 12]`.
+
 ## 2026-08-26 — The hero waits for his own door, the way the Ferryman does
 
 Reported as an asymmetry, and that is exactly what it was: "перевозчик

@@ -452,6 +452,27 @@ namespace BarPromenade
                         "return_supermarket_missing");
                 }
             }
+            else if (
+                GameSessionState.TryGetCityReturnKind(
+                    out CityReturnKind churchReturnKind) &&
+                churchReturnKind == CityReturnKind.Church)
+            {
+                if (World.ChurchPlan != null)
+                {
+                    // The exterior plan owns this point. No raw scene
+                    // coordinate survives a round trip through the church.
+                    spawnPosition = World.ChurchPlan.ReturnPosition;
+                    spawnSource = "church_return";
+                    spawnOnSidewalk = true;
+                }
+                else
+                {
+                    spawnSource = "missing_church_return";
+                    GameLog.Warning(
+                        "city",
+                        "return_church_missing");
+                }
+            }
 
             if (!spawnOnSidewalk)
             {
@@ -1183,6 +1204,9 @@ namespace BarPromenade
                 GameLog.Field(
                     "player_home_present",
                     world.PlayerHome != null),
+                GameLog.Field(
+                    "church_present",
+                    world.Church != null),
                 GameLog.Field(
                     "fence_segment_count",
                     world.FencePlan.Segments.Count),

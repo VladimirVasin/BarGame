@@ -100,7 +100,10 @@ namespace BarPromenade.Tests.EditMode
                         overlay.BridgePosition.z)),
                 Is.True,
                 "The authored bridge must fit the chart.");
-            Assert.That(overlay.TerminalLandmarks.Count, Is.EqualTo(2));
+            //  Three since the summit stopped being an MVP pad: the
+            //  brink is where the ground stops, which is precisely the
+            //  sort of thing a map exists to mark.
+            Assert.That(overlay.TerminalLandmarks.Count, Is.EqualTo(3));
             Assert.That(
                 overlay.TerminalLandmarks,
                 Is.Not.SameAs(plan.Terminal.Landmarks));
@@ -116,6 +119,12 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 overlay.TerminalLandmarks[1].LocalizationKey,
                 Is.EqualTo("map.mountain_road.cableway"));
+            Assert.That(
+                overlay.TerminalLandmarks[2].Kind,
+                Is.EqualTo(MountainRoadTerminalLandmarkKind.Brink));
+            Assert.That(
+                overlay.TerminalLandmarks[2].LocalizationKey,
+                Is.EqualTo("map.mountain_road.brink"));
             for (int index = 0;
                  index < overlay.TerminalLandmarks.Count;
                  index++)
@@ -1136,6 +1145,15 @@ namespace BarPromenade.Tests.EditMode
                 CityGenerationSettings.Default,
                 58021);
             var ground = new CityMapCityTeleportGround(layout);
+            CityChurchPlan church = CityChurchPlanner.Create(layout);
+            Assert.That(church, Is.Not.Null);
+            Assert.That(
+                ground.TryResolveStandingPosition(
+                    church.ModelFootprint.center,
+                    out _),
+                Is.False,
+                "The church occupies special open ground, so its model " +
+                "footprint must be excluded explicitly from arrivals.");
 
             CityMapTeleportLattice lattice =
                 CityMapTeleportLatticeBuilder.Create(

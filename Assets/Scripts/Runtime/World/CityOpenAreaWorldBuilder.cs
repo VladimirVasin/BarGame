@@ -39,10 +39,85 @@ namespace BarPromenade
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
             var batches = new Dictionary<BatchKey, List<Bounds>>();
+            var importedBatches = new Dictionary<
+                BatchKey,
+                List<RuntimeMeshPlacement>>();
+            var importedIds = new HashSet<string>(StringComparer.Ordinal);
+            var collisionBounds = new List<Bounds>(plan.Descriptors.Count);
+            CityMiscAssetProvider miscProvider =
+                CityMiscAssetProvider.Load();
+
+            TryAppendYardAssembly(
+                plan.Descriptors,
+                CityOpenAreaDecorationKind.YardDeadTree,
+                CityMiscKind.YardDeadTree,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendYardAssembly(
+                plan.Descriptors,
+                CityOpenAreaDecorationKind.YardBench,
+                CityMiscKind.YardBench,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendYardAssembly(
+                plan.Descriptors,
+                CityOpenAreaDecorationKind.YardCarpetFrame,
+                CityMiscKind.YardCarpetFrame,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendYardAssembly(
+                plan.Descriptors,
+                CityOpenAreaDecorationKind.YardSandpit,
+                CityMiscKind.YardSandpit,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendYardAssembly(
+                plan.Descriptors,
+                CityOpenAreaDecorationKind.YardChildToy,
+                CityMiscKind.YardChildToy,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendYardAssembly(
+                plan.Descriptors,
+                CityOpenAreaDecorationKind.YardDeadLamp,
+                CityMiscKind.YardDeadLamp,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendYardAssembly(
+                plan.Descriptors,
+                CityOpenAreaDecorationKind.YardBin,
+                CityMiscKind.YardBin,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendYardAssembly(
+                plan.Descriptors,
+                CityOpenAreaDecorationKind.YardBottle,
+                CityMiscKind.YardBottle,
+                miscProvider,
+                importedBatches,
+                importedIds);
+
             for (int index = 0; index < plan.Descriptors.Count; index++)
             {
                 CityOpenAreaDecorationDescriptor descriptor =
                     plan.Descriptors[index];
+                if (descriptor.BlocksMovement)
+                {
+                    collisionBounds.Add(descriptor.Bounds);
+                }
+
+                if (importedIds.Contains(descriptor.StableId))
+                {
+                    continue;
+                }
+
                 var key = new BatchKey(
                     Mathf.FloorToInt(
                         descriptor.Bounds.center.x / SpatialChunkSize),
@@ -68,22 +143,257 @@ namespace BarPromenade
                     root,
                     batches[key],
                     ResolveColor(key.Style),
-                    CityOpenAreaDecorationRules.BlocksMovement(key.Style));
+                    false);
+            }
+
+            keys = new List<BatchKey>(importedBatches.Keys);
+            keys.Sort(BatchKey.Compare);
+            for (int index = 0; index < keys.Count; index++)
+            {
+                BatchKey key = keys[index];
+                RuntimePrimitiveFactory.CreateCombinedMeshes(
+                    $"Imported Open Area Chunk {key.X} {key.Z} " +
+                    $"{key.Style}",
+                    root,
+                    importedBatches[key],
+                    ResolveColor(key.Style));
+            }
+
+            if (collisionBounds.Count > 0)
+            {
+                Transform collisionRoot = new GameObject(
+                    "Open Area Collision Proxies").transform;
+                collisionRoot.SetParent(root, false);
+                CityStaticCollisionBuilder.AddBoxColliders(
+                    collisionRoot,
+                    collisionBounds);
             }
 
             if (plan.YardSpotlight.HasValue)
             {
                 BuildHomeYardSpotlight(
                     root,
-                    plan.YardSpotlight.Value);
+                    plan.YardSpotlight.Value,
+                    miscProvider);
             }
 
             return root.gameObject;
         }
 
+        private static void TryAppendYardAssembly(
+            IReadOnlyList<CityOpenAreaDecorationDescriptor> descriptors,
+            CityOpenAreaDecorationKind decorationKind,
+            CityMiscKind miscKind,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            if (!TryResolveYardAssemblyOrigin(
+                    descriptors,
+                    decorationKind,
+                    out Vector3 origin) ||
+                !TryGetImportedParts(
+                    provider,
+                    miscKind,
+                    out List<CityMiscMeshPart> parts))
+            {
+                return;
+            }
+
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityMiscMeshPart part = parts[index];
+                CityOpenAreaDecorationStyle style = ResolveYardStyle(
+                    decorationKind,
+                    part.Role);
+                var key = new BatchKey(
+                    Mathf.FloorToInt(origin.x / SpatialChunkSize),
+                    Mathf.FloorToInt(origin.z / SpatialChunkSize),
+                    style);
+                if (!batches.TryGetValue(
+                        key,
+                        out List<RuntimeMeshPlacement> placements))
+                {
+                    placements = new List<RuntimeMeshPlacement>();
+                    batches.Add(key, placements);
+                }
+
+                placements.Add(new RuntimeMeshPlacement(
+                    part.Mesh,
+                    origin,
+                    Quaternion.identity));
+            }
+
+            for (int index = 0; index < descriptors.Count; index++)
+            {
+                CityOpenAreaDecorationDescriptor descriptor =
+                    descriptors[index];
+                if (descriptor.Kind == decorationKind)
+                {
+                    importedIds.Add(descriptor.StableId);
+                }
+            }
+        }
+
+        private static bool TryResolveYardAssemblyOrigin(
+            IReadOnlyList<CityOpenAreaDecorationDescriptor> descriptors,
+            CityOpenAreaDecorationKind kind,
+            out Vector3 origin)
+        {
+            string suffix;
+            Vector3 offset;
+            switch (kind)
+            {
+                case CityOpenAreaDecorationKind.YardDeadTree:
+                    suffix = "-tree-trunk";
+                    offset = Vector3.zero;
+                    break;
+                case CityOpenAreaDecorationKind.YardBench:
+                    suffix = "-bench-seat";
+                    offset = new Vector3(0f, -0.47f, 0f);
+                    break;
+                case CityOpenAreaDecorationKind.YardCarpetFrame:
+                    suffix = "-carpet-frame-header";
+                    offset = new Vector3(0f, -1.62f, 0f);
+                    break;
+                case CityOpenAreaDecorationKind.YardSandpit:
+                    suffix = "-sandpit-edge-a";
+                    offset = Vector3.zero;
+                    break;
+                case CityOpenAreaDecorationKind.YardChildToy:
+                    suffix = "-sandpit-toy";
+                    offset = Vector3.zero;
+                    break;
+                case CityOpenAreaDecorationKind.YardDeadLamp:
+                    suffix = "-dead-lamp-post";
+                    offset = Vector3.zero;
+                    break;
+                case CityOpenAreaDecorationKind.YardBin:
+                    suffix = "-bin-body";
+                    offset = Vector3.zero;
+                    break;
+                case CityOpenAreaDecorationKind.YardBottle:
+                    suffix = "-bench-bottle";
+                    offset = Vector3.zero;
+                    break;
+                default:
+                    origin = default;
+                    return false;
+            }
+
+            for (int index = 0; index < descriptors.Count; index++)
+            {
+                CityOpenAreaDecorationDescriptor descriptor =
+                    descriptors[index];
+                if (descriptor.Kind != kind ||
+                    !descriptor.StableId.EndsWith(
+                        suffix,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                Bounds bounds = descriptor.Bounds;
+                origin = new Vector3(
+                    bounds.center.x,
+                    bounds.min.y,
+                    bounds.center.z) + offset;
+                // The bench and frame offsets were stated from their
+                // authored centres; every other anchor is its ground base.
+                if (kind == CityOpenAreaDecorationKind.YardBench ||
+                    kind == CityOpenAreaDecorationKind.YardCarpetFrame)
+                {
+                    origin.y = bounds.center.y + offset.y;
+                }
+
+                return true;
+            }
+
+            origin = default;
+            return false;
+        }
+
+        private static CityOpenAreaDecorationStyle ResolveYardStyle(
+            CityOpenAreaDecorationKind kind,
+            CityMiscMeshRole role)
+        {
+            switch (kind)
+            {
+                case CityOpenAreaDecorationKind.YardDeadTree:
+                    return CityOpenAreaDecorationStyle.TreeTrunk;
+                case CityOpenAreaDecorationKind.YardBench:
+                    return role == CityMiscMeshRole.Timber
+                        ? CityOpenAreaDecorationStyle.YardTimber
+                        : CityOpenAreaDecorationStyle.YardPipe;
+                case CityOpenAreaDecorationKind.YardCarpetFrame:
+                case CityOpenAreaDecorationKind.YardDeadLamp:
+                case CityOpenAreaDecorationKind.YardBin:
+                    return CityOpenAreaDecorationStyle.YardPipe;
+                case CityOpenAreaDecorationKind.YardSandpit:
+                case CityOpenAreaDecorationKind.YardBottle:
+                    return CityOpenAreaDecorationStyle.YardTimber;
+                case CityOpenAreaDecorationKind.YardChildToy:
+                    return CityOpenAreaDecorationStyle.YardPaint;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(kind),
+                        kind,
+                        "Unsupported imported yard assembly.");
+            }
+        }
+
+        private static bool TryGetImportedParts(
+            CityMiscAssetProvider provider,
+            CityMiscKind kind,
+            out List<CityMiscMeshPart> parts)
+        {
+            parts = null;
+            if (provider == null ||
+                !CityMiscAssetProvider.Supports(kind))
+            {
+                return false;
+            }
+
+            try
+            {
+                int partCount = CityMiscAssetProvider.GetPartCount(kind);
+                if (partCount < 1)
+                {
+                    return false;
+                }
+
+                var result = new List<CityMiscMeshPart>(partCount);
+                for (int index = 0; index < partCount; index++)
+                {
+                    CityMiscMeshPart part = provider.GetPartOrThrow(
+                        kind,
+                        0,
+                        index);
+                    if (part.Mesh == null)
+                    {
+                        return false;
+                    }
+
+                    result.Add(part);
+                }
+
+                parts = result;
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return false;
+            }
+        }
+
         private static void BuildHomeYardSpotlight(
             Transform parent,
-            HomeYardSpotlightDescriptor descriptor)
+            HomeYardSpotlightDescriptor descriptor,
+            CityMiscAssetProvider miscProvider)
         {
             Vector3 facadeNormal = Vector3.ProjectOnPlane(
                 descriptor.FacadeNormal,
@@ -117,23 +427,30 @@ namespace BarPromenade
                 descriptor.MountPosition,
                 Quaternion.LookRotation(facadeNormal, Vector3.up));
 
-            GameObject wallPlate = RuntimePrimitiveFactory.CreateBox(
-                "Spotlight Wall Plate",
-                assembly,
-                new Vector3(0f, 0f, -0.14f),
-                new Vector3(0.62f, 0.42f, 0.08f),
-                YardSpotlightMetal,
-                false);
-            DisableFixtureShadows(wallPlate);
+            if (!TryBuildImportedFixture(
+                    assembly,
+                    miscProvider,
+                    CityMiscKind.YardSpotlightWallMount,
+                    "Imported Spotlight Wall Mount"))
+            {
+                GameObject wallPlate = RuntimePrimitiveFactory.CreateBox(
+                    "Spotlight Wall Plate",
+                    assembly,
+                    new Vector3(0f, 0f, -0.14f),
+                    new Vector3(0.62f, 0.42f, 0.08f),
+                    YardSpotlightMetal,
+                    false);
+                DisableFixtureShadows(wallPlate);
 
-            GameObject bracket = RuntimePrimitiveFactory.CreateBox(
-                "Spotlight Wall Bracket",
-                assembly,
-                new Vector3(0f, -0.03f, -0.015f),
-                new Vector3(0.11f, 0.11f, 0.25f),
-                YardSpotlightMetal,
-                false);
-            DisableFixtureShadows(bracket);
+                GameObject bracket = RuntimePrimitiveFactory.CreateBox(
+                    "Spotlight Wall Bracket",
+                    assembly,
+                    new Vector3(0f, -0.03f, -0.015f),
+                    new Vector3(0.11f, 0.11f, 0.25f),
+                    YardSpotlightMetal,
+                    false);
+                DisableFixtureShadows(bracket);
+            }
 
             Transform head = new GameObject(
                 "Spotlight Head").transform;
@@ -148,14 +465,21 @@ namespace BarPromenade
                 aimDirection,
                 rotationUp);
 
-            GameObject housing = RuntimePrimitiveFactory.CreateBox(
-                "Spotlight Housing",
-                head,
-                new Vector3(0f, 0f, -0.20f),
-                new Vector3(0.50f, 0.32f, 0.42f),
-                YardSpotlightMetal,
-                false);
-            DisableFixtureShadows(housing);
+            if (!TryBuildImportedFixture(
+                    head,
+                    miscProvider,
+                    CityMiscKind.YardSpotlightHeadShell,
+                    "Imported Spotlight Head Shell"))
+            {
+                GameObject housing = RuntimePrimitiveFactory.CreateBox(
+                    "Spotlight Housing",
+                    head,
+                    new Vector3(0f, 0f, -0.20f),
+                    new Vector3(0.50f, 0.32f, 0.42f),
+                    YardSpotlightMetal,
+                    false);
+                DisableFixtureShadows(housing);
+            }
 
             Color lensColor = MultiplyRgb(descriptor.Color, 4.8f, 1f);
             GameObject lens = RuntimePrimitiveFactory.CreateBox(
@@ -211,6 +535,41 @@ namespace BarPromenade
                 1.80f,
                 MultiplyRgb(descriptor.Color, 4.2f, 0.18f),
                 MultiplyRgb(descriptor.Color, 2.1f, 0.05f));
+        }
+
+        private static bool TryBuildImportedFixture(
+            Transform parent,
+            CityMiscAssetProvider provider,
+            CityMiscKind kind,
+            string name)
+        {
+            if (!TryGetImportedParts(
+                    provider,
+                    kind,
+                    out List<CityMiscMeshPart> parts))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityMiscMeshPart part = parts[index];
+                GameObject fixture =
+                    RuntimePrimitiveFactory.CreateCombinedMeshes(
+                        $"{name} {part.Role}",
+                        parent,
+                        new[]
+                        {
+                            new RuntimeMeshPlacement(
+                                part.Mesh,
+                                Vector3.zero,
+                                Quaternion.identity)
+                        },
+                        YardSpotlightMetal);
+                DisableFixtureShadows(fixture);
+            }
+
+            return true;
         }
 
         private static Color MultiplyRgb(

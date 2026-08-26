@@ -128,6 +128,8 @@ namespace BarPromenade.Tests.EditMode
                          CityDistrictKind.CentralPark,
                          CityDistrictKind.NorthWaterfront,
                          CityDistrictKind.Cemetery,
+                         CityDistrictKind.Yard,
+                         CityDistrictKind.Church,
                      })
             {
                 Assert.Throws<ArgumentOutOfRangeException>(

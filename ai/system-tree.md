@@ -14,6 +14,7 @@ Assets/
     HomeInterior.unity
     MountainRoad.unity
     AreaLoading.unity
+    ChurchInterior.unity
   Settings/
     CityNoirVolumeProfile.asset
     PCPresentationBaselineVolumeProfile.asset  project-owned Neutral/Bloom/Vignette baseline
@@ -118,8 +119,12 @@ Assets/
       StairwellCatProvider.asset      serialized link to the passive 3D cat prefab
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
+      CityMiscAssetProvider.asset   177 passive City role-mesh bindings + manifest signature
     MountainRoad/
       MountainRoadCafeCastProvider.asset  four isolated staged cafe prefab links
+    Church/
+      ChurchExterior3D.prefab          passive Catholic exterior + typed semantic anchors
+      ChurchInterior3D.prefab          passive furnished interior + typed semantic anchors
     Localization/
       ru.json
       en.json
@@ -168,6 +173,12 @@ Assets/
     Models/
       CityChessSet3D.fbx                six turned chessmen and a draught, board-scaled
       CityChessSet3D.json               deterministic heights/footprints manifest
+      CityMisc3D.fbx                    91 citywide misc assemblies / 177 role meshes
+      CityMisc3D.json                   roots, roles, bounds, compatibility + build signature
+  Church/
+    Models/                             split Catholic exterior/interior FBX + shared manifest
+    Textures/                           nine deterministic plaster/stone/wood/glass/art sheets
+    Materials/                          shared URP bindings for the thirteen semantic slots
   Stairwell/
     Cat/
       Models/
@@ -177,7 +188,7 @@ Assets/
         StairwellCat.prefab             passive asset outside Resources
   Scripts/
     Runtime/
-      Core/          nine-scene bootstrap, gameplay roots, session, transitions
+      Core/          ten-scene bootstrap, gameplay roots, session, transitions
         CityGameRoot.cs           city composition + deferred debug-map arrival
         AreaTravelTypes.cs        stable City/MountainRoad IDs + arrival token
         AreaTravelService.cs      guarded Single-load area handoff through AreaLoading
@@ -250,7 +261,7 @@ Assets/
         CityFringeYard{PracticalPlan,PracticalValidator}.cs four clear, deterministic practicals
         CityFringeYardSurfaceAppearance.cs four measured shared surface families
         CityFringeYardValidator.cs bands/gaps/all-safe-seams/corridors/vocabulary/budget invariants
-        CityFringeYard{WorldBuilder,WorldResult}.cs 48 m batches, emissive anchors, no new Lights
+        CityFringeYard{WorldBuilder,WorldResult}.cs imported utility/shed/gauge shells + Unity terrain, cables and practicals
         CityFringePracticalAnchor.cs runtime pose passed to the fixed night-light pool
         MountainRoadPlan.cs       typed 620 m route, ten hairpins, bridge, tunnel/plateau + dressing
         MountainRoad{Planner,Validator}.cs route/bridge + ridge envelope/footprint invariants
@@ -261,8 +272,9 @@ Assets/
         MountainRoadCafe{WorldBuilder,WorldResult,Geometry}.cs enterable glass cafe
         MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs four-role silent cast
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
+        MountainRoadMiscAssetProvider.cs 19 passive Blender meshes + deterministic visual variants
         MountainRoadWalkableArea.cs route/plateau movement boundary
-        MountainRoadWorldBuilder.cs separate mountain-only runtime composition
+        MountainRoadWorldBuilder.cs separate mountain-only composition + 12 imported misc batches
         CityElevationStairPlacement.cs  sidewalk flight/landing integration
         CityExteriorStair{Plan,Planner,Validator}.cs guarded exterior flight contracts
         CityExteriorStairWorldBuilder.cs visible steps + one hidden ramp collider per flight
@@ -277,10 +289,10 @@ Assets/
         CityWorldBuilder.cs      continuous terrain, fenced corner infill, river/bridges, graded streets, stairs + guarded drops
         HomeYardSitePlan.cs      shared roadless-gap, rider-ring, neighbour-light + leaning-utility geometry
         CityOpenAreaDecorationPlan.cs  deterministic inter-building bar-side yard/light descriptors
-        CityOpenAreaWorldBuilder.cs    chunked landmarks + fixed always-on neighbour-wall yard Spot
+        CityOpenAreaWorldBuilder.cs    imported yard props/fixture shells + Unity collision, lens, halo and fixed Spot
         CityCemeteryPlan.cs      oriented cemetery part/lamp descriptors, six grave variants + bounded budget
         CityCemeteryPlanner.cs   gate-framed alleys, hash-varied graves/оградки, trees, lamps + validation
-        CityCemeteryWorldBuilder.cs  chunked oriented batches with cemetery sheets + night-scaled alley lamps
+        CityCemeteryWorldBuilder.cs  imported graves/vegetation/furniture + Unity collision, lamps and grave-work dynamics
         CityCemeterySurfaceAppearance.cs  four cemetery albedos (granite/stone/gravel/soil) via MPBs
         CityCemeteryGroundWorldBuilder.cs  the cemetery slab, rebuilt around every open grave
         CityCemeteryGroundExcavation.cs   the register of open holes; cut and fill both rebuild the slab
@@ -288,9 +300,15 @@ Assets/
         CityHandLampWorldBuilder.cs      the shared kerosene hand lamp: pier head and graveside, one fixture
         CityCemeteryCoffinWorldBuilder.cs  six-sided turned-board coffin, overhanging lid, cross
         CityCemeterySealedGraveWorldBuilder.cs  turned mound courses + one planner monument, slab omitted
+        CityChurchPlan.cs        `4 x 2` precinct, west door/approach, cemetery clearance + return
+        CityChurch{Ground,World}WorldBuilder.cs typed ground and Catholic exterior composition
+        ChurchAssetRegistry.cs   passive Blender-part/material/anchor contract shared by both prefabs
+        ChurchResources.cs       typed Resources load/instantiate bridge for exterior and interior
+        ChurchInteriorLayout{Plan,Planner,Validator}.cs Catholic zones, routes and exact furnishings
+        ChurchInteriorWorld{Builder,Result}.cs imported interior plus plan-owned collision
         CitySeacoastPlan.cs      oriented coast part/lamp descriptors, four hull variants, frame + budget
         CitySeacoastPlanner.cs   zoned shore (port/esplanade/wild), mol, boat station, footbridge, mouth banks + validation
-        CitySeacoastWorldBuilder.cs  chunked oriented batches with coast sheets, sea sheets/shelf + fixtures
+        CitySeacoastWorldBuilder.cs  imported boats/barge/oars/barrier/driftwood + Unity sea, infrastructure and fixtures
         CitySeacoastSurfaceAppearance.cs  five coast albedos (sand/concrete/granite/plank/hull) via MPBs
         CityLighthouseIslandPlan.cs      island part kinds/descriptors, budget, lantern position
         CityLighthouseIslandPlanner.cs   the offshore island: mound, ruined shacks, wreck, banded tower + validation
@@ -306,7 +324,7 @@ Assets/
         CityTravelDistance.cs    weighted road/park-path distance between bars
         CityDistrictPointOfInterestPlan.cs  kinds, public bounds and street accesses
         CityDistrictPointOfInterestPlanner.cs  primary/public reservations + 18 m guard
-        CityDistrictPointOfInterestWorldBuilder.cs  four physical open-place recipes + drying yard and island mast floodlights, carpet rack and babushka stances
+        CityDistrictPointOfInterestWorldBuilder.cs  four imported static shells + Unity paving/collision, cloth, lights, mechanisms and NPCs
         CityDistrictArtProfile.cs  pure frontage/mass/window/light/wear identity for four urban districts
         CityDistrictPresentationPlan.cs  immutable per-block channel decisions + transition motif
         CityDistrictPresentationPlanner.cs  stable block keys and one-block allowed-neighbour transition band
@@ -315,7 +333,8 @@ Assets/
         CityDecorationPlan.cs        immutable ordered seeded decoration data
         CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. bar-side yard pair
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
-        CityDecorationWorldBuilder.cs  six-style visuals, chunked collision proxies + utility dock read-back
+        CityMiscAssetProvider.cs     61 kinds / 91 assemblies / 177 passive role meshes with roots and bounds
+        CityDecorationWorldBuilder.cs  imported role batches, Unity collision proxies + utility dock read-back
         CityStreetUtilityDock.cs     booth-door/dumpster-lid docks the interactions stand on
         CityStreetUtilityWorldBuilder.cs  one placeholder trigger per utility dock
         CityBoardGamePlan.cs     playable tables, seated eye pose + board-plane square picking
@@ -338,6 +357,7 @@ Assets/
         RoadFencePlan.cs         MapBoundary/DeadEnd/CornerGuard rails + clearance-opening metadata
         RoadFencePlanner.cs      unsupported edges, true Street terminals + default NE road-cap L
         CityNightFixturePlanner.cs  lamps/signals clear public ground and approaches
+        CityNightWorldBuilder.cs imported street-lamp/signal shells + Unity bulbs, halos, controllers and Lights
         CityDayNightController.cs   session lighting + exterior night factor
         CityWeatherController.cs    per-frame weather sample -> rain, wet film, flash, thunder
         CityRainField.cs            seeded player-following stretched rain streaks
@@ -504,7 +524,7 @@ Assets/
         CityBusStopWaitPlan.cs     per-stop pavement wait slots + stop-seeded graph distances
         CityBusStopWaitPlanner.cs  locally grounded slot geometry + single-source Dijkstra
         CityBusNpcPassengerController.cs ambient waiters, seated boarding, random alighting
-        CityBusStopWorldBuilder.cs physical City poles + collider-free Home-local pole
+        CityBusStopWorldBuilder.cs imported Route 01 shelters/poles + Unity collision and Home-local placement
         CityBusDriverDoorTimeline.cs deterministic approach/dwell hand, button + look samples
         CityBusDriverPresentation.cs seated IK, door/player focus, rubber-neck stretch + blink
         CityBusDriverAssetRegistry.cs exact 31-bone passive rig bindings
@@ -516,7 +536,7 @@ Assets/
       Player/        motor, presentation contracts, chase/fixed cameras and contact shadow
         PlayerMotor.cs             grounded guided approach + no-progress cancellation
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
-        PlayerFactory.cs           shared prefab spawn in all six gameplay roots
+        PlayerFactory.cs           shared prefab spawn in all seven gameplay roots
         PlayerAttention.cs         Silent Hill head: notice cone rules, target picker + magnets
         PlayerCameraFollow.cs      bounded yaw/pitch chase, fixed pose + shared mouse/stick/arrow orbit sampling
         PlayerContactShadow.cs     slope-aligned planted/fall-aware analytic ground patch
@@ -541,7 +561,7 @@ Assets/
         HomeRefrigeratorInventoryAdapter.cs  slot sources -> inventory IDs
         SupermarketProductCatalog.cs five offers with localized metadata/prices
         SupermarketPurchaseRules.cs  pure finite-source/cash/stack validation
-      Interaction/   contracts, shops and bar/home/stairwell/supermarket doors
+      Interaction/   contracts, shops and bar/home/stairwell/supermarket/church doors
         CityTunnelTravel{Plan,Planner,Controller}.cs automatic unavailable crossing + visible return
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
         PlayerAnimatedInteraction*.cs  positioning, static/moving pelvis targets + independent exit
@@ -558,7 +578,7 @@ Assets/
         HomeTeethBrushingInteraction.cs  mirror close-up, CCD brushing arm, foam, day-gated relief
         Supermarket{Entrance,Exit}.cs  separate-scene round trip and return context
         SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
-      Scenes/        startup/loading plus six gameplay roots and presentation
+      Scenes/        startup/loading plus seven gameplay roots, including ChurchInterior
         MainMenuRoot.cs                 black build-index-0 new-run boundary
         AreaLoadingRoot.cs              black unscaled progress-bar area transfer
         MountainRoadRoot.cs             standalone mountain world/player/UI composition
@@ -611,6 +631,8 @@ Assets/
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
+      City/CityMiscAssetSetup.cs  FBX import/provider binding + strict manifest/root/bounds validation
+      City/Church{AssetSetup,ModelImporter}.cs Catholic FBX import, materials, prefabs + validation
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       MountainRoadCafeCastAssetSetup.cs  isolated model/clip import, validation + provider setup
       Player3D/       deterministic model/animation/portrait import + prefab setup
@@ -619,6 +641,7 @@ Assets/
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
+      CityMiscAssetTests.cs       177-entry catalog/signature/provider + affected-builder smoke contract
       RuntimePrimitiveFactoryTests.cs four exterior assets/import/seam/MPB/UV contract incl. box-projected world UVs
       CityParkSurfaceAppearanceTests.cs  eight park sheets: recipes/import/source contract, UV mode, textured lawn/park build + landmark-only decoration texturing
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
@@ -711,7 +734,7 @@ Assets/
       IntoxicationStatusPlayModeTests.cs hybrid handoff, fixed root, one-phase Rise cleanup
       PlayerAnimatedInteraction3DPlayModeTests.cs   clip sampling, pelvis alignment and cleanup
       PlayerDoorActionPlayModeTests.cs terminal transition commit + cancellation cleanup
-      Player3DGameplaySceneIntegrationPlayModeTests.cs  all six gameplay roots
+      Player3DGameplaySceneIntegrationPlayModeTests.cs  shared gameplay-root camera/hero contract
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  prefab subsets + visibility restoration
 ArtSource/
@@ -734,9 +757,10 @@ ArtSource/
     fringe-contact-sheet.png      forefield/service-track/concrete/masonry comparison sheet
     fringe-textures.json          measured fringe texture manifest
     Facades/                     facade albedo contract, contact sheet and the cell-grid README
-    Blender/                     generated park chess-set .blend and the six-silhouette review row
+    Blender/                     park chess set plus CityMisc3D source and 91-assembly contact sheet
   Home/                          apartment albedo contract, manifest and contact sheet
-  MountainRoad/                  mountain albedo contract, borrowed-sheet contracts, contact sheet and README
+  MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
+  Church/Blender/                Catholic `.blend` source + accepted exterior/interior previews
 tools/
   build-city-bus-3d-model.py         real-scale bus model/export validator
   build-city-bus-driver-3d-model.py  driver model/rig/export validator
@@ -750,6 +774,10 @@ tools/
   build-player-balcony-smoking-atlas.py   retired player-sprite source tooling
   build-player-cat-feeding-atlas.py       retired player-sprite source tooling
   build-stairwell-cat-3d-model.py   armature-free pivot-empty cat + grin-UV validator
+  build-church-3d-model.py       deterministic Catholic exterior/interior Blender build + validator
+  build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
+  build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
+  build-city-misc-3d-model.py    61 kinds / 91 assemblies / 177 citywide role meshes
   build-city-facade-textures.py     deterministic district wall albedos + validator
   build-city-poi-textures.py        deterministic district POI surface albedos + validator
   build-cemetery-textures.py        deterministic cemetery surface albedos (granite/stone/gravel/soil) + validator
@@ -1010,7 +1038,7 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> simplified blue ink-outlined closed route
                             -> five default numbered localized hover stops + compact legend
                             -> below orange player route; no live bus marker
-six gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
+seven gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
                                       -> 37 Generic in-place Actions
                                          -> Idle/Walk/face/status/fall

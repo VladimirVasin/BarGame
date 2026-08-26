@@ -11,6 +11,8 @@ namespace BarPromenade.Tests.EditMode
         {
             "interaction.enter_bar",
             "interaction.exit_bar",
+            "interaction.enter_church",
+            "interaction.exit_church",
             "interaction.enter_supermarket",
             "interaction.exit_supermarket",
             "interaction.browse_supermarket_shelf",
@@ -327,6 +329,7 @@ namespace BarPromenade.Tests.EditMode
             "map.district.central_park",
             "map.district.north_waterfront",
             "map.district.cemetery",
+            "map.district.church",
             "map.district.yard",
             "debug.minigames.title",
             "debug.minigames.hint",

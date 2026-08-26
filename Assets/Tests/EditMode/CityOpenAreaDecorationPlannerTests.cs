@@ -346,6 +346,21 @@ namespace BarPromenade.Tests.EditMode
                 GameObject world = CityOpenAreaWorldBuilder.Build(
                     owner.transform,
                     first);
+                Transform collisionProxies = world.transform.Find(
+                    "Open Area Collision Proxies");
+                Assert.That(collisionProxies, Is.Not.Null);
+                int expectedBlockingParts = first.Descriptors.Count(
+                    descriptor => descriptor.BlocksMovement);
+                BoxCollider[] yardColliders = collisionProxies
+                    .GetComponents<BoxCollider>();
+                Assert.That(
+                    yardColliders,
+                    Has.Length.EqualTo(expectedBlockingParts));
+                Assert.That(
+                    yardColliders.All(collider =>
+                        collider.enabled && !collider.isTrigger),
+                    Is.True);
+
                 Transform fixture = world.transform.Find(
                     "Home Yard Spotlight");
                 Assert.That(fixture, Is.Not.Null);

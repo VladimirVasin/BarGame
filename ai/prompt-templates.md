@@ -18,11 +18,24 @@ runtime changes.
 4. Use one additional focused check only for a shared-framework change that the
    primary check cannot cover. Default to one Unity invocation; cap shared
    framework work at two narrowly filtered invocations.
-5. Do not run complete suites unless the user explicitly asks for
-   release/full-regression verification. Create a player build only when it is
-   the requested deliverable or release gate; use a smoke only when requested
-   or when packaged startup behavior is the changed contract.
-6. Report the result and mention omitted broad checks in one sentence.
+5. Keep iterating on the focused check, then run ONE complete EditMode suite
+   before calling the task done. The focused check is for iteration; it is not
+   evidence of anything outside its filter. A summit rebuild was reported
+   `81/81` green on a `MountainRoad*` filter while it had broken
+   `CityMapAreaPresentationTests`, which that filter never reached; the
+   regression was found much later and by accident. Report the suite's number.
+   Create a player build only when it is the requested deliverable or release
+   gate; use a smoke only when requested or when packaged startup behavior is
+   the changed contract.
+6. `-testFilter` is a REGULAR EXPRESSION, not a prefix. `"Bar"` matches every
+   test in the project through the `BarPromenade` namespace; a filter intended
+   for `96` tests silently ran `1704`. Always read `total` back out of the
+   results file and check it is the number you meant.
+7. Art and geometry are accepted by LOOKING, not by counting. Numbers cannot
+   see a misplaced object or a mesh at a hundredth of its size: three such
+   defects passed `1710` green tests in one session and were caught only by a
+   rendered frame. Capture frames for any scene whose appearance changed.
+8. Report the result and mention omitted broad checks in one sentence.
 
 ## FEATURE
 

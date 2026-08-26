@@ -62,10 +62,17 @@ namespace BarPromenade.Tests.EditMode
                 ["Audible Sulphur Ceiling Tube"] = "emissive",
                 ["Cold Service Strip"] = "emissive",
                 ["Visible Station Practical Lens"] = "emissive",
+                ["Visible Boarding Flood Lens"] = "emissive",
                 ["Cabin Front Window"] = "emissive",
                 ["Cabin Rear Window"] = "emissive",
                 ["Cabin Left Window"] = "emissive",
-                ["Cabin Right Window"] = "emissive"
+                ["Cabin Right Window"] = "emissive",
+                ["Windsock"] = "skinned cloth on the shared two-sided panel",
+                ["Load Tarp"] = "skinned cloth on the shared two-sided panel",
+                ["Vista Silhouette"] =
+                    "a matte at 80-110 m on its own fog-exempt shader",
+                ["Vista City Lights"] =
+                    "additive windows; a sheet would make them opaque"
             };
 
         /// <summary>
@@ -130,6 +137,14 @@ namespace BarPromenade.Tests.EditMode
                     ["Inset Green Linoleum"] =
                         MountainRoadSurfaceKind.Linoleum,
                     ["Physical Concrete Station Pad"] =
+                        MountainRoadSurfaceKind.Concrete,
+                    ["Site Ploughed Snow"] =
+                        MountainRoadSurfaceKind.WindSnow,
+                    ["Site Cut Rock"] =
+                        MountainRoadSurfaceKind.LayeredStone,
+                    ["Site Dressed Stone"] =
+                        MountainRoadSurfaceKind.LayeredStone,
+                    ["Site Concrete Work"] =
                         MountainRoadSurfaceKind.Concrete
                 };
 

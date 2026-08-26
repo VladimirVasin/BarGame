@@ -14,9 +14,12 @@ and water edge and four urban districts with four graph-separated bars. The
 default road footprint now has a mandatory uninterrupted outer Street circuit:
 the two road bridges and their continuous bank roads close it across the river,
 while only the interior street loops remain seed-optional. The
-default footprint also extends east to a plain `4 x 4` north-east
-yard (the drained former lake block) plus a reachable `3 x 2`
-cemetery with deterministic physical landmarks and street access;
+default footprint also extends east to a reachable `3 x 2` cemetery with
+deterministic physical landmarks and street access, a separate `4 x 2`
+church precinct immediately north of it, and the residual plain `4 x 4`
+north-east yard (the drained former lake block). The church owns a large
+Blender-authored exterior and a west-facing street entrance into its separate
+runtime-composed interior;
 the north edge carries the dressed seacoast precinct — mol, beacon,
 the transplanted boat station with its fisherman, footbridge over
 the river mouth, animated sea and wild east shore. Both `3 m` river
@@ -107,9 +110,10 @@ north or east boundary. The sparse
 footprint can be non-rectangular, and the same data-first area contract supports
 reordered urban areas.
 
-The build now has nine explicit scenes. `MountainRoad` is appended at index
-`7` as the sixth gameplay root and `AreaLoading` at index `8` as a black,
-progress-bar-only transfer boundary. The City and mountain worlds are each
+The build now has ten explicit scenes. `MountainRoad` is appended at index
+`7` as the sixth gameplay root, `AreaLoading` at index `8` as a black,
+progress-bar-only transfer boundary, and `ChurchInterior` at index `9` as the
+seventh gameplay root. The City and mountain worlds are each
 runtime-composed after a Single-mode load and are never resident or rendered
 together. The ordinary map has switchable City/Mountain Road tabs; confirming
 the other area unloads the source into `AreaLoading` and then loads the chosen
@@ -138,16 +142,40 @@ Mountain Road world, not as additional scenes, and add only sounds owned by
 visible appliances, machinery and roller crossings. Their landmarks come from
 the same terminal plan used by the map, which now shows all ten hairpins and
 the bridge. Layered forest, grounded melancholy roadside objects, mid ridges
-and far snowy mountains are distributed over the full route. Five causal road
-sound anchors remain, including the loose bridge rail, and one tunnel lamp
-visibly flickers.
+and far snowy mountains are distributed over the full route. Eight of the
+twelve roadside-misc kinds — `102` of `159` placements — now render from a
+deterministic `19`-mesh Blender library combined into `12` runtime batches;
+their plan-owned transforms, semantic roots and collision proxies did not
+move. Boulders, the culvert, utility cable and tunnel lamp remain the explicit
+later migration wave. Nine causal sound
+anchors remain, five on the road including the loose bridge rail and four on
+the summit, and one tunnel lamp visibly flickers.
+The rest of that pad is a dressed transfer yard: ploughed snow and a grit bin
+left of the arrival, the last road board and a seized barrier right of it, the
+cafe's winter furniture on its threshold, a freight dock with one abandoned
+suitcase beside the cable station, and a `0.66 m` retaining wall with two
+three-riser flights onto a back terrace. That terrace ends. A `1.02 m` parapet
+stands `0.35 m` inside the rim — which is what finally makes the walkable
+mask's own clamp invisible — and carries a bench, a survey pillar, a memorial
+plate and a windsock mast, with one gap where the run is missing and chained.
+Behind it the terrain is cut away `26 m` through a `-27` degree wedge aimed at
+the one sector the ridges leave clear inside the `120 m` far plane; no ridge is
+moved for it and the two flanking masses become its jambs. In that opening a
+fixed matte at `81-105 m`, on the lighthouse island's two existing shaders,
+shows the valley bed, the switchback he climbed and a grain of city — all
+measured from `y = 0`, the height of the tunnel mouth — with its windows lit
+after dark by the same per-minute apply that moves the sun and not one Light in
+it. One mercury practical burns over the freight dock; the brink stays dark.
+The hero can sit on the bench or on the cafe's one free stool, and the Ferryman
+answers up here at last: a repertoire and never an offer, because the road has
+ended.
 For now the City tunnel still refuses passage; only the map invokes this area
 transfer. LastRouteCar still has no Mountain Road driving controller.
 
 The runtime places one visually
 distinct player home beside a bar street and one deterministic street-front
-supermarket, instantiates the same modular low-poly 3D hero in all six gameplay
-roots, loads separate bar, supermarket, stairwell and home interiors, and
+supermarket, instantiates the same modular low-poly 3D hero in all seven gameplay
+roots, loads separate bar, supermarket, stairwell, home and church interiors, and
 restores the same seed and matching exterior return point. The hero keeps
 independent body meshes on one Generic rig, uses continuous in-place 3D clips
 for locomotion and contextual actions, including a grounded lean/right-hand
@@ -160,7 +188,15 @@ bars, the supermarket and the player home retain their original low-rise
 heights. Building masses wear one of eight district wall albedos built by
 `tools/build-city-facade-textures.py`, tiled by the building's own bay and floor
 grid through `CityFacadeGrid` so the baked window band lands on the real panes
-rather than by metres. Road v2 gives ordinary City streets an `8 m` footprint
+rather than by metres. The broad passive City misc layer now resolves through
+one deterministic `city_misc_citywide_v3` Blender library: `61` semantic kinds,
+`91` assemblies, `177` role meshes and `32,642` triangles cover ordinary
+decoration and park landmarks, night fixtures, Route 01 stops, the eastern
+yard, cemetery, seacoast, fringe service belt and the static shells of all four
+district points of interest. Unity plans still own placement, terrain,
+collision, dynamics, interactions, lights, halos, cloth and NPCs; tilted
+cemetery monuments deliberately remain on their legacy geometry. Road v2 gives
+ordinary City streets an `8 m` footprint
 with a `6 m` carriageway and two raised `1 m` sidewalks. At selected eligible
 perpendicular two-way corners and three- or four-way nodes, Road v2.1 moves the
 four `1 m` corner pads outward, cuts the raised curbs back by `4.5 m` on every
@@ -515,5 +551,78 @@ repository evidence. This does not require running every test layer.
 - All future contextual player animations must follow the mandatory
   `ai/contextual-animation-standard.md`; do not add one-off teleport, root-motion
   gameplay transactions or visibility fades that conceal mismatched endpoints.
+- **Every 3D object is assembled in Blender.** New geometry is authored by a
+  deterministic generator under `tools/build-*-3d-model.py`, exported and
+  imported as a model asset; it is not composed at runtime out of
+  `RuntimePrimitiveFactory` boxes and cylinders. The existing generators are
+  the pattern to copy — player, pedestrians, bus, bus driver, bartender,
+  cashier, cat, chess set, Last Route car, church, Mountain Road misc and City
+  misc — each pairing its script with a measured JSON manifest and a
+  determinism check. Blender lives at
+  `C:\Program Files\Blender Foundation\Blender 5.0\blender.exe`.
+  This is a rule for what is built from now on. The structural runtime-primitive
+  geometry still in the tree — terrain, roads, building masses, infrastructure,
+  dynamic precinct pieces, the mountain road and its terminal — predates it
+  and is not retroactively invalid. The City and Mountain Road misc libraries
+  are explicit bounded migrations; moving anything else remains its own
+  decision, taken piece by piece and never as a side effect of another task.
+- **Interiors share one authoring library: `tools/interior_kit.py`.** It is
+  imported by interior generators and holds what a box cannot express — wall
+  runs with real openings and reveals, swept mouldings, chamfered edges,
+  panelled leaves, turned legs. Its rule is that it contains no value belonging
+  to any one room; if a number is specific to the bar it lives in the bar's
+  generator. The bar is the first thing built on it
+  (`tools/build-bar-3d-model.py`, with `tools/bar_parts.py` for Unity-space
+  authoring) and is fully migrated, interior and facade; the apartment,
+  stairwell and supermarket are the intended next users.
+- **Blender's axes reach Unity by SWAPPING the last two, not by negating one.**
+  Unity `(x, y, z)` is Blender `(x, z, y)` under the project's export settings
+  (`axis_forward="-Z", axis_up="Y"`) plus `bakeAxisConversion`; the
+  right-to-left handedness change is what removes the sign one would expect.
+  Never settle this by reasoning about it — assert an authored anchor against
+  the plan position it is supposed to occupy, as `BarModelContractTests` does.
+  Getting it wrong silently mirrors the model: the bar's doorway landed in the
+  opposite wall and its counter 9.5 m away.
+- **An imported FBX keeps its unit factor on the authoring root.** That root
+  arrives scaled `100` and its meshes store vertices at a hundredth of the
+  metres they were authored in; an anchor's `localPosition` is likewise a
+  hundredth. Anything that separates a part from that root — a reparent with
+  `worldPositionStays: false`, an `Instantiate` followed by
+  `localScale = Vector3.one`, reading `anchor.localPosition` instead of
+  `anchor.position` — silently makes it a hundredth of its size or puts it a
+  hundredth of the way to where it belongs, while anchors, collision, counts
+  and the manifest all stay right, because none of those come from the meshes.
+  Reparent with `worldPositionStays: true`, take a clone's scale from the
+  template's `lossyScale`, read anchors through world space, have the asset
+  setup MEASURE the imported renderers against the manifest bounds, and have a
+  test MEASURE the placed room — a correct prefab can still be placed wrongly.
+  This cost three separate defects in the bar, and only a rendered frame found
+  the last two.
+- **A swapped axis pair is a reflection, so it reverses face winding.** Any
+  generator that authors in Unity space and converts must re-wind every face,
+  and any ring swept through XZ winds the opposite way from the same ring
+  through XY. Inverted normals survive wireframes, triangle counts and every
+  dimension assertion; check the signed volume of each solid at generation
+  time, as `tools/bar_parts.py` does.
+- **One working copy per concurrent session.** Two agents in the same checkout
+  fight over one Unity project: only one instance may open it, so the other's
+  runs abort with "another Unity instance is running", and a half-written file
+  from one breaks the other's compilation and wastes a whole ten-minute test
+  run. In one session that cost three broken compilations, several aborted
+  runs and two foreign red tests in every report. Give each session its own
+  checkout — `Library/`, `Temp/` and `Logs/` are already gitignored, so a
+  worktree is self-sufficient:
+
+  ```
+  git worktree add ../БП-<branch> <branch>
+  ```
+
+  The first Unity launch there is slow while `Library/` is rebuilt; that is the
+  whole price, and it is paid once. Branches still merge the ordinary way — the
+  gain is that until they merge the sessions cannot break each other.
+- **Look at what you changed.** `Assets/Tests/PlayMode/AreaCaptureFixture.cs`
+  renders any world scene to `Captures/<area>/`. Run it for any scene whose
+  appearance changed and open the frames. Numbers cannot see an object in the
+  wrong place or a mesh at a hundredth of its size.
 - Update the maps and work log when implementation changes project reality.
 - Keep documentation concise and mark uncertainty directly.

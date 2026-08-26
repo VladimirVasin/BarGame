@@ -19,7 +19,8 @@ namespace BarPromenade
         // 3 was the lake, drained when its boat station moved to the
         // seacoast. The value stays a hole so nothing renumbers.
         Cemetery = 4,
-        Yard = 5
+        Yard = 5,
+        Church = 6
     }
 
     public enum CityAreaPlacementPolicy
@@ -156,6 +157,12 @@ namespace BarPromenade
                         CityAreaPlacementPolicy.Movable,
                         "yard");
                     break;
+                case CityAreaFeatureKind.Church:
+                    ValidateSpecialCombination(
+                        CityDistrictKind.Church,
+                        CityAreaPlacementPolicy.Movable,
+                        "church");
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(Feature));
             }
@@ -186,6 +193,7 @@ namespace BarPromenade
                 case CityDistrictKind.NorthWaterfront:
                 case CityDistrictKind.Cemetery:
                 case CityDistrictKind.Yard:
+                case CityDistrictKind.Church:
                     return true;
                 default:
                     return false;
@@ -608,6 +616,14 @@ namespace BarPromenade
                     }
 
                     break;
+                case CityAreaFeatureKind.Church:
+                    if (topology != CityCellTopologyKind.OpenLand)
+                    {
+                        throw new InvalidOperationException(
+                            "A church precinct can contain only open land.");
+                    }
+
+                    break;
                 case CityAreaFeatureKind.NorthWaterfront:
                     if (topology != CityCellTopologyKind.OpenLand &&
                         topology != CityCellTopologyKind.Water)
@@ -717,6 +733,7 @@ namespace BarPromenade
                     case CityAreaFeatureKind.Cemetery:
                         break;
                     case CityAreaFeatureKind.Yard:
+                    case CityAreaFeatureKind.Church:
                         break;
                     default:
                         throw new ArgumentOutOfRangeException(

@@ -127,42 +127,50 @@ namespace BarPromenade
             var parts = new List<DecorationPart>(15);
             var collisionBounds = new List<Bounds>(
                 CityStaticCollisionBuilder.MaximumDecorationProxyCount);
+            CityMiscAssetProvider importedProvider = null;
             for (int index = 0; index < descriptors.Count; index++)
             {
                 parts.Clear();
-                Expand(
-                    layout,
-                    descriptors[index],
-                    parts);
-                for (int partIndex = 0;
-                     partIndex < parts.Count;
-                     partIndex++)
-                {
-                    DecorationPart part = parts[partIndex];
-                    Bounds bounds = part.Bounds;
-                    if (homeContext != null)
-                    {
-                        bounds = new Bounds(
-                            PlayerHomeBalconyGeometry.ToHomeLocal(
-                                homeContext.PlayerHome,
-                                bounds.center),
-                            PlayerHomeBalconyGeometry.ToHomeLocalSize(
-                                homeContext.PlayerHome,
-                                bounds.size));
-                        if (!HomeExteriorViewBuilder
-                                .TryClipToExteriorHalfSpace(
-                                    bounds,
-                                    out bounds))
-                        {
-                            continue;
-                        }
-                    }
-
-                    AddToChunk(
+                CityDecorationDescriptor descriptor = descriptors[index];
+                bool imported = homeContext == null &&
+                    TryAppendImportedDecoration(
                         chunks,
-                        bounds,
-                        part.Style,
-                        part.Surface);
+                        layout,
+                        descriptor,
+                        ref importedProvider);
+                if (!imported)
+                {
+                    Expand(layout, descriptor, parts);
+                    for (int partIndex = 0;
+                         partIndex < parts.Count;
+                         partIndex++)
+                    {
+                        DecorationPart part = parts[partIndex];
+                        Bounds bounds = part.Bounds;
+                        if (homeContext != null)
+                        {
+                            bounds = new Bounds(
+                                PlayerHomeBalconyGeometry.ToHomeLocal(
+                                    homeContext.PlayerHome,
+                                    bounds.center),
+                                PlayerHomeBalconyGeometry.ToHomeLocalSize(
+                                    homeContext.PlayerHome,
+                                    bounds.size));
+                            if (!HomeExteriorViewBuilder
+                                    .TryClipToExteriorHalfSpace(
+                                        bounds,
+                                        out bounds))
+                            {
+                                continue;
+                            }
+                        }
+
+                        AddToChunk(
+                            chunks,
+                            bounds,
+                            part.Style,
+                            part.Surface);
+                    }
                 }
 
                 if (homeContext == null)
@@ -170,7 +178,7 @@ namespace BarPromenade
                     collisionBounds.Clear();
                     CityStaticCollisionBuilder.AddDecorationProxyBounds(
                         layout,
-                        descriptors[index],
+                        descriptor,
                         collisionBounds);
                     for (int collisionIndex = 0;
                          collisionIndex < collisionBounds.Count;
@@ -184,6 +192,522 @@ namespace BarPromenade
             }
 
             BuildChunks(root, chunks);
+        }
+
+        private static bool TryAppendImportedDecoration(
+            IDictionary<ChunkCoordinate, ChunkGeometry> chunks,
+            CityLayout layout,
+            CityDecorationDescriptor descriptor,
+            ref CityMiscAssetProvider provider)
+        {
+            if (!TryResolveImportedKind(descriptor.Kind, out CityMiscKind kind))
+            {
+                return false;
+            }
+
+            if (provider == null)
+            {
+                provider = CityMiscAssetProvider.LoadOrThrow();
+            }
+
+            descriptor.TryResolveLot(layout, out BuildingLot lot);
+            var context = new RecipeContext(layout, descriptor, lot);
+            if (kind == CityMiscKind.ParkChessTables)
+            {
+                if (provider == null)
+                {
+                    provider = CityMiscAssetProvider.LoadOrThrow();
+                }
+
+                return AppendImportedChessTables(
+                    chunks,
+                    context,
+                    provider);
+            }
+
+            if (!TryResolveImportedTransform(
+                    kind,
+                    context,
+                    out int variant,
+                    out Vector3 scale))
+            {
+                return false;
+            }
+
+            var coordinate = new ChunkCoordinate(
+                Mathf.FloorToInt(context.Origin.x / SpatialChunkSize),
+                Mathf.FloorToInt(context.Origin.z / SpatialChunkSize));
+            if (!chunks.TryGetValue(coordinate, out ChunkGeometry geometry))
+            {
+                geometry = new ChunkGeometry();
+                chunks.Add(coordinate, geometry);
+            }
+
+            Quaternion rotation = Quaternion.LookRotation(
+                context.Forward,
+                Vector3.up);
+            Vector3 center = context.Origin - coordinate.Origin;
+            int partCount = CityMiscAssetProvider.GetPartCount(kind);
+            for (int partIndex = 0; partIndex < partCount; partIndex++)
+            {
+                CityMiscMeshPart part = provider.GetPartOrThrow(
+                    kind,
+                    variant,
+                    partIndex);
+                ResolveImportedAppearance(
+                    part,
+                    context,
+                    out BatchStyle style,
+                    out CityParkSurfaceKind? surface);
+                geometry.AddMesh(
+                    style,
+                    surface,
+                    new RuntimeMeshPlacement(
+                        part.Mesh,
+                        center,
+                        rotation,
+                        scale));
+            }
+
+            return true;
+        }
+
+        private static bool TryResolveImportedKind(
+            CityDecorationKind decorationKind,
+            out CityMiscKind miscKind)
+        {
+            switch (decorationKind)
+            {
+                case CityDecorationKind.OldTownChimneysAndDormers:
+                    miscKind = CityMiscKind.OldTownChimneysAndDormers;
+                    return true;
+                case CityDecorationKind.OldTownScaffolding:
+                    miscKind = CityMiscKind.OldTownScaffolding;
+                    return true;
+                case CityDecorationKind.OldTownStreetMarket:
+                    miscKind = CityMiscKind.OldTownStreetMarket;
+                    return true;
+                case CityDecorationKind.OldTownClockTower:
+                    miscKind = CityMiscKind.OldTownClockTower;
+                    return true;
+                case CityDecorationKind.ResidentialBalconies:
+                    miscKind = CityMiscKind.ResidentialBalconies;
+                    return true;
+                case CityDecorationKind.ResidentialLaundryAndAntenna:
+                    miscKind = CityMiscKind.ResidentialLaundryAndAntenna;
+                    return true;
+                case CityDecorationKind.ResidentialDiscardedFurniture:
+                    miscKind = CityMiscKind.ResidentialDiscardedFurniture;
+                    return true;
+                case CityDecorationKind.ResidentialRooftopGreenhouse:
+                    miscKind = CityMiscKind.ResidentialRooftopGreenhouse;
+                    return true;
+                case CityDecorationKind.IndustrialStacksAndTanks:
+                    miscKind = CityMiscKind.IndustrialStacksAndTanks;
+                    return true;
+                case CityDecorationKind.IndustrialPipeRack:
+                    miscKind = CityMiscKind.IndustrialPipeRack;
+                    return true;
+                case CityDecorationKind.IndustrialCargo:
+                    miscKind = CityMiscKind.IndustrialCargo;
+                    return true;
+                case CityDecorationKind.IndustrialGantry:
+                    miscKind = CityMiscKind.IndustrialGantry;
+                    return true;
+                case CityDecorationKind.NightlifeBillboard:
+                    miscKind = CityMiscKind.NightlifeBillboard;
+                    return true;
+                case CityDecorationKind.NightlifeFireEscape:
+                    miscKind = CityMiscKind.NightlifeFireEscape;
+                    return true;
+                case CityDecorationKind.NightlifeVendingAndQueue:
+                    miscKind = CityMiscKind.NightlifeVendingAndQueue;
+                    return true;
+                case CityDecorationKind.NightlifeCinema:
+                    miscKind = CityMiscKind.NightlifeCinema;
+                    return true;
+                case CityDecorationKind.RoadsideRoadworkAndBicycle:
+                    miscKind = CityMiscKind.RoadsideRoadworkAndBicycle;
+                    return true;
+                case CityDecorationKind.RoadsidePhoneBooth:
+                    miscKind = CityMiscKind.RoadsidePhoneBooth;
+                    return true;
+                case CityDecorationKind.RoadsideDumpsterAndUtility:
+                    miscKind = CityMiscKind.RoadsideDumpsterAndUtility;
+                    return true;
+                case CityDecorationKind.ParkFountainAndStatue:
+                    miscKind = CityMiscKind.ParkFountainAndStatue;
+                    return true;
+                case CityDecorationKind.ParkBandstand:
+                    miscKind = CityMiscKind.ParkBandstand;
+                    return true;
+                case CityDecorationKind.ParkChessTables:
+                    miscKind = CityMiscKind.ParkChessTables;
+                    return true;
+                case CityDecorationKind.ParkPlayground:
+                    miscKind = CityMiscKind.ParkPlayground;
+                    return true;
+                default:
+                    miscKind = default;
+                    return false;
+            }
+        }
+
+        private static bool TryResolveImportedTransform(
+            CityMiscKind kind,
+            RecipeContext context,
+            out int variant,
+            out Vector3 scale)
+        {
+            variant = 0;
+            scale = Vector3.one;
+            switch (kind)
+            {
+                case CityMiscKind.OldTownChimneysAndDormers:
+                    if (!Near(Mathf.Clamp(context.Width * 0.22f, 1.1f, 2.4f), 2.4f) ||
+                        !Near(Mathf.Min(context.Width * 0.18f, 1.8f), 1.8f))
+                    {
+                        return false;
+                    }
+
+                    variant = context.Descriptor.Variant & 1;
+                    return true;
+                case CityMiscKind.OldTownScaffolding:
+                    return Near(
+                               Mathf.Clamp(context.Width * 0.68f, 4.2f, 7.2f),
+                               7.2f) &&
+                           Near(
+                               Mathf.Clamp(context.Height - 0.6f, 4.8f, 7.2f),
+                               7.2f);
+                case CityMiscKind.OldTownStreetMarket:
+                    return Near(
+                        Mathf.Clamp(context.Width * 0.44f, 3.4f, 5.2f),
+                        5.2f);
+                case CityMiscKind.OldTownClockTower:
+                {
+                    float width = Mathf.Clamp(
+                        context.Width * 0.28f,
+                        2.8f,
+                        4f);
+                    scale = new Vector3(width / 4f, 1f, width / 4f);
+                    return true;
+                }
+                case CityMiscKind.ResidentialBalconies:
+                {
+                    float width = Mathf.Clamp(
+                        context.Width * 0.50f,
+                        2.8f,
+                        4.8f);
+                    int floors = Mathf.Clamp(
+                        Mathf.FloorToInt((context.Height - 0.8f) / 2.25f),
+                        2,
+                        3);
+                    variant = floors - 2;
+                    scale = new Vector3(width / 4.8f, 1f, 1f);
+                    return true;
+                }
+                case CityMiscKind.ResidentialDiscardedFurniture:
+                case CityMiscKind.IndustrialCargo:
+                case CityMiscKind.RoadsideRoadworkAndBicycle:
+                    variant = context.Descriptor.Variant & 1;
+                    return true;
+                case CityMiscKind.ResidentialRooftopGreenhouse:
+                {
+                    float width = Mathf.Clamp(
+                        context.Width * 0.46f,
+                        3.4f,
+                        5.4f);
+                    float depth = Mathf.Clamp(
+                        context.Depth * 0.34f,
+                        2.6f,
+                        4f);
+                    scale = new Vector3(width / 5.4f, 1f, depth / 4f);
+                    return true;
+                }
+                case CityMiscKind.IndustrialPipeRack:
+                    return Near(
+                        Mathf.Clamp(context.Width * 0.52f, 4.5f, 7f),
+                        7f);
+                case CityMiscKind.IndustrialGantry:
+                {
+                    float width = Mathf.Clamp(
+                        context.Width * 0.60f,
+                        6f,
+                        9f);
+                    float depth = Mathf.Clamp(
+                        context.Depth * 0.42f,
+                        3.2f,
+                        5f);
+                    variant = context.Descriptor.Variant & 1;
+                    scale = new Vector3(width / 9f, 1f, depth / 5f);
+                    return true;
+                }
+                case CityMiscKind.NightlifeBillboard:
+                {
+                    float width = Mathf.Clamp(
+                        context.Width * 0.55f,
+                        4.2f,
+                        7f);
+                    scale = new Vector3(width / 7f, 1f, 1f);
+                    return true;
+                }
+                case CityMiscKind.NightlifeFireEscape:
+                    return Near(
+                               Mathf.Clamp(context.Width * 0.34f, 3f, 4.4f),
+                               4.4f) &&
+                           Near(
+                               Mathf.Clamp(context.Height - 0.8f, 5.2f, 7.2f),
+                               7.2f);
+                case CityMiscKind.NightlifeCinema:
+                {
+                    float width = Mathf.Clamp(
+                        context.Width * 0.72f,
+                        6f,
+                        9.5f);
+                    variant = context.Descriptor.Variant & 1;
+                    scale = new Vector3(width / 9.5f, 1f, 1f);
+                    return true;
+                }
+                case CityMiscKind.IndustrialStacksAndTanks:
+                case CityMiscKind.NightlifeVendingAndQueue:
+                case CityMiscKind.ResidentialLaundryAndAntenna:
+                case CityMiscKind.RoadsidePhoneBooth:
+                case CityMiscKind.RoadsideDumpsterAndUtility:
+                case CityMiscKind.ParkFountainAndStatue:
+                case CityMiscKind.ParkBandstand:
+                case CityMiscKind.ParkPlayground:
+                    return true;
+                default:
+                    return false;
+            }
+        }
+
+        private static bool Near(float actual, float expected)
+        {
+            return Mathf.Abs(actual - expected) <= 0.001f;
+        }
+
+        private static bool AppendImportedChessTables(
+            IDictionary<ChunkCoordinate, ChunkGeometry> chunks,
+            RecipeContext context,
+            CityMiscAssetProvider provider)
+        {
+            var coordinate = new ChunkCoordinate(
+                Mathf.FloorToInt(context.Origin.x / SpatialChunkSize),
+                Mathf.FloorToInt(context.Origin.z / SpatialChunkSize));
+            if (!chunks.TryGetValue(coordinate, out ChunkGeometry geometry))
+            {
+                geometry = new ChunkGeometry();
+                chunks.Add(coordinate, geometry);
+            }
+
+            Quaternion rotation = Quaternion.LookRotation(
+                context.Forward,
+                Vector3.up);
+            int partCount = CityMiscAssetProvider.GetPartCount(
+                CityMiscKind.ParkChessTables);
+            for (int partIndex = 0; partIndex < partCount; partIndex++)
+            {
+                CityMiscMeshPart part = provider.GetPartOrThrow(
+                    CityMiscKind.ParkChessTables,
+                    0,
+                    partIndex);
+                switch (part.Component)
+                {
+                    case "TableSlab_Masonry_Stone":
+                    case "BoardLight_Masonry_Timber":
+                    case "BoardDarkAndRim_Street_Timber":
+                    case "BenchSeat_Street_Timber":
+                        AddImportedChessPart(
+                            geometry,
+                            coordinate,
+                            context,
+                            part,
+                            Vector3.zero,
+                            rotation,
+                            Vector3.one);
+                        break;
+                    case "TableFooting_Masonry_Stone":
+                        for (int table = -1; table <= 1; table += 2)
+                        {
+                            float x = table * ChessTableOffset;
+                            float ground = context.GroundDrop(x, 0f) -
+                                ChessGroundEmbed;
+                            float height = ChessFootingTopY - ground;
+                            AddImportedChessPart(
+                                geometry,
+                                coordinate,
+                                context,
+                                part,
+                                new Vector3(x, ground, 0f),
+                                rotation,
+                                new Vector3(
+                                    1f,
+                                    height /
+                                    (ChessGroundEmbed + ChessFootingTopY),
+                                    1f));
+                        }
+                        break;
+                    case "TablePedestal_Masonry_Stone":
+                        for (int table = -1; table <= 1; table += 2)
+                        {
+                            float x = table * ChessTableOffset;
+                            float ground = context.GroundDrop(x, 0f) -
+                                ChessGroundEmbed;
+                            AddImportedChessPart(
+                                geometry,
+                                coordinate,
+                                context,
+                                part,
+                                new Vector3(x, ground, 0f),
+                                rotation,
+                                new Vector3(
+                                    1f,
+                                    ChessPedestalTopY - ground,
+                                    1f));
+                        }
+                        break;
+                    case "BenchPad_Masonry_Stone":
+                    case "BenchLeg_Masonry_Stone":
+                        AppendImportedChessBenchSupports(
+                            geometry,
+                            coordinate,
+                            context,
+                            part,
+                            rotation,
+                            part.Component ==
+                                "BenchLeg_Masonry_Stone");
+                        break;
+                    default:
+                        throw new InvalidOperationException(
+                            $"Unknown chess-table component " +
+                            $"'{part.Component}'.");
+                }
+            }
+
+            return true;
+        }
+
+        private static void AppendImportedChessBenchSupports(
+            ChunkGeometry geometry,
+            ChunkCoordinate coordinate,
+            RecipeContext context,
+            CityMiscMeshPart part,
+            Quaternion rotation,
+            bool leg)
+        {
+            float legTop = ChessBenchSeatCenterY -
+                ChessBenchSeatThickness * 0.25f;
+            for (int table = -1; table <= 1; table += 2)
+            {
+                float tableX = table * ChessTableOffset;
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    float z = side * ChessBenchZ;
+                    for (int end = -1; end <= 1; end += 2)
+                    {
+                        float x = tableX + end *
+                            (ChessBenchWidth * 0.5f -
+                             ChessBenchLegInset);
+                        float ground = context.GroundDrop(x, z) -
+                            ChessGroundEmbed;
+                        Vector3 scale = leg
+                            ? new Vector3(1f, legTop - ground, 1f)
+                            : Vector3.one;
+                        AddImportedChessPart(
+                            geometry,
+                            coordinate,
+                            context,
+                            part,
+                            new Vector3(x, ground, z),
+                            rotation,
+                            scale);
+                    }
+                }
+            }
+        }
+
+        private static void AddImportedChessPart(
+            ChunkGeometry geometry,
+            ChunkCoordinate coordinate,
+            RecipeContext context,
+            CityMiscMeshPart part,
+            Vector3 recipeLocalPosition,
+            Quaternion rotation,
+            Vector3 scale)
+        {
+            ResolveImportedAppearance(
+                part,
+                context,
+                out BatchStyle style,
+                out CityParkSurfaceKind? surface);
+            Vector3 worldPosition = context.Origin +
+                context.Tangent * recipeLocalPosition.x +
+                Vector3.up * recipeLocalPosition.y +
+                context.Forward * recipeLocalPosition.z;
+            geometry.AddMesh(
+                style,
+                surface,
+                new RuntimeMeshPlacement(
+                    part.Mesh,
+                    worldPosition - coordinate.Origin,
+                    rotation,
+                    scale));
+        }
+
+        private static void ResolveImportedAppearance(
+            CityMiscMeshPart part,
+            RecipeContext context,
+            out BatchStyle style,
+            out CityParkSurfaceKind? surface)
+        {
+            switch (part.Role)
+            {
+                case CityMiscMeshRole.Industrial:
+                    style = BatchStyle.Industrial;
+                    break;
+                case CityMiscMeshRole.Street:
+                    style = BatchStyle.Street;
+                    break;
+                case CityMiscMeshRole.Masonry:
+                    style = BatchStyle.Masonry;
+                    break;
+                case CityMiscMeshRole.Neon:
+                    style = context.Neon;
+                    break;
+                case CityMiscMeshRole.Residential:
+                    style = BatchStyle.Residential;
+                    break;
+                case CityMiscMeshRole.BacklitSign:
+                    style = BatchStyle.BacklitSign;
+                    break;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(part),
+                        part.Role,
+                        "The imported role is not a City decoration style.");
+            }
+
+            switch (part.Surface)
+            {
+                case CityMiscSurfaceKind.Default:
+                    surface = null;
+                    return;
+                case CityMiscSurfaceKind.Stone:
+                    surface = CityParkSurfaceKind.Stone;
+                    return;
+                case CityMiscSurfaceKind.Timber:
+                    surface = CityParkSurfaceKind.Timber;
+                    return;
+                case CityMiscSurfaceKind.PaintedMetal:
+                    surface = CityParkSurfaceKind.PaintedMetal;
+                    return;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(part),
+                        part.Surface,
+                        "Unknown imported City misc surface.");
+            }
         }
 
         private static void Expand(
@@ -1675,7 +2199,8 @@ namespace BarPromenade
                 {
                     var style = (BatchStyle)styleIndex;
                     BatchGeometry batch = geometry.Get(style);
-                    if (batch == null || batch.Boxes.Count == 0)
+                    if (batch == null ||
+                        (batch.Boxes.Count == 0 && batch.Meshes.Count == 0))
                     {
                         continue;
                     }
@@ -1684,8 +2209,10 @@ namespace BarPromenade
                         style == BatchStyle.NeonMagenta ||
                         style == BatchStyle.NeonCyan ||
                         style == BatchStyle.BacklitSign;
-                    GameObject result =
-                        RuntimePrimitiveFactory.CreateCombinedBoxes(
+                    if (batch.Boxes.Count > 0)
+                    {
+                        GameObject legacyResult =
+                            RuntimePrimitiveFactory.CreateCombinedBoxes(
                             GetBatchName(style),
                             chunk,
                             batch.Boxes,
@@ -1694,21 +2221,52 @@ namespace BarPromenade
                                 ? emissiveMaterial
                                 : defaultMaterial,
                             false);
-                    Renderer renderer = result.GetComponent<Renderer>();
-                    renderer.shadowCastingMode = ShadowCastingMode.Off;
-                    renderer.receiveShadows = false;
-                    if (emissive)
+                        ConfigureDetailRenderer(
+                            legacyResult.GetComponent<Renderer>(),
+                            style,
+                            emissive,
+                            emissiveMaterial);
+                    }
+
+                    if (batch.Meshes.Count > 0)
                     {
-                        // Neon and sign lightboxes are electric: they
-                        // die to a tinted tube under the day sky.
-                        CityNightGlowRegistry.Register(
-                            renderer,
-                            GetBatchColor(style));
+                        GameObject importedResult =
+                            RuntimePrimitiveFactory.CreateCombinedMeshes(
+                                "Imported " + GetBatchName(style),
+                                chunk,
+                                batch.Meshes,
+                                GetBatchColor(style));
+                        ConfigureDetailRenderer(
+                            importedResult.GetComponent<Renderer>(),
+                            style,
+                            emissive,
+                            emissiveMaterial);
                     }
                 }
 
                 BuildParkBatches(chunk, coordinate, geometry);
             }
+        }
+
+        private static void ConfigureDetailRenderer(
+            Renderer renderer,
+            BatchStyle style,
+            bool emissive,
+            Material emissiveMaterial)
+        {
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            if (!emissive)
+            {
+                return;
+            }
+
+            renderer.sharedMaterial = emissiveMaterial;
+            // Neon and sign lightboxes are electric: they die to a
+            // tinted tube under the day sky.
+            CityNightGlowRegistry.Register(
+                renderer,
+                GetBatchColor(style));
         }
 
         /// <summary>
@@ -1729,32 +2287,66 @@ namespace BarPromenade
             {
                 ParkBatchKey key = keys[index];
                 BatchGeometry batch = geometry.GetPark(key);
-                if (batch.Boxes.Count == 0)
+                if (batch.Boxes.Count == 0 && batch.Meshes.Count == 0)
                 {
                     continue;
                 }
 
                 Color color = GetBatchColor(key.Style);
-                GameObject result =
-                    RuntimePrimitiveFactory.CreateCombinedBoxes(
-                        $"Park {key.Surface} {key.Style} Details",
-                        chunk,
-                        batch.Boxes,
-                        color,
-                        false,
-                        CityParkSurfaceAppearance
-                            .GetRecipe(key.Surface)
-                            .MetersPerTile,
-                        CityParkSurfaceAppearance.GetUvMode(key.Surface),
-                        coordinate.Origin);
-                Renderer renderer = result.GetComponent<Renderer>();
-                renderer.shadowCastingMode = ShadowCastingMode.Off;
-                renderer.receiveShadows = false;
-                CityParkSurfaceAppearance.ApplyCombined(
-                    renderer,
-                    key.Surface,
-                    color);
+                if (batch.Boxes.Count > 0)
+                {
+                    GameObject legacyResult =
+                        RuntimePrimitiveFactory.CreateCombinedBoxes(
+                            $"Park {key.Surface} {key.Style} Details",
+                            chunk,
+                            batch.Boxes,
+                            color,
+                            false,
+                            CityParkSurfaceAppearance
+                                .GetRecipe(key.Surface)
+                                .MetersPerTile,
+                            CityParkSurfaceAppearance.GetUvMode(key.Surface),
+                            coordinate.Origin);
+                    ConfigureParkRenderer(
+                        legacyResult.GetComponent<Renderer>(),
+                        key,
+                        color);
+                }
+
+                if (batch.Meshes.Count > 0)
+                {
+                    GameObject importedResult =
+                        RuntimePrimitiveFactory.CreateCombinedMeshes(
+                            $"Imported Park {key.Surface} " +
+                            $"{key.Style} Details",
+                            chunk,
+                            batch.Meshes,
+                            color,
+                            false,
+                            CityParkSurfaceAppearance
+                                .GetRecipe(key.Surface)
+                                .MetersPerTile,
+                            CityParkSurfaceAppearance.GetUvMode(key.Surface),
+                            coordinate.Origin);
+                    ConfigureParkRenderer(
+                        importedResult.GetComponent<Renderer>(),
+                        key,
+                        color);
+                }
             }
+        }
+
+        private static void ConfigureParkRenderer(
+            Renderer renderer,
+            ParkBatchKey key,
+            Color color)
+        {
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = false;
+            CityParkSurfaceAppearance.ApplyCombined(
+                renderer,
+                key.Surface,
+                color);
         }
 
         private static string GetBatchName(BatchStyle style)
@@ -2011,6 +2603,8 @@ namespace BarPromenade
         private sealed class BatchGeometry
         {
             public readonly List<Bounds> Boxes = new List<Bounds>();
+            public readonly List<RuntimeMeshPlacement> Meshes =
+                new List<RuntimeMeshPlacement>();
         }
 
         private sealed class ChunkGeometry
@@ -2058,6 +2652,37 @@ namespace BarPromenade
                 }
 
                 batch.Boxes.Add(bounds);
+            }
+
+            public void AddMesh(
+                BatchStyle style,
+                CityParkSurfaceKind? surface,
+                RuntimeMeshPlacement placement)
+            {
+                if (surface.HasValue)
+                {
+                    var key = new ParkBatchKey(style, surface.Value);
+                    if (!parkBatches.TryGetValue(
+                            key,
+                            out BatchGeometry parkBatch))
+                    {
+                        parkBatch = new BatchGeometry();
+                        parkBatches.Add(key, parkBatch);
+                    }
+
+                    parkBatch.Meshes.Add(placement);
+                    return;
+                }
+
+                int index = (int)style;
+                BatchGeometry batch = batches[index];
+                if (batch == null)
+                {
+                    batch = new BatchGeometry();
+                    batches[index] = batch;
+                }
+
+                batch.Meshes.Add(placement);
             }
 
             public BatchGeometry Get(BatchStyle style)

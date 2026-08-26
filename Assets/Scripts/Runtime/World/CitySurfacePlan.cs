@@ -14,7 +14,8 @@ namespace BarPromenade
         // stays a hole so nothing renumbers.
         CemeteryGround = 5,
         Water = 6,
-        RiverWater = 7
+        RiverWater = 7,
+        ChurchGround = 8
     }
 
     public readonly struct CitySurfaceDescriptor :
@@ -448,7 +449,8 @@ namespace BarPromenade
             CityAreaFeatureKind feature = area.Definition.Feature;
             if (feature != CityAreaFeatureKind.NorthWaterfront &&
                 feature != CityAreaFeatureKind.Cemetery &&
-                feature != CityAreaFeatureKind.Yard)
+                feature != CityAreaFeatureKind.Yard &&
+                feature != CityAreaFeatureKind.Church)
             {
                 return false;
             }
@@ -497,6 +499,17 @@ namespace BarPromenade
                         continue;
                     }
 
+                    // The exterior model owns one west-facing entrance.
+                    // Pick its frontage only after the road graph exists;
+                    // unlike waterfront/cemetery access this edge is never
+                    // injected into the pre-MST required-edge set.
+                    if (area.Definition.Feature ==
+                            CityAreaFeatureKind.Church &&
+                        streetDirection != Vector2Int.left)
+                    {
+                        continue;
+                    }
+
                     RoadEdge frontage = RoadEdge.ForCellFrontage(
                         cell,
                         streetDirection);
@@ -516,7 +529,11 @@ namespace BarPromenade
                         SquaredDistanceToCenter(
                             frontage,
                             blueprint.CenterNode));
-                    if (!found || CompareCandidates(candidate, selected) < 0)
+                    int comparison = area.Definition.Feature ==
+                            CityAreaFeatureKind.Church
+                        ? CompareChurchCandidates(candidate, selected)
+                        : CompareCandidates(candidate, selected);
+                    if (!found || comparison < 0)
                     {
                         selected = candidate;
                         found = true;
@@ -525,6 +542,25 @@ namespace BarPromenade
             }
 
             return found;
+        }
+
+        private static int CompareChurchCandidates(
+            AccessCandidate left,
+            AccessCandidate right)
+        {
+            // Keep the authored south-west road connection deterministic.
+            // CityChurchPlanner routes it across the precinct to the
+            // basilica's central west door and validates cemetery clearance.
+            int zComparison = left.Cell.y.CompareTo(right.Cell.y);
+            if (zComparison != 0)
+            {
+                return zComparison;
+            }
+
+            int xComparison = left.Cell.x.CompareTo(right.Cell.x);
+            return xComparison != 0
+                ? xComparison
+                : RoadEdge.Compare(left.Frontage, right.Frontage);
         }
 
         private static CityOpenAreaAccessDescriptor CreateAccessDescriptor(
@@ -725,6 +761,8 @@ namespace BarPromenade
                             return CitySurfaceKind.CemeteryGround;
                         case CityAreaFeatureKind.Yard:
                             return CitySurfaceKind.OpenGround;
+                        case CityAreaFeatureKind.Church:
+                            return CitySurfaceKind.ChurchGround;
                         default:
                             return CitySurfaceKind.OpenGround;
                     }

@@ -1,0 +1,1078 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 80847328e234401b960a53a1ea4efab6, type: 3}
+  m_Name: CityMiscAssetProvider
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CityMiscAssetProvider
+  entries:
+  - kind: 0
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 4349064526123954629, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 0
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 7300107590071574013, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 1
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 2717408300976655651, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 1
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -4178691669635147900, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 1
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -7698586256857341331, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 1
+    variant: 1
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 5741098117473575156, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 1
+    variant: 1
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 1441528956672220003, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 1
+    variant: 1
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -3347292540684060576, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 2
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 7175932960216624877, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 2
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: -2234371631935302778, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 2
+    variant: 0
+    component: Neon
+    role: 3
+    surface: 0
+    mesh: {fileID: 6154594411777209659, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 3
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 773563857845497778, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 3
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -8432412347502205660, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 3
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 6859321520818226118, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 3
+    variant: 1
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -3334957261516399883, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 3
+    variant: 1
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -2512627683842406260, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 3
+    variant: 1
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 1854497755315897064, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 4
+    variant: 0
+    component: Bark
+    role: 4
+    surface: 0
+    mesh: {fileID: -2840158355500345876, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 4
+    variant: 0
+    component: Foliage
+    role: 5
+    surface: 0
+    mesh: {fileID: 1436120889509353752, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 4
+    variant: 1
+    component: Bark
+    role: 4
+    surface: 0
+    mesh: {fileID: -5096544410058368777, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 4
+    variant: 1
+    component: Foliage
+    role: 5
+    surface: 0
+    mesh: {fileID: -8892089292379701439, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 4
+    variant: 2
+    component: Bark
+    role: 4
+    surface: 0
+    mesh: {fileID: 1813681489039885888, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 4
+    variant: 2
+    component: Foliage
+    role: 5
+    surface: 0
+    mesh: {fileID: -7660975451035699754, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 4
+    variant: 3
+    component: Bark
+    role: 4
+    surface: 0
+    mesh: {fileID: -6065793819758663594, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 4
+    variant: 3
+    component: Foliage
+    role: 5
+    surface: 0
+    mesh: {fileID: -6900129559573826919, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 5
+    variant: 0
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: 1826016403862284724, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 5
+    variant: 1
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -2580968763483298809, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 6
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 1178540821212469140, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 6
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -5216491519293645207, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 6
+    variant: 0
+    component: BacklitSign
+    role: 8
+    surface: 0
+    mesh: {fileID: 7646646914456491474, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 7
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: -6727553477723318867, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 7
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -7365466749285875384, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 8
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -7136370652272344877, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 9
+    variant: 0
+    component: Chimneys_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 4520761816605954903, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 9
+    variant: 0
+    component: Dormer_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 4443900626786450373, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 9
+    variant: 0
+    component: Window_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -2518156237611733949, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 9
+    variant: 1
+    component: Chimneys_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 6084268830617586894, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 9
+    variant: 1
+    component: Dormer_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 2989243694440877765, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 9
+    variant: 1
+    component: Window_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -3298271385041198573, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 10
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: -3754664583642506242, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 10
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -4220422250227571641, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 11
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -1758378641891038811, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 11
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 4739165537186167311, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 11
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 1208752018544819459, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 12
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -9207572067267962446, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 12
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -7772026517628247335, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 12
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 8345003827450256081, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 13
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 2264369145771129466, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 13
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 893511315527769779, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 13
+    variant: 1
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -1811666396164632372, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 13
+    variant: 1
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -8104973133242271168, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 14
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 2013178064779788294, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 14
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -4206944487950005513, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 14
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -1112439811669912084, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 15
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 7552269235580957984, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 15
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -7450786084217229359, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 15
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 4300991344737136110, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 15
+    variant: 1
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 1034657537412732057, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 15
+    variant: 1
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -983754450667660470, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 15
+    variant: 1
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 8883006175259616497, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 16
+    variant: 0
+    component: Base_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 920589603693668413, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 16
+    variant: 0
+    component: Frame_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -1883743610890666321, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 16
+    variant: 0
+    component: Roof_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 6046307220337997604, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 16
+    variant: 0
+    component: Hardware_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 7080627282361450403, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 17
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -8903421191287302694, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 17
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: -2225225345698984941, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 18
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 7347411392890430188, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 18
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 7636669618525910359, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 18
+    variant: 1
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 3497532437866060535, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 18
+    variant: 1
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -3350658603626449560, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 19
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 8129689916898227284, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 19
+    variant: 0
+    component: Neon
+    role: 3
+    surface: 0
+    mesh: {fileID: 9122460140324123411, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 20
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: -6254697704734085602, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 20
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 8896254705565870458, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 21
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -2759687157565793217, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 21
+    variant: 0
+    component: Neon
+    role: 3
+    surface: 0
+    mesh: {fileID: -1872678755081629387, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 21
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -3780100501426331531, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 21
+    variant: 1
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 5081838739075095190, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 21
+    variant: 1
+    component: Neon
+    role: 3
+    surface: 0
+    mesh: {fileID: 3439049418161743045, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 21
+    variant: 1
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 3543066370596050380, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 22
+    variant: 0
+    component: Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -7969166817897035387, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 22
+    variant: 0
+    component: Street_Stone
+    role: 1
+    surface: 1
+    mesh: {fileID: -8828196253615320312, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 23
+    variant: 0
+    component: Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -5507628772603397603, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 23
+    variant: 0
+    component: Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: 3575099384822110630, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 23
+    variant: 0
+    component: Masonry_Timber
+    role: 2
+    surface: 2
+    mesh: {fileID: 4346282698778222311, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 23
+    variant: 0
+    component: Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: 184566816298642026, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 24
+    variant: 0
+    component: TableSlab_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -9149015957012352111, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 24
+    variant: 0
+    component: BoardLight_Masonry_Timber
+    role: 2
+    surface: 2
+    mesh: {fileID: -1125638439003967936, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 24
+    variant: 0
+    component: BoardDarkAndRim_Street_Timber
+    role: 1
+    surface: 2
+    mesh: {fileID: 5802136618296370698, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 24
+    variant: 0
+    component: TableFooting_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -3383768471293887182, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 24
+    variant: 0
+    component: TablePedestal_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -748419611280309033, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 24
+    variant: 0
+    component: BenchSeat_Street_Timber
+    role: 1
+    surface: 2
+    mesh: {fileID: -8365505215458495387, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 24
+    variant: 0
+    component: BenchPad_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -7616985494876201868, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 24
+    variant: 0
+    component: BenchLeg_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: 2676532023799835833, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 25
+    variant: 0
+    component: Residential_PaintedMetal
+    role: 7
+    surface: 3
+    mesh: {fileID: -2778854314859983752, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 25
+    variant: 0
+    component: Masonry_Timber
+    role: 2
+    surface: 2
+    mesh: {fileID: 1101600085171633680, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 25
+    variant: 0
+    component: Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -7570350023495765465, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 26
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -7095776041101266075, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 26
+    variant: 0
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: 7585110251180480349, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 27
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 2448047206348180609, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 27
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -2341660407235449901, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 27
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 8994631116911825778, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 28
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 4352630307831787559, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 29
+    variant: 0
+    component: Bark
+    role: 4
+    surface: 0
+    mesh: {fileID: 2696052521258962415, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 30
+    variant: 0
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -130734635499360577, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 30
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -4121309190188980374, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 31
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 8138766565289034100, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 32
+    variant: 0
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -3793046756693920321, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 33
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 8522156724109878250, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 34
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 8537730595567766424, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 35
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -6575329461122648444, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 36
+    variant: 0
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -2874634051583053044, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 37
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -2148365930258773375, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 38
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -3681814127908964877, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 39
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 7006667786298602471, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 39
+    variant: 1
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -652239006948898098, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 39
+    variant: 2
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -129423513780783522, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 39
+    variant: 3
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 4759502853719133624, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 39
+    variant: 4
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 3601706645878823553, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 39
+    variant: 5
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -2374041883573814284, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 40
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 6187983333679696985, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 40
+    variant: 1
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -1521854726430633651, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 40
+    variant: 2
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -90485199178539940, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 40
+    variant: 3
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -8975259987088144088, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 40
+    variant: 4
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -1843482970660533643, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 41
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 1252710354549558461, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 41
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 7555594042931461300, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 42
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 9104906276072337181, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 43
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 4731343570804573897, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 44
+    variant: 0
+    component: Bark
+    role: 4
+    surface: 0
+    mesh: {fileID: -2306972745932976346, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 44
+    variant: 0
+    component: Foliage
+    role: 5
+    surface: 0
+    mesh: {fileID: 3339136288432869917, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 44
+    variant: 1
+    component: Bark
+    role: 4
+    surface: 0
+    mesh: {fileID: -8192757906786033883, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 44
+    variant: 1
+    component: Foliage
+    role: 5
+    surface: 0
+    mesh: {fileID: -2142548761067536038, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 45
+    variant: 0
+    component: Foliage
+    role: 5
+    surface: 0
+    mesh: {fileID: 3085656532632982201, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 46
+    variant: 0
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -3594308460475288797, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 46
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 2839738458885257913, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 6073652270192074517, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -5588344067101780613, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 0
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -430909833128994856, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 1
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -2136322294112094800, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 1
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -5998923689844379301, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 1
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -976119111682687032, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 2
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -3348235262367065717, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 2
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 1832353904929843606, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 2
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: 1561942234573697197, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 3
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 336583118200674806, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 3
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -3532687435316062387, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 47
+    variant: 3
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: 1604505594321227881, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 48
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -7009780712717002691, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 49
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -3069928549894627182, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 50
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 7614110791578742468, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 50
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 6071269788363366653, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 51
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 6232838664212360806, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 51
+    variant: 1
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 406636024945048853, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 51
+    variant: 2
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 3686855564044028138, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 52
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -496977570874391880, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 53
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 3290435793976264558, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 53
+    variant: 1
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -4491535932293730773, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 53
+    variant: 2
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -3337581643136769579, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 54
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -4584317961598966944, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 54
+    variant: 1
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 2478316423670471716, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 55
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 2757088273083681905, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 55
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 7520465012965564119, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 56
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 4688604384223958541, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 56
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -8642316855451545547, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 56
+    variant: 1
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 2222014111048707866, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 56
+    variant: 1
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -1975519015980614212, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 57
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -1636212143352362600, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 57
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 3669779941699320969, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 58
+    variant: 0
+    component: Residential_PaintedMetal
+    role: 7
+    surface: 3
+    mesh: {fileID: 5913884577559831090, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 58
+    variant: 0
+    component: Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: -1756465869902633583, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 59
+    variant: 0
+    component: Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 4600011945839833897, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 59
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -3060517102206513406, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 60
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 431442089952269645, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 60
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 4100957003219377709, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 60
+    variant: 0
+    component: Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 811195182628008247, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 60
+    variant: 0
+    component: Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: 5809277177797752918, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  buildSignature: 3fff5efec42b67e97fe921c44bf22ec076523ae5dd6f0ddd87f6fd2a631c973a

@@ -116,13 +116,14 @@ namespace BarPromenade.Tests.EditMode
                     "plateau polygon.");
             }
 
-            Assert.That(terminal.Landmarks, Has.Count.EqualTo(2));
+            Assert.That(terminal.Landmarks, Has.Count.EqualTo(3));
             Assert.That(
                 terminal.Landmarks.Select(landmark => landmark.Kind),
                 Is.EquivalentTo(new[]
                 {
                     MountainRoadTerminalLandmarkKind.Cafe,
-                    MountainRoadTerminalLandmarkKind.Cableway
+                    MountainRoadTerminalLandmarkKind.Cableway,
+                    MountainRoadTerminalLandmarkKind.Brink
                 }));
             for (int index = 0;
                  index < terminal.Landmarks.Count;

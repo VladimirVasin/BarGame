@@ -237,7 +237,7 @@ namespace BarPromenade.Tests.PlayMode
             for (int index = 0; index < renderers.Length; index++)
             {
                 Renderer renderer = renderers[index];
-                if (renderer.name == "Street Lamp Fixtures")
+                if (renderer.name == "Imported Street Lamp Fixtures")
                 {
                     fixtureBatchCount++;
                     Assert.That(
@@ -248,7 +248,7 @@ namespace BarPromenade.Tests.PlayMode
                     Assert.That(
                         renderer.GetComponent<MeshFilter>().sharedMesh.name,
                         Is.EqualTo(
-                            "Street Lamp Fixtures Combined Mesh"));
+                            "Imported Street Lamp Fixtures Combined Mesh"));
                     if (sharedFixtureMaterial == null)
                     {
                         sharedFixtureMaterial = renderer.sharedMaterial;
@@ -1288,30 +1288,56 @@ namespace BarPromenade.Tests.PlayMode
             {
                 case CityDistrictPointOfInterestKind
                     .OldTownWaterworksCourt:
-                    AssertDetailFacesPositiveLocalZ(
+                    AssertImportedRecipeParts(
                         recipe,
-                        "Cast Iron Standpipe",
-                        "Water Spout Mouth");
+                        "Masonry",
+                        "Street");
+                    AssertRequiredChild(recipe, "Dark Water");
+                    AssertRequiredChild(recipe, "Working Lamp");
+                    break;
+                case CityDistrictPointOfInterestKind
+                    .ResidentialDryingYard:
+                    AssertImportedRecipeParts(
+                        recipe,
+                        "Residential_PaintedMetal",
+                        "Residential_Timber");
                     break;
                 case CityDistrictPointOfInterestKind
                     .IndustrialWeighbridge:
-                    AssertDetailFacesPositiveLocalZ(
+                    AssertImportedRecipeParts(
                         recipe,
-                        "Scale Indicator Head",
-                        "Scale Indicator Face");
+                        "Industrial",
+                        "Street");
+                    AssertRequiredChild(recipe, "Scale Indicator Face");
+                    AssertRequiredChild(recipe, "Scale Needle");
+                    AssertRequiredChild(recipe, "Cold Service Lamp");
                     break;
                 case CityDistrictPointOfInterestKind
                     .NightlifeLastRouteIsland:
-                    AssertDetailFacesPositiveLocalZ(
+                    AssertImportedRecipeParts(
                         recipe,
-                        "Broken Route Totem",
-                        "Totem Route Map Backing");
-                    AssertDetailFacesPositiveLocalZ(
-                        recipe,
-                        "Departure Board",
-                        "Departure Board Glass");
+                        "Masonry",
+                        "Street",
+                        "Residential",
+                        "Timber");
                     AssertLastRouteIslandDetails(recipe);
                     break;
+            }
+        }
+
+        private static void AssertImportedRecipeParts(
+            Transform recipe,
+            params string[] components)
+        {
+            for (int index = 0; index < components.Length; index++)
+            {
+                Transform part = AssertRequiredChild(
+                    recipe,
+                    $"Imported {recipe.name} {components[index]}");
+                Assert.That(
+                    part.GetComponent<Renderer>(),
+                    Is.Not.Null,
+                    $"Imported POI role '{components[index]}' must render.");
             }
         }
 
@@ -1423,58 +1449,17 @@ namespace BarPromenade.Tests.PlayMode
                 "The mast's floodlight lenses are the island's only " +
                 "emissive surfaces.");
 
-            Transform board = AssertRequiredChild(
-                recipe,
-                "Departure Board");
-            Renderer boardRenderer = board.GetComponent<Renderer>();
-            Assert.That(boardRenderer, Is.Not.Null);
-            string[] supports =
+            string[] runtimeDetails =
             {
-                "Departure Board Support West",
-                "Departure Board Support East"
-            };
-            Renderer islandRenderer = AssertRequiredChild(
-                    recipe,
-                    "Last Route Island")
-                .GetComponent<Renderer>();
-            Assert.That(islandRenderer, Is.Not.Null);
-            for (int index = 0; index < supports.Length; index++)
-            {
-                Renderer supportRenderer = AssertRequiredChild(
-                        recipe,
-                        supports[index])
-                    .GetComponent<Renderer>();
-                Assert.That(supportRenderer, Is.Not.Null);
-                Assert.That(
-                    supportRenderer.bounds.max.y,
-                    Is.EqualTo(boardRenderer.bounds.min.y)
-                        .Within(0.02f),
-                    $"'{supports[index]}' must meet the board.");
-                Assert.That(
-                    supportRenderer.bounds.min.y,
-                    Is.EqualTo(islandRenderer.bounds.max.y)
-                        .Within(0.02f),
-                    $"'{supports[index]}' must rest on the island.");
-            }
-
-            string[] addedDetails =
-            {
-                "Totem Torn Poster A",
-                "Totem Torn Poster B",
-                "Departure Schedule Row A",
-                "Departure Schedule Row B",
-                "Departure Schedule Row C",
-                "Departure Board Foot West",
-                "Departure Board Foot East",
-                "Island Waste Bin",
-                "Discarded Bottle Standing",
-                "Discarded Bottle Fallen",
                 "Lost Scarf",
-                "Discarded Timetable"
+                "Last Route Island Collision",
+                "Departure Board Collider",
+                "Empty Bench Collider",
+                "Island Waste Bin Collider"
             };
-            for (int index = 0; index < addedDetails.Length; index++)
+            for (int index = 0; index < runtimeDetails.Length; index++)
             {
-                AssertRequiredChild(recipe, addedDetails[index]);
+                AssertRequiredChild(recipe, runtimeDetails[index]);
             }
         }
 
@@ -1485,21 +1470,6 @@ namespace BarPromenade.Tests.PlayMode
             Transform child = parent.Find(childName);
             Assert.That(child, Is.Not.Null, childName);
             return child;
-        }
-
-        private static void AssertDetailFacesPositiveLocalZ(
-            Transform recipe,
-            string bodyName,
-            string detailName)
-        {
-            Transform body = recipe.Find(bodyName);
-            Transform detail = recipe.Find(detailName);
-            Assert.That(body, Is.Not.Null, bodyName);
-            Assert.That(detail, Is.Not.Null, detailName);
-            Assert.That(
-                detail.localPosition.z,
-                Is.GreaterThan(body.localPosition.z),
-                $"'{detailName}' must face the recipe's primary-street side.");
         }
 
         private static void AssertApproachesHaveNoSolidObstacle(

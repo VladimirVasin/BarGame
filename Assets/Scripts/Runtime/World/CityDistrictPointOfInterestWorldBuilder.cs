@@ -1326,6 +1326,19 @@ namespace BarPromenade
             bool colliders,
             bool homeExterior)
         {
+            if (TryBuildImportedRecipe(
+                    parent,
+                    descriptor.Kind,
+                    homeExterior))
+            {
+                BuildImportedRecipeRuntime(
+                    parent,
+                    descriptor,
+                    colliders,
+                    homeExterior);
+                return;
+            }
+
             switch (descriptor.Kind)
             {
                 case CityDistrictPointOfInterestKind
@@ -1359,6 +1372,462 @@ namespace BarPromenade
                     return;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(descriptor));
+            }
+        }
+
+        private static bool TryBuildImportedRecipe(
+            Transform parent,
+            CityDistrictPointOfInterestKind kind,
+            bool homeExterior)
+        {
+            CityMiscKind miscKind = ResolveImportedPoiKind(kind);
+            CityMiscAssetProvider provider =
+                CityMiscAssetProvider.Load();
+            if (provider == null || !CityMiscAssetProvider.Supports(miscKind))
+            {
+                return false;
+            }
+
+            try
+            {
+                int partCount = CityMiscAssetProvider.GetPartCount(miscKind);
+                if (partCount < 1)
+                {
+                    return false;
+                }
+
+                var parts = new List<CityMiscMeshPart>(partCount);
+                for (int index = 0; index < partCount; index++)
+                {
+                    CityMiscMeshPart part = provider.GetPartOrThrow(
+                        miscKind,
+                        0,
+                        index);
+                    if (part.Mesh == null)
+                    {
+                        return false;
+                    }
+
+                    parts.Add(part);
+                }
+
+                for (int index = 0; index < parts.Count; index++)
+                {
+                    CityMiscMeshPart part = parts[index];
+                    ResolveImportedPoiAppearance(
+                        kind,
+                        part,
+                        out Color color,
+                        out CityPointOfInterestSurfaceKind? surface,
+                        out SurfaceProjection projection);
+                    GameObject chunk =
+                        RuntimePrimitiveFactory.CreateCombinedMeshes(
+                            $"Imported {GetRecipeName(kind)} " +
+                            $"{part.Component}",
+                            parent,
+                            new[]
+                            {
+                                new RuntimeMeshPlacement(
+                                    part.Mesh,
+                                    Vector3.zero,
+                                    Quaternion.identity)
+                            },
+                            color);
+                    ConfigureRenderer(chunk, homeExterior);
+                    if (surface.HasValue)
+                    {
+                        CityPointOfInterestSurfaceAppearance.Apply(
+                            chunk.GetComponent<Renderer>(),
+                            surface.Value,
+                            projection,
+                            color);
+                    }
+                }
+
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return false;
+            }
+        }
+
+        private static void BuildImportedRecipeRuntime(
+            Transform parent,
+            CityDistrictPointOfInterestDescriptor descriptor,
+            bool colliders,
+            bool homeExterior)
+        {
+            switch (descriptor.Kind)
+            {
+                case CityDistrictPointOfInterestKind
+                    .OldTownWaterworksCourt:
+                    BuildImportedWaterworksRuntime(
+                        parent,
+                        colliders,
+                        homeExterior);
+                    return;
+                case CityDistrictPointOfInterestKind
+                    .ResidentialDryingYard:
+                    BuildImportedDryingYardRuntime(
+                        parent,
+                        colliders,
+                        homeExterior);
+                    return;
+                case CityDistrictPointOfInterestKind
+                    .IndustrialWeighbridge:
+                    BuildImportedWeighbridgeRuntime(
+                        parent,
+                        colliders,
+                        homeExterior);
+                    return;
+                case CityDistrictPointOfInterestKind
+                    .NightlifeLastRouteIsland:
+                    BuildImportedLastRouteRuntime(
+                        parent,
+                        descriptor,
+                        colliders,
+                        homeExterior);
+                    return;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(descriptor));
+            }
+        }
+
+        private static void BuildImportedWaterworksRuntime(
+            Transform parent,
+            bool colliders,
+            bool homeExterior)
+        {
+            AddBox(parent, "Dark Water", -1.02f, 0.32f, 0.40f,
+                3.45f, 0.045f, 1.04f, OldWater, false, homeExterior);
+            AddBox(parent, "Working Lamp", 0.55f, 3.88f, 0.40f,
+                0.34f, 0.20f, 0.34f, AmberGlow, true, homeExterior);
+            if (colliders)
+            {
+                AddObstacleCollider(
+                    parent,
+                    "Waterworks Basin Collider",
+                    new Vector3(-0.80f, 0.55f, 0.40f),
+                    new Vector3(4.40f, 1.10f, 1.85f));
+            }
+        }
+
+        private static void BuildImportedDryingYardRuntime(
+            Transform parent,
+            bool colliders,
+            bool homeExterior)
+        {
+            if (homeExterior)
+            {
+                AddBox(parent, "Large Faded Blanket", 1.15f, 1.55f, 0f,
+                    3.20f, 1.45f, 0.075f, ResidentialCloth, false,
+                    true, surface: CityPointOfInterestSurfaceKind.Cloth);
+                AddBox(parent, "Blanket Repair Patch", 1.72f, 1.66f,
+                    -0.045f, 0.72f, 0.52f, 0.035f, ResidentialPatch,
+                    false, true,
+                    surface: CityPointOfInterestSurfaceKind.Cloth);
+                AddBox(parent, "Cold Sheet", -2.75f, 1.78f, -3f,
+                    1.70f, 0.94f, 0.065f, ResidentialClothCold, false,
+                    true, surface: CityPointOfInterestSurfaceKind.Cloth);
+                AddBox(parent, "Small Towel", 2.75f, 1.94f, 3f,
+                    0.90f, 0.58f, 0.065f, ResidentialPatch, false,
+                    true, surface: CityPointOfInterestSurfaceKind.Cloth);
+            }
+            else
+            {
+                AddLaundryCloth(parent, "Large Faded Blanket",
+                    1.15f, 2.34f, -0.16f,
+                    3.20f, 1.45f, ResidentialCloth,
+                    tornVariant: 0, columns: 9, rows: 7);
+                AddLaundryCloth(parent, "Blanket Repair Patch",
+                    -1.35f, 2.20f, 0.16f,
+                    0.72f, 0.52f, ResidentialPatch,
+                    tornVariant: 3, columns: 4, rows: 4);
+                AddLaundryCloth(parent, "Cold Sheet",
+                    -2.75f, 2.20f, -2.84f,
+                    1.70f, 0.94f, ResidentialClothCold,
+                    tornVariant: 0, columns: 6, rows: 5);
+                AddLaundryCloth(parent, "Small Towel",
+                    2.75f, 2.34f, 2.84f,
+                    0.90f, 0.58f, ResidentialPatch,
+                    tornVariant: 0, columns: 4, rows: 4);
+            }
+
+            BuildDryingYardFloodlight(
+                parent,
+                colliders,
+                homeExterior,
+                true);
+            BuildDryingYardCarpetRack(
+                parent,
+                colliders,
+                homeExterior,
+                true);
+
+            if (!colliders)
+            {
+                return;
+            }
+
+            float[] rows = { -3f, 0f, 3f };
+            for (int row = 0; row < rows.Length; row++)
+            {
+                string rowName = $"Drying Frame {row + 1}";
+                AddObstacleCollider(
+                    parent,
+                    rowName + " West Post Collider",
+                    new Vector3(-4.55f, 1.35f, rows[row]),
+                    new Vector3(0.28f, 2.70f, 0.28f));
+                AddObstacleCollider(
+                    parent,
+                    rowName + " East Post Collider",
+                    new Vector3(4.55f, 1.35f, rows[row]),
+                    new Vector3(0.28f, 2.70f, 0.28f));
+            }
+
+            AddObstacleCollider(
+                parent,
+                "Shared Bench Collider",
+                new Vector3(DryingBenchX, 0.38f, DryingBenchZ),
+                new Vector3(DryingBenchWidth, 0.76f, 0.62f));
+        }
+
+        private static void BuildImportedWeighbridgeRuntime(
+            Transform parent,
+            bool colliders,
+            bool homeExterior)
+        {
+            AddBox(parent, "Scale Indicator Face", 3.25f, 4.66f, 0.525f,
+                1.78f, 0.52f, 0.035f, IndustrialGlow, true,
+                homeExterior, alwaysLit: true);
+            GameObject needle = AddBox(parent, "Scale Needle",
+                3.25f, 4.66f, 0.55f,
+                0.10f, 0.42f, 0.035f, IndustrialDark, false,
+                homeExterior, 28f);
+            if (!homeExterior)
+            {
+                CityWeighbridgeIndicatorRegistry.Register(
+                    CityWeighbridgeIndicatorRegistry.NeedleId,
+                    needle.transform);
+            }
+
+            AddBox(parent, "Cold Service Lamp", 3.25f, 5.34f, 0.20f,
+                1.15f, 0.16f, 0.38f, IndustrialGlow, true,
+                homeExterior);
+            if (colliders)
+            {
+                AddObstacleCollider(
+                    parent,
+                    "Walkable Weighbridge Collider",
+                    new Vector3(0f, 0.16f, 0f),
+                    new Vector3(3.60f, 0.22f, 11.60f));
+                AddObstacleCollider(
+                    parent,
+                    "Scale Mechanism Collider",
+                    new Vector3(3.25f, 0.50f, 0.20f),
+                    new Vector3(1.20f, 1.00f, 1.28f));
+            }
+        }
+
+        private static void BuildImportedLastRouteRuntime(
+            Transform parent,
+            CityDistrictPointOfInterestDescriptor descriptor,
+            bool colliders,
+            bool homeExterior)
+        {
+            AddBox(parent, "Lost Scarf", -0.35f, 0.292f, 1.05f,
+                1.10f, 0.025f, 0.34f, NightlifePosterRed, false,
+                homeExterior, -18f,
+                surface: CityPointOfInterestSurfaceKind.Cloth,
+                projection: SurfaceProjection.BoxXZ);
+            if (!homeExterior)
+            {
+                float[] segmentAngles = { 48f, 102f, 168f, 226f, 292f };
+                for (int index = 0; index < segmentAngles.Length; index++)
+                {
+                    float angle = segmentAngles[index];
+                    float radians = angle * Mathf.Deg2Rad;
+                    BuildCanopyRags(
+                        parent,
+                        $"Broken Canopy Segment {index + 1}",
+                        index,
+                        Mathf.Sin(radians) * 4.70f,
+                        Mathf.Cos(radians) * 4.70f,
+                        angle);
+                }
+            }
+
+            BuildIslandMastFloodlight(
+                parent,
+                homeExterior,
+                true);
+            BuildFerrymanCarFloodlight(
+                parent,
+                descriptor,
+                colliders,
+                homeExterior);
+
+            if (!colliders)
+            {
+                return;
+            }
+
+            AddImportedIslandSurfaceCollider(parent);
+            float[] colliderAngles = { 48f, 102f, 168f, 226f, 292f };
+            for (int index = 0; index < colliderAngles.Length; index++)
+            {
+                float radians = colliderAngles[index] * Mathf.Deg2Rad;
+                AddObstacleCollider(
+                    parent,
+                    $"Broken Canopy Segment {index + 1} Post Collider",
+                    new Vector3(
+                        Mathf.Sin(radians) * 4.70f,
+                        1.70f,
+                        Mathf.Cos(radians) * 4.70f),
+                    new Vector3(0.36f, 3.40f, 0.36f));
+            }
+
+            AddObstacleCollider(
+                parent,
+                "Last Route Mast Collider",
+                new Vector3(-2.75f, 0.72f, -1.25f),
+                new Vector3(1.12f, 1.42f, 1.12f));
+            AddObstacleCollider(
+                parent,
+                "Departure Board Collider",
+                new Vector3(2.45f, 1.35f, -2.55f),
+                new Vector3(2.65f, 2.70f, 0.38f),
+                -12f);
+            AddObstacleCollider(
+                parent,
+                "Empty Bench Collider",
+                new Vector3(IslandBenchX, 0.44f, IslandBenchZ),
+                new Vector3(
+                    IslandBenchWidth,
+                    0.88f,
+                    IslandBenchDepth),
+                IslandBenchYaw);
+            AddObstacleCollider(
+                parent,
+                "Island Waste Bin Collider",
+                new Vector3(4.15f, 0.71f, 2.20f),
+                new Vector3(0.78f, 1.00f, 0.78f),
+                8f);
+        }
+
+        private static void AddImportedIslandSurfaceCollider(
+            Transform parent)
+        {
+            GameObject surface = RuntimePrimitiveFactory.CreateCylinder(
+                "Last Route Island Collision",
+                parent,
+                new Vector3(0f, 0.12f, 0f),
+                new Vector3(10.80f, 0.09f, 10.80f),
+                NightlifeIsland,
+                RuntimePrimitiveFactory.DefaultMaterial,
+                false);
+            surface.GetComponent<Renderer>().enabled = false;
+            MeshCollider collider = surface.AddComponent<MeshCollider>();
+            collider.sharedMesh =
+                surface.GetComponent<MeshFilter>().sharedMesh;
+        }
+
+        private static CityMiscKind ResolveImportedPoiKind(
+            CityDistrictPointOfInterestKind kind)
+        {
+            switch (kind)
+            {
+                case CityDistrictPointOfInterestKind
+                    .OldTownWaterworksCourt:
+                    return CityMiscKind.PoiOldTownWaterworksShell;
+                case CityDistrictPointOfInterestKind
+                    .ResidentialDryingYard:
+                    return CityMiscKind.PoiResidentialDryingYardShell;
+                case CityDistrictPointOfInterestKind
+                    .IndustrialWeighbridge:
+                    return CityMiscKind.PoiIndustrialWeighbridgeShell;
+                case CityDistrictPointOfInterestKind
+                    .NightlifeLastRouteIsland:
+                    return CityMiscKind.PoiNightlifeLastRouteIslandShell;
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(kind));
+            }
+        }
+
+        private static void ResolveImportedPoiAppearance(
+            CityDistrictPointOfInterestKind kind,
+            CityMiscMeshPart part,
+            out Color color,
+            out CityPointOfInterestSurfaceKind? surface,
+            out SurfaceProjection projection)
+        {
+            surface = null;
+            projection = SurfaceProjection.BoxXY;
+            switch (kind)
+            {
+                case CityDistrictPointOfInterestKind
+                    .OldTownWaterworksCourt:
+                    color = part.Role == CityMiscMeshRole.Masonry
+                        ? OldStone
+                        : OldMetal;
+                    return;
+                case CityDistrictPointOfInterestKind
+                    .ResidentialDryingYard:
+                    if (part.Surface == CityMiscSurfaceKind.Timber)
+                    {
+                        color = ResidentialCloth;
+                        surface = CityPointOfInterestSurfaceKind.Timber;
+                        projection = SurfaceProjection.BoxXZ;
+                    }
+                    else
+                    {
+                        color = ResidentialFrame;
+                        surface =
+                            CityPointOfInterestSurfaceKind.PaintedMetal;
+                    }
+
+                    return;
+                case CityDistrictPointOfInterestKind
+                    .IndustrialWeighbridge:
+                    color = part.Role == CityMiscMeshRole.Industrial
+                        ? IndustrialSteel
+                        : IndustrialDark;
+                    surface =
+                        CityPointOfInterestSurfaceKind.PaintedMetal;
+                    return;
+                case CityDistrictPointOfInterestKind
+                    .NightlifeLastRouteIsland:
+                    switch (part.Role)
+                    {
+                        case CityMiscMeshRole.Masonry:
+                            color = NightlifeIsland;
+                            surface =
+                                CityPointOfInterestSurfaceKind.Paving;
+                            projection = SurfaceProjection.BoxXZ;
+                            return;
+                        case CityMiscMeshRole.Residential:
+                            color = NightlifeRoutePaper;
+                            surface = CityPointOfInterestSurfaceKind.Paper;
+                            return;
+                        case CityMiscMeshRole.Timber:
+                            color = NightlifeSeat;
+                            surface = CityPointOfInterestSurfaceKind.Timber;
+                            projection = SurfaceProjection.BoxXZ;
+                            return;
+                        default:
+                            color = NightlifeFrame;
+                            surface = CityPointOfInterestSurfaceKind
+                                .PaintedMetal;
+                            return;
+                    }
+                default:
+                    throw new ArgumentOutOfRangeException(nameof(kind));
             }
         }
 
@@ -1520,8 +1989,16 @@ namespace BarPromenade
                 0.18f, 0.50f, 0.42f, ResidentialFrame, false, homeExterior,
                 surface: CityPointOfInterestSurfaceKind.PaintedMetal);
 
-            BuildDryingYardFloodlight(parent, colliders, homeExterior);
-            BuildDryingYardCarpetRack(parent, colliders, homeExterior);
+            BuildDryingYardFloodlight(
+                parent,
+                colliders,
+                homeExterior,
+                false);
+            BuildDryingYardCarpetRack(
+                parent,
+                colliders,
+                homeExterior,
+                false);
 
             // The blanket used to carry an obstacle collider from its
             // static-box days; simulated cloth is something the hero
@@ -1546,25 +2023,31 @@ namespace BarPromenade
         private static void BuildDryingYardCarpetRack(
             Transform parent,
             bool colliders,
-            bool homeExterior)
+            bool homeExterior,
+            bool shellImported)
         {
-            AddBox(parent, "Carpet Rack Post South",
-                CarpetRackX, CarpetRackBarHeight * 0.5f, CarpetRackZSouth,
-                0.14f, CarpetRackBarHeight, 0.14f,
-                ResidentialFrame, false, homeExterior,
-                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
-            AddBox(parent, "Carpet Rack Post North",
-                CarpetRackX, CarpetRackBarHeight * 0.5f, CarpetRackZNorth,
-                0.14f, CarpetRackBarHeight, 0.14f,
-                ResidentialFrame, false, homeExterior,
-                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
-            AddBox(parent, "Carpet Rack Bar",
-                CarpetRackX, CarpetRackBarHeight,
-                (CarpetRackZSouth + CarpetRackZNorth) * 0.5f,
-                0.10f, 0.10f,
-                CarpetRackZNorth - CarpetRackZSouth + 0.14f,
-                ResidentialFrame, false, homeExterior,
-                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+            if (!shellImported)
+            {
+                AddBox(parent, "Carpet Rack Post South",
+                    CarpetRackX, CarpetRackBarHeight * 0.5f,
+                    CarpetRackZSouth,
+                    0.14f, CarpetRackBarHeight, 0.14f,
+                    ResidentialFrame, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+                AddBox(parent, "Carpet Rack Post North",
+                    CarpetRackX, CarpetRackBarHeight * 0.5f,
+                    CarpetRackZNorth,
+                    0.14f, CarpetRackBarHeight, 0.14f,
+                    ResidentialFrame, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+                AddBox(parent, "Carpet Rack Bar",
+                    CarpetRackX, CarpetRackBarHeight,
+                    (CarpetRackZSouth + CarpetRackZNorth) * 0.5f,
+                    0.10f, 0.10f,
+                    CarpetRackZNorth - CarpetRackZSouth + 0.14f,
+                    ResidentialFrame, false, homeExterior,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+            }
             if (homeExterior)
             {
                 // The balcony vista keeps the carpets as cheap static
@@ -1765,14 +2248,18 @@ namespace BarPromenade
         private static void BuildDryingYardFloodlight(
             Transform parent,
             bool colliders,
-            bool homeExterior)
+            bool homeExterior,
+            bool shellImported)
         {
-            AddCylinder(parent, "Drying Yard Floodlight Pole",
-                FloodlightPoleX, FloodlightHeadHeight * 0.5f,
-                FloodlightPoleZ,
-                0.22f, FloodlightHeadHeight * 0.5f, 0.22f,
-                ResidentialFrame, false, homeExterior,
-                CityPointOfInterestSurfaceKind.PaintedMetal);
+            if (!shellImported)
+            {
+                AddCylinder(parent, "Drying Yard Floodlight Pole",
+                    FloodlightPoleX, FloodlightHeadHeight * 0.5f,
+                    FloodlightPoleZ,
+                    0.22f, FloodlightHeadHeight * 0.5f, 0.22f,
+                    ResidentialFrame, false, homeExterior,
+                    CityPointOfInterestSurfaceKind.PaintedMetal);
+            }
 
             var headPosition = new Vector3(
                 FloodlightPoleX,
@@ -1785,20 +2272,23 @@ namespace BarPromenade
                 (FloodlightAimTarget - headPosition).normalized,
                 Vector3.up);
 
-            GameObject housing = RuntimePrimitiveFactory.CreateBox(
-                "Floodlight Housing",
-                head,
-                new Vector3(0f, 0f, -0.16f),
-                new Vector3(0.46f, 0.30f, 0.38f),
-                ResidentialFrame,
-                RuntimePrimitiveFactory.DefaultMaterial,
-                false);
-            ConfigureRenderer(housing, homeExterior);
-            CityPointOfInterestSurfaceAppearance.Apply(
-                housing.GetComponent<Renderer>(),
-                CityPointOfInterestSurfaceKind.PaintedMetal,
-                SurfaceProjection.BoxXY,
-                ResidentialFrame);
+            if (!shellImported)
+            {
+                GameObject housing = RuntimePrimitiveFactory.CreateBox(
+                    "Floodlight Housing",
+                    head,
+                    new Vector3(0f, 0f, -0.16f),
+                    new Vector3(0.46f, 0.30f, 0.38f),
+                    ResidentialFrame,
+                    RuntimePrimitiveFactory.DefaultMaterial,
+                    false);
+                ConfigureRenderer(housing, homeExterior);
+                CityPointOfInterestSurfaceAppearance.Apply(
+                    housing.GetComponent<Renderer>(),
+                    CityPointOfInterestSurfaceKind.PaintedMetal,
+                    SurfaceProjection.BoxXY,
+                    ResidentialFrame);
+            }
 
             GameObject lens = RuntimePrimitiveFactory.CreateBox(
                 "Floodlight Lens",
@@ -2126,7 +2616,7 @@ namespace BarPromenade
                 surface: CityPointOfInterestSurfaceKind.Paper,
                 projection: SurfaceProjection.BoxXZ);
 
-            BuildIslandMastFloodlight(parent, homeExterior);
+            BuildIslandMastFloodlight(parent, homeExterior, false);
             BuildFerrymanCarFloodlight(
                 parent,
                 descriptor,
@@ -2176,15 +2666,19 @@ namespace BarPromenade
         /// </summary>
         private static void BuildIslandMastFloodlight(
             Transform parent,
-            bool homeExterior)
+            bool homeExterior,
+            bool shellImported)
         {
             // Bracket arm from the mast face to the head, yawed to the
             // mast-to-head direction.
-            AddBox(parent, "Island Floodlight Bracket",
-                -2.575f, IslandFloodlightHeadLocal.y, -1.15f,
-                0.14f, 0.14f, 0.60f, NightlifeFrame, false, homeExterior,
-                60f,
-                surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+            if (!shellImported)
+            {
+                AddBox(parent, "Island Floodlight Bracket",
+                    -2.575f, IslandFloodlightHeadLocal.y, -1.15f,
+                    0.14f, 0.14f, 0.60f, NightlifeFrame, false,
+                    homeExterior, 60f,
+                    surface: CityPointOfInterestSurfaceKind.PaintedMetal);
+            }
 
             Transform head = new GameObject(
                 "Island Floodlight Head").transform;
@@ -2195,20 +2689,23 @@ namespace BarPromenade
                  IslandFloodlightHeadLocal).normalized,
                 Vector3.up);
 
-            GameObject housing = RuntimePrimitiveFactory.CreateBox(
-                "Island Floodlight Housing",
-                head,
-                new Vector3(0f, 0f, -0.16f),
-                new Vector3(0.46f, 0.30f, 0.38f),
-                NightlifeFrame,
-                RuntimePrimitiveFactory.DefaultMaterial,
-                false);
-            ConfigureRenderer(housing, homeExterior);
-            CityPointOfInterestSurfaceAppearance.Apply(
-                housing.GetComponent<Renderer>(),
-                CityPointOfInterestSurfaceKind.PaintedMetal,
-                SurfaceProjection.BoxXY,
-                NightlifeFrame);
+            if (!shellImported)
+            {
+                GameObject housing = RuntimePrimitiveFactory.CreateBox(
+                    "Island Floodlight Housing",
+                    head,
+                    new Vector3(0f, 0f, -0.16f),
+                    new Vector3(0.46f, 0.30f, 0.38f),
+                    NightlifeFrame,
+                    RuntimePrimitiveFactory.DefaultMaterial,
+                    false);
+                ConfigureRenderer(housing, homeExterior);
+                CityPointOfInterestSurfaceAppearance.Apply(
+                    housing.GetComponent<Renderer>(),
+                    CityPointOfInterestSurfaceKind.PaintedMetal,
+                    SurfaceProjection.BoxXY,
+                    NightlifeFrame);
+            }
 
             GameObject lens = RuntimePrimitiveFactory.CreateBox(
                 "Island Floodlight Lens",

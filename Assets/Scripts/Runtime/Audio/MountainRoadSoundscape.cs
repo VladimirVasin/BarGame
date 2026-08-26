@@ -102,6 +102,10 @@ namespace BarPromenade
                     return UtilityCable(time, lowNoise, slowNoise);
                 case MountainRoadSoundAnchorKind.SnowPole:
                     return SnowPole(time, white, slowNoise);
+                case MountainRoadSoundAnchorKind.WindsockHalyard:
+                    return WindsockHalyard(time, white, slowNoise);
+                case MountainRoadSoundAnchorKind.LoadTarp:
+                    return LoadTarp(time, white, lowNoise, slowNoise);
                 case MountainRoadSoundAnchorKind.TunnelLampBallast:
                     return 0f;
                 default:
@@ -162,6 +166,48 @@ namespace BarPromenade
             float windContact = Mathf.Max(0f, slowNoise - 0.12f) *
                                 white * 0.035f;
             return first + second + windContact;
+        }
+
+        /// <summary>
+        /// A rope clip against a hollow mast. Lower and slacker than a
+        /// snow pole because there is a metre of loose line above it, and
+        /// the strikes come in pairs - the clip hits going out and again
+        /// coming back.
+        /// </summary>
+        private static float WindsockHalyard(
+            float time,
+            float white,
+            float slowNoise)
+        {
+            float first = MetallicStrike(time, 0.41f, 246f, 15f);
+            float echo = MetallicStrike(time, 0.58f, 231f, 21f) * 0.55f;
+            float second = MetallicStrike(time, 2.24f, 268f, 17f) * 0.86f;
+            float secondEcho =
+                MetallicStrike(time, 2.39f, 252f, 23f) * 0.48f;
+            float rope = Mathf.Max(0f, slowNoise - 0.05f) * white * 0.028f;
+            return first + echo + second + secondEcho + rope;
+        }
+
+        /// <summary>
+        /// Canvas. No pitch at all - a band of noise that opens and shuts
+        /// with the gust, and one hard snap where the rope has gone slack.
+        /// </summary>
+        private static float LoadTarp(
+            float time,
+            float white,
+            float lowNoise,
+            float slowNoise)
+        {
+            float gust = Mathf.Max(0f, slowNoise + 0.18f);
+            float body = white * gust * 0.052f + lowNoise * 0.021f;
+            float snap = 0f;
+            float elapsed = time - 1.86f;
+            if (elapsed >= 0f && elapsed < 0.12f)
+            {
+                snap = white * Mathf.Exp(-elapsed * 42f) * 0.19f;
+            }
+
+            return body + snap;
         }
 
         private static float MetallicStrike(
@@ -328,6 +374,10 @@ namespace BarPromenade
                 case MountainRoadSoundAnchorKind.LooseGuardRail:
                 case MountainRoadSoundAnchorKind.SnowPole:
                     return 5100f;
+                case MountainRoadSoundAnchorKind.WindsockHalyard:
+                    return 4400f;
+                case MountainRoadSoundAnchorKind.LoadTarp:
+                    return 2100f;
                 case MountainRoadSoundAnchorKind.UtilityCable:
                     return 2800f;
                 default:

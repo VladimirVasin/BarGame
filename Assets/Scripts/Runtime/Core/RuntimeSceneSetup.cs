@@ -165,6 +165,24 @@ namespace BarPromenade
             return camera;
         }
 
+        public static Camera EnsureChurchInterior()
+        {
+            Camera camera = EnsureCamera(
+                new Color(0.075f, 0.068f, 0.060f));
+            camera.farClipPlane = 70f;
+            SetPostProcessing(camera, true);
+            ConfigureDirectionalLighting(
+                new Color(0.72f, 0.80f, 0.88f),
+                0.68f,
+                new Color(0.22f, 0.205f, 0.185f),
+                0.48f);
+
+            RenderSettings.fog = false;
+            RenderSettings.reflectionIntensity = 0.42f;
+            DynamicGI.UpdateEnvironment();
+            return camera;
+        }
+
         public static Camera EnsureHomeInterior()
         {
             Camera camera = EnsureCamera(HomeBackgroundColor);

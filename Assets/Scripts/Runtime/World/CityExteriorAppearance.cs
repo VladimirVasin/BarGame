@@ -55,6 +55,8 @@ namespace BarPromenade
             new Color(0.15f, 0.20f, 0.16f);
         public static readonly Color YardGround =
             new Color(0.30f, 0.26f, 0.19f);
+        public static readonly Color ChurchGround =
+            new Color(0.30f, 0.29f, 0.25f);
         public static readonly Color WindowOff =
             new Color(0.025f, 0.035f, 0.040f);
         public static readonly Color ColdWindow =

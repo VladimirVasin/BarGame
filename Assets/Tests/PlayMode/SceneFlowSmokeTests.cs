@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using NUnit.Framework;
@@ -930,17 +930,44 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(new Vector2(22f, 16f)));
             Assert.That(interiorRoot.Layout.RoomHeight, Is.EqualTo(4.8f));
             Assert.That(interiorRoot.Room, Is.Not.Null);
+            //  The room is built from an authored model now, but its
+            //  parts are still direct children under their own names -
+            //  the placer flattens the model's wrapper away precisely so
+            //  that lookups like these keep working.
             Assert.That(interiorRoot.Room.Find("Ceiling"), Is.Not.Null);
+            //  Collision hangs off the ROOM, on a child per authored
+            //  box, never on the model part it describes: a part's
+            //  transform carries the FBX unit factor of a hundred and
+            //  the axis conversion, and a BoxCollider reads its centre
+            //  and size in that space.
+            Collider floorCollider = interiorRoot.Room
+                .Find("Floor Collision")
+                .GetComponent<Collider>();
+            Assert.That(
+                floorCollider,
+                Is.Not.Null,
+                "the floor still needs its authored collision");
+            Physics.SyncTransforms();
+            Assert.That(
+                floorCollider.bounds.size.x,
+                Is.EqualTo(interiorRoot.Layout.RoomSize.x).Within(0.1f),
+                $"the floor collides across {floorCollider.bounds.size}, " +
+                "not across the room");
+            Assert.That(
+                floorCollider.bounds.max.y,
+                Is.EqualTo(0f).Within(0.05f),
+                "the hero has no floor at his own feet");
             Assert.That(interiorRoot.Room.Find("Backbar Amber Sign"), Is.Not.Null);
             Assert.That(interiorRoot.Room.Find("Booth Base 1"), Is.Not.Null);
             Assert.That(interiorRoot.Room.Find("Small Stage"), Is.Not.Null);
             Assert.That(interiorRoot.Room.Find("Social High Table 4"), Is.Not.Null);
             Assert.That(interiorRoot.Room.Find("Activity Bay Rug"), Is.Not.Null);
-            Collider stageCollider = interiorRoot.Room.Find("Small Stage")
+            Collider stageCollider = interiorRoot.Room
+                .Find("Small Stage Collision")
                 .GetComponent<Collider>();
-            Collider counterCollider = interiorRoot.Room.Find("Bar Counter")
+            Collider counterCollider = interiorRoot.Room
+                .Find("Bar Counter Collision")
                 .GetComponent<Collider>();
-            Physics.SyncTransforms();
             Assert.That(
                 stageCollider.bounds.Intersects(
                     counterCollider.bounds),

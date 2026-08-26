@@ -1152,6 +1152,18 @@ namespace BarPromenade
                 "supermarket_entered");
         }
 
+        public static void EnterChurch()
+        {
+            ActiveBarId = string.Empty;
+            ActiveBarActivity = BarActivityKind.None;
+            ActiveBarDistrict =
+                BarDistrictIdentityCatalog.FallbackDistrict;
+            ReturnKind = CityReturnKind.None;
+            GameLog.Info(
+                "session",
+                "church_entered");
+        }
+
         public static void PrepareHomeReturn()
         {
             if (ReturnKind == CityReturnKind.PlayerHome)
@@ -1205,6 +1217,23 @@ namespace BarPromenade
             }
 
             ReturnKind = CityReturnKind.Supermarket;
+            GameLog.Info(
+                "session",
+                "city_return_prepared",
+                GameLog.Field(
+                    "return_kind",
+                    ReturnKind.ToString()),
+                GameLog.Field("is_returning", true));
+        }
+
+        public static void PrepareChurchReturn()
+        {
+            if (ReturnKind == CityReturnKind.Church)
+            {
+                return;
+            }
+
+            ReturnKind = CityReturnKind.Church;
             GameLog.Info(
                 "session",
                 "city_return_prepared",

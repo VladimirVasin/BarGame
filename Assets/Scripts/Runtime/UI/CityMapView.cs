@@ -145,6 +145,8 @@ namespace BarPromenade
             new Color32(66, 77, 65, 255);
         private static readonly Color YardLand =
             new Color32(94, 84, 63, 255);
+        private static readonly Color ChurchLand =
+            new Color32(102, 96, 84, 255);
         private static readonly Color WaterLand =
             new Color32(35, 91, 119, 255);
         private static readonly Color PierTimber =
@@ -165,6 +167,8 @@ namespace BarPromenade
             new Color32(178, 158, 111, 255);
         private static readonly Color YardTexture =
             new Color32(126, 113, 86, 255);
+        private static readonly Color ChurchMarker =
+            new Color32(219, 204, 164, 255);
         private static readonly Color AreaGate =
             new Color32(226, 178, 96, 255);
         private static readonly Color RiverWater =
@@ -1613,13 +1617,20 @@ namespace BarPromenade
 
         /// <summary>
         /// The motif that tells one open precinct from another once the
-        /// permanent labels are gone: crosses for the cemetery, sand for
-        /// the beach, drying lines for a yard.
+        /// permanent labels are gone: grave crosses for the cemetery, a
+        /// Latin cross for the Catholic church, sand for the beach and
+        /// drying lines for a yard.
         /// </summary>
         private void DrawAreaTexture(
             MapProjection projection,
             CityMapAreaRegion region)
         {
+            if (region.Feature == CityAreaFeatureKind.Church)
+            {
+                DrawLatinChurchCross(projection, region.LandBounds);
+                return;
+            }
+
             for (int index = 0;
                  index < region.LandBounds.Count;
                  index++)
@@ -1645,6 +1656,54 @@ namespace BarPromenade
                         break;
                 }
             }
+        }
+
+        /// <summary>
+        /// One conventional Latin cross identifies the Catholic church as
+        /// a precinct landmark without repeating a glyph in every cell.
+        /// </summary>
+        private void DrawLatinChurchCross(
+            MapProjection projection,
+            IReadOnlyList<Rect> landBounds)
+        {
+            if (landBounds.Count == 0)
+            {
+                return;
+            }
+
+            Rect markerBounds = ProjectWorldRect(
+                projection,
+                landBounds[0]);
+            for (int index = 1; index < landBounds.Count; index++)
+            {
+                Rect cell = ProjectWorldRect(projection, landBounds[index]);
+                markerBounds = Rect.MinMaxRect(
+                    Mathf.Min(markerBounds.xMin, cell.xMin),
+                    Mathf.Min(markerBounds.yMin, cell.yMin),
+                    Mathf.Max(markerBounds.xMax, cell.xMax),
+                    Mathf.Max(markerBounds.yMax, cell.yMax));
+            }
+
+            Vector2 center = markerBounds.center;
+            float height = Mathf.Clamp(
+                markerBounds.height * 0.52f,
+                13f,
+                25f);
+            float stemWidth = Mathf.Max(2f, height * 0.10f);
+            DrawSolidRect(
+                new Rect(
+                    center.x - stemWidth * 0.5f,
+                    center.y - height * 0.5f,
+                    stemWidth,
+                    height),
+                ChurchMarker);
+            DrawSolidRect(
+                new Rect(
+                    center.x - height * 0.32f,
+                    center.y - height * 0.20f,
+                    height * 0.64f,
+                    stemWidth),
+                ChurchMarker);
         }
 
         private void DrawCemeteryGraves(Rect cell)
@@ -3670,6 +3729,8 @@ namespace BarPromenade
                     return CemeteryLand;
                 case CityDistrictKind.Yard:
                     return YardLand;
+                case CityDistrictKind.Church:
+                    return ChurchLand;
                 default:
                     return Building;
             }
@@ -3690,6 +3751,8 @@ namespace BarPromenade
                     return CemeteryLand;
                 case CitySurfaceKind.OpenGround:
                     return YardLand;
+                case CitySurfaceKind.ChurchGround:
+                    return ChurchLand;
                 default:
                     return surface.MapColor;
             }
@@ -3744,6 +3807,8 @@ namespace BarPromenade
                     return "map.district.cemetery";
                 case CityDistrictKind.Yard:
                     return "map.district.yard";
+                case CityDistrictKind.Church:
+                    return "map.district.church";
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(district),

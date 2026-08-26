@@ -185,6 +185,36 @@ namespace BarPromenade
         {
             var batches =
                 new Dictionary<BatchKey, List<RuntimeOrientedBox>>();
+            var importedBatches = new Dictionary<
+                BatchKey,
+                List<RuntimeMeshPlacement>>();
+            var collisionBatches =
+                new Dictionary<BatchKey, List<RuntimeOrientedBox>>();
+            var importedIds = new HashSet<string>(StringComparer.Ordinal);
+            CityMiscAssetProvider miscProvider =
+                CityMiscAssetProvider.Load();
+
+            TryAppendImportedBoats(
+                plan.Parts,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendImportedSlipwayBarrier(
+                plan.Parts,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendImportedBarge(
+                plan,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendImportedDriftwood(
+                plan.Parts,
+                miscProvider,
+                importedBatches,
+                importedIds);
+
             for (int index = 0; index < plan.Parts.Count; index++)
             {
                 CitySeacoastPartDescriptor part = plan.Parts[index];
@@ -192,6 +222,16 @@ namespace BarPromenade
                     Mathf.FloorToInt(part.Center.x / SpatialChunkSize),
                     Mathf.FloorToInt(part.Center.z / SpatialChunkSize),
                     part.Style);
+                if (importedIds.Contains(part.StableId))
+                {
+                    if (part.BlocksMovement)
+                    {
+                        AppendBox(collisionBatches, key, part);
+                    }
+
+                    continue;
+                }
+
                 if (!batches.TryGetValue(
                         key,
                         out List<RuntimeOrientedBox> boxes))
@@ -233,6 +273,474 @@ namespace BarPromenade
                         ResolveColor(key.Style));
                 }
             }
+
+            keys = new List<BatchKey>(importedBatches.Keys);
+            keys.Sort(BatchKey.Compare);
+            for (int index = 0; index < keys.Count; index++)
+            {
+                BatchKey key = keys[index];
+                CitySeacoastSurfaceKind? surface =
+                    ResolveSurface(key.Style);
+                float? uvTileSize = surface.HasValue
+                    ? CitySeacoastSurfaceAppearance
+                        .GetRecipe(surface.Value).MetersPerTile
+                    : (float?)null;
+                GameObject chunk =
+                    RuntimePrimitiveFactory.CreateCombinedMeshes(
+                        $"Imported Seacoast Chunk {key.X} {key.Z} " +
+                        $"{key.Style}",
+                        root,
+                        importedBatches[key],
+                        ResolveColor(key.Style),
+                        false,
+                        uvTileSize);
+                if (surface.HasValue)
+                {
+                    CitySeacoastSurfaceAppearance.ApplyCombined(
+                        chunk.GetComponent<Renderer>(),
+                        surface.Value,
+                        ResolveColor(key.Style));
+                }
+            }
+
+            keys = new List<BatchKey>(collisionBatches.Keys);
+            keys.Sort(BatchKey.Compare);
+            for (int index = 0; index < keys.Count; index++)
+            {
+                BatchKey key = keys[index];
+                GameObject proxy =
+                    RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                        $"Seacoast Imported Collision {key.X} " +
+                        $"{key.Z} {key.Style}",
+                        root,
+                        collisionBatches[key],
+                        ResolveColor(key.Style),
+                        true);
+                proxy.GetComponent<Renderer>().enabled = false;
+            }
+        }
+
+        private static void TryAppendImportedBoats(
+            IReadOnlyList<CitySeacoastPartDescriptor> parts,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            var groups = new Dictionary<
+                int,
+                List<CitySeacoastPartDescriptor>>();
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CitySeacoastPartDescriptor part = parts[index];
+                if (part.BoatOrdinal < 0 ||
+                    (part.Kind != CitySeacoastPartKind.Boat &&
+                     part.Kind != CitySeacoastPartKind.BoatRest))
+                {
+                    continue;
+                }
+
+                if (!groups.TryGetValue(
+                        part.BoatOrdinal,
+                        out List<CitySeacoastPartDescriptor> group))
+                {
+                    group = new List<CitySeacoastPartDescriptor>();
+                    groups.Add(part.BoatOrdinal, group);
+                }
+
+                group.Add(part);
+            }
+
+            var ordinals = new List<int>(groups.Keys);
+            ordinals.Sort();
+            for (int index = 0; index < ordinals.Count; index++)
+            {
+                int ordinal = ordinals[index];
+                List<CitySeacoastPartDescriptor> group = groups[ordinal];
+                CitySeacoastPartDescriptor restA = default;
+                CitySeacoastPartDescriptor restB = default;
+                int restCount = 0;
+                for (int partIndex = 0;
+                     partIndex < group.Count;
+                     partIndex++)
+                {
+                    if (group[partIndex].Kind !=
+                        CitySeacoastPartKind.BoatRest)
+                    {
+                        continue;
+                    }
+
+                    if (restCount == 0)
+                    {
+                        restA = group[partIndex];
+                    }
+                    else if (restCount == 1)
+                    {
+                        restB = group[partIndex];
+                    }
+
+                    restCount++;
+                }
+
+                if (restCount < 2)
+                {
+                    continue;
+                }
+
+                Vector3 origin = new Vector3(
+                    (restA.Center.x + restB.Center.x) * 0.5f,
+                    Mathf.Min(
+                        restA.Center.y - restA.Size.y * 0.5f,
+                        restB.Center.y - restB.Size.y * 0.5f),
+                    (restA.Center.z + restB.Center.z) * 0.5f);
+                TryAppendAssembly(
+                    provider,
+                    CityMiscKind.SeacoastBoat,
+                    (int)restA.Variant,
+                    origin,
+                    restA.Rotation,
+                    CitySeacoastStyle.HullPaint,
+                    group,
+                    Vector3.one,
+                    batches,
+                    importedIds);
+
+                string oarId =
+                    $"seacoast-boat-{ordinal:D2}-oar";
+                for (int partIndex = 0;
+                     partIndex < parts.Count;
+                     partIndex++)
+                {
+                    CitySeacoastPartDescriptor part = parts[partIndex];
+                    if (!string.Equals(
+                            part.StableId,
+                            oarId,
+                            StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    TryAppendAssembly(
+                        provider,
+                        CityMiscKind.SeacoastOar,
+                        0,
+                        origin,
+                        restA.Rotation,
+                        CitySeacoastStyle.Litter,
+                        new List<CitySeacoastPartDescriptor> { part },
+                        Vector3.one,
+                        batches,
+                        importedIds);
+                    break;
+                }
+            }
+        }
+
+        private static void TryAppendImportedSlipwayBarrier(
+            IReadOnlyList<CitySeacoastPartDescriptor> parts,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            var barrier = new List<CitySeacoastPartDescriptor>(3);
+            CitySeacoastPartDescriptor chain = default;
+            bool hasChain = false;
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CitySeacoastPartDescriptor part = parts[index];
+                if (part.Kind != CitySeacoastPartKind.Bollard)
+                {
+                    continue;
+                }
+
+                barrier.Add(part);
+                if (part.StableId.EndsWith(
+                        "-chain",
+                        StringComparison.Ordinal))
+                {
+                    chain = part;
+                    hasChain = true;
+                }
+            }
+
+            if (!hasChain || barrier.Count != 3)
+            {
+                return;
+            }
+
+            TryAppendAssembly(
+                provider,
+                CityMiscKind.SeacoastSlipwayBarrier,
+                0,
+                new Vector3(
+                    chain.Center.x,
+                    chain.Center.y - 0.78f,
+                    chain.Center.z),
+                chain.Rotation,
+                CitySeacoastStyle.Iron,
+                barrier,
+                Vector3.one,
+                batches,
+                importedIds);
+        }
+
+        private static void TryAppendImportedBarge(
+            CitySeacoastPlan plan,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            var barge = new List<CitySeacoastPartDescriptor>();
+            CitySeacoastPartDescriptor deck = default;
+            bool hasDeck = false;
+            for (int index = 0; index < plan.Parts.Count; index++)
+            {
+                CitySeacoastPartDescriptor part = plan.Parts[index];
+                if (part.Kind != CitySeacoastPartKind.Barge)
+                {
+                    continue;
+                }
+
+                barge.Add(part);
+                if (part.StableId.EndsWith(
+                        "-deck",
+                        StringComparison.Ordinal))
+                {
+                    deck = part;
+                    hasDeck = true;
+                }
+            }
+
+            if (!hasDeck)
+            {
+                return;
+            }
+
+            Quaternion yaw = Quaternion.Euler(
+                0f,
+                deck.Rotation.eulerAngles.y,
+                0f);
+            TryAppendAssembly(
+                provider,
+                CityMiscKind.SeacoastBarge,
+                0,
+                new Vector3(
+                    deck.Center.x,
+                    plan.Frame.SeaTopY,
+                    deck.Center.z),
+                yaw,
+                CitySeacoastStyle.RustIron,
+                barge,
+                Vector3.one,
+                batches,
+                importedIds);
+        }
+
+        private static void TryAppendImportedDriftwood(
+            IReadOnlyList<CitySeacoastPartDescriptor> parts,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            if (provider == null ||
+                !CityMiscAssetProvider.Supports(
+                    CityMiscKind.SeacoastDriftwood))
+            {
+                return;
+            }
+
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CitySeacoastPartDescriptor source = parts[index];
+                if (source.Kind != CitySeacoastPartKind.Driftwood)
+                {
+                    continue;
+                }
+
+                int variant;
+                try
+                {
+                    variant = provider.SelectVariant(
+                        CityMiscKind.SeacoastDriftwood,
+                        source.StableId);
+                }
+                catch (ArgumentException)
+                {
+                    continue;
+                }
+
+                if (!TryGetImportedParts(
+                        provider,
+                        CityMiscKind.SeacoastDriftwood,
+                        variant,
+                        out List<CityMiscMeshPart> authored))
+                {
+                    continue;
+                }
+
+                Vector3 authoredSize = authored[0].Mesh.bounds.size;
+                Vector3 scale = new Vector3(
+                    authoredSize.x > 0.0001f
+                        ? source.Size.x / authoredSize.x
+                        : 1f,
+                    1f,
+                    1f);
+                TryAppendAssembly(
+                    provider,
+                    CityMiscKind.SeacoastDriftwood,
+                    variant,
+                    new Vector3(
+                        source.Center.x,
+                        source.Center.y - source.Size.y * 0.5f,
+                        source.Center.z),
+                    source.Rotation,
+                    source.Style,
+                    new List<CitySeacoastPartDescriptor> { source },
+                    scale,
+                    batches,
+                    importedIds);
+            }
+        }
+
+        private static bool TryAppendAssembly(
+            CityMiscAssetProvider provider,
+            CityMiscKind kind,
+            int variant,
+            Vector3 origin,
+            Quaternion rotation,
+            CitySeacoastStyle sourceStyle,
+            IReadOnlyList<CitySeacoastPartDescriptor> sourceParts,
+            Vector3 scale,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            if (sourceParts == null || sourceParts.Count == 0 ||
+                !TryGetImportedParts(
+                    provider,
+                    kind,
+                    variant,
+                    out List<CityMiscMeshPart> parts))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityMiscMeshPart part = parts[index];
+                CitySeacoastStyle style = ResolveImportedStyle(
+                    kind,
+                    part.Role,
+                    sourceStyle);
+                var key = new BatchKey(
+                    Mathf.FloorToInt(origin.x / SpatialChunkSize),
+                    Mathf.FloorToInt(origin.z / SpatialChunkSize),
+                    style);
+                if (!batches.TryGetValue(
+                        key,
+                        out List<RuntimeMeshPlacement> placements))
+                {
+                    placements = new List<RuntimeMeshPlacement>();
+                    batches.Add(key, placements);
+                }
+
+                placements.Add(new RuntimeMeshPlacement(
+                    part.Mesh,
+                    origin,
+                    rotation,
+                    scale));
+            }
+
+            for (int index = 0; index < sourceParts.Count; index++)
+            {
+                importedIds.Add(sourceParts[index].StableId);
+            }
+
+            return true;
+        }
+
+        private static bool TryGetImportedParts(
+            CityMiscAssetProvider provider,
+            CityMiscKind kind,
+            int variant,
+            out List<CityMiscMeshPart> parts)
+        {
+            parts = null;
+            if (provider == null || !CityMiscAssetProvider.Supports(kind))
+            {
+                return false;
+            }
+
+            try
+            {
+                int count = CityMiscAssetProvider.GetPartCount(kind);
+                var result = new List<CityMiscMeshPart>(count);
+                for (int index = 0; index < count; index++)
+                {
+                    result.Add(provider.GetPartOrThrow(
+                        kind,
+                        variant,
+                        index));
+                }
+
+                parts = result;
+                return result.Count > 0;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return false;
+            }
+        }
+
+        private static CitySeacoastStyle ResolveImportedStyle(
+            CityMiscKind kind,
+            CityMiscMeshRole role,
+            CitySeacoastStyle sourceStyle)
+        {
+            switch (kind)
+            {
+                case CityMiscKind.SeacoastBoat:
+                    if (role == CityMiscMeshRole.Timber)
+                    {
+                        return CitySeacoastStyle.TarredTimber;
+                    }
+
+                    return role == CityMiscMeshRole.Street
+                        ? CitySeacoastStyle.HullTar
+                        : CitySeacoastStyle.HullPaint;
+                case CityMiscKind.SeacoastOar:
+                case CityMiscKind.SeacoastDriftwood:
+                    return CitySeacoastStyle.Litter;
+                case CityMiscKind.SeacoastSlipwayBarrier:
+                    return CitySeacoastStyle.Iron;
+                case CityMiscKind.SeacoastBarge:
+                    return role == CityMiscMeshRole.Industrial
+                        ? CitySeacoastStyle.RustIron
+                        : CitySeacoastStyle.HullTar;
+                default:
+                    return sourceStyle;
+            }
+        }
+
+        private static void AppendBox(
+            IDictionary<BatchKey, List<RuntimeOrientedBox>> batches,
+            BatchKey key,
+            CitySeacoastPartDescriptor part)
+        {
+            if (!batches.TryGetValue(
+                    key,
+                    out List<RuntimeOrientedBox> boxes))
+            {
+                boxes = new List<RuntimeOrientedBox>();
+                batches.Add(key, boxes);
+            }
+
+            boxes.Add(new RuntimeOrientedBox(
+                part.Center,
+                part.Rotation,
+                part.Size));
         }
 
         private static CitySeacoastSurfaceKind? ResolveSurface(

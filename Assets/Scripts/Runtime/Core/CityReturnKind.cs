@@ -5,6 +5,7 @@ namespace BarPromenade
         None = 0,
         Bar = 1,
         PlayerHome = 2,
-        Supermarket = 3
+        Supermarket = 3,
+        Church = 4
     }
 }

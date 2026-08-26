@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using UnityEngine;
 
 namespace BarPromenade
@@ -640,5 +640,20 @@ namespace BarPromenade
             clip.SetData(samples, 0);
             return clip;
         }
-    }
+            //  Domain reload is disabled on entering play mode, so a static
+        //  field survives from one run to the next. A cached
+        //  UnityEngine.Object survives as a DESTROYED one, which reads
+        //  as null-ish but throws on use. This hook runs before the
+        //  first scene of every run, reload or not.
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetCachedResources()
+        {
+            exteriorEngineClip = null;
+            interiorEngineClip = null;
+            doorOpeningClip = null;
+            doorClosingClip = null;
+        }
+}
 }

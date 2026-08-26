@@ -1,0 +1,1195 @@
+{
+  "generator": "tools/build-mountain-road-misc-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "design_id": "mountain_road_misc_wave1_v1",
+  "display_name": "Mountain Road Misc Wave 1",
+  "source_axes": {
+    "right": "+X",
+    "forward": "+Y",
+    "up": "+Z"
+  },
+  "unity_axes": {
+    "right": "+X",
+    "forward": "+Z",
+    "up": "+Y",
+    "fbx_axis_forward": "-Z",
+    "fbx_axis_up": "+Y",
+    "bake_space_transform": true
+  },
+  "root_contract": {
+    "origin": "descriptor_center",
+    "source_ground_axis": "Z",
+    "source_ground_value": -0.5,
+    "unity_ground_axis": "Y",
+    "unity_ground_value": -0.5,
+    "normalized_descriptor_min": [
+      -0.5,
+      -0.5,
+      -0.5
+    ],
+    "normalized_descriptor_max": [
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "mesh_count": 19,
+  "assembly_count": 15,
+  "triangle_count": 2516,
+  "assemblies": [
+    {
+      "kind": "SnowPole",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_SnowPole_Body",
+        "GEO_MRM_SnowPole_Band"
+      ],
+      "bounds_min_source": [
+        -0.46627,
+        -0.4734,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4358,
+        0.45156,
+        0.481029
+      ],
+      "bounds_min_unity": [
+        -0.46627,
+        -0.5,
+        -0.4734
+      ],
+      "bounds_max_unity": [
+        0.4358,
+        0.481029,
+        0.45156
+      ]
+    },
+    {
+      "kind": "FallenLog",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_FallenLog_Variant01_Wood"
+      ],
+      "bounds_min_source": [
+        -0.42133,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.479055,
+        0.5,
+        0.337187
+      ],
+      "bounds_min_unity": [
+        -0.42133,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.479055,
+        0.337187,
+        0.5
+      ]
+    },
+    {
+      "kind": "FallenLog",
+      "variant": 1,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_FallenLog_Variant02_Wood"
+      ],
+      "bounds_min_source": [
+        -0.46409,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.455615,
+        0.5,
+        0.330478
+      ],
+      "bounds_min_unity": [
+        -0.46409,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.455615,
+        0.330478,
+        0.5
+      ]
+    },
+    {
+      "kind": "FallenLog",
+      "variant": 2,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_FallenLog_Variant03_Wood"
+      ],
+      "bounds_min_source": [
+        -0.411006,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.481796,
+        0.5,
+        0.310347
+      ],
+      "bounds_min_unity": [
+        -0.411006,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.481796,
+        0.310347,
+        0.5
+      ]
+    },
+    {
+      "kind": "Stump",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_Stump_Variant01_Wood"
+      ],
+      "bounds_min_source": [
+        -0.388328,
+        -0.432731,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.43,
+        0.432731,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.388328,
+        -0.5,
+        -0.432731
+      ],
+      "bounds_max_unity": [
+        0.43,
+        0.5,
+        0.432731
+      ]
+    },
+    {
+      "kind": "Stump",
+      "variant": 1,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_Stump_Variant02_Wood"
+      ],
+      "bounds_min_source": [
+        -0.4541,
+        -0.421967,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4541,
+        0.421967,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.4541,
+        -0.5,
+        -0.421967
+      ],
+      "bounds_max_unity": [
+        0.4541,
+        0.5,
+        0.421967
+      ]
+    },
+    {
+      "kind": "Stump",
+      "variant": 2,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_Stump_Variant03_Wood"
+      ],
+      "bounds_min_source": [
+        -0.339697,
+        -0.359446,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.359446,
+        0.379196,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.339697,
+        -0.5,
+        -0.359446
+      ],
+      "bounds_max_unity": [
+        0.359446,
+        0.5,
+        0.379196
+      ]
+    },
+    {
+      "kind": "Stump",
+      "variant": 3,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_Stump_Variant04_Wood"
+      ],
+      "bounds_min_source": [
+        -0.438985,
+        -0.446639,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.429774,
+        0.440079,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.438985,
+        -0.5,
+        -0.446639
+      ],
+      "bounds_max_unity": [
+        0.429774,
+        0.5,
+        0.440079
+      ]
+    },
+    {
+      "kind": "DeadTree",
+      "variant": 0,
+      "scale_mode": "uniform_by_height",
+      "part_meshes": [
+        "GEO_MRM_DeadTree_Variant01_Wood"
+      ],
+      "bounds_min_source": [
+        -0.111463,
+        -0.116811,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.133541,
+        0.10901,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.111463,
+        -0.5,
+        -0.116811
+      ],
+      "bounds_max_unity": [
+        0.133541,
+        0.5,
+        0.10901
+      ]
+    },
+    {
+      "kind": "DeadTree",
+      "variant": 1,
+      "scale_mode": "uniform_by_height",
+      "part_meshes": [
+        "GEO_MRM_DeadTree_Variant02_Wood"
+      ],
+      "bounds_min_source": [
+        -0.127555,
+        -0.111732,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.111927,
+        0.109783,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.127555,
+        -0.5,
+        -0.111732
+      ],
+      "bounds_max_unity": [
+        0.111927,
+        0.5,
+        0.109783
+      ]
+    },
+    {
+      "kind": "DeadTree",
+      "variant": 2,
+      "scale_mode": "uniform_by_height",
+      "part_meshes": [
+        "GEO_MRM_DeadTree_Variant03_Wood"
+      ],
+      "bounds_min_source": [
+        -0.121548,
+        -0.11741,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.119607,
+        0.114925,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.121548,
+        -0.5,
+        -0.11741
+      ],
+      "bounds_max_unity": [
+        0.119607,
+        0.5,
+        0.114925
+      ]
+    },
+    {
+      "kind": "GuardRail",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_GuardRail_Iron"
+      ],
+      "bounds_min_source": [
+        -0.49,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.46,
+        0.5,
+        0.335
+      ],
+      "bounds_min_unity": [
+        -0.49,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.46,
+        0.335,
+        0.5
+      ]
+    },
+    {
+      "kind": "ConvexMirror",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_ConvexMirror_Pole",
+        "GEO_MRM_ConvexMirror_Frame",
+        "GEO_MRM_ConvexMirror_Face"
+      ],
+      "bounds_min_source": [
+        -0.49,
+        -0.475,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.49,
+        0.23,
+        0.495
+      ],
+      "bounds_min_unity": [
+        -0.49,
+        -0.5,
+        -0.475
+      ],
+      "bounds_max_unity": [
+        0.49,
+        0.495,
+        0.23
+      ]
+    },
+    {
+      "kind": "UtilityCabinet",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_UtilityCabinet_Body",
+        "GEO_MRM_UtilityCabinet_Trim"
+      ],
+      "bounds_min_source": [
+        -0.49,
+        -0.477524,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.49,
+        0.45,
+        0.48
+      ],
+      "bounds_min_unity": [
+        -0.49,
+        -0.5,
+        -0.477524
+      ],
+      "bounds_max_unity": [
+        0.49,
+        0.48,
+        0.45
+      ]
+    },
+    {
+      "kind": "AbandonedChair",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_MRM_AbandonedChair_Wood"
+      ],
+      "bounds_min_source": [
+        -0.433778,
+        -0.372,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.422543,
+        0.372,
+        0.498319
+      ],
+      "bounds_min_unity": [
+        -0.433778,
+        -0.5,
+        -0.372
+      ],
+      "bounds_max_unity": [
+        0.422543,
+        0.498319,
+        0.372
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "mesh": "GEO_MRM_SnowPole_Body",
+      "kind": "SnowPole",
+      "variant": 0,
+      "part_role": "Body",
+      "surface_kind": "PaleEnamel",
+      "tint_role": "SnowPoleBody",
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.265,
+        -0.265,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.265,
+        0.265,
+        0.481029
+      ],
+      "bounds_min_unity": [
+        -0.265,
+        -0.5,
+        -0.265
+      ],
+      "bounds_max_unity": [
+        0.265,
+        0.481029,
+        0.265
+      ],
+      "uv_min": [
+        0.235,
+        0.0
+      ],
+      "uv_max": [
+        0.765,
+        0.981029
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_SnowPole_Band",
+      "kind": "SnowPole",
+      "variant": 0,
+      "part_role": "Band",
+      "surface_kind": "PaleEnamel",
+      "tint_role": "SnowPoleBand",
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.46627,
+        -0.4734,
+        0.145
+      ],
+      "bounds_max_source": [
+        0.4358,
+        0.45156,
+        0.255
+      ],
+      "bounds_min_unity": [
+        -0.46627,
+        0.145,
+        -0.4734
+      ],
+      "bounds_max_unity": [
+        0.4358,
+        0.255,
+        0.45156
+      ],
+      "uv_min": [
+        0.03373,
+        0.0266
+      ],
+      "uv_max": [
+        0.9358,
+        0.95156
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_FallenLog_Variant01_Wood",
+      "kind": "FallenLog",
+      "variant": 0,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "DeadWood",
+      "vertices": 68,
+      "triangles": 128,
+      "bounds_min_source": [
+        -0.42133,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.479055,
+        0.5,
+        0.337187
+      ],
+      "bounds_min_unity": [
+        -0.42133,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.479055,
+        0.337187,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_FallenLog_Variant02_Wood",
+      "kind": "FallenLog",
+      "variant": 1,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "DeadWood",
+      "vertices": 68,
+      "triangles": 128,
+      "bounds_min_source": [
+        -0.46409,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.455615,
+        0.5,
+        0.330478
+      ],
+      "bounds_min_unity": [
+        -0.46409,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.455615,
+        0.330478,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_FallenLog_Variant03_Wood",
+      "kind": "FallenLog",
+      "variant": 2,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "DeadWood",
+      "vertices": 82,
+      "triangles": 152,
+      "bounds_min_source": [
+        -0.411006,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.481796,
+        0.5,
+        0.310347
+      ],
+      "bounds_min_unity": [
+        -0.411006,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.481796,
+        0.310347,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_Stump_Variant01_Wood",
+      "kind": "Stump",
+      "variant": 0,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "DeadWood",
+      "vertices": 65,
+      "triangles": 106,
+      "bounds_min_source": [
+        -0.388328,
+        -0.432731,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.43,
+        0.432731,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.388328,
+        -0.5,
+        -0.432731
+      ],
+      "bounds_max_unity": [
+        0.43,
+        0.5,
+        0.432731
+      ],
+      "uv_min": [
+        0.067269,
+        0.0
+      ],
+      "uv_max": [
+        0.932731,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_Stump_Variant02_Wood",
+      "kind": "Stump",
+      "variant": 1,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "DeadWood",
+      "vertices": 69,
+      "triangles": 110,
+      "bounds_min_source": [
+        -0.4541,
+        -0.421967,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4541,
+        0.421967,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.4541,
+        -0.5,
+        -0.421967
+      ],
+      "bounds_max_unity": [
+        0.4541,
+        0.5,
+        0.421967
+      ],
+      "uv_min": [
+        0.0459,
+        0.0
+      ],
+      "uv_max": [
+        0.9541,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_Stump_Variant03_Wood",
+      "kind": "Stump",
+      "variant": 2,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "DeadWood",
+      "vertices": 61,
+      "triangles": 102,
+      "bounds_min_source": [
+        -0.339697,
+        -0.359446,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.359446,
+        0.379196,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.339697,
+        -0.5,
+        -0.359446
+      ],
+      "bounds_max_unity": [
+        0.359446,
+        0.5,
+        0.379196
+      ],
+      "uv_min": [
+        0.140554,
+        0.0
+      ],
+      "uv_max": [
+        0.879196,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_Stump_Variant04_Wood",
+      "kind": "Stump",
+      "variant": 3,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "DeadWood",
+      "vertices": 73,
+      "triangles": 114,
+      "bounds_min_source": [
+        -0.438985,
+        -0.446639,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.429774,
+        0.440079,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.438985,
+        -0.5,
+        -0.446639
+      ],
+      "bounds_max_unity": [
+        0.429774,
+        0.5,
+        0.440079
+      ],
+      "uv_min": [
+        0.053361,
+        0.0
+      ],
+      "uv_max": [
+        0.940079,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_DeadTree_Variant01_Wood",
+      "kind": "DeadTree",
+      "variant": 0,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "DeadWood",
+      "vertices": 74,
+      "triangles": 132,
+      "bounds_min_source": [
+        -0.111463,
+        -0.116811,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.133541,
+        0.10901,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.111463,
+        -0.5,
+        -0.116811
+      ],
+      "bounds_max_unity": [
+        0.133541,
+        0.5,
+        0.10901
+      ],
+      "uv_min": [
+        0.386389,
+        0.0
+      ],
+      "uv_max": [
+        0.633541,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_DeadTree_Variant02_Wood",
+      "kind": "DeadTree",
+      "variant": 1,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "DeadWood",
+      "vertices": 74,
+      "triangles": 132,
+      "bounds_min_source": [
+        -0.127555,
+        -0.111732,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.111927,
+        0.109783,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.127555,
+        -0.5,
+        -0.111732
+      ],
+      "bounds_max_unity": [
+        0.111927,
+        0.5,
+        0.109783
+      ],
+      "uv_min": [
+        0.372445,
+        0.0
+      ],
+      "uv_max": [
+        0.611927,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_DeadTree_Variant03_Wood",
+      "kind": "DeadTree",
+      "variant": 2,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "DeadWood",
+      "vertices": 88,
+      "triangles": 156,
+      "bounds_min_source": [
+        -0.121548,
+        -0.11741,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.119607,
+        0.114925,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.121548,
+        -0.5,
+        -0.11741
+      ],
+      "bounds_max_unity": [
+        0.119607,
+        0.5,
+        0.114925
+      ],
+      "uv_min": [
+        0.378452,
+        0.0
+      ],
+      "uv_max": [
+        0.619607,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_GuardRail_Iron",
+      "kind": "GuardRail",
+      "variant": 0,
+      "part_role": "Iron",
+      "surface_kind": "RustedIron",
+      "tint_role": "Rust",
+      "vertices": 110,
+      "triangles": 192,
+      "bounds_min_source": [
+        -0.49,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.46,
+        0.5,
+        0.335
+      ],
+      "bounds_min_unity": [
+        -0.49,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.46,
+        0.335,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_ConvexMirror_Pole",
+      "kind": "ConvexMirror",
+      "variant": 0,
+      "part_role": "Pole",
+      "surface_kind": "RustedIron",
+      "tint_role": "Rust",
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -0.12,
+        -0.23,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.12,
+        0.23,
+        0.26
+      ],
+      "bounds_min_unity": [
+        -0.12,
+        -0.5,
+        -0.23
+      ],
+      "bounds_max_unity": [
+        0.12,
+        0.26,
+        0.23
+      ],
+      "uv_min": [
+        0.27,
+        0.0
+      ],
+      "uv_max": [
+        0.73,
+        0.76
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_ConvexMirror_Frame",
+      "kind": "ConvexMirror",
+      "variant": 0,
+      "part_role": "Frame",
+      "surface_kind": "RustedIron",
+      "tint_role": "Rust",
+      "vertices": 80,
+      "triangles": 160,
+      "bounds_min_source": [
+        -0.49,
+        -0.45,
+        0.145
+      ],
+      "bounds_max_source": [
+        0.49,
+        -0.27,
+        0.495
+      ],
+      "bounds_min_unity": [
+        -0.49,
+        0.145,
+        -0.45
+      ],
+      "bounds_max_unity": [
+        0.49,
+        0.495,
+        -0.27
+      ],
+      "uv_min": [
+        0.01,
+        0.05
+      ],
+      "uv_max": [
+        0.99,
+        0.995
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_ConvexMirror_Face",
+      "kind": "ConvexMirror",
+      "variant": 0,
+      "part_role": "Face",
+      "surface_kind": "PaleEnamel",
+      "tint_role": "MirrorFace",
+      "vertices": 62,
+      "triangles": 120,
+      "bounds_min_source": [
+        -0.405,
+        -0.475,
+        0.188
+      ],
+      "bounds_max_source": [
+        0.405,
+        -0.382,
+        0.452
+      ],
+      "bounds_min_unity": [
+        -0.405,
+        0.188,
+        -0.475
+      ],
+      "bounds_max_unity": [
+        0.405,
+        0.452,
+        -0.382
+      ],
+      "uv_min": [
+        0.085,
+        0.085
+      ],
+      "uv_max": [
+        0.905,
+        0.952
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_UtilityCabinet_Body",
+      "kind": "UtilityCabinet",
+      "variant": 0,
+      "part_role": "Body",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Cabinet",
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -0.49,
+        -0.45,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.49,
+        0.45,
+        0.48
+      ],
+      "bounds_min_unity": [
+        -0.49,
+        -0.5,
+        -0.45
+      ],
+      "bounds_max_unity": [
+        0.49,
+        0.48,
+        0.45
+      ],
+      "uv_min": [
+        0.01,
+        0.0
+      ],
+      "uv_max": [
+        0.99,
+        0.98
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_UtilityCabinet_Trim",
+      "kind": "UtilityCabinet",
+      "variant": 0,
+      "part_role": "Trim",
+      "surface_kind": "RustedIron",
+      "tint_role": "Iron",
+      "vertices": 94,
+      "triangles": 164,
+      "bounds_min_source": [
+        -0.3975,
+        -0.477524,
+        -0.38
+      ],
+      "bounds_max_source": [
+        0.3975,
+        -0.4075,
+        0.38
+      ],
+      "bounds_min_unity": [
+        -0.3975,
+        -0.38,
+        -0.477524
+      ],
+      "bounds_max_unity": [
+        0.3975,
+        0.38,
+        -0.4075
+      ],
+      "uv_min": [
+        0.022476,
+        0.022476
+      ],
+      "uv_max": [
+        0.8975,
+        0.88
+      ]
+    },
+    {
+      "mesh": "GEO_MRM_AbandonedChair_Wood",
+      "kind": "AbandonedChair",
+      "variant": 0,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "DeadWood",
+      "vertices": 228,
+      "triangles": 396,
+      "bounds_min_source": [
+        -0.433778,
+        -0.372,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.422543,
+        0.372,
+        0.498319
+      ],
+      "bounds_min_unity": [
+        -0.433778,
+        -0.5,
+        -0.372
+      ],
+      "bounds_max_unity": [
+        0.422543,
+        0.498319,
+        0.372
+      ],
+      "uv_min": [
+        0.066222,
+        0.0
+      ],
+      "uv_max": [
+        0.922543,
+        0.998319
+      ]
+    }
+  ],
+  "build_signature": "7751d06778e333f0c71c0d2a8608abc80f09c125e19f5ef028f13d147499204a"
+}

@@ -25,6 +25,7 @@ namespace BarPromenade
             ValidateLandmarkSeparation(terminal);
             ValidateLandmarks(plan, terminal.Landmarks);
             ValidateTerminalExclusions(plan, terminal.Cableway);
+            MountainRoadTerminalSiteValidator.ValidateOrThrow(plan);
         }
 
         private static void ValidateVehicleApron(
@@ -389,10 +390,11 @@ namespace BarPromenade
             MountainRoadPlan plan,
             IReadOnlyList<MountainRoadTerminalLandmark> landmarks)
         {
-            if (landmarks.Count != 2)
+            if (landmarks.Count != 3)
             {
                 throw new InvalidOperationException(
-                    "The mountain map needs cafe and cableway landmarks.");
+                    "The mountain map needs the cafe, the cableway " +
+                    "and the brink.");
             }
 
             var kinds = new HashSet<MountainRoadTerminalLandmarkKind>();

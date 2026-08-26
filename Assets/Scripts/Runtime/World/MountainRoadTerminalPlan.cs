@@ -8,7 +8,10 @@ namespace BarPromenade
     public enum MountainRoadTerminalLandmarkKind
     {
         Cafe = 0,
-        Cableway = 1
+        Cableway = 1,
+
+        /// <summary>Where the ground stops.</summary>
+        Brink = 2
     }
 
     public enum MountainCablewayNodeKind
@@ -340,7 +343,8 @@ namespace BarPromenade
             MountainRoadVehicleApronPlan vehicleApron,
             MountainRoadCafePlan cafe,
             MountainRoadCablewayPlan cableway,
-            IList<MountainRoadTerminalLandmark> sourceLandmarks)
+            IList<MountainRoadTerminalLandmark> sourceLandmarks,
+            MountainRoadTerminalSitePlan site)
         {
             VehicleApron = vehicleApron ??
                 throw new ArgumentNullException(nameof(vehicleApron));
@@ -349,6 +353,7 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(cableway));
             landmarks = new ReadOnlyCollection<MountainRoadTerminalLandmark>(
                 new List<MountainRoadTerminalLandmark>(sourceLandmarks));
+            Site = site;
         }
 
         public MountainRoadVehicleApronPlan VehicleApron { get; }
@@ -356,6 +361,9 @@ namespace BarPromenade
         public MountainRoadCablewayPlan Cableway { get; }
         public IReadOnlyList<MountainRoadTerminalLandmark> Landmarks =>
             landmarks;
+
+        /// <summary>Everything on the pad that is not one of those three.</summary>
+        public MountainRoadTerminalSitePlan Site { get; }
 
         public bool IsSheltered(Vector3 position)
         {

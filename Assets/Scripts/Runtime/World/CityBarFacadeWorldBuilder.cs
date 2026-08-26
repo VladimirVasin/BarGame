@@ -1,32 +1,28 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace BarPromenade
 {
     /// <summary>
-    /// Builds the passive, collider-free identity of a bar facade. City and
+    /// Places the passive, collider-free identity of a bar facade. City and
     /// the bounded Home exterior share this recipe; gameplay entrances remain
     /// owned by CityWorldBuilder.
+    ///
+    /// The geometry is one authored model
+    /// (`tools/build-bar-3d-model.py`, facade asset) placed at the door and
+    /// TURNED to face the street. The primitive version instead carried two
+    /// hand-written size triples per part - one for an X frontage and one for
+    /// a Z frontage - which are the same box rotated ninety degrees, written
+    /// down twice and free to disagree.
     /// </summary>
     public static class CityBarFacadeWorldBuilder
     {
-        private static readonly Color BarTrim =
-            new Color(0.84f, 0.55f, 0.18f);
-        private static readonly Color BarAwning =
-            new Color(0.24f, 0.018f, 0.045f);
-        private static readonly Color DoorColor =
-            new Color(0.055f, 0.025f, 0.022f);
-
-        // The sign keeps the palette of the pixel panel it replaces, so the
-        // bars stay recognisable from the same distance they always were.
-        private static readonly Color SignOutline =
-            new Color(0.137f, 0.071f, 0.114f);
-        private static readonly Color SignField =
-            new Color(0.357f, 0.086f, 0.169f);
-        private static readonly Color SignPale =
-            new Color(0.976f, 0.914f, 0.722f);
-        private static readonly Color SignDrink =
-            new Color(0.871f, 0.545f, 0.165f);
+        private static readonly int BaseColorId =
+            Shader.PropertyToID("_BaseColor");
+        private static readonly int ColorId =
+            Shader.PropertyToID("_Color");
 
         public static void BuildCity(
             Transform parent,
@@ -79,349 +75,187 @@ namespace BarPromenade
         {
             direction.y = 0f;
             direction.Normalize();
-            Vector3 tangent = new Vector3(
-                -direction.z,
-                0f,
-                direction.x);
-            bool frontageIsX =
-                Mathf.Abs(direction.x) > 0.5f;
-            Vector3 doorSize = frontageIsX
-                ? new Vector3(0.12f, 2.1f, 1.45f)
-                : new Vector3(1.45f, 2.1f, 0.12f);
-            Vector3 verticalSize = frontageIsX
-                ? new Vector3(0.18f, 2.35f, 0.16f)
-                : new Vector3(0.16f, 2.35f, 0.18f);
-            Vector3 headerSize = frontageIsX
-                ? new Vector3(0.18f, 0.22f, 2.05f)
-                : new Vector3(2.05f, 0.22f, 0.18f);
-            Vector3 canopySize = frontageIsX
-                ? new Vector3(
-                    0.82f,
-                    0.18f,
-                    BarEntranceGeometry.CanopyWidth)
-                : new Vector3(
-                    BarEntranceGeometry.CanopyWidth,
-                    0.18f,
-                    0.82f);
 
-            CreateBox(
-                "Bar Door",
-                parent,
-                doorPosition +
-                direction * 0.045f +
-                Vector3.up * 1.05f,
-                doorSize,
-                ScaleColor(DoorColor, colorScale),
-                material,
-                clipToHomeExterior);
-            for (int side = -1; side <= 1; side += 2)
+            GameObject prefab = BarModelResources.LoadFacadePrefab();
+            if (prefab == null)
             {
-                CreateBox(
-                    "Bar Door Frame",
-                    parent,
-                    doorPosition +
-                    direction * 0.10f +
-                    tangent * side * 0.86f +
-                    Vector3.up * 1.14f,
-                    verticalSize,
-                    ScaleColor(BarTrim, colorScale),
-                    material,
-                    clipToHomeExterior);
+                throw new InvalidOperationException(
+                    "The bar facade model is missing. Run " +
+                    "tools/build-bar-3d-model.py through Blender, then " +
+                    "Bar Promenade/Bar/Build Runtime Prefabs.");
             }
 
-            CreateBox(
-                "Bar Door Header",
-                parent,
-                doorPosition +
-                direction * 0.10f +
-                Vector3.up * 2.30f,
-                headerSize,
-                ScaleColor(BarTrim, colorScale),
-                material,
-                clipToHomeExterior);
-            CreateBox(
-                "Bar Entrance Canopy",
-                parent,
-                doorPosition +
-                direction * 0.38f +
-                Vector3.up * 2.52f,
-                canopySize,
-                ScaleColor(BarTrim, colorScale),
-                material,
-                clipToHomeExterior);
-            CreateBox(
-                "Bar Entrance Canopy Inset",
-                parent,
-                doorPosition +
-                direction * 0.40f +
-                Vector3.up * 2.46f,
-                Vector3.Scale(
-                    canopySize,
-                    new Vector3(0.88f, 0.55f, 0.88f)),
-                ScaleColor(BarAwning, colorScale),
-                material,
-                clipToHomeExterior);
+            GameObject instance = Object.Instantiate(prefab, parent);
+            instance.name = $"Bar Facade {barId}";
+            instance.transform.localPosition = doorPosition;
+            //  The model is authored facing +X; one rotation replaces the
+            //  whole frontageIsX branch.
+            instance.transform.localRotation =
+                Quaternion.LookRotation(
+                    new Vector3(direction.z, 0f, -direction.x),
+                    Vector3.up);
+            instance.transform.localScale = Vector3.one;
 
-            Vector3 bracketSize = frontageIsX
-                ? new Vector3(1.25f, 0.10f, 0.10f)
-                : new Vector3(0.10f, 0.10f, 1.25f);
-            CreateBox(
-                "Bar Sign Bracket",
-                parent,
-                doorPosition +
-                direction * 0.34f +
-                Vector3.up * 4.10f,
-                bracketSize,
-                ScaleColor(BarTrim, colorScale),
-                material,
-                clipToHomeExterior);
+            BarAssetRegistry registry =
+                instance.GetComponent<BarAssetRegistry>();
+            if (registry == null)
+            {
+                throw new InvalidOperationException(
+                    "The bar facade prefab has no BarAssetRegistry.");
+            }
 
+            Vector3 signPivot = registry.TryGetAnchor(
+                "sign_pivot",
+                out Transform anchor)
+                ? anchor.localPosition
+                : new Vector3(0.74f, 3.42f, 0f);
+
+            Transform marker = BuildMarker(
+                parent,
+                instance.transform,
+                barId,
+                doorPosition,
+                signPivot,
+                clipToHomeExterior,
+                out BarBuildingMarker markerComponent);
+
+            var properties = new MaterialPropertyBlock();
+            foreach (BarPartBinding binding in registry.Parts)
+            {
+                Renderer renderer = binding?.Renderer;
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                Transform part = renderer.transform;
+                bool sign = binding.Group != null &&
+                    binding.Group.StartsWith(
+                        BarAssetRegistry.PivotGroupPrefix,
+                        StringComparison.Ordinal);
+                Transform destination = sign && marker != null
+                    ? marker
+                    : parent;
+                if (sign && marker == null)
+                {
+                    Object.DestroyImmediate(part.gameObject);
+                    continue;
+                }
+
+                //  KeepWorld: an imported FBX splits its unit conversion
+                //  across the hierarchy - the authoring root arrives scaled
+                //  100 and every part scaled 0.01 - so lifting a part out
+                //  without preserving its world transform shrinks it by a
+                //  hundred.
+                part.SetParent(destination, true);
+
+                if (!ClipToHome(part, clipToHomeExterior))
+                {
+                    Object.DestroyImmediate(part.gameObject);
+                    continue;
+                }
+
+                properties.Clear();
+                Color tint = ScaleColor(
+                    binding.Tint.Resolve(default),
+                    colorScale);
+                properties.SetColor(BaseColorId, tint);
+                properties.SetColor(ColorId, tint);
+                renderer.SetPropertyBlock(properties);
+                if (material != null)
+                {
+                    renderer.sharedMaterial = material;
+                }
+
+                if (sign && markerComponent != null)
+                {
+                    markerComponent.RegisterSignPart(part.gameObject);
+                }
+            }
+
+            Object.DestroyImmediate(instance);
+        }
+
+        /// <summary>
+        /// Hangs the blade sign's own object, or reports that this facade
+        /// has none because the marker falls behind the home's facade.
+        /// </summary>
+        private static Transform BuildMarker(
+            Transform parent,
+            Transform facade,
+            string barId,
+            Vector3 doorPosition,
+            Vector3 signPivot,
+            bool clipToHomeExterior,
+            out BarBuildingMarker markerComponent)
+        {
             Vector3 markerPosition =
-                doorPosition +
-                direction * 0.74f +
-                Vector3.up * 3.42f;
+                facade.localRotation * signPivot + doorPosition;
             if (clipToHomeExterior &&
                 markerPosition.x <=
                 HomeExteriorViewBuilder.ExteriorMinimumX)
             {
-                return;
+                markerComponent = null;
+                return null;
             }
 
-            GameObject markerObject = new GameObject(
-                "Bar Landmark Marker");
+            var markerObject = new GameObject("Bar Landmark Marker");
             markerObject.transform.SetParent(parent, false);
             markerObject.transform.localPosition = markerPosition;
-            BarBuildingMarker marker =
+            markerObject.transform.localRotation = facade.localRotation;
+            markerComponent =
                 markerObject.AddComponent<BarBuildingMarker>();
-            marker.Initialize(barId);
-            BuildHangingSign(
-                marker,
-                markerObject.transform,
-                direction,
-                frontageIsX,
-                material,
-                colorScale,
-                clipToHomeExterior,
-                markerPosition);
+            markerComponent.Initialize(barId);
+            return markerObject.transform;
         }
 
         /// <summary>
-        /// A projecting blade sign hung under the bracket arm: layered plates
-        /// whose faces look along the street, plus the tankard that used to be
-        /// drawn in pixels.
-        /// <para>
-        /// Each layer is smaller across the panel than the one behind it but
-        /// slightly thicker across the blade, so the layer behind survives as
-        /// a border without needing four boxes per frame edge. Eight boxes
-        /// carry the whole sign.
-        /// </para>
+        /// Trims a part back to the home exterior's half-space, or reports
+        /// that nothing of it survives.
+        ///
+        /// The primitive version rebuilt each box from the clipped bounds,
+        /// which is a shift and a scale rather than a true cut - so doing
+        /// exactly that to the authored part reproduces it.
         /// </summary>
-        private static void BuildHangingSign(
-            BarBuildingMarker marker,
-            Transform parent,
-            Vector3 direction,
-            bool frontageIsX,
-            Material material,
-            float colorScale,
-            bool clipToHomeExterior,
-            Vector3 markerPosition)
+        private static bool ClipToHome(Transform part, bool clip)
         {
-            // `direction` runs out from the wall along the bracket arm, so the
-            // panel spans it and the blade thickness runs across the frontage.
-            // The frontage's sign matters: on a -X or -Z frontage an unsigned
-            // axis would mirror the tankard into the wall and swap the
-            // inner/outer hangers.
-            Vector3 outward = direction;
-            Vector3 across = frontageIsX
-                ? new Vector3(0f, 0f, 1f)
-                : new Vector3(1f, 0f, 0f);
-            AddSignBox(
-                marker,
-                parent,
-                "Bar Sign Hanger Inner",
-                markerPosition,
-                (outward * -0.30f) + (Vector3.up * 0.46f),
-                Size(outward, across, 0.06f, 0.30f, 0.05f),
-                SignOutline,
-                material,
-                colorScale,
-                clipToHomeExterior);
-            AddSignBox(
-                marker,
-                parent,
-                "Bar Sign Hanger Outer",
-                markerPosition,
-                (outward * 0.30f) + (Vector3.up * 0.46f),
-                Size(outward, across, 0.06f, 0.30f, 0.05f),
-                SignOutline,
-                material,
-                colorScale,
-                clipToHomeExterior);
+            if (!clip)
+            {
+                return true;
+            }
 
-            AddSignBox(
-                marker,
-                parent,
-                "Bar Sign Panel",
-                markerPosition,
-                Vector3.zero,
-                Size(outward, across, 0.90f, 0.70f, 0.10f),
-                SignOutline,
-                material,
-                colorScale,
-                clipToHomeExterior);
-            AddSignBox(
-                marker,
-                parent,
-                "Bar Sign Panel Frame",
-                markerPosition,
-                Vector3.zero,
-                Size(outward, across, 0.84f, 0.64f, 0.12f),
-                BarTrim,
-                material,
-                colorScale,
-                clipToHomeExterior);
-            AddSignBox(
-                marker,
-                parent,
-                "Bar Sign Panel Field",
-                markerPosition,
-                Vector3.zero,
-                Size(outward, across, 0.72f, 0.52f, 0.13f),
-                SignField,
-                material,
-                colorScale,
-                clipToHomeExterior);
+            Renderer renderer = part.GetComponent<Renderer>();
+            if (renderer == null)
+            {
+                return true;
+            }
 
-            // The tankard, kept chunky enough to read at the distance the
-            // pixel panel used to.
-            AddSignBox(
-                marker,
-                parent,
-                "Bar Sign Tankard",
-                markerPosition,
-                outward * -0.05f,
-                Size(outward, across, 0.26f, 0.34f, 0.15f),
-                SignPale,
-                material,
-                colorScale,
-                clipToHomeExterior);
-            AddSignBox(
-                marker,
-                parent,
-                "Bar Sign Tankard Fill",
-                markerPosition,
-                (outward * -0.05f) + (Vector3.up * -0.04f),
-                Size(outward, across, 0.18f, 0.20f, 0.16f),
-                SignDrink,
-                material,
-                colorScale,
-                clipToHomeExterior);
-            AddSignBox(
-                marker,
-                parent,
-                "Bar Sign Tankard Handle",
-                markerPosition,
-                (outward * 0.13f) + (Vector3.up * -0.02f),
-                Size(outward, across, 0.09f, 0.18f, 0.14f),
-                SignPale,
-                material,
-                colorScale,
-                clipToHomeExterior);
-        }
-
-        private static Vector3 Size(
-            Vector3 outward,
-            Vector3 across,
-            float along,
-            float height,
-            float thickness)
-        {
-            Vector3 size = (outward * along) + (across * thickness);
-            size.x = Mathf.Abs(size.x);
-            size.z = Mathf.Abs(size.z);
-            size.y = height;
-            return size;
-        }
-
-        private static void AddSignBox(
-            BarBuildingMarker marker,
-            Transform parent,
-            string name,
-            Vector3 markerPosition,
-            Vector3 offset,
-            Vector3 size,
-            Color color,
-            Material material,
-            float colorScale,
-            bool clipToHomeExterior)
-        {
-            Bounds bounds = new Bounds(markerPosition + offset, size);
-            if (clipToHomeExterior &&
-                !HomeExteriorViewBuilder.TryClipToExteriorHalfSpace(
+            Bounds bounds = renderer.bounds;
+            if (!HomeExteriorViewBuilder.TryClipToExteriorHalfSpace(
                     bounds,
-                    out bounds))
+                    out Bounds clipped))
             {
-                return;
+                return false;
             }
 
-            Color scaled = ScaleColor(color, colorScale);
-            GameObject part = material == null
-                ? RuntimePrimitiveFactory.CreateBox(
-                    name,
-                    parent,
-                    bounds.center - markerPosition,
-                    bounds.size,
-                    scaled,
-                    false)
-                : RuntimePrimitiveFactory.CreateBox(
-                    name,
-                    parent,
-                    bounds.center - markerPosition,
-                    bounds.size,
-                    scaled,
-                    material,
-                    false);
-            marker.RegisterSignPart(part);
-        }
-
-        private static void CreateBox(
-            string name,
-            Transform parent,
-            Vector3 position,
-            Vector3 size,
-            Color color,
-            Material material,
-            bool clipToHomeExterior)
-        {
-            Bounds bounds = new Bounds(position, size);
-            if (clipToHomeExterior &&
-                !HomeExteriorViewBuilder.TryClipToExteriorHalfSpace(
-                    bounds,
-                    out bounds))
+            if (Mathf.Approximately(bounds.size.x, clipped.size.x))
             {
-                return;
+                return true;
             }
 
-            if (material == null)
-            {
-                RuntimePrimitiveFactory.CreateBox(
-                    name,
-                    parent,
-                    bounds.center,
-                    bounds.size,
-                    color,
-                    false);
-                return;
-            }
-
-            RuntimePrimitiveFactory.CreateBox(
-                name,
-                parent,
-                bounds.center,
-                bounds.size,
-                color,
-                material,
-                false);
+            float factor = bounds.size.x > 0.0001f
+                ? clipped.size.x / bounds.size.x
+                : 1f;
+            Vector3 scale = part.localScale;
+            part.localScale = new Vector3(
+                scale.x * factor,
+                scale.y,
+                scale.z);
+            part.position += new Vector3(
+                clipped.center.x - bounds.center.x,
+                0f,
+                0f);
+            return true;
         }
 
         private static Vector3 ResolveDirection(BuildingLot lot)

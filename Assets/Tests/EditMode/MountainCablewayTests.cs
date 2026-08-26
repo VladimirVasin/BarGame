@@ -69,9 +69,14 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(result.Supports, Has.Count.EqualTo(3));
                 Assert.That(result.StationLight.shadows,
                     Is.EqualTo(LightShadows.None));
+                // Two: the lens over the platform and the flood on the
+                // outer canopy edge that reaches the freight kerb and the
+                // yard. One lamp under a canopy lights only what it hangs
+                // over, which left the station a dark shape with a glow
+                // inside it.
                 Assert.That(
                     result.Root.GetComponentsInChildren<Light>(true),
-                    Has.Length.EqualTo(1));
+                    Has.Length.EqualTo(2));
                 Assert.That(result.Controller.AudioSources,
                     Has.Count.EqualTo(5));
                 Assert.That(

@@ -26,6 +26,8 @@ namespace BarPromenade.Editor
             "Assets/Scenes/MountainRoad.unity";
         private const string AreaLoadingScenePath =
             "Assets/Scenes/AreaLoading.unity";
+        private const string ChurchInteriorScenePath =
+            "Assets/Scenes/ChurchInterior.unity";
         private const string TestBootstrapScenePrefix =
             "Assets/InitTestScene";
 
@@ -39,7 +41,8 @@ namespace BarPromenade.Editor
             StairwellInteriorScenePath,
             HomeInteriorScenePath,
             MountainRoadScenePath,
-            AreaLoadingScenePath
+            AreaLoadingScenePath,
+            ChurchInteriorScenePath
         };
 
         private static SceneAsset mainMenuStartScene;
@@ -73,6 +76,7 @@ namespace BarPromenade.Editor
             EnsureHomeInteriorScene();
             EnsureMountainRoadScene();
             EnsureAreaLoadingScene();
+            EnsureChurchInteriorScene();
             ConfigureBuildScenes();
             AssetDatabase.SaveAssets();
             AssetDatabase.Refresh();
@@ -86,6 +90,7 @@ namespace BarPromenade.Editor
         {
             EnsureMountainRoadScene();
             EnsureAreaLoadingScene();
+            EnsureChurchInteriorScene();
             ConfigureBuildScenes();
             var options = new BuildPlayerOptions
             {
@@ -351,6 +356,11 @@ namespace BarPromenade.Editor
         private static void EnsureAreaLoadingScene()
         {
             EnsureEmptyAdditiveScene(AreaLoadingScenePath);
+        }
+
+        private static void EnsureChurchInteriorScene()
+        {
+            EnsureEmptyAdditiveScene(ChurchInteriorScenePath);
         }
 
         private static void EnsureEmptyAdditiveScene(string scenePath)

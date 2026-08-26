@@ -191,8 +191,9 @@ namespace BarPromenade.Tests.EditMode
                     root.GetComponentsInChildren<MeshRenderer>(true);
                 Assert.That(
                     renderers.Length,
-                    Is.InRange(12, 120),
-                    "The 48-metre style/collision batches must stay bounded.");
+                    Is.InRange(12, 144),
+                    "The 48-metre imported role/collision batches must " +
+                    "stay bounded.");
                 Assert.That(
                     renderers.Count(item =>
                         item.name == "Practical Emissive Lens"),
@@ -207,6 +208,22 @@ namespace BarPromenade.Tests.EditMode
                             CityFringeYardWorldBuilder
                                 .PracticalLensForwardOffset));
                 }
+                MeshRenderer[] importedIronSolids = renderers.Where(
+                        item => item.name.StartsWith(
+                            "Imported Fringe Chunk ",
+                            System.StringComparison.Ordinal) &&
+                            item.name.EndsWith(
+                                "Iron Solid",
+                                System.StringComparison.Ordinal))
+                    .ToArray();
+                Assert.That(importedIronSolids, Is.Not.Empty);
+                Assert.That(
+                    importedIronSolids.All(item =>
+                        item.shadowCastingMode !=
+                        UnityEngine.Rendering.ShadowCastingMode.Off),
+                    Is.True,
+                    "Blocking imported iron keeps the legacy shadow " +
+                    "contract.");
                 Assert.That(
                     root.GetComponentsInChildren<MeshCollider>(true).Length,
                     Is.GreaterThan(0));

@@ -44,7 +44,8 @@ namespace BarPromenade
             LastRouteFerrymanPlan plan,
             LastRouteCarAssetRegistry car,
             InventoryTargetInteractionController targetInteraction,
-            int citySeed)
+            int citySeed,
+            string[] talkRepertoire = null)
         {
             return Create(
                 parent,
@@ -52,7 +53,8 @@ namespace BarPromenade
                 car,
                 targetInteraction,
                 citySeed,
-                LastRouteFerrymanProvider.Load());
+                LastRouteFerrymanProvider.Load(),
+                talkRepertoire);
         }
 
         public static LastRouteFerrymanPresentation Create(
@@ -61,7 +63,8 @@ namespace BarPromenade
             LastRouteCarAssetRegistry car,
             InventoryTargetInteractionController targetInteraction,
             int citySeed,
-            LastRouteFerrymanProvider provider)
+            LastRouteFerrymanProvider provider,
+            string[] talkRepertoire = null)
         {
             if (parent == null)
             {
@@ -168,13 +171,14 @@ namespace BarPromenade
             // The talk trigger docks in front of him, which for once is the
             // side the player arrives on.
             //
-            // It is skipped altogether when no menu is handed in, and that is
-            // the mountain terrace: his whole repertoire is twelve lines of a
-            // man waiting on an island and one question - leave the city? -
-            // and at the far end of the road out of it, every one of them is
-            // nonsense. He waits there in silence until he is given something
-            // to say.
-            if (targetInteraction != null)
+            // The same box and the same dock either way; what changes is
+            // what is behind it. A menu belongs to the island, where its
+            // second option - leave the city? - is the whole point of him.
+            // At the far end of that road there is no honest second
+            // option, so the mountain hands a REPERTOIRE instead and he
+            // answers without offering anything. Hand in neither and he
+            // is silent, which is what he was up here until now.
+            if (targetInteraction != null || talkRepertoire != null)
             {
                 var trigger = new GameObject("Ferryman Talk Trigger");
                 trigger.transform.SetParent(root, false);
@@ -189,13 +193,26 @@ namespace BarPromenade
                     TriggerSpan,
                     TriggerHeight,
                     TriggerReach);
-                trigger
-                    .AddComponent<LastRouteFerrymanInteraction>()
-                    .Initialize(
-                        stance.Position,
-                        citySeed,
-                        presentation,
-                        targetInteraction);
+                if (targetInteraction != null)
+                {
+                    trigger
+                        .AddComponent<LastRouteFerrymanInteraction>()
+                        .Initialize(
+                            stance.Position,
+                            citySeed,
+                            presentation,
+                            targetInteraction);
+                }
+                else
+                {
+                    trigger
+                        .AddComponent<LastRouteFerrymanTalkInteraction>()
+                        .Initialize(
+                            stance.Position,
+                            citySeed,
+                            presentation,
+                            talkRepertoire);
+                }
             }
 
             GameLog.Info(

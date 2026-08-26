@@ -158,8 +158,11 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(stationBefore));
 
                 BarDistrictIdentity identity = plan.DistrictIdentity;
+                //  The ceiling lives inside the authored shell model
+                //  now, not as a direct child of the room, so it has to
+                //  be found by name rather than by path.
                 AssertRendererColor(
-                    room.Find("Ceiling"),
+                    FindDescendant(room, "Ceiling"),
                     identity.CeilingTint);
                 AssertRendererColor(
                     room.Find("Backbar Amber Sign"),
@@ -189,7 +192,8 @@ namespace BarPromenade.Tests.EditMode
                 CityDistrictKind.CentralPark,
                 CityDistrictKind.NorthWaterfront,
                 CityDistrictKind.Cemetery,
-                CityDistrictKind.Yard
+                CityDistrictKind.Yard,
+                CityDistrictKind.Church
             };
             foreach (CityDistrictKind district in nonBar)
             {
@@ -273,6 +277,20 @@ namespace BarPromenade.Tests.EditMode
                     BarDistrictIdentityCatalog.FallbackDistrict),
                 "A non-bar district must normalize on entry.");
             GameSessionState.BeginNewGame();
+        }
+
+        private static Transform FindDescendant(Transform root, string name)
+        {
+            foreach (Transform candidate in
+                     root.GetComponentsInChildren<Transform>(true))
+            {
+                if (candidate.name == name)
+                {
+                    return candidate;
+                }
+            }
+
+            return null;
         }
 
         private static void AssertRendererColor(

@@ -1,0 +1,37 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 766e35b8677d433293b02d2646d5a286, type: 3}
+  m_Name: MountainRoadMiscAssetProvider
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.MountainRoadMiscAssetProvider
+  snowPoleBody: {fileID: -7209457257718245793, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  snowPoleBand: {fileID: -4400943438732352827, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  fallenLogVariants:
+  - {fileID: -1847746816820902004, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  - {fileID: -4213320829478176330, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  - {fileID: -6793291869943014432, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  stumpVariants:
+  - {fileID: 6760324578550813076, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  - {fileID: -4622422674800972349, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  - {fileID: -6346668650972279801, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  - {fileID: -5145876512029868336, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  deadTreeVariants:
+  - {fileID: 6858951621618580447, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  - {fileID: 2544731301569517721, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  - {fileID: 2558580759823695413, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  guardRailIron: {fileID: 929824583188564714, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  convexMirrorPole: {fileID: 4177210449908039648, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  convexMirrorFrame: {fileID: -2547059999909567200, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  convexMirrorFace: {fileID: -6902816498843742980, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  utilityCabinetBody: {fileID: -7089055310754253973, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  utilityCabinetTrim: {fileID: -5670830058904512965, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  abandonedChairWood: {fileID: -4648906596580815740, guid: adb3016d4860e4f4fa16236811c2f1b2, type: 3}
+  buildSignature: 7751d06778e333f0c71c0d2a8608abc80f09c125e19f5ef028f13d147499204a

@@ -336,6 +336,17 @@ namespace BarPromenade
             profile = GameLogProfile.Off;
             currentFilePath = string.Empty;
             currentDirectoryPath = string.Empty;
+
+            //  Cleared here too, because `GameLogRuntime.ResetStatics`
+            //  routes every play-mode entry through this method and domain
+            //  reload no longer clears statics for us. Without this the
+            //  second run of a session continues the first one's sequence
+            //  under the first one's session id. The session-end record is
+            //  written before this runs, so it still carries them.
+            sessionId = string.Empty;
+            sceneName = string.Empty;
+            citySeed = null;
+            sequence = 0;
         }
     }
 }

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -18,6 +18,7 @@ namespace BarPromenade
         private const int NorthEastYardSize = 4;
         private const int DefaultCemeteryWidth = 3;
         private const int DefaultCemeteryDepth = 2;
+        private const int DefaultChurchDepth = 2;
 
         private static readonly Color OldTownMapColor =
             new Color32(113, 93, 72, 255);
@@ -35,6 +36,8 @@ namespace BarPromenade
             new Color32(82, 91, 78, 255);
         private static readonly Color YardMapColor =
             new Color32(116, 102, 78, 255);
+        private static readonly Color ChurchMapColor =
+            new Color32(126, 119, 102, 255);
 
         private static CityBlueprint defaultBlueprint;
 
@@ -119,19 +122,27 @@ namespace BarPromenade
                     urbanWidth + EasternOpenAreaWidth,
                     1),
                 CityCellTopologyKind.Water);
-            // The east yard fills the void between the cemetery and the
-            // north-east yard, one solid rectangle bordering the eastern
-            // boundary street. Appended last so every existing area (and
-            // therefore every existing access descriptor id and order) is
-            // unchanged.
+            // The church takes the two southern rows immediately above the
+            // cemetery. The residual utility yard keeps the same eastern
+            // edge and fills the residual rows between church and the
+            // north-east yard, so neither the city envelope nor any urban
+            // lot moves.
             builder.AddRectangle(
-                CreateYard("yard-east"),
+                CreateChurch(),
                 new RectInt(
                     urbanWidth,
                     DefaultCemeteryDepth,
                     EasternOpenAreaWidth,
+                    DefaultChurchDepth),
+                CityCellTopologyKind.OpenLand);
+            builder.AddRectangle(
+                CreateYard("yard-east"),
+                new RectInt(
+                    urbanWidth,
+                    DefaultCemeteryDepth + DefaultChurchDepth,
+                    EasternOpenAreaWidth,
                     settings.BlocksZ - NorthEastYardSize -
-                    DefaultCemeteryDepth),
+                    DefaultCemeteryDepth - DefaultChurchDepth),
                 CityCellTopologyKind.OpenLand);
             // The south and west fringes: one open row/column beyond the
             // boundary streets, split in halves so each yard aligns to its
@@ -193,7 +204,8 @@ namespace BarPromenade
             if (archetype == CityDistrictKind.CentralPark ||
                 archetype == CityDistrictKind.NorthWaterfront ||
                 archetype == CityDistrictKind.Cemetery ||
-                archetype == CityDistrictKind.Yard)
+                archetype == CityDistrictKind.Yard ||
+                archetype == CityDistrictKind.Church)
             {
                 throw new ArgumentOutOfRangeException(nameof(archetype));
             }
@@ -235,6 +247,20 @@ namespace BarPromenade
                 CityAreaPlacementPolicy.Movable,
                 localizationKey,
                 YardMapColor);
+        }
+
+        public static CityAreaDefinition CreateChurch(
+            string id = "church",
+            string localizationKey = "map.district.church")
+        {
+            return new CityAreaDefinition(
+                id,
+                CityDistrictKind.Church,
+                CityAreaCategory.NonUrbanOpen,
+                CityAreaFeatureKind.Church,
+                CityAreaPlacementPolicy.Movable,
+                localizationKey,
+                ChurchMapColor);
         }
 
         private static CityBlueprintBuilder CreateUrbanCoreBuilder(
@@ -465,5 +491,17 @@ namespace BarPromenade
                 "map.district.north_waterfront",
                 WaterfrontMapColor);
         }
-    }
+            //  Domain reload is disabled on entering play mode, so a static
+        //  field survives from one run to the next. A cached
+        //  UnityEngine.Object survives as a DESTROYED one, which reads
+        //  as null-ish but throws on use. This hook runs before the
+        //  first scene of every run, reload or not.
+
+        [RuntimeInitializeOnLoadMethod(
+            RuntimeInitializeLoadType.SubsystemRegistration)]
+        private static void ResetCachedResources()
+        {
+            defaultBlueprint = null;
+        }
+}
 }

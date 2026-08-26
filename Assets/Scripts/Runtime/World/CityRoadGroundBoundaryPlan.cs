@@ -429,7 +429,8 @@ namespace BarPromenade
 
             return surface.Kind == CitySurfaceKind.Beach ||
                    surface.Kind == CitySurfaceKind.CemeteryGround ||
-                   surface.Kind == CitySurfaceKind.OpenGround;
+                   surface.Kind == CitySurfaceKind.OpenGround ||
+                   surface.Kind == CitySurfaceKind.ChurchGround;
         }
 
         private static void AddParkGateSpans(

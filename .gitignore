@@ -44,9 +44,21 @@ crashlytics-build.properties
 Thumbs.db
 Desktop.ini
 
+# Blender automatic backup files
+*.blend[0-9]*
+
 # Test and coverage output
 /TestResults/
 /CodeCoverage/
+
+# Unity Test Framework leaves one of these in Assets/ for every PlayMode run
+# that does not exit cleanly. They are never source.
+/Assets/InitTestScene*.unity
+/Assets/InitTestScene*.unity.meta
+
+# Rendered frames from the area capture fixture. Look at them, do not commit
+# them: they are output, and they are large.
+/Captures/
 
 # Session diagnostics
 /debug*.log

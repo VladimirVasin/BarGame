@@ -1,0 +1,571 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!1 &8660765567688419656
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2273631555987986779}
+  - component: {fileID: 7875573878421788351}
+  m_Layer: 0
+  m_Name: BarFacade3D
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2273631555987986779
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8660765567688419656}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 3462937588788445767}
+  m_Father: {fileID: 0}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!114 &7875573878421788351
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 8660765567688419656}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 89cca80f39dd4ad409f22c81d94abb69, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.BarAssetRegistry
+  modelRoot: {fileID: 653755942410300222}
+  anchors:
+  - anchorName: Door
+    role: facade_door
+    anchor: {fileID: 4365327864754485917}
+  - anchorName: SignMarker
+    role: sign_pivot
+    anchor: {fileID: 4703585745866077114}
+  parts:
+  - sourceName: Bar Door
+    role: facade_door
+    group: fixed
+    sheet: DarkWood
+    emissive: 0
+    castsShadows: 1
+    tint:
+      field: 
+      rgb: {r: 0.055, g: 0.025, b: 0.022, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 979164411801208515}
+  - sourceName: Bar Door Frame Left
+    role: facade_trim
+    group: fixed
+    sheet: 
+    emissive: 0
+    castsShadows: 1
+    tint:
+      field: 
+      rgb: {r: 0.84, g: 0.55, b: 0.18, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 7560569291971353791}
+  - sourceName: Bar Door Frame Right
+    role: facade_trim
+    group: fixed
+    sheet: 
+    emissive: 0
+    castsShadows: 1
+    tint:
+      field: 
+      rgb: {r: 0.84, g: 0.55, b: 0.18, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 4639338242318677453}
+  - sourceName: Bar Door Header
+    role: facade_trim
+    group: fixed
+    sheet: 
+    emissive: 0
+    castsShadows: 1
+    tint:
+      field: 
+      rgb: {r: 0.84, g: 0.55, b: 0.18, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 7164363330451229704}
+  - sourceName: Bar Entrance Canopy
+    role: facade_trim
+    group: fixed
+    sheet: 
+    emissive: 0
+    castsShadows: 1
+    tint:
+      field: 
+      rgb: {r: 0.84, g: 0.55, b: 0.18, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 5611952179307896664}
+  - sourceName: Bar Entrance Canopy Inset
+    role: facade_awning
+    group: fixed
+    sheet: 
+    emissive: 0
+    castsShadows: 1
+    tint:
+      field: 
+      rgb: {r: 0.24, g: 0.018, b: 0.045, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 3895991683084627452}
+  - sourceName: Bar Sign Bracket
+    role: facade_trim
+    group: fixed
+    sheet: 
+    emissive: 0
+    castsShadows: 1
+    tint:
+      field: 
+      rgb: {r: 0.84, g: 0.55, b: 0.18, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 2185161073601611079}
+  - sourceName: Bar Sign Hanger Inner
+    role: sign_part
+    group: pivot:Bar Landmark Marker
+    sheet: 
+    emissive: 0
+    castsShadows: 0
+    tint:
+      field: 
+      rgb: {r: 0.137, g: 0.071, b: 0.114, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 1319834205611602826}
+  - sourceName: Bar Sign Hanger Outer
+    role: sign_part
+    group: pivot:Bar Landmark Marker
+    sheet: 
+    emissive: 0
+    castsShadows: 0
+    tint:
+      field: 
+      rgb: {r: 0.137, g: 0.071, b: 0.114, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 513790750165245592}
+  - sourceName: Bar Sign Panel
+    role: sign_part
+    group: pivot:Bar Landmark Marker
+    sheet: 
+    emissive: 0
+    castsShadows: 0
+    tint:
+      field: 
+      rgb: {r: 0.137, g: 0.071, b: 0.114, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 7971491459797327126}
+  - sourceName: Bar Sign Panel Field
+    role: sign_part
+    group: pivot:Bar Landmark Marker
+    sheet: 
+    emissive: 0
+    castsShadows: 0
+    tint:
+      field: 
+      rgb: {r: 0.357, g: 0.086, b: 0.169, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 1540708416666778584}
+  - sourceName: Bar Sign Panel Frame
+    role: sign_part
+    group: pivot:Bar Landmark Marker
+    sheet: 
+    emissive: 0
+    castsShadows: 0
+    tint:
+      field: 
+      rgb: {r: 0.84, g: 0.55, b: 0.18, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 2191914682848075571}
+  - sourceName: Bar Sign Tankard
+    role: sign_part
+    group: pivot:Bar Landmark Marker
+    sheet: 
+    emissive: 0
+    castsShadows: 0
+    tint:
+      field: 
+      rgb: {r: 0.976, g: 0.914, b: 0.722, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 5524572394416876171}
+  - sourceName: Bar Sign Tankard Fill
+    role: sign_part
+    group: pivot:Bar Landmark Marker
+    sheet: 
+    emissive: 0
+    castsShadows: 0
+    tint:
+      field: 
+      rgb: {r: 0.871, g: 0.545, b: 0.165, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 3685772493037277149}
+  - sourceName: Bar Sign Tankard Handle
+    role: sign_part
+    group: pivot:Bar Landmark Marker
+    sheet: 
+    emissive: 0
+    castsShadows: 0
+    tint:
+      field: 
+      rgb: {r: 0.976, g: 0.914, b: 0.722, a: 1}
+      scale: 1
+      lerpField: 
+      lerpRgb: {r: 0, g: 0, b: 0, a: 1}
+      lerpT: 0
+    colliders: []
+    renderer: {fileID: 8859581015181325093}
+  localBounds:
+    m_Center: {x: 0.2575, y: 1.8999999, z: 0.00000035762787}
+    m_Extent: {x: 0.7075, y: 2.2499998, z: 1.4249998}
+  dimensions:
+    width: 22
+    depth: 16
+    height: 4.8
+    wallThickness: 0.3
+    doorWidth: 3.2
+    doorHeight: 4.8
+  sourceTriangleCount: 420
+  sourceGeneratorVersion: 2.0.0
+  designId: bar_facade_v1
+  buildSignature: 7a373b3589c10a1dcb57306bd633e724e4853b2647c73c9333a8b9b40ada60c1
+--- !u!1001 &4000439049409537452
+PrefabInstance:
+  m_ObjectHideFlags: 0
+  serializedVersion: 2
+  m_Modification:
+    serializedVersion: 3
+    m_TransformParent: {fileID: 2273631555987986779}
+    m_Modifications:
+    - target: {fileID: -9109306682029471664, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -8889520092081247631, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8889520092081247631, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8889520092081247631, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -8679921383154817045, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalPosition.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalPosition.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalPosition.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.w
+      value: 1
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalRotation.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.x
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.y
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -8679921383154817045, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_LocalEulerAnglesHint.z
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6708718323858104716, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6708718323858104716, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6708718323858104716, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -6497405456992201178, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6497405456992201178, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6497405456992201178, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -6201644889324160353, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6201644889324160353, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6201644889324160353, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -5718107072469189836, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -5718107072469189836, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -5718107072469189836, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -5038724484912798865, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -3641186822282455415, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3641186822282455415, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -3641186822282455415, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: -2348376893268035309, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 919132149155446097, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_Name
+      value: Model
+      objectReference: {fileID: 0}
+    - target: {fileID: 3014925159772528875, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 6118285656076151204, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 6423266809854539962, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6423266809854539962, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 6423266809854539962, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 8639689227583492193, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 8819669681826200308, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    - target: {fileID: 8876404977603284775, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8876404977603284775, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: 8876404977603284775, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value: 
+      objectReference: {fileID: 2100000, guid: bd99b3c03f184a72bd5a23ff70db876b, type: 2}
+    m_RemovedComponents: []
+    m_RemovedGameObjects: []
+    m_AddedGameObjects: []
+    m_AddedComponents: []
+  m_SourcePrefab: {fileID: 100100000, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+--- !u!23 &513790750165245592 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -5718107072469189836, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &653755942410300222 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -4713314367397785966, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &979164411801208515 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -5038724484912798865, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1319834205611602826 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -6497405456992201178, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &1540708416666778584 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -6708718323858104716, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2185161073601611079 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3014925159772528875, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &2191914682848075571 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -6201644889324160353, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &3462937588788445767 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8679921383154817045, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3685772493037277149 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -8889520092081247631, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &3895991683084627452 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -9109306682029471664, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4365327864754485917 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -8426049573773500623, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &4639338242318677453 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8639689227583492193, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!4 &4703585745866077114 stripped
+Transform:
+  m_CorrespondingSourceObject: {fileID: -665947467688700394, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5524572394416876171 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8876404977603284775, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &5611952179307896664 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 8819669681826200308, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &7164363330451229704 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6118285656076151204, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &7560569291971353791 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -2348376893268035309, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &7971491459797327126 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6423266809854539962, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}
+--- !u!23 &8859581015181325093 stripped
+MeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -3641186822282455415, guid: 96f456f1314752d478f3bc616ed73ca5, type: 3}
+  m_PrefabInstance: {fileID: 4000439049409537452}
+  m_PrefabAsset: {fileID: 0}

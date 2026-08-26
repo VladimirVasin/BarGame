@@ -19,6 +19,8 @@ namespace BarPromenade
             MountainRoadBridgeWorldResult bridge,
             MountainRoadCafeWorldResult cafe,
             MountainCablewayWorldResult cableway,
+            MountainRoadTerminalSiteWorldResult site,
+            MountainRoadVistaWorldResult vista,
             IDictionary<string, Transform> semanticObjects)
         {
             Root = root ?? throw new ArgumentNullException(nameof(root));
@@ -38,6 +40,8 @@ namespace BarPromenade
             Cafe = cafe ?? throw new ArgumentNullException(nameof(cafe));
             Cableway = cableway ??
                 throw new ArgumentNullException(nameof(cableway));
+            Site = site ?? throw new ArgumentNullException(nameof(site));
+            Vista = vista ?? throw new ArgumentNullException(nameof(vista));
             SemanticObjects = new ReadOnlyDictionary<string, Transform>(
                 new Dictionary<string, Transform>(
                     semanticObjects,
@@ -54,6 +58,8 @@ namespace BarPromenade
         public MountainRoadBridgeWorldResult Bridge { get; }
         public MountainRoadCafeWorldResult Cafe { get; }
         public MountainCablewayWorldResult Cableway { get; }
+        public MountainRoadTerminalSiteWorldResult Site { get; }
+        public MountainRoadVistaWorldResult Vista { get; }
         public IReadOnlyDictionary<string, Transform> SemanticObjects { get; }
     }
 
@@ -181,12 +187,23 @@ namespace BarPromenade
             MergeSemanticObjects(
                 semanticObjects,
                 cableway.SemanticObjects);
+            MountainRoadTerminalSiteWorldResult site =
+                MountainRoadTerminalSiteWorldBuilder.Build(
+                    physicalRoot.transform,
+                    plan.Terminal.Site);
+            MergeSemanticObjects(
+                semanticObjects,
+                site.SemanticObjects);
             BuildForest(physicalRoot.transform, plan.Forest);
             BuildMisc(
                 physicalRoot.transform,
                 plan.Misc,
                 semanticObjects);
             BuildRidges(backdropRoot.transform, plan.Ridges);
+            MountainRoadVistaWorldResult vista =
+                MountainRoadVistaWorldBuilder.Build(
+                    backdropRoot.transform,
+                    plan.Vista);
 
             return new MountainRoadWorldResult(
                 root,
@@ -199,6 +216,8 @@ namespace BarPromenade
                 bridge,
                 cafe,
                 cableway,
+                site,
+                vista,
                 semanticObjects);
         }
 
@@ -410,9 +429,12 @@ namespace BarPromenade
             var root = new GameObject("Authored Forest Misc");
             root.transform.SetParent(parent, false);
             var boulders = new List<MountainRoadMiscDescriptor>();
-            var logs = new List<RuntimeOrientedBox>();
-            var stumps = new List<RuntimeOrientedBox>();
-            var deadWood = new List<RuntimeOrientedBox>();
+            var logColliders = new List<RuntimeOrientedBox>();
+            var stumpColliders = new List<RuntimeOrientedBox>();
+            var deadTreeColliders = new List<RuntimeOrientedBox>();
+            var importedBatches =
+                new Dictionary<int, ImportedMiscBatch>();
+            MountainRoadMiscAssetProvider provider = null;
             for (int index = 0; index < misc.Count; index++)
             {
                 MountainRoadMiscDescriptor item = misc[index];
@@ -422,21 +444,45 @@ namespace BarPromenade
                         boulders.Add(item);
                         break;
                     case MountainRoadMiscKind.FallenLog:
-                        logs.Add(new RuntimeOrientedBox(
+                        EnsureImportedProvider(ref provider);
+                        AppendImportedParts(
+                            importedBatches,
+                            provider,
+                            item);
+                        logColliders.Add(new RuntimeOrientedBox(
                             item.Position,
                             item.Rotation,
                             item.Size));
                         break;
                     case MountainRoadMiscKind.Stump:
-                        stumps.Add(new RuntimeOrientedBox(
+                        EnsureImportedProvider(ref provider);
+                        AppendImportedParts(
+                            importedBatches,
+                            provider,
+                            item);
+                        stumpColliders.Add(new RuntimeOrientedBox(
                             item.Position,
                             item.Rotation,
                             item.Size));
                         break;
                     case MountainRoadMiscKind.DeadTree:
-                        AppendDeadTree(deadWood, item);
+                        EnsureImportedProvider(ref provider);
+                        AppendImportedParts(
+                            importedBatches,
+                            provider,
+                            item);
+                        AppendDeadTree(deadTreeColliders, item);
                         break;
                     default:
+                        if (MountainRoadMiscAssetProvider.Supports(item.Kind))
+                        {
+                            EnsureImportedProvider(ref provider);
+                            AppendImportedParts(
+                                importedBatches,
+                                provider,
+                                item);
+                        }
+
                         Transform semantic = BuildSemanticObject(
                             root.transform,
                             item);
@@ -459,9 +505,207 @@ namespace BarPromenade
                     MountainRoadSurfaceKind.LayeredStone);
             }
 
-            CreateBoxBatch(root.transform, "Fallen Logs", logs, DeadWoodColor, true);
-            CreateBoxBatch(root.transform, "Cut Stumps", stumps, DeadWoodColor, true);
-            CreateBoxBatch(root.transform, "Dead Trees", deadWood, DeadWoodColor, true);
+            BuildImportedBatches(root.transform, importedBatches);
+            CreateColliderProxies(
+                root.transform,
+                "Fallen Log Collision",
+                logColliders);
+            CreateColliderProxies(
+                root.transform,
+                "Cut Stump Collision",
+                stumpColliders);
+            CreateColliderProxies(
+                root.transform,
+                "Dead Tree Collision",
+                deadTreeColliders);
+        }
+
+        private sealed class ImportedMiscBatch
+        {
+            internal ImportedMiscBatch(
+                MountainRoadMiscKind kind,
+                MountainRoadMiscMeshRole role)
+            {
+                Kind = kind;
+                Role = role;
+                Placements = new List<RuntimeMeshPlacement>(32);
+            }
+
+            internal MountainRoadMiscKind Kind { get; }
+            internal MountainRoadMiscMeshRole Role { get; }
+            internal List<RuntimeMeshPlacement> Placements { get; }
+        }
+
+        private static void EnsureImportedProvider(
+            ref MountainRoadMiscAssetProvider provider)
+        {
+            if (provider == null)
+            {
+                provider = MountainRoadMiscAssetProvider.LoadOrThrow();
+            }
+        }
+
+        private static void AppendImportedParts(
+            IDictionary<int, ImportedMiscBatch> batches,
+            MountainRoadMiscAssetProvider provider,
+            MountainRoadMiscDescriptor item)
+        {
+            int partCount = provider.GetPartCount(item.Kind);
+            Vector3 scale = item.Kind == MountainRoadMiscKind.DeadTree
+                ? Vector3.one * item.Size.y
+                : item.Size;
+            for (int partIndex = 0; partIndex < partCount; partIndex++)
+            {
+                MountainRoadMiscMeshPart part = provider.GetPartOrThrow(
+                    item.Kind,
+                    item.StableId,
+                    partIndex);
+                int key = ((int)item.Kind << 8) | partIndex;
+                if (!batches.TryGetValue(key, out ImportedMiscBatch batch))
+                {
+                    batch = new ImportedMiscBatch(item.Kind, part.Role);
+                    batches.Add(key, batch);
+                }
+                else if (batch.Role != part.Role)
+                {
+                    throw new InvalidOperationException(
+                        $"Imported misc part role drifted for {item.Kind}, " +
+                        $"part {partIndex}.");
+                }
+
+                batch.Placements.Add(new RuntimeMeshPlacement(
+                    part.Mesh,
+                    item.Position,
+                    item.Rotation,
+                    scale));
+            }
+        }
+
+        private static void BuildImportedBatches(
+            Transform parent,
+            IReadOnlyDictionary<int, ImportedMiscBatch> batches)
+        {
+            var keys = new List<int>(batches.Keys);
+            keys.Sort();
+            for (int index = 0; index < keys.Count; index++)
+            {
+                ImportedMiscBatch batch = batches[keys[index]];
+                ResolveImportedAppearance(
+                    batch.Role,
+                    out MountainRoadSurfaceKind surface,
+                    out Color tint);
+                HomeSurfaceRecipe recipe =
+                    MountainRoadSurfaceAppearance.GetRecipe(surface);
+                GameObject combined =
+                    RuntimePrimitiveFactory.CreateCombinedMeshes(
+                        ImportedBatchName(batch.Kind, batch.Role),
+                        parent,
+                        batch.Placements,
+                        tint,
+                        false,
+                        recipe.MetersPerTile,
+                        RuntimeWorldUvMode.BoxProjected,
+                        Vector3.zero);
+                MountainRoadSurfaceAppearance.ApplyCombined(
+                    combined.GetComponent<Renderer>(),
+                    surface,
+                    tint);
+            }
+        }
+
+        private static string ImportedBatchName(
+            MountainRoadMiscKind kind,
+            MountainRoadMiscMeshRole role)
+        {
+            switch (kind)
+            {
+                case MountainRoadMiscKind.FallenLog:
+                    return "Imported Fallen Logs";
+                case MountainRoadMiscKind.Stump:
+                    return "Imported Cut Stumps";
+                case MountainRoadMiscKind.DeadTree:
+                    return "Imported Dead Trees";
+                case MountainRoadMiscKind.GuardRail:
+                    return "Imported Guard Rails";
+                case MountainRoadMiscKind.SnowPole:
+                    return role == MountainRoadMiscMeshRole.SnowPoleBody
+                        ? "Imported Snow Pole Bodies"
+                        : "Imported Snow Pole Bands";
+                case MountainRoadMiscKind.ConvexMirror:
+                    return $"Imported Convex Mirror {role}";
+                case MountainRoadMiscKind.UtilityCabinet:
+                    return $"Imported Utility Cabinet {role}";
+                case MountainRoadMiscKind.AbandonedChair:
+                    return "Imported Abandoned Chair";
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(kind),
+                        kind,
+                        null);
+            }
+        }
+
+        private static void ResolveImportedAppearance(
+            MountainRoadMiscMeshRole role,
+            out MountainRoadSurfaceKind surface,
+            out Color tint)
+        {
+            switch (role)
+            {
+                case MountainRoadMiscMeshRole.Wood:
+                    surface = MountainRoadSurfaceKind.BarkAndDeadwood;
+                    tint = DeadWoodColor;
+                    return;
+                case MountainRoadMiscMeshRole.GuardRailIron:
+                case MountainRoadMiscMeshRole.ConvexMirrorPole:
+                case MountainRoadMiscMeshRole.ConvexMirrorFrame:
+                    surface = MountainRoadSurfaceKind.RustedIron;
+                    tint = RustColor;
+                    return;
+                case MountainRoadMiscMeshRole.SnowPoleBody:
+                    surface = MountainRoadSurfaceKind.PaleEnamel;
+                    tint = SnowPoleColor;
+                    return;
+                case MountainRoadMiscMeshRole.SnowPoleBand:
+                    surface = MountainRoadSurfaceKind.PaleEnamel;
+                    tint = SnowColor;
+                    return;
+                case MountainRoadMiscMeshRole.ConvexMirrorFace:
+                    surface = MountainRoadSurfaceKind.PaleEnamel;
+                    tint = MirrorFaceColor;
+                    return;
+                case MountainRoadMiscMeshRole.UtilityCabinetBody:
+                    surface = MountainRoadSurfaceKind.PaintedMetal;
+                    tint = CabinetColor;
+                    return;
+                case MountainRoadMiscMeshRole.UtilityCabinetTrim:
+                    surface = MountainRoadSurfaceKind.RustedIron;
+                    tint = IronColor;
+                    return;
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(role),
+                        role,
+                        null);
+            }
+        }
+
+        private static void CreateColliderProxies(
+            Transform parent,
+            string name,
+            IReadOnlyList<RuntimeOrientedBox> boxes)
+        {
+            for (int index = 0; index < boxes.Count; index++)
+            {
+                RuntimeOrientedBox box = boxes[index];
+                GameObject proxy = CreateBoxColliderProxy(
+                    $"{name} {index:00}",
+                    parent,
+                    box.Center,
+                    box.Rotation,
+                    box.Size);
+                proxy.layer = parent.gameObject.layer;
+            }
         }
 
         private static void AppendDeadTree(
@@ -504,25 +748,26 @@ namespace BarPromenade
             switch (item.Kind)
             {
                 case MountainRoadMiscKind.GuardRail:
-                    BuildGuardRail(root.transform, item.Size);
+                    BuildGuardRailCollision(root.transform, item.Size);
                     break;
                 case MountainRoadMiscKind.Culvert:
                     BuildCulvert(root.transform, item.Size);
                     break;
                 case MountainRoadMiscKind.ConvexMirror:
-                    BuildMirror(root.transform, item.Size);
+                    BuildMirrorCollision(root.transform, item.Size);
                     break;
                 case MountainRoadMiscKind.UtilityCabinet:
-                    BuildCabinet(root.transform, item.Size);
+                    BuildCabinetCollision(root.transform, item.Size);
                     break;
                 case MountainRoadMiscKind.UtilityCable:
                     BuildUtilityCable(root.transform, item.Size);
                     break;
                 case MountainRoadMiscKind.SnowPole:
-                    BuildSnowPole(root.transform, item.Size);
+                    // This marker is visual-only. Its stable root remains the
+                    // source of the authored wind sound.
                     break;
                 case MountainRoadMiscKind.AbandonedChair:
-                    BuildChair(root.transform, item.Size);
+                    BuildChairCollision(root.transform, item.Size);
                     break;
                 case MountainRoadMiscKind.TunnelLamp:
                     BuildTunnelLamp(root.transform, item.Size);
@@ -537,31 +782,24 @@ namespace BarPromenade
             return root.transform;
         }
 
-        private static void BuildGuardRail(Transform root, Vector3 size)
+        private static void BuildGuardRailCollision(
+            Transform root,
+            Vector3 size)
         {
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Loose Iron Beam",
-                    root,
-                    Vector3.up * 0.19f,
-                    new Vector3(size.x, 0.18f, size.z),
-                    IronColor,
-                    true),
-                MountainRoadSurfaceKind.RustedIron,
-                IronColor);
+            CreateBoxColliderProxy(
+                "Loose Iron Beam",
+                root,
+                Vector3.up * 0.19f,
+                Quaternion.identity,
+                new Vector3(size.x, 0.18f, size.z));
             for (int index = -1; index <= 1; index++)
             {
-                TextureSurface(
-                    RuntimePrimitiveFactory.CreateBox(
-                        "Guard Post",
-                        root,
-                        new Vector3(0f, -0.12f, index * size.z * 0.38f),
-                        new Vector3(0.18f, size.y, 0.18f),
-                        RustColor,
-                        true),
-                    MountainRoadSurfaceKind.RustedIron,
-                    SurfaceProjection.BoxZY,
-                    RustColor);
+                CreateBoxColliderProxy(
+                    "Guard Post",
+                    root,
+                    new Vector3(0f, -0.12f, index * size.z * 0.38f),
+                    Quaternion.identity,
+                    new Vector3(0.18f, size.y, 0.18f));
             }
         }
 
@@ -589,57 +827,28 @@ namespace BarPromenade
             mouth.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
         }
 
-        private static void BuildMirror(Transform root, Vector3 size)
+        private static void BuildMirrorCollision(
+            Transform root,
+            Vector3 size)
         {
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Mirror Pole",
-                    root,
-                    new Vector3(0f, -0.15f, 0f),
-                    new Vector3(0.10f, size.y, 0.10f),
-                    RustColor,
-                    true),
-                MountainRoadSurfaceKind.RustedIron,
-                SurfaceProjection.BoxZY,
-                RustColor);
-            GameObject mirror = RuntimePrimitiveFactory.CreateCylinder(
-                "Cracked Convex Mirror",
+            CreateBoxColliderProxy(
+                "Mirror Pole",
                 root,
-                new Vector3(0f, size.y * 0.42f, 0f),
-                new Vector3(size.x, size.z, size.x),
-                MirrorFaceColor,
-                false);
-            mirror.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
-            TextureSurface(
-                mirror,
-                MountainRoadSurfaceKind.PaleEnamel,
-                SurfaceProjection.CylinderCapXZ,
-                MirrorFaceColor);
+                new Vector3(0f, -0.15f, 0f),
+                Quaternion.identity,
+                new Vector3(0.10f, size.y, 0.10f));
         }
 
-        private static void BuildCabinet(Transform root, Vector3 size)
+        private static void BuildCabinetCollision(
+            Transform root,
+            Vector3 size)
         {
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Service Cabinet",
-                    root,
-                    Vector3.zero,
-                    size,
-                    CabinetColor,
-                    true),
-                MountainRoadSurfaceKind.PaintedMetal,
-                CabinetColor);
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Cabinet Door Seam",
-                    root,
-                    new Vector3(0f, 0f, -size.z * 0.51f),
-                    new Vector3(size.x * 0.78f, size.y * 0.78f, 0.025f),
-                    IronColor,
-                    false),
-                MountainRoadSurfaceKind.RustedIron,
-                SurfaceProjection.BoxXY,
-                IronColor);
+            CreateBoxColliderProxy(
+                "Service Cabinet",
+                root,
+                Vector3.zero,
+                Quaternion.identity,
+                size);
         }
 
         private static void BuildUtilityCable(Transform root, Vector3 size)
@@ -677,75 +886,52 @@ namespace BarPromenade
             }
         }
 
-        private static void BuildSnowPole(Transform root, Vector3 size)
+        private static void BuildChairCollision(
+            Transform root,
+            Vector3 size)
         {
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Bent Snow Pole",
-                    root,
-                    Vector3.zero,
-                    size,
-                    SnowPoleColor,
-                    false),
-                MountainRoadSurfaceKind.PaleEnamel,
-                SurfaceProjection.BoxZY,
-                SnowPoleColor);
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Faded White Band",
-                    root,
-                    Vector3.up * (size.y * 0.24f),
-                    new Vector3(size.x * 1.15f, 0.22f, size.z * 1.15f),
-                    SnowColor,
-                    false),
-                MountainRoadSurfaceKind.PaleEnamel,
-                SurfaceProjection.BoxZY,
-                SnowColor);
-        }
-
-        private static void BuildChair(Transform root, Vector3 size)
-        {
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Chair Seat",
-                    root,
-                    new Vector3(0f, -0.06f, 0f),
-                    new Vector3(size.x, 0.12f, size.z),
-                    DeadWoodColor,
-                    true),
-                MountainRoadSurfaceKind.BarkAndDeadwood,
-                DeadWoodColor);
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Chair Back",
-                    root,
-                    new Vector3(0f, size.y * 0.32f, size.z * 0.42f),
-                    new Vector3(size.x, size.y * 0.65f, 0.10f),
-                    DeadWoodColor,
-                    true),
-                MountainRoadSurfaceKind.BarkAndDeadwood,
-                SurfaceProjection.BoxXY,
-                DeadWoodColor);
+            CreateBoxColliderProxy(
+                "Chair Seat",
+                root,
+                new Vector3(0f, -0.06f, 0f),
+                Quaternion.identity,
+                new Vector3(size.x, 0.12f, size.z));
+            CreateBoxColliderProxy(
+                "Chair Back",
+                root,
+                new Vector3(0f, size.y * 0.32f, size.z * 0.42f),
+                Quaternion.identity,
+                new Vector3(size.x, size.y * 0.65f, 0.10f));
             for (int x = -1; x <= 1; x += 2)
             {
                 for (int z = -1; z <= 1; z += 2)
                 {
-                    TextureSurface(
-                        RuntimePrimitiveFactory.CreateBox(
-                            "Chair Leg",
-                            root,
-                            new Vector3(
-                                x * size.x * 0.36f,
-                                -size.y * 0.32f,
-                                z * size.z * 0.36f),
-                            new Vector3(0.08f, size.y * 0.6f, 0.08f),
-                            DeadWoodColor,
-                            true),
-                        MountainRoadSurfaceKind.BarkAndDeadwood,
-                        SurfaceProjection.BoxZY,
-                        DeadWoodColor);
+                    CreateBoxColliderProxy(
+                        "Chair Leg",
+                        root,
+                        new Vector3(
+                            x * size.x * 0.36f,
+                            -size.y * 0.32f,
+                            z * size.z * 0.36f),
+                        Quaternion.identity,
+                        new Vector3(0.08f, size.y * 0.6f, 0.08f));
                 }
             }
+        }
+
+        private static GameObject CreateBoxColliderProxy(
+            string name,
+            Transform parent,
+            Vector3 localPosition,
+            Quaternion localRotation,
+            Vector3 size)
+        {
+            var proxy = new GameObject(name);
+            proxy.transform.SetParent(parent, false);
+            proxy.transform.localPosition = localPosition;
+            proxy.transform.localRotation = localRotation;
+            proxy.AddComponent<BoxCollider>().size = size;
+            return proxy;
         }
 
         private static void BuildTunnelLamp(Transform root, Vector3 size)

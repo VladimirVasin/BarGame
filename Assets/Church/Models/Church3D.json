@@ -1,0 +1,887 @@
+{
+  "generator": "tools/build-church-3d-model.py",
+  "generator_version": "1.2.0",
+  "blender_version": "5.0.1",
+  "design_id": "provincial_catholic_gothic_basilica_v1",
+  "display_name": "Catholic Church of the Northern Cemetery",
+  "dimensions_m": {
+    "width": 23.0,
+    "length": 44.0,
+    "height": 32.0
+  },
+  "door_opening_m": {
+    "width": 2.8,
+    "height": 4.2
+  },
+  "blender_forward_axis": "-Y",
+  "unity_exterior_entrance_outward_axis": "+Z",
+  "unity_interior_entrance_to_altar_axis": "+Z",
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "textures": [
+    {
+      "material_slot": "CandleFlame",
+      "asset_path": "Assets/Church/Textures/ChurchGlassAtlasAlbedo.png",
+      "sha256": "967d61f469f2bf25bbe55781ea3a59e7b7f697e7f147deb233fdc3861edae27c",
+      "base_material_asset": "Assets/Resources/Materials/CityNoirEmission.mat"
+    },
+    {
+      "material_slot": "Floor",
+      "asset_path": "Assets/Church/Textures/ChurchFloorAlbedo.png",
+      "sha256": "c503d8957ce7f3b3a13959e8bc2041df2a02f51f0a05ca3871220ff28b0b8815",
+      "base_material_asset": "Assets/Resources/Materials/RuntimePrimitiveLit.mat"
+    },
+    {
+      "material_slot": "GlassCold",
+      "asset_path": "Assets/Church/Textures/ChurchGlassAtlasAlbedo.png",
+      "sha256": "967d61f469f2bf25bbe55781ea3a59e7b7f697e7f147deb233fdc3861edae27c",
+      "base_material_asset": "Assets/Resources/Materials/CityNoirEmission.mat"
+    },
+    {
+      "material_slot": "GlassWarm",
+      "asset_path": "Assets/Church/Textures/ChurchGlassAtlasAlbedo.png",
+      "sha256": "967d61f469f2bf25bbe55781ea3a59e7b7f697e7f147deb233fdc3861edae27c",
+      "base_material_asset": "Assets/Resources/Materials/CityNoirEmission.mat"
+    },
+    {
+      "material_slot": "Gold",
+      "asset_path": "Assets/Church/Textures/ChurchMetalAlbedo.png",
+      "sha256": "828bf5cfdc882003048c862e014680ef6c5b1d5b14b04a01e65127971be3de13",
+      "base_material_asset": "Assets/Resources/Materials/RuntimePrimitiveLit.mat"
+    },
+    {
+      "material_slot": "Iron",
+      "asset_path": "Assets/Church/Textures/ChurchMetalAlbedo.png",
+      "sha256": "828bf5cfdc882003048c862e014680ef6c5b1d5b14b04a01e65127971be3de13",
+      "base_material_asset": "Assets/Resources/Materials/RuntimePrimitiveLit.mat"
+    },
+    {
+      "material_slot": "Mural",
+      "asset_path": "Assets/Church/Textures/ChurchMuralAtlasAlbedo.png",
+      "sha256": "65cb84ace3a086106a75347cd477af9b355db6ef78d37d116353bb87ea623f13",
+      "base_material_asset": "Assets/Resources/Materials/RuntimePrimitiveLit.mat"
+    },
+    {
+      "material_slot": "Plaster",
+      "asset_path": "Assets/Church/Textures/ChurchPlasterAlbedo.png",
+      "sha256": "3dfdcb553e2824d19c3739a26bd15e84352c75ef88c99f6a8ab9d73e5b887e24",
+      "base_material_asset": "Assets/Resources/Materials/RuntimePrimitiveLit.mat"
+    },
+    {
+      "material_slot": "Roof",
+      "asset_path": "Assets/Church/Textures/ChurchMetalAlbedo.png",
+      "sha256": "828bf5cfdc882003048c862e014680ef6c5b1d5b14b04a01e65127971be3de13",
+      "base_material_asset": "Assets/Resources/Materials/RuntimePrimitiveLit.mat"
+    },
+    {
+      "material_slot": "SacredArt",
+      "asset_path": "Assets/Church/Textures/ChurchSacredArtAtlasAlbedo.png",
+      "sha256": "922312a1ca10a69bd7996833cac4c3e44e46b59c293c10be2236875b8825b36d",
+      "base_material_asset": "Assets/Resources/Materials/RuntimePrimitiveLit.mat"
+    },
+    {
+      "material_slot": "Stone",
+      "asset_path": "Assets/Church/Textures/ChurchStoneAlbedo.png",
+      "sha256": "a1030db9626ea154f15e0517611db324eed3eab47af3c1879e82aa3fbf7b0594",
+      "base_material_asset": "Assets/Resources/Materials/RuntimePrimitiveLit.mat"
+    },
+    {
+      "material_slot": "Textile",
+      "asset_path": "Assets/Church/Textures/ChurchTextileAlbedo.png",
+      "sha256": "5abe568bc479ea29faed04eaa324b10cb63090b4d1eb3400a56bfaf452d5948c",
+      "base_material_asset": "Assets/Resources/Materials/RuntimePrimitiveLit.mat"
+    },
+    {
+      "material_slot": "Wood",
+      "asset_path": "Assets/Church/Textures/ChurchWoodAlbedo.png",
+      "sha256": "514a6001656ebfeeb9df86fbbbea82fc0e2d2d4e49b0e8661d41756da278acb2",
+      "base_material_asset": "Assets/Resources/Materials/RuntimePrimitiveLit.mat"
+    }
+  ],
+  "assets": [
+    {
+      "kind": "Exterior",
+      "root_name": "ROOT_ChurchExterior3D",
+      "runtime_wrapper_yaw_degrees": 180.0,
+      "mesh_count": 12,
+      "renderer_count": 12,
+      "triangle_count": 6412,
+      "bounds_min": [
+        -11.5,
+        -22.191191,
+        0.0
+      ],
+      "bounds_max": [
+        11.5,
+        22.1,
+        32.0
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Exterior.Entrance",
+          "role": "entrance_threshold",
+          "local_position": [
+            0.0,
+            -22.049999,
+            0.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            180.000005
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Approach",
+          "role": "street_approach",
+          "local_position": [
+            0.0,
+            -27.0,
+            0.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            180.000005
+          ]
+        },
+        {
+          "name": "ANCHOR_Exterior.Return",
+          "role": "city_return",
+          "local_position": [
+            0.0,
+            -24.4,
+            0.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            180.000005
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "EXT_Foundation",
+          "role": "foundation_and_west_steps",
+          "material_slot": "Stone",
+          "vertices": 24,
+          "triangles": 36
+        },
+        {
+          "name": "EXT_BasilicaMasses",
+          "role": "whitewashed_gothic_basilica_mass",
+          "material_slot": "Plaster",
+          "vertices": 96,
+          "triangles": 172
+        },
+        {
+          "name": "EXT_StoneButtresses",
+          "role": "stone_plinth_and_flying_buttresses",
+          "material_slot": "Stone",
+          "vertices": 496,
+          "triangles": 828
+        },
+        {
+          "name": "EXT_GabledRoofs",
+          "role": "steep_oxidized_gabled_roofs",
+          "material_slot": "Roof",
+          "vertices": 260,
+          "triangles": 500
+        },
+        {
+          "name": "EXT_BellSpire",
+          "role": "central_bell_spire_and_pinnacles",
+          "material_slot": "Roof",
+          "vertices": 80,
+          "triangles": 140
+        },
+        {
+          "name": "EXT_LatinCross",
+          "role": "spire_latin_cross",
+          "material_slot": "Gold",
+          "vertices": 16,
+          "triangles": 24
+        },
+        {
+          "name": "EXT_WestDoors",
+          "role": "central_west_double_door",
+          "material_slot": "Wood",
+          "vertices": 64,
+          "triangles": 108
+        },
+        {
+          "name": "EXT_StainedGlass",
+          "role": "stained_lancet_windows",
+          "material_slot": "GlassWarm",
+          "vertices": 96,
+          "triangles": 144
+        },
+        {
+          "name": "EXT_LancetTracery",
+          "role": "pointed_window_stone_tracery",
+          "material_slot": "Stone",
+          "vertices": 1120,
+          "triangles": 2008
+        },
+        {
+          "name": "EXT_RoseGlass",
+          "role": "west_rose_stained_glass",
+          "material_slot": "GlassWarm",
+          "vertices": 8,
+          "triangles": 12
+        },
+        {
+          "name": "EXT_RoseTracery",
+          "role": "west_rose_stone_tracery",
+          "material_slot": "Stone",
+          "vertices": 768,
+          "triangles": 1472
+        },
+        {
+          "name": "EXT_CornicesAndRoofSeams",
+          "role": "gothic_cornices_pilasters_and_roof_seams",
+          "material_slot": "Iron",
+          "vertices": 592,
+          "triangles": 968
+        }
+      ]
+    },
+    {
+      "kind": "Interior",
+      "root_name": "ROOT_ChurchInterior3D",
+      "runtime_wrapper_yaw_degrees": 0.0,
+      "mesh_count": 23,
+      "renderer_count": 23,
+      "triangle_count": 8804,
+      "bounds_min": [
+        -11.41,
+        -22.01,
+        -0.24
+      ],
+      "bounds_max": [
+        11.41,
+        22.01,
+        14.0
+      ],
+      "anchors": [
+        {
+          "name": "ANCHOR_Interior.Spawn",
+          "role": "player_spawn",
+          "local_position": [
+            0.0,
+            -18.799999,
+            0.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.Exit",
+          "role": "exit_interaction",
+          "local_position": [
+            0.0,
+            -21.0,
+            0.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            180.000005
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.NarthexLight",
+          "role": "light_narthex",
+          "local_position": [
+            0.0,
+            -15.8,
+            4.2
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.NaveLight",
+          "role": "light_nave",
+          "local_position": [
+            0.0,
+            -1.5,
+            8.8
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            0.0
+          ]
+        },
+        {
+          "name": "ANCHOR_Interior.SanctuaryLight",
+          "role": "light_sanctuary",
+          "local_position": [
+            0.0,
+            15.7,
+            5.0
+          ],
+          "local_rotation_degrees": [
+            0.0,
+            0.0,
+            180.000005
+          ]
+        }
+      ],
+      "parts": [
+        {
+          "name": "INT_Floor",
+          "role": "stone_floor_and_raised_sanctuary",
+          "material_slot": "Floor",
+          "vertices": 16,
+          "triangles": 24
+        },
+        {
+          "name": "INT_PlasteredShell",
+          "role": "narthex_nave_aisles_and_apse_shell",
+          "material_slot": "Plaster",
+          "vertices": 40,
+          "triangles": 60
+        },
+        {
+          "name": "INT_WestDoor",
+          "role": "west_exit_door",
+          "material_slot": "Wood",
+          "vertices": 8,
+          "triangles": 12
+        },
+        {
+          "name": "INT_NavePiers",
+          "role": "four_nave_piers",
+          "material_slot": "Plaster",
+          "vertices": 192,
+          "triangles": 368
+        },
+        {
+          "name": "INT_PierCapitals",
+          "role": "pier_bases_and_carved_capitals",
+          "material_slot": "Stone",
+          "vertices": 384,
+          "triangles": 736
+        },
+        {
+          "name": "INT_RibbedVault",
+          "role": "pointed_nave_vault",
+          "material_slot": "Mural",
+          "vertices": 6,
+          "triangles": 4
+        },
+        {
+          "name": "INT_VaultRibs",
+          "role": "gothic_vault_ribs_and_transverse_arches",
+          "material_slot": "Stone",
+          "vertices": 532,
+          "triangles": 948
+        },
+        {
+          "name": "INT_Pews",
+          "role": "twelve_nave_pew_halves",
+          "material_slot": "Wood",
+          "vertices": 672,
+          "triangles": 1008
+        },
+        {
+          "name": "INT_Confessionals",
+          "role": "paired_wall_confessionals",
+          "material_slot": "Wood",
+          "vertices": 96,
+          "triangles": 160
+        },
+        {
+          "name": "INT_StoneFurnishings",
+          "role": "baptismal_font_and_altar_table",
+          "material_slot": "Stone",
+          "vertices": 96,
+          "triangles": 176
+        },
+        {
+          "name": "INT_AltarCloth",
+          "role": "altar_frontal",
+          "material_slot": "Textile",
+          "vertices": 8,
+          "triangles": 12
+        },
+        {
+          "name": "INT_VotiveStands",
+          "role": "paired_votive_candle_stands",
+          "material_slot": "Gold",
+          "vertices": 392,
+          "triangles": 768
+        },
+        {
+          "name": "INT_VotiveCandles",
+          "role": "votive_wax_candles",
+          "material_slot": "Plaster",
+          "vertices": 512,
+          "triangles": 896
+        },
+        {
+          "name": "INT_VotiveFlames",
+          "role": "votive_flame_emissives",
+          "material_slot": "CandleFlame",
+          "vertices": 256,
+          "triangles": 384
+        },
+        {
+          "name": "INT_CommunionRail",
+          "role": "closed_communion_rail_and_center_gate",
+          "material_slot": "Gold",
+          "vertices": 256,
+          "triangles": 444
+        },
+        {
+          "name": "INT_HighAltar",
+          "role": "high_altar_reredos",
+          "material_slot": "Wood",
+          "vertices": 72,
+          "triangles": 120
+        },
+        {
+          "name": "INT_Tabernacle",
+          "role": "gilded_tabernacle",
+          "material_slot": "Gold",
+          "vertices": 24,
+          "triangles": 40
+        },
+        {
+          "name": "INT_Crucifix",
+          "role": "sanctuary_latin_crucifix",
+          "material_slot": "Wood",
+          "vertices": 24,
+          "triangles": 36
+        },
+        {
+          "name": "INT_StationsOfCross",
+          "role": "fourteen_stations_of_cross",
+          "material_slot": "SacredArt",
+          "vertices": 112,
+          "triangles": 168
+        },
+        {
+          "name": "INT_ChoirAndOrganCase",
+          "role": "choir_loft_and_pipe_organ_case",
+          "material_slot": "Wood",
+          "vertices": 56,
+          "triangles": 84
+        },
+        {
+          "name": "INT_OrganPipes",
+          "role": "pipe_organ_rank",
+          "material_slot": "Iron",
+          "vertices": 456,
+          "triangles": 836
+        },
+        {
+          "name": "INT_StainedGlass",
+          "role": "side_aisle_stained_glass",
+          "material_slot": "GlassCold",
+          "vertices": 80,
+          "triangles": 120
+        },
+        {
+          "name": "INT_WindowTracery",
+          "role": "interior_lancet_tracery",
+          "material_slot": "Stone",
+          "vertices": 800,
+          "triangles": 1400
+        }
+      ],
+      "layout_contract": [
+        {
+          "name": "nave_piers",
+          "count": 4,
+          "centers_xz": [
+            [
+              -5.5,
+              -3.5
+            ],
+            [
+              5.5,
+              -3.5
+            ],
+            [
+              -5.5,
+              5.5
+            ],
+            [
+              5.5,
+              5.5
+            ]
+          ],
+          "footprint_xz_m": [
+            1.4,
+            1.4
+          ],
+          "vertical_envelope_m": [
+            0.0,
+            9.6
+          ],
+          "centers_xz_flat": [
+            -5.5,
+            -3.5,
+            5.5,
+            -3.5,
+            -5.5,
+            5.5,
+            5.5,
+            5.5
+          ]
+        },
+        {
+          "name": "pew_halves",
+          "count": 12,
+          "centers_xz": [
+            [
+              -2.9,
+              -12.0
+            ],
+            [
+              2.9,
+              -12.0
+            ],
+            [
+              -2.9,
+              -10.45
+            ],
+            [
+              2.9,
+              -10.45
+            ],
+            [
+              -2.9,
+              -8.9
+            ],
+            [
+              2.9,
+              -8.9
+            ],
+            [
+              -2.9,
+              -7.35
+            ],
+            [
+              2.9,
+              -7.35
+            ],
+            [
+              -2.9,
+              -5.8
+            ],
+            [
+              2.9,
+              -5.8
+            ],
+            [
+              -2.9,
+              -4.25
+            ],
+            [
+              2.9,
+              -4.25
+            ]
+          ],
+          "footprint_xz_m": [
+            3.8,
+            0.72
+          ],
+          "vertical_envelope_m": [
+            0.0,
+            1.5
+          ],
+          "centers_xz_flat": [
+            -2.9,
+            -12.0,
+            2.9,
+            -12.0,
+            -2.9,
+            -10.45,
+            2.9,
+            -10.45,
+            -2.9,
+            -8.9,
+            2.9,
+            -8.9,
+            -2.9,
+            -7.35,
+            2.9,
+            -7.35,
+            -2.9,
+            -5.8,
+            2.9,
+            -5.8,
+            -2.9,
+            -4.25,
+            2.9,
+            -4.25
+          ]
+        },
+        {
+          "name": "communion_rail",
+          "count": 1,
+          "centers_xz": [
+            [
+              0.0,
+              12.4
+            ]
+          ],
+          "footprint_xz_m": [
+            21.6,
+            0.4
+          ],
+          "vertical_envelope_m": [
+            0.0,
+            0.92
+          ],
+          "centers_xz_flat": [
+            0.0,
+            12.4
+          ]
+        },
+        {
+          "name": "altar_table",
+          "count": 1,
+          "centers_xz": [
+            [
+              0.0,
+              15.7
+            ]
+          ],
+          "footprint_xz_m": [
+            2.75,
+            1.55
+          ],
+          "vertical_envelope_m": [
+            0.0,
+            1.14
+          ],
+          "centers_xz_flat": [
+            0.0,
+            15.7
+          ]
+        },
+        {
+          "name": "high_altar",
+          "count": 1,
+          "centers_xz": [
+            [
+              0.0,
+              18.0
+            ]
+          ],
+          "footprint_xz_m": [
+            4.2,
+            2.5
+          ],
+          "vertical_envelope_m": [
+            0.0,
+            6.2
+          ],
+          "centers_xz_flat": [
+            0.0,
+            18.0
+          ]
+        },
+        {
+          "name": "crucifix",
+          "count": 1,
+          "centers_xz": [
+            [
+              0.0,
+              20.65
+            ]
+          ],
+          "footprint_xz_m": [
+            2.5,
+            0.35
+          ],
+          "vertical_envelope_m": [
+            3.5,
+            8.2
+          ],
+          "centers_xz_flat": [
+            0.0,
+            20.65
+          ]
+        },
+        {
+          "name": "confessionals",
+          "count": 2,
+          "centers_xz": [
+            [
+              -9.7,
+              7.3
+            ],
+            [
+              9.7,
+              7.3
+            ]
+          ],
+          "footprint_xz_m": [
+            1.8,
+            3.3
+          ],
+          "vertical_envelope_m": [
+            0.0,
+            3.15
+          ],
+          "centers_xz_flat": [
+            -9.7,
+            7.3,
+            9.7,
+            7.3
+          ]
+        },
+        {
+          "name": "votive_stands",
+          "count": 2,
+          "centers_xz": [
+            [
+              -8.8,
+              10.5
+            ],
+            [
+              8.8,
+              10.5
+            ]
+          ],
+          "footprint_xz_m": [
+            0.8,
+            0.8
+          ],
+          "vertical_envelope_m": [
+            0.0,
+            1.35
+          ],
+          "centers_xz_flat": [
+            -8.8,
+            10.5,
+            8.8,
+            10.5
+          ]
+        },
+        {
+          "name": "baptismal_font",
+          "count": 1,
+          "centers_xz": [
+            [
+              -8.8,
+              -16.8
+            ]
+          ],
+          "footprint_xz_m": [
+            1.1,
+            1.1
+          ],
+          "vertical_envelope_m": [
+            0.0,
+            1.11
+          ],
+          "centers_xz_flat": [
+            -8.8,
+            -16.8
+          ]
+        },
+        {
+          "name": "choir_loft",
+          "count": 1,
+          "centers_xz": [
+            [
+              0.0,
+              -18.4
+            ]
+          ],
+          "footprint_xz_m": [
+            17.0,
+            4.2
+          ],
+          "vertical_envelope_m": [
+            4.4,
+            4.8
+          ],
+          "centers_xz_flat": [
+            0.0,
+            -18.4
+          ]
+        },
+        {
+          "name": "choir_loft_supports",
+          "count": 4,
+          "centers_xz": [
+            [
+              -8.0,
+              -18.2
+            ],
+            [
+              -5.3,
+              -18.2
+            ],
+            [
+              5.3,
+              -18.2
+            ],
+            [
+              8.0,
+              -18.2
+            ]
+          ],
+          "footprint_xz_m": [
+            0.32,
+            0.32
+          ],
+          "vertical_envelope_m": [
+            0.0,
+            4.4
+          ],
+          "centers_xz_flat": [
+            -8.0,
+            -18.2,
+            -5.3,
+            -18.2,
+            5.3,
+            -18.2,
+            8.0,
+            -18.2
+          ]
+        },
+        {
+          "name": "pipe_organ",
+          "count": 1,
+          "centers_xz": [
+            [
+              0.0,
+              -20.3
+            ]
+          ],
+          "footprint_xz_m": [
+            12.0,
+            1.6
+          ],
+          "vertical_envelope_m": [
+            4.8,
+            11.7
+          ],
+          "centers_xz_flat": [
+            0.0,
+            -20.3
+          ]
+        }
+      ]
+    }
+  ],
+  "build_signature": "a0e3cf637b669cbaf170f3ea28f402858d2c92d93e1a1014d8dad93cf049f925"
+}

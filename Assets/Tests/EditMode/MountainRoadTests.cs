@@ -70,12 +70,17 @@ namespace BarPromenade.Tests.EditMode
                 first.Forest.Count(item =>
                     item.Layer == MountainRoadForestLayer.Far),
                 Is.EqualTo(186));
-            Assert.That(first.SoundAnchors, Has.Count.EqualTo(5));
+            // Five on the road and four on the summit. The rule has
+            // not changed - every one still has something you can walk
+            // up to and look at - only the summit now has furniture of
+            // its own for them to belong to.
+            Assert.That(first.SoundAnchors, Has.Count.EqualTo(9));
             Assert.That(
                 first.SoundAnchors.All(sound =>
                     first.Misc.Any(item =>
                         item.StableId == sound.SourceObjectStableId &&
-                        item.Position == sound.Position)),
+                        item.Position == sound.Position) ||
+                    OwnedByTheSite(first.Terminal.Site, sound)),
                 Is.True,
                 "Every positioned sound belongs to a visible semantic prop.");
 
@@ -677,6 +682,38 @@ namespace BarPromenade.Tests.EditMode
                     }
                 }
             }
+        }
+
+        /// <summary>
+        /// A summit sound hangs on a batched site part or on one of
+        /// the two cloths, neither of which is roadside misc.
+        /// </summary>
+        private static bool OwnedByTheSite(
+            MountainRoadTerminalSitePlan site,
+            MountainRoadSoundAnchor sound)
+        {
+            if (site == null)
+            {
+                return false;
+            }
+
+            if (site.TryGetPart(
+                    sound.SourceObjectStableId,
+                    out MountainRoadSitePartDescriptor part))
+            {
+                return part.Center == sound.Position;
+            }
+
+            for (int index = 0; index < site.Cloth.Count; index++)
+            {
+                if (site.Cloth[index].StableId ==
+                    sound.SourceObjectStableId)
+                {
+                    return site.Cloth[index].Anchor == sound.Position;
+                }
+            }
+
+            return false;
         }
     }
 }

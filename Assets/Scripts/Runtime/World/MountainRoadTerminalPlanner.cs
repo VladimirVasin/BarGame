@@ -52,13 +52,19 @@ namespace BarPromenade
                     "terminal-landmark-cableway",
                     MountainRoadTerminalLandmarkKind.Cableway,
                     cableway.StationArea.Center,
-                    "map.mountain_road.cableway")
+                    "map.mountain_road.cableway"),
+                new MountainRoadTerminalLandmark(
+                    "terminal-landmark-brink",
+                    MountainRoadTerminalLandmarkKind.Brink,
+                    LocalToWorld(plateau, 3f, 0f, 15.3f),
+                    "map.mountain_road.brink")
             };
             return new MountainRoadTerminalPlan(
                 vehicle,
                 cafe,
                 cableway,
-                landmarks);
+                landmarks,
+                MountainRoadTerminalSitePlanner.Create(plateau, cafe));
         }
 
         private static MountainRoadCafePlan CreateCafe(

@@ -25,8 +25,123 @@ namespace BarPromenade
             ValidateForest(plan);
             ValidateMiscAndSounds(plan);
             ValidateRidges(plan);
+            ValidateBrink(plan);
             ValidateBounds(plan);
             MountainRoadTerminalValidator.ValidateOrThrow(plan);
+        }
+
+        /// <summary>
+        /// The cut takes ground away, and every rule here names one thing
+        /// that would rather it did not.
+        ///
+        /// The cableway rule is the one worth reading twice. Lowering the
+        /// ground under the line only INCREASES the clearance its own test
+        /// measures, so a cut that put three supports on twenty-metre
+        /// stilts would make that test greener, not redder. It is checked
+        /// as a horizontal distance for exactly that reason.
+        /// </summary>
+        private static void ValidateBrink(MountainRoadPlan plan)
+        {
+            MountainRoadBrinkDescriptor brink = plan.Plateau.Brink;
+            if (brink == null)
+            {
+                throw new InvalidOperationException(
+                    "The terminal plateau needs its brink.");
+            }
+
+            RequireFinite(brink.RimStart, "Brink rim start");
+            RequireFinite(brink.RimEnd, "Brink rim end");
+            RequireNormalized(brink.Outward, "Brink outward");
+            RequireNormalized(brink.Corridor.Axis, "Brink corridor axis");
+            if (brink.DropDepth <= 1f ||
+                brink.EdgeBlendDistance <= 0.5f ||
+                brink.Corridor.HalfAngleDegrees <= 0f ||
+                brink.Corridor.OuterHalfAngleDegrees >= 90f ||
+                brink.Corridor.OuterRadius <=
+                    brink.Corridor.InnerRadius + brink.EdgeBlendDistance)
+            {
+                throw new InvalidOperationException(
+                    "The brink corridor is not a usable wedge.");
+            }
+
+            MountainRoadViewCorridor corridor = brink.Corridor;
+            IReadOnlyList<MountainRoadRouteSample> samples =
+                plan.Route.Samples;
+            for (int index = 0; index < samples.Count; index++)
+            {
+                Vector3 position = samples[index].Position;
+                RequireOutsideCorridor(
+                    corridor,
+                    new Vector2(position.x, position.z),
+                    MountainRoadPlanner.BrinkRouteClearance,
+                    $"Route sample '{samples[index].StableId}'");
+            }
+
+            IReadOnlyList<MountainCablewayNodeDescriptor> nodes =
+                plan.Terminal.Cableway.Nodes;
+            for (int index = 0; index < nodes.Count; index++)
+            {
+                Vector3 ground = nodes[index].GroundPosition;
+                RequireOutsideCorridor(
+                    corridor,
+                    new Vector2(ground.x, ground.z),
+                    MountainRoadPlanner.BrinkCablewayClearance,
+                    $"Cableway node '{nodes[index].StableId}' ground");
+            }
+
+            for (int index = 0; index < plan.Ridges.Count; index++)
+            {
+                MountainRoadRidgeDescriptor ridge = plan.Ridges[index];
+                float radians = ridge.YawDegrees * Mathf.Deg2Rad;
+                var right = new Vector2(
+                    Mathf.Cos(radians),
+                    -Mathf.Sin(radians));
+                var forward = new Vector2(
+                    Mathf.Sin(radians),
+                    Mathf.Cos(radians));
+                var center = new Vector2(ridge.Center.x, ridge.Center.z);
+                for (int cornerX = -1; cornerX <= 1; cornerX += 2)
+                {
+                    for (int cornerZ = -1; cornerZ <= 1; cornerZ += 2)
+                    {
+                        Vector2 corner = center +
+                            right * (cornerX * ridge.Size.x * 0.5f) +
+                            forward * (cornerZ * ridge.Size.z * 0.5f);
+                        RequireOutsideCorridor(
+                            corridor,
+                            corner,
+                            MountainRoadPlanner.BrinkRidgeClearance,
+                            $"Ridge '{ridge.StableId}' footprint");
+                    }
+                }
+            }
+
+            for (int index = 0; index < plan.Forest.Count; index++)
+            {
+                Vector3 position = plan.Forest[index].Position;
+                RequireOutsideCorridor(
+                    corridor,
+                    new Vector2(position.x, position.z),
+                    MountainRoadPlanner.BrinkForestClearance +
+                    plan.Forest[index].CrownRadius,
+                    $"Tree '{plan.Forest[index].StableId}'");
+            }
+        }
+
+        private static void RequireOutsideCorridor(
+            MountainRoadViewCorridor corridor,
+            Vector2 point,
+            float margin,
+            string label)
+        {
+            float depth = corridor.DepthInside(point);
+            if (depth > -margin)
+            {
+                throw new InvalidOperationException(
+                    $"{label} stands inside the brink corridor: it clears " +
+                    $"the wedge by {(-depth):0.00} m against the " +
+                    $"{margin:0.00} m the cut needs.");
+            }
         }
 
         private static void ValidateTunnel(MountainRoadPlan plan)
@@ -609,13 +724,17 @@ namespace BarPromenade
                 MountainRoadSoundAnchor sound = plan.SoundAnchors[index];
                 if (string.IsNullOrWhiteSpace(sound.StableId) ||
                     !soundIds.Add(sound.StableId) ||
-                    !byId.TryGetValue(sound.SourceObjectStableId, out var source))
+                    !TryFindSoundSource(
+                        plan,
+                        byId,
+                        sound.SourceObjectStableId,
+                        out Vector3 sourcePosition))
                 {
                     throw new InvalidOperationException(
                         "Every sound anchor needs a unique ID and visible source.");
                 }
 
-                if (Vector3.Distance(sound.Position, source.Position) > 0.01f ||
+                if (Vector3.Distance(sound.Position, sourcePosition) > 0.01f ||
                     sound.AudibleRadius < 4f ||
                     sound.AudibleRadius > 10f)
                 {
@@ -624,11 +743,61 @@ namespace BarPromenade
                 }
             }
 
-            if (plan.SoundAnchors.Count != 5)
+            if (plan.SoundAnchors.Count != 9)
             {
                 throw new InvalidOperationException(
-                    "The authored area exposes exactly five causal sound anchors.");
+                    "The authored area exposes exactly nine causal " +
+                    "sound anchors: five on the road, four on the summit.");
             }
+        }
+
+        /// <summary>
+        /// A visible source is roadside furniture OR a piece of the
+        /// summit - a part inside a batch, or one of the two cloths.
+        /// The rule was never about which list a thing lives in; it is
+        /// that a sound here has something you can walk up to and look
+        /// at.
+        /// </summary>
+        private static bool TryFindSoundSource(
+            MountainRoadPlan plan,
+            IReadOnlyDictionary<string, MountainRoadMiscDescriptor> misc,
+            string sourceId,
+            out Vector3 position)
+        {
+            if (misc.TryGetValue(
+                    sourceId,
+                    out MountainRoadMiscDescriptor item))
+            {
+                position = item.Position;
+                return true;
+            }
+
+            MountainRoadTerminalSitePlan site = plan.Terminal.Site;
+            if (site != null)
+            {
+                if (site.TryGetPart(
+                        sourceId,
+                        out MountainRoadSitePartDescriptor part))
+                {
+                    position = part.Center;
+                    return true;
+                }
+
+                for (int index = 0; index < site.Cloth.Count; index++)
+                {
+                    if (string.Equals(
+                            site.Cloth[index].StableId,
+                            sourceId,
+                            StringComparison.Ordinal))
+                    {
+                        position = site.Cloth[index].Anchor;
+                        return true;
+                    }
+                }
+            }
+
+            position = Vector3.zero;
+            return false;
         }
 
         private static void ValidateRidges(MountainRoadPlan plan)

@@ -1,0 +1,4838 @@
+{
+  "generator": "tools/build-bar-3d-model.py",
+  "generator_version": "2.0.0",
+  "blender_version": "5.0.1",
+  "design_id": "bar_interior_v2",
+  "display_name": "Bar Promenade Bar Interior",
+  "dimensions_m": {
+    "width": 22.0,
+    "depth": 16.0,
+    "height": 4.8
+  },
+  "wall_thickness_m": 0.3,
+  "door_opening_m": {
+    "width": 3.2,
+    "height": 4.8
+  },
+  "blender_forward_axis": "-Y",
+  "unity_entrance_outward_axis": "-Z",
+  "runtime_wrapper_yaw_degrees": 0.0,
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "activity_kinds": [
+    "BeerPong",
+    "Cocktail",
+    "SplitTheG",
+    "TinctureMatch"
+  ],
+  "district_moods": [
+    "Memory",
+    "Household",
+    "AfterShift",
+    "Escape"
+  ],
+  "bounds_min": [
+    -11.15,
+    -8.17,
+    -0.28
+  ],
+  "bounds_max": [
+    11.15,
+    8.15,
+    5.0
+  ],
+  "mesh_count": 156,
+  "triangle_count": 8484,
+  "anchors": [
+    {
+      "name": "ActivityStation",
+      "role": "activity_station",
+      "local_position": [
+        5.1,
+        -1.55,
+        0.9
+      ]
+    },
+    {
+      "name": "CeilingFan",
+      "role": "ceiling_fan_pivot",
+      "local_position": [
+        0.0,
+        0.75,
+        4.35
+      ]
+    },
+    {
+      "name": "CounterStation",
+      "role": "counter_station",
+      "local_position": [
+        -1.15,
+        4.75,
+        0.9
+      ]
+    },
+    {
+      "name": "Entrance",
+      "role": "entrance",
+      "local_position": [
+        0.0,
+        -8.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Jukebox",
+      "role": "jukebox_pivot",
+      "local_position": [
+        6.4,
+        -6.78,
+        0.0
+      ]
+    },
+    {
+      "name": "RoomCentre",
+      "role": "room_centre",
+      "local_position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "name": "Floor",
+      "role": "floor",
+      "group": "fixed",
+      "sheet": "WornPlank",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "FloorTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            0.0,
+            -0.12,
+            0.0
+          ],
+          "size": [
+            22.0,
+            0.24,
+            16.0
+          ]
+        }
+      ],
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "Ceiling",
+      "role": "ceiling",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CeilingTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "Front Wall",
+      "role": "wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "WallTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -6.3,
+            2.4,
+            -8.0
+          ],
+          "size": [
+            9.4,
+            4.8,
+            0.3
+          ]
+        },
+        {
+          "center": [
+            6.3,
+            2.4,
+            -8.0
+          ],
+          "size": [
+            9.4,
+            4.8,
+            0.3
+          ]
+        }
+      ],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Back Wall",
+      "role": "wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "WallTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            0.0,
+            2.4,
+            8.0
+          ],
+          "size": [
+            22.0,
+            4.8,
+            0.3
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Left Wall",
+      "role": "wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "WallTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -11.0,
+            2.4,
+            0.0
+          ],
+          "size": [
+            0.3,
+            4.8,
+            16.0
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Right Wall",
+      "role": "wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "WallTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            11.0,
+            2.4,
+            0.0
+          ],
+          "size": [
+            0.3,
+            4.8,
+            16.0
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Skirting",
+      "role": "skirting",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 80
+    },
+    {
+      "name": "Entrance Left Post",
+      "role": "entrance_frame",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Entrance Right Post",
+      "role": "entrance_frame",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Entrance Lintel",
+      "role": "entrance_frame",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Wall Wainscot",
+      "role": "wainscot",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "WallPanelTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84
+    },
+    {
+      "name": "Wall Brass Rails",
+      "role": "wainscot_rail",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84
+    },
+    {
+      "name": "Ceiling Cross Beams",
+      "role": "beam",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 112,
+      "triangles": 196
+    },
+    {
+      "name": "Ceiling Long Beams",
+      "role": "beam",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56
+    },
+    {
+      "name": "Bar Counter",
+      "role": "counter",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CounterWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            0.0,
+            0.7,
+            5.75
+          ],
+          "size": [
+            11.2,
+            1.4,
+            1.0
+          ]
+        }
+      ],
+      "vertices": 44,
+      "triangles": 76
+    },
+    {
+      "name": "Counter Top",
+      "role": "counter_top",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Counter Foot Rail",
+      "role": "counter_rail",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Counter Front Panels",
+      "role": "counter_panel",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "WoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 112,
+      "triangles": 196
+    },
+    {
+      "name": "Bar Stool 1 Leg",
+      "role": "stool_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Stool 1",
+      "role": "stool_seat",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.3,
+          0.035,
+          0.045
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Stool 2 Leg",
+      "role": "stool_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Stool 2",
+      "role": "stool_seat",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.3,
+          0.035,
+          0.045
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Stool 4 Leg",
+      "role": "stool_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Stool 4",
+      "role": "stool_seat",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.3,
+          0.035,
+          0.045
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Stool 5 Leg",
+      "role": "stool_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Stool 5",
+      "role": "stool_seat",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.3,
+          0.035,
+          0.045
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Stool 6 Leg",
+      "role": "stool_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Stool 6",
+      "role": "stool_seat",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.3,
+          0.035,
+          0.045
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Tap Stem 1",
+      "role": "tap_stem",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Tap Handle 1",
+      "role": "tap_handle",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Tap Stem 2",
+      "role": "tap_stem",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Tap Handle 2",
+      "role": "tap_handle",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "GlassTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Tap Stem 3",
+      "role": "tap_stem",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Tap Handle 3",
+      "role": "tap_handle",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Tap Stem 4",
+      "role": "tap_stem",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Tap Handle 4",
+      "role": "tap_handle",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "GlassTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Tap Stem 5",
+      "role": "tap_stem",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Tap Handle 5",
+      "role": "tap_handle",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Backbar Cabinet",
+      "role": "backbar",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CounterWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            0.0,
+            0.72,
+            7.4
+          ],
+          "size": [
+            11.1,
+            1.44,
+            0.55
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Backbar Mirror Panels",
+      "role": "backbar_mirror",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "GlassTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140
+    },
+    {
+      "name": "Backbar Shelves",
+      "role": "backbar_shelf",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 144,
+      "triangles": 252
+    },
+    {
+      "name": "Bottle Silhouettes 1",
+      "role": "bottle",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.72,
+          0.22,
+          0.07
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 352,
+      "triangles": 616
+    },
+    {
+      "name": "Bottle Silhouettes 2",
+      "role": "bottle",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.12,
+          0.38,
+          0.25
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 352,
+      "triangles": 616
+    },
+    {
+      "name": "Bottle Silhouettes 3",
+      "role": "bottle",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.46,
+          0.15,
+          0.4
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 320,
+      "triangles": 560
+    },
+    {
+      "name": "Bottle Silhouettes 4",
+      "role": "bottle",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.72,
+          0.62,
+          0.32
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 320,
+      "triangles": 560
+    },
+    {
+      "name": "Backbar Crown",
+      "role": "backbar_crown",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Backbar Amber Sign",
+      "role": "sign_glow",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "SignGlowColor",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Base 1",
+      "role": "booth_base",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CounterWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -9.86,
+            0.2,
+            -3.9
+          ],
+          "size": [
+            0.78,
+            0.4,
+            2.28
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Cushion 1",
+      "role": "booth_cushion",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Back 1",
+      "role": "booth_back",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -10.32,
+            0.9,
+            -3.9
+          ],
+          "size": [
+            0.18,
+            0.95,
+            2.3
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Table Top 1",
+      "role": "booth_table",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -8.18,
+            0.88,
+            -3.9
+          ],
+          "size": [
+            1.18,
+            0.12,
+            1.48
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Table Leg 1",
+      "role": "booth_table_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -8.18,
+            0.43,
+            -3.9
+          ],
+          "size": [
+            0.18,
+            0.86,
+            0.18
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Base 2",
+      "role": "booth_base",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CounterWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -9.86,
+            0.2,
+            -0.35
+          ],
+          "size": [
+            0.78,
+            0.4,
+            2.28
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Cushion 2",
+      "role": "booth_cushion",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Back 2",
+      "role": "booth_back",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -10.32,
+            0.9,
+            -0.35
+          ],
+          "size": [
+            0.18,
+            0.95,
+            2.3
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Table Top 2",
+      "role": "booth_table",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -8.18,
+            0.88,
+            -0.35
+          ],
+          "size": [
+            1.18,
+            0.12,
+            1.48
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Table Leg 2",
+      "role": "booth_table_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -8.18,
+            0.43,
+            -0.35
+          ],
+          "size": [
+            0.18,
+            0.86,
+            0.18
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Base 3",
+      "role": "booth_base",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CounterWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -9.86,
+            0.2,
+            3.15
+          ],
+          "size": [
+            0.78,
+            0.4,
+            2.28
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Cushion 3",
+      "role": "booth_cushion",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Back 3",
+      "role": "booth_back",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -10.32,
+            0.9,
+            3.15
+          ],
+          "size": [
+            0.18,
+            0.95,
+            2.3
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Table Top 3",
+      "role": "booth_table",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -8.18,
+            0.88,
+            3.15
+          ],
+          "size": [
+            1.18,
+            0.12,
+            1.48
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Booth Table Leg 3",
+      "role": "booth_table_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -8.18,
+            0.43,
+            3.15
+          ],
+          "size": [
+            0.18,
+            0.86,
+            0.18
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Small Stage",
+      "role": "stage",
+      "group": "fixed",
+      "sheet": "WornPlank",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "CounterWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -8.1,
+            0.16,
+            5.925
+          ],
+          "size": [
+            3.8,
+            0.32,
+            2.35
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Stage Left Curtain",
+      "role": "stage_curtain",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84
+    },
+    {
+      "name": "Stage Right Curtain",
+      "role": "stage_curtain",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84
+    },
+    {
+      "name": "Stage Valance",
+      "role": "stage_curtain",
+      "group": "fixed",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Stage Left Speaker",
+      "role": "stage_speaker",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.035,
+          0.035,
+          0.04
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -9.45,
+            0.92,
+            6.345
+          ],
+          "size": [
+            0.72,
+            1.45,
+            0.62
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Stage Right Speaker",
+      "role": "stage_speaker",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.035,
+          0.035,
+          0.04
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -6.75,
+            0.92,
+            6.345
+          ],
+          "size": [
+            0.72,
+            1.45,
+            0.62
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Stage Microphone Stand",
+      "role": "stage_mic",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Stage Microphone",
+      "role": "stage_mic",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.06,
+          0.06,
+          0.065
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Activity Bay Rug",
+      "role": "bay_rug",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.12,
+          0.11,
+          0.2
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Activity Bay Border",
+      "role": "bay_border",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112
+    },
+    {
+      "name": "Social High Table 1 Leg",
+      "role": "table_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -3.5,
+            0.47,
+            -3.65
+          ],
+          "size": [
+            0.17,
+            0.94,
+            0.17
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Social High Table 1",
+      "role": "table_top",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -3.5,
+            0.98,
+            -3.65
+          ],
+          "size": [
+            0.9,
+            0.16,
+            0.9
+          ]
+        }
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Social High Table 2 Leg",
+      "role": "table_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            3.5,
+            0.47,
+            -3.65
+          ],
+          "size": [
+            0.17,
+            0.94,
+            0.17
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Social High Table 2",
+      "role": "table_top",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            3.5,
+            0.98,
+            -3.65
+          ],
+          "size": [
+            0.9,
+            0.16,
+            0.9
+          ]
+        }
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Social High Table 3 Leg",
+      "role": "table_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -3.5,
+            0.47,
+            2.5
+          ],
+          "size": [
+            0.17,
+            0.94,
+            0.17
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Social High Table 3",
+      "role": "table_top",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -3.5,
+            0.98,
+            2.5
+          ],
+          "size": [
+            0.9,
+            0.16,
+            0.9
+          ]
+        }
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Social High Table 4 Leg",
+      "role": "table_leg",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            3.5,
+            0.47,
+            2.5
+          ],
+          "size": [
+            0.17,
+            0.94,
+            0.17
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Social High Table 4",
+      "role": "table_top",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            3.5,
+            0.98,
+            2.5
+          ],
+          "size": [
+            0.9,
+            0.16,
+            0.9
+          ]
+        }
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "Coat Rack",
+      "role": "coat_rack",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            -8.85,
+            0.92,
+            -6.45
+          ],
+          "size": [
+            0.12,
+            1.84,
+            0.12
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Coat Rack Hook 1",
+      "role": "coat_hook",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Coat Rack Hook 2",
+      "role": "coat_hook",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Coat Rack Hook 3",
+      "role": "coat_hook",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Coat Rack Hook 4",
+      "role": "coat_hook",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Service Door",
+      "role": "service_door",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "GlassTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Service Door Frame",
+      "role": "service_door_frame",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Burgundy Poster Frame",
+      "role": "poster_frame",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Burgundy Poster",
+      "role": "poster",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "WallTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "SignAccentColor",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.68
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Teal Poster Frame",
+      "role": "poster_frame",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Teal Poster",
+      "role": "poster",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "GlassTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.35,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Entrance Notice Frame",
+      "role": "poster_frame",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Entrance Notice",
+      "role": "poster",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "SignAccentColor",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Fan Hub",
+      "role": "fan_hub",
+      "group": "pivot:Slow Ceiling Fan",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Fan Blade 1",
+      "role": "fan_blade",
+      "group": "pivot:Slow Ceiling Fan",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Fan Blade 2",
+      "role": "fan_blade",
+      "group": "pivot:Slow Ceiling Fan",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Fan Blade 3",
+      "role": "fan_blade",
+      "group": "pivot:Slow Ceiling Fan",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Fan Blade 4",
+      "role": "fan_blade",
+      "group": "pivot:Slow Ceiling Fan",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Jukebox Corpus",
+      "role": "jukebox_body",
+      "group": "pivot:Bar Jukebox",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.075,
+          0.045
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Jukebox Crown",
+      "role": "jukebox_body",
+      "group": "pivot:Bar Jukebox",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.3,
+          0.1,
+          0.055
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84
+    },
+    {
+      "name": "Jukebox Glow Panel",
+      "role": "jukebox_panel",
+      "group": "pivot:Bar Jukebox",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.35,
+          0.78,
+          0.3
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Jukebox Glow Tube -1",
+      "role": "jukebox_tube",
+      "group": "pivot:Bar Jukebox",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.3,
+          0.34,
+          0.42
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Jukebox Glow Tube 1",
+      "role": "jukebox_tube",
+      "group": "pivot:Bar Jukebox",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.3,
+          0.34,
+          0.42
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Jukebox Grille",
+      "role": "jukebox_grille",
+      "group": "pivot:Bar Jukebox",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.055,
+          0.035,
+          0.03
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 224
+    },
+    {
+      "name": "Jukebox Key 1",
+      "role": "jukebox_key",
+      "group": "pivot:Bar Jukebox",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.58,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Jukebox Key 2",
+      "role": "jukebox_key",
+      "group": "pivot:Bar Jukebox",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.58,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Jukebox Key 3",
+      "role": "jukebox_key",
+      "group": "pivot:Bar Jukebox",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.58,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Jukebox Key 4",
+      "role": "jukebox_key",
+      "group": "pivot:Bar Jukebox",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.58,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Practical Cable",
+      "role": "practical_cable",
+      "group": "prefab:Practical",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "DarkWoodTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Practical Shade",
+      "role": "practical_shade",
+      "group": "prefab:Practical",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Practical Bulb",
+      "role": "practical_bulb",
+      "group": "prefab:Practical",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "PendantColor",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 2.2,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Old Town Ledger Field",
+      "role": "district_field",
+      "group": "district:Memory",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "WallTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.48,
+          0.31,
+          0.15
+        ],
+        "lerp_t": 0.46
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Old Town Missing Portraits",
+      "role": "district_cards",
+      "group": "district:Memory",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "SignAccentColor",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84
+    },
+    {
+      "name": "Residential Curtain Field",
+      "role": "district_field",
+      "group": "district:Household",
+      "sheet": "WornLeather",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "UpholsteryTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Residential Curtain Pleats",
+      "role": "district_cards",
+      "group": "district:Household",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "WallPanelTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 112,
+      "triangles": 196
+    },
+    {
+      "name": "Industrial Safety Band",
+      "role": "district_field",
+      "group": "district:AfterShift",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "SignAccentColor",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Industrial Utility Pipes",
+      "role": "district_cards",
+      "group": "district:AfterShift",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "MetalTint",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112
+    },
+    {
+      "name": "Nightlife Neon Cyan",
+      "role": "neon",
+      "group": "district:Escape",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "PendantColor",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 2.8,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Nightlife Neon Magenta",
+      "role": "neon",
+      "group": "district:Escape",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "SignAccentColor",
+        "rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "scale": 2.8,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Table",
+      "role": "activity_table",
+      "group": "activity:BeerPong",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.055,
+          0.26,
+          0.29
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            7.0,
+            0.92,
+            0.58
+          ],
+          "size": [
+            2.35,
+            0.14,
+            4.25
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Table Leg 1",
+      "role": "activity_table_leg",
+      "group": "activity:BeerPong",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            6.1,
+            0.43,
+            -1.1
+          ],
+          "size": [
+            0.16,
+            0.86,
+            0.16
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Table Leg 2",
+      "role": "activity_table_leg",
+      "group": "activity:BeerPong",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            7.9,
+            0.43,
+            -1.1
+          ],
+          "size": [
+            0.16,
+            0.86,
+            0.16
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Table Leg 3",
+      "role": "activity_table_leg",
+      "group": "activity:BeerPong",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            6.1,
+            0.43,
+            2.26
+          ],
+          "size": [
+            0.16,
+            0.86,
+            0.16
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Table Leg 4",
+      "role": "activity_table_leg",
+      "group": "activity:BeerPong",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            7.9,
+            0.43,
+            2.26
+          ],
+          "size": [
+            0.16,
+            0.86,
+            0.16
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Center Line",
+      "role": "activity_line",
+      "group": "activity:BeerPong",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Cup 1",
+      "role": "activity_cup",
+      "group": "activity:BeerPong",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.82,
+          0.12,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Cup 2",
+      "role": "activity_cup",
+      "group": "activity:BeerPong",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.82,
+          0.12,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Cup 3",
+      "role": "activity_cup",
+      "group": "activity:BeerPong",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.82,
+          0.12,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Cup 4",
+      "role": "activity_cup",
+      "group": "activity:BeerPong",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.82,
+          0.12,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Cup 5",
+      "role": "activity_cup",
+      "group": "activity:BeerPong",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.82,
+          0.12,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Beer Pong Cup 6",
+      "role": "activity_cup",
+      "group": "activity:BeerPong",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.82,
+          0.12,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Cocktail Service Cart",
+      "role": "activity_console",
+      "group": "activity:Cocktail",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            7.15,
+            0.64,
+            0.45
+          ],
+          "size": [
+            2.65,
+            1.2,
+            1.05
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Cocktail Service Cart Top",
+      "role": "activity_console_top",
+      "group": "activity:Cocktail",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Cocktail Service Cart Accent",
+      "role": "activity_accent",
+      "group": "activity:Cocktail",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.1,
+          0.24,
+          0.22
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Cocktail Shaker",
+      "role": "activity_prop",
+      "group": "activity:Cocktail",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.64,
+          0.68,
+          0.66
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Cocktail Glass",
+      "role": "activity_prop",
+      "group": "activity:Cocktail",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.58,
+          0.62
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Split the G Tap Cart",
+      "role": "activity_console",
+      "group": "activity:SplitTheG",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            7.15,
+            0.64,
+            0.45
+          ],
+          "size": [
+            2.65,
+            1.2,
+            1.05
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Split the G Tap Cart Top",
+      "role": "activity_console_top",
+      "group": "activity:SplitTheG",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Split the G Tap Cart Accent",
+      "role": "activity_accent",
+      "group": "activity:SplitTheG",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.1,
+          0.18,
+          0.13
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Split the G Coaster",
+      "role": "activity_prop",
+      "group": "activity:SplitTheG",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Split the G Pint",
+      "role": "activity_prop",
+      "group": "activity:SplitTheG",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.36,
+          0.16,
+          0.055
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Split the G Foam",
+      "role": "activity_prop",
+      "group": "activity:SplitTheG",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.94,
+          0.83,
+          0.61
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Split the G Target",
+      "role": "activity_prop",
+      "group": "activity:SplitTheG",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture Apothecary Cart",
+      "role": "activity_console",
+      "group": "activity:TinctureMatch",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [
+        {
+          "center": [
+            7.15,
+            0.64,
+            0.45
+          ],
+          "size": [
+            2.65,
+            1.2,
+            1.05
+          ]
+        }
+      ],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture Apothecary Cart Top",
+      "role": "activity_console_top",
+      "group": "activity:TinctureMatch",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture Apothecary Cart Accent",
+      "role": "activity_accent",
+      "group": "activity:TinctureMatch",
+      "sheet": "",
+      "emissive": true,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.16,
+          0.08,
+          0.22
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture Match Tray",
+      "role": "activity_prop",
+      "group": "activity:TinctureMatch",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.024,
+          0.017
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture Shot 1",
+      "role": "activity_prop",
+      "group": "activity:TinctureMatch",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.66,
+          0.08,
+          0.1
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture Shot 2",
+      "role": "activity_prop",
+      "group": "activity:TinctureMatch",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.94,
+          0.44,
+          0.08
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture Shot 3",
+      "role": "activity_prop",
+      "group": "activity:TinctureMatch",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.2,
+          0.12,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture Shot 4",
+      "role": "activity_prop",
+      "group": "activity:TinctureMatch",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.13,
+          0.48,
+          0.24
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture Shot 5",
+      "role": "activity_prop",
+      "group": "activity:TinctureMatch",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.74,
+          0.57,
+          0.2
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture XXX Bottle",
+      "role": "activity_prop",
+      "group": "activity:TinctureMatch",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.7,
+          0.82,
+          0.78
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture XXX Bottle Neck",
+      "role": "activity_prop",
+      "group": "activity:TinctureMatch",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.7,
+          0.82,
+          0.78
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture XXX Sign",
+      "role": "activity_prop",
+      "group": "activity:TinctureMatch",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.86,
+          0.46,
+          0.14
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Tincture XXX Marks",
+      "role": "activity_prop",
+      "group": "activity:TinctureMatch",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.16,
+          0.08,
+          0.04
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168
+    }
+  ],
+  "build_signature": "5c14a514e2894f4e778ad99fb7573f55269c292d3374dbcfb65c712fedfe4607"
+}

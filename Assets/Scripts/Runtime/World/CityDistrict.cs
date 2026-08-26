@@ -16,7 +16,8 @@ namespace BarPromenade
         // 6 was the lake, drained when its boat station moved to the
         // seacoast. The value stays a hole so nothing renumbers.
         Cemetery = 7,
-        Yard = 8
+        Yard = 8,
+        Church = 9
     }
 
     public enum CityLandUseKind

@@ -16,19 +16,23 @@ These instructions apply to the entire repository.
 
 ## Current baseline
 
-- Unity `6000.5.9f1`, Universal Render Pipeline `17.5.0`, Input System `1.20.0`.
+- Unity `6000.5.10f1`, Universal Render Pipeline `17.5.0`, Input System `1.20.0`.
 - The playable MVP is implemented through runtime composition: scenes are
   near-empty containers and the world is built from validated pure plans.
-- Seven build scenes, in build order:
+- Ten build scenes, in build order:
   `Assets/Scenes/MainMenu.unity` (index `0`),
   `Assets/Scenes/City.unity`,
   `Assets/Scenes/DoorTransition.unity`,
   `Assets/Scenes/BarInterior.unity`,
   `Assets/Scenes/SupermarketInterior.unity`,
-  `Assets/Scenes/StairwellInterior.unity`, and
-  `Assets/Scenes/HomeInterior.unity`.
-  Five of them are gameplay roots: City, BarInterior, SupermarketInterior,
-  StairwellInterior and HomeInterior. Each instantiates the same
+  `Assets/Scenes/StairwellInterior.unity`,
+  `Assets/Scenes/HomeInterior.unity`,
+  `Assets/Scenes/MountainRoad.unity`,
+  `Assets/Scenes/AreaLoading.unity`, and
+  `Assets/Scenes/ChurchInterior.unity`.
+  Seven of them are gameplay roots: City, BarInterior, SupermarketInterior,
+  StairwellInterior, HomeInterior, MountainRoad and ChurchInterior. Each
+  instantiates the same
   `Resources/Player/Player3D.prefab` through `PlayerFactory`.
 - `Assets/Scripts/Runtime/` owns gameplay, `Assets/Scripts/Editor/` owns
   authoring tools, and `Assets/Tests/{EditMode,PlayMode}/` owns verification

@@ -53,6 +53,9 @@ namespace BarPromenade.Tests.EditMode
         [TestCase(
             CityDistrictKind.Yard,
             "map.district.yard")]
+        [TestCase(
+            CityDistrictKind.Church,
+            "map.district.church")]
         public void DistrictLocalizationKeys_AreStable(
             CityDistrictKind district,
             string expected)
@@ -248,7 +251,8 @@ namespace BarPromenade.Tests.EditMode
                     CityAreaFeatureKind.CentralPark,
                     CityAreaFeatureKind.NorthWaterfront,
                     CityAreaFeatureKind.Cemetery,
-                    CityAreaFeatureKind.Yard
+                    CityAreaFeatureKind.Yard,
+                    CityAreaFeatureKind.Church
                 }));
 
             // The waterfront is the one precinct that carries open
@@ -263,6 +267,9 @@ namespace BarPromenade.Tests.EditMode
                 Is.Not.Empty);
             Assert.That(
                 byFeature[CityAreaFeatureKind.Cemetery].Gates,
+                Is.Not.Empty);
+            Assert.That(
+                byFeature[CityAreaFeatureKind.Church].Gates,
                 Is.Not.Empty);
             Assert.That(
                 byFeature[CityAreaFeatureKind.UrbanDistrict].IsUrban,

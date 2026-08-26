@@ -4,12 +4,48 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
 ## Current facts
 
-- **Accepted:** Unity `6000.5.9f1` with URP `17.5.0`.
+- **Accepted:** Unity `6000.5.10f1` with URP `17.5.0`.
 - **Accepted:** New Input System is enabled.
+- **Accepted:** Domain reload is disabled on entering play mode
+  (`m_EnterPlayModeOptions: 1`); scene reload is kept, being cheap and safe.
+  This makes every mutable static field in `Assets/Scripts/Runtime` survive
+  from one run to the next, so each must be cleared by a
+  `RuntimeInitializeOnLoadMethod(SubsystemRegistration)` hook — the pattern in
+  `BarSurfaceAppearance.ResetCachedResources` and `GameSessionState.Reset`.
+  The runtime has no `static event` at all, which is what makes this safe;
+  keep it that way. A static field holding a `UnityEngine.Object` is the worst
+  case, because it survives as a DESTROYED object rather than as null.
+- **Accepted:** Appearance is verified by rendering, not by asserting.
+  `Assets/Tests/PlayMode/AreaCaptureFixture.cs` photographs a world scene
+  through its own main camera, so the frames carry the real lighting and
+  post-processing. The captures are `[Explicit]`: they are not tests and must
+  be run one area at a time, because heavy scene-loading fixtures run together
+  trip `ExitPlayModeTask`.
+- **Accepted:** Interior generators share `tools/interior_kit.py` — wall runs
+  with real openings, swept mouldings, chamfers, panelled leaves, turned legs.
+  It holds no value belonging to any one room, which is the only test of
+  whether it is general; the next interior must import it unedited.
+- **Accepted:** A Blender-authored interior gets NO material assets. Every
+  renderer shares `RuntimePrimitiveLit` and receives its sheet, tint,
+  smoothness and metallic through a `MaterialPropertyBlock`, which is the same
+  path `BarSurfaceAppearance.Apply` takes for a runtime primitive. This
+  diverges from the church, which creates one material asset per slot, and it
+  is deliberate: the bar's appearance varies by district, and a district tint
+  is a `_BaseColor` in a property block. Baking materials into the FBX or into
+  per-slot assets would need a material set per district per part.
+- **Accepted:** Model UVs are baked in Blender at each sheet's measured
+  metres-per-tile, so `_BaseMap_ST` stays the identity. `SurfaceAppearance`
+  remains the source of those numbers but is not applied to an authored
+  renderer: `Apply` derives its scale from the mesh bounding box, which is
+  correct for a slab and wrong for a wall run with a doorway cut through it.
+- **Accepted:** Geometry from Blender carries no collider, light, camera,
+  rigidbody or animator; each is enforced by the asset setup's
+  `ValidateOrThrow`, not by review. Collision and illumination stay authored
+  from the layout plan, so a model can be re-cut without risking traversal.
 - **Accepted:** Gameplay and transition presentation are composed at runtime
-  in nine explicit build scenes; `MountainRoad` and `AreaLoading` are appended
-  at build indices `7` and `8`.
-- **Accepted:** City, Mountain Road, Bar, Supermarket, Home and Stairwell instantiate one
+  in ten explicit build scenes; `MountainRoad`, `AreaLoading` and
+  `ChurchInterior` are appended at build indices `7`, `8` and `9`.
+- **Accepted:** City, Mountain Road, Bar, Supermarket, Home, Stairwell and Church instantiate one
   `Resources/Player/Player3D` modular hero prefab through `PlayerFactory`.
   Its Generic rig, independent mesh parts, in-place Actions, prefab-derived
   first-person subsets, dedicated 3D portrait, real mesh shadows and analytic
@@ -41,12 +77,28 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   park becomes two `2 x 4` regions joined by its own footbridge. A full-width
   walkable northern beach and continuous non-walkable water row remain. The
   playable default also extends east
-  with a plain `4 x 4` north-east yard (the drained former lake block)
-  and a `3 x 2`
-  cemetery; both use the shared open-area street-access contract, and
-  the cemetery owns deterministic runtime-composed landmarks. Roads, ground, navigation and map
+  with a `3 x 2` cemetery, a separate `4 x 2` church precinct immediately
+  north of it, and a residual plain `4 x 4` north-east yard (the drained
+  former lake block). Cemetery and yard retain the shared open-area
+  street-access contract; the church owns one explicit west frontage without
+  participating in the pre-MST access repair. The cemetery owns deterministic
+  runtime-composed landmarks. Roads, ground, navigation and map
   drawing consume only active cells, so connected holes and non-rectangular
   outlines remain real voids.
+- **Accepted — Church is a special precinct with split Blender payloads:**
+  `default-coastal` carves `RectInt(13,2,4,2)` from the former eastern Yard
+  and keeps the residual Yard rectangular at `RectInt(13,4,4,4)`. Church is
+  an appended area/district/surface kind, not a building lot, and selects one
+  west frontage after the ordinary graph is established; it never enters the
+  pre-MST open-area repair, so adding it cannot reseed the city road network.
+  The exterior's runtime `+Z` anchor is `EntranceOutward` and is placed toward
+  world west, leaving the altar end east. One deterministic Blender source
+  exports separate exterior/interior FBX and Resources prefabs: City loads no
+  furnishings, while `ChurchInterior` loads no exterior. Imported models own
+  render hierarchy and semantic anchors only; data-first Unity plans retain
+  all walkability, barriers, colliders, entry/return points and lights. The
+  transition uses appended `EnterChurch`/`ExitChurch` directions and the same
+  accepted-request session semantics as the existing doors.
 - **Accepted — The coastal basin closes only west and south:**
   `CityMountainBoundaryDefinition` opts in only `default-coastal`; custom and
   legacy layouts receive `CityMountainBoundaryPlan.Empty` instead of acquiring
@@ -1392,6 +1444,105 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   cafe adds three short-range appliance voices, and the cableway adds only a
   visible reducer motor plus roller-crossing clacks. Cafe/cableway map landmarks
   and rain shelter volumes are read from the same validated terminal plan.
+- **Accepted — Every 3D object is assembled in Blender:** new geometry is
+  authored by a deterministic generator under `tools/build-*-3d-model.py`,
+  exported, and imported as a model asset. It is not composed at runtime
+  from `RuntimePrimitiveFactory` boxes and cylinders. The established
+  generators set the pattern — player, pedestrians, bus, bus driver,
+  bartender, cashier, cat, chess set, Last Route car, church and the two misc
+  libraries — and each pairs its script with a measured JSON manifest plus a
+  determinism check,
+  so a rebuild that changes nothing produces a byte-identical manifest and
+  a rebuild that changes something says what.
+  The rule governs what is built from now on. It does not condemn what is
+  already there: the generated city, every precinct in it, the mountain
+  road and its terminal are runtime-composed primitives, and that is by far
+  the larger part of the world's geometry. Any migration is a separate,
+  deliberate decision about one piece at a time — a task may not quietly
+  rebuild a neighbouring system in Blender because it happened to touch it.
+  What the rule does change immediately is the answer to "how should this
+  new prop exist": in Blender, with a generator, not as another handful of
+  boxes.
+- **Accepted — Mountain Road misc migrates as a mesh library, not as world
+  prefabs:** wave one moves eight of the twelve `MountainRoadPlan.Misc` kinds
+  (`102 / 159` default placements) into one deterministic Blender source and
+  one FBX containing `19` passive mesh sub-assets. `MountainRoadMiscDescriptor`
+  still owns stable ID, centre, rotation, size and blocking intent. The
+  provider deterministically selects the three log, four stump and three dead
+  tree variants by stable ID; imported parts are combined by kind/material
+  role into `12` renderers instead of creating one prefab per placement.
+  Colliders remain Unity box proxies and semantic roots retain their exact
+  stable IDs, including the loose bridge rail and sounding snow pole. Dead
+  trees alone scale uniformly by descriptor height because their descriptor
+  X/Z is the trunk envelope while the established branch silhouette extends
+  beyond it. Boulders, culvert, utility cable and tunnel lamp are deliberately
+  outside this wave: the first already owns bespoke batched geometry and the
+  other three have terrain, span or dynamic-renderer coupling.
+- **Accepted — City misc is one citywide role-mesh library, not world
+  prefabs:** final design `city_misc_citywide_v3` contains `61` semantic kinds,
+  `91` assemblies and `177` role meshes (`32,642` triangles) under build
+  signature
+  `3fff5efec42b67e97fe921c44bf22ec076523ae5dd6f0ddd87f6fd2a631c973a`.
+  The provider resolves kind, stable variant and semantic role; the affected
+  builders then place or combine those meshes from their existing plans. The
+  catalog spans the 24-family decoration layer and parks, street lamps and
+  traffic housings, Route 01 shelters/poles, the eastern yard, cemetery,
+  seacoast, fringe service belt and the static shells of all four district
+  points of interest. Per-assembly roots and fixed metre-scale bounds are part
+  of the manifest contract. The earlier wave-one and v2 subsets remain frozen
+  by compatibility signatures
+  `dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6`
+  and `8ec3ffe04ffbcfba94cbf708d9c8263afbe853aeea4ffdeabfe638857a043193`.
+  Unity still owns world plans, placement, terrain, collision proxies,
+  dynamics, interactions, realtime lights and halos, cloth and NPCs. Tilted
+  cemetery monuments deliberately stay on the legacy builder because their
+  non-rigid tilt is outside the rigid assembly-placement contract.
+- **Accepted — The summit opens exactly once, and the opening is a
+  terrain mask:** the terminal plateau carries a `MountainRoadBrinkDescriptor`
+  on its own descriptor rather than on the terminal plan, because
+  `MountainRoadTerminalPlanner` already samples terrain to ground the
+  cableway and so cannot precede the thing that changes terrain — and
+  because the plateau descriptor is already threaded into every
+  `SampleHeight` call in the area, which costs the change no signature
+  anywhere. `MountainRoadTerrainSampler.ApplyBrinkFall` takes the ground
+  down `26 m` inside a wedge from the back rim: bearing `-27` degrees in
+  the plateau's own frame, `9` degrees of composed half-angle plus `3` of
+  taper, from `3 m` out to `132 m`. It runs on the FINAL returned height,
+  after the plateau's `12 m` exterior blend, because applied to the
+  intermediate terrain that blend lifts the cut back to pad height across
+  exactly the stretch the cliff is made of; the interior early return still
+  answers first, so the pad, the road seam and the one drivable surface are
+  untouched by construction rather than by tolerance. The bearing is
+  measured: swept from the rim, the mid and far ridges stand shoulder to
+  shoulder from `-60` to `-46` and again from `-8` through `+14`, and
+  between those two masses there is nothing inside the area's `120 m` far
+  plane. No ridge is skipped — the amphitheatre keeps its eight mid and
+  twelve far-snow against floors of six and ten — and the two masses become
+  the opening's jambs. `MountainRoadValidator.ValidateBrink` holds the cut
+  `10 m` from every route centreline, `6 m` from every cableway node's
+  GROUND (a horizontal distance on purpose: lowering ground under the line
+  only makes its own clearance test greener while the supports end up on
+  stilts), `3 m` from every ridge footprint and clear of every crown.
+- **Accepted — What is over the brink is a fixed matte on borrowed
+  shaders:** `MountainRoadVista*` stands real world geometry at `81-105 m`
+  in the cut — valley bed, the switchback the hero climbed, a grain of city
+  seventeen columns wide and a horizon ridge line landing within a few
+  degrees of the standing eye, so the city reads BELOW the horizon rather
+  than on it. Everything is measured from `y = 0`, the height of the tunnel
+  he drove out of, which is what makes the drop mean something. It reuses
+  `CityLighthouseIsland.shader` and `CityLighthouseBeam.shader` unchanged —
+  neither has anything city-specific in its HLSL — through a mountain-owned
+  resources class that only retunes distance for a `120 m` far plane. It is
+  fixed rather than camera-relative because the parapet and the walls of the
+  cut have to occlude it and because twenty metres of parapet make parallax
+  an effect rather than an artefact. Its windows are additive vertex colour
+  driven by `NightFactor` from `MountainRoadAtmosphere`'s existing
+  per-minute apply, so the valley can never be lit at an hour the rock in
+  front of it is not; there is no Light in it and never will be. Two things
+  the contract tests deleted rather than fixed: painted shoulders framing
+  the gap (occluded by the real ground at their own offset — the cut's own
+  walls are better in every way) and worn paths across the yard (the plateau
+  slab is already asphalt, so there is no snow to wear through).
 - **Accepted — Mountain ridge dressing follows the complete route envelope:**
   The terrain bounds retain a `76 m` margin around the road, plateau and upper
   cableway reach. Ordinary mid and far-snow ridges sample the outer perimeter
@@ -1550,7 +1701,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   read-only stacks plus atomic add,
   remove and world-source collection operations; `BeginNewGame` resets starter
   possessions and every collected source, while ordinary scene transitions do
-  neither. `InventoryController` is installed beside pause in all six gameplay
+  neither. `InventoryController` is installed beside pause in all seven gameplay
   roots, opens on `I` or gamepad North only during free input, captures the
   existing fullscreen modal lock and exact time scale, and restores both on
   close or lifecycle cleanup. Its `640x360` IMGUI view keeps generated
@@ -1640,7 +1791,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   production runtime and UI representation of the main hero now derives from
   the generated modular 3D character. `PlayerFactory` preserves the
   authoritative `PlayerMotor`/`CharacterController` root and instantiates one
-  `Resources/Player/Player3D` prefab in all six gameplay roots. Its Generic
+  `Resources/Player/Player3D` prefab in all seven gameplay roots. Its Generic
   Animator uses no root motion; the prefab contains a 31-bone armature with six
   non-deforming sockets, while `Player3DAssetRegistry` serializes 73 mesh
   bindings, 16 required anatomical parts, metrics and 37 in-place Actions.

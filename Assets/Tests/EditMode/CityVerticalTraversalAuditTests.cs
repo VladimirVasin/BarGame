@@ -161,7 +161,8 @@ namespace BarPromenade.Tests.EditMode
             return kind == CitySurfaceKind.BuildableGround ||
                    kind == CitySurfaceKind.ParkGround ||
                    kind == CitySurfaceKind.OpenGround ||
-                   kind == CitySurfaceKind.Beach;
+                   kind == CitySurfaceKind.Beach ||
+                   kind == CitySurfaceKind.ChurchGround;
         }
 
         private static void AssertDeterministic(

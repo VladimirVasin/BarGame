@@ -44,7 +44,13 @@ namespace BarPromenade
         CulvertWater = 1,
         LooseGuardRail = 2,
         UtilityCable = 3,
-        SnowPole = 4
+        SnowPole = 4,
+
+        /// <summary>The halyard slapping the windsock's mast.</summary>
+        WindsockHalyard = 5,
+
+        /// <summary>A tarp roped over freight nobody is coming for.</summary>
+        LoadTarp = 6
     }
 
     public enum MountainRoadRidgeLayer
@@ -276,6 +282,187 @@ namespace BarPromenade
         public Vector3 SpawnForward => OutwardAxis;
     }
 
+    /// <summary>
+    /// A horizontal wedge on the ground, in world XZ. It says where the
+    /// mountain is allowed to be absent: the terrain is cut away inside it
+    /// and nothing that has to stay grounded may stand in it.
+    ///
+    /// The taper exists because a hard-walled cut is a razor slot. The last
+    /// few degrees fall off gradually, which gives the opening real side
+    /// walls; clearance work therefore measures against the OUTER angle,
+    /// not the one the view is composed on.
+    /// </summary>
+    public readonly struct MountainRoadViewCorridor
+    {
+        internal MountainRoadViewCorridor(
+            Vector3 apex,
+            Vector3 axis,
+            float halfAngleDegrees,
+            float taperDegrees,
+            float innerRadius,
+            float outerRadius)
+        {
+            Apex = apex;
+            Vector3 flat = axis;
+            flat.y = 0f;
+            Axis = flat.normalized;
+            HalfAngleDegrees = halfAngleDegrees;
+            TaperDegrees = taperDegrees;
+            InnerRadius = innerRadius;
+            OuterRadius = outerRadius;
+        }
+
+        public Vector3 Apex { get; }
+        public Vector3 Axis { get; }
+        public float HalfAngleDegrees { get; }
+        public float TaperDegrees { get; }
+        public float InnerRadius { get; }
+        public float OuterRadius { get; }
+
+        public float OuterHalfAngleDegrees =>
+            HalfAngleDegrees + TaperDegrees;
+
+        /// <summary>
+        /// Signed distance to the outer wedge: positive inside, and outside
+        /// the true metres to the nearest point of it, so a clearance rule
+        /// reads <c>DepthInside(p) &lt;= -margin</c>.
+        ///
+        /// The angular and radial cases have to be answered together. A
+        /// point that is both well off the axis AND past the far arc is
+        /// nowhere near the cut, and treating its radial shortfall as a
+        /// clearance reports a road a hundred and forty metres away as
+        /// standing ten metres from the edge.
+        /// </summary>
+        public float DepthInside(Vector2 pointXZ)
+        {
+            var delta = new Vector2(
+                pointXZ.x - Apex.x,
+                pointXZ.y - Apex.z);
+            float distance = delta.magnitude;
+            if (distance <= 0.0001f)
+            {
+                return 0f;
+            }
+
+            var axis = new Vector2(Axis.x, Axis.z);
+            float angle = Vector2.Angle(axis, delta / distance);
+            float offWall = angle - OuterHalfAngleDegrees;
+            if (offWall <= 0f)
+            {
+                // Angularly inside: either within the arc, or straight
+                // past its far end.
+                return distance <= OuterRadius
+                    ? Mathf.Min(
+                        OuterRadius - distance,
+                        distance * Mathf.Sin(-offWall * Mathf.Deg2Rad))
+                    : OuterRadius - distance;
+            }
+
+            // Angularly outside: measure to the nearer wall segment, which
+            // runs from the apex to its own far endpoint.
+            float radians = offWall * Mathf.Deg2Rad;
+            float along = distance * Mathf.Cos(radians);
+            if (along <= 0f)
+            {
+                return -distance;
+            }
+
+            if (along >= OuterRadius)
+            {
+                float squared = distance * distance +
+                                OuterRadius * OuterRadius -
+                                2f * distance * OuterRadius *
+                                Mathf.Cos(radians);
+                return -Mathf.Sqrt(Mathf.Max(0f, squared));
+            }
+
+            return -distance * Mathf.Sin(radians);
+        }
+
+        /// <summary>
+        /// How much of the cut applies at this point: one inside the
+        /// composed wedge past the lead-in, easing to zero across the
+        /// taper and across <paramref name="innerBlend"/> metres of radius.
+        /// </summary>
+        public float Weight(Vector2 pointXZ, float innerBlend)
+        {
+            var delta = new Vector2(
+                pointXZ.x - Apex.x,
+                pointXZ.y - Apex.z);
+            float distance = delta.magnitude;
+            if (distance <= 0.0001f || distance > OuterRadius)
+            {
+                return 0f;
+            }
+
+            var axis = new Vector2(Axis.x, Axis.z);
+            float angle = Vector2.Angle(axis, delta / distance);
+            float lateral = 1f - Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.InverseLerp(
+                    HalfAngleDegrees,
+                    OuterHalfAngleDegrees,
+                    angle));
+            float longitudinal = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.InverseLerp(
+                    InnerRadius,
+                    InnerRadius + innerBlend,
+                    distance));
+            return lateral * longitudinal;
+        }
+    }
+
+    /// <summary>
+    /// Where the terminal terrace stops being ground.
+    ///
+    /// This hangs off the plateau rather than off the terminal on purpose:
+    /// <see cref="MountainRoadTerminalPlanner"/> already samples terrain
+    /// height to ground the cableway, so anything that CHANGES terrain has
+    /// to exist before the terminal does. The plateau descriptor is also
+    /// already threaded into every terrain sample in the area, so putting
+    /// it here costs no signature anywhere.
+    /// </summary>
+    public sealed class MountainRoadBrinkDescriptor
+    {
+        internal MountainRoadBrinkDescriptor(
+            Vector3 rimStart,
+            Vector3 rimEnd,
+            Vector3 outward,
+            float dropDepth,
+            float edgeBlendDistance,
+            MountainRoadViewCorridor corridor)
+        {
+            RimStart = rimStart;
+            RimEnd = rimEnd;
+            Vector3 flat = outward;
+            flat.y = 0f;
+            Outward = flat.normalized;
+            DropDepth = dropDepth;
+            EdgeBlendDistance = edgeBlendDistance;
+            Corridor = corridor;
+        }
+
+        public Vector3 RimStart { get; }
+        public Vector3 RimEnd { get; }
+        public Vector3 Outward { get; }
+
+        /// <summary>
+        /// How far the ground is taken down inside the cut. It is a
+        /// CONSTANT subtraction rather than a flat floor, so the cut bed
+        /// keeps the macro slope and the far edge of the mesh is a
+        /// uniformly lowered continuation instead of a second cliff.
+        /// </summary>
+        public float DropDepth { get; }
+
+        public float EdgeBlendDistance { get; }
+        public MountainRoadViewCorridor Corridor { get; }
+
+        public Vector3 RimCenter => (RimStart + RimEnd) * 0.5f;
+    }
+
     public sealed class MountainRoadPlateauDescriptor
     {
         private readonly ReadOnlyCollection<Vector2> verticesXZ;
@@ -284,7 +471,8 @@ namespace BarPromenade
             Vector3 center,
             Vector3 forward,
             float entryDistance,
-            IList<Vector2> sourceVertices)
+            IList<Vector2> sourceVertices,
+            MountainRoadBrinkDescriptor brink)
         {
             Center = center;
             Forward = forward.normalized;
@@ -293,12 +481,16 @@ namespace BarPromenade
             verticesXZ = new ReadOnlyCollection<Vector2>(
                 new List<Vector2>(sourceVertices));
             BoundsXZ = CalculateBounds(verticesXZ);
+            Brink = brink;
         }
 
         public Vector3 Center { get; }
         public Vector3 Forward { get; }
         public Vector3 Right { get; }
         public float EntryDistance { get; }
+
+        /// <summary>The cut rim, or null on a plateau without one.</summary>
+        public MountainRoadBrinkDescriptor Brink { get; }
         public IReadOnlyList<Vector2> VerticesXZ => verticesXZ;
         public Rect BoundsXZ { get; }
         public Vector2 Size => BoundsXZ.size;
@@ -492,8 +684,10 @@ namespace BarPromenade
             IList<MountainRoadForestDescriptor> sourceForest,
             IList<MountainRoadMiscDescriptor> sourceMisc,
             IList<MountainRoadRidgeDescriptor> sourceRidges,
-            IList<MountainRoadSoundAnchor> sourceSoundAnchors)
+            IList<MountainRoadSoundAnchor> sourceSoundAnchors,
+            MountainRoadVistaPlan vista)
         {
+            Vista = vista;
             Seed = seed;
             Tunnel = tunnel ?? throw new ArgumentNullException(nameof(tunnel));
             Route = route ?? throw new ArgumentNullException(nameof(route));
@@ -513,6 +707,10 @@ namespace BarPromenade
         public MountainRoadRoutePlan Route { get; }
         public MountainRoadPlateauDescriptor Plateau { get; }
         public MountainRoadTerminalPlan Terminal { get; }
+
+        /// <summary>What is seen over the brink, or null without one.</summary>
+        public MountainRoadVistaPlan Vista { get; }
+
         public MountainRoadBridgeDescriptor Bridge => Route.Bridge;
         public Rect TerrainBoundsXZ { get; }
         public Bounds WorldBounds { get; }

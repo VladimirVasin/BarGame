@@ -32,5 +32,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/AreaLoading.unity
     guid: eae6ce3f401d6804abba37c7af08e20b
+  - enabled: 1
+    path: Assets/Scenes/ChurchInterior.unity
+    guid: 0cfd71e3471776e4d9c21e5a657b87ec
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

@@ -130,6 +130,36 @@ namespace BarPromenade
 
             var batches =
                 new Dictionary<BatchKey, List<RuntimeOrientedBox>>();
+            var importedBatches = new Dictionary<
+                BatchKey,
+                List<RuntimeMeshPlacement>>();
+            var collisionBatches =
+                new Dictionary<BatchKey, List<RuntimeOrientedBox>>();
+            var importedIds = new HashSet<string>(StringComparer.Ordinal);
+            CityMiscAssetProvider miscProvider =
+                CityMiscAssetProvider.Load();
+
+            TryAppendImportedGraves(
+                parts,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendImportedTrees(
+                parts,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendImportedBushes(
+                parts,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendImportedBenches(
+                parts,
+                miscProvider,
+                importedBatches,
+                importedIds);
+
             for (int index = 0; index < parts.Count; index++)
             {
                 CityCemeteryPartDescriptor part = parts[index];
@@ -139,6 +169,16 @@ namespace BarPromenade
                     Mathf.FloorToInt(
                         part.Center.z / SpatialChunkSize),
                     part.Style);
+                if (importedIds.Contains(part.StableId))
+                {
+                    if (part.BlocksMovement)
+                    {
+                        AppendBox(collisionBatches, key, part);
+                    }
+
+                    continue;
+                }
+
                 if (!batches.TryGetValue(
                         key,
                         out List<RuntimeOrientedBox> boxes))
@@ -170,8 +210,8 @@ namespace BarPromenade
                         root,
                         batches[key],
                         ResolveColor(key.Style),
-                        CityCemeteryRules.BlocksMovement(key.Style),
-                        uvTileSize);
+                    CityCemeteryRules.BlocksMovement(key.Style),
+                    uvTileSize);
                 if (surface.HasValue)
                 {
                     CityCemeterySurfaceAppearance.ApplyCombined(
@@ -180,6 +220,600 @@ namespace BarPromenade
                         ResolveColor(key.Style));
                 }
             }
+
+            keys = new List<BatchKey>(importedBatches.Keys);
+            keys.Sort(BatchKey.Compare);
+            for (int index = 0; index < keys.Count; index++)
+            {
+                BatchKey key = keys[index];
+                CityCemeterySurfaceKind? surface =
+                    ResolveSurface(key.Style);
+                float? uvTileSize = surface.HasValue
+                    ? CityCemeterySurfaceAppearance
+                        .GetRecipe(surface.Value).MetersPerTile
+                    : (float?)null;
+                GameObject chunk =
+                    RuntimePrimitiveFactory.CreateCombinedMeshes(
+                        $"Imported {namePrefix} {key.X} {key.Z} " +
+                        $"{key.Style}",
+                        root,
+                        importedBatches[key],
+                        ResolveColor(key.Style),
+                        false,
+                        uvTileSize,
+                        RuntimeWorldUvMode.XZPlanar);
+                if (surface.HasValue)
+                {
+                    CityCemeterySurfaceAppearance.ApplyCombined(
+                        chunk.GetComponent<Renderer>(),
+                        surface.Value,
+                        ResolveColor(key.Style));
+                }
+            }
+
+            keys = new List<BatchKey>(collisionBatches.Keys);
+            keys.Sort(BatchKey.Compare);
+            for (int index = 0; index < keys.Count; index++)
+            {
+                BatchKey key = keys[index];
+                GameObject proxy =
+                    RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                        $"{namePrefix} Imported Collision {key.X} " +
+                        $"{key.Z} {key.Style}",
+                        root,
+                        collisionBatches[key],
+                        ResolveColor(key.Style),
+                        true);
+                proxy.GetComponent<Renderer>().enabled = false;
+            }
+        }
+
+        private static void TryAppendImportedGraves(
+            IReadOnlyList<CityCemeteryPartDescriptor> parts,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            if (provider == null)
+            {
+                return;
+            }
+
+            var groups = new Dictionary<
+                int,
+                List<CityCemeteryPartDescriptor>>();
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityCemeteryPartDescriptor part = parts[index];
+                if (part.GraveOrdinal < 0 || !IsGravePart(part.Kind))
+                {
+                    continue;
+                }
+
+                if (!groups.TryGetValue(
+                        part.GraveOrdinal,
+                        out List<CityCemeteryPartDescriptor> group))
+                {
+                    group = new List<CityCemeteryPartDescriptor>();
+                    groups.Add(part.GraveOrdinal, group);
+                }
+
+                group.Add(part);
+            }
+
+            var ordinals = new List<int>(groups.Keys);
+            ordinals.Sort();
+            for (int groupIndex = 0;
+                 groupIndex < ordinals.Count;
+                 groupIndex++)
+            {
+                List<CityCemeteryPartDescriptor> group =
+                    groups[ordinals[groupIndex]];
+                CityCemeteryPartDescriptor slab = default;
+                bool hasSlab = false;
+                for (int index = 0; index < group.Count; index++)
+                {
+                    if (group[index].Kind !=
+                        CityCemeteryPartKind.GraveSlab)
+                    {
+                        continue;
+                    }
+
+                    slab = group[index];
+                    hasSlab = true;
+                    break;
+                }
+
+                if (!hasSlab)
+                {
+                    continue;
+                }
+
+                Vector3 ground = new Vector3(
+                    slab.Center.x,
+                    slab.Center.y - slab.Size.y * 0.5f,
+                    slab.Center.z);
+                int variant = (int)slab.Variant;
+                var slabParts = SelectParts(
+                    group,
+                    CityCemeteryPartKind.GraveSlab);
+                TryAppendAssembly(
+                    provider,
+                    CityMiscKind.CemeteryGraveSlab,
+                    variant,
+                    ground,
+                    slab.Rotation,
+                    slab.Style,
+                    slabParts,
+                    batches,
+                    importedIds);
+
+                List<CityCemeteryPartDescriptor> monuments =
+                    SelectParts(
+                        group,
+                        CityCemeteryPartKind.GraveMonument);
+                if (slab.Variant ==
+                    CityCemeteryGraveVariant.OvergrownSlab)
+                {
+                    TryAppendAssembly(
+                        provider,
+                        CityMiscKind.CemeteryOvergrownMound,
+                        0,
+                        ground,
+                        slab.Rotation,
+                        CityCemeteryStyle.Soil,
+                        monuments,
+                        batches,
+                        importedIds);
+                }
+                else if (!HasNonRigidMonumentTilt(
+                             monuments,
+                             slab.Rotation))
+                {
+                    TryAppendAssembly(
+                        provider,
+                        CityMiscKind.CemeteryGraveMonument,
+                        variant,
+                        ground,
+                        slab.Rotation,
+                        slab.Style,
+                        monuments,
+                        batches,
+                        importedIds);
+                }
+
+                TryAppendAssembly(
+                    provider,
+                    CityMiscKind.CemeteryGraveEnclosure,
+                    0,
+                    ground,
+                    slab.Rotation,
+                    CityCemeteryStyle.Iron,
+                    SelectParts(
+                        group,
+                        CityCemeteryPartKind.GraveEnclosure),
+                    batches,
+                    importedIds);
+                TryAppendAssembly(
+                    provider,
+                    CityMiscKind.CemeteryGraveOffering,
+                    0,
+                    ground,
+                    slab.Rotation,
+                    CityCemeteryStyle.Flowers,
+                    SelectParts(
+                        group,
+                        CityCemeteryPartKind.GraveOffering),
+                    batches,
+                    importedIds);
+            }
+        }
+
+        private static void TryAppendImportedTrees(
+            IReadOnlyList<CityCemeteryPartDescriptor> parts,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            var groups = new Dictionary<
+                string,
+                List<CityCemeteryPartDescriptor>>(
+                    StringComparer.Ordinal);
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityCemeteryPartDescriptor part = parts[index];
+                if (part.Kind != CityCemeteryPartKind.TreeTrunk &&
+                    part.Kind != CityCemeteryPartKind.TreeCrown)
+                {
+                    continue;
+                }
+
+                string stem = GetTreeStem(part.StableId);
+                if (!groups.TryGetValue(
+                        stem,
+                        out List<CityCemeteryPartDescriptor> group))
+                {
+                    group = new List<CityCemeteryPartDescriptor>();
+                    groups.Add(stem, group);
+                }
+
+                group.Add(part);
+            }
+
+            var stems = new List<string>(groups.Keys);
+            stems.Sort(StringComparer.Ordinal);
+            for (int index = 0; index < stems.Count; index++)
+            {
+                List<CityCemeteryPartDescriptor> group = groups[stems[index]];
+                CityCemeteryPartDescriptor trunk = default;
+                bool found = false;
+                for (int partIndex = 0;
+                     partIndex < group.Count;
+                     partIndex++)
+                {
+                    if (group[partIndex].Kind !=
+                        CityCemeteryPartKind.TreeTrunk)
+                    {
+                        continue;
+                    }
+
+                    trunk = group[partIndex];
+                    found = true;
+                    break;
+                }
+
+                if (!found)
+                {
+                    continue;
+                }
+
+                Vector3 ground = new Vector3(
+                    trunk.Center.x,
+                    trunk.Center.y - trunk.Size.y * 0.5f,
+                    trunk.Center.z);
+                int variant = trunk.Style ==
+                    CityCemeteryStyle.TrunkBirch
+                        ? 0
+                        : 1;
+                TryAppendAssembly(
+                    provider,
+                    CityMiscKind.CemeteryTree,
+                    variant,
+                    ground,
+                    Quaternion.identity,
+                    trunk.Style,
+                    group,
+                    batches,
+                    importedIds);
+            }
+        }
+
+        private static void TryAppendImportedBushes(
+            IReadOnlyList<CityCemeteryPartDescriptor> parts,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityCemeteryPartDescriptor part = parts[index];
+                if (part.Kind != CityCemeteryPartKind.Bush)
+                {
+                    continue;
+                }
+
+                Vector3 ground = new Vector3(
+                    part.Center.x,
+                    part.Center.y - part.Size.y * 0.5f,
+                    part.Center.z);
+                TryAppendAssembly(
+                    provider,
+                    CityMiscKind.CemeteryBush,
+                    0,
+                    ground,
+                    part.Rotation,
+                    part.Style,
+                    new List<CityCemeteryPartDescriptor> { part },
+                    batches,
+                    importedIds);
+            }
+        }
+
+        private static void TryAppendImportedBenches(
+            IReadOnlyList<CityCemeteryPartDescriptor> parts,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            var groups = new Dictionary<
+                string,
+                List<CityCemeteryPartDescriptor>>(
+                    StringComparer.Ordinal);
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityCemeteryPartDescriptor part = parts[index];
+                if (part.Kind != CityCemeteryPartKind.Bench)
+                {
+                    continue;
+                }
+
+                string stem = GetBenchStem(part.StableId);
+                if (!groups.TryGetValue(
+                        stem,
+                        out List<CityCemeteryPartDescriptor> group))
+                {
+                    group = new List<CityCemeteryPartDescriptor>();
+                    groups.Add(stem, group);
+                }
+
+                group.Add(part);
+            }
+
+            var stems = new List<string>(groups.Keys);
+            stems.Sort(StringComparer.Ordinal);
+            for (int index = 0; index < stems.Count; index++)
+            {
+                List<CityCemeteryPartDescriptor> group = groups[stems[index]];
+                CityCemeteryPartDescriptor seat = default;
+                bool found = false;
+                float groundY = float.PositiveInfinity;
+                for (int partIndex = 0;
+                     partIndex < group.Count;
+                     partIndex++)
+                {
+                    CityCemeteryPartDescriptor part = group[partIndex];
+                    groundY = Mathf.Min(
+                        groundY,
+                        part.Center.y - part.Size.y * 0.5f);
+                    if (part.StableId.EndsWith(
+                            "-seat",
+                            StringComparison.Ordinal))
+                    {
+                        seat = part;
+                        found = true;
+                    }
+                }
+
+                if (!found)
+                {
+                    continue;
+                }
+
+                TryAppendAssembly(
+                    provider,
+                    CityMiscKind.CemeteryBench,
+                    0,
+                    new Vector3(
+                        seat.Center.x,
+                        groundY,
+                        seat.Center.z),
+                    seat.Rotation,
+                    CityCemeteryStyle.Timber,
+                    group,
+                    batches,
+                    importedIds);
+            }
+        }
+
+        private static bool TryAppendAssembly(
+            CityMiscAssetProvider provider,
+            CityMiscKind kind,
+            int variant,
+            Vector3 origin,
+            Quaternion rotation,
+            CityCemeteryStyle sourceStyle,
+            IReadOnlyList<CityCemeteryPartDescriptor> sourceParts,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            if (sourceParts == null || sourceParts.Count == 0 ||
+                !TryGetImportedParts(
+                    provider,
+                    kind,
+                    variant,
+                    out List<CityMiscMeshPart> parts))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityMiscMeshPart part = parts[index];
+                CityCemeteryStyle style = ResolveImportedStyle(
+                    kind,
+                    part.Role,
+                    sourceStyle);
+                var key = new BatchKey(
+                    Mathf.FloorToInt(origin.x / SpatialChunkSize),
+                    Mathf.FloorToInt(origin.z / SpatialChunkSize),
+                    style);
+                if (!batches.TryGetValue(
+                        key,
+                        out List<RuntimeMeshPlacement> placements))
+                {
+                    placements = new List<RuntimeMeshPlacement>();
+                    batches.Add(key, placements);
+                }
+
+                placements.Add(new RuntimeMeshPlacement(
+                    part.Mesh,
+                    origin,
+                    rotation));
+            }
+
+            for (int index = 0; index < sourceParts.Count; index++)
+            {
+                importedIds.Add(sourceParts[index].StableId);
+            }
+
+            return true;
+        }
+
+        private static bool TryGetImportedParts(
+            CityMiscAssetProvider provider,
+            CityMiscKind kind,
+            int variant,
+            out List<CityMiscMeshPart> parts)
+        {
+            parts = null;
+            if (provider == null || !CityMiscAssetProvider.Supports(kind))
+            {
+                return false;
+            }
+
+            try
+            {
+                int count = CityMiscAssetProvider.GetPartCount(kind);
+                var result = new List<CityMiscMeshPart>(count);
+                for (int index = 0; index < count; index++)
+                {
+                    result.Add(provider.GetPartOrThrow(
+                        kind,
+                        variant,
+                        index));
+                }
+
+                parts = result;
+                return result.Count > 0;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return false;
+            }
+        }
+
+        private static CityCemeteryStyle ResolveImportedStyle(
+            CityMiscKind kind,
+            CityMiscMeshRole role,
+            CityCemeteryStyle sourceStyle)
+        {
+            switch (kind)
+            {
+                case CityMiscKind.CemeteryOvergrownMound:
+                    return role == CityMiscMeshRole.Residential
+                        ? CityCemeteryStyle.Flowers
+                        : CityCemeteryStyle.Soil;
+                case CityMiscKind.CemeteryGraveEnclosure:
+                    return CityCemeteryStyle.Iron;
+                case CityMiscKind.CemeteryGraveOffering:
+                    return CityCemeteryStyle.Flowers;
+                case CityMiscKind.CemeteryTree:
+                    return role == CityMiscMeshRole.Foliage
+                        ? CityCemeteryStyle.FoliageDark
+                        : sourceStyle;
+                case CityMiscKind.CemeteryBush:
+                    return CityCemeteryStyle.FoliageDark;
+                case CityMiscKind.CemeteryBench:
+                    return role == CityMiscMeshRole.Timber
+                        ? CityCemeteryStyle.Timber
+                        : CityCemeteryStyle.Iron;
+                default:
+                    return sourceStyle;
+            }
+        }
+
+        private static bool IsGravePart(CityCemeteryPartKind kind)
+        {
+            return kind == CityCemeteryPartKind.GraveSlab ||
+                   kind == CityCemeteryPartKind.GraveMonument ||
+                   kind == CityCemeteryPartKind.GraveEnclosure ||
+                   kind == CityCemeteryPartKind.GraveOffering;
+        }
+
+        private static List<CityCemeteryPartDescriptor> SelectParts(
+            IReadOnlyList<CityCemeteryPartDescriptor> parts,
+            CityCemeteryPartKind kind)
+        {
+            var selected = new List<CityCemeteryPartDescriptor>();
+            for (int index = 0; index < parts.Count; index++)
+            {
+                if (parts[index].Kind == kind)
+                {
+                    selected.Add(parts[index]);
+                }
+            }
+
+            return selected;
+        }
+
+        private static bool HasNonRigidMonumentTilt(
+            IReadOnlyList<CityCemeteryPartDescriptor> monuments,
+            Quaternion graveYaw)
+        {
+            for (int index = 0; index < monuments.Count; index++)
+            {
+                CityCemeteryPartDescriptor part = monuments[index];
+                if (part.StableId.EndsWith(
+                        "-slant",
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                if (Quaternion.Angle(part.Rotation, graveYaw) > 0.05f)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static string GetTreeStem(string stableId)
+        {
+            int suffix = stableId.IndexOf(
+                "-trunk",
+                StringComparison.Ordinal);
+            if (suffix < 0)
+            {
+                suffix = stableId.IndexOf(
+                    "-crown-",
+                    StringComparison.Ordinal);
+            }
+
+            return suffix > 0
+                ? stableId.Substring(0, suffix)
+                : stableId;
+        }
+
+        private static string GetBenchStem(string stableId)
+        {
+            string[] suffixes = { "-seat", "-back", "-leg-" };
+            for (int index = 0; index < suffixes.Length; index++)
+            {
+                int suffix = stableId.IndexOf(
+                    suffixes[index],
+                    StringComparison.Ordinal);
+                if (suffix > 0)
+                {
+                    return stableId.Substring(0, suffix);
+                }
+            }
+
+            return stableId;
+        }
+
+        private static void AppendBox(
+            IDictionary<BatchKey, List<RuntimeOrientedBox>> batches,
+            BatchKey key,
+            CityCemeteryPartDescriptor part)
+        {
+            if (!batches.TryGetValue(
+                    key,
+                    out List<RuntimeOrientedBox> boxes))
+            {
+                boxes = new List<RuntimeOrientedBox>();
+                batches.Add(key, boxes);
+            }
+
+            boxes.Add(new RuntimeOrientedBox(
+                part.Center,
+                part.Rotation,
+                part.Size));
         }
 
         /// <summary>

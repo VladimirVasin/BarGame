@@ -155,7 +155,8 @@ namespace BarPromenade
             CityLayout layout)
         {
             float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
-            var footprints = new List<Rect>(layout.BuildingLots.Count);
+            var footprints = new List<Rect>(
+                layout.BuildingLots.Count + 1);
             for (int index = 0; index < layout.BuildingLots.Count; index++)
             {
                 BuildingLot lot = layout.BuildingLots[index];
@@ -164,14 +165,31 @@ namespace BarPromenade
                     continue;
                 }
 
-                footprints.Add(Rect.MinMaxRect(
-                    lot.Center.x - lot.Size.x * 0.5f - radius,
-                    lot.Center.z - lot.Size.y * 0.5f - radius,
-                    lot.Center.x + lot.Size.x * 0.5f + radius,
-                    lot.Center.z + lot.Size.y * 0.5f + radius));
+                footprints.Add(Expand(
+                    Rect.MinMaxRect(
+                        lot.Center.x - lot.Size.x * 0.5f,
+                        lot.Center.z - lot.Size.y * 0.5f,
+                        lot.Center.x + lot.Size.x * 0.5f,
+                        lot.Center.z + lot.Size.y * 0.5f),
+                    radius));
+            }
+
+            CityChurchPlan church = CityChurchPlanner.Create(layout);
+            if (church != null)
+            {
+                footprints.Add(Expand(church.ModelFootprint, radius));
             }
 
             return footprints;
+        }
+
+        private static Rect Expand(Rect bounds, float amount)
+        {
+            return Rect.MinMaxRect(
+                bounds.xMin - amount,
+                bounds.yMin - amount,
+                bounds.xMax + amount,
+                bounds.yMax + amount);
         }
     }
 

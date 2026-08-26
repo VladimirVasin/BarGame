@@ -458,7 +458,10 @@ namespace BarPromenade.Tests.EditMode
                     Texture texture = properties.GetTexture(BaseMapId);
                     bool named = renderer.name.StartsWith(
                         "Park ",
-                        StringComparison.Ordinal);
+                        StringComparison.Ordinal) ||
+                        renderer.name.StartsWith(
+                            "Imported Park ",
+                            StringComparison.Ordinal);
                     if (texture == null)
                     {
                         Assert.That(
@@ -525,11 +528,14 @@ namespace BarPromenade.Tests.EditMode
             switch (rendererName)
             {
                 case "Park Tree Trunks":
+                case "Imported Park Tree Trunks":
                     return CityParkSurfaceKind.Bark;
                 case "Park Tree Canopies":
+                case "Imported Park Tree Canopies":
                 case "Park Boundary Hedges":
                     return CityParkSurfaceKind.Foliage;
                 case "Park Benches":
+                case "Imported Park Benches":
                     return CityParkSurfaceKind.Timber;
                 default:
                     Assert.Fail(

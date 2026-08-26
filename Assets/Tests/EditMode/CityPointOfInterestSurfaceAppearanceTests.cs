@@ -392,15 +392,23 @@ namespace BarPromenade.Tests.EditMode
                     }
                 }
 
-                // Three frames of two posts, a header and two lines,
-                // two bench legs, the floodlight pole and housing.
                 Assert.That(
                     metalCount,
-                    Is.GreaterThanOrEqualTo(19),
-                    "The drying frames and fixtures must carry the " +
-                    "painted-metal sheet.");
+                    Is.EqualTo(1),
+                    "The authored drying frames and fixture shells share " +
+                    "one painted-metal role mesh.");
                 Assert.That(timberCount, Is.EqualTo(1));
                 Assert.That(clothCount, Is.EqualTo(4));
+                Assert.That(
+                    dryingYard.Find(
+                        "Imported Residential Drying Yard " +
+                        "Residential_PaintedMetal"),
+                    Is.Not.Null);
+                Assert.That(
+                    dryingYard.Find(
+                        "Imported Residential Drying Yard " +
+                        "Residential_Timber"),
+                    Is.Not.Null);
             }
             finally
             {
@@ -500,25 +508,37 @@ namespace BarPromenade.Tests.EditMode
                     }
                 }
 
-                // The island platform, the inner route ring (paint
-                // over the same paving) and the empty centre disc.
-                Assert.That(pavingCount, Is.EqualTo(3));
-                // Five canopy segments of post, beam and roof, the
-                // mast group, the departure board frame, the bench
-                // base, the waste bin and the floodlight metalwork.
+                Assert.That(
+                    pavingCount,
+                    Is.EqualTo(1),
+                    "The authored island masonry shares one paving role " +
+                    "mesh.");
                 Assert.That(
                     metalCount,
-                    Is.GreaterThanOrEqualTo(26),
-                    "The island fixtures must carry the painted-metal " +
-                    "sheet.");
-                // Two route plates, the totem map backing, two torn
-                // posters, three schedule rows and the discarded
-                // timetable.
-                Assert.That(paperCount, Is.EqualTo(9));
+                    Is.GreaterThanOrEqualTo(1),
+                    "The imported island fixtures must carry the " +
+                    "painted-metal sheet; the Ferryman lamp may add " +
+                    "runtime renderers.");
+                Assert.That(
+                    paperCount,
+                    Is.EqualTo(1),
+                    "All static island paper is one authored role mesh.");
                 Assert.That(timberCount, Is.EqualTo(1));
                 // Six simulated canopy rags plus the lost scarf.
                 Assert.That(clothCount, Is.EqualTo(7));
                 Assert.That(skinnedClothCount, Is.EqualTo(6));
+                foreach (string component in new[]
+                         {
+                             "Masonry", "Street", "Residential", "Timber"
+                         })
+                {
+                    Assert.That(
+                        island.Find(
+                            "Imported Nightlife Last Route Island " +
+                            component),
+                        Is.Not.Null,
+                        $"Missing imported island {component} role mesh.");
+                }
             }
             finally
             {

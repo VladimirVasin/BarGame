@@ -3,7 +3,7 @@
 ## Current
 
 - Product name: **Барный Променад** (Bar Promenade).
-- Engine: Unity `6000.5.9f1`.
+- Engine: Unity `6000.5.10f1`.
 - Rendering: Universal Render Pipeline package `17.5.0` with one PC quality
   level and one PC render-pipeline profile. PC is the current and default
   quality at index `0` for every serialized platform key, has no platform
@@ -18,10 +18,11 @@
   `Assets/Scenes/StairwellInterior.unity`,
   `Assets/Scenes/HomeInterior.unity`,
   `Assets/Scenes/MountainRoad.unity` and
-  `Assets/Scenes/AreaLoading.unity`. The last two are appended at build indices
-  `7` and `8`, preserving every previous index.
+  `Assets/Scenes/AreaLoading.unity`, followed by
+  `Assets/Scenes/ChurchInterior.unity`. The last three are appended at build
+  indices `7`, `8` and `9`, preserving every previous index.
 - Runtime assembly: `BarPromenade.Runtime`.
-- Player presentation: one modular `Player3D.prefab` in all six gameplay
+- Player presentation: one modular `Player3D.prefab` in all seven gameplay
   roots, with independent mesh parts, a Generic in-place action set,
   same-prefab first-person subsets, a dedicated portrait, real mesh shadows
   and an analytic contact patch.
@@ -34,8 +35,8 @@
 
 A runtime-composed 3D coastal city and separately loaded mountain road in which
 one modular low-poly 3D hero walks the streets and climb, approaches interactive
-bars, a supermarket and his nearby home, enters separate interiors, and returns
-to the matching exterior entrance.
+bars, a supermarket, his nearby home and the church north of the cemetery,
+enters separate interiors, and returns to the matching exterior entrance.
 
 The vertical slice contains:
 
@@ -98,7 +99,14 @@ The vertical slice contains:
   terminal rather than old absolute world heights. At the normal `2.6 m/s`
   walk speed the route takes about `230.8 s`, or `3 min 51 s`; vehicle control
   remains separate future work. Layered forest, grounded roadside misc, middle
-  ridges and far snowy peaks are distributed over the complete climb. Five
+  ridges and far snowy peaks are distributed over the complete climb. The
+  first deliberate misc migration replaces the visible runtime-box geometry
+  of `FallenLog`, `Stump`, `DeadTree`, `GuardRail`, `SnowPole`,
+  `ConvexMirror`, `UtilityCabinet` and `AbandonedChair`: `102` plan placements
+  select `19` deterministic Blender meshes and arrive as `12` combined
+  renderers, while transforms, semantic IDs and simple collision proxies stay
+  plan-owned. Boulders, culvert, utility cable and tunnel lamp remain on their
+  previous builders. Five
   causal positional sound anchors belong to identifiable visible sources,
   including one loose bridge rail; one tunnel practical visibly flickers. Its
   root may generate the pure City layout/mountain plan needed by the City map
@@ -688,7 +696,8 @@ The vertical slice contains:
   camera-distance self-fade inside the 48 m far plane — visible from
   the esplanade, sand and pier head, gone from every street;
 - a reusable Cemetery non-urban profile on the default city's eastern edge
-  (the former lake block above it is a plain `4 x 4` north-east yard now),
+  (the church occupies the next `4 x 2` rows and the former lake block above
+  that remains a plain `4 x 4` north-east yard),
   where the `3 x 2` cemetery is walkable ground;
   it requires one street-linked open-area approach and exposes the same data
   to world, fence, navigation, map and deterministic landmark consumers. The
@@ -712,6 +721,21 @@ The vertical slice contains:
   committed until an act finishes, so every worksite in the yard stays a pure
   function of its own rung in the book of work (`CemeteryGraveWorkLedger`,
   one stage and one epitaph per plot);
+- one deterministic Church precinct on the `4 x 2` open area immediately
+  north of that cemetery. Its sole frontage and exterior entrance face the
+  west street; the altar end faces east, the cemetery fence retains a clear
+  separation and there is no direct cemetery gate. City loads only the
+  `44 x 23 x 32 m` Blender-authored Catholic exterior — neo-Gothic west
+  tower and spire, buttresses, lancet windows, rose window, pitched roofs and
+  Latin crosses — with emissive windows but no new realtime exterior Light.
+  A completed door action routes through the
+  shared `DoorTransition` into `ChurchInterior`, whose validated plan owns a
+  narthex, nave, crossing/choir, four piers, two side aisles, pew rows,
+  confessionals, font, votive stands and an inaccessible sanctuary with high
+  altar, tabernacle and crucifix. Exiting returns to the exact church frontage.
+  One deterministic
+  Blender source exports independent exterior/interior FBX and Resources
+  prefabs so the City never loads the furnishings;
 - one deterministic city-decoration plan with a distinct silhouette or facade
   treatment on every ordinary building lot, four primary urban landmarks, two
   park landmarks and optional frontage, roadside and park clusters. Its 24
@@ -727,6 +751,16 @@ The vertical slice contains:
   frontage and roadside descriptors sample the rendered terrain at their
   final XZ anchor, so their geometry, collision proxies and interaction
   docks share the actual pavement height rather than the lot datum;
+- one deterministic `city_misc_citywide_v3` mesh library supplies the passive
+  visuals for the broad City misc pass: `61` semantic kinds resolve to `91`
+  assemblies, `177` role meshes and `32,642` triangles. It covers the 24-family
+  decoration layer and park landmarks, street lamps and signal housings,
+  Route 01 shelters/poles, the eastern yard, cemetery graves and vegetation,
+  seacoast boats/barge/driftwood, fringe utility dressing and the static shells
+  of all four district points of interest. These are role meshes rather than
+  world prefabs: validated plans still own placement, terrain, collision,
+  dynamics, interactions, realtime lights/halos, cloth and NPCs. Tilted
+  cemetery monuments intentionally retain their legacy visual builder;
 - four first-class open district points of interest on their own full-block
   land-use lots: Old Town's waterworks court, Residential's drying yard,
   Industrial's weighbridge and Nightlife's last-route island. Their canonical
@@ -1004,7 +1038,7 @@ The vertical slice contains:
   bars expose `ReturnPosition`, home and supermarket expose `Center`, and each
   district POI exposes its authored position. Mountain Road owns the current
   player, tunnel, every authored hairpin apex, bridge centre, plateau endpoint,
-  cafe and cableway. Road and itinerary polylines, intermediate route samples
+  cafe, cableway and brink. Road and itinerary polylines, intermediate route samples
   and mountain hatches remain decorative. Point inspection is mutually
   exclusive with debug teleport and suppresses route editing, area travel and
   teleport confirmation until the player exits `XYZ` mode. Confirming the
@@ -1016,18 +1050,37 @@ The vertical slice contains:
   all ten authored hairpins, distinct mountain bridge, enlarged endpoint
   terminal and surrounding mountain hatch. Hairpins and bridge come from the
   same pure route plan used by the world. The terminal plan also supplies
-  distinct localized cafe and cableway landmarks; the map does not infer them
-  from runtime GameObjects. The physical terminal
+  distinct localized cafe, cableway and brink landmarks; the map does not
+  infer them from runtime GameObjects. The physical terminal
   keeps a clear `7.5 m` vehicle circle on its irregular roughly `42 x 27 m`
   plateau. On the left, one five-sided Nighthawks-inspired glass cafe is
   enterable without a scene load. Its lone patron, neighbouring couple and
   attendant are four dedicated staged models rather than pedestrian-pool
-  substitutes; two stools remain empty. Long seeded rests separate short
-  single-episode gestures, with the couple synchronized and no NPC voice bed.
+  substitutes; two stools remain empty, and the hero may take the middle one
+  of those two — the only one whose plank dock fits — which the attendant
+  notices through the tableau's own scheduler. Long seeded rests separate
+  short single-episode gestures, with the couple synchronized and no NPC
+  voice bed.
   On the right, a `58 m` continuously looping cableway moves four
   colliderless cabins over three grounded supports while its upper return is
   hidden by a real snowy ridge. The cafe interior and lower station participate
-  in the shared weather-shelter query. With the
+  in the shared weather-shelter query. The rest of the pad is a dressed
+  transfer yard of `85` batched parts on existing sheets and existing tints:
+  a ploughed snow bank and grit bin, the last road board and a seized
+  barrier, winter furniture on the cafe threshold, a freight dock with one
+  abandoned suitcase, and a `0.66 m` retaining wall whose two three-riser
+  flights climb to a back terrace. A `1.02 m` parapet closes that terrace
+  `0.35 m` inside the rim, carrying a sittable bench, a survey pillar, a
+  memorial plate and a windsock mast, with one chained gap. Past it the
+  terrain is cut `26 m` down through a `-27` degree wedge — the one sector
+  the ridges leave clear inside the `120 m` far plane, so none is moved and
+  both flanking masses become its jambs — and a fixed matte at `81-105 m` on
+  the lighthouse island's shaders shows the valley bed, the switchback he
+  climbed and a grain of city, all measured from the tunnel mouth's own
+  height and lit after dark with no Light at all. One mercury practical burns
+  over the freight dock and the brink stays dark. The Ferryman answers on the
+  summit from a second repertoire that offers nothing, the road having
+  ended. With the
   test teleport enabled through the City F9 toggle or the Home F9 arrival,
   every map lot becomes selectable,
   the side panel asks for an explicit confirmation and a

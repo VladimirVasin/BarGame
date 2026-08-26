@@ -101,6 +101,15 @@ namespace BarPromenade
                 return;
             }
 
+            // Batch-mode PlayMode tests use the Null graphics device. URP
+            // cannot allocate the cubemap render targets there, and asking
+            // it to render anyway can crash the native render loop before
+            // the test runner has a chance to report a result.
+            if (SystemInfo.graphicsDeviceType == GraphicsDeviceType.Null)
+            {
+                return;
+            }
+
             lastRenderedNight = CityWaterResources.NightFactor;
             reflectionCamera.RenderToCubemap(cubemap);
         }

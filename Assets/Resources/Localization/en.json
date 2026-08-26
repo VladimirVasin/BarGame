@@ -109,6 +109,14 @@
       "value": "E — return to the city"
     },
     {
+      "key": "interaction.enter_church",
+      "value": "E — enter the church"
+    },
+    {
+      "key": "interaction.exit_church",
+      "value": "E — return to the cemetery road"
+    },
+    {
       "key": "interaction.enter_supermarket",
       "value": "E — enter the shop"
     },
@@ -605,6 +613,10 @@
       "value": "Cableway"
     },
     {
+      "key": "map.mountain_road.brink",
+      "value": "The Brink"
+    },
+    {
       "key": "map.route_title",
       "value": "Bar Route"
     },
@@ -923,6 +935,10 @@
     {
       "key": "map.district.cemetery",
       "value": "Cemetery"
+    },
+    {
+      "key": "map.district.church",
+      "value": "Church"
     },
     {
       "key": "map.district.yard",
@@ -1311,6 +1327,54 @@
     {
       "key": "lastroute.ferryman.line.12",
       "value": "Nobody gets driven back this way."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.01",
+      "value": "We're here."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.02",
+      "value": "No further. Road's done."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.03",
+      "value": "Twenty years up here. First time not alone."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.04",
+      "value": "Engine cools down, and that's that."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.05",
+      "value": "Cold up here. Always was."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.06",
+      "value": "She made it. Doesn't always."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.07",
+      "value": "I'll wait. I'm used to it."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.08",
+      "value": "Still got the coin. Nowhere to toss it."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.09",
+      "value": "You got here. That's rare enough."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.10",
+      "value": "Wind blows here dawn to dawn."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.11",
+      "value": "If you're smoking, go round the far side."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.12",
+      "value": "Don't ask about going back."
     },
     {
       "key": "park.quarrel.chess.line.01",

@@ -382,6 +382,11 @@ namespace BarPromenade
             Transform reducer = BuildVisibleReducer(
                 root.transform,
                 bullwheel.localPosition);
+            BuildDriveHeadframe(
+                root.transform,
+                bullwheel.localPosition,
+                reducer.localPosition,
+                stationSize);
             TextureSurface(
                 CreateBetween(
                     "Visible Drive Shaft",
@@ -395,6 +400,7 @@ namespace BarPromenade
                 SurfaceProjection.BoxZY,
                 Rust);
             Light light = BuildStationPractical(root.transform);
+            BuildBoardingFlood(root.transform);
             return new StationPresentation(
                 root,
                 bullwheel,
@@ -532,6 +538,144 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// What actually holds the machinery up.
+        ///
+        /// The bullwheel sits four metres over the pad and four and a
+        /// half metres FORWARD of the station centre - outside the
+        /// canopy footprint entirely - and the reducer floats at three
+        /// and a half. Between them ran a drive shaft, which tied the two
+        /// to each other and neither of them to the ground: from the
+        /// yard the whole drive read as hanging in the air.
+        ///
+        /// So: a bearing pedestal up to the hub, four struts tying that
+        /// outrigger back to the frame it stands proud of, and a machine
+        /// deck slung between the two rear columns for the gearbox to
+        /// stand on. The boarding happens under that deck, which is what
+        /// a lower station looks like.
+        /// </summary>
+        private static void BuildDriveHeadframe(
+            Transform parent,
+            Vector3 bullwheelLocal,
+            Vector3 reducerLocal,
+            Vector2 stationSize)
+        {
+            float halfRight = stationSize.x * 0.5f - 0.55f;
+            float halfForward = stationSize.y * 0.5f - 0.48f;
+            float pedestalTop = bullwheelLocal.y - 0.34f;
+
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Physical Bullwheel Pedestal",
+                    parent,
+                    new Vector3(
+                        bullwheelLocal.x,
+                        pedestalTop * 0.5f,
+                        bullwheelLocal.z),
+                    new Vector3(0.48f, pedestalTop, 0.48f),
+                    GreenSteel,
+                    true),
+                MountainRoadSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxZY,
+                GreenSteel);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateCylinder(
+                    "Bullwheel Bearing Housing",
+                    parent,
+                    new Vector3(
+                        bullwheelLocal.x,
+                        pedestalTop + 0.14f,
+                        bullwheelLocal.z),
+                    new Vector3(0.78f, 0.34f, 0.78f),
+                    Rust,
+                    false),
+                MountainRoadSurfaceKind.RustedIron,
+                SurfaceProjection.CylinderSide,
+                Rust);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Bullwheel Pedestal Foot",
+                    parent,
+                    new Vector3(
+                        bullwheelLocal.x,
+                        0.11f,
+                        bullwheelLocal.z),
+                    new Vector3(1.15f, 0.22f, 1.15f),
+                    DarkSteel,
+                    false),
+                MountainRoadSurfaceKind.Concrete,
+                DarkSteel);
+
+            for (int side = -1; side <= 1; side += 2)
+            {
+                TextureSurface(
+                    CreateBetween(
+                        "Headframe Upper Strut",
+                        parent,
+                        new Vector3(
+                            bullwheelLocal.x,
+                            pedestalTop - 0.55f,
+                            bullwheelLocal.z),
+                        new Vector3(
+                            side * 2.4f,
+                            4.42f,
+                            halfForward),
+                        0.13f,
+                        GreenSteel,
+                        false),
+                    MountainRoadSurfaceKind.PaintedMetal,
+                    SurfaceProjection.BoxZY,
+                    GreenSteel);
+                TextureSurface(
+                    CreateBetween(
+                        "Headframe Lower Strut",
+                        parent,
+                        new Vector3(
+                            bullwheelLocal.x,
+                            1.35f,
+                            bullwheelLocal.z),
+                        new Vector3(
+                            side * 1.7f,
+                            0.18f,
+                            halfForward + 0.15f),
+                        0.11f,
+                        Rust,
+                        false),
+                    MountainRoadSurfaceKind.RustedIron,
+                    SurfaceProjection.BoxZY,
+                    Rust);
+            }
+
+            float deckTop = reducerLocal.y - 0.46f;
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Machine Deck",
+                    parent,
+                    new Vector3(
+                        -(halfRight + 0.8f) * 0.5f,
+                        deckTop - 0.08f,
+                        0f),
+                    new Vector3(
+                        halfRight - 0.8f + 0.32f,
+                        0.16f,
+                        halfForward * 2f + 0.3f),
+                    DarkSteel,
+                    false),
+                MountainRoadSurfaceKind.PaintedMetal,
+                DarkSteel);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Physical Machine Deck Prop",
+                    parent,
+                    new Vector3(-0.9f, (deckTop - 0.16f) * 0.5f, 1.9f),
+                    new Vector3(0.2f, deckTop - 0.16f, 0.2f),
+                    GreenSteel,
+                    true),
+                MountainRoadSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxZY,
+                GreenSteel);
+        }
+
         private static Transform BuildLowerBullwheel(
             Transform parent,
             MountainRoadCablewayPlan plan)
@@ -646,6 +790,57 @@ namespace BarPromenade
             return reducer.transform;
         }
 
+        /// <summary>
+        /// A second fixture on the outer edge of the canopy, throwing
+        /// down and OUT across the freight kerb and the yard rather than
+        /// onto the platform the lens already covers.
+        ///
+        /// One lamp under a canopy lights the thing it hangs over and
+        /// nothing else, which is why the station read as a dark shape
+        /// with a glow inside it. This is what makes it a place you can
+        /// see from the far side of the pad.
+        /// </summary>
+        private static void BuildBoardingFlood(Transform parent)
+        {
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Boarding Flood Housing",
+                    parent,
+                    new Vector3(0f, 4.34f, -2.55f),
+                    new Vector3(0.72f, 0.2f, 0.42f),
+                    DarkSteel,
+                    false),
+                MountainRoadSurfaceKind.PaintedMetal,
+                DarkSteel);
+            GameObject lens = RuntimePrimitiveFactory.CreateBox(
+                "Visible Boarding Flood Lens",
+                parent,
+                new Vector3(0f, 4.21f, -2.55f),
+                new Vector3(0.56f, 0.07f, 0.3f),
+                LampLens,
+                CityNightResources.EmissiveMaterial,
+                false);
+            lens.GetComponent<Renderer>().shadowCastingMode =
+                ShadowCastingMode.Off;
+
+            var lightObject = new GameObject("Station Boarding Flood");
+            lightObject.transform.SetParent(lens.transform, false);
+            lightObject.transform.localPosition = Vector3.down * 0.05f;
+            lightObject.transform.localRotation = Quaternion.LookRotation(
+                (Vector3.down * 0.88f + Vector3.back * 0.47f).normalized,
+                Vector3.forward);
+            Light flood = lightObject.AddComponent<Light>();
+            flood.type = LightType.Spot;
+            flood.color = new Color(0.62f, 0.8f, 0.72f);
+            flood.intensity = 6.5f;
+            flood.range = 15f;
+            flood.spotAngle = 100f;
+            flood.innerSpotAngle = 54f;
+            flood.shadows = LightShadows.None;
+            flood.renderMode = LightRenderMode.ForcePixel;
+            flood.bounceIntensity = 0f;
+        }
+
         private static Light BuildStationPractical(Transform parent)
         {
             TextureSurface(
@@ -678,8 +873,14 @@ namespace BarPromenade
             Light light = lightObject.AddComponent<Light>();
             light.type = LightType.Spot;
             light.color = new Color(0.58f, 0.78f, 0.66f);
-            light.intensity = 1.65f;
-            light.range = 10.5f;
+
+            // The other half of the summit's night. It used to burn at
+            // `1.65` against a cafe counter at `10.5`, which made the
+            // station a night-light beside a lit room - and the two are
+            // meant to be a pair, one cold and one warm, each pulling the
+            // eye across the yard to its own side.
+            light.intensity = 7.2f;
+            light.range = 16f;
             light.spotAngle = 78f;
             light.innerSpotAngle = 46f;
             light.shadows = LightShadows.None;

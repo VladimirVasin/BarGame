@@ -39,14 +39,58 @@ namespace BarPromenade
             "lastroute.ferryman.line.12"
         };
 
+        /// <summary>
+        /// The same man one chapter later, at the far end of the road he
+        /// was waiting to drive. The rules do not relax, they move:
+        ///
+        /// * he still NEVER offers to take anybody anywhere. On the island
+        ///   that was the joke; here it is simply true, because the road
+        ///   has ended and there is nothing left to offer;
+        /// * still "ты", still two short clauses, still level;
+        /// * and still not one word about where the route goes. He has
+        ///   arrived and he says nothing about what he arrived at - what
+        ///   he talks about is the car, the cold, the drive, and the fact
+        ///   that the waiting is over without anything having replaced it.
+        /// </summary>
+        public static readonly string[] MountainLineKeys =
+        {
+            "lastroute.ferryman.mountain.line.01",
+            "lastroute.ferryman.mountain.line.02",
+            "lastroute.ferryman.mountain.line.03",
+            "lastroute.ferryman.mountain.line.04",
+            "lastroute.ferryman.mountain.line.05",
+            "lastroute.ferryman.mountain.line.06",
+            "lastroute.ferryman.mountain.line.07",
+            "lastroute.ferryman.mountain.line.08",
+            "lastroute.ferryman.mountain.line.09",
+            "lastroute.ferryman.mountain.line.10",
+            "lastroute.ferryman.mountain.line.11",
+            "lastroute.ferryman.mountain.line.12"
+        };
+
         /// <summary>Seed stream from the city seed - the watchman's hash
         /// idiom, never zero so xorshift never sticks.</summary>
         public static uint CreateState(int citySeed)
         {
+            return CreateState(citySeed, 0x4652524Du); // "FRRM"
+        }
+
+        /// <summary>
+        /// The mountain pool walks its own stream. Sharing one with the
+        /// island would have the two repertoires march in step off the
+        /// same seed, so the same ordinal answer would come up in both
+        /// places on the same visit.
+        /// </summary>
+        public static uint CreateMountainState(int citySeed)
+        {
+            return CreateState(citySeed, 0x4652504Bu); // "FRPK"
+        }
+
+        private static uint CreateState(int citySeed, uint salt)
+        {
             unchecked
             {
-                uint state = ((uint)citySeed * 2654435761u) ^
-                             0x4652524Du; // "FRRM"
+                uint state = ((uint)citySeed * 2654435761u) ^ salt;
                 return state == 0u ? 0x9E3779B9u : state;
             }
         }
@@ -65,17 +109,26 @@ namespace BarPromenade
         /// landing on the previous one slides to its neighbour.</summary>
         public static int NextIndex(ref uint state, int previousIndex)
         {
-            if (LineKeys.Length == 0)
+            return NextIndex(ref state, previousIndex, LineKeys);
+        }
+
+        /// <summary>The same walk over whichever pool he is speaking from.</summary>
+        public static int NextIndex(
+            ref uint state,
+            int previousIndex,
+            string[] pool)
+        {
+            if (pool == null || pool.Length == 0)
             {
                 throw new InvalidOperationException(
                     "The Ferryman has no lines to speak.");
             }
 
             int index = (int)(NextRandomState(ref state) %
-                              (uint)LineKeys.Length);
-            if (index == previousIndex && LineKeys.Length > 1)
+                              (uint)pool.Length);
+            if (index == previousIndex && pool.Length > 1)
             {
-                index = (index + 1) % LineKeys.Length;
+                index = (index + 1) % pool.Length;
             }
 
             return index;

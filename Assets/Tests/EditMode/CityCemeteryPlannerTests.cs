@@ -323,19 +323,27 @@ namespace BarPromenade.Tests.EditMode
                     root,
                     CityCemeteryStyle.GraniteDark,
                     CityCemeterySurfaceAppearance.GetTexture(
-                        CityCemeterySurfaceKind.Granite),
-                    expectCollider: true);
+                        CityCemeterySurfaceKind.Granite));
                 AssertChunkAppearance(
                     root,
                     CityCemeteryStyle.Gravel,
                     CityCemeterySurfaceAppearance.GetTexture(
-                        CityCemeterySurfaceKind.Gravel),
-                    expectCollider: false);
+                        CityCemeterySurfaceKind.Gravel));
                 AssertChunkAppearance(
                     root,
                     CityCemeteryStyle.FoliageDark,
-                    null,
-                    expectCollider: false);
+                    null);
+                Assert.That(
+                    root.GetComponentsInChildren<Renderer>(true).Any(
+                        renderer =>
+                            !renderer.enabled &&
+                            renderer.name.StartsWith(
+                                "Cemetery Chunk Imported Collision ",
+                                System.StringComparison.Ordinal) &&
+                            renderer.GetComponent<MeshCollider>() != null),
+                    Is.True,
+                    "Imported blocking shells retain hidden collision " +
+                    "proxy batches.");
             }
             finally
             {
@@ -515,12 +523,11 @@ namespace BarPromenade.Tests.EditMode
         private static void AssertChunkAppearance(
             GameObject root,
             CityCemeteryStyle style,
-            Texture expectedTexture,
-            bool expectCollider)
+            Texture expectedTexture)
         {
             List<Renderer> chunks = root
                 .GetComponentsInChildren<Renderer>(true)
-                .Where(item => item.name.EndsWith(
+                .Where(item => item.enabled && item.name.EndsWith(
                     style.ToString(),
                     System.StringComparison.Ordinal))
                 .ToList();
@@ -551,10 +558,6 @@ namespace BarPromenade.Tests.EditMode
                         chunk.name);
                 }
 
-                Assert.That(
-                    chunk.GetComponent<MeshCollider>() != null,
-                    Is.EqualTo(expectCollider),
-                    chunk.name);
             }
         }
 

@@ -148,6 +148,9 @@ namespace BarPromenade
         private static readonly CitySoundDistrictProfile Yard =
             Create("city.sound.yard", CityDistrictKind.Yard);
 
+        private static readonly CitySoundDistrictProfile Church =
+            Create("city.sound.church", CityDistrictKind.Church);
+
         public static CitySoundDistrictProfile Get(
             CityDistrictKind district)
         {
@@ -169,6 +172,8 @@ namespace BarPromenade
                     return Cemetery;
                 case CityDistrictKind.Yard:
                     return Yard;
+                case CityDistrictKind.Church:
+                    return Church;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(district));
             }

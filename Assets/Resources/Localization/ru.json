@@ -109,6 +109,14 @@
       "value": "E — выйти в город"
     },
     {
+      "key": "interaction.enter_church",
+      "value": "E — войти в церковь"
+    },
+    {
+      "key": "interaction.exit_church",
+      "value": "E — выйти к кладбищу"
+    },
+    {
       "key": "interaction.enter_supermarket",
       "value": "E — войти в магазин"
     },
@@ -605,6 +613,10 @@
       "value": "Канатная дорога"
     },
     {
+      "key": "map.mountain_road.brink",
+      "value": "Смотровая кромка"
+    },
+    {
       "key": "map.route_title",
       "value": "Маршрут по барам"
     },
@@ -923,6 +935,10 @@
     {
       "key": "map.district.cemetery",
       "value": "Кладбище"
+    },
+    {
+      "key": "map.district.church",
+      "value": "Церковь"
     },
     {
       "key": "map.district.yard",
@@ -1311,6 +1327,54 @@
     {
       "key": "lastroute.ferryman.line.12",
       "value": "Обратно этой дорогой не возят."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.01",
+      "value": "Приехали."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.02",
+      "value": "Дальше не везу. Дороги нет."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.03",
+      "value": "Двадцать лет сюда. Первый раз не один."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.04",
+      "value": "Мотор остынет — и всё."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.05",
+      "value": "Холодно тут. Всегда было."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.06",
+      "value": "Машина дошла. Не каждый раз доходит."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.07",
+      "value": "Я подожду. Мне не привыкать."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.08",
+      "value": "Монетка осталась. Бросать некуда."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.09",
+      "value": "Ты добрался. Это уже редкость."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.10",
+      "value": "Ветер тут с утра до утра."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.11",
+      "value": "Курить будешь — с той стороны."
+    },
+    {
+      "key": "lastroute.ferryman.mountain.line.12",
+      "value": "Про обратно не спрашивай."
     },
     {
       "key": "park.quarrel.chess.line.01",

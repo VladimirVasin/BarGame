@@ -895,6 +895,7 @@ namespace BarPromenade.Tests.EditMode
             // (the mountain belt's rule): safe beach spans no longer
             // need an authored access behind them.
             return surface.Kind == CitySurfaceKind.CemeteryGround ||
+                   surface.Kind == CitySurfaceKind.ChurchGround ||
                    (surface.Kind == CitySurfaceKind.OpenGround &&
                     !CityMountainBoundaryDefinition.IsMountainFacingAreaId(
                         surface.AreaId));

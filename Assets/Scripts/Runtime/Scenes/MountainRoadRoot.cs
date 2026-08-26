@@ -1,3 +1,5 @@
+using System;
+using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -54,6 +56,13 @@ namespace BarPromenade
         /// <summary>The climb, while it is being driven. Null once the car has
         /// stopped, and on any visit that did not arrive in it.</summary>
         public LastRouteRideController Ride { get; private set; }
+
+        /// <summary>The bench on the brink and the free counter stool.</summary>
+        public IReadOnlyList<CityBenchSitInteraction> Seats
+        {
+            get;
+            private set;
+        }
 
         private void Awake()
         {
@@ -143,6 +152,7 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 false);
             BuildAtmosphere(camera);
+            BuildSeats(camera);
             BuildCommonUi(ui);
             // After the camera follow, because arriving in the car takes the
             // lens on its very first frame and the seat resolves the follow
@@ -213,14 +223,17 @@ namespace BarPromenade
                 return;
             }
 
-            // No talk menu is handed in, so no talk trigger is built: see
-            // LastRouteFerrymanFactory. He has nothing to say up here yet.
+            // He speaks up here now, and only speaks: a repertoire rather
+            // than the island's menu, because that menu's second option is
+            // "leave the city?" and the city is six hundred metres below
+            // us. See LastRouteFerrymanFactory for the fork.
             LastRouteFerryman = LastRouteFerrymanFactory.Create(
                 transform,
                 LastRouteFerrymanPlan.Create(LastRouteCar),
                 LastRouteCar,
                 null,
-                GameSessionState.CitySeed);
+                GameSessionState.CitySeed,
+                LastRouteFerrymanQuips.MountainLineKeys);
 
             Transform carRoot = LastRouteCar.transform.parent != null
                 ? LastRouteCar.transform.parent
@@ -256,6 +269,49 @@ namespace BarPromenade
             carRoot.GetComponent<LastRouteCarHeadlights>()?.Follow(Ride);
         }
 
+        /// <summary>
+        /// The two sit offers, installed after the player because the
+        /// shared builder raises the animated-interaction controller on
+        /// him. Sitting at the counter is also the one thing on this
+        /// mountain that asks the cafe for a reaction: the attendant
+        /// notices, once, through the tableau's own scheduler rather than
+        /// around it.
+        /// </summary>
+        private void BuildSeats(Camera camera)
+        {
+            Seats = CityBenchSitWorldBuilder.Build(
+                transform,
+                MountainRoadSeatPlanner.CreateAll(Plan),
+                Player,
+                camera);
+            for (int index = 0; index < Seats.Count; index++)
+            {
+                CityBenchSitInteraction seat = Seats[index];
+                if (!string.Equals(
+                        seat.Plan.Id,
+                        Plan.Terminal.Site.CounterSeat.StableId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                seat.SeatedChanged += HandleCounterSeatedChanged;
+            }
+        }
+
+        private void HandleCounterSeatedChanged(
+            CityBenchSitInteraction seat,
+            bool seated)
+        {
+            if (!seated)
+            {
+                return;
+            }
+
+            World.Cafe.Cast?.TryRequestEpisode(
+                MountainRoadCafeCastEpisode.Attendant);
+        }
+
         private void BuildAtmosphere(Camera camera)
         {
             GameObject atmosphereObject = new GameObject(
@@ -264,6 +320,7 @@ namespace BarPromenade
             Atmosphere = atmosphereObject
                 .AddComponent<MountainRoadAtmosphere>();
             Atmosphere.Initialize(camera, Plan, World);
+            Atmosphere.AttachVista(World.Vista.Controller);
             Soundscape = MountainRoadSoundscape.Create(transform, Plan);
 
             // The city's schedule, read as snow. The shaper is what makes it

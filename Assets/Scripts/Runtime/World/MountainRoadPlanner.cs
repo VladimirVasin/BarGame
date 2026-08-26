@@ -21,6 +21,49 @@ namespace BarPromenade
         public const float RidgeRoadClearance = 1.5f;
         public const float RidgeTreeClearance = 0.75f;
 
+        /// <summary>
+        /// How far the cut takes the ground down. A constant, not a floor:
+        /// the bed keeps the macro slope, so the far end of the terrain
+        /// mesh is a lowered continuation rather than a second cliff.
+        /// `26 m` puts the bed at roughly the height of the tunnel the
+        /// hero drove out of, which is what the drop is measured against.
+        /// </summary>
+        public const float BrinkDropDepth = 26f;
+
+        public const float BrinkEdgeBlendDistance = 4.5f;
+
+        /// <summary>
+        /// The middle of the measured gap, and a wedge narrow enough to
+        /// keep its jambs standing. Swept from the rim, the ridges leave
+        /// `-44` to `-10` degrees clear; centring on `-27` and opening
+        /// `9` degrees plus `3` of taper leaves five degrees of margin on
+        /// each side, which at their own distances is seven metres of
+        /// footprint clearance rather than the two a wider slot left.
+        /// It is a notch, not a panorama - and a notch is what a mountain
+        /// gives you.
+        /// </summary>
+        public const float BrinkCorridorBearingDegrees = -27f;
+
+        public const float BrinkCorridorHalfAngle = 9f;
+        public const float BrinkCorridorTaper = 3f;
+        public const float BrinkCorridorInnerRadius = 3f;
+
+        /// <summary>
+        /// Past the area's `120 m` far plane, so the far wall of the cut
+        /// is never a visible end to it.
+        /// </summary>
+        public const float BrinkCorridorOuterRadius = 132f;
+
+        /// <summary>How far every grounded thing stays out of the cut.</summary>
+        public const float BrinkRouteClearance = 10f;
+        public const float BrinkCablewayClearance = 6f;
+        public const float BrinkRidgeClearance = 3f;
+        public const float BrinkForestClearance = 1f;
+
+        private const float BrinkRimStartOffset = -7f;
+        private const float BrinkRimEndOffset = 13f;
+        private const float BrinkRimForward = 18f;
+
         private const float LowerRunLength = 25f;
         private const float LowerShelfLength = 26f;
         private const float UpperShelfLength = 33f;
@@ -83,10 +126,11 @@ namespace BarPromenade
             List<MountainRoadMiscDescriptor> misc =
                 CreateMisc(seed, tunnel, route, plateau);
             List<MountainRoadSoundAnchor> sounds =
-                CreateSoundAnchors(misc);
+                CreateSoundAnchors(misc, terminal.Site);
             Bounds worldBounds = CalculateWorldBounds(
                 terrainBounds,
                 route,
+                plateau,
                 terminal,
                 ridges);
             var plan = new MountainRoadPlan(
@@ -100,7 +144,11 @@ namespace BarPromenade
                 forest,
                 misc,
                 ridges,
-                sounds);
+                sounds,
+                MountainRoadVistaPlanner.Create(
+                    plateau,
+                    terminal.Site,
+                    seed));
             MountainRoadValidator.ValidateOrThrow(plan);
             return plan;
         }
@@ -108,14 +156,20 @@ namespace BarPromenade
         private static Bounds CalculateWorldBounds(
             Rect terrainBounds,
             MountainRoadRoutePlan route,
+            MountainRoadPlateauDescriptor plateau,
             MountainRoadTerminalPlan terminal,
             IReadOnlyList<MountainRoadRidgeDescriptor> ridges)
         {
             float minimumX = terrainBounds.xMin;
             float maximumX = terrainBounds.xMax;
+            float brinkFloor = plateau.Brink == null
+                ? 0f
+                : SampleBrinkFloor(route, plateau);
             float minimumY = Mathf.Min(
                 -12f,
-                route.Bridge.GorgeFloorY - 2f);
+                Mathf.Min(
+                    route.Bridge.GorgeFloorY - 2f,
+                    brinkFloor - 2f));
             float maximumY = terminal.Cableway.UpperCableCenter.y + 6f;
             float minimumZ = terrainBounds.yMin;
             float maximumZ = terrainBounds.yMax;
@@ -410,6 +464,36 @@ namespace BarPromenade
             return Mathf.Min(enter, exit);
         }
 
+        /// <summary>
+        /// The lowest ground the cut reaches. Walked rather than derived,
+        /// because the bed keeps the macro slope and the deepest point is
+        /// wherever the slope has fallen furthest by the outer radius.
+        /// </summary>
+        private static float SampleBrinkFloor(
+            MountainRoadRoutePlan route,
+            MountainRoadPlateauDescriptor plateau)
+        {
+            MountainRoadViewCorridor corridor = plateau.Brink.Corridor;
+            float lowest = float.PositiveInfinity;
+            const int stations = 24;
+            for (int index = 0; index <= stations; index++)
+            {
+                float distance = Mathf.Lerp(
+                    corridor.InnerRadius,
+                    corridor.OuterRadius,
+                    index / (float)stations);
+                Vector3 point = corridor.Apex + corridor.Axis * distance;
+                lowest = Mathf.Min(
+                    lowest,
+                    MountainRoadTerrainSampler.SampleHeight(
+                        route,
+                        plateau,
+                        new Vector2(point.x, point.z)));
+            }
+
+            return lowest;
+        }
+
         private static MountainRoadPlateauDescriptor CreatePlateau(
             MountainRoadRoutePlan route)
         {
@@ -448,7 +532,55 @@ namespace BarPromenade
                 center,
                 forward,
                 route.Length - PlateauEntryLead,
-                vertices);
+                vertices,
+                CreateBrink(center, right, forward));
+        }
+
+        /// <summary>
+        /// The back rim, and the one place the mountain is allowed to open.
+        ///
+        /// Both numbers were measured rather than chosen. The back band is
+        /// the only stretch of this plateau with room for a terrace at all:
+        /// the west flank leaves two metres between the cafe's blind wall
+        /// and the rim, and the east is where the ground rises. And the
+        /// bearing is the middle of the one wide sector with no ridge
+        /// inside the area's own far plane - swept from the rim, the
+        /// mid and far ridges stand shoulder to shoulder from `-60` to
+        /// `-46` degrees and again from `-8` through `+14`, and between
+        /// those two masses there is nothing at all out to `120 m`. So the
+        /// cut does not need a ridge moved out of its way; the ridges
+        /// already part here, and the opening is aimed at the gap they
+        /// leave. They become its jambs.
+        /// </summary>
+        private static MountainRoadBrinkDescriptor CreateBrink(
+            Vector3 center,
+            Vector3 right,
+            Vector3 forward)
+        {
+            Vector3 rimStart = center +
+                               right * BrinkRimStartOffset +
+                               forward * BrinkRimForward;
+            Vector3 rimEnd = center +
+                             right * BrinkRimEndOffset +
+                             forward * BrinkRimForward;
+            float bearing = BrinkCorridorBearingDegrees * Mathf.Deg2Rad;
+            Vector3 axis = (
+                right * Mathf.Sin(bearing) +
+                forward * Mathf.Cos(bearing)).normalized;
+            var corridor = new MountainRoadViewCorridor(
+                (rimStart + rimEnd) * 0.5f,
+                axis,
+                BrinkCorridorHalfAngle,
+                BrinkCorridorTaper,
+                BrinkCorridorInnerRadius,
+                BrinkCorridorOuterRadius);
+            return new MountainRoadBrinkDescriptor(
+                rimStart,
+                rimEnd,
+                forward,
+                BrinkDropDepth,
+                BrinkEdgeBlendDistance,
+                corridor);
         }
 
         private static Rect CalculateTerrainBounds(
@@ -962,8 +1094,18 @@ namespace BarPromenade
                 blocksMovement);
         }
 
+        /// <summary>
+        /// Every sound on this mountain answers to something you can
+        /// see. The five on the road are road furniture; the four on
+        /// the summit are the yard lamp's ballast, the loose pipe in
+        /// the gap of the parapet, the halyard on the windsock mast
+        /// and the tarp over the freight - and the last two are the
+        /// same wind that bends the trees, arriving at two different
+        /// materials.
+        /// </summary>
         private static List<MountainRoadSoundAnchor> CreateSoundAnchors(
-            IReadOnlyList<MountainRoadMiscDescriptor> misc)
+            IReadOnlyList<MountainRoadMiscDescriptor> misc,
+            MountainRoadTerminalSitePlan site)
         {
             var byId = new Dictionary<string, MountainRoadMiscDescriptor>(
                 StringComparer.Ordinal);
@@ -988,8 +1130,72 @@ namespace BarPromenade
                     "misc-utility-cable", 8f),
                 CreateSound(byId, "sound-snow-pole",
                     MountainRoadSoundAnchorKind.SnowPole,
-                    "misc-snow-pole-16", 6f)
+                    "misc-snow-pole-16", 6f),
+                CreateSitePartSound(site, "sound-yard-lamp-ballast",
+                    MountainRoadSoundAnchorKind.TunnelLampBallast,
+                    "site-yard-lamp-shade", 6.5f),
+                CreateSitePartSound(site, "sound-parapet-gap-rail",
+                    MountainRoadSoundAnchorKind.LooseGuardRail,
+                    "site-parapet-gap-post-00", 7f),
+                CreateClothSound(site, "sound-windsock-halyard",
+                    MountainRoadSoundAnchorKind.WindsockHalyard,
+                    "site-windsock", 8f),
+                CreateClothSound(site, "sound-load-tarp",
+                    MountainRoadSoundAnchorKind.LoadTarp,
+                    "site-load-tarp", 6f)
             };
+        }
+
+        private static MountainRoadSoundAnchor CreateSitePartSound(
+            MountainRoadTerminalSitePlan site,
+            string stableId,
+            MountainRoadSoundAnchorKind kind,
+            string sourceId,
+            float radius)
+        {
+            if (!site.TryGetPart(
+                    sourceId,
+                    out MountainRoadSitePartDescriptor part))
+            {
+                throw new InvalidOperationException(
+                    $"The site has no '{sourceId}' to sound from.");
+            }
+
+            return new MountainRoadSoundAnchor(
+                stableId,
+                kind,
+                sourceId,
+                part.Center,
+                radius);
+        }
+
+        private static MountainRoadSoundAnchor CreateClothSound(
+            MountainRoadTerminalSitePlan site,
+            string stableId,
+            MountainRoadSoundAnchorKind kind,
+            string sourceId,
+            float radius)
+        {
+            for (int index = 0; index < site.Cloth.Count; index++)
+            {
+                if (!string.Equals(
+                        site.Cloth[index].StableId,
+                        sourceId,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                return new MountainRoadSoundAnchor(
+                    stableId,
+                    kind,
+                    sourceId,
+                    site.Cloth[index].Anchor,
+                    radius);
+            }
+
+            throw new InvalidOperationException(
+                $"The site has no '{sourceId}' to sound from.");
         }
 
         private static MountainRoadSoundAnchor CreateSound(

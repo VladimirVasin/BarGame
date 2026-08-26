@@ -15,6 +15,8 @@ namespace BarPromenade
             IList<BarEntrance> bars,
             HomeEntrance playerHome,
             SupermarketEntrance supermarket,
+            CityChurchPlan churchPlan,
+            ChurchEntrance church,
             RoadFencePlan fencePlan,
             GameObject parkRoot,
             GameObject districtPointOfInterestRoot,
@@ -42,6 +44,8 @@ namespace BarPromenade
                 new List<BarEntrance>(bars));
             PlayerHome = playerHome;
             Supermarket = supermarket;
+            ChurchPlan = churchPlan;
+            Church = church;
             FencePlan = fencePlan ??
                 throw new ArgumentNullException(nameof(fencePlan));
             ParkRoot = parkRoot;
@@ -102,6 +106,8 @@ namespace BarPromenade
         public IReadOnlyList<BarEntrance> Bars { get; }
         public HomeEntrance PlayerHome { get; }
         public SupermarketEntrance Supermarket { get; }
+        public CityChurchPlan ChurchPlan { get; }
+        public ChurchEntrance Church { get; }
         public RoadFencePlan FencePlan { get; }
         public GameObject ParkRoot { get; }
         public GameObject DistrictPointOfInterestRoot { get; }

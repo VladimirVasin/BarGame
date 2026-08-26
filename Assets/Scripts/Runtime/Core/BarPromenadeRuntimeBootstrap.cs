@@ -100,6 +100,10 @@ namespace BarPromenade
             {
                 EnsureSupermarketInteriorInstalled();
             }
+            else if (scene.name == SceneIds.ChurchInterior)
+            {
+                EnsureChurchInteriorInstalled();
+            }
             else if (scene.name == SceneIds.HomeInterior)
             {
                 EnsureHomeInteriorInstalled();
@@ -128,6 +132,7 @@ namespace BarPromenade
                    sceneName == SceneIds.City ||
                    sceneName == SceneIds.BarInterior ||
                    sceneName == SceneIds.SupermarketInterior ||
+                   sceneName == SceneIds.ChurchInterior ||
                    sceneName == SceneIds.HomeInterior ||
                    sceneName == SceneIds.StairwellInterior ||
                    sceneName == SceneIds.DoorTransition ||
@@ -257,6 +262,28 @@ namespace BarPromenade
                 GameObject root = new GameObject(
                     "[Bar Promenade] Door Transition Runtime");
                 return root.AddComponent<DoorTransitionRoot>();
+            }
+            finally
+            {
+                creating = false;
+            }
+        }
+
+        public static ChurchInteriorRoot EnsureChurchInteriorInstalled()
+        {
+            ChurchInteriorRoot existing =
+                Object.FindAnyObjectByType<ChurchInteriorRoot>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject(
+                    "[Bar Promenade] Church Interior Runtime");
+                return root.AddComponent<ChurchInteriorRoot>();
             }
             finally
             {

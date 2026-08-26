@@ -70,6 +70,8 @@ namespace BarPromenade
             Transform root = new GameObject("Night Street Furniture").transform;
             root.SetParent(parent, false);
             Material emissiveMaterial = CityNightResources.EmissiveMaterial;
+            CityMiscAssetProvider miscProvider =
+                CityMiscAssetProvider.Load();
 
             var lampAnchors =
                 new List<Transform>(plan.StreetLamps.Count);
@@ -83,7 +85,10 @@ namespace BarPromenade
                     root,
                     descriptor,
                     index));
-                AddStreetLampGeometry(lampChunks, descriptor);
+                AddStreetLampGeometry(
+                    lampChunks,
+                    descriptor,
+                    miscProvider);
                 // Not a child of the anchor: the anchors stay bare
                 // teleport targets for the pool, a contract the night
                 // presentation test pins.
@@ -111,7 +116,8 @@ namespace BarPromenade
             var trafficSignals = BuildTrafficSignals(
                 root,
                 plan.TrafficSignals,
-                emissiveMaterial);
+                emissiveMaterial,
+                miscProvider);
             var barLightPositions = new List<Vector3>(bars.Count);
             for (int index = 0; index < bars.Count; index++)
             {
@@ -150,7 +156,8 @@ namespace BarPromenade
 
         private static void AddStreetLampGeometry(
             IDictionary<LampChunkCoordinate, LampChunkGeometry> chunks,
-            StreetLampDescriptor descriptor)
+            StreetLampDescriptor descriptor,
+            CityMiscAssetProvider provider)
         {
             LampChunkCoordinate coordinate =
                 LampChunkCoordinate.FromPosition(descriptor.Position);
@@ -166,27 +173,42 @@ namespace BarPromenade
                 descriptor.Forward,
                 Vector3.up);
             Vector3 origin = coordinate.Origin;
-            // Full-height street furniture: the base stays exactly on
-            // the planned position, only the mast grew to a realistic
-            // 5.3 m with every part scaled in proportion.
-            geometry.FixtureBoxes.Add(CreateLampBox(
-                descriptor.Position,
-                rotation,
-                origin,
-                new Vector3(0f, 2.65f, 0f),
-                new Vector3(0.14f, 5.30f, 0.14f)));
-            geometry.FixtureBoxes.Add(CreateLampBox(
-                descriptor.Position,
-                rotation,
-                origin,
-                new Vector3(0f, 5.22f, 0.48f),
-                new Vector3(0.15f, 0.15f, 1.12f)));
-            geometry.FixtureBoxes.Add(CreateLampBox(
-                descriptor.Position,
-                rotation,
-                origin,
-                new Vector3(0f, 5.12f, 1.06f),
-                new Vector3(0.62f, 0.20f, 0.54f)));
+            if (TryGetImportedParts(
+                    provider,
+                    CityMiscKind.StreetLampShell,
+                    out List<CityMiscMeshPart> fixtureParts) &&
+                fixtureParts.Count == 1 &&
+                fixtureParts[0].Role == CityMiscMeshRole.Fixture)
+            {
+                geometry.FixtureMeshes.Add(new RuntimeMeshPlacement(
+                    fixtureParts[0].Mesh,
+                    descriptor.Position - origin,
+                    rotation));
+            }
+            else
+            {
+                // Asset setup and Home test fixtures are allowed to lag a
+                // catalog wave. Keep the old shell as a deliberate fallback;
+                // the bulb, halo, pooled-light anchor and collider never move.
+                geometry.FixtureBoxes.Add(CreateLampBox(
+                    descriptor.Position,
+                    rotation,
+                    origin,
+                    new Vector3(0f, 2.65f, 0f),
+                    new Vector3(0.14f, 5.30f, 0.14f)));
+                geometry.FixtureBoxes.Add(CreateLampBox(
+                    descriptor.Position,
+                    rotation,
+                    origin,
+                    new Vector3(0f, 5.22f, 0.48f),
+                    new Vector3(0.15f, 0.15f, 1.12f)));
+                geometry.FixtureBoxes.Add(CreateLampBox(
+                    descriptor.Position,
+                    rotation,
+                    origin,
+                    new Vector3(0f, 5.12f, 1.06f),
+                    new Vector3(0.62f, 0.20f, 0.54f)));
+            }
             geometry.BulbBoxes.Add(CreateLampBox(
                 descriptor.Position,
                 rotation,
@@ -246,11 +268,24 @@ namespace BarPromenade
                         geometry.CollisionBoxes);
                 }
 
-                RuntimePrimitiveFactory.CreateCombinedBoxes(
-                    "Street Lamp Fixtures",
-                    chunk,
-                    geometry.FixtureBoxes,
-                    FixtureColor);
+                if (geometry.FixtureMeshes.Count > 0)
+                {
+                    RuntimePrimitiveFactory.CreateCombinedMeshes(
+                        "Imported Street Lamp Fixtures",
+                        chunk,
+                        geometry.FixtureMeshes,
+                        FixtureColor);
+                }
+
+                if (geometry.FixtureBoxes.Count > 0)
+                {
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Street Lamp Fixture Fallbacks",
+                        chunk,
+                        geometry.FixtureBoxes,
+                        FixtureColor);
+                }
+
                 GameObject bulbs =
                     RuntimePrimitiveFactory.CreateCombinedBoxes(
                         "Street Lamp Bulbs",
@@ -273,7 +308,8 @@ namespace BarPromenade
         private static List<TrafficSignalController> BuildTrafficSignals(
             Transform parent,
             IReadOnlyList<TrafficSignalDescriptor> descriptors,
-            Material emissiveMaterial)
+            Material emissiveMaterial,
+            CityMiscAssetProvider miscProvider)
         {
             var controllers = new List<TrafficSignalController>(
                 descriptors.Count / 2);
@@ -296,7 +332,8 @@ namespace BarPromenade
                     TrafficSignalVisual visual = BuildTrafficSignalHead(
                         intersection,
                         descriptors[descriptorIndex],
-                        emissiveMaterial);
+                        emissiveMaterial,
+                        miscProvider);
                     amberLenses.Add(visual.Lens);
                     amberHalos.Add(visual.Halo);
                     descriptorIndex++;
@@ -318,7 +355,8 @@ namespace BarPromenade
         private static TrafficSignalVisual BuildTrafficSignalHead(
             Transform parent,
             TrafficSignalDescriptor descriptor,
-            Material emissiveMaterial)
+            Material emissiveMaterial,
+            CityMiscAssetProvider miscProvider)
         {
             Transform signal = new GameObject(
                 $"Traffic Signal {descriptor.PairIndex + 1}").transform;
@@ -329,20 +367,24 @@ namespace BarPromenade
                 Vector3.up);
             CityStaticCollisionBuilder.AddLowerPoleCollider(signal);
 
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Signal Pole",
-                signal,
-                new Vector3(0f, 1.28f, 0f),
-                new Vector3(0.075f, 1.28f, 0.075f),
-                FixtureColor,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Signal Housing",
-                signal,
-                new Vector3(0f, 2.55f, 0.06f),
-                new Vector3(0.50f, 1.02f, 0.28f),
-                SignalHousing,
-                false);
+            if (!TryBuildTrafficSignalShell(signal, miscProvider))
+            {
+                RuntimePrimitiveFactory.CreateCylinder(
+                    "Signal Pole",
+                    signal,
+                    new Vector3(0f, 1.28f, 0f),
+                    new Vector3(0.075f, 1.28f, 0.075f),
+                    FixtureColor,
+                    false);
+                RuntimePrimitiveFactory.CreateBox(
+                    "Signal Housing",
+                    signal,
+                    new Vector3(0f, 2.55f, 0.06f),
+                    new Vector3(0.50f, 1.02f, 0.28f),
+                    SignalHousing,
+                    false);
+            }
+
             RuntimePrimitiveFactory.CreateBox(
                 "Red Lens",
                 signal,
@@ -381,6 +423,93 @@ namespace BarPromenade
             return new TrafficSignalVisual(
                 amber.GetComponent<Renderer>(),
                 halo);
+        }
+
+        private static bool TryBuildTrafficSignalShell(
+            Transform parent,
+            CityMiscAssetProvider provider)
+        {
+            if (!TryGetImportedParts(
+                    provider,
+                    CityMiscKind.TrafficSignalShell,
+                    out List<CityMiscMeshPart> parts))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityMiscMeshPart part = parts[index];
+                RuntimePrimitiveFactory.CreateCombinedMeshes(
+                    $"Imported Traffic Signal Shell {part.Role}",
+                    parent,
+                    new[]
+                    {
+                        new RuntimeMeshPlacement(
+                            part.Mesh,
+                            Vector3.zero,
+                            Quaternion.identity)
+                    },
+                    ResolveTrafficSignalShellColor(part.Role));
+            }
+
+            return true;
+        }
+
+        private static Color ResolveTrafficSignalShellColor(
+            CityMiscMeshRole role)
+        {
+            return role == CityMiscMeshRole.Fixture
+                ? FixtureColor
+                : SignalHousing;
+        }
+
+        private static bool TryGetImportedParts(
+            CityMiscAssetProvider provider,
+            CityMiscKind kind,
+            out List<CityMiscMeshPart> parts)
+        {
+            parts = null;
+            if (provider == null ||
+                !CityMiscAssetProvider.Supports(kind))
+            {
+                return false;
+            }
+
+            try
+            {
+                int partCount = CityMiscAssetProvider.GetPartCount(kind);
+                if (partCount < 1)
+                {
+                    return false;
+                }
+
+                var result = new List<CityMiscMeshPart>(partCount);
+                for (int index = 0; index < partCount; index++)
+                {
+                    CityMiscMeshPart part = provider.GetPartOrThrow(
+                        kind,
+                        0,
+                        index);
+                    if (part.Mesh == null)
+                    {
+                        return false;
+                    }
+
+                    result.Add(part);
+                }
+
+                parts = result;
+                return true;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return false;
+            }
         }
 
         private readonly struct TrafficSignalVisual
@@ -456,6 +585,8 @@ namespace BarPromenade
 
         private sealed class LampChunkGeometry
         {
+            public List<RuntimeMeshPlacement> FixtureMeshes { get; } =
+                new List<RuntimeMeshPlacement>();
             public List<Bounds> FixtureBoxes { get; } =
                 new List<Bounds>();
             public List<Bounds> BulbBoxes { get; } =

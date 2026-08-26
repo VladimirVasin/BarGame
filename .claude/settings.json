@@ -11,7 +11,12 @@
       "Bash(git add *)",
       "Bash(git commit *)",
       "Bash(git stash *)",
-      "Bash(mkdir -p *)"
+      "Bash(mkdir -p *)",
+      "Read(//C:/Users/tushk/AppData/Local/Temp/claude/**)",
+      "Read(//C:/Users/tushk/AppData/Local/Temp/**/*.png)",
+      "Read(Captures/**)",
+      "Edit(**/*.md)",
+      "Write(**/*.md)"
     ]
   }
 }

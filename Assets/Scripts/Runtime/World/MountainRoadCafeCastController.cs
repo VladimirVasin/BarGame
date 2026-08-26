@@ -138,6 +138,32 @@ namespace BarPromenade
             nextEpisodeSeconds = elapsedSeconds + 1f;
         }
 
+        /// <summary>
+        /// One episode out of turn, for a reason rather than a timer: the
+        /// hero has just sat down at the counter and the man behind it
+        /// notices. It still obeys the one rule the tableau has - never
+        /// two at once - and it still books the ordinary cooldown after
+        /// itself, so being noticed costs the room its next idle beat
+        /// instead of adding a beat on top of it.
+        /// </summary>
+        public bool TryRequestEpisode(MountainRoadCafeCastEpisode episode)
+        {
+            if (!IsInitialized ||
+                episode == MountainRoadCafeCastEpisode.None ||
+                ActiveEpisode != MountainRoadCafeCastEpisode.None)
+            {
+                return false;
+            }
+
+            if (!TryStartEpisode(episode))
+            {
+                return false;
+            }
+
+            ActiveEpisode = episode;
+            return true;
+        }
+
         private void AssignRole(
             MountainRoadCafeCastPresentation presentation)
         {

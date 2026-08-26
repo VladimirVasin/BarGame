@@ -399,13 +399,13 @@ namespace BarPromenade.Tests.EditMode
                     "yard-east",
                     out CityAreaPlacement yard),
                 Is.True);
-            Assert.That(yard.Cells, Has.Count.EqualTo(24));
+            Assert.That(yard.Cells, Has.Count.EqualTo(16));
             var expectedCells = new List<Vector2Int>();
             for (int x = settings.BlocksX + 1;
                  x < settings.BlocksX + 5;
                  x++)
             {
-                for (int z = 2; z < 8; z++)
+                for (int z = 4; z < 8; z++)
                 {
                     expectedCells.Add(new Vector2Int(x, z));
                 }
@@ -420,7 +420,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 yard.Cells.All(cell => !blueprint.CreatesLot(cell)),
                 Is.True);
-            // 200 pre-yard cells + 24 east + 12 south + 12 west.
+            // 200 pre-east cells + 8 church + 16 east + 12 south +
+            // 12 west. The split preserves the complete footprint.
             Assert.That(blueprint.Cells, Has.Count.EqualTo(248));
             Assert.That(
                 yard.Definition.Feature,
@@ -439,7 +440,7 @@ namespace BarPromenade.Tests.EditMode
                         "yard-east",
                         StringComparison.Ordinal))
                 .ToList();
-            Assert.That(yardSurfaces, Has.Count.EqualTo(24));
+            Assert.That(yardSurfaces, Has.Count.EqualTo(16));
             foreach (CitySurfaceDescriptor surface in yardSurfaces)
             {
                 Assert.That(

@@ -1,0 +1,476 @@
+{
+  "generator": "tools/build-bar-3d-model.py",
+  "generator_version": "2.0.0",
+  "blender_version": "5.0.1",
+  "design_id": "bar_facade_v1",
+  "display_name": "Bar Promenade Bar Interior",
+  "dimensions_m": {
+    "width": 22.0,
+    "depth": 16.0,
+    "height": 4.8
+  },
+  "wall_thickness_m": 0.3,
+  "door_opening_m": {
+    "width": 3.2,
+    "height": 4.8
+  },
+  "blender_forward_axis": "-Y",
+  "unity_entrance_outward_axis": "-Z",
+  "runtime_wrapper_yaw_degrees": 0.0,
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "activity_kinds": [
+    "BeerPong",
+    "Cocktail",
+    "SplitTheG",
+    "TinctureMatch"
+  ],
+  "district_moods": [
+    "Memory",
+    "Household",
+    "AfterShift",
+    "Escape"
+  ],
+  "bounds_min": [
+    -0.45,
+    -1.425,
+    -0.35
+  ],
+  "bounds_max": [
+    0.965,
+    1.425,
+    4.15
+  ],
+  "mesh_count": 15,
+  "triangle_count": 420,
+  "anchors": [
+    {
+      "name": "Door",
+      "role": "facade_door",
+      "local_position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "SignMarker",
+      "role": "sign_pivot",
+      "local_position": [
+        0.74,
+        0.0,
+        3.42
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "name": "Bar Door",
+      "role": "facade_door",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.055,
+          0.025,
+          0.022
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Door Frame Left",
+      "role": "facade_trim",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.84,
+          0.55,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Door Frame Right",
+      "role": "facade_trim",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.84,
+          0.55,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Door Header",
+      "role": "facade_trim",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.84,
+          0.55,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Entrance Canopy",
+      "role": "facade_trim",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.84,
+          0.55,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Entrance Canopy Inset",
+      "role": "facade_awning",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.018,
+          0.045
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Sign Bracket",
+      "role": "facade_trim",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.84,
+          0.55,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Sign Hanger Inner",
+      "role": "sign_part",
+      "group": "pivot:Bar Landmark Marker",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.137,
+          0.071,
+          0.114
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Sign Hanger Outer",
+      "role": "sign_part",
+      "group": "pivot:Bar Landmark Marker",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.137,
+          0.071,
+          0.114
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Sign Panel",
+      "role": "sign_part",
+      "group": "pivot:Bar Landmark Marker",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.137,
+          0.071,
+          0.114
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Sign Panel Frame",
+      "role": "sign_part",
+      "group": "pivot:Bar Landmark Marker",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.84,
+          0.55,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Sign Panel Field",
+      "role": "sign_part",
+      "group": "pivot:Bar Landmark Marker",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.357,
+          0.086,
+          0.169
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Sign Tankard",
+      "role": "sign_part",
+      "group": "pivot:Bar Landmark Marker",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.976,
+          0.914,
+          0.722
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Sign Tankard Fill",
+      "role": "sign_part",
+      "group": "pivot:Bar Landmark Marker",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.871,
+          0.545,
+          0.165
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "Bar Sign Tankard Handle",
+      "role": "sign_part",
+      "group": "pivot:Bar Landmark Marker",
+      "sheet": "",
+      "emissive": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.976,
+          0.914,
+          0.722
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28
+    }
+  ],
+  "build_signature": "7a373b3589c10a1dcb57306bd633e724e4853b2647c73c9333a8b9b40ada60c1"
+}

@@ -29,7 +29,13 @@ namespace BarPromenade
         public const string AttendantAnchorId =
             "terminal-cafe-npc-attendant";
 
-        public const int MaximumRealtimeLights = 2;
+        /// <summary>
+        /// Two inside and one out. The pair indoors light the room; what
+        /// makes the building a landmark is the third, because a cafe
+        /// whose light stops at its own glass is a lit box rather than
+        /// something you steer towards.
+        /// </summary>
+        public const int MaximumRealtimeLights = 3;
         public const int TableauNpcCount = 4;
 
         private const float WallThickness = 0.24f;
@@ -115,7 +121,7 @@ namespace BarPromenade
                 physicalRoot.transform,
                 dressingRoot.transform,
                 semanticAnchors);
-            BuildTableau(
+            MountainRoadCafeCastController cast = BuildTableau(
                 plan,
                 npcRoot.transform,
                 semanticAnchors);
@@ -137,7 +143,8 @@ namespace BarPromenade
                 lightingRoot,
                 soundscape,
                 lights,
-                semanticAnchors);
+                semanticAnchors,
+                cast);
         }
 
         /// <summary>
@@ -626,21 +633,35 @@ namespace BarPromenade
             return root.transform;
         }
 
+        /// <summary>
+        /// The counter row, published because the hero can now be seated
+        /// on it. Two seats are unoccupied and that is structural negative
+        /// space: index `1` separates the solitary patron from the couple,
+        /// index `4` finishes the row at the bend without becoming another
+        /// spawn. Whoever sits down has to land on the SAME timber the
+        /// three silent ones are on, so the offer reads these rather than
+        /// carrying its own copy of them.
+        /// </summary>
+        public static readonly float[] StoolRightOffsets =
+        {
+            -1.50f,
+            -0.38f,
+            0.75f,
+            1.80f,
+            3.00f
+        };
+
+        public const int EmptyStoolIndex = 1;
+        public const float StoolForward = -2.18f;
+        public const float StoolSeatTopAboveFloor = 0.4675f;
+        public const float StoolSeatThickness = 0.055f;
+        public const float StoolSeatDiameter = 0.48f;
+
         private static void BuildStools(
             MountainRoadCafePlan plan,
             Transform parent)
         {
-            // Two unoccupied seats are structural negative space: one
-            // separates the solitary patron from the couple, the other
-            // finishes the row at the bend without becoming another spawn.
-            float[] rightOffsets =
-            {
-                -1.50f,
-                -0.38f,
-                0.75f,
-                1.80f,
-                3.00f
-            };
+            float[] rightOffsets = StoolRightOffsets;
             for (int index = 0; index < rightOffsets.Length; index++)
             {
                 Transform stool = new GameObject(
@@ -650,7 +671,7 @@ namespace BarPromenade
                     plan,
                     rightOffsets[index],
                     0f,
-                    -2.18f);
+                    StoolForward);
                 TextureSurface(
                     RuntimePrimitiveFactory.CreateCylinder(
                         "Metal Pedestal",
@@ -666,8 +687,13 @@ namespace BarPromenade
                     RuntimePrimitiveFactory.CreateCylinder(
                         "Round Red Seat",
                         stool,
-                        center + Vector3.up * 0.44f,
-                        new Vector3(0.48f, 0.055f, 0.48f),
+                        center + Vector3.up *
+                            (StoolSeatTopAboveFloor -
+                             StoolSeatThickness * 0.5f),
+                        new Vector3(
+                            StoolSeatDiameter,
+                            StoolSeatThickness,
+                            StoolSeatDiameter),
                         StoolSeat,
                         true),
                     MountainRoadSurfaceKind.Timber,
@@ -949,8 +975,8 @@ namespace BarPromenade
                     Local(plan, 0.35f, 3.80f, -0.18f),
                     (Vector3.down + plan.Forward * 0.05f).normalized,
                     new Color(1f, 0.72f, 0.32f),
-                    10.5f,
-                    8.2f,
+                    11.5f,
+                    11f,
                     108f,
                     68f,
                     true),
@@ -964,9 +990,43 @@ namespace BarPromenade
                     5.8f,
                     78f,
                     42f,
-                    false)
+                    false),
+                CreateFacadeWash(plan, parent)
             };
             return lights;
+        }
+
+        /// <summary>
+        /// The wash off the glazed corner: the one fixture on this
+        /// mountain whose job is to be SEEN rather than to let somebody
+        /// see.
+        ///
+        /// It hangs outside the fascia at the chamfer, where the south
+        /// and east faces meet, so its pool covers the doorstep, the
+        /// parked car and the walls of the building itself - light on a
+        /// wall is what tells you at forty metres that the thing is a
+        /// building and not a lamp. It casts no shadows: a wash that
+        /// silhouetted its own cafe would be both wrong and expensive,
+        /// and the two inside already carry the room.
+        /// </summary>
+        private static Light CreateFacadeWash(
+            MountainRoadCafePlan plan,
+            Transform parent)
+        {
+            Vector3 outward = (
+                plan.Right * 0.707f -
+                plan.Forward * 0.707f).normalized;
+            return CreateSpotLight(
+                "Sulphur Facade Wash",
+                parent,
+                Local(plan, 3.6f, 5f, -3.6f),
+                (Vector3.down * 0.92f + outward * 0.39f).normalized,
+                new Color(1f, 0.78f, 0.45f),
+                15f,
+                20f,
+                138f,
+                76f,
+                false);
         }
 
         private static Light CreateSpotLight(
@@ -1006,12 +1066,12 @@ namespace BarPromenade
             return light;
         }
 
-        private static void BuildTableau(
+        private static MountainRoadCafeCastController BuildTableau(
             MountainRoadCafePlan plan,
             Transform parent,
             IDictionary<string, Transform> semanticAnchors)
         {
-            MountainRoadCafeCastFactory.Create(
+            return MountainRoadCafeCastFactory.Create(
                 parent,
                 MountainRoadCafeCastPlan.Create(plan),
                 semanticAnchors,

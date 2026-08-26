@@ -56,11 +56,24 @@ namespace BarPromenade
             root.transform.SetParent(parent, false);
             var batches =
                 new Dictionary<BatchKey, List<RuntimeOrientedBox>>();
+            var importedBatches = new Dictionary<
+                BatchKey,
+                List<RuntimeMeshPlacement>>();
+            var collisionBatches =
+                new Dictionary<BatchKey, List<RuntimeOrientedBox>>();
+            var importedIds = new HashSet<string>(StringComparer.Ordinal);
+            CityMiscAssetProvider miscProvider =
+                CityMiscAssetProvider.Load();
             for (int yardIndex = 0;
                  yardIndex < plan.Yards.Count;
                  yardIndex++)
             {
                 CityFringeYardDescriptor yard = plan.Yards[yardIndex];
+                TryAppendImportedYardParts(
+                    yard,
+                    miscProvider,
+                    importedBatches,
+                    importedIds);
                 for (int partIndex = 0;
                      partIndex < yard.Parts.Count;
                      partIndex++)
@@ -72,6 +85,16 @@ namespace BarPromenade
                         Mathf.FloorToInt(part.Center.z / SpatialChunkSize),
                         part.Style,
                         part.BlocksMovement);
+                    if (importedIds.Contains(part.StableId))
+                    {
+                        if (part.BlocksMovement)
+                        {
+                            AppendBox(collisionBatches, key, part);
+                        }
+
+                        continue;
+                    }
+
                     if (!batches.TryGetValue(
                             key,
                             out List<RuntimeOrientedBox> boxes))
@@ -111,13 +134,520 @@ namespace BarPromenade
                      key.Style == CityFringeYardStyle.Drainage ||
                      key.Style == CityFringeYardStyle.Iron))
                 {
+                        renderer.shadowCastingMode = ShadowCastingMode.Off;
+                }
+            }
+
+            keys = new List<BatchKey>(importedBatches.Keys);
+            keys.Sort(BatchKey.Compare);
+            for (int index = 0; index < keys.Count; index++)
+            {
+                BatchKey key = keys[index];
+                Color color = ResolveColor(key.Style);
+                GameObject chunk =
+                    RuntimePrimitiveFactory.CreateCombinedMeshes(
+                        $"Imported Fringe Chunk {key.X} {key.Z} " +
+                        $"{key.Style} " +
+                        $"{(key.BlocksMovement ? "Solid" : "Visual")}",
+                        root.transform,
+                        importedBatches[key],
+                        color,
+                        false,
+                        ResolveTileSize(key.Style),
+                        ResolveUvMode(key.Style));
+                Renderer renderer = chunk.GetComponent<Renderer>();
+                ApplyAppearance(renderer, key.Style, color);
+                if (!key.BlocksMovement &&
+                    (key.Style == CityFringeYardStyle.ServiceGround ||
+                     key.Style == CityFringeYardStyle.ServiceTrack ||
+                     key.Style == CityFringeYardStyle.Drainage ||
+                     key.Style == CityFringeYardStyle.Iron))
+                {
                     renderer.shadowCastingMode = ShadowCastingMode.Off;
                 }
+            }
+
+            keys = new List<BatchKey>(collisionBatches.Keys);
+            keys.Sort(BatchKey.Compare);
+            for (int index = 0; index < keys.Count; index++)
+            {
+                BatchKey key = keys[index];
+                GameObject proxy =
+                    RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                        $"Fringe Imported Collision {key.X} " +
+                        $"{key.Z} {key.Style}",
+                        root.transform,
+                        collisionBatches[key],
+                        ResolveColor(key.Style),
+                        true);
+                proxy.GetComponent<Renderer>().enabled = false;
             }
 
             IList<CityFringePracticalAnchor> practicalAnchors =
                 BuildPracticalAnchors(root.transform, plan.Practicals);
             return new CityFringeYardWorldResult(root, practicalAnchors);
+        }
+
+        private static void TryAppendImportedYardParts(
+            CityFringeYardDescriptor yard,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            TryAppendImportedUtilityPoles(
+                yard,
+                provider,
+                batches,
+                importedIds);
+            TryAppendImportedSingleParts(
+                yard,
+                CityFringeYardPartKind.RepairStack,
+                CityMiscKind.FringeRepairStock,
+                ResolveRepairVariant,
+                provider,
+                batches,
+                importedIds);
+            TryAppendImportedSingleParts(
+                yard,
+                CityFringeYardPartKind.PipeStock,
+                CityMiscKind.FringePipeStock,
+                ResolvePipeVariant,
+                provider,
+                batches,
+                importedIds);
+            TryAppendImportedUtilitySheds(
+                yard,
+                provider,
+                batches,
+                importedIds);
+            TryAppendImportedFloodGauge(
+                yard,
+                provider,
+                batches,
+                importedIds);
+        }
+
+        private static void TryAppendImportedUtilityPoles(
+            CityFringeYardDescriptor yard,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            for (int index = 0; index < yard.Parts.Count; index++)
+            {
+                CityFringeYardPartDescriptor pole = yard.Parts[index];
+                if (pole.Kind != CityFringeYardPartKind.UtilityPole)
+                {
+                    continue;
+                }
+
+                string armId = pole.StableId.Replace(
+                    "-utility-pole-",
+                    "-utility-arm-");
+                CityFringeYardPartDescriptor arm = default;
+                bool found = false;
+                for (int armIndex = 0;
+                     armIndex < yard.Parts.Count;
+                     armIndex++)
+                {
+                    if (!string.Equals(
+                            yard.Parts[armIndex].StableId,
+                            armId,
+                            StringComparison.Ordinal))
+                    {
+                        continue;
+                    }
+
+                    arm = yard.Parts[armIndex];
+                    found = true;
+                    break;
+                }
+
+                if (!found)
+                {
+                    continue;
+                }
+
+                TryAppendAssembly(
+                    provider,
+                    CityMiscKind.FringeUtilityPole,
+                    0,
+                    new Vector3(
+                        pole.Center.x,
+                        pole.Center.y - pole.Size.y * 0.5f,
+                        pole.Center.z),
+                    arm.Rotation,
+                    CityFringeYardStyle.Iron,
+                    new[] { pole, arm },
+                    Vector3.one,
+                    batches,
+                    importedIds);
+            }
+        }
+
+        private static void TryAppendImportedSingleParts(
+            CityFringeYardDescriptor yard,
+            CityFringeYardPartKind sourceKind,
+            CityMiscKind miscKind,
+            Func<CityFringeYardPartDescriptor, int> resolveVariant,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            for (int index = 0; index < yard.Parts.Count; index++)
+            {
+                CityFringeYardPartDescriptor source = yard.Parts[index];
+                if (source.Kind != sourceKind)
+                {
+                    continue;
+                }
+
+                int variant = resolveVariant(source);
+                if (!TryGetImportedParts(
+                        provider,
+                        miscKind,
+                        variant,
+                        out _))
+                {
+                    continue;
+                }
+
+                Vector3 scale = miscKind ==
+                    CityMiscKind.FringePipeStock
+                        ? ScalePipeStock(variant, source.Size)
+                        : Vector3.one;
+                TryAppendAssembly(
+                    provider,
+                    miscKind,
+                    variant,
+                    new Vector3(
+                        source.Center.x,
+                        source.Center.y - source.Size.y * 0.5f,
+                        source.Center.z),
+                    source.Rotation,
+                    source.Style,
+                    new[] { source },
+                    scale,
+                    batches,
+                    importedIds);
+            }
+        }
+
+        private static void TryAppendImportedUtilitySheds(
+            CityFringeYardDescriptor yard,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            for (int index = 0; index < yard.Parts.Count; index++)
+            {
+                CityFringeYardPartDescriptor shed = yard.Parts[index];
+                if (shed.Kind != CityFringeYardPartKind.UtilityShed)
+                {
+                    continue;
+                }
+
+                string suffix = GetTrailingOrdinal(shed.StableId);
+                CityFringeYardPartDescriptor door = default;
+                bool found = false;
+                for (int doorIndex = 0;
+                     doorIndex < yard.Parts.Count;
+                     doorIndex++)
+                {
+                    CityFringeYardPartDescriptor candidate =
+                        yard.Parts[doorIndex];
+                    if (candidate.Kind ==
+                            CityFringeYardPartKind.UtilityDoor &&
+                        candidate.StableId.EndsWith(
+                            suffix,
+                            StringComparison.Ordinal))
+                    {
+                        door = candidate;
+                        found = true;
+                        break;
+                    }
+                }
+
+                if (!found)
+                {
+                    continue;
+                }
+
+                TryAppendAssembly(
+                    provider,
+                    CityMiscKind.FringeUtilityShedShell,
+                    0,
+                    new Vector3(
+                        shed.Center.x,
+                        shed.Center.y - shed.Size.y * 0.5f + 0.16f,
+                        shed.Center.z),
+                    shed.Rotation,
+                    shed.Style,
+                    new[] { shed, door },
+                    Vector3.one,
+                    batches,
+                    importedIds);
+            }
+        }
+
+        private static void TryAppendImportedFloodGauge(
+            CityFringeYardDescriptor yard,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            var gaugeParts = new List<CityFringeYardPartDescriptor>(4);
+            CityFringeYardPartDescriptor pole = default;
+            CityFringeYardPartDescriptor cross = default;
+            CityFringeYardPartDescriptor housing = default;
+            bool hasPole = false;
+            bool hasCross = false;
+            bool hasHousing = false;
+            for (int index = 0; index < yard.Parts.Count; index++)
+            {
+                CityFringeYardPartDescriptor part = yard.Parts[index];
+                if (part.Kind ==
+                        CityFringeYardPartKind.PracticalHousing &&
+                    string.Equals(
+                        part.StableId,
+                        $"{yard.AreaId}-landmark-practical-housing",
+                        StringComparison.Ordinal))
+                {
+                    housing = part;
+                    hasHousing = true;
+                    continue;
+                }
+
+                if (part.Kind != CityFringeYardPartKind.FloodGauge)
+                {
+                    continue;
+                }
+
+                gaugeParts.Add(part);
+                if (part.StableId.EndsWith(
+                        "-flood-gauge",
+                        StringComparison.Ordinal))
+                {
+                    pole = part;
+                    hasPole = true;
+                }
+                else if (part.StableId.EndsWith(
+                             "-wheel-b",
+                             StringComparison.Ordinal))
+                {
+                    cross = part;
+                    hasCross = true;
+                }
+            }
+
+            if (!hasPole || !hasCross || !hasHousing ||
+                gaugeParts.Count != 3)
+            {
+                return;
+            }
+
+            gaugeParts.Add(housing);
+
+            float side = Vector3.Dot(
+                cross.Rotation * Vector3.forward,
+                pole.Rotation * Vector3.right);
+            int variant = side >= 0f ? 0 : 1;
+            TryAppendAssembly(
+                provider,
+                CityMiscKind.FringeFloodGaugeShell,
+                variant,
+                new Vector3(
+                    pole.Center.x,
+                    pole.Center.y - pole.Size.y * 0.5f,
+                    pole.Center.z),
+                pole.Rotation,
+                pole.Style,
+                gaugeParts,
+                Vector3.one,
+                batches,
+                importedIds);
+        }
+
+        private static bool TryAppendAssembly(
+            CityMiscAssetProvider provider,
+            CityMiscKind kind,
+            int variant,
+            Vector3 origin,
+            Quaternion rotation,
+            CityFringeYardStyle sourceStyle,
+            IReadOnlyList<CityFringeYardPartDescriptor> sourceParts,
+            Vector3 scale,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            if (sourceParts == null || sourceParts.Count == 0 ||
+                !TryGetImportedParts(
+                    provider,
+                    kind,
+                    variant,
+                    out List<CityMiscMeshPart> parts))
+            {
+                return false;
+            }
+
+            bool blocksMovement = false;
+            for (int index = 0; index < sourceParts.Count; index++)
+            {
+                blocksMovement |= sourceParts[index].BlocksMovement;
+            }
+
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityMiscMeshPart part = parts[index];
+                CityFringeYardStyle style = ResolveImportedStyle(
+                    kind,
+                    part.Role,
+                    sourceStyle);
+                var key = new BatchKey(
+                    Mathf.FloorToInt(origin.x / SpatialChunkSize),
+                    Mathf.FloorToInt(origin.z / SpatialChunkSize),
+                    style,
+                    blocksMovement);
+                if (!batches.TryGetValue(
+                        key,
+                        out List<RuntimeMeshPlacement> placements))
+                {
+                    placements = new List<RuntimeMeshPlacement>();
+                    batches.Add(key, placements);
+                }
+
+                placements.Add(new RuntimeMeshPlacement(
+                    part.Mesh,
+                    origin,
+                    rotation,
+                    scale));
+            }
+
+            for (int index = 0; index < sourceParts.Count; index++)
+            {
+                importedIds.Add(sourceParts[index].StableId);
+            }
+
+            return true;
+        }
+
+        private static bool TryGetImportedParts(
+            CityMiscAssetProvider provider,
+            CityMiscKind kind,
+            int variant,
+            out List<CityMiscMeshPart> parts)
+        {
+            parts = null;
+            if (provider == null || !CityMiscAssetProvider.Supports(kind))
+            {
+                return false;
+            }
+
+            try
+            {
+                int count = CityMiscAssetProvider.GetPartCount(kind);
+                var result = new List<CityMiscMeshPart>(count);
+                for (int index = 0; index < count; index++)
+                {
+                    result.Add(provider.GetPartOrThrow(
+                        kind,
+                        variant,
+                        index));
+                }
+
+                parts = result;
+                return result.Count > 0;
+            }
+            catch (InvalidOperationException)
+            {
+                return false;
+            }
+            catch (ArgumentOutOfRangeException)
+            {
+                return false;
+            }
+        }
+
+        private static CityFringeYardStyle ResolveImportedStyle(
+            CityMiscKind kind,
+            CityMiscMeshRole role,
+            CityFringeYardStyle sourceStyle)
+        {
+            switch (kind)
+            {
+                case CityMiscKind.FringeUtilityPole:
+                    return CityFringeYardStyle.Iron;
+                case CityMiscKind.FringeRepairStock:
+                case CityMiscKind.FringePipeStock:
+                    return role == CityMiscMeshRole.Fixture
+                        ? CityFringeYardStyle.Iron
+                        : CityFringeYardStyle.Concrete;
+                case CityMiscKind.FringeUtilityShedShell:
+                    return role == CityMiscMeshRole.Fixture
+                        ? CityFringeYardStyle.Iron
+                        : CityFringeYardStyle.UtilityPaint;
+                case CityMiscKind.FringeFloodGaugeShell:
+                    return role == CityMiscMeshRole.Fixture
+                        ? CityFringeYardStyle.Iron
+                        : CityFringeYardStyle.UtilityPaint;
+                default:
+                    return sourceStyle;
+            }
+        }
+
+        private static int ResolveRepairVariant(
+            CityFringeYardPartDescriptor part)
+        {
+            string suffix = GetTrailingOrdinal(part.StableId);
+            return int.TryParse(suffix, out int value)
+                ? Mathf.Clamp(value, 0, 2)
+                : 0;
+        }
+
+        private static int ResolvePipeVariant(
+            CityFringeYardPartDescriptor part)
+        {
+            return part.Style == CityFringeYardStyle.Iron ? 1 : 0;
+        }
+
+        private static string GetTrailingOrdinal(string stableId)
+        {
+            int separator = stableId.LastIndexOf('-');
+            return separator >= 0 && separator + 1 < stableId.Length
+                ? stableId.Substring(separator + 1)
+                : string.Empty;
+        }
+
+        private static Vector3 ScalePipeStock(
+            int variant,
+            Vector3 target)
+        {
+            Vector3 source = variant == 0
+                ? new Vector3(0.34f, 0.34f, 5.75f)
+                : new Vector3(0.58f, 0.38f, 7.40f);
+            return new Vector3(
+                target.x / source.x,
+                target.y / source.y,
+                target.z / source.z);
+        }
+
+        private static void AppendBox(
+            IDictionary<BatchKey, List<RuntimeOrientedBox>> batches,
+            BatchKey key,
+            CityFringeYardPartDescriptor part)
+        {
+            if (!batches.TryGetValue(
+                    key,
+                    out List<RuntimeOrientedBox> boxes))
+            {
+                boxes = new List<RuntimeOrientedBox>();
+                batches.Add(key, boxes);
+            }
+
+            boxes.Add(new RuntimeOrientedBox(
+                part.Center,
+                part.Rotation,
+                part.Size));
         }
 
         private static IList<CityFringePracticalAnchor>

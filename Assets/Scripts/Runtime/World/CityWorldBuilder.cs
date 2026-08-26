@@ -70,6 +70,8 @@ namespace BarPromenade
                 RoadWalkableArea.FromLayout(
                     layout,
                     mountainBoundaryPlan);
+            CityChurchPlan churchPlan =
+                CityChurchPlanner.Create(layout);
             CityFringeYardPlan fringeYardPlan =
                 CityFringeYardPlanner.Create(
                     layout,
@@ -136,6 +138,11 @@ namespace BarPromenade
             {
                 CityCemeteryWorldBuilder.Build(world, cemeteryPlan);
             }
+
+            ChurchEntrance church = CityChurchWorldBuilder.Build(
+                world,
+                churchPlan,
+                walkableArea);
 
             if (seacoastPlan != null)
             {
@@ -218,6 +225,8 @@ namespace BarPromenade
                 bars,
                 playerHome,
                 supermarket,
+                churchPlan,
+                church,
                 fencePlan,
                 parkRoot,
                 districtPointOfInterestRoot,
@@ -322,6 +331,9 @@ namespace BarPromenade
                 surfaces,
                 layout,
                 fringeYardPlan);
+            CityChurchGroundWorldBuilder.Build(
+                surfaces,
+                layout);
             // The sand carries the seacoast's tide-banded sheet over
             // UVs baked at its metre pitch; the tint stays the flat
             // colour the map and the compensation were solved against.
@@ -551,6 +563,8 @@ namespace BarPromenade
 
             Transform park = new GameObject("Central Park").transform;
             park.SetParent(parent, false);
+            CityMiscAssetProvider miscProvider =
+                CityMiscAssetProvider.LoadOrThrow();
             if (parkLawn != null)
             {
                 parkLawn.transform.SetParent(park, false);
@@ -585,8 +599,10 @@ namespace BarPromenade
                     ParkPlaza);
             }
 
-            var trunks = new List<Bounds>(plan.TreePositions.Count);
-            var canopies = new List<Bounds>(plan.TreePositions.Count);
+            var trunks = new List<RuntimeMeshPlacement>(
+                plan.TreePositions.Count);
+            var canopies = new List<RuntimeMeshPlacement>(
+                plan.TreePositions.Count);
             Transform colliders =
                 new GameObject("Park Tree Colliders").transform;
             colliders.SetParent(park, false);
@@ -595,13 +611,41 @@ namespace BarPromenade
                  index++)
             {
                 Vector3 position = plan.TreePositions[index];
-                float height = 2.8f + (index % 4) * 0.24f;
-                trunks.Add(new Bounds(
-                    position + (Vector3.up * (height * 0.5f)),
-                    new Vector3(0.52f, height, 0.52f)));
-                canopies.Add(new Bounds(
-                    position + (Vector3.up * (height + 1.25f)),
-                    new Vector3(2.8f, 2.5f, 2.8f)));
+                int variant = index %
+                    CityMiscAssetProvider.GetVariantCount(
+                        CityMiscKind.ParkTree);
+                Quaternion rotation = Quaternion.Euler(
+                    0f,
+                    (index * 137.50776f) % 360f,
+                    0f);
+                int treePartCount = CityMiscAssetProvider.GetPartCount(
+                    CityMiscKind.ParkTree);
+                for (int partIndex = 0;
+                     partIndex < treePartCount;
+                     partIndex++)
+                {
+                    CityMiscMeshPart part = miscProvider.GetPartOrThrow(
+                        CityMiscKind.ParkTree,
+                        variant,
+                        partIndex);
+                    var placement = new RuntimeMeshPlacement(
+                        part.Mesh,
+                        position,
+                        rotation);
+                    if (part.Role == CityMiscMeshRole.Bark)
+                    {
+                        trunks.Add(placement);
+                    }
+                    else if (part.Role == CityMiscMeshRole.Foliage)
+                    {
+                        canopies.Add(placement);
+                    }
+                    else
+                    {
+                        throw new InvalidOperationException(
+                            $"Unexpected park-tree role {part.Role}.");
+                    }
+                }
 
                 GameObject colliderObject =
                     new GameObject($"Tree Collider {index + 1}");
@@ -613,46 +657,41 @@ namespace BarPromenade
                 collider.size = new Vector3(0.62f, 2.3f, 0.62f);
             }
 
-            BuildParkSurfaceBoxesIfAny(
-                "Park Tree Trunks",
+            BuildParkSurfaceMeshesIfAny(
+                "Imported Park Tree Trunks",
                 park,
                 trunks,
                 CityParkSurfaceKind.Bark,
                 ParkTrunk);
-            BuildParkSurfaceBoxesIfAny(
-                "Park Tree Canopies",
+            BuildParkSurfaceMeshesIfAny(
+                "Imported Park Tree Canopies",
                 park,
                 canopies,
                 CityParkSurfaceKind.Foliage,
                 ParkCanopy);
 
-            var benchParts = new List<RuntimeOrientedBox>(
-                plan.Benches.Count * 3);
+            var benchParts = new List<RuntimeMeshPlacement>(
+                plan.Benches.Count);
             for (int index = 0;
                  index < plan.Benches.Count;
                  index++)
             {
                 CityParkBenchDescriptor bench = plan.Benches[index];
-                benchParts.Add(new RuntimeOrientedBox(
-                    bench.Position + (Vector3.up * 0.62f),
-                    bench.Rotation,
-                    new Vector3(
-                        CityParkBenchDescriptor.SeatWidth,
-                        0.18f,
-                        CityParkBenchDescriptor.SeatDepth)));
-                for (int side = -1; side <= 1; side += 2)
-                {
-                    benchParts.Add(new RuntimeOrientedBox(
-                        bench.Position +
-                        bench.Tangent * (side * 0.72f) +
-                        Vector3.up * 0.30f,
-                        bench.Rotation,
-                        new Vector3(0.18f, 0.60f, 0.46f)));
-                }
+                int variant = index %
+                    CityMiscAssetProvider.GetVariantCount(
+                        CityMiscKind.ParkBench);
+                CityMiscMeshPart part = miscProvider.GetPartOrThrow(
+                    CityMiscKind.ParkBench,
+                    variant,
+                    0);
+                benchParts.Add(new RuntimeMeshPlacement(
+                    part.Mesh,
+                    bench.Position,
+                    bench.Rotation));
             }
 
-            BuildParkSurfaceOrientedBoxesIfAny(
-                "Park Benches",
+            BuildParkSurfaceMeshesIfAny(
+                "Imported Park Benches",
                 park,
                 benchParts,
                 CityParkSurfaceKind.Timber,
@@ -2130,6 +2169,32 @@ namespace BarPromenade
                 name,
                 parent,
                 boxes,
+                color,
+                false,
+                CityParkSurfaceAppearance.GetRecipe(kind).MetersPerTile,
+                CityParkSurfaceAppearance.GetUvMode(kind));
+            CityParkSurfaceAppearance.ApplyCombined(
+                group.GetComponent<Renderer>(),
+                kind,
+                color);
+        }
+
+        private static void BuildParkSurfaceMeshesIfAny(
+            string name,
+            Transform parent,
+            IReadOnlyList<RuntimeMeshPlacement> placements,
+            CityParkSurfaceKind kind,
+            Color color)
+        {
+            if (placements.Count == 0)
+            {
+                return;
+            }
+
+            GameObject group = RuntimePrimitiveFactory.CreateCombinedMeshes(
+                name,
+                parent,
+                placements,
                 color,
                 false,
                 CityParkSurfaceAppearance.GetRecipe(kind).MetersPerTile,
