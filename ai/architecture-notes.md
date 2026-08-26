@@ -1401,6 +1401,47 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   stays grounded over uneven terrain. Plan and validator both keep every ridge
   footprint clear of the road corridor, plateau and tree crowns; the dedicated
   cableway return occluder remains separately positioned by the terminal plan.
+- **Accepted — A borrowed albedo shares its bytes but not its
+  compensation:** the mountain road prints six sheets of its own (asphalt,
+  forest floor, wind snow, layered stone, conifer needles, bark) and borrows
+  nine kinds from City, Home and Supermarket families rather than reprinting
+  concrete, iron, painted metal, masonry, linoleum, timber and wall paint.
+  What a borrowed kind does not inherit is the source family's albedo
+  compensation. Compensation is fitted to the TINTS that multiply a sheet,
+  not to the sheet: the masonry serving a city retaining wall at
+  `0.335, 0.350, 0.325` cannot also serve the cafe's brick gable at
+  `0.290, 0.105, 0.065` — reusing the fringe constant there would brighten
+  the wall by more than the `8%` the linear rule allows.
+  `tools/build-mountain-road-textures.py` therefore measures each borrowed
+  PNG, re-solves the constant against the mountain's own tints, and refuses
+  the build if the result would clamp a channel or miss the limit; it records
+  the source sheet's SHA256 so a regeneration upstream is caught rather than
+  silently shifting a mountain surface. Two kinds may name one file and still
+  differ: `PaintedMetal` and `PaleEnamel` read the park's painted metal at
+  opposite ends of its tint range, as do `WallPaint` and `InteriorPaint`.
+- **Accepted — The mountain UVs were fixed before the sheets landed:** a
+  sheet on a bad unwrap only makes the unwrap visible, so the same pass
+  corrected six of them. The road's kerb continues the carriageway's unwrap
+  over its edge — its U runs on past the road half-width by the slab's own
+  thickness — instead of collapsing three metres of asphalt into two
+  centimetres of border; the vertices stay welded, so the road and plateau
+  still share one entry vertex. The plateau and the terminal apron are
+  unwrapped in the ROAD's frame, measured from the entry sample and biased by
+  the distance already travelled, so the texture crosses their shared seam
+  unbroken rather than restarting at it. Soil and snow are two cuts of one
+  vertex grid and now receive one set of normals averaged over both triangle
+  sets, because letting each mesh recalculate its own lit the snow line as a
+  seam that is not there. Ridges and boulders, which carried no UVs at all,
+  take the same faceted box projection the combined batches use, at the stone
+  recipe's pitch and off their existing normals, so nothing about the
+  lighting changes. Conifer crowns unroll by arc length against world height,
+  phased per tree from where it stands. The bridge deck moved from a scaled
+  cube onto the single-box batch its girders and piers already use, so its
+  faces tile at true metre scale; its transform stops carrying the offset and
+  its collider becomes the mesh, matching the abutments. The cafe's prism
+  splits its cap and side UVs onto separate vertices — sharing them gave every
+  side face zero vertical UV extent — which also gives the roof slab the crisp
+  arris a building edge has instead of a bevel.
 - **Accepted — Cross-area map travel is a hard Single-mode scene boundary:**
   the ordinary map owns City and Mountain Road tabs, draws the hero only on the
   current area's tab and asks for confirmation before an other-area transfer.

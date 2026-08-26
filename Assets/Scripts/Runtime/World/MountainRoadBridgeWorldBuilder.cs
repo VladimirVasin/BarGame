@@ -101,6 +101,19 @@ namespace BarPromenade
         private const float PierFootingEmbed = 0.42f;
         private const int MaximumRailIntervals = 24;
 
+        // The bridge borrows three packaged sheets rather than printing its
+        // own: the deck, abutments and piers are concrete, the girders and
+        // crossbeams are oxidised steel and the open rails are painted
+        // rail steel. Each batch bakes its UVs at its own recipe's pitch,
+        // so the pitch is never restated as a literal here.
+        private static float ConcreteMetersPerTile =>
+            MountainRoadSurfaceAppearance.GetRecipe(
+                MountainRoadSurfaceKind.Concrete).MetersPerTile;
+
+        private static float IronMetersPerTile =>
+            MountainRoadSurfaceAppearance.GetRecipe(
+                MountainRoadSurfaceKind.RustedIron).MetersPerTile;
+
         private static readonly Color AgedConcrete =
             new Color(0.285f, 0.30f, 0.285f, 1f);
         private static readonly Color DarkConcrete =
@@ -229,6 +242,16 @@ namespace BarPromenade
             return result;
         }
 
+        /// <summary>
+        /// The slab under the road. It is one oriented box in a combined
+        /// batch rather than a scaled cube, for the reason the girders and
+        /// the piers already are: a cube's per-face 0..1 UVs would stretch
+        /// one tile of concrete over the whole fifty-metre span, while the
+        /// batch bakes true metre-scale UVs per face. The slab keeps its
+        /// place in the world, its single enabled collider and its single
+        /// renderer; only its transform stops carrying the offset, which is
+        /// now baked into the mesh.
+        /// </summary>
         private static GameObject BuildStructuralDeck(
             Transform parent,
             MountainRoadBridgeDescriptor bridge,
@@ -236,19 +259,31 @@ namespace BarPromenade
             Quaternion bridgeRotation,
             Vector3 deckUp)
         {
-            GameObject deck = RuntimePrimitiveFactory.CreateBox(
-                "Physical Sloped Structural Deck",
-                parent,
-                -deckUp *
-                (StructuralDeckSurfaceClearance +
-                 bridge.DeckThickness * 0.5f),
-                new Vector3(
-                    bridge.DeckWidth,
-                    bridge.DeckThickness,
-                    span.magnitude + 0.12f),
-                AgedConcrete,
-                true);
-            deck.transform.localRotation = bridgeRotation;
+            var slab = new[]
+            {
+                new RuntimeOrientedBox(
+                    -deckUp *
+                    (StructuralDeckSurfaceClearance +
+                     bridge.DeckThickness * 0.5f),
+                    bridgeRotation,
+                    new Vector3(
+                        bridge.DeckWidth,
+                        bridge.DeckThickness,
+                        span.magnitude + 0.12f))
+            };
+            GameObject deck =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "Physical Sloped Structural Deck",
+                    parent,
+                    slab,
+                    AgedConcrete,
+                    true,
+                    ConcreteMetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            MountainRoadSurfaceAppearance.ApplyCombined(
+                deck.GetComponent<Renderer>(),
+                MountainRoadSurfaceKind.Concrete,
+                AgedConcrete);
             return deck;
         }
 
@@ -296,14 +331,20 @@ namespace BarPromenade
                         0.32f)));
             }
 
-            return RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                "Batched Steel Girders And Crossbeams",
-                parent,
-                boxes,
-                OxidizedSteel,
-                false,
-                2.5f,
-                RuntimeWorldUvMode.BoxProjected);
+            GameObject beams =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "Batched Steel Girders And Crossbeams",
+                    parent,
+                    boxes,
+                    OxidizedSteel,
+                    false,
+                    IronMetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            MountainRoadSurfaceAppearance.ApplyCombined(
+                beams.GetComponent<Renderer>(),
+                MountainRoadSurfaceKind.RustedIron,
+                OxidizedSteel);
+            return beams;
         }
 
         private static GameObject BuildAbutments(
@@ -349,14 +390,20 @@ namespace BarPromenade
                         depth)));
             }
 
-            return RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                "Physical Concrete Abutments",
-                parent,
-                boxes,
-                DarkConcrete,
-                true,
-                2.8f,
-                RuntimeWorldUvMode.BoxProjected);
+            GameObject abutments =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "Physical Concrete Abutments",
+                    parent,
+                    boxes,
+                    DarkConcrete,
+                    true,
+                    ConcreteMetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            MountainRoadSurfaceAppearance.ApplyCombined(
+                abutments.GetComponent<Renderer>(),
+                MountainRoadSurfaceKind.Concrete,
+                DarkConcrete);
+            return abutments;
         }
 
         private static Transform BuildPier(
@@ -426,14 +473,19 @@ namespace BarPromenade
                         PierLegWidth * 1.75f)));
             }
 
-            RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                "Physical Pier Bent And Footings",
-                pierRoot,
-                boxes,
-                AgedConcrete,
-                true,
-                2.8f,
-                RuntimeWorldUvMode.BoxProjected);
+            GameObject bent =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "Physical Pier Bent And Footings",
+                    pierRoot,
+                    boxes,
+                    AgedConcrete,
+                    true,
+                    ConcreteMetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            MountainRoadSurfaceAppearance.ApplyCombined(
+                bent.GetComponent<Renderer>(),
+                MountainRoadSurfaceKind.Concrete,
+                AgedConcrete);
             return pierRoot;
         }
 
@@ -506,14 +558,19 @@ namespace BarPromenade
                 }
             }
 
-            RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                "Batched Open Rail Posts And Beams",
-                railRoot,
-                boxes,
-                RailSteel,
-                false,
-                1.8f,
-                RuntimeWorldUvMode.BoxProjected);
+            GameObject railBatch =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "Batched Open Rail Posts And Beams",
+                    railRoot,
+                    boxes,
+                    RailSteel,
+                    false,
+                    IronMetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            MountainRoadSurfaceAppearance.ApplyCombined(
+                railBatch.GetComponent<Renderer>(),
+                MountainRoadSurfaceKind.RustedIron,
+                RailSteel);
 
             var colliderObject = new GameObject(
                 "Continuous Physical Rail Collider");

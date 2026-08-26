@@ -8,9 +8,16 @@ namespace BarPromenade
     public static class MountainRoadSurfaceMeshFactory
     {
         public const float SurfaceThickness = 0.18f;
-        public const float MetersPerTile = 3.5f;
         public const float TerminalApronSurfaceOffset = 0.025f;
         public const float TerminalApronEntryOverlap = 0.45f;
+
+        /// <summary>
+        /// The pitch every road UV is baked at, read from the packaged
+        /// asphalt recipe so the mesh and the sheet can never drift apart.
+        /// </summary>
+        public static float MetersPerTile =>
+            MountainRoadSurfaceAppearance.GetRecipe(
+                MountainRoadSurfaceKind.Asphalt).MetersPerTile;
 
         private const int TerminalApronArcSegments = 28;
 
@@ -71,6 +78,7 @@ namespace BarPromenade
                 triangles);
             AppendPlateau(
                 plan.Plateau,
+                plan.Route.Sample(plan.Plateau.EntryDistance),
                 connection,
                 vertices,
                 uvs,
@@ -78,8 +86,15 @@ namespace BarPromenade
             return CreateMesh("Mountain Road Surface", vertices, uvs, triangles);
         }
 
+        /// <summary>
+        /// The visible pocket the vehicle turns in. Its UVs are anchored to
+        /// the road entry rather than to the pocket's own centre, so the
+        /// asphalt runs continuously across the seam the apron shares with
+        /// the road and the plateau instead of restarting there.
+        /// </summary>
         public static Mesh CreateTerminalApron(
-            MountainRoadVehicleApronPlan apron)
+            MountainRoadVehicleApronPlan apron,
+            float entryDistance)
         {
             if (apron == null)
             {
@@ -126,13 +141,15 @@ namespace BarPromenade
                 surfaceCenter
             };
             vertices.AddRange(outline);
+            float tile = MetersPerTile;
             var uvs = new List<Vector2>(vertices.Count);
             for (int index = 0; index < vertices.Count; index++)
             {
-                Vector3 local = vertices[index] - surfaceCenter;
+                Vector3 local = vertices[index] - apron.EntryCenter;
                 uvs.Add(new Vector2(
                     Vector3.Dot(local, apron.Right),
-                    Vector3.Dot(local, apron.Forward)) / MetersPerTile);
+                    entryDistance +
+                    Vector3.Dot(local, apron.Forward)) / tile);
             }
 
             var triangles = new List<int>(outline.Count * 3);
@@ -212,6 +229,7 @@ namespace BarPromenade
             ICollection<Vector2> uvs,
             IList<int> triangles)
         {
+            float tile = MetersPerTile;
             var leftTop = new int[rows.Count];
             var rightTop = new int[rows.Count];
             var leftBottom = new int[rows.Count];
@@ -219,25 +237,37 @@ namespace BarPromenade
             for (int index = 0; index < rows.Count; index++)
             {
                 Row row = rows[index];
-                float v = row.Distance / MetersPerTile;
+                float v = row.Distance / tile;
+                float halfWidth = row.Width * 0.5f / tile;
+
+                // Across the carriageway and along the distance travelled.
                 leftTop[index] = AddVertex(
                     row.Left,
-                    new Vector2(-row.Width * 0.5f / MetersPerTile, v),
+                    new Vector2(-halfWidth, v),
                     vertices,
                     uvs);
                 rightTop[index] = AddVertex(
                     row.RightEdge,
-                    new Vector2(row.Width * 0.5f / MetersPerTile, v),
+                    new Vector2(halfWidth, v),
                     vertices,
                     uvs);
+
+                // The kerb continues that same unwrap over the edge: its U
+                // runs on past the carriageway by the slab's own thickness,
+                // so 0.18 m of face carries 0.18 m of sheet. These vertices
+                // are shared with the plateau rim and with the collider, so
+                // they are re-mapped rather than duplicated; giving them a
+                // fixed 0..1 U is what used to squeeze three metres of
+                // asphalt into two centimetres of border.
+                float kerb = halfWidth + SurfaceThickness / tile;
                 leftBottom[index] = AddVertex(
                     row.Left - Vector3.up * SurfaceThickness,
-                    new Vector2(0f, v),
+                    new Vector2(-kerb, v),
                     vertices,
                     uvs);
                 rightBottom[index] = AddVertex(
                     row.RightEdge - Vector3.up * SurfaceThickness,
-                    new Vector2(1f, v),
+                    new Vector2(kerb, v),
                     vertices,
                     uvs);
             }
@@ -272,21 +302,38 @@ namespace BarPromenade
                 rightBottom[last]);
         }
 
+        /// <summary>
+        /// The plateau's UVs live in the road's own frame, measured from the
+        /// entry sample and biased by the distance already travelled. That
+        /// is what makes the sheet cross the shared entry seam unbroken:
+        /// the two connection vertices the ribbon already wrote land on
+        /// exactly the value this projection would give them. A plateau
+        /// unwrapped around its own centre restarts the texture at the seam
+        /// instead, which is the join the old mapping showed.
+        /// </summary>
         private static void AppendPlateau(
             MountainRoadPlateauDescriptor plateau,
+            MountainRoadRouteSample entry,
             RibbonConnection connection,
             ICollection<Vector3> vertices,
             ICollection<Vector2> uvs,
             IList<int> triangles)
         {
+            float tile = MetersPerTile;
+            float skirt = SurfaceThickness / tile;
+            Vector2 centerUv = ProjectRoadFrameUv(
+                plateau.Center,
+                plateau,
+                entry,
+                tile);
             int centerTop = AddVertex(
                 plateau.Center,
-                Vector2.zero,
+                centerUv,
                 vertices,
                 uvs);
             int centerBottom = AddVertex(
                 plateau.Center - Vector3.up * SurfaceThickness,
-                Vector2.zero,
+                centerUv,
                 vertices,
                 uvs);
             int count = plateau.VerticesXZ.Count;
@@ -310,14 +357,19 @@ namespace BarPromenade
 
                 Vector2 xz = plateau.VerticesXZ[index];
                 Vector3 world = new Vector3(xz.x, plateau.Center.y, xz.y);
-                Vector3 local = world - plateau.Center;
-                Vector2 uv = new Vector2(
-                    Vector3.Dot(local, plateau.Right),
-                    Vector3.Dot(local, plateau.Forward)) / MetersPerTile;
+                Vector2 uv = ProjectRoadFrameUv(world, plateau, entry, tile);
                 rimTop[index] = AddVertex(world, uv, vertices, uvs);
+
+                // The rim's own kerb unwraps outward from the centre by the
+                // slab thickness, the same trick the road's border uses, so
+                // the skirt samples a real 0.18 m band rather than smearing
+                // one line of the sheet down its whole face.
+                Vector2 outward = uv - centerUv;
                 rimBottom[index] = AddVertex(
                     world - Vector3.up * SurfaceThickness,
-                    uv,
+                    uv + (outward.sqrMagnitude > 1e-8f
+                        ? outward.normalized
+                        : Vector2.down) * skirt,
                     vertices,
                     uvs);
             }
@@ -341,6 +393,23 @@ namespace BarPromenade
                         triangles);
                 }
             }
+        }
+
+        /// <summary>
+        /// One world point in the road's unwrap: across the carriageway on
+        /// U, along the distance already travelled on V.
+        /// </summary>
+        private static Vector2 ProjectRoadFrameUv(
+            Vector3 world,
+            MountainRoadPlateauDescriptor plateau,
+            MountainRoadRouteSample entry,
+            float tile)
+        {
+            Vector3 local = world - entry.Position;
+            return new Vector2(
+                Vector3.Dot(local, plateau.Right),
+                entry.Distance +
+                Vector3.Dot(local, plateau.Forward)) / tile;
         }
 
         private static int AddVertex(

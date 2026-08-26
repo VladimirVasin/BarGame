@@ -12,6 +12,12 @@ namespace BarPromenade
     /// </summary>
     internal static class MountainRoadCafeGeometry
     {
+        /// <summary>
+        /// One run of the cafe's shell. `surface` names the sheet its wide
+        /// face carries; a segment with no sheet - the glazing - passes
+        /// null and keeps both its flat colour and its own material, which
+        /// the recipe path would otherwise replace with the shared lit one.
+        /// </summary>
         internal static GameObject CreateSegmentBox(
             string name,
             Transform parent,
@@ -22,7 +28,8 @@ namespace BarPromenade
             float depth,
             Color color,
             Material sharedMaterial,
-            bool collider)
+            bool collider,
+            MountainRoadSurfaceKind? surface = null)
         {
             Vector3 segment = second - first;
             segment.y = 0f;
@@ -55,6 +62,17 @@ namespace BarPromenade
             box.transform.rotation = Quaternion.LookRotation(
                 Vector3.Cross(direction, Vector3.up),
                 Vector3.up);
+            if (surface.HasValue)
+            {
+                // A run's readable face is the one along its length and up
+                // its height, whatever its depth happens to be.
+                MountainRoadSurfaceAppearance.Apply(
+                    box.GetComponent<Renderer>(),
+                    surface.Value,
+                    SurfaceProjection.BoxXY,
+                    color);
+            }
+
             return box;
         }
 
@@ -63,9 +81,12 @@ namespace BarPromenade
             Transform parent,
             IReadOnlyList<Vector2> footprint,
             float y,
+            float metersPerTile,
+            MountainRoadSurfaceKind surface,
             Color color)
         {
             int count = footprint.Count;
+            float tilesPerMeter = 1f / metersPerTile;
             var vertices = new Vector3[count];
             var normals = new Vector3[count];
             var uvs = new Vector2[count];
@@ -74,7 +95,7 @@ namespace BarPromenade
                 Vector2 point = footprint[index];
                 vertices[index] = new Vector3(point.x, y, point.y);
                 normals[index] = Vector3.up;
-                uvs[index] = point * 0.42f;
+                uvs[index] = point * tilesPerMeter;
             }
 
             var triangles = new int[(count - 2) * 3];
@@ -96,29 +117,76 @@ namespace BarPromenade
                 triangles = triangles
             };
             mesh.RecalculateBounds();
-            return CreateMeshObject(name, parent, mesh, color, false);
+            return CreateMeshObject(
+                name,
+                parent,
+                mesh,
+                surface,
+                color,
+                false);
         }
 
+        /// <summary>
+        /// An extruded footprint whose caps and sides are unwrapped apart.
+        ///
+        /// The caps take the world-XZ projection a flat slab wants. The
+        /// sides cannot: sharing the caps' vertices gives the top and the
+        /// bottom of every side face the same UV, so each face samples one
+        /// horizontal line of the sheet and smears it down its whole height.
+        /// The sides therefore carry their own vertices, unwrapped as
+        /// distance around the perimeter against world height. Per-face
+        /// vertices also give the slab the crisp arris a building edge has,
+        /// instead of the bevel that averaging a cap normal into a side
+        /// normal used to produce.
+        /// </summary>
         internal static GameObject CreatePrism(
             string name,
             Transform parent,
             IReadOnlyList<Vector2> footprint,
             float bottom,
             float top,
+            float metersPerTile,
+            MountainRoadSurfaceKind surface,
             Color color,
             bool collider)
         {
             int count = footprint.Count;
-            var vertices = new Vector3[count * 2];
-            var uvs = new Vector2[count * 2];
+            float tilesPerMeter = 1f / metersPerTile;
+            var vertices = new Vector3[count * 2 + count * 4];
+            var uvs = new Vector2[vertices.Length];
             for (int index = 0; index < count; index++)
             {
                 Vector2 point = footprint[index];
                 vertices[index] = new Vector3(point.x, bottom, point.y);
                 vertices[index + count] =
                     new Vector3(point.x, top, point.y);
-                uvs[index] = point * 0.36f;
-                uvs[index + count] = point * 0.36f;
+                uvs[index] = point * tilesPerMeter;
+                uvs[index + count] = point * tilesPerMeter;
+            }
+
+            int wallStart = count * 2;
+            float run = 0f;
+            for (int index = 0; index < count; index++)
+            {
+                Vector2 near = footprint[index];
+                Vector2 far = footprint[(index + 1) % count];
+                float length = Vector2.Distance(near, far);
+
+                // U keeps running around the perimeter across the unwelded
+                // corners, so neighbouring faces still line up even though
+                // they no longer share a vertex.
+                float nearU = run * tilesPerMeter;
+                float farU = (run + length) * tilesPerMeter;
+                int first = wallStart + index * 4;
+                vertices[first] = new Vector3(near.x, bottom, near.y);
+                vertices[first + 1] = new Vector3(near.x, top, near.y);
+                vertices[first + 2] = new Vector3(far.x, bottom, far.y);
+                vertices[first + 3] = new Vector3(far.x, top, far.y);
+                uvs[first] = new Vector2(nearU, bottom * tilesPerMeter);
+                uvs[first + 1] = new Vector2(nearU, top * tilesPerMeter);
+                uvs[first + 2] = new Vector2(farU, bottom * tilesPerMeter);
+                uvs[first + 3] = new Vector2(farU, top * tilesPerMeter);
+                run += length;
             }
 
             var triangles = new int[(count - 2) * 6 + count * 6];
@@ -135,13 +203,13 @@ namespace BarPromenade
 
             for (int index = 0; index < count; index++)
             {
-                int next = (index + 1) % count;
-                triangles[triangle++] = index;
-                triangles[triangle++] = next + count;
-                triangles[triangle++] = next;
-                triangles[triangle++] = index;
-                triangles[triangle++] = index + count;
-                triangles[triangle++] = next + count;
+                int first = wallStart + index * 4;
+                triangles[triangle++] = first;
+                triangles[triangle++] = first + 3;
+                triangles[triangle++] = first + 2;
+                triangles[triangle++] = first;
+                triangles[triangle++] = first + 1;
+                triangles[triangle++] = first + 3;
             }
 
             var mesh = new Mesh
@@ -154,13 +222,20 @@ namespace BarPromenade
             };
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
-            return CreateMeshObject(name, parent, mesh, color, collider);
+            return CreateMeshObject(
+                name,
+                parent,
+                mesh,
+                surface,
+                color,
+                collider);
         }
 
         private static GameObject CreateMeshObject(
             string name,
             Transform parent,
             Mesh mesh,
+            MountainRoadSurfaceKind surface,
             Color color,
             bool collider)
         {
@@ -169,10 +244,16 @@ namespace BarPromenade
             MeshFilter filter = result.AddComponent<MeshFilter>();
             filter.sharedMesh = mesh;
             MeshRenderer renderer = result.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
             renderer.shadowCastingMode = ShadowCastingMode.On;
             renderer.receiveShadows = true;
             RuntimePrimitiveFactory.SetColor(renderer, color);
+
+            // Both meshes bake their UVs at the recipe's pitch, so they
+            // take the combined path and add no _BaseMap_ST of their own.
+            MountainRoadSurfaceAppearance.ApplyCombined(
+                renderer,
+                surface,
+                color);
             if (collider)
             {
                 result.AddComponent<MeshCollider>().sharedMesh = mesh;

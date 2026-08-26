@@ -295,22 +295,39 @@ namespace BarPromenade.Tests.EditMode
                     Is.LessThanOrEqualTo(
                         MountainRoadBridgeValidator.MaximumRendererCount));
 
+                // The deck is one oriented box in a combined batch, so its
+                // slope and its offset live in the mesh rather than in the
+                // transform. Both are read back off the vertices.
                 Transform deck = result.Bridge.StructuralDeck.transform;
                 Vector3 bridgeSpan = first.Bridge.End - first.Bridge.Start;
+                Vector3 deckUp = Quaternion.LookRotation(
+                    bridgeSpan.normalized,
+                    Vector3.up) * Vector3.up;
+                Vector3[] deckCorners = result.Bridge.StructuralDeck
+                    .GetComponent<MeshFilter>()
+                    .sharedMesh
+                    .vertices
+                    .Select(vertex => deck.TransformPoint(vertex))
+                    .ToArray();
                 Assert.That(
-                    Vector3.Dot(deck.forward, bridgeSpan.normalized),
-                    Is.GreaterThan(0.999f),
+                    deckCorners,
+                    Has.Length.EqualTo(24),
+                    "The structural deck must stay one batched slab.");
+                Assert.That(
+                    deckCorners.Max(corner => Vector3.Dot(
+                        corner - first.Bridge.Center,
+                        bridgeSpan.normalized)),
+                    Is.EqualTo(bridgeSpan.magnitude * 0.5f + 0.06f)
+                        .Within(0.002f),
                     "The structural deck must follow the climbing road.");
-                Vector3 deckTop = deck.position +
-                                  deck.up *
-                                  (deck.lossyScale.y * 0.5f);
                 Assert.That(
-                    Vector3.Distance(
-                        deckTop,
-                        first.Bridge.Center - deck.up *
+                    deckCorners.Max(corner =>
+                        Vector3.Dot(corner, deckUp)),
+                    Is.EqualTo(Vector3.Dot(
+                        first.Bridge.Center - deckUp *
                         MountainRoadBridgeWorldBuilder
-                            .StructuralDeckSurfaceClearance),
-                    Is.LessThan(0.002f),
+                            .StructuralDeckSurfaceClearance,
+                        deckUp)).Within(0.002f),
                     "The bridge deck must support the asphalt without a " +
                     "coplanar surface.");
                 for (int index = 0;

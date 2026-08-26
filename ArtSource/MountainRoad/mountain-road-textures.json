@@ -1,0 +1,644 @@
+{
+  "sheetSize": 1024,
+  "runtimeImportSize": 512,
+  "meanLuminanceTolerance": 0.02,
+  "brightnessErrorLimit": 0.08,
+  "tintChannelFloor": 0.09,
+  "sheets": [
+    {
+      "key": "MountainRoadAsphaltAlbedo",
+      "grammar": "mountain_road_asphalt",
+      "resourcePath": "Textures/MountainRoadAsphaltAlbedo",
+      "meanLinearLuminance": 0.50031,
+      "albedoCompensation": 1.488,
+      "brightnessError": 0.007921,
+      "metersPerTile": 3.5,
+      "smoothness": 0.045,
+      "metallic": 0.0,
+      "exposure": 0.657323,
+      "tints": {
+        "MountainRoadWorldBuilder.Road": [
+          0.115,
+          0.125,
+          0.118
+        ],
+        "MountainRoadWorldBuilder.TerminalApron": [
+          0.075,
+          0.084,
+          0.08
+        ]
+      },
+      "tintValues": [
+        0.075,
+        0.08,
+        0.084,
+        0.115,
+        0.118,
+        0.125
+      ],
+      "edgeDelta": 2.5026,
+      "seamRatio": 0.8942,
+      "contrast": 73,
+      "channelRatio": 1.0232,
+      "sha256": "9EBCC26C6DAA730EE7497B5C412FCB59F27E02850776D28DF65EC812B89CB0FC"
+    },
+    {
+      "key": "MountainRoadForestFloorAlbedo",
+      "grammar": "mountain_road_forest_floor",
+      "resourcePath": "Textures/MountainRoadForestFloorAlbedo",
+      "meanLinearLuminance": 0.500075,
+      "albedoCompensation": 1.445,
+      "brightnessError": 0.011298,
+      "metersPerTile": 5.0,
+      "smoothness": 0.03,
+      "metallic": 0.0,
+      "exposure": 0.591775,
+      "tints": {
+        "MountainRoadWorldBuilder.Soil": [
+          0.17,
+          0.18,
+          0.155
+        ]
+      },
+      "tintValues": [
+        0.155,
+        0.17,
+        0.18
+      ],
+      "edgeDelta": 2.0767,
+      "seamRatio": 0.9264,
+      "contrast": 53,
+      "channelRatio": 1.026,
+      "sha256": "7D98212AFDC117215B0416A3405B370EC967A6936574A7B2397C11BFD0DD8F56"
+    },
+    {
+      "key": "MountainRoadSnowAlbedo",
+      "grammar": "mountain_road_wind_snow",
+      "resourcePath": "Textures/MountainRoadSnowAlbedo",
+      "meanLinearLuminance": 0.499949,
+      "albedoCompensation": 1.368,
+      "brightnessError": 0.009769,
+      "metersPerTile": 5.0,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 0.706778,
+      "tints": {
+        "MountainRoadWorldBuilder.Snow": [
+          0.63,
+          0.665,
+          0.65
+        ],
+        "MountainRoadWorldBuilder.FarSnowyRidge": [
+          0.47,
+          0.52,
+          0.525
+        ]
+      },
+      "tintValues": [
+        0.47,
+        0.52,
+        0.525,
+        0.63,
+        0.65,
+        0.665
+      ],
+      "edgeDelta": 1.387,
+      "seamRatio": 0.9832,
+      "contrast": 44,
+      "channelRatio": 1.0112,
+      "sha256": "1E46CF1B0F5F5F1EB6F67AE4BD50E1293E3EFEEA28F114606A7809160377A13A"
+    },
+    {
+      "key": "MountainRoadStoneAlbedo",
+      "grammar": "mountain_road_layered_stone",
+      "resourcePath": "Textures/MountainRoadStoneAlbedo",
+      "meanLinearLuminance": 0.520273,
+      "albedoCompensation": 1.415,
+      "brightnessError": 0.057819,
+      "metersPerTile": 6.0,
+      "smoothness": 0.025,
+      "metallic": 0.0,
+      "exposure": 0.869981,
+      "tints": {
+        "MountainRoadWorldBuilder.Rock": [
+          0.245,
+          0.265,
+          0.245
+        ],
+        "MountainRoadWorldBuilder.TunnelRock": [
+          0.115,
+          0.13,
+          0.12
+        ],
+        "MountainRoadWorldBuilder.MiddleRidge": [
+          0.19,
+          0.215,
+          0.205
+        ]
+      },
+      "tintValues": [
+        0.115,
+        0.12,
+        0.13,
+        0.19,
+        0.205,
+        0.215,
+        0.245,
+        0.265
+      ],
+      "edgeDelta": 7.4977,
+      "seamRatio": 2.1003,
+      "contrast": 79,
+      "channelRatio": 1.014,
+      "sha256": "49E5F7AA205F71326EC6155DDC11C7C2098E584DAC1B605E4A35C0FDED5490C8"
+    },
+    {
+      "key": "MountainRoadNeedleAlbedo",
+      "grammar": "mountain_road_conifer_needles",
+      "resourcePath": "Textures/MountainRoadNeedleAlbedo",
+      "meanLinearLuminance": 0.520151,
+      "albedoCompensation": 1.456,
+      "brightnessError": 0.053978,
+      "metersPerTile": 2.5,
+      "smoothness": 0.02,
+      "metallic": 0.0,
+      "exposure": 0.526184,
+      "tints": {
+        "MountainRoadWorldBuilder.PhysicalCrown": [
+          0.115,
+          0.165,
+          0.125
+        ],
+        "MountainRoadWorldBuilder.MidCrown": [
+          0.095,
+          0.14,
+          0.115
+        ],
+        "MountainRoadWorldBuilder.FarCrown": [
+          0.075,
+          0.105,
+          0.09
+        ]
+      },
+      "tintValues": [
+        0.075,
+        0.09,
+        0.095,
+        0.105,
+        0.115,
+        0.125,
+        0.14,
+        0.165
+      ],
+      "edgeDelta": 3.2231,
+      "seamRatio": 0.8727,
+      "contrast": 75,
+      "channelRatio": 1.0215,
+      "sha256": "B65180562DC95490D573E157E8809660BABA84F76DA6874075C9C923884B8E3B"
+    },
+    {
+      "key": "MountainRoadBarkAlbedo",
+      "grammar": "mountain_road_bark_deadwood",
+      "resourcePath": "Textures/MountainRoadBarkAlbedo",
+      "meanLinearLuminance": 0.499908,
+      "albedoCompensation": 1.434,
+      "brightnessError": 0.047111,
+      "metersPerTile": 2.5,
+      "smoothness": 0.04,
+      "metallic": 0.0,
+      "exposure": 0.647551,
+      "tints": {
+        "MountainRoadWorldBuilder.Trunk": [
+          0.19,
+          0.165,
+          0.135
+        ],
+        "MountainRoadWorldBuilder.DeadWood": [
+          0.27,
+          0.25,
+          0.21
+        ]
+      },
+      "tintValues": [
+        0.135,
+        0.165,
+        0.19,
+        0.21,
+        0.25,
+        0.27
+      ],
+      "edgeDelta": 4.3184,
+      "seamRatio": 1.0775,
+      "contrast": 82,
+      "channelRatio": 1.0366,
+      "sha256": "8F21202CA63B912202816AE83B2EE628C768EC219B0EB8C068624CB00E4AD028"
+    }
+  ],
+  "borrowed": [
+    {
+      "key": "Concrete",
+      "grammar": "borrowed",
+      "borrowedFrom": "CityFringeConcreteAlbedo",
+      "sourceManifest": "ArtSource/City/fringe-textures.json",
+      "resourcePath": "Textures/CityFringeConcreteAlbedo",
+      "meanLinearLuminance": 0.499919,
+      "albedoCompensation": 1.4065,
+      "brightnessError": 0.015515,
+      "metersPerTile": 3.0,
+      "smoothness": 0.055,
+      "metallic": 0.0,
+      "sha256": "3B3BB9DFA005A484F76E1C35639EA25F3D16E42C42B253145EF730AFFA67172B",
+      "tints": {
+        "MountainRoadBridgeWorldBuilder.AgedConcrete": [
+          0.285,
+          0.3,
+          0.285
+        ],
+        "MountainRoadBridgeWorldBuilder.DarkConcrete": [
+          0.225,
+          0.24,
+          0.23
+        ],
+        "MountainCablewayWorldBuilder.Concrete": [
+          0.23,
+          0.245,
+          0.225
+        ]
+      },
+      "tintValues": [
+        0.225,
+        0.23,
+        0.24,
+        0.245,
+        0.285,
+        0.3
+      ]
+    },
+    {
+      "key": "RustedIron",
+      "grammar": "borrowed",
+      "borrowedFrom": "CityRiverIronAlbedo",
+      "sourceManifest": "ArtSource/City/river-textures.json",
+      "resourcePath": "Textures/CityRiverIronAlbedo",
+      "meanLinearLuminance": 0.500167,
+      "albedoCompensation": 1.417,
+      "brightnessError": 0.052284,
+      "metersPerTile": 1.2,
+      "smoothness": 0.18,
+      "metallic": 0.2,
+      "sha256": "17372FA5E8508ECFFBCF92E61DEA14F385792072026347892760BF6D8582C680",
+      "tints": {
+        "MountainRoadWorldBuilder.Iron": [
+          0.2,
+          0.23,
+          0.22
+        ],
+        "MountainRoadWorldBuilder.Rust": [
+          0.33,
+          0.245,
+          0.17
+        ],
+        "MountainRoadBridgeWorldBuilder.OxidizedSteel": [
+          0.205,
+          0.225,
+          0.215
+        ],
+        "MountainRoadBridgeWorldBuilder.RailSteel": [
+          0.245,
+          0.275,
+          0.26
+        ],
+        "MountainCablewayWorldBuilder.Rust": [
+          0.37,
+          0.245,
+          0.15
+        ]
+      },
+      "tintValues": [
+        0.15,
+        0.17,
+        0.2,
+        0.205,
+        0.215,
+        0.22,
+        0.225,
+        0.23,
+        0.245,
+        0.26,
+        0.275,
+        0.33,
+        0.37
+      ]
+    },
+    {
+      "key": "PaintedMetal",
+      "grammar": "borrowed",
+      "borrowedFrom": "CityParkPaintedMetalAlbedo",
+      "sourceManifest": "ArtSource/City/park-textures.json",
+      "resourcePath": "Textures/CityParkPaintedMetalAlbedo",
+      "meanLinearLuminance": 0.579967,
+      "albedoCompensation": 1.3375,
+      "brightnessError": 0.06258,
+      "metersPerTile": 1.2,
+      "smoothness": 0.16,
+      "metallic": 0.15,
+      "sha256": "6AB63A91A276D6563ACF0642D7684552A7CA5E7C8FA376F5CD5C3CD9D8CC9F4A",
+      "tints": {
+        "MountainCablewayWorldBuilder.DarkSteel": [
+          0.105,
+          0.145,
+          0.135
+        ],
+        "MountainCablewayWorldBuilder.GreenSteel": [
+          0.16,
+          0.225,
+          0.19
+        ],
+        "MountainCablewayWorldBuilder.CabinWarm": [
+          0.31,
+          0.14,
+          0.11
+        ],
+        "MountainCablewayWorldBuilder.CabinCool": [
+          0.105,
+          0.23,
+          0.2
+        ],
+        "MountainCablewayWorldBuilder.Cable": [
+          0.045,
+          0.055,
+          0.052
+        ],
+        "MountainRoadCafeWorldBuilder.StoolMetal": [
+          0.14,
+          0.16,
+          0.145
+        ],
+        "MountainRoadCafeWorldBuilder.ApplianceDark": [
+          0.2,
+          0.235,
+          0.215
+        ],
+        "MountainRoadWorldBuilder.UtilityCabinet": [
+          0.2,
+          0.265,
+          0.24
+        ]
+      },
+      "tintValues": [
+        0.045,
+        0.052,
+        0.055,
+        0.105,
+        0.11,
+        0.135,
+        0.14,
+        0.145,
+        0.16,
+        0.19,
+        0.2,
+        0.215,
+        0.225,
+        0.23,
+        0.235,
+        0.24,
+        0.265,
+        0.31
+      ]
+    },
+    {
+      "key": "PaleEnamel",
+      "grammar": "borrowed",
+      "borrowedFrom": "CityParkPaintedMetalAlbedo",
+      "sourceManifest": "ArtSource/City/park-textures.json",
+      "resourcePath": "Textures/CityParkPaintedMetalAlbedo",
+      "meanLinearLuminance": 0.579967,
+      "albedoCompensation": 1.315,
+      "brightnessError": 0.072695,
+      "metersPerTile": 1.2,
+      "smoothness": 0.16,
+      "metallic": 0.15,
+      "sha256": "6AB63A91A276D6563ACF0642D7684552A7CA5E7C8FA376F5CD5C3CD9D8CC9F4A",
+      "tints": {
+        "MountainCablewayWorldBuilder.FadedSign": [
+          0.56,
+          0.52,
+          0.39
+        ],
+        "MountainRoadCafeWorldBuilder.Appliance": [
+          0.51,
+          0.53,
+          0.43
+        ],
+        "MountainRoadCafeWorldBuilder.RefrigeratorDoor": [
+          0.57,
+          0.58,
+          0.47
+        ],
+        "MountainRoadCafeWorldBuilder.BrassHandle": [
+          0.55,
+          0.38,
+          0.12
+        ],
+        "MountainRoadCafeWorldBuilder.CoffeeCup": [
+          0.7,
+          0.68,
+          0.55
+        ],
+        "MountainRoadWorldBuilder.ConvexMirror": [
+          0.48,
+          0.54,
+          0.52
+        ],
+        "MountainRoadWorldBuilder.SnowPole": [
+          0.62,
+          0.22,
+          0.18
+        ],
+        "MountainRoadWorldBuilder.SnowPoleBand": [
+          0.63,
+          0.665,
+          0.65
+        ]
+      },
+      "tintValues": [
+        0.12,
+        0.18,
+        0.22,
+        0.38,
+        0.39,
+        0.43,
+        0.47,
+        0.48,
+        0.51,
+        0.52,
+        0.53,
+        0.54,
+        0.55,
+        0.56,
+        0.57,
+        0.58,
+        0.62,
+        0.63,
+        0.65,
+        0.665,
+        0.68,
+        0.7
+      ]
+    },
+    {
+      "key": "Masonry",
+      "grammar": "borrowed",
+      "borrowedFrom": "CityFringeMasonryAlbedo",
+      "sourceManifest": "ArtSource/City/fringe-textures.json",
+      "resourcePath": "Textures/CityFringeMasonryAlbedo",
+      "meanLinearLuminance": 0.499928,
+      "albedoCompensation": 1.4465,
+      "brightnessError": 0.074177,
+      "metersPerTile": 2.4,
+      "smoothness": 0.035,
+      "metallic": 0.0,
+      "sha256": "5DBBBA5AC2B5BB60A8EA21EC57EACF53C9394C2648DD0DE7D970695300140118",
+      "tints": {
+        "MountainRoadCafeWorldBuilder.Brick": [
+          0.29,
+          0.105,
+          0.065
+        ]
+      },
+      "tintValues": [
+        0.065,
+        0.105,
+        0.29
+      ]
+    },
+    {
+      "key": "Linoleum",
+      "grammar": "borrowed",
+      "borrowedFrom": "SupermarketLinoleumAlbedo",
+      "sourceManifest": "ArtSource/Supermarket/supermarket-textures.json",
+      "resourcePath": "Supermarket/Textures/SupermarketLinoleumAlbedo",
+      "meanLinearLuminance": 0.500253,
+      "albedoCompensation": 1.4185,
+      "brightnessError": 0.041069,
+      "metersPerTile": 2.4,
+      "smoothness": 0.16,
+      "metallic": 0.0,
+      "sha256": "CF32A15B1512F129B5F8B6F740C13DECA0E1F9402BD49FBABF39DC045B78BEAA",
+      "tints": {
+        "MountainRoadCafeWorldBuilder.FloorLinoleum": [
+          0.16,
+          0.32,
+          0.27
+        ]
+      },
+      "tintValues": [
+        0.16,
+        0.27,
+        0.32
+      ]
+    },
+    {
+      "key": "Timber",
+      "grammar": "borrowed",
+      "borrowedFrom": "CityParkTimberAlbedo",
+      "sourceManifest": "ArtSource/City/park-textures.json",
+      "resourcePath": "Textures/CityParkTimberAlbedo",
+      "meanLinearLuminance": 0.579988,
+      "albedoCompensation": 1.328,
+      "brightnessError": 0.074563,
+      "metersPerTile": 1.4,
+      "smoothness": 0.08,
+      "metallic": 0.0,
+      "sha256": "F735131B2787A6227EB3702980220079046077BD5A38920EA7A7EF9CB75401D4",
+      "tints": {
+        "MountainRoadCafeWorldBuilder.CounterWood": [
+          0.34,
+          0.105,
+          0.045
+        ],
+        "MountainRoadCafeWorldBuilder.CounterTop": [
+          0.46,
+          0.16,
+          0.06
+        ],
+        "MountainRoadCafeWorldBuilder.StoolSeat": [
+          0.41,
+          0.12,
+          0.055
+        ]
+      },
+      "tintValues": [
+        0.045,
+        0.055,
+        0.06,
+        0.105,
+        0.12,
+        0.16,
+        0.34,
+        0.41,
+        0.46
+      ]
+    },
+    {
+      "key": "WallPaint",
+      "grammar": "borrowed",
+      "borrowedFrom": "SupermarketWallPaintAlbedo",
+      "sourceManifest": "ArtSource/Supermarket/supermarket-textures.json",
+      "resourcePath": "Supermarket/Textures/SupermarketWallPaintAlbedo",
+      "meanLinearLuminance": 0.520031,
+      "albedoCompensation": 1.4635,
+      "brightnessError": 0.016367,
+      "metersPerTile": 2.6,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "sha256": "69C26138036301B7ADA407C03079C25CD723DBF9664F55C489CCBE7C8122C44A",
+      "tints": {
+        "MountainRoadCafeWorldBuilder.Facade": [
+          0.035,
+          0.075,
+          0.068
+        ],
+        "MountainRoadCafeWorldBuilder.FacadeTrim": [
+          0.045,
+          0.125,
+          0.105
+        ]
+      },
+      "tintValues": [
+        0.035,
+        0.045,
+        0.068,
+        0.075,
+        0.105,
+        0.125
+      ]
+    },
+    {
+      "key": "InteriorPaint",
+      "grammar": "borrowed",
+      "borrowedFrom": "SupermarketWallPaintAlbedo",
+      "sourceManifest": "ArtSource/Supermarket/supermarket-textures.json",
+      "resourcePath": "Supermarket/Textures/SupermarketWallPaintAlbedo",
+      "meanLinearLuminance": 0.520031,
+      "albedoCompensation": 1.348,
+      "brightnessError": 0.018619,
+      "metersPerTile": 2.6,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "sha256": "69C26138036301B7ADA407C03079C25CD723DBF9664F55C489CCBE7C8122C44A",
+      "tints": {
+        "MountainRoadCafeWorldBuilder.InteriorCream": [
+          0.72,
+          0.62,
+          0.37
+        ]
+      },
+      "tintValues": [
+        0.37,
+        0.62,
+        0.72
+      ]
+    }
+  ]
+}

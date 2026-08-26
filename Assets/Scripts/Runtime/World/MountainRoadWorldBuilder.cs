@@ -85,6 +85,26 @@ namespace BarPromenade
             new Color(0.115f, 0.13f, 0.12f, 1f);
         private static readonly Color TunnelDarkColor =
             new Color(0.025f, 0.03f, 0.028f, 1f);
+        private static readonly Color MiddleRidgeColor =
+            new Color(0.19f, 0.215f, 0.205f, 1f);
+        private static readonly Color FarSnowyRidgeColor =
+            new Color(0.47f, 0.52f, 0.525f, 1f);
+        private static readonly Color CabinetColor =
+            new Color(0.20f, 0.265f, 0.24f, 1f);
+        private static readonly Color MirrorFaceColor =
+            new Color(0.48f, 0.54f, 0.52f, 1f);
+        private static readonly Color SnowPoleColor =
+            new Color(0.62f, 0.22f, 0.18f, 1f);
+        private static readonly Color LampLensColor =
+            new Color(0.88f, 0.63f, 0.32f, 1f);
+
+        private static float StoneMetersPerTile =>
+            MountainRoadSurfaceAppearance.GetRecipe(
+                MountainRoadSurfaceKind.LayeredStone).MetersPerTile;
+
+        private static float BarkMetersPerTile =>
+            MountainRoadSurfaceAppearance.GetRecipe(
+                MountainRoadSurfaceKind.BarkAndDeadwood).MetersPerTile;
 
         public static MountainRoadWorldResult Build(
             Transform parent,
@@ -122,15 +142,18 @@ namespace BarPromenade
                 MountainRoadSurfaceMeshFactory.Create(plan),
                 RoadColor,
                 true,
-                ShadowCastingMode.On);
+                ShadowCastingMode.On,
+                MountainRoadSurfaceKind.Asphalt);
             GameObject terminalApron = CreateMeshObject(
                 "Visible Terminal Vehicle Apron",
                 physicalRoot.transform,
                 MountainRoadSurfaceMeshFactory.CreateTerminalApron(
-                    plan.Terminal.VehicleApron),
+                    plan.Terminal.VehicleApron,
+                    plan.Plateau.EntryDistance),
                 TerminalApronColor,
                 false,
-                ShadowCastingMode.Off);
+                ShadowCastingMode.Off,
+                MountainRoadSurfaceKind.Asphalt);
             terminalApron.GetComponent<MeshRenderer>().receiveShadows = false;
             MountainRoadBridgeWorldResult bridge =
                 MountainRoadBridgeWorldBuilder.Build(
@@ -217,14 +240,16 @@ namespace BarPromenade
                 meshes.Soil,
                 SoilColor,
                 true,
-                ShadowCastingMode.On);
+                ShadowCastingMode.On,
+                MountainRoadSurfaceKind.ForestFloor);
             CreateMeshObject(
                 "Upper Snow",
                 root.transform,
                 meshes.Snow,
                 SnowColor,
                 true,
-                ShadowCastingMode.On);
+                ShadowCastingMode.On,
+                MountainRoadSurfaceKind.WindSnow);
             return root;
         }
 
@@ -267,14 +292,22 @@ namespace BarPromenade
                         wallThickness,
                         depth))
             };
-            RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                "Tunnel Rock Shell",
-                root.transform,
-                shell,
-                TunnelRockColor,
-                true,
-                3.5f,
-                RuntimeWorldUvMode.BoxProjected);
+            GameObject shellBatch =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "Tunnel Rock Shell",
+                    root.transform,
+                    shell,
+                    TunnelRockColor,
+                    true,
+                    StoneMetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            MountainRoadSurfaceAppearance.ApplyCombined(
+                shellBatch.GetComponent<Renderer>(),
+                MountainRoadSurfaceKind.LayeredStone,
+                TunnelRockColor);
+
+            // The darkness behind the mouth is the absence of a surface, so
+            // it keeps its flat black plate and takes no sheet at all.
             RuntimePrimitiveFactory.CreateBox(
                 "Tunnel Darkness",
                 root.transform,
@@ -340,17 +373,24 @@ namespace BarPromenade
                     false,
                     layerIndex == 2
                         ? ShadowCastingMode.Off
-                        : ShadowCastingMode.On);
+                        : ShadowCastingMode.On,
+                    MountainRoadSurfaceKind.ConiferNeedles);
                 crowns.GetComponent<MeshRenderer>().receiveShadows =
                     layerIndex != 2;
-                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                    $"{layers[layerIndex]} Conifer Trunks",
-                    root.transform,
-                    trunks,
-                    TrunkColor,
-                    layers[layerIndex] == MountainRoadForestLayer.Physical,
-                    2.5f,
-                    RuntimeWorldUvMode.BoxProjected);
+                GameObject trunkBatch =
+                    RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                        $"{layers[layerIndex]} Conifer Trunks",
+                        root.transform,
+                        trunks,
+                        TrunkColor,
+                        layers[layerIndex] ==
+                            MountainRoadForestLayer.Physical,
+                        BarkMetersPerTile,
+                        RuntimeWorldUvMode.BoxProjected);
+                MountainRoadSurfaceAppearance.ApplyCombined(
+                    trunkBatch.GetComponent<Renderer>(),
+                    MountainRoadSurfaceKind.BarkAndDeadwood,
+                    TrunkColor);
             }
         }
 
@@ -402,10 +442,13 @@ namespace BarPromenade
                 CreateMeshObject(
                     "Grounded Rockfall",
                     root.transform,
-                    MountainRoadSceneryMeshFactory.CreateBoulders(boulders),
+                    MountainRoadSceneryMeshFactory.CreateBoulders(
+                        boulders,
+                        MountainRoadSurfaceKind.LayeredStone),
                     RockColor,
                     true,
-                    ShadowCastingMode.On);
+                    ShadowCastingMode.On,
+                    MountainRoadSurfaceKind.LayeredStone);
             }
 
             CreateBoxBatch(root.transform, "Fallen Logs", logs, DeadWoodColor, true);
@@ -488,34 +531,46 @@ namespace BarPromenade
 
         private static void BuildGuardRail(Transform root, Vector3 size)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Loose Iron Beam",
-                root,
-                Vector3.up * 0.19f,
-                new Vector3(size.x, 0.18f, size.z),
-                IronColor,
-                true);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Loose Iron Beam",
+                    root,
+                    Vector3.up * 0.19f,
+                    new Vector3(size.x, 0.18f, size.z),
+                    IronColor,
+                    true),
+                MountainRoadSurfaceKind.RustedIron,
+                IronColor);
             for (int index = -1; index <= 1; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
-                    "Guard Post",
-                    root,
-                    new Vector3(0f, -0.12f, index * size.z * 0.38f),
-                    new Vector3(0.18f, size.y, 0.18f),
-                    RustColor,
-                    true);
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Guard Post",
+                        root,
+                        new Vector3(0f, -0.12f, index * size.z * 0.38f),
+                        new Vector3(0.18f, size.y, 0.18f),
+                        RustColor,
+                        true),
+                    MountainRoadSurfaceKind.RustedIron,
+                    SurfaceProjection.BoxZY,
+                    RustColor);
             }
         }
 
         private static void BuildCulvert(Transform root, Vector3 size)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Culvert Headwall",
-                root,
-                Vector3.zero,
-                size,
-                RockColor,
-                false);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Culvert Headwall",
+                    root,
+                    Vector3.zero,
+                    size,
+                    RockColor,
+                    false),
+                MountainRoadSurfaceKind.LayeredStone,
+                RockColor);
+
+            // The bore is a hole, not a material.
             GameObject mouth = RuntimePrimitiveFactory.CreateCylinder(
                 "Visible Culvert Mouth",
                 root,
@@ -528,39 +583,55 @@ namespace BarPromenade
 
         private static void BuildMirror(Transform root, Vector3 size)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Mirror Pole",
-                root,
-                new Vector3(0f, -0.15f, 0f),
-                new Vector3(0.10f, size.y, 0.10f),
-                RustColor,
-                true);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Mirror Pole",
+                    root,
+                    new Vector3(0f, -0.15f, 0f),
+                    new Vector3(0.10f, size.y, 0.10f),
+                    RustColor,
+                    true),
+                MountainRoadSurfaceKind.RustedIron,
+                SurfaceProjection.BoxZY,
+                RustColor);
             GameObject mirror = RuntimePrimitiveFactory.CreateCylinder(
                 "Cracked Convex Mirror",
                 root,
                 new Vector3(0f, size.y * 0.42f, 0f),
                 new Vector3(size.x, size.z, size.x),
-                new Color(0.48f, 0.54f, 0.52f, 1f),
+                MirrorFaceColor,
                 false);
             mirror.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            TextureSurface(
+                mirror,
+                MountainRoadSurfaceKind.PaleEnamel,
+                SurfaceProjection.CylinderCapXZ,
+                MirrorFaceColor);
         }
 
         private static void BuildCabinet(Transform root, Vector3 size)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Service Cabinet",
-                root,
-                Vector3.zero,
-                size,
-                new Color(0.20f, 0.265f, 0.24f, 1f),
-                true);
-            RuntimePrimitiveFactory.CreateBox(
-                "Cabinet Door Seam",
-                root,
-                new Vector3(0f, 0f, -size.z * 0.51f),
-                new Vector3(size.x * 0.78f, size.y * 0.78f, 0.025f),
-                IronColor,
-                false);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Service Cabinet",
+                    root,
+                    Vector3.zero,
+                    size,
+                    CabinetColor,
+                    true),
+                MountainRoadSurfaceKind.PaintedMetal,
+                CabinetColor);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Cabinet Door Seam",
+                    root,
+                    new Vector3(0f, 0f, -size.z * 0.51f),
+                    new Vector3(size.x * 0.78f, size.y * 0.78f, 0.025f),
+                    IronColor,
+                    false),
+                MountainRoadSurfaceKind.RustedIron,
+                SurfaceProjection.BoxXY,
+                IronColor);
         }
 
         private static void BuildUtilityCable(Transform root, Vector3 size)
@@ -568,13 +639,17 @@ namespace BarPromenade
             float half = size.x * 0.5f;
             for (int side = -1; side <= 1; side += 2)
             {
-                RuntimePrimitiveFactory.CreateBox(
-                    "Cable Pole",
-                    root,
-                    new Vector3(side * half, -0.05f, 0f),
-                    new Vector3(0.16f, size.y, 0.16f),
-                    DeadWoodColor,
-                    true);
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Cable Pole",
+                        root,
+                        new Vector3(side * half, -0.05f, 0f),
+                        new Vector3(0.16f, size.y, 0.16f),
+                        DeadWoodColor,
+                        true),
+                    MountainRoadSurfaceKind.BarkAndDeadwood,
+                    SurfaceProjection.BoxZY,
+                    DeadWoodColor);
             }
 
             for (int segment = 0; segment < 3; segment++)
@@ -582,6 +657,8 @@ namespace BarPromenade
                 float t = (segment + 0.5f) / 3f;
                 float x = Mathf.Lerp(-half, half, t);
                 float sag = 0.28f * (1f - Mathf.Abs(t * 2f - 1f));
+                // Fifty-five millimetres of cable is under one texel of
+                // the composite; a sheet on it would only alias.
                 RuntimePrimitiveFactory.CreateBox(
                     "Sagging Visible Cable",
                     root,
@@ -594,71 +671,97 @@ namespace BarPromenade
 
         private static void BuildSnowPole(Transform root, Vector3 size)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Bent Snow Pole",
-                root,
-                Vector3.zero,
-                size,
-                new Color(0.62f, 0.22f, 0.18f, 1f),
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Faded White Band",
-                root,
-                Vector3.up * (size.y * 0.24f),
-                new Vector3(size.x * 1.15f, 0.22f, size.z * 1.15f),
-                SnowColor,
-                false);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Bent Snow Pole",
+                    root,
+                    Vector3.zero,
+                    size,
+                    SnowPoleColor,
+                    false),
+                MountainRoadSurfaceKind.PaleEnamel,
+                SurfaceProjection.BoxZY,
+                SnowPoleColor);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Faded White Band",
+                    root,
+                    Vector3.up * (size.y * 0.24f),
+                    new Vector3(size.x * 1.15f, 0.22f, size.z * 1.15f),
+                    SnowColor,
+                    false),
+                MountainRoadSurfaceKind.PaleEnamel,
+                SurfaceProjection.BoxZY,
+                SnowColor);
         }
 
         private static void BuildChair(Transform root, Vector3 size)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Chair Seat",
-                root,
-                new Vector3(0f, -0.06f, 0f),
-                new Vector3(size.x, 0.12f, size.z),
-                DeadWoodColor,
-                true);
-            RuntimePrimitiveFactory.CreateBox(
-                "Chair Back",
-                root,
-                new Vector3(0f, size.y * 0.32f, size.z * 0.42f),
-                new Vector3(size.x, size.y * 0.65f, 0.10f),
-                DeadWoodColor,
-                true);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Chair Seat",
+                    root,
+                    new Vector3(0f, -0.06f, 0f),
+                    new Vector3(size.x, 0.12f, size.z),
+                    DeadWoodColor,
+                    true),
+                MountainRoadSurfaceKind.BarkAndDeadwood,
+                DeadWoodColor);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Chair Back",
+                    root,
+                    new Vector3(0f, size.y * 0.32f, size.z * 0.42f),
+                    new Vector3(size.x, size.y * 0.65f, 0.10f),
+                    DeadWoodColor,
+                    true),
+                MountainRoadSurfaceKind.BarkAndDeadwood,
+                SurfaceProjection.BoxXY,
+                DeadWoodColor);
             for (int x = -1; x <= 1; x += 2)
             {
                 for (int z = -1; z <= 1; z += 2)
                 {
-                    RuntimePrimitiveFactory.CreateBox(
-                        "Chair Leg",
-                        root,
-                        new Vector3(
-                            x * size.x * 0.36f,
-                            -size.y * 0.32f,
-                            z * size.z * 0.36f),
-                        new Vector3(0.08f, size.y * 0.6f, 0.08f),
-                        DeadWoodColor,
-                        true);
+                    TextureSurface(
+                        RuntimePrimitiveFactory.CreateBox(
+                            "Chair Leg",
+                            root,
+                            new Vector3(
+                                x * size.x * 0.36f,
+                                -size.y * 0.32f,
+                                z * size.z * 0.36f),
+                            new Vector3(0.08f, size.y * 0.6f, 0.08f),
+                            DeadWoodColor,
+                            true),
+                        MountainRoadSurfaceKind.BarkAndDeadwood,
+                        SurfaceProjection.BoxZY,
+                        DeadWoodColor);
                 }
             }
         }
 
         private static void BuildTunnelLamp(Transform root, Vector3 size)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Lamp Housing",
-                root,
-                Vector3.up * 0.07f,
-                size,
-                IronColor,
-                false);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Lamp Housing",
+                    root,
+                    Vector3.up * 0.07f,
+                    size,
+                    IronColor,
+                    false),
+                MountainRoadSurfaceKind.RustedIron,
+                IronColor);
+
+            // MountainRoadAtmosphere drives this lens through its own
+            // property block every frame; it is a practical, not a
+            // material, and takes no sheet.
             RuntimePrimitiveFactory.CreateBox(
                 "Warm Lamp Lens",
                 root,
                 Vector3.down * 0.035f,
                 new Vector3(size.x * 0.72f, 0.06f, size.z * 0.78f),
-                new Color(0.88f, 0.63f, 0.32f, 1f),
+                LampLensColor,
                 false);
         }
 
@@ -680,24 +783,36 @@ namespace BarPromenade
                 }
             }
 
+            // The two rings do not wear the same sheet, so each names its
+            // kind ONCE and hands the same value to the bake and to the
+            // recipe. Splitting them would tile the far ring at the stone
+            // pitch while its snow recipe declared another.
+            const MountainRoadSurfaceKind midSurface =
+                MountainRoadSurfaceKind.LayeredStone;
+            const MountainRoadSurfaceKind snowSurface =
+                MountainRoadSurfaceKind.WindSnow;
             CreateMeshObject(
                 "Middle Rock Ridges",
                 parent,
                 MountainRoadSceneryMeshFactory.CreateRidges(
                     "Middle Rock Ridges",
-                    mid),
-                new Color(0.19f, 0.215f, 0.205f, 1f),
+                    mid,
+                    midSurface),
+                MiddleRidgeColor,
                 false,
-                ShadowCastingMode.On);
+                ShadowCastingMode.On,
+                midSurface);
             GameObject snow = CreateMeshObject(
                 "Far Snowy Mountain Ring",
                 parent,
                 MountainRoadSceneryMeshFactory.CreateRidges(
                     "Far Snowy Mountain Ring",
-                    snowy),
-                new Color(0.47f, 0.52f, 0.525f, 1f),
+                    snowy,
+                    snowSurface),
+                FarSnowyRidgeColor,
                 false,
-                ShadowCastingMode.Off);
+                ShadowCastingMode.Off,
+                snowSurface);
             snow.GetComponent<MeshRenderer>().receiveShadows = false;
         }
 
@@ -713,23 +828,35 @@ namespace BarPromenade
                 return;
             }
 
-            RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
-                name,
-                parent,
-                boxes,
-                color,
-                collider,
-                2.5f,
-                RuntimeWorldUvMode.BoxProjected);
+            GameObject batch =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    name,
+                    parent,
+                    boxes,
+                    color,
+                    collider,
+                    BarkMetersPerTile,
+                    RuntimeWorldUvMode.BoxProjected);
+            MountainRoadSurfaceAppearance.ApplyCombined(
+                batch.GetComponent<Renderer>(),
+                MountainRoadSurfaceKind.BarkAndDeadwood,
+                color);
         }
 
+        /// <summary>
+        /// One hand-built mountain mesh. Every such mesh bakes its UVs at
+        /// its own recipe's metre pitch, so it takes the combined path: the
+        /// sheet, the compensated tint and the surface response ride a
+        /// property block and no per-object material is created.
+        /// </summary>
         private static GameObject CreateMeshObject(
             string name,
             Transform parent,
             Mesh mesh,
             Color color,
             bool collider,
-            ShadowCastingMode shadowCasting)
+            ShadowCastingMode shadowCasting,
+            MountainRoadSurfaceKind surface)
         {
             if (mesh == null)
             {
@@ -741,15 +868,62 @@ namespace BarPromenade
             result.AddComponent<MeshFilter>().sharedMesh = mesh;
             result.AddComponent<RuntimeGeneratedMeshOwner>().Initialize(mesh);
             var renderer = result.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
             renderer.shadowCastingMode = shadowCasting;
             RuntimePrimitiveFactory.SetColor(renderer, color);
+            MountainRoadSurfaceAppearance.ApplyCombined(
+                renderer,
+                surface,
+                color);
             if (collider)
             {
                 result.AddComponent<MeshCollider>().sharedMesh = mesh;
             }
 
             return result;
+        }
+
+        /// <summary>
+        /// Gives one mountain primitive its sheet. A caller with nothing to
+        /// sample - the darkness behind the tunnel mouth, the culvert bore,
+        /// a sagging span of cable, the lamp lens the atmosphere flickers -
+        /// passes no surface and keeps its flat colour.
+        /// </summary>
+        private static void TextureSurface(
+            GameObject instance,
+            MountainRoadSurfaceKind? surface,
+            Color tint)
+        {
+            if (instance == null || !surface.HasValue)
+            {
+                return;
+            }
+
+            MountainRoadSurfaceAppearance.Apply(
+                instance.GetComponent<Renderer>(),
+                surface.Value,
+                tint);
+        }
+
+        /// <summary>
+        /// The same, for a primitive whose readable face its proportions
+        /// would not find - a thin seam panel, a bent marker pole.
+        /// </summary>
+        private static void TextureSurface(
+            GameObject instance,
+            MountainRoadSurfaceKind surface,
+            SurfaceProjection projection,
+            Color tint)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            MountainRoadSurfaceAppearance.Apply(
+                instance.GetComponent<Renderer>(),
+                surface,
+                projection,
+                tint);
         }
     }
 }

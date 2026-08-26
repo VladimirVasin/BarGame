@@ -67,6 +67,14 @@ namespace BarPromenade
             new Color(0.20f, 0.235f, 0.215f, 1f);
         private static readonly Color WarmGlow =
             new Color(3.20f, 2.15f, 0.72f, 1f);
+        private static readonly Color BrassHandle =
+            new Color(0.55f, 0.38f, 0.12f, 1f);
+        private static readonly Color RefrigeratorDoor =
+            new Color(0.57f, 0.58f, 0.47f, 1f);
+        private static readonly Color SightGlass =
+            new Color(0.27f, 0.58f, 0.51f, 0.55f);
+        private static readonly Color CoffeeCup =
+            new Color(0.70f, 0.68f, 0.55f, 1f);
         private static readonly Color ColdGlow =
             new Color(0.72f, 1.60f, 1.42f, 1f);
 
@@ -132,6 +140,47 @@ namespace BarPromenade
                 semanticAnchors);
         }
 
+        /// <summary>
+        /// Gives one cafe primitive its sheet. The glazing, the two
+        /// emissive tubes and the boiler sight glasses carry their own
+        /// materials and pass no surface: the recipe path assigns the
+        /// shared lit material, which would strip their transparency and
+        /// their emission.
+        /// </summary>
+        private static void TextureSurface(
+            GameObject instance,
+            MountainRoadSurfaceKind surface,
+            Color tint)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            MountainRoadSurfaceAppearance.Apply(
+                instance.GetComponent<Renderer>(),
+                surface,
+                tint);
+        }
+
+        private static void TextureSurface(
+            GameObject instance,
+            MountainRoadSurfaceKind surface,
+            SurfaceProjection projection,
+            Color tint)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            MountainRoadSurfaceAppearance.Apply(
+                instance.GetComponent<Renderer>(),
+                surface,
+                projection,
+                tint);
+        }
+
         private static void ValidatePlan(MountainRoadCafePlan plan)
         {
             if (plan == null)
@@ -183,7 +232,8 @@ namespace BarPromenade
                 southStart,
                 doorStart,
                 plan,
-                Facade);
+                Facade,
+                MountainRoadSurfaceKind.WallPaint);
             CreateGlazedSegment(
                 "South Window Wall",
                 facadeRoot,
@@ -208,14 +258,16 @@ namespace BarPromenade
                 corners[3],
                 corners[4],
                 plan,
-                Brick);
+                Brick,
+                MountainRoadSurfaceKind.Masonry);
             CreateOpaqueSegment(
                 "West Blind Wall",
                 facadeRoot,
                 corners[4],
                 corners[0],
                 plan,
-                Facade);
+                Facade,
+                MountainRoadSurfaceKind.WallPaint);
 
             GameObject glassAnchor = new GameObject("Glazed Facade Anchor");
             glassAnchor.transform.SetParent(facadeRoot, false);
@@ -242,7 +294,8 @@ namespace BarPromenade
             Vector3 first,
             Vector3 second,
             MountainRoadCafePlan plan,
-            Color color)
+            Color color,
+            MountainRoadSurfaceKind surface)
         {
             CreateSegmentBox(
                 name,
@@ -254,7 +307,8 @@ namespace BarPromenade
                 WallThickness,
                 color,
                 null,
-                true);
+                true,
+                surface);
         }
 
         private static void CreateGlazedSegment(
@@ -276,7 +330,8 @@ namespace BarPromenade
                 WallThickness,
                 Facade,
                 null,
-                true);
+                true,
+                MountainRoadSurfaceKind.WallPaint);
             CreateSegmentBox(
                 name + " Glass",
                 parent,
@@ -298,7 +353,8 @@ namespace BarPromenade
                 WallThickness,
                 Facade,
                 null,
-                true);
+                true,
+                MountainRoadSurfaceKind.WallPaint);
 
             float length = Vector3.Distance(first, second);
             int divisions = Mathf.Max(1, Mathf.CeilToInt(length / 2.25f));
@@ -319,7 +375,8 @@ namespace BarPromenade
                     WallThickness + 0.025f,
                     FacadeTrim,
                     null,
-                    true);
+                    true,
+                    MountainRoadSurfaceKind.WallPaint);
             }
         }
 
@@ -342,7 +399,8 @@ namespace BarPromenade
                 WallThickness,
                 Facade,
                 null,
-                true);
+                true,
+                MountainRoadSurfaceKind.WallPaint);
 
             CreateDoorJamb(
                 "Entrance West Jamb",
@@ -369,7 +427,7 @@ namespace BarPromenade
                 HomeBalconyResources.GlassMaterial,
                 false);
             leaf.name = "Open Glass Door - Non Blocking";
-            RuntimePrimitiveFactory.CreateCylinder(
+            GameObject handleBar = RuntimePrimitiveFactory.CreateCylinder(
                 "Open Door Brass Handle",
                 leaf.transform,
                 new Vector3(
@@ -377,9 +435,15 @@ namespace BarPromenade
                     0f,
                     -0.045f),
                 new Vector3(0.045f, 0.12f, 0.045f),
-                new Color(0.55f, 0.38f, 0.12f, 1f),
-                false).transform.localRotation =
-                    Quaternion.Euler(0f, 0f, 90f);
+                BrassHandle,
+                false);
+            handleBar.transform.localRotation =
+                Quaternion.Euler(0f, 0f, 90f);
+            TextureSurface(
+                handleBar,
+                MountainRoadSurfaceKind.PaleEnamel,
+                SurfaceProjection.CylinderSide,
+                BrassHandle);
 
             var entrance = new GameObject("Open Entrance Anchor");
             entrance.transform.SetParent(parent, false);
@@ -399,13 +463,19 @@ namespace BarPromenade
             Vector3 position,
             MountainRoadCafePlan plan)
         {
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject jamb = RuntimePrimitiveFactory.CreateBox(
                 name,
                 parent,
                 position + Vector3.up * (DoorHeight * 0.5f),
                 new Vector3(FrameWidth, DoorHeight, WallThickness + 0.03f),
                 FacadeTrim,
-                true).transform.rotation = FrameRotation(plan);
+                true);
+            jamb.transform.rotation = FrameRotation(plan);
+            TextureSurface(
+                jamb,
+                MountainRoadSurfaceKind.WallPaint,
+                SurfaceProjection.BoxZY,
+                FacadeTrim);
         }
 
         private static void BuildRoof(
@@ -419,6 +489,9 @@ namespace BarPromenade
                 expanded,
                 plan.FloorY + plan.Height,
                 plan.FloorY + plan.Height + RoofThickness,
+                MountainRoadSurfaceAppearance.GetRecipe(
+                    MountainRoadSurfaceKind.WallPaint).MetersPerTile,
+                MountainRoadSurfaceKind.WallPaint,
                 Facade,
                 true);
         }
@@ -444,6 +517,10 @@ namespace BarPromenade
                 InteriorCream,
                 false);
             north.transform.rotation = rotation;
+            TextureSurface(
+                north,
+                MountainRoadSurfaceKind.InteriorPaint,
+                InteriorCream);
 
             GameObject west = RuntimePrimitiveFactory.CreateBox(
                 "Rust Interior Side Wall",
@@ -460,6 +537,7 @@ namespace BarPromenade
                 Brick,
                 false);
             west.transform.rotation = rotation;
+            TextureSurface(west, MountainRoadSurfaceKind.Masonry, Brick);
         }
 
         private static void BuildInterior(
@@ -473,6 +551,9 @@ namespace BarPromenade
                 dressingRoot,
                 ScaleFootprint(plan, 0.978f),
                 plan.FloorY + FloorVisualOffset,
+                MountainRoadSurfaceAppearance.GetRecipe(
+                    MountainRoadSurfaceKind.Linoleum).MetersPerTile,
+                MountainRoadSurfaceKind.Linoleum,
                 FloorLinoleum);
 
             Transform counter = BuildCounter(plan, physicalRoot);
@@ -500,6 +581,10 @@ namespace BarPromenade
                 CounterWood,
                 true);
             baseObject.transform.rotation = rotation;
+            TextureSurface(
+                baseObject,
+                MountainRoadSurfaceKind.Timber,
+                CounterWood);
             GameObject top = RuntimePrimitiveFactory.CreateBox(
                 "Long Counter Top",
                 root.transform,
@@ -508,6 +593,7 @@ namespace BarPromenade
                 CounterTop,
                 true);
             top.transform.rotation = rotation;
+            TextureSurface(top, MountainRoadSurfaceKind.Timber, CounterTop);
 
             Vector3 returnDirection =
                 (plan.Right * 0.62f + plan.Forward * 0.78f).normalized;
@@ -523,7 +609,8 @@ namespace BarPromenade
                 0.82f,
                 CounterWood,
                 null,
-                true);
+                true,
+                MountainRoadSurfaceKind.Timber);
             CreateSegmentBox(
                 "Angled Counter Return Top",
                 root.transform,
@@ -534,7 +621,8 @@ namespace BarPromenade
                 1.02f,
                 CounterTop,
                 null,
-                true);
+                true,
+                MountainRoadSurfaceKind.Timber);
             return root.transform;
         }
 
@@ -563,27 +651,39 @@ namespace BarPromenade
                     rightOffsets[index],
                     0f,
                     -2.18f);
-                RuntimePrimitiveFactory.CreateCylinder(
-                    "Metal Pedestal",
-                    stool,
-                    center + Vector3.up * 0.215f,
-                    new Vector3(0.10f, 0.215f, 0.10f),
-                    StoolMetal,
-                    true);
-                RuntimePrimitiveFactory.CreateCylinder(
-                    "Round Red Seat",
-                    stool,
-                    center + Vector3.up * 0.44f,
-                    new Vector3(0.48f, 0.055f, 0.48f),
-                    StoolSeat,
-                    true);
-                RuntimePrimitiveFactory.CreateCylinder(
-                    "Stool Foot",
-                    stool,
-                    center + Vector3.up * 0.035f,
-                    new Vector3(0.34f, 0.035f, 0.34f),
-                    StoolMetal,
-                    true);
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateCylinder(
+                        "Metal Pedestal",
+                        stool,
+                        center + Vector3.up * 0.215f,
+                        new Vector3(0.10f, 0.215f, 0.10f),
+                        StoolMetal,
+                        true),
+                    MountainRoadSurfaceKind.PaintedMetal,
+                    SurfaceProjection.CylinderSide,
+                    StoolMetal);
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateCylinder(
+                        "Round Red Seat",
+                        stool,
+                        center + Vector3.up * 0.44f,
+                        new Vector3(0.48f, 0.055f, 0.48f),
+                        StoolSeat,
+                        true),
+                    MountainRoadSurfaceKind.Timber,
+                    SurfaceProjection.CylinderCapXZ,
+                    StoolSeat);
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateCylinder(
+                        "Stool Foot",
+                        stool,
+                        center + Vector3.up * 0.035f,
+                        new Vector3(0.34f, 0.035f, 0.34f),
+                        StoolMetal,
+                        true),
+                    MountainRoadSurfaceKind.PaintedMetal,
+                    SurfaceProjection.CylinderCapXZ,
+                    StoolMetal);
             }
         }
 
@@ -600,6 +700,10 @@ namespace BarPromenade
                 ApplianceDark,
                 true);
             cabinet.transform.rotation = rotation;
+            TextureSurface(
+                cabinet,
+                MountainRoadSurfaceKind.PaintedMetal,
+                ApplianceDark);
             GameObject worktop = RuntimePrimitiveFactory.CreateBox(
                 "Rear Service Worktop",
                 parent,
@@ -608,6 +712,10 @@ namespace BarPromenade
                 CounterTop,
                 true);
             worktop.transform.rotation = rotation;
+            TextureSurface(
+                worktop,
+                MountainRoadSurfaceKind.Timber,
+                CounterTop);
         }
 
         private static void BuildRefrigerator(
@@ -625,14 +733,23 @@ namespace BarPromenade
                 Appliance,
                 true);
             body.transform.rotation = rotation;
+            TextureSurface(
+                body,
+                MountainRoadSurfaceKind.PaleEnamel,
+                Appliance);
             GameObject door = RuntimePrimitiveFactory.CreateBox(
                 "Refrigerator Door Face",
                 parent,
                 center - plan.Forward * 0.378f + Vector3.up * 0.03f,
                 new Vector3(1.01f, 1.80f, 0.035f),
-                new Color(0.57f, 0.58f, 0.47f, 1f),
+                RefrigeratorDoor,
                 false);
             door.transform.rotation = rotation;
+            TextureSurface(
+                door,
+                MountainRoadSurfaceKind.PaleEnamel,
+                SurfaceProjection.BoxXY,
+                RefrigeratorDoor);
             GameObject handle = RuntimePrimitiveFactory.CreateBox(
                 "Refrigerator Handle",
                 parent,
@@ -642,6 +759,11 @@ namespace BarPromenade
                 ApplianceDark,
                 false);
             handle.transform.rotation = rotation;
+            TextureSurface(
+                handle,
+                MountainRoadSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxZY,
+                ApplianceDark);
             semanticAnchors.Add(
                 MountainRoadCafeSoundscape.RefrigeratorAnchorId,
                 body.transform);
@@ -668,29 +790,45 @@ namespace BarPromenade
                     new Vector3(0.58f, 0.52f, 0.58f),
                     Appliance,
                     true);
-                RuntimePrimitiveFactory.CreateCylinder(
-                    "Boiler Lid",
-                    parent,
-                    center + Vector3.up * 0.57f,
-                    new Vector3(0.64f, 0.045f, 0.64f),
-                    ApplianceDark,
-                    true);
+                TextureSurface(
+                    body,
+                    MountainRoadSurfaceKind.PaleEnamel,
+                    SurfaceProjection.CylinderSide,
+                    Appliance);
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateCylinder(
+                        "Boiler Lid",
+                        parent,
+                        center + Vector3.up * 0.57f,
+                        new Vector3(0.64f, 0.045f, 0.64f),
+                        ApplianceDark,
+                        true),
+                    MountainRoadSurfaceKind.PaintedMetal,
+                    SurfaceProjection.CylinderCapXZ,
+                    ApplianceDark);
+
+                // The sight glass keeps the shared glass material.
                 RuntimePrimitiveFactory.CreateBox(
                     "Boiler Sight Glass",
                     parent,
                     center - plan.Forward * 0.305f,
                     new Vector3(0.10f, 0.62f, 0.035f),
-                    new Color(0.27f, 0.58f, 0.51f, 0.55f),
+                    SightGlass,
                     HomeBalconyResources.GlassMaterial,
                     false).transform.rotation = FrameRotation(plan);
-                RuntimePrimitiveFactory.CreateBox(
+                GameObject tap = RuntimePrimitiveFactory.CreateBox(
                     "Boiler Tap",
                     parent,
                     center - plan.Forward * 0.37f -
                     Vector3.up * 0.27f,
                     new Vector3(0.12f, 0.10f, 0.24f),
                     ApplianceDark,
-                    false).transform.rotation = FrameRotation(plan);
+                    false);
+                tap.transform.rotation = FrameRotation(plan);
+                TextureSurface(
+                    tap,
+                    MountainRoadSurfaceKind.PaintedMetal,
+                    ApplianceDark);
                 if (index == 0)
                 {
                     semanticAnchors.Add(
@@ -715,6 +853,10 @@ namespace BarPromenade
                 ApplianceDark,
                 false);
             housing.transform.rotation = rotation;
+            TextureSurface(
+                housing,
+                MountainRoadSurfaceKind.PaintedMetal,
+                ApplianceDark);
             GameObject tube = RuntimePrimitiveFactory.CreateBox(
                 "Audible Sulphur Ceiling Tube",
                 parent,
@@ -738,6 +880,10 @@ namespace BarPromenade
                 ApplianceDark,
                 false);
             coldHousing.transform.rotation = rotation;
+            TextureSurface(
+                coldHousing,
+                MountainRoadSurfaceKind.PaintedMetal,
+                ApplianceDark);
             GameObject coldTube = RuntimePrimitiveFactory.CreateBox(
                 "Cold Service Strip",
                 parent,
@@ -764,22 +910,31 @@ namespace BarPromenade
                     offsets[index] + 0.16f,
                     1.09f,
                     -1.50f);
-                RuntimePrimitiveFactory.CreateCylinder(
-                    $"White Coffee Cup {index + 1:00}",
-                    parent,
-                    place,
-                    new Vector3(0.14f, 0.075f, 0.14f),
-                    new Color(0.70f, 0.68f, 0.55f, 1f),
-                    false);
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateCylinder(
+                        $"White Coffee Cup {index + 1:00}",
+                        parent,
+                        place,
+                        new Vector3(0.14f, 0.075f, 0.14f),
+                        CoffeeCup,
+                        false),
+                    MountainRoadSurfaceKind.PaleEnamel,
+                    SurfaceProjection.CylinderSide,
+                    CoffeeCup);
             }
 
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject napkins = RuntimePrimitiveFactory.CreateBox(
                 "Counter Napkin Holder",
                 parent,
                 Local(plan, 1.52f, 1.13f, -1.48f),
                 new Vector3(0.18f, 0.20f, 0.12f),
                 Appliance,
-                false).transform.rotation = FrameRotation(plan);
+                false);
+            napkins.transform.rotation = FrameRotation(plan);
+            TextureSurface(
+                napkins,
+                MountainRoadSurfaceKind.PaleEnamel,
+                Appliance);
         }
 
         private static List<Light> BuildLights(

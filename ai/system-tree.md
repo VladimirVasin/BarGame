@@ -257,6 +257,7 @@ Assets/
         MountainRoadBridge{WorldBuilder,Validator}.cs deck/beams/piers/open rails + bounded physics
         MountainRoadTerminal{Plan,Planner,Validator}.cs vehicle/cafe/cableway terminal contract
         MountainRoad{Terrain,Surface,Scenery}*.cs 76 m terrain, gorge, road + colliderless terminal apron
+        MountainRoadSurfaceAppearance.cs six printed + nine borrowed measured surface families
         MountainRoadCafe{WorldBuilder,WorldResult,Geometry}.cs enterable glass cafe
         MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs four-role silent cast
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
@@ -731,6 +732,7 @@ ArtSource/
     Facades/                     facade albedo contract, contact sheet and the cell-grid README
     Blender/                     generated park chess-set .blend and the six-silhouette review row
   Home/                          apartment albedo contract, manifest and contact sheet
+  MountainRoad/                  mountain albedo contract, borrowed-sheet contracts, contact sheet and README
 tools/
   build-city-bus-3d-model.py         real-scale bus model/export validator
   build-city-bus-driver-3d-model.py  driver model/rig/export validator
@@ -750,6 +752,7 @@ tools/
   build-city-park-textures.py       deterministic park surface albedos (ground, objects and landmark materials) + validator
   build-city-mountain-textures.py   deterministic weathered-rock albedo + validator
   build-city-fringe-textures.py     four measured fringe albedos + validator
+  build-mountain-road-textures.py   six measured mountain albedos + nine borrowed-sheet contracts + validator
   build-home-textures.py            deterministic apartment surface albedos + validator
 Packages/
 ProjectSettings/

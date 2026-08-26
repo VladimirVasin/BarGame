@@ -6,6 +6,98 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-26 — The mountain road stopped being flat colour
+
+The area was built entirely out of untextured tints. Six sheets are now
+printed for it, nine are borrowed, and the unwraps that would have made a
+sheet look worse than a flat colour were corrected first.
+
+- **Six new measured albedos** — cold non-directional mountain asphalt, damp
+  forest floor, wind-packed snow, coarse bedded stone, dark conifer needles
+  and ridge-and-furrow bark — are generated, validated and hashed by
+  `tools/build-mountain-road-textures.py` into
+  `ArtSource/MountainRoad/mountain-road-textures.json`, and imported at `512`
+  with Repeat and mips. The asphalt carries no wheel bands and no travel
+  direction, because the road turns through ten hairpins and any directional
+  wear would run across the carriageway half the time.
+- **Nine kinds are borrowed rather than reprinted.** Concrete, iron, painted
+  metal, masonry, linoleum, timber and wall paint already ship, so the
+  bridge, cableway and cafe read those sheets — but a borrowed kind does NOT
+  inherit its source family's compensation, which is fitted to the tints that
+  multiply a sheet and not to the PNG. The tool measures each borrowed sheet,
+  re-solves the constant against the mountain's own tints and refuses the
+  build if a channel would clamp or brightness would move by more than `8%`.
+  The city masonry under the cafe's brick tint needed `1.4465`, not the
+  fringe's `1.3895`. Borrowed entries record the source SHA256, so a
+  regeneration upstream is caught here.
+- **`MountainRoadSurfaceAppearance`** owns all fifteen recipes and applies
+  them through `MaterialPropertyBlock` on the one shared `RuntimePrimitiveLit`.
+  Hand-built meshes bake metre-scale UVs at their recipe's pitch and take
+  `ApplyCombined`; single primitives take `Apply` with an explicit projection
+  wherever their proportions would pick the wrong face. No call to
+  `renderer.material` and no new material instance anywhere.
+- **Six unwraps were wrong and are fixed.** The road kerb now continues the
+  carriageway's unwrap over its edge instead of squeezing three metres of
+  asphalt into two centimetres of border, with no vertex duplication, so the
+  road and plateau still share one entry vertex. The plateau and the terminal
+  apron are unwrapped in the road's frame from the entry sample, so the
+  texture crosses their shared seam unbroken. Soil and snow are cut from one
+  vertex grid and now share one set of normals averaged over both triangle
+  sets — separate `RecalculateNormals` calls were lighting the snow line as a
+  seam. Ridges and boulders had no UVs at all and take the faceted box
+  projection off their existing normals, so the lighting is unchanged. Crowns
+  unroll by arc length against height, phased per tree. The bridge deck moved
+  onto the single-box batch its girders and piers already use. The cafe's
+  prism splits its cap and side UVs, which also gives the roof slab a crisp
+  arris instead of a bevel.
+- **Excluded on purpose, and the test enforces the list:** the tunnel dark,
+  the culvert bore, the sagging cable and the haul cable, the flickering lamp
+  lens, the sign's painted stroke, five sheets of glazing and six emissive
+  parts. Anything else that ships without a sheet fails the sweep — which is
+  how `Entrance Header` was caught before it shipped flat.
+- **An adversarial review of the diff caught one defect of my own:**
+  `CreateStoneMesh` baked every ridge and boulder at the layered-stone pitch,
+  but `CreateRidges` also builds the far snowy ring, which wears the wind-snow
+  sheet — so that ring tiled a fifth too coarsely for its own recipe. The
+  factory now takes the kind it is being baked for, and each caller names that
+  kind once and hands the same value to both the bake and the recipe, so the
+  two cannot drift apart again.
+- **Found by the review, NOT fixed here, because it is geometry:** both road
+  kerb quads in `MountainRoadSurfaceMeshFactory.AppendRibbon` are wound
+  facing the road centreline. With `AddQuad(a,b,c,d)` emitting `(a,b,c)` and
+  the repository's `normal = Cross(b-a, c-a)` convention — which the road's
+  own top quad and the plateau's skirt both confirm — the left kerb comes out
+  `+Right` and the right kerb `-Right`, i.e. both inward, so `Ps1Lit`'s back
+  culling drops them. The winding predates this pass, and the corrected kerb
+  UVs are right either way (`halfWidth + SurfaceThickness/tile` puts exactly
+  `0.18 m` of sheet across the `0.18 m` drop), but they land on faces that are
+  never rasterised except where the plateau's correctly wound skirt reuses the
+  same two vertices. The fix is one line — swap the two kerb `AddQuad`
+  argument pairs — but it changes what the road's silhouette draws, which this
+  pass reserved.
+- **Also known and left:** the plateau's first and last skirt faces reuse the
+  ribbon's straight-U kerb offset instead of the radial one, so two of its
+  sixteen `0.18 m` skirt faces sample a `0.019`-`0.143 m` band rather than the
+  full `0.18 m`; separating them would break the road/plateau shared-entry-
+  vertex contract that `MountainRoadTests` pins. The terrain keeps its
+  XZ-planar unwrap, so the gorge walls stretch vertically the same way the
+  City's own terrain does; a slope-aware parameterization would change tiling
+  density across the whole `76 m` envelope.
+- **Verification:** `python tools/build-mountain-road-textures.py --verify`
+  passed all six printed sheets (worst brightness error `5.8%`, worst seam
+  ratio `2.10x`, contrast `44`-`83`) and all nine borrowed contracts (worst
+  error `7.5%`). One focused Unity EditMode invocation over
+  `MountainRoadSurfaceAppearanceTests|MountainRoadTests|MountainRoadTerminalTests|MountainCablewayTests|MountainRoadCafeCastTests`
+  passed `36/36`; the first run of that same filter was `35/36`, red on the
+  untextured `Entrance Header`, which is the evidence the sweep is wired to
+  the defect it exists for. A wider invocation adding `LastRouteRideTests`,
+  `RuntimePrimitiveFactoryTests` and the four borrowed families' own
+  appearance fixtures passed `126/126`, which is what proves the borrowed
+  sheets were not disturbed. After the ridge-pitch correction the final run
+  over the six mountain and Last Route fixtures passed `52/52`. Broader Unity
+  suites were not re-run: the deterministic contract is covered by the tool's
+  own validator and these fixtures.
+
 ## 2026-08-26 — The arrival threw the passenger out of his own car
 
 Two reports, one cause, and the second one hid the first.

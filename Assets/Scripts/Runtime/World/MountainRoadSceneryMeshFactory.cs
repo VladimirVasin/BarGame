@@ -16,7 +16,10 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(trees));
             }
 
+            float tile = MountainRoadSurfaceAppearance.GetRecipe(
+                MountainRoadSurfaceKind.ConiferNeedles).MetersPerTile;
             var vertices = new List<Vector3>(trees.Count * 96);
+            var uvs = new List<Vector2>(trees.Count * 96);
             var triangles = new List<int>(trees.Count * 96);
             for (int index = 0; index < trees.Count; index++)
             {
@@ -25,13 +28,21 @@ namespace BarPromenade
                     0f,
                     tree.YawDegrees,
                     0f);
+
+                // One phase per tree, taken from where it stands, so a
+                // stand of crowns does not repeat the same needle patch at
+                // the same place on every trunk.
+                float phase = tree.Position.x + tree.Position.z;
                 AppendCone(
                     tree.Position + Vector3.up * (tree.Height * 0.18f),
                     rotation,
                     tree.CrownRadius,
                     tree.Height * 0.56f,
                     7,
+                    phase,
+                    tile,
                     vertices,
+                    uvs,
                     triangles);
                 AppendCone(
                     tree.Position + Vector3.up * (tree.Height * 0.43f),
@@ -39,15 +50,19 @@ namespace BarPromenade
                     tree.CrownRadius * 0.73f,
                     tree.Height * 0.57f,
                     7,
+                    phase,
+                    tile,
                     vertices,
+                    uvs,
                     triangles);
             }
 
-            return CreateMesh(name, vertices, triangles);
+            return CreateMesh(name, uvs, vertices, triangles);
         }
 
         internal static Mesh CreateBoulders(
-            IReadOnlyList<MountainRoadMiscDescriptor> boulders)
+            IReadOnlyList<MountainRoadMiscDescriptor> boulders,
+            MountainRoadSurfaceKind surface)
         {
             if (boulders == null)
             {
@@ -62,12 +77,17 @@ namespace BarPromenade
                 AppendBoulder(item, index, vertices, triangles);
             }
 
-            return CreateMesh("Mountain Road Boulders", vertices, triangles);
+            return CreateBoxProjectedMesh(
+                "Mountain Road Boulders",
+                surface,
+                vertices,
+                triangles);
         }
 
         internal static Mesh CreateRidges(
             string name,
-            IReadOnlyList<MountainRoadRidgeDescriptor> ridges)
+            IReadOnlyList<MountainRoadRidgeDescriptor> ridges,
+            MountainRoadSurfaceKind surface)
         {
             if (ridges == null)
             {
@@ -81,19 +101,35 @@ namespace BarPromenade
                 AppendRidge(ridges[index], vertices, triangles);
             }
 
-            return CreateMesh(name, vertices, triangles);
+            return CreateBoxProjectedMesh(
+                name,
+                surface,
+                vertices,
+                triangles);
         }
 
+        /// <summary>
+        /// One skirt of a crown. Its UVs unroll the cone: U is the arc the
+        /// vertex stands at, so a metre around the crown is a metre of
+        /// sheet, and V is world height, so needles never lie sideways and
+        /// the two stacked skirts of one tree stay in register. A cone's
+        /// facets own their vertices outright, which is why the wrap back to
+        /// zero needs no seam column.
+        /// </summary>
         private static void AppendCone(
             Vector3 baseCenter,
             Quaternion rotation,
             float radius,
             float height,
             int sides,
+            float phase,
+            float metersPerTile,
             ICollection<Vector3> vertices,
+            ICollection<Vector2> uvs,
             IList<int> triangles)
         {
             Vector3 apex = baseCenter + Vector3.up * height;
+            float tilesPerMeter = 1f / metersPerTile;
             for (int side = 0; side < sides; side++)
             {
                 float firstAngle = side / (float)sides * Mathf.PI * 2f;
@@ -110,6 +146,16 @@ namespace BarPromenade
                 vertices.Add(first);
                 vertices.Add(apex);
                 vertices.Add(second);
+                uvs.Add(new Vector2(
+                    (phase + firstAngle * radius) * tilesPerMeter,
+                    first.y * tilesPerMeter));
+                uvs.Add(new Vector2(
+                    (phase + (firstAngle + secondAngle) * 0.5f * radius) *
+                    tilesPerMeter,
+                    apex.y * tilesPerMeter));
+                uvs.Add(new Vector2(
+                    (phase + secondAngle * radius) * tilesPerMeter,
+                    second.y * tilesPerMeter));
                 triangles.Add(firstIndex);
                 triangles.Add(firstIndex + 1);
                 triangles.Add(firstIndex + 2);
@@ -255,8 +301,44 @@ namespace BarPromenade
             triangles.Add(d);
         }
 
+        /// <summary>
+        /// Ridges and boulders have no natural unwrap, so they take the
+        /// same faceted box projection the combined batches use — the plane
+        /// comes from each vertex's own normal — baked at the pitch of the
+        /// sheet the caller is about to put on them. The pitch is read from
+        /// that kind rather than assumed, because these meshes do not all
+        /// wear stone: the far ring is snow, and baking it at the stone
+        /// pitch tiled it a fifth too coarsely for its own recipe. The
+        /// normals are the ones the mesh already carries, so nothing about
+        /// the lighting or the silhouette changes; only the UVs arrive.
+        /// </summary>
+        private static Mesh CreateBoxProjectedMesh(
+            string name,
+            MountainRoadSurfaceKind surface,
+            List<Vector3> vertices,
+            List<int> triangles)
+        {
+            Mesh mesh = CreateMesh(name, null, vertices, triangles);
+            float tilesPerMeter = 1f /
+                MountainRoadSurfaceAppearance.GetRecipe(
+                    surface).MetersPerTile;
+            Vector3[] positions = mesh.vertices;
+            Vector3[] normals = mesh.normals;
+            var uvs = new Vector2[positions.Length];
+            for (int index = 0; index < positions.Length; index++)
+            {
+                uvs[index] = RuntimePrimitiveFactory.ProjectBoxUv(
+                    positions[index],
+                    normals[index]) * tilesPerMeter;
+            }
+
+            mesh.uv = uvs;
+            return mesh;
+        }
+
         private static Mesh CreateMesh(
             string name,
+            List<Vector2> uvs,
             List<Vector3> vertices,
             List<int> triangles)
         {
@@ -271,6 +353,11 @@ namespace BarPromenade
             }
 
             mesh.SetVertices(vertices);
+            if (uvs != null)
+            {
+                mesh.SetUVs(0, uvs);
+            }
+
             mesh.SetTriangles(triangles, 0, true);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();

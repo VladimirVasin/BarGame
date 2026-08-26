@@ -68,6 +68,12 @@ namespace BarPromenade
             new Color(0.48f, 0.14f, 0.105f, 1f);
         private static readonly Color LampLens =
             new Color(0.58f, 0.78f, 0.65f, 1f);
+        private static readonly Color FadedSign =
+            new Color(0.56f, 0.52f, 0.39f, 1f);
+        private static readonly Color CabinWarm =
+            new Color(0.31f, 0.14f, 0.11f, 1f);
+        private static readonly Color CabinCool =
+            new Color(0.105f, 0.23f, 0.20f, 1f);
         private static readonly Color CabinWindow =
             new Color(0.20f, 0.34f, 0.28f, 1f);
 
@@ -308,6 +314,46 @@ namespace BarPromenade
                 new Vector3(0.055f, 0.055f, length + 0.035f)));
         }
 
+        /// <summary>
+        /// Gives one cableway primitive its sheet. The practical lens and
+        /// the sixteen cabin windows carry the shared emissive material and
+        /// pass no surface; so does the haul cable, whose fifty-five
+        /// millimetres sit under a texel of the composite.
+        /// </summary>
+        private static void TextureSurface(
+            GameObject instance,
+            MountainRoadSurfaceKind surface,
+            Color tint)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            MountainRoadSurfaceAppearance.Apply(
+                instance.GetComponent<Renderer>(),
+                surface,
+                tint);
+        }
+
+        private static void TextureSurface(
+            GameObject instance,
+            MountainRoadSurfaceKind surface,
+            SurfaceProjection projection,
+            Color tint)
+        {
+            if (instance == null)
+            {
+                return;
+            }
+
+            MountainRoadSurfaceAppearance.Apply(
+                instance.GetComponent<Renderer>(),
+                surface,
+                projection,
+                tint);
+        }
+
         private static StationPresentation BuildLowerStation(
             Transform parent,
             MountainRoadCablewayPlan plan)
@@ -319,13 +365,16 @@ namespace BarPromenade
                 Quaternion.LookRotation(plan.LineForward, Vector3.up));
             Vector2 stationSize = plan.StationArea.Size;
 
-            RuntimePrimitiveFactory.CreateBox(
-                "Physical Concrete Station Pad",
-                root.transform,
-                Vector3.up * 0.08f,
-                new Vector3(stationSize.x, 0.16f, stationSize.y),
-                Concrete,
-                true);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Physical Concrete Station Pad",
+                    root.transform,
+                    Vector3.up * 0.08f,
+                    new Vector3(stationSize.x, 0.16f, stationSize.y),
+                    Concrete,
+                    true),
+                MountainRoadSurfaceKind.Concrete,
+                Concrete);
             BuildStationFrame(root.transform, stationSize);
             BuildClosedBoardingZone(root.transform);
 
@@ -333,14 +382,18 @@ namespace BarPromenade
             Transform reducer = BuildVisibleReducer(
                 root.transform,
                 bullwheel.localPosition);
-            CreateBetween(
-                "Visible Drive Shaft",
-                root.transform,
-                reducer.localPosition + Vector3.up * 0.10f,
-                bullwheel.localPosition + Vector3.down * 0.16f,
-                0.14f,
-                Rust,
-                false);
+            TextureSurface(
+                CreateBetween(
+                    "Visible Drive Shaft",
+                    root.transform,
+                    reducer.localPosition + Vector3.up * 0.10f,
+                    bullwheel.localPosition + Vector3.down * 0.16f,
+                    0.14f,
+                    Rust,
+                    false),
+                MountainRoadSurfaceKind.RustedIron,
+                SurfaceProjection.BoxZY,
+                Rust);
             Light light = BuildStationPractical(root.transform);
             return new StationPresentation(
                 root,
@@ -359,43 +412,57 @@ namespace BarPromenade
             {
                 for (int forward = -1; forward <= 1; forward += 2)
                 {
-                    RuntimePrimitiveFactory.CreateBox(
-                        "Physical Station Column",
-                        parent,
-                        new Vector3(
-                            right * halfRight,
-                            2.25f,
-                            forward * halfForward),
-                        new Vector3(0.28f, 4.5f, 0.28f),
-                        GreenSteel,
-                        true);
+                    TextureSurface(
+                        RuntimePrimitiveFactory.CreateBox(
+                            "Physical Station Column",
+                            parent,
+                            new Vector3(
+                                right * halfRight,
+                                2.25f,
+                                forward * halfForward),
+                            new Vector3(0.28f, 4.5f, 0.28f),
+                            GreenSteel,
+                            true),
+                        MountainRoadSurfaceKind.PaintedMetal,
+                        SurfaceProjection.BoxZY,
+                        GreenSteel);
                 }
             }
 
-            RuntimePrimitiveFactory.CreateBox(
-                "Corrugated Station Canopy",
-                parent,
-                new Vector3(0f, 4.62f, 0f),
-                new Vector3(
-                    stationSize.x - 0.2f,
-                    0.24f,
-                    stationSize.y - 0.18f),
-                DarkSteel,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Physical Drive Service Hut",
-                parent,
-                new Vector3(3.25f, 1.32f, -1.62f),
-                new Vector3(2.1f, 2.48f, 2.0f),
-                GreenSteel,
-                true);
-            RuntimePrimitiveFactory.CreateBox(
-                "Rusty Service Hut Door",
-                parent,
-                new Vector3(2.185f, 1.28f, -1.62f),
-                new Vector3(0.035f, 2.0f, 1.25f),
-                Rust,
-                false);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Corrugated Station Canopy",
+                    parent,
+                    new Vector3(0f, 4.62f, 0f),
+                    new Vector3(
+                        stationSize.x - 0.2f,
+                        0.24f,
+                        stationSize.y - 0.18f),
+                    DarkSteel,
+                    false),
+                MountainRoadSurfaceKind.PaintedMetal,
+                DarkSteel);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Physical Drive Service Hut",
+                    parent,
+                    new Vector3(3.25f, 1.32f, -1.62f),
+                    new Vector3(2.1f, 2.48f, 2.0f),
+                    GreenSteel,
+                    true),
+                MountainRoadSurfaceKind.PaintedMetal,
+                GreenSteel);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Rusty Service Hut Door",
+                    parent,
+                    new Vector3(2.185f, 1.28f, -1.62f),
+                    new Vector3(0.035f, 2.0f, 1.25f),
+                    Rust,
+                    false),
+                MountainRoadSurfaceKind.RustedIron,
+                SurfaceProjection.BoxZY,
+                Rust);
         }
 
         private static void BuildClosedBoardingZone(Transform parent)
@@ -403,27 +470,35 @@ namespace BarPromenade
             const float fenceForward = 1.56f;
             for (int index = -1; index <= 1; index++)
             {
-                RuntimePrimitiveFactory.CreateBox(
-                    "Physical Closed Boarding Post",
-                    parent,
-                    new Vector3(index * 2.7f, 0.82f, fenceForward),
-                    new Vector3(0.13f, 1.55f, 0.13f),
-                    Rust,
-                    true);
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Physical Closed Boarding Post",
+                        parent,
+                        new Vector3(index * 2.7f, 0.82f, fenceForward),
+                        new Vector3(0.13f, 1.55f, 0.13f),
+                        Rust,
+                        true),
+                    MountainRoadSurfaceKind.RustedIron,
+                    SurfaceProjection.BoxZY,
+                    Rust);
             }
 
             for (int rail = 0; rail < 2; rail++)
             {
-                RuntimePrimitiveFactory.CreateBox(
-                    "Physical Closed Boarding Rail",
-                    parent,
-                    new Vector3(
-                        0f,
-                        0.66f + rail * 0.58f,
-                        fenceForward),
-                    new Vector3(5.45f, 0.10f, 0.10f),
-                    DarkSteel,
-                    true);
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Physical Closed Boarding Rail",
+                        parent,
+                        new Vector3(
+                            0f,
+                            0.66f + rail * 0.58f,
+                            fenceForward),
+                        new Vector3(5.45f, 0.10f, 0.10f),
+                        DarkSteel,
+                        true),
+                    MountainRoadSurfaceKind.PaintedMetal,
+                    SurfaceProjection.BoxXY,
+                    DarkSteel);
             }
 
             GameObject sign = RuntimePrimitiveFactory.CreateBox(
@@ -431,8 +506,13 @@ namespace BarPromenade
                 parent,
                 new Vector3(0f, 1.62f, fenceForward - 0.08f),
                 new Vector3(1.55f, 0.56f, 0.06f),
-                new Color(0.56f, 0.52f, 0.39f, 1f),
+                FadedSign,
                 false);
+            TextureSurface(
+                sign,
+                MountainRoadSurfaceKind.PaleEnamel,
+                SurfaceProjection.BoxXY,
+                FadedSign);
             for (int diagonal = -1; diagonal <= 1; diagonal += 2)
             {
                 GameObject mark = RuntimePrimitiveFactory.CreateBox(
@@ -446,6 +526,9 @@ namespace BarPromenade
                     0f,
                     0f,
                     diagonal * 25f);
+
+                // Four millimetres of paint on the sign's own face; it is
+                // a stroke, not a material, and takes no sheet.
             }
         }
 
@@ -459,20 +542,28 @@ namespace BarPromenade
             pivot.position = plan.LowerCableCenter;
             pivot.rotation = parent.rotation;
             float diameter = plan.TrackSeparation * 1.08f;
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Bullwheel Disc",
-                pivot,
-                Vector3.zero,
-                new Vector3(diameter, 0.11f, diameter),
-                DarkSteel,
-                false);
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Bullwheel Hub",
-                pivot,
-                Vector3.up * 0.15f,
-                new Vector3(0.52f, 0.20f, 0.52f),
-                Rust,
-                false);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateCylinder(
+                    "Bullwheel Disc",
+                    pivot,
+                    Vector3.zero,
+                    new Vector3(diameter, 0.11f, diameter),
+                    DarkSteel,
+                    false),
+                MountainRoadSurfaceKind.PaintedMetal,
+                SurfaceProjection.CylinderCapXZ,
+                DarkSteel);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateCylinder(
+                    "Bullwheel Hub",
+                    pivot,
+                    Vector3.up * 0.15f,
+                    new Vector3(0.52f, 0.20f, 0.52f),
+                    Rust,
+                    false),
+                MountainRoadSurfaceKind.RustedIron,
+                SurfaceProjection.CylinderSide,
+                Rust);
             for (int spoke = 0; spoke < 4; spoke++)
             {
                 GameObject bar = RuntimePrimitiveFactory.CreateBox(
@@ -486,6 +577,11 @@ namespace BarPromenade
                     0f,
                     spoke * 45f,
                     0f);
+                TextureSurface(
+                    bar,
+                    MountainRoadSurfaceKind.RustedIron,
+                    SurfaceProjection.BoxXY,
+                    Rust);
             }
 
             for (int side = -1; side <= 1; side += 2)
@@ -505,6 +601,11 @@ namespace BarPromenade
                     0f,
                     0f,
                     90f);
+                TextureSurface(
+                    roller,
+                    MountainRoadSurfaceKind.RustedIron,
+                    SurfaceProjection.CylinderSide,
+                    Rust);
             }
 
             return pivot;
@@ -525,26 +626,38 @@ namespace BarPromenade
                 new Vector3(1.35f, 0.92f, 1.15f),
                 GreenSteel,
                 false);
-            RuntimePrimitiveFactory.CreateCylinder(
+            TextureSurface(
+                reducer,
+                MountainRoadSurfaceKind.PaintedMetal,
+                GreenSteel);
+            GameObject cover = RuntimePrimitiveFactory.CreateCylinder(
                 "Reducer Gear Cover",
                 reducer.transform,
                 new Vector3(0f, 0f, -0.54f),
                 new Vector3(0.62f, 0.12f, 0.62f),
                 Rust,
-                false).transform.localRotation =
-                Quaternion.Euler(90f, 0f, 0f);
+                false);
+            cover.transform.localRotation = Quaternion.Euler(90f, 0f, 0f);
+            TextureSurface(
+                cover,
+                MountainRoadSurfaceKind.RustedIron,
+                SurfaceProjection.CylinderCapXZ,
+                Rust);
             return reducer.transform;
         }
 
         private static Light BuildStationPractical(Transform parent)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Station Practical Housing",
-                parent,
-                new Vector3(0f, 4.42f, -0.75f),
-                new Vector3(1.55f, 0.16f, 0.58f),
-                DarkSteel,
-                false);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Station Practical Housing",
+                    parent,
+                    new Vector3(0f, 4.42f, -0.75f),
+                    new Vector3(1.55f, 0.16f, 0.58f),
+                    DarkSteel,
+                    false),
+                MountainRoadSurfaceKind.PaintedMetal,
+                DarkSteel);
             GameObject lens = RuntimePrimitiveFactory.CreateBox(
                 "Visible Station Practical Lens",
                 parent,
@@ -620,40 +733,52 @@ namespace BarPromenade
             for (int depth = -1; depth <= 1; depth += 2)
             {
                 float z = depth * 0.46f;
-                CreateBetween(
-                    "A-Frame Left Leg",
-                    parent,
-                    new Vector3(-baseHalf, 0.08f, z),
-                    new Vector3(-topHalf, height - 0.48f, z),
-                    0.24f,
-                    GreenSteel,
-                    false);
-                CreateBetween(
-                    "A-Frame Right Leg",
-                    parent,
-                    new Vector3(baseHalf, 0.08f, z),
-                    new Vector3(topHalf, height - 0.48f, z),
-                    0.24f,
-                    GreenSteel,
-                    false);
+                TextureSurface(
+                    CreateBetween(
+                        "A-Frame Left Leg",
+                        parent,
+                        new Vector3(-baseHalf, 0.08f, z),
+                        new Vector3(-topHalf, height - 0.48f, z),
+                        0.24f,
+                        GreenSteel,
+                        false),
+                    MountainRoadSurfaceKind.PaintedMetal,
+                    SurfaceProjection.BoxZY,
+                    GreenSteel);
+                TextureSurface(
+                    CreateBetween(
+                        "A-Frame Right Leg",
+                        parent,
+                        new Vector3(baseHalf, 0.08f, z),
+                        new Vector3(topHalf, height - 0.48f, z),
+                        0.24f,
+                        GreenSteel,
+                        false),
+                    MountainRoadSurfaceKind.PaintedMetal,
+                    SurfaceProjection.BoxZY,
+                    GreenSteel);
             }
 
             for (int side = -1; side <= 1; side += 2)
             {
-                CreateBetween(
-                    "Rusty Tower Cross Brace",
-                    parent,
-                    new Vector3(
-                        side * (baseHalf - 0.22f),
-                        height * 0.22f,
-                        -0.46f),
-                    new Vector3(
-                        side * Mathf.Lerp(baseHalf, topHalf, 0.68f),
-                        height * 0.68f,
-                        0.46f),
-                    0.10f,
-                    Rust,
-                    false);
+                TextureSurface(
+                    CreateBetween(
+                        "Rusty Tower Cross Brace",
+                        parent,
+                        new Vector3(
+                            side * (baseHalf - 0.22f),
+                            height * 0.22f,
+                            -0.46f),
+                        new Vector3(
+                            side * Mathf.Lerp(baseHalf, topHalf, 0.68f),
+                            height * 0.68f,
+                            0.46f),
+                        0.10f,
+                        Rust,
+                        false),
+                    MountainRoadSurfaceKind.RustedIron,
+                    SurfaceProjection.BoxZY,
+                    Rust);
             }
         }
 
@@ -669,6 +794,11 @@ namespace BarPromenade
                 new Vector3(trackSeparation + 1.55f, 0.20f, 0.32f),
                 DarkSteel,
                 false);
+            TextureSurface(
+                crossbeam,
+                MountainRoadSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXY,
+                DarkSteel);
             for (int side = -1; side <= 1; side += 2)
             {
                 GameObject roller = RuntimePrimitiveFactory.CreateCylinder(
@@ -685,6 +815,11 @@ namespace BarPromenade
                     0f,
                     0f,
                     90f);
+                TextureSurface(
+                    roller,
+                    MountainRoadSurfaceKind.RustedIron,
+                    SurfaceProjection.CylinderSide,
+                    Rust);
             }
 
             return crossbeam.transform;
@@ -701,20 +836,28 @@ namespace BarPromenade
                 plan.UpperCableCenter,
                 Quaternion.LookRotation(plan.LineForward, Vector3.up));
             float diameter = plan.TrackSeparation * 1.08f;
-            RuntimePrimitiveFactory.CreateCylinder(
-                "Occluded Upper Bullwheel",
-                root,
-                Vector3.zero,
-                new Vector3(diameter, 0.10f, diameter),
-                Cable,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Occluded Upper Machinery Frame",
-                root,
-                Vector3.down * 0.55f,
-                new Vector3(diameter + 0.7f, 1.15f, 0.24f),
-                DarkSteel,
-                false);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateCylinder(
+                    "Occluded Upper Bullwheel",
+                    root,
+                    Vector3.zero,
+                    new Vector3(diameter, 0.10f, diameter),
+                    Cable,
+                    false),
+                MountainRoadSurfaceKind.PaintedMetal,
+                SurfaceProjection.CylinderCapXZ,
+                Cable);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Occluded Upper Machinery Frame",
+                    root,
+                    Vector3.down * 0.55f,
+                    new Vector3(diameter + 0.7f, 1.15f, 0.24f),
+                    DarkSteel,
+                    false),
+                MountainRoadSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXY,
+                DarkSteel);
             return root;
         }
 
@@ -749,56 +892,73 @@ namespace BarPromenade
             Transform root = new GameObject(
                 "Colliderless Moving Cabin - " + stableId).transform;
             root.SetParent(parent, false);
-            Color body = variant % 2 == 0
-                ? new Color(0.31f, 0.14f, 0.11f, 1f)
-                : new Color(0.105f, 0.23f, 0.20f, 1f);
-            RuntimePrimitiveFactory.CreateBox(
-                "Cabin Cable Grip",
-                root,
-                new Vector3(0f, -0.10f, 0f),
-                new Vector3(0.62f, 0.12f, 0.14f),
-                Rust,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Cabin Hanger",
-                root,
-                new Vector3(0f, -0.55f, 0f),
-                new Vector3(0.09f, 0.98f, 0.09f),
-                DarkSteel,
-                false);
+            Color body = variant % 2 == 0 ? CabinWarm : CabinCool;
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Cabin Cable Grip",
+                    root,
+                    new Vector3(0f, -0.10f, 0f),
+                    new Vector3(0.62f, 0.12f, 0.14f),
+                    Rust,
+                    false),
+                MountainRoadSurfaceKind.RustedIron,
+                SurfaceProjection.BoxXY,
+                Rust);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Cabin Hanger",
+                    root,
+                    new Vector3(0f, -0.55f, 0f),
+                    new Vector3(0.09f, 0.98f, 0.09f),
+                    DarkSteel,
+                    false),
+                MountainRoadSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxZY,
+                DarkSteel);
 
             float roofY = -MountainRoadCablewayPlan.CabinRoofDrop;
             float floorY = roofY - size.y;
-            RuntimePrimitiveFactory.CreateBox(
-                "Cabin Roof",
-                root,
-                new Vector3(0f, roofY, 0f),
-                new Vector3(size.x * 1.06f, 0.18f, size.z * 1.08f),
-                body,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Cabin Lower Skirt",
-                root,
-                new Vector3(0f, floorY + 0.20f, 0f),
-                new Vector3(size.x, 0.40f, size.z),
-                body,
-                false);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Cabin Roof",
+                    root,
+                    new Vector3(0f, roofY, 0f),
+                    new Vector3(size.x * 1.06f, 0.18f, size.z * 1.08f),
+                    body,
+                    false),
+                MountainRoadSurfaceKind.PaintedMetal,
+                body);
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Cabin Lower Skirt",
+                    root,
+                    new Vector3(0f, floorY + 0.20f, 0f),
+                    new Vector3(size.x, 0.40f, size.z),
+                    body,
+                    false),
+                MountainRoadSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXY,
+                body);
             float postY = Mathf.Lerp(roofY, floorY + 0.40f, 0.5f);
             float postHeight = roofY - (floorY + 0.40f);
             for (int right = -1; right <= 1; right += 2)
             {
                 for (int forward = -1; forward <= 1; forward += 2)
                 {
-                    RuntimePrimitiveFactory.CreateBox(
-                        "Cabin Corner Post",
-                        root,
-                        new Vector3(
-                            right * (size.x * 0.5f - 0.07f),
-                            postY,
-                            forward * (size.z * 0.5f - 0.07f)),
-                        new Vector3(0.13f, postHeight, 0.13f),
-                        body,
-                        false);
+                    TextureSurface(
+                        RuntimePrimitiveFactory.CreateBox(
+                            "Cabin Corner Post",
+                            root,
+                            new Vector3(
+                                right * (size.x * 0.5f - 0.07f),
+                                postY,
+                                forward * (size.z * 0.5f - 0.07f)),
+                            new Vector3(0.13f, postHeight, 0.13f),
+                            body,
+                            false),
+                        MountainRoadSurfaceKind.PaintedMetal,
+                        SurfaceProjection.BoxZY,
+                        body);
                 }
             }
 

@@ -695,7 +695,7 @@ namespace BarPromenade
         /// coordinates, so a batched run reads as one continuous
         /// surface rather than a repeated per-box stamp.
         /// </summary>
-        private static Vector2 ProjectBoxUv(
+        internal static Vector2 ProjectBoxUv(
             Vector3 vertex,
             Vector3 normal)
         {
