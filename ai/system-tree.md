@@ -120,6 +120,12 @@ Assets/
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
       CityMiscAssetProvider.asset   177 passive City role-mesh bindings + manifest signature
+      CityBuildingAssetProvider.asset  four district prototype-prefab bindings + signature
+      Buildings/
+        OldTownPrototype01.prefab      passive fixed-metre wrapper + semantic registry
+        ResidentialPrototype01.prefab passive fixed-metre wrapper + semantic registry
+        IndustrialPrototype01.prefab  passive fixed-metre wrapper + semantic registry
+        NightlifePrototype01.prefab   passive fixed-metre wrapper + semantic registry
     MountainRoad/
       MountainRoadCafeCastProvider.asset  four isolated staged cafe prefab links
     Church/
@@ -175,6 +181,8 @@ Assets/
       CityChessSet3D.json               deterministic heights/footprints manifest
       CityMisc3D.fbx                    91 citywide misc assemblies / 177 role meshes
       CityMisc3D.json                   roots, roles, bounds, compatibility + build signature
+      CityBuildings3D.fbx               four fixed-metre district prototypes / 24 role meshes
+      CityBuildings3D.json              envelopes, attachments, window slots + build signature
   Church/
     Models/                             split Catholic exterior/interior FBX + shared manifest
     Textures/                           nine deterministic plaster/stone/wood/glass/art sheets
@@ -334,6 +342,8 @@ Assets/
         CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. bar-side yard pair
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
         CityMiscAssetProvider.cs     61 kinds / 91 assemblies / 177 passive role meshes with roots and bounds
+        CityBuildingAssetRegistry.cs fixed envelope, frontage, role, attachment + window-slot contract
+        CityBuildingAssetProvider.cs four passive Resources prefab bindings; no world consumer yet
         CityDecorationWorldBuilder.cs  imported role batches, Unity collision proxies + utility dock read-back
         CityStreetUtilityDock.cs     booth-door/dumpster-lid docks the interactions stand on
         CityStreetUtilityWorldBuilder.cs  one placeholder trigger per utility dock
@@ -632,6 +642,7 @@ Assets/
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
       City/CityMiscAssetSetup.cs  FBX import/provider binding + strict manifest/root/bounds validation
+      City/CityBuilding{AssetSetup,ModelImporter}.cs passive FBX import + four wrappers/provider
       City/Church{AssetSetup,ModelImporter}.cs Catholic FBX import, materials, prefabs + validation
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       MountainRoadCafeCastAssetSetup.cs  isolated model/clip import, validation + provider setup
@@ -642,6 +653,7 @@ Assets/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
       CityMiscAssetTests.cs       177-entry catalog/signature/provider + affected-builder smoke contract
+      CityBuildingAssetTests.cs   4 prototypes / 24 meshes, importer, wrapper + provider contract
       RuntimePrimitiveFactoryTests.cs four exterior assets/import/seam/MPB/UV contract incl. box-projected world UVs
       CityParkSurfaceAppearanceTests.cs  eight park sheets: recipes/import/source contract, UV mode, textured lawn/park build + landmark-only decoration texturing
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
@@ -757,7 +769,7 @@ ArtSource/
     fringe-contact-sheet.png      forefield/service-track/concrete/masonry comparison sheet
     fringe-textures.json          measured fringe texture manifest
     Facades/                     facade albedo contract, contact sheet and the cell-grid README
-    Blender/                     park chess set plus CityMisc3D source and 91-assembly contact sheet
+    Blender/                     park chess, CityMisc3D and four-prototype CityBuildings3D sources/previews
   Home/                          apartment albedo contract, manifest and contact sheet
   MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
   Church/Blender/                Catholic `.blend` source + accepted exterior/interior previews
@@ -778,6 +790,8 @@ tools/
   build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
   build-city-misc-3d-model.py    61 kinds / 91 assemblies / 177 citywide role meshes
+  build-city-buildings-3d-model.py  four fixed-metre district prototypes / 24 role meshes
+  city_building_parts.py         pure deterministic building geometry + attachment/window metadata
   build-city-facade-textures.py     deterministic district wall albedos + validator
   build-city-poi-textures.py        deterministic district POI surface albedos + validator
   build-cemetery-textures.py        deterministic cemetery surface albedos (granite/stone/gravel/soil) + validator

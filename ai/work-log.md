@@ -6,6 +6,52 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-27 — The first four City building prototypes are staged in Blender
+
+The ordinary-building migration now has a deliberately non-runtime foundation:
+one deterministic `city_buildings_prototypes_v1` source and four fixed-metre
+district grammars. Old Town's `FragmentedPerimeter` is
+`14 x 13.5 x 42 m` / `768` triangles, Residential's `SetbackCourtyard` is
+`11.5 x 11.5 x 40 m` / `1,238`, Industrial's `LowWideProcess` is
+`14 x 13.5 x 36 m` / `798`, and Nightlife's `TallDense` is
+`12.5 x 12 x 48 m` / `858`. All four fit the production default's minimum
+district footprints and live height bands without scale.
+
+Each prototype exports exactly six passive role meshes (`Shell`, `Trim`,
+`Roof`, `Metal`, `WindowFrame`, `WindowGlass`), for `24` meshes and `3,662`
+triangles total. The manifest also carries a ground-centred front anchor, one
+roof and four facade attachment bounds per building, and `194` stable window
+slots with UV2 IDs. Source `+Y` becomes Unity `+Z`; no materials, colliders,
+lights, cameras or animation enter the FBX. Generator `1.0.0` produced build
+signature
+`a38ab8521b0470e080ea074204b2a948dc9bdbcc14bfd06cecc95a2d7506c1ac`.
+
+Unity's strict importer wraps the four roots as passive Resources prefabs and
+binds them through `CityBuildingAssetProvider`; the registry preserves the
+manifest identity, envelope, role renderers and attachment/window metadata.
+This slice intentionally adds no consumer to `CityWorldBuilder` or
+`HomeExteriorViewBuilder`: the live City still draws its ordinary primitive
+masses, roofs and pane rows. Runtime selection, frontage/foundation placement,
+facade and per-window appearance, logical collision/decoration authority and
+Home half-space handling remain the next integration slice.
+
+Blender `5.0.1` completed the full BLEND/preview/FBX/JSON build and the
+independent `--validate-only` pass. Both repeated the same pure-build
+signature; the four prototype triangle counts and `45 / 54 / 41 / 54` window
+slot counts matched the manifest. A clean FBX re-import found exactly five
+Empty roots plus `24` meshes, two UV layers on every mesh and zero materials,
+Actions, lights, cameras or other payload types. The final contact sheet keeps
+all four buildings, both label rows and the bright `1.75 m` scale figures in
+frame.
+
+Unity's batch setup completed with `CITY BUILDING UNITY ASSET BUILD OK`, and
+the focused `BarPromenade.Tests.EditMode.CityBuildingAssetTests` selection
+passed `3/3` (`Logs/city-buildings-editmode-results.xml`). The import proof
+also fixed the nested-hierarchy axis handoff explicitly: Blender exports with
+`bake_space_transform = false`, Unity imports with `bakeAxisConversion = true`,
+and the four model-relative bounds now match the manifest after that one
+conversion.
+
 ## 2026-08-27 — The production city keeps one bar beside the player home
 
 The default coastal blueprint now requires exactly one Residential bar. It

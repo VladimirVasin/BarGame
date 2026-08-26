@@ -1500,6 +1500,36 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   dynamics, interactions, realtime lights and halos, cloth and NPCs. Tilted
   cemetery monuments deliberately stay on the legacy builder because their
   non-rigid tilt is outside the rigid assembly-placement contract.
+- **Accepted — Ordinary-building prototypes are staged before runtime
+  replacement:** design `city_buildings_prototypes_v1` is one deterministic,
+  fixed-metre Blender source with four district grammars: Old Town's
+  `FragmentedPerimeter` at `14 x 13.5 x 42 m`, Residential's
+  `SetbackCourtyard` at `11.5 x 11.5 x 40 m`, Industrial's
+  `LowWideProcess` at `14 x 13.5 x 36 m`, and Nightlife's `TallDense` at
+  `12.5 x 12 x 48 m`. Those envelopes fit the production default's minimum
+  district footprints and current district height bands without runtime
+  scale. Every prototype owns exactly six passive meshes — `Shell`, `Trim`,
+  `Roof`, `Metal`, `WindowFrame` and `WindowGlass` — for `24` meshes and
+  `3,662` triangles in total, with a hard `3,500`-triangle cap per prototype.
+  Generator `1.0.0` locks that catalog under build signature
+  `a38ab8521b0470e080ea074204b2a948dc9bdbcc14bfd06cecc95a2d7506c1ac`.
+  Source `+Y` is the authored frontage and imports as Unity `+Z`; the origin
+  is the footprint centre on the ground. The FBX carries no imported material,
+  collider, light, camera or animation assets.
+
+  Unity wraps the four roots in passive Resources prefabs and binds them
+  through `CityBuildingAssetProvider`. Each `CityBuildingAssetRegistry`
+  preserves the fixed envelope, front anchor, roof and four facade attachment
+  bounds, plus `194` explicit window slots whose UV2 IDs reserve a later
+  per-pane appearance channel. This is an asset boundary, not a completed
+  world migration: neither `CityWorldBuilder` nor `HomeExteriorViewBuilder`
+  loads the provider. The live City therefore keeps its primitive masses,
+  roofs and pane rows. A separate integration decision must still align the
+  authored frontage and terrain foundation, bind the six roles to
+  `CityFacadeAppearance` and `CityWindowAppearance`, reconcile logical
+  `BuildingLot` bounds with collision, sound occlusion and decoration
+  attachments, and decide how the bounded Home exterior clips imported
+  topology at its half-space.
 - **Accepted — The summit opens exactly once, and the opening is a
   terrain mask:** the terminal plateau carries a `MountainRoadBrinkDescriptor`
   on its own descriptor rather than on the terminal plan, because

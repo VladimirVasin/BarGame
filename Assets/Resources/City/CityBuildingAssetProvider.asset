@@ -1,0 +1,29 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 04541b978f0a476891b7aaa8fc54765c, type: 3}
+  m_Name: CityBuildingAssetProvider
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CityBuildingAssetProvider
+  entries:
+  - stableId: old-town-prototype-01
+    district: 0
+    prefab: {fileID: 7184585473421723159, guid: 1800b05e864fede43bef65106ab57d2c, type: 3}
+  - stableId: residential-prototype-01
+    district: 1
+    prefab: {fileID: 8661025633427157974, guid: f562a6a4e08d0834990f2cbcafbe6010, type: 3}
+  - stableId: industrial-prototype-01
+    district: 2
+    prefab: {fileID: 3735304620573982460, guid: e0e03ccaedf70b44c90eb9d8bc997ab6, type: 3}
+  - stableId: nightlife-prototype-01
+    district: 3
+    prefab: {fileID: 3171250783102549557, guid: 4ba307fec917a884fbf435c416d5da2b, type: 3}
+  designId: city_buildings_prototypes_v1
+  buildSignature: a38ab8521b0470e080ea074204b2a948dc9bdbcc14bfd06cecc95a2d7506c1ac

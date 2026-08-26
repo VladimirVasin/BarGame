@@ -864,6 +864,15 @@ The vertical slice contains:
   `0.070` Exp2 fog. The bar keeps its former `5–13 m` envelope, the player home
   stays `8.8 m`, and the supermarket stays `6.4 m`; public places and the park
   remain open land rather than receiving a tall mass;
+- alongside that live primitive path, a staged deterministic Blender catalog
+  now provides one fixed-metre prototype for each urban district: Old Town
+  `14 x 13.5 x 42 m`, Residential `11.5 x 11.5 x 40 m`, Industrial
+  `14 x 13.5 x 36 m` and Nightlife `12.5 x 12 x 48 m`. Their four wrapper
+  prefabs expose `24` passive role meshes, front/roof/facade attachment
+  metadata and `194` addressable window slots through one Resources provider.
+  The catalog is not selected or instantiated by `CityWorldBuilder` or the
+  bounded Home exterior yet, so it changes no live building, material,
+  collision or navigation contract in this slice;
 - deterministic ochre guard rails, batched into `48 m` spatial chunks, only
   where a street faces water, unmapped space or the active map boundary, plus
   full-width caps at true degree-one street dead ends. Street-to-park
