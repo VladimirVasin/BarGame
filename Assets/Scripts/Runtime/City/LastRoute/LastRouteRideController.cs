@@ -57,6 +57,8 @@ namespace BarPromenade
         private LastRouteFerrymanPresentation ferryman;
         private LastRouteRideFadeView fade;
         private Func<LastRouteCarDrivePath> buildPath;
+        private CityBusDirector buses;
+        private CityPedestrianDirector pedestrians;
         private bool driveBegun;
         private bool travelRequested;
         private bool warnedTravelRefused;
@@ -73,6 +75,12 @@ namespace BarPromenade
         public bool IsAwaitingStart => awaitingMountainStart;
 
         /// <summary>
+        /// The turn across the road, once the car is on its way to it. Null
+        /// on the mountain leg and until the hero sits down.
+        /// </summary>
+        public LastRouteCarGiveWay GiveWay { get; private set; }
+
+        /// <summary>
         /// The city half: armed and waiting for the hero to actually sit
         /// down. Nothing happens until he does, and if he never does, this
         /// costs one idle component.
@@ -82,7 +90,9 @@ namespace BarPromenade
             LastRouteCarSeatInteraction carSeat,
             LastRouteCarDriver carDriver,
             LastRouteFerrymanPresentation ferrymanPresentation,
-            Func<LastRouteCarDrivePath> cityPathFactory)
+            Func<LastRouteCarDrivePath> cityPathFactory,
+            CityBusDirector busDirector = null,
+            CityPedestrianDirector pedestrianDirector = null)
         {
             LastRouteRideController controller = Create(
                 parent,
@@ -96,6 +106,8 @@ namespace BarPromenade
 
             controller.leg = Leg.City;
             controller.buildPath = cityPathFactory;
+            controller.buses = busDirector;
+            controller.pedestrians = pedestrianDirector;
             controller.seat.Seated += controller.HandleSeated;
             return controller;
         }
@@ -183,6 +195,16 @@ namespace BarPromenade
                 LastRouteFerrymanRideStage.InTransit);
             seat.BeginRideAttachment();
             driver.Begin(path, LastRouteCarDriveProfile.City);
+
+            // And the one place on that road where he has to look before he
+            // goes. Armed after the drive rather than with it, because the
+            // road is built lazily and until it exists there is no line to
+            // measure and no crossing to watch.
+            GiveWay = LastRouteCarGiveWay.Attach(
+                driver,
+                path,
+                buses,
+                pedestrians);
         }
 
         /// <summary>

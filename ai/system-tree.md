@@ -484,9 +484,11 @@ Assets/
         LastRouteFerryman{Coin,Coat,RigAnchors,Quips,Interaction}.cs  the toss, the hem, the sockets, the twelve lines and the one question
         LastRouteFerrymanAlightingTimeline.cs  the same three beats run backwards, to get him out at the far end
         LastRouteFerrymanRideStage.cs  the monotone ladder both areas build him from
-        LastRouteCarDrive{Path,Model}.cs  one drivable centreline, and how fast a car will take it
+        LastRouteCarDrive{Path,Model}.cs  one drivable centreline with the one place on it the car gives way, and how fast a car will take it - corners, the end of the road and a stop line all braked to the same way
         LastRouteCarDriver.cs      the engine on the runtime root: pose, steering, wheel roll and what the road does to the springs
-        LastRouteCityDeparturePlanner.cs  the lot exit, a Dijkstra over the bus graph, and the run into the tunnel
+        LastRouteCarHeadlights.cs  two shadow-casting beams and a wide spill on the SPRUNG body, emitting from OUTSIDE the shell just proud of the lit face, switched by the journey itself; the area they light keeps its ordinary grade
+        LastRouteCarGiveWay{,Model}.cs  wait or go at the turn across the road: the pure clock and commit rule, and the live look for an oncoming bus or anyone walking over the mouth
+        LastRouteCityDeparturePlanner.cs  the lot exit, a Dijkstra over the layout's own street edges (NEVER the bus graph - that is Route 01's one-way loop), the turn off where the forecourt opens, and the run into the tunnel
         LastRouteMountainDrivePlanner.cs  the climb read out at a metre, from inside the tunnel to the middle of the apron
         LastRouteRideController.cs  who owns the beat: seat, engine, blackout, area load, arrival and the man getting back out
       Vehicles/      one-slot real-scale Route 01 bus, passenger ride and presentation
@@ -560,6 +562,8 @@ Assets/
         MainMenuRoot.cs                 black build-index-0 new-run boundary
         AreaLoadingRoot.cs              black unscaled progress-bar area transfer
         MountainRoadRoot.cs             standalone mountain world/player/UI composition
+        MountainRoadWeather{Rules,Shaper}.cs  the city's own weather slot re-read by altitude, as snow and harder wind
+        MountainRoadWindDriver.cs       carries that wind to the crowns, the cloth and the sound bed
         MountainRoadAtmosphere.cs       cold fog, time grade and flickering tunnel lamp
         HomeOpening*.cs                5 s gate, 3 s post-Wake alarm and 2x wake
         HomeDebugCityMapShortcut.cs     Home F9 -> City/home return + one-shot debug map request

@@ -36,18 +36,62 @@ namespace BarPromenade.Tests.EditMode
             "DepthNormals"
         };
 
-        [Test]
-        public void Clone_CompilesAndKeepsEveryPass()
+        private const string FoliageCloneName =
+            "Bar Promenade/PS1 Lit Foliage";
+        private const string FoliageClonePath =
+            "Assets/Resources/Shaders/Ps1LitFoliage.shader";
+        private const string FoliageMaterialPath =
+            "Assets/Resources/Materials/MountainFoliageLit.mat";
+
+        /// <summary>
+        /// The foliage clone wraps a fourth pass. Wind is an object-space
+        /// displacement, identical under every projection, so ShadowCaster
+        /// MUST carry it — a crown whose shadow stands still while the crown
+        /// sways is the exact bug that pass exists to avoid, and on this road
+        /// it is the most visible one there is, because the car's headlights
+        /// throw those shadows straight across the asphalt.
+        /// </summary>
+        private static readonly string[] FoliageWrappedPasses =
         {
-            Shader clone = Shader.Find(CloneName);
+            "ForwardLit",
+            "ShadowCaster",
+            "DepthOnly",
+            "DepthNormals"
+        };
+
+        /// <summary>
+        /// Both clones, so a URP bump fails here for either of them rather
+        /// than quietly stranding one on a stale variant set.
+        /// </summary>
+        private static IEnumerable<TestCaseData> Clones()
+        {
+            yield return new TestCaseData(
+                    CloneName,
+                    ClonePath,
+                    WrappedPasses)
+                .SetName("Ps1Lit");
+            yield return new TestCaseData(
+                    FoliageCloneName,
+                    FoliageClonePath,
+                    FoliageWrappedPasses)
+                .SetName("Ps1LitFoliage");
+        }
+
+        [TestCaseSource(nameof(Clones))]
+        public void Clone_CompilesAndKeepsEveryPass(
+            string cloneName,
+            string clonePath,
+            string[] wrappedPasses)
+        {
+            Shader clone = Shader.Find(cloneName);
             Shader stock = Shader.Find(StockName);
-            Assert.That(clone, Is.Not.Null, "PS1 Lit is missing.");
+            Assert.That(clone, Is.Not.Null, $"'{cloneName}' is missing.");
             Assert.That(stock, Is.Not.Null, "URP Lit is missing.");
 
             if (ShaderUtil.ShaderHasError(clone))
             {
                 var report = new StringBuilder(
-                    "The PS1 Lit shader does not compile:");
+                    $"'{cloneName}' does not compile:");
                 foreach (var message in
                          ShaderUtil.GetShaderMessages(clone))
                 {
@@ -65,7 +109,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 clone.isSupported,
                 Is.True,
-                "The PS1 Lit shader is not supported on this platform.");
+                $"'{cloneName}' is not supported on this platform.");
             Assert.That(
                 clone.passCount,
                 Is.EqualTo(stock.passCount),
@@ -73,10 +117,13 @@ namespace BarPromenade.Tests.EditMode
                 "shadows or stops writing depth.");
         }
 
-        [Test]
-        public void Clone_CarriesTheSameKeywordSpace()
+        [TestCaseSource(nameof(Clones))]
+        public void Clone_CarriesTheSameKeywordSpace(
+            string cloneName,
+            string clonePath,
+            string[] wrappedPasses)
         {
-            Shader clone = Shader.Find(CloneName);
+            Shader clone = Shader.Find(cloneName);
             Shader stock = Shader.Find(StockName);
 
             CollectionAssert.AreEquivalent(
@@ -88,8 +135,11 @@ namespace BarPromenade.Tests.EditMode
                 "exactly that.");
         }
 
-        [Test]
-        public void Clone_CarriesEveryPackagePragmaVerbatim()
+        [TestCaseSource(nameof(Clones))]
+        public void Clone_CarriesEveryPackagePragmaVerbatim(
+            string cloneName,
+            string clonePath,
+            string[] wrappedPasses)
         {
             string packageFile = Path.GetFullPath(PackagePath);
             Assert.That(
@@ -102,7 +152,7 @@ namespace BarPromenade.Tests.EditMode
             Dictionary<string, List<string>> clone =
                 ReadDirectivesByPass(
                     File.ReadAllText(
-                        Path.Combine(Application.dataPath, "..", ClonePath)));
+                        Path.Combine(Application.dataPath, "..", clonePath)));
 
             CollectionAssert.AreEquivalent(
                 stock.Keys,
@@ -121,11 +171,14 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
-        [Test]
-        public void Clone_SnapsExactlyTheThreeCameraPasses()
+        [TestCaseSource(nameof(Clones))]
+        public void Clone_WrapsExactlyItsDeclaredPasses(
+            string cloneName,
+            string clonePath,
+            string[] wrappedPasses)
         {
             string source = File.ReadAllText(
-                Path.Combine(Application.dataPath, "..", ClonePath));
+                Path.Combine(Application.dataPath, "..", clonePath));
             Dictionary<string, List<string>> vertexLines =
                 ReadDirectivesByPass(source, keepVertex: true);
 
@@ -138,16 +191,16 @@ namespace BarPromenade.Tests.EditMode
                     continue;
                 }
 
-                bool snapped = vertex.Contains("Ps1");
-                bool shouldSnap = WrappedPasses.Contains(pass.Key);
+                bool wrapped = vertex.Contains("Ps1");
+                bool shouldWrap = wrappedPasses.Contains(pass.Key);
                 Assert.That(
-                    snapped,
-                    Is.EqualTo(shouldSnap),
-                    $"Pass '{pass.Key}' is " +
-                    (snapped ? "snapped" : "unsnapped") +
+                    wrapped,
+                    Is.EqualTo(shouldWrap),
+                    $"Pass '{pass.Key}' of '{cloneName}' is " +
+                    (wrapped ? "wrapped" : "unwrapped") +
                     " and should not be. The camera passes must agree " +
                     "to the bit or the depth prepass stops matching the " +
-                    "forward pass; ShadowCaster and Meta must never snap.");
+                    "forward pass; Meta must never be touched at all.");
             }
 
             Assert.That(
@@ -156,10 +209,13 @@ namespace BarPromenade.Tests.EditMode
                 "The snap helper must be shared, never inlined per pass.");
         }
 
-        [Test]
-        public void Clone_KeepsThePropertiesTheWorldDrivesThrough()
+        [TestCaseSource(nameof(Clones))]
+        public void Clone_KeepsThePropertiesTheWorldDrivesThrough(
+            string cloneName,
+            string clonePath,
+            string[] wrappedPasses)
         {
-            Shader clone = Shader.Find(CloneName);
+            Shader clone = Shader.Find(cloneName);
 
             // Every runtime primitive and appearance system writes these
             // by name through property blocks; a rename would break far
@@ -176,8 +232,63 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     clone.FindPropertyIndex(property),
                     Is.GreaterThanOrEqualTo(0),
-                    $"PS1 Lit no longer exposes '{property}'.");
+                    $"'{cloneName}' no longer exposes '{property}'.");
             }
+        }
+
+        /// <summary>
+        /// The one contract the parameterized shape above cannot express,
+        /// and the reason the foliage clone exists as a separate file at
+        /// all: wind and snap are not the same kind of thing.
+        ///
+        /// The snap works in PROJECTION space, so the shadow map's own
+        /// projection can never agree with the camera's and ShadowCaster
+        /// must not snap. The wind is a displacement in OBJECT space,
+        /// identical under every projection, so ShadowCaster must carry it
+        /// or a swaying crown casts a still shadow — straight across the
+        /// road the headlights are lighting.
+        /// </summary>
+        [Test]
+        public void FoliageClone_BendsItsShadowButNeverSnapsIt()
+        {
+            string source = File.ReadAllText(
+                Path.Combine(
+                    Application.dataPath,
+                    "..",
+                    FoliageClonePath));
+
+            Assert.That(
+                CountOccurrences(source, "Ps1SnapClipPosition("),
+                Is.EqualTo(3),
+                "Only the three camera passes may snap. A shadow map is a " +
+                "different projection at a different resolution, so no " +
+                "snap there can agree with the camera's.");
+            Assert.That(
+                CountOccurrences(source, "MountainWindDisplace("),
+                Is.EqualTo(4),
+                "Every wrapped pass must bend, ShadowCaster included: a " +
+                "crown whose shadow does not sway is the bug.");
+            Assert.That(
+                source,
+                Does.Contain("#include \"MountainWindSway.hlsl\""),
+                "The wind helper must be shared so all four passes " +
+                "displace by the identical offset.");
+        }
+
+        private static int CountOccurrences(string source, string token)
+        {
+            int count = 0;
+            int index = source.IndexOf(token, StringComparison.Ordinal);
+            while (index >= 0)
+            {
+                count++;
+                index = source.IndexOf(
+                    token,
+                    index + token.Length,
+                    StringComparison.Ordinal);
+            }
+
+            return count;
         }
 
         [Test]
@@ -190,7 +301,8 @@ namespace BarPromenade.Tests.EditMode
             string[] paths = new[]
                 {
                     "Assets/Resources/Materials/RuntimePrimitiveLit.mat",
-                    "Assets/Player3D/Materials/Player3DLit.mat"
+                    "Assets/Player3D/Materials/Player3DLit.mat",
+                    FoliageMaterialPath
                 }
                 .Concat(
                     AssetDatabase
@@ -214,9 +326,16 @@ namespace BarPromenade.Tests.EditMode
                     continue;
                 }
 
+                // The conifer crowns are the one family that wants a
+                // different vertex stage, so they carry the foliage clone.
+                // Everything else must be on the plain one.
+                string expected =
+                    path == FoliageMaterialPath
+                        ? FoliageCloneName
+                        : CloneName;
                 Assert.That(
                     material.shader.name,
-                    Is.EqualTo(CloneName),
+                    Is.EqualTo(expected),
                     $"'{path}' fell back to {material.shader.name}.");
             }
         }

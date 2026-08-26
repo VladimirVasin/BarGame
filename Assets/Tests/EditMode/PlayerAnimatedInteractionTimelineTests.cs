@@ -353,5 +353,107 @@ namespace BarPromenade.Tests.EditMode
                 exitFramesPerSecond,
                 loopFrameExtraHoldSeconds);
         }
+
+        [Test]
+        public void PelvisTransition_StandsStillForItsHoldAndArrivesAtItsSettle()
+        {
+            var start = Vector3.zero;
+            var waypoint = new Vector3(0f, 0f, 1f);
+            var end = new Vector3(0f, 0f, 2f);
+            var transition = new PlayerAnimatedInteractionPelvisTransition(
+                waypoint,
+                enterArrivalProgress: 0.5f,
+                enterDepartureProgress: 0.6f,
+                exitArrivalProgress: 0.5f,
+                exitDepartureProgress: 0.6f,
+                enterHoldProgress: 0.3f,
+                enterSettleProgress: 0.8f,
+                exitHoldProgress: 0.2f,
+                exitSettleProgress: 0.9f);
+
+            Assert.That(
+                transition.EvaluateEntering(start, end, 0f),
+                Is.EqualTo(start));
+            Assert.That(
+                transition.EvaluateEntering(start, end, 0.3f),
+                Is.EqualTo(start),
+                "The hold is inclusive of its own moment: a body that has " +
+                "already twitched by the frame it is allowed to move is a " +
+                "body that moved early.");
+            Assert.That(
+                transition.EvaluateEntering(start, end, 0.4f).z,
+                Is.InRange(0.01f, 0.99f),
+                "And it is genuinely under way in between.");
+            Assert.That(
+                transition.EvaluateEntering(start, end, 0.55f),
+                Is.EqualTo(waypoint));
+            Assert.That(
+                transition.EvaluateEntering(start, end, 0.8f),
+                Is.EqualTo(end),
+                "Arrived at the settle, not on the closing frame.");
+            Assert.That(
+                transition.EvaluateEntering(start, end, 1f),
+                Is.EqualTo(end),
+                "And still there afterwards, while the clip finishes in " +
+                "place.");
+
+            Assert.That(
+                transition.EvaluateExiting(end, start, 0.2f),
+                Is.EqualTo(end));
+            Assert.That(
+                transition.EvaluateExiting(end, start, 0.9f),
+                Is.EqualTo(start));
+        }
+
+        [Test]
+        public void PelvisTransition_WithoutHoldsIsTheOlderTwoMarkerShape()
+        {
+            var start = Vector3.zero;
+            var waypoint = new Vector3(0f, 0f, 1f);
+            var end = new Vector3(0f, 0f, 2f);
+            var transition = new PlayerAnimatedInteractionPelvisTransition(
+                waypoint,
+                enterArrivalProgress: 0.5f,
+                enterDepartureProgress: 0.6f,
+                exitArrivalProgress: 0.5f,
+                exitDepartureProgress: 0.6f);
+
+            // Every seat with no door to wait for still moves from the first
+            // frame and lands on the last, and none of them said so.
+            Assert.That(
+                transition.EvaluateEntering(start, end, 0.05f).z,
+                Is.GreaterThan(0f),
+                "A bench sitter must not have acquired a hold he never " +
+                "asked for.");
+            Assert.That(
+                transition.EvaluateEntering(start, end, 1f),
+                Is.EqualTo(end));
+        }
+
+        [Test]
+        public void PelvisTransition_RefusesAnOutOfOrderProgressLadder()
+        {
+            var waypoint = new Vector3(0f, 0f, 1f);
+
+            Assert.Throws<System.ArgumentOutOfRangeException>(
+                () => new PlayerAnimatedInteractionPelvisTransition(
+                    waypoint,
+                    enterArrivalProgress: 0.3f,
+                    enterDepartureProgress: 0.6f,
+                    exitArrivalProgress: 0.5f,
+                    exitDepartureProgress: 0.6f,
+                    enterHoldProgress: 0.4f),
+                "A hold that outlasts its own arrival is a divide by a " +
+                "negative span, not a slower walk.");
+
+            Assert.Throws<System.ArgumentOutOfRangeException>(
+                () => new PlayerAnimatedInteractionPelvisTransition(
+                    waypoint,
+                    enterArrivalProgress: 0.5f,
+                    enterDepartureProgress: 0.6f,
+                    exitArrivalProgress: 0.5f,
+                    exitDepartureProgress: 0.6f,
+                    enterSettleProgress: 0.55f));
+        }
     }
 }

@@ -7,6 +7,15 @@ namespace BarPromenade
 {
     internal static class MountainRoadSceneryMeshFactory
     {
+        /// <summary>
+        /// Metres of slack added to the crown bounds so the wind cannot
+        /// bend a tree out of its own culling volume. It is generous
+        /// against the amplitude the tallest tree can reach, because the
+        /// cost of being wrong is a popping stand and the cost of being
+        /// generous is a few extra draws at the screen edge.
+        /// </summary>
+        internal const float WindCullingHeadroom = 2.5f;
+
         internal static Mesh CreateConiferCrowns(
             string name,
             IReadOnlyList<MountainRoadForestDescriptor> trees)
@@ -31,10 +40,16 @@ namespace BarPromenade
 
                 // One phase per tree, taken from where it stands, so a
                 // stand of crowns does not repeat the same needle patch at
-                // the same place on every trunk.
-                float phase = tree.Position.x + tree.Position.z;
+                // the same place on every trunk. Altitude is folded into
+                // the phase because V no longer carries it: V used to be
+                // absolute world height and its fractional part is what
+                // used to break the repeat VERTICALLY between neighbours.
+                float phase = tree.Position.x +
+                              tree.Position.z +
+                              tree.Position.y * 1.37f;
                 AppendCone(
                     tree.Position + Vector3.up * (tree.Height * 0.18f),
+                    tree.Position.y,
                     rotation,
                     tree.CrownRadius,
                     tree.Height * 0.56f,
@@ -46,6 +61,7 @@ namespace BarPromenade
                     triangles);
                 AppendCone(
                     tree.Position + Vector3.up * (tree.Height * 0.43f),
+                    tree.Position.y,
                     rotation,
                     tree.CrownRadius * 0.73f,
                     tree.Height * 0.57f,
@@ -57,7 +73,17 @@ namespace BarPromenade
                     triangles);
             }
 
-            return CreateMesh(name, uvs, vertices, triangles);
+            Mesh mesh = CreateMesh(name, uvs, vertices, triangles);
+
+            // The crowns bend in the shader, and Unity culls against the
+            // bounds the CPU baked. Without this headroom a stand at the
+            // edge of the frustum pops out the moment the wind leans it
+            // back in, and the shadow pass drops it a frame before the
+            // forward pass does.
+            Bounds bounds = mesh.bounds;
+            bounds.Expand(WindCullingHeadroom * 2f);
+            mesh.bounds = bounds;
+            return mesh;
         }
 
         internal static Mesh CreateBoulders(
@@ -111,13 +137,22 @@ namespace BarPromenade
         /// <summary>
         /// One skirt of a crown. Its UVs unroll the cone: U is the arc the
         /// vertex stands at, so a metre around the crown is a metre of
-        /// sheet, and V is world height, so needles never lie sideways and
-        /// the two stacked skirts of one tree stay in register. A cone's
-        /// facets own their vertices outright, which is why the wrap back to
-        /// zero needs no seam column.
+        /// sheet, and V is height above THIS TREE'S OWN FOOT, so needles
+        /// never lie sideways and the two stacked skirts of one tree stay in
+        /// register. A cone's facets own their vertices outright, which is
+        /// why the wrap back to zero needs no seam column.
+        ///
+        /// V used to be absolute world height, which textures identically —
+        /// the sheet only cares about the metre pitch and each tree's own
+        /// phase already breaks the repeat. It is measured from the foot
+        /// because <c>MountainWindSway.hlsl</c> reads the bend lever out of
+        /// it, and it can only read UV0: the four passes that have to agree
+        /// on the displacement (forward, shadow, depth, depth-normals) share
+        /// no other vertex channel. See that file for the whole argument.
         /// </summary>
         private static void AppendCone(
             Vector3 baseCenter,
+            float treeFootY,
             Quaternion rotation,
             float radius,
             float height,
@@ -148,14 +183,14 @@ namespace BarPromenade
                 vertices.Add(second);
                 uvs.Add(new Vector2(
                     (phase + firstAngle * radius) * tilesPerMeter,
-                    first.y * tilesPerMeter));
+                    (first.y - treeFootY) * tilesPerMeter));
                 uvs.Add(new Vector2(
                     (phase + (firstAngle + secondAngle) * 0.5f * radius) *
                     tilesPerMeter,
-                    apex.y * tilesPerMeter));
+                    (apex.y - treeFootY) * tilesPerMeter));
                 uvs.Add(new Vector2(
                     (phase + secondAngle * radius) * tilesPerMeter,
-                    second.y * tilesPerMeter));
+                    (second.y - treeFootY) * tilesPerMeter));
                 triangles.Add(firstIndex);
                 triangles.Add(firstIndex + 1);
                 triangles.Add(firstIndex + 2);

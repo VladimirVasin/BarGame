@@ -69,6 +69,23 @@ namespace BarPromenade.Tests.EditMode
             };
 
         /// <summary>
+        /// The renderers that deliberately leave the one shared primitive
+        /// material, with what they left it for. They still take a sheet and
+        /// still answer with its surface response — only the vertex stage
+        /// differs. Everything not named here must keep the primitive
+        /// material: a stray per-object material is how batching dies
+        /// quietly, and the sweep below asserts the list is exact in both
+        /// directions.
+        /// </summary>
+        private static readonly Dictionary<string, string> ForeignMaterials =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                ["Physical Conifer Crowns"] = "bends in the wind",
+                ["Mid Conifer Crowns"] = "bends in the wind",
+                ["Far Conifer Crowns"] = "bends in the wind"
+            };
+
+        /// <summary>
         /// Imported prefab casts colour their own renderers through their
         /// own bindings; a sweep must stop at the subtree root.
         /// </summary>
@@ -261,6 +278,7 @@ namespace BarPromenade.Tests.EditMode
 
                 var seenPaths = new HashSet<string>(StringComparer.Ordinal);
                 var skipped = new HashSet<string>(StringComparer.Ordinal);
+                var foreign = new HashSet<string>(StringComparer.Ordinal);
                 int textured = 0;
                 Renderer[] renderers =
                     world.Root.GetComponentsInChildren<Renderer>(true);
@@ -319,6 +337,12 @@ namespace BarPromenade.Tests.EditMode
                         kind = expected;
                     }
 
+                    if (renderer.sharedMaterial !=
+                        RuntimePrimitiveFactory.DefaultMaterial)
+                    {
+                        foreign.Add(name);
+                    }
+
                     AssertSharedMaterialAndResponse(
                         renderer,
                         kind,
@@ -341,6 +365,13 @@ namespace BarPromenade.Tests.EditMode
                     Is.EquivalentTo(Excluded.Keys),
                     "The exclusion list must describe exactly the objects " +
                     "the built world actually leaves flat.");
+                Assert.That(
+                    foreign,
+                    Is.EquivalentTo(ForeignMaterials.Keys),
+                    "Exactly the named renderers may leave the shared " +
+                    "primitive material; a fourth one joining the foliage " +
+                    "material by accident is how a surface picks up wind " +
+                    "it was never meant to have.");
             }
             finally
             {
@@ -357,10 +388,23 @@ namespace BarPromenade.Tests.EditMode
         {
             HomeSurfaceRecipe recipe =
                 MountainRoadSurfaceAppearance.GetRecipe(kind);
-            Assert.That(
-                renderer.sharedMaterial,
-                Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial),
-                $"'{name}' must keep the one shared primitive material.");
+            if (ForeignMaterials.TryGetValue(name, out string reason))
+            {
+                Assert.That(
+                    renderer.sharedMaterial,
+                    Is.SameAs(MountainRoadSurfaceAppearance.FoliageMaterial),
+                    $"'{name}' {reason}, so it must carry the one shared " +
+                    "foliage material - never a per-object instance.");
+            }
+            else
+            {
+                Assert.That(
+                    renderer.sharedMaterial,
+                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial),
+                    $"'{name}' must keep the one shared primitive " +
+                    "material.");
+            }
+
             Assert.That(
                 properties.GetFloat(SmoothnessId),
                 Is.EqualTo(recipe.Smoothness).Within(0.0001f),

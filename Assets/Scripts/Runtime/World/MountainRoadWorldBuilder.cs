@@ -154,7 +154,11 @@ namespace BarPromenade
                 false,
                 ShadowCastingMode.Off,
                 MountainRoadSurfaceKind.Asphalt);
-            terminalApron.GetComponent<MeshRenderer>().receiveShadows = false;
+            // Casts nothing — a flat ground plate shadowing itself is acne
+            // and there is nothing underneath it — but it RECEIVES now. The
+            // car stops on this apron under its own headlights, and it is
+            // the surface the passenger is looking at when he gets out.
+            terminalApron.GetComponent<MeshRenderer>().receiveShadows = true;
             MountainRoadBridgeWorldResult bridge =
                 MountainRoadBridgeWorldBuilder.Build(
                     physicalRoot.transform,
@@ -363,6 +367,13 @@ namespace BarPromenade
                             tree.TrunkRadius * 2f)));
                 }
 
+                // Every layer casts and receives now, the far one included.
+                // It used to be excused as backdrop, but it stands 17-28 m
+                // out — inside both the shadow distance and the reach of
+                // the car's headlights — and during the climb it is the
+                // only thing between the beam and the void. A forest the
+                // headlights sweep without anything changing is the whole
+                // effect thrown away.
                 GameObject crowns = CreateMeshObject(
                     $"{layers[layerIndex]} Conifer Crowns",
                     root.transform,
@@ -371,12 +382,9 @@ namespace BarPromenade
                         trees),
                     crownColors[layerIndex],
                     false,
-                    layerIndex == 2
-                        ? ShadowCastingMode.Off
-                        : ShadowCastingMode.On,
-                    MountainRoadSurfaceKind.ConiferNeedles);
-                crowns.GetComponent<MeshRenderer>().receiveShadows =
-                    layerIndex != 2;
+                    ShadowCastingMode.On,
+                    MountainRoadSurfaceKind.ConiferNeedles,
+                    MountainRoadSurfaceAppearance.FoliageMaterial);
                 GameObject trunkBatch =
                     RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
                         $"{layers[layerIndex]} Conifer Trunks",
@@ -856,7 +864,8 @@ namespace BarPromenade
             Color color,
             bool collider,
             ShadowCastingMode shadowCasting,
-            MountainRoadSurfaceKind surface)
+            MountainRoadSurfaceKind surface,
+            Material sharedMaterial = null)
         {
             if (mesh == null)
             {
@@ -873,7 +882,8 @@ namespace BarPromenade
             MountainRoadSurfaceAppearance.ApplyCombined(
                 renderer,
                 surface,
-                color);
+                color,
+                sharedMaterial ?? RuntimePrimitiveFactory.DefaultMaterial);
             if (collider)
             {
                 result.AddComponent<MeshCollider>().sharedMesh = mesh;

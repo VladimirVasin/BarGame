@@ -40,6 +40,42 @@ namespace BarPromenade
         /// </summary>
         public const float DoorwayStandoff = 0.72f;
 
+        /// <summary>
+        /// When the hero's body is allowed to be moving, as fractions of his
+        /// own clips.
+        ///
+        /// Every one of these eight numbers is a KEY of those clips and none
+        /// of them is a taste. `CarBoardEnter` is authored `relaxed 0.0,
+        /// reach 0.10, pull 0.22, door_clear 0.34, seat_step 0.52,
+        /// seat_settle 0.66, seat_down 0.78, door_shut 0.90, seated 1.0`, and
+        /// `CarAlightExit` is that read backwards.
+        ///
+        /// The two HOLDS are the whole point of naming them. Without a hold
+        /// the pelvis starts travelling on the clip's first frame: the hero
+        /// was ninety-two per cent of the way from the dock to the doorway by
+        /// the time the leaf finished opening at `0.34`, so he walked through
+        /// a door he was simultaneously miming a pull on. The Ferryman never
+        /// did - `LastRouteFerrymanBoardingTimeline.TravelStartPhase` holds
+        /// his root at `0.36` until his own leaf stands open - and the two men
+        /// doing the same beat differently was the whole of the fault.
+        ///
+        /// The SETTLES are the same mistake at the far end: the pelvis used to
+        /// reach the seat only on the closing frame, so he was still sliding
+        /// down into it while the clip already had him seated and pulling the
+        /// leaf shut behind him.
+        ///
+        /// A test holds all four against the leaf's own phases, which is where
+        /// the contract actually lives.
+        /// </summary>
+        public const float EnterHoldProgress = 0.34f;
+        public const float EnterArrivalProgress = 0.52f;
+        public const float EnterDepartureProgress = 0.60f;
+        public const float EnterSettleProgress = 0.78f;
+        public const float ExitHoldProgress = 0.24f;
+        public const float ExitArrivalProgress = 0.52f;
+        public const float ExitDepartureProgress = 0.60f;
+        public const float ExitSettleProgress = 0.94f;
+
         public const float SeatClearance = 0.02f;
         // How far above the car's own ground the surface probe starts, and
         // therefore how much of a step up or down it can find.
@@ -220,10 +256,14 @@ namespace BarPromenade
             var transition = new PlayerAnimatedInteractionPelvisTransition(
                 PlayerCharacterDimensions.GetUprightPelvisPosition(
                     doorwayGround),
-                enterArrivalProgress: 0.42f,
-                enterDepartureProgress: 0.56f,
-                exitArrivalProgress: 0.44f,
-                exitDepartureProgress: 0.60f);
+                EnterArrivalProgress,
+                EnterDepartureProgress,
+                ExitArrivalProgress,
+                ExitDepartureProgress,
+                EnterHoldProgress,
+                EnterSettleProgress,
+                ExitHoldProgress,
+                ExitSettleProgress);
 
             Vector3 triggerCentre = dock;
             triggerCentre.y = groundY + TriggerHeight * 0.5f;

@@ -19,8 +19,13 @@ namespace BarPromenade
         public RetroAudioService Audio { get; private set; }
         public MountainRoadAtmosphere Atmosphere { get; private set; }
         public MountainRoadSoundscape Soundscape { get; private set; }
-        public CityRainField Rain { get; private set; }
-        public CityRainSoundPlayer RainSound { get; private set; }
+        /// <summary>The precipitation field, which up here falls as snow.
+        /// </summary>
+        public CityRainField Snow { get; private set; }
+
+        public MountainRoadWindSoundPlayer WindSound { get; private set; }
+        public MountainRoadWindDriver Wind { get; private set; }
+        public MountainRoadWeatherShaper WeatherShaper { get; private set; }
         public CityWeatherController Weather { get; private set; }
         public InteractionPromptView InteractionPrompt { get; private set; }
         public IntoxicationHudView IntoxicationHud { get; private set; }
@@ -200,7 +205,8 @@ namespace BarPromenade
                 transform,
                 LastRouteCarPlan.At(position, facing),
                 Player,
-                camera);
+                camera,
+                arrivingByCar);
             if (LastRouteCar == null)
             {
                 GameLog.Warning("mountain_road", "last_route_car_missing");
@@ -242,6 +248,12 @@ namespace BarPromenade
                 carRoot.GetComponent<LastRouteCarDriver>(),
                 LastRouteFerryman,
                 () => LastRouteMountainDrivePlanner.Create(Plan));
+
+            // The beams follow the journey directly. They used to be powered
+            // by the atmosphere, because the atmosphere was putting the sun
+            // out and the two had to move together; the sun stays up now, so
+            // a headlight is just a switch on a car again.
+            carRoot.GetComponent<LastRouteCarHeadlights>()?.Follow(Ride);
         }
 
         private void BuildAtmosphere(Camera camera)
@@ -254,28 +266,55 @@ namespace BarPromenade
             Atmosphere.Initialize(camera, Plan, World);
             Soundscape = MountainRoadSoundscape.Create(transform, Plan);
 
-            GameObject rainObject = new GameObject("Mountain Rain Field");
-            rainObject.transform.SetParent(transform, false);
-            Rain = rainObject.AddComponent<CityRainField>();
-            Rain.Initialize(
+            // The city's schedule, read as snow. The shaper is what makes it
+            // one: nothing here re-rolls the weather, so the slot the city is
+            // in is the slot this is, and the mountain simply receives it
+            // frozen and harder the higher you get.
+            WeatherShaper = new MountainRoadWeatherShaper(
+                Player.GameObject.transform,
+                Plan.Route.Start.y,
+                Plan.Route.End.y);
+
+            GameObject snowObject = new GameObject("Mountain Snow Field");
+            snowObject.transform.SetParent(transform, false);
+            Snow = snowObject.AddComponent<CityRainField>();
+            Snow.Initialize(
                 Player.GameObject.transform,
                 CityNightResources.AtmosphereMaterial,
                 Plan.Seed,
-                GameWeatherRules.EvaluateCurrent().RainIntensity);
+                WeatherShaper
+                    .ShapePrecipitation(GameWeatherRules.EvaluateCurrent())
+                    .RainIntensity,
+                CityPrecipitationKind.Snow);
 
-            GameObject rainSoundObject = new GameObject(
-                "Mountain Rain Sound");
-            rainSoundObject.transform.SetParent(transform, false);
-            RainSound = rainSoundObject
-                .AddComponent<CityRainSoundPlayer>();
+            // No rain bed up here: snow is silent, and what the climb sounds
+            // like is the wind driving it sideways.
+            GameObject windSoundObject = new GameObject("Mountain Wind Bed");
+            windSoundObject.transform.SetParent(transform, false);
+            WindSound = windSoundObject
+                .AddComponent<MountainRoadWindSoundPlayer>();
             Weather = gameObject.AddComponent<CityWeatherController>();
             Weather.Initialize(
-                Rain,
-                RainSound,
+                Snow,
+                null,
                 null,
                 null,
                 camera.transform,
-                IsSheltered);
+                IsSheltered,
+                WeatherShaper);
+
+            GameObject windObject = new GameObject("Mountain Wind Driver");
+            windObject.transform.SetParent(transform, false);
+            Wind = windObject.AddComponent<MountainRoadWindDriver>();
+            Wind.Initialize(
+                Weather,
+                WeatherShaper,
+                WindSound,
+                Plan.Route.Start.y,
+                Plan.Route.End.y,
+                MountainRoadSurfaceAppearance
+                    .GetRecipe(MountainRoadSurfaceKind.ConiferNeedles)
+                    .MetersPerTile);
         }
 
         private void BuildCommonUi(GameObject ui)

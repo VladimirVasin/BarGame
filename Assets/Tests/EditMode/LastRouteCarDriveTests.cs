@@ -345,5 +345,349 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(model.Distance, Is.EqualTo(0f));
             Assert.That(model.Speed, Is.EqualTo(0f));
         }
+
+        [Test]
+        public void Model_StopsAtAHoldAndGoesAgainWhenItIsLifted()
+        {
+            LastRouteCarDrivePath path = BuildStraight(120f);
+            var model = new LastRouteCarDriveModel(
+                path,
+                LastRouteCarDriveProfile.City);
+            model.SetHold(60f);
+
+            Advance(model, 30f);
+
+            Assert.That(
+                model.Distance,
+                Is.EqualTo(60f).Within(0.35f),
+                "A car held at a line settles onto it, the same way it " +
+                "settles onto the end of the road.");
+            Assert.That(model.Speed, Is.LessThan(0.05f));
+            Assert.That(
+                model.HasArrived,
+                Is.False,
+                "Waiting is not arriving. The seat's exit is gated on the " +
+                "car being finished, and a passenger let out at a give-way " +
+                "line steps into moving traffic.");
+            Assert.That(model.IsWaiting, Is.True);
+
+            model.ReleaseHold();
+            Advance(model, 30f);
+
+            Assert.That(model.HasArrived, Is.True);
+            Assert.That(model.IsWaiting, Is.False);
+        }
+
+        [Test]
+        public void Model_BrakesForAHoldRatherThanBeingStoppedAtIt()
+        {
+            LastRouteCarDrivePath path = BuildStraight(200f);
+            var model = new LastRouteCarDriveModel(
+                path,
+                LastRouteCarDriveProfile.City);
+            Advance(model, 20f);
+            float cruising = model.Speed;
+            Assert.That(
+                cruising,
+                Is.GreaterThan(6f),
+                "It has to be up to speed for this to prove anything.");
+
+            // Armed with barely enough road to stop in. The point is that it
+            // costs the hardest stop the car has and a little overshoot -
+            // never a frame in which the car simply is not where it was.
+            model.SetHold(model.Distance + 8f);
+            float worstStep = 0f;
+            float previous = model.Distance;
+            for (int frame = 0; frame < 600; frame++)
+            {
+                model.Advance(1f / 60f);
+                worstStep = Mathf.Max(worstStep, model.Distance - previous);
+                previous = model.Distance;
+            }
+
+            Assert.That(
+                worstStep,
+                Is.LessThan(cruising / 60f + 0.001f),
+                "The car jumped. A hold is a speed ceiling, never a clamp " +
+                "on where the car is allowed to be.");
+            Assert.That(
+                model.Speed,
+                Is.LessThan(0.05f),
+                "And it does come to rest.");
+        }
+
+        [Test]
+        public void GiveWay_HoldsWhileTheWayIsBlockedAndGoesWhenItClears()
+        {
+            var decision = new LastRouteCarGiveWayModel(40f);
+
+            // Walked in from thirty metres out with something coming.
+            float hold = float.PositiveInfinity;
+            for (float distance = 10f; distance <= 39f; distance += 0.5f)
+            {
+                hold = decision.Advance(0.1f, distance, 3f, 2.6f, false);
+            }
+
+            Assert.That(hold, Is.EqualTo(40f));
+            Assert.That(decision.IsGivingWay, Is.True);
+            Assert.That(decision.IsCommitted, Is.False);
+
+            // Standing at the line. It clears, he waits a beat, he goes.
+            hold = decision.Advance(0.1f, 40f, 0f, 2.6f, true);
+            Assert.That(
+                hold,
+                Is.EqualTo(40f),
+                "One clear frame is a walker between footfalls, not a gap.");
+
+            for (int step = 0; step < 8; step++)
+            {
+                hold = decision.Advance(0.1f, 40f, 0f, 2.6f, true);
+            }
+
+            Assert.That(decision.IsCommitted, Is.True);
+            Assert.That(decision.CommitReason, Is.EqualTo("clear"));
+            Assert.That(hold, Is.EqualTo(float.PositiveInfinity));
+
+            // And it stays gone: the car is in the turn now.
+            Assert.That(
+                decision.Advance(0.1f, 41f, 2f, 2.6f, false),
+                Is.EqualTo(float.PositiveInfinity),
+                "Nothing seen from inside the turn can stop the car in it.");
+        }
+
+        [Test]
+        public void GiveWay_DoesNotStandOnTheBrakesThroughItsOwnLine()
+        {
+            var decision = new LastRouteCarGiveWayModel(40f);
+
+            // Blocked with eight metres to go at cruise, which needs almost
+            // thirteen to stop in. A driver past the point of no return takes
+            // the turn; braking through a line he is already over is worse,
+            // and holding him there is the game stuttering.
+            float hold = decision.Advance(1f / 60f, 32f, 8.2f, 2.6f, false);
+
+            Assert.That(hold, Is.EqualTo(float.PositiveInfinity));
+            Assert.That(decision.IsCommitted, Is.True);
+            Assert.That(decision.CommitReason, Is.EqualTo("too_late"));
+        }
+
+        [Test]
+        public void GiveWay_IgnoresWhatItSeesFromUpTheRoad()
+        {
+            var decision = new LastRouteCarGiveWayModel(200f);
+
+            // A bus crossing the mouth while the car is still a block away
+            // is not a reason to wait, and - the part that matters - not a
+            // reason to spend the clock that stops him waiting for ever.
+            for (int step = 0; step < 600; step++)
+            {
+                decision.Advance(0.1f, 20f, 8.2f, 2.6f, false);
+            }
+
+            Assert.That(decision.IsCommitted, Is.False);
+            Assert.That(decision.IsGivingWay, Is.False);
+            Assert.That(
+                decision.WaitedSeconds,
+                Is.EqualTo(0f),
+                "A whole minute of blocked crossing seen from a hundred and " +
+                "eighty metres away has burnt the wait budget before the " +
+                "car ever arrives.");
+        }
+
+        [Test]
+        public void GiveWay_NeverWaitsForEver()
+        {
+            var decision = new LastRouteCarGiveWayModel(40f);
+
+            // Somebody has stalled on the kerb. This is the one ride out of
+            // the city with the hero in the passenger seat: a pedestrian who
+            // stops walking must not be able to end the game.
+            float hold = float.PositiveInfinity;
+            float waited = 0f;
+            while (!decision.IsCommitted && waited < 60f)
+            {
+                hold = decision.Advance(0.1f, 40f, 0f, 2.6f, false);
+                waited += 0.1f;
+            }
+
+            Assert.That(decision.IsCommitted, Is.True);
+            Assert.That(decision.CommitReason, Is.EqualTo("waited_out"));
+            Assert.That(hold, Is.EqualTo(float.PositiveInfinity));
+            Assert.That(
+                waited,
+                Is.EqualTo(LastRouteCarGiveWayModel.MaximumWaitSeconds)
+                    .Within(0.2f));
+        }
+
+        [Test]
+        public void GiveWay_LetsAClearRoadRunAtTheLineWithoutSlowing()
+        {
+            var decision = new LastRouteCarGiveWayModel(40f);
+
+            for (float distance = 0f; distance <= 20f; distance += 0.5f)
+            {
+                Assert.That(
+                    decision.Advance(0.1f, distance, 8.2f, 2.6f, true),
+                    Is.EqualTo(float.PositiveInfinity),
+                    $"The car is being braked at {distance:0.0} m for a " +
+                    "crossing that is clear.");
+            }
+
+            Assert.That(
+                decision.IsCommitted,
+                Is.False,
+                "Clear from up the road is not a decision. Something can " +
+                "still pull out in front of him before he gets there.");
+        }
+
+        /// <summary>
+        /// A left turn off a street running west, across the oncoming lane
+        /// and into a mouth on the far side - the shape of the only crossing
+        /// either leg has. The car waits at `(0, 0)` pointing west.
+        /// </summary>
+        private static LastRouteCarGiveWayPoint BuildCrossing()
+        {
+            return new LastRouteCarGiveWayPoint(
+                40f,
+                new Vector3(-6f, 0f, 0f),
+                new Vector3(-6f, 0f, -5.5f));
+        }
+
+        private static readonly Vector3 Westward = new Vector3(-1f, 0f, 0f);
+
+        [Test]
+        public void GiveWay_WaitsForABusComingTheOtherWay()
+        {
+            LastRouteCarGiveWayPoint crossing = BuildCrossing();
+
+            // In the oncoming lane, `1.5 m` the far side of the crown,
+            // twenty metres away and coming this way.
+            Assert.That(
+                LastRouteCarGiveWay.IsCrossedByVehicle(
+                    crossing,
+                    Westward,
+                    new Vector3(-26f, 0f, -3f),
+                    Vector3.right,
+                    6f,
+                    4.1f),
+                Is.True,
+                "A bus about to drive through the turn is the whole reason " +
+                "there is a line to stop at.");
+        }
+
+        [Test]
+        public void GiveWay_DoesNotWaitForABusFollowingHimDownHisOwnLane()
+        {
+            LastRouteCarGiveWayPoint crossing = BuildCrossing();
+
+            // The crossing STARTS in the car's own lane, and Route 01 lays
+            // its links at the same offset off the same crown - so a bus
+            // simply following the car sweeps straight through the crossing.
+            // Direction-agnostically that reads as traffic, and the car sits
+            // at the line until the wait runs out with nothing crossing it.
+            Assert.That(
+                LastRouteCarGiveWay.IsCrossedByVehicle(
+                    crossing,
+                    Westward,
+                    new Vector3(14f, 0f, 0f),
+                    Westward,
+                    6f,
+                    4.1f),
+                Is.False,
+                "A bus behind him in his own lane is traffic he is in, not " +
+                "traffic he crosses.");
+        }
+
+        [Test]
+        public void GiveWay_SeesABusStoppedWithItsTailAcrossTheMouth()
+        {
+            LastRouteCarGiveWayPoint crossing = BuildCrossing();
+
+            // Dwelling, so no speed to sweep with, and reported at the middle
+            // of eight metres of body. Its nose is well past the mouth and
+            // its tail is over it.
+            Assert.That(
+                LastRouteCarGiveWay.IsCrossedByVehicle(
+                    crossing,
+                    Westward,
+                    new Vector3(-2f, 0f, -3f),
+                    Vector3.right,
+                    0f,
+                    4.1f),
+                Is.True,
+                "A bus is eight metres long and it is reported at its " +
+                "middle. Sweeping only forwards leaves its tail invisible.");
+        }
+
+        [Test]
+        public void GiveWay_WaitsForSomeoneAboutToStepOntoTheCrossing()
+        {
+            LastRouteCarGiveWayPoint crossing = BuildCrossing();
+
+            // Standing clear, but walking straight at it - a metre and a
+            // half's warning at a stride.
+            Assert.That(
+                LastRouteCarGiveWay.IsWalkedInto(
+                    crossing,
+                    new Vector3(-8.5f, 0f, -3f),
+                    Vector3.right,
+                    1.3f,
+                    0.35f),
+                Is.True,
+                "Where he will be beats where he is: a walker read only at " +
+                "his own feet is one the car has already passed.");
+
+            Assert.That(
+                LastRouteCarGiveWay.IsWalkedInto(
+                    crossing,
+                    new Vector3(-8.5f, 0f, -3f),
+                    Vector3.left,
+                    1.3f,
+                    0.35f),
+                Is.False,
+                "And the same man walking away from it is not in the way.");
+        }
+
+        [Test]
+        public void GiveWay_MeasuresTheGapBetweenTwoStretchesOfRoad()
+        {
+            // Crossing segments touch at zero, whatever their ends do.
+            Assert.That(
+                LastRouteCarGiveWay.SegmentDistance(
+                    new Vector3(-10f, 0f, -3f),
+                    new Vector3(10f, 0f, -3f),
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(0f, 0f, -6f)),
+                Is.EqualTo(0f).Within(0.001f));
+
+            // Parallel and apart is the gap between them, and height is not
+            // part of it - the forecourt sits below the street it opens off.
+            Assert.That(
+                LastRouteCarGiveWay.SegmentDistance(
+                    new Vector3(-10f, 9f, 4f),
+                    new Vector3(10f, 9f, 4f),
+                    new Vector3(-10f, 0f, 0f),
+                    new Vector3(10f, 0f, 0f)),
+                Is.EqualTo(4f).Within(0.001f));
+
+            // A degenerate segment is a point, not a divide by zero.
+            Assert.That(
+                LastRouteCarGiveWay.SegmentDistance(
+                    new Vector3(3f, 0f, 0f),
+                    new Vector3(3f, 0f, 0f),
+                    new Vector3(0f, 0f, 0f),
+                    new Vector3(0f, 0f, -6f)),
+                Is.EqualTo(3f).Within(0.001f));
+        }
+
+        private static void Advance(
+            LastRouteCarDriveModel model,
+            float seconds)
+        {
+            for (float elapsed = 0f; elapsed < seconds; elapsed += 1f / 60f)
+            {
+                model.Advance(1f / 60f);
+            }
+        }
     }
 }

@@ -54,8 +54,13 @@ namespace BarPromenade
         /// pointed at the street.</summary>
         public const float LotExitLeadMeters = 5f;
 
-        /// <summary>Straight runs are cut this fine, so a long approach still
-        /// has vertices for the corner rounding to work with.</summary>
+        /// <summary>
+        /// How fine the finished road is cut, once every corner in it has
+        /// been rounded. The drive model reads the road ahead by walking
+        /// VERTICES, so a road sampled block by block is one it can barely
+        /// see; this brings the city up to the metre the mountain route
+        /// already arrives at.
+        /// </summary>
         public const float StraightStepMeters = 1.5f;
 
         /// <summary>
@@ -67,6 +72,16 @@ namespace BarPromenade
 
         /// <summary>Below this a vertex is a straight, not a corner.</summary>
         public const float CornerAngleThresholdDegrees = 4f;
+
+        /// <summary>
+        /// How far back from the turn the car stops when it has to give way.
+        ///
+        /// Measured to the car's MIDDLE, which is what the drive model moves,
+        /// so it is the corner's own cut plus about half a car: the nose then
+        /// sits where the turn begins, square in its own lane, and nothing of
+        /// it is over the crown of the road while it waits.
+        /// </summary>
+        public const float GiveWayStandoffMeters = CornerRadiusMeters + 2f;
 
         /// <summary>
         /// Steeper than this is not a road. On this terrain nothing should
@@ -91,40 +106,130 @@ namespace BarPromenade
 
             var points = new List<Vector3> { carPlan.Position };
             Vector3 streetAnchor = forecourt.StreetAnchor;
-            if (!TryAppendStreets(points, carPlan, layout, streetAnchor))
+            bool hasTurn = TryAppendStreets(
+                points,
+                carPlan,
+                layout,
+                streetAnchor,
+                out Vector3 turnFrom,
+                out Vector3 laneDirection,
+                out float laneRun);
+            if (!hasTurn)
             {
                 // No layout, or nothing on it reachable. He still leaves.
                 GameLog.Warning("lastroute", "departure_streets_unavailable");
-                AppendStraight(points, streetAnchor);
             }
 
-            AppendStraight(points, forecourt.PortalAnchor);
+            Append(points, streetAnchor);
 
+            // The portal is ONE vertex, carrying the tunnel floor's own
+            // height, and not the forecourt ground followed by a step up onto
+            // that floor.
+            //
+            // The two differ by the `3 cm` throat lift and by nothing else -
+            // same X, same Z - so a pair of them is a segment pointing
+            // straight up. `BuildVertexForwards` averages the segments meeting
+            // at a vertex, which turns a riser of any height into a forward
+            // pitched forty-five degrees, and `Sample` then slerps the car
+            // into and out of it across whatever its neighbours are. That was
+            // survivable while the neighbours were the centimetre-and-a-half
+            // ends of a rounded corner; once every leg reaches the rounder at
+            // full length it is a metre and a half either side, and the car
+            // rears up in the hero's face at the mouth. The lift now rides the
+            // approach as a `0.2%` grade instead.
             Vector3 axis = forecourt.Axis.normalized;
             Vector3 mouth = forecourt.PortalAnchor;
             mouth.y = tunnelFloorSurfaceY;
-            AppendStraight(points, mouth);
-            AppendStraight(points, mouth + (axis * TunnelBlackoutDepth));
+            Append(points, mouth);
+            Append(points, mouth + (axis * TunnelBlackoutDepth));
 
-            // Rounded first, then cut fine. The other way round would cap
-            // every corner's cut at half a short segment and leave the arcs
-            // barely bent, because a junction on this grid is a right angle
-            // with twenty-five metres of straight either side of it.
-            return new LastRouteCarDrivePath(
-                Subdivide(RoundCorners(points)));
+            // Straightened, then rounded, then cut fine, and the order is the
+            // whole reason the turn into the forecourt reads as a turn.
+            //
+            // A corner's cut is capped at half of the shorter leg meeting it,
+            // so a corner can only be rounded as hard as its neighbours are
+            // long. Every leg therefore has to reach `RoundCorners` at its
+            // FULL length - which is why nothing before this point subdivides
+            // anything, and why the collinear vertices the forecourt run
+            // carries are dropped first. The fine sampling the drive model
+            // reads the road by is put back at the end, on a road that has
+            // already been bent.
+            var road = new LastRouteCarDrivePath(
+                Subdivide(RoundCorners(Straighten(points))));
+            if (hasTurn)
+            {
+                road.DeclareGiveWay(
+                    ResolveGiveWay(
+                        road,
+                        turnFrom,
+                        laneDirection,
+                        laneRun,
+                        streetAnchor));
+            }
+
+            return road;
+        }
+
+        /// <summary>
+        /// Where the car stops if it has to let something past, and what it
+        /// is letting past.
+        ///
+        /// The stop line is measured back up the LANE from the turn, not back
+        /// along the finished road, because the finished road has an arc
+        /// where the turn is and a point on an arc is already committed to
+        /// it. Backing up the straight the arc leaves from puts the line on
+        /// the one stretch where a stopped car is still just a car in a lane.
+        ///
+        /// And never further back than that lane is long. On a short enough
+        /// block the standoff would walk the line off the end of it, and
+        /// <see cref="LastRouteCarDrivePath.FindNearestDistance"/> would then
+        /// answer with whatever part of the road happened to pass nearest -
+        /// which on a grid is a street at right angles to this one.
+        /// </summary>
+        private static LastRouteCarGiveWayPoint ResolveGiveWay(
+            LastRouteCarDrivePath road,
+            Vector3 turnFrom,
+            Vector3 laneDirection,
+            float laneRun,
+            Vector3 streetAnchor)
+        {
+            Vector3 stopLine = turnFrom -
+                               (laneDirection *
+                                Mathf.Min(GiveWayStandoffMeters, laneRun));
+            return new LastRouteCarGiveWayPoint(
+                road.FindNearestDistance(stopLine),
+                turnFrom,
+                streetAnchor);
         }
 
         /// <summary>
         /// The whole street middle: joins the grid at the junction nearest the
-        /// lot, walks it to the junction nearest the forecourt's street
-        /// anchor, and lays the result out in the right-hand lane.
+        /// lot, walks it to the block the forecourt opens onto, and lays the
+        /// result out in the right-hand lane as far as the turning itself.
+        ///
+        /// It stops AT THE TURNING and not at a junction, and that is the
+        /// difference between a car that turns off where the tunnel is and
+        /// one that drives past it. The forecourt opening sits halfway along
+        /// its block - `CitySurfacePlan` puts an access centre at the middle
+        /// of its frontage edge - so both ends of that block are the same
+        /// distance from it, to the centimetre. Routing to "the nearest
+        /// junction" was therefore a coin toss between them, it came down on
+        /// the far one, and the car drove thirteen metres past its own
+        /// turning and swung back through a hundred and thirty-five degrees
+        /// to reach it.
         /// </summary>
         private static bool TryAppendStreets(
             List<Vector3> points,
             LastRouteCarPlan carPlan,
             CityLayout layout,
-            Vector3 streetAnchor)
+            Vector3 streetAnchor,
+            out Vector3 turnFrom,
+            out Vector3 laneDirection,
+            out float laneRun)
         {
+            turnFrom = streetAnchor;
+            laneDirection = Vector3.forward;
+            laneRun = 0f;
             if (layout == null)
             {
                 return false;
@@ -141,42 +246,237 @@ namespace BarPromenade
             // is the one that way rather than the nearest one behind it.
             Vector3 probe = carPlan.Position +
                             (carPlan.Facing * LotExitLeadMeters);
-            if (!TryFindNearestNode(layout, graph, probe, out Vector2Int from) ||
-                !TryFindNearestNode(
-                    layout,
-                    graph,
-                    streetAnchor,
-                    out Vector2Int to))
+            if (!TryFindNearestNode(layout, graph, probe, out Vector2Int from))
             {
                 return false;
             }
 
-            if (!TryFindRoute(
+            if (!TryFindTurnOff(
+                    layout,
+                    streetAnchor,
+                    out Vector2Int firstEnd,
+                    out Vector2Int secondEnd,
+                    out Vector3 foot))
+            {
+                return false;
+            }
+
+            if (!TryRouteToBlock(
                     layout,
                     graph,
                     from,
-                    to,
-                    out List<Vector2Int> route))
+                    firstEnd,
+                    secondEnd,
+                    foot,
+                    out List<Vector2Int> route,
+                    out Vector2Int entry,
+                    out Vector2Int exit))
             {
                 return false;
             }
 
-            IReadOnlyList<Vector3> lane = BuildLane(layout, route);
-            if (lane.Count == 0)
+            laneDirection = Flatten(
+                layout.GetNodeWorldPosition(exit) -
+                layout.GetNodeWorldPosition(entry));
+            if (laneDirection.sqrMagnitude < 0.000001f)
             {
                 return false;
             }
+
+            laneDirection = laneDirection.normalized;
+
+            // The far end of the block is carried into the lane solve and
+            // then dropped. It is there only so the junction the car turns AT
+            // is mitered as a corner between two streets rather than as the
+            // end of the road; the car never reaches it.
+            var laneRoute = new List<Vector2Int>(route.Count + 1);
+            laneRoute.AddRange(route);
+            laneRoute.Add(exit);
+            IReadOnlyList<Vector3> lane = BuildLane(layout, laneRoute);
+            if (lane.Count < 2)
+            {
+                return false;
+            }
+
+            turnFrom = foot +
+                       (Vector3.Cross(Vector3.up, laneDirection) *
+                        LaneCenterOffsetMeters);
+
+            // How much lane there is behind the turning, which is all the
+            // room a car waiting to take it has.
+            laneRun = Vector3.Distance(
+                Flatten(lane[lane.Count - 2]),
+                Flatten(turnFrom));
 
             // Pulling away off the lot: a short bend from where it is parked
             // onto the road, rather than a corner at the kerb.
             AppendLotExit(points, carPlan, lane[0]);
-            for (int index = 0; index < lane.Count; index++)
+            for (int index = 0; index < lane.Count - 1; index++)
             {
                 Append(points, lane[index]);
             }
 
-            AppendStraight(points, streetAnchor);
+            Append(points, turnFrom);
             return true;
+        }
+
+        /// <summary>
+        /// The block of street the forecourt opens onto, and the point on its
+        /// middle square with that opening.
+        ///
+        /// Nearest SEGMENT rather than nearest node, because that is the
+        /// question actually being asked: which stretch of road does this
+        /// driveway come off. The foot is then held back from both ends by a
+        /// corner radius so that the turn out of the block and the turn into
+        /// the forecourt are two corners with room between them instead of
+        /// one unroundable kink - and on a block too short to hold both, the
+        /// middle is the least bad place to put it.
+        /// </summary>
+        private static bool TryFindTurnOff(
+            CityLayout layout,
+            Vector3 streetAnchor,
+            out Vector2Int first,
+            out Vector2Int second,
+            out Vector3 foot)
+        {
+            first = default;
+            second = default;
+            foot = streetAnchor;
+            float best = float.PositiveInfinity;
+            bool found = false;
+            for (int index = 0; index < layout.RoadEdges.Count; index++)
+            {
+                RoadEdge edge = layout.RoadEdges[index];
+                if (!IsDrivable(layout, edge))
+                {
+                    continue;
+                }
+
+                Vector3 a = layout.GetNodeWorldPosition(edge.A);
+                Vector3 b = layout.GetNodeWorldPosition(edge.B);
+                Vector3 candidate = ClosestPointOnSegment(a, b, streetAnchor);
+                float distance = PlanarDistanceSquared(candidate, streetAnchor);
+                if (distance >= best)
+                {
+                    continue;
+                }
+
+                best = distance;
+                first = edge.A;
+                second = edge.B;
+                foot = candidate;
+                found = true;
+            }
+
+            if (!found)
+            {
+                return false;
+            }
+
+            Vector3 start = layout.GetNodeWorldPosition(first);
+            Vector3 end = layout.GetNodeWorldPosition(second);
+            float block = Vector3.Distance(
+                Flatten(start),
+                Flatten(end));
+            float along = Vector3.Distance(Flatten(start), Flatten(foot));
+            float held = block > CornerRadiusMeters * 2f
+                ? Mathf.Clamp(
+                    along,
+                    CornerRadiusMeters,
+                    block - CornerRadiusMeters)
+                : block * 0.5f;
+            foot = Vector3.Lerp(
+                start,
+                end,
+                block > 0.001f ? held / block : 0.5f);
+            return true;
+        }
+
+        /// <summary>
+        /// Which end of the turning's own block the car arrives at, and the
+        /// route there.
+        ///
+        /// Both ends are costed, and the cost includes the run back along the
+        /// block to the turning - otherwise the far end wins on a technicality
+        /// whenever the route to it happens to be shorter by less than the
+        /// block. Which end wins also decides which LANE the car is in when it
+        /// gets there, which is the whole reason the turn is a give-way at
+        /// all: arriving from one side it crosses the oncoming carriageway,
+        /// and from the other it does not.
+        /// </summary>
+        private static bool TryRouteToBlock(
+            CityLayout layout,
+            Dictionary<Vector2Int, List<Vector2Int>> graph,
+            Vector2Int from,
+            Vector2Int first,
+            Vector2Int second,
+            Vector3 foot,
+            out List<Vector2Int> route,
+            out Vector2Int entry,
+            out Vector2Int exit)
+        {
+            bool hasFirst = TryFindRoute(
+                layout,
+                graph,
+                from,
+                first,
+                out List<Vector2Int> toFirst);
+            bool hasSecond = TryFindRoute(
+                layout,
+                graph,
+                from,
+                second,
+                out List<Vector2Int> toSecond);
+            float firstCost = hasFirst
+                ? MeasureRoute(layout, toFirst) +
+                  Vector3.Distance(
+                      Flatten(layout.GetNodeWorldPosition(first)),
+                      Flatten(foot))
+                : float.PositiveInfinity;
+            float secondCost = hasSecond
+                ? MeasureRoute(layout, toSecond) +
+                  Vector3.Distance(
+                      Flatten(layout.GetNodeWorldPosition(second)),
+                      Flatten(foot))
+                : float.PositiveInfinity;
+            if (float.IsPositiveInfinity(firstCost) &&
+                float.IsPositiveInfinity(secondCost))
+            {
+                route = null;
+                entry = default;
+                exit = default;
+                return false;
+            }
+
+            if (firstCost <= secondCost)
+            {
+                route = toFirst;
+                entry = first;
+                exit = second;
+            }
+            else
+            {
+                route = toSecond;
+                entry = second;
+                exit = first;
+            }
+
+            return route != null && route.Count > 0;
+        }
+
+        private static float MeasureRoute(
+            CityLayout layout,
+            IReadOnlyList<Vector2Int> route)
+        {
+            float length = 0f;
+            for (int index = 1; index < route.Count; index++)
+            {
+                length += Vector3.Distance(
+                    layout.GetNodeWorldPosition(route[index - 1]),
+                    layout.GetNodeWorldPosition(route[index]));
+            }
+
+            return length;
         }
 
         /// <summary>
@@ -191,16 +491,7 @@ namespace BarPromenade
             for (int index = 0; index < layout.RoadEdges.Count; index++)
             {
                 RoadEdge edge = layout.RoadEdges[index];
-                if (layout.GetPathKind(edge) != CityPathKind.Street)
-                {
-                    continue;
-                }
-
-                Vector3 a = layout.GetNodeWorldPosition(edge.A);
-                Vector3 b = layout.GetNodeWorldPosition(edge.B);
-                float run = Vector3.ProjectOnPlane(b - a, Vector3.up).magnitude;
-                if (run > 0.01f &&
-                    Mathf.Abs(b.y - a.y) / run > MaximumDrivableGrade)
+                if (!IsDrivable(layout, edge))
                 {
                     continue;
                 }
@@ -210,6 +501,24 @@ namespace BarPromenade
             }
 
             return graph;
+        }
+
+        /// <summary>
+        /// A street a saloon could take. Park paths are gravel between
+        /// benches, and nothing this steep is a road.
+        /// </summary>
+        private static bool IsDrivable(CityLayout layout, RoadEdge edge)
+        {
+            if (layout.GetPathKind(edge) != CityPathKind.Street)
+            {
+                return false;
+            }
+
+            Vector3 a = layout.GetNodeWorldPosition(edge.A);
+            Vector3 b = layout.GetNodeWorldPosition(edge.B);
+            float run = Vector3.ProjectOnPlane(b - a, Vector3.up).magnitude;
+            return run <= 0.01f ||
+                   Mathf.Abs(b.y - a.y) / run <= MaximumDrivableGrade;
         }
 
         private static void Link(
@@ -441,19 +750,6 @@ namespace BarPromenade
             }
         }
 
-        private static void AppendStraight(List<Vector3> points, Vector3 to)
-        {
-            Vector3 from = points[points.Count - 1];
-            float span = Vector3.Distance(from, to);
-            int steps = Mathf.Max(
-                1,
-                Mathf.CeilToInt(span / StraightStepMeters));
-            for (int index = 1; index <= steps; index++)
-            {
-                Append(points, Vector3.Lerp(from, to, index / (float)steps));
-            }
-        }
-
         private static void Append(List<Vector3> points, Vector3 point)
         {
             if (points.Count > 0 &&
@@ -467,9 +763,56 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Drops every vertex that is not a corner.
+        ///
+        /// A corner can only be cut as deep as half its shorter leg, so a
+        /// vertex sitting in the middle of a straight is not free: it halves
+        /// what the corners either side of it are allowed to be. The forecourt
+        /// run carries three such - the street anchor and the two the tunnel
+        /// mouth's own floor height puts in - all of them dead in line with
+        /// the axis, and between them they held the turn into the forecourt
+        /// to a cut of under three metres.
+        ///
+        /// Endpoints are never dropped, and neither is a vertex whose
+        /// neighbours are directly above or below it: those are the tunnel
+        /// floor step, they turn the car through nothing, and flattening them
+        /// leaves no direction to judge.
+        /// </summary>
+        private static List<Vector3> Straighten(List<Vector3> points)
+        {
+            if (points.Count < 3)
+            {
+                return points;
+            }
+
+            var kept = new List<Vector3> { points[0] };
+            for (int index = 1; index < points.Count - 1; index++)
+            {
+                Vector3 incoming = Flatten(points[index] - kept[kept.Count - 1]);
+                Vector3 outgoing = Flatten(points[index + 1] - points[index]);
+                if (incoming.sqrMagnitude < 0.000001f ||
+                    outgoing.sqrMagnitude < 0.000001f ||
+                    Vector3.Angle(incoming, outgoing) >=
+                    CornerAngleThresholdDegrees)
+                {
+                    Append(kept, points[index]);
+                }
+            }
+
+            Append(kept, points[points.Count - 1]);
+            return kept;
+        }
+
+        /// <summary>
         /// Cuts every genuine corner into a small arc. Endpoints are never
         /// moved - the first point is where the car is actually parked, and
         /// the last is the point the blackout is measured at.
+        ///
+        /// The turn is measured on the GROUND PLANE, matching
+        /// <see cref="LastRouteCarDrivePath"/>'s own curvature: what a corner
+        /// costs the car is how hard the road turns, not how steeply it
+        /// climbs, and the run into the tunnel steps down onto the floor
+        /// without turning at all.
         /// </summary>
         private static List<Vector3> RoundCorners(List<Vector3> points)
         {
@@ -486,13 +829,14 @@ namespace BarPromenade
                 Vector3 next = points[index + 1];
                 Vector3 incoming = corner - previous;
                 Vector3 outgoing = next - corner;
-                if (incoming.sqrMagnitude < 0.000001f ||
-                    outgoing.sqrMagnitude < 0.000001f)
+                if (Flatten(incoming).sqrMagnitude < 0.000001f ||
+                    Flatten(outgoing).sqrMagnitude < 0.000001f)
                 {
+                    Append(rounded, corner);
                     continue;
                 }
 
-                if (Vector3.Angle(incoming, outgoing) <
+                if (Vector3.Angle(Flatten(incoming), Flatten(outgoing)) <
                     CornerAngleThresholdDegrees)
                 {
                     Append(rounded, corner);
@@ -564,6 +908,28 @@ namespace BarPromenade
         {
             value.y = 0f;
             return value;
+        }
+
+        /// <summary>
+        /// The point on a street segment nearest a place beside it, chosen on
+        /// the ground plane and carrying the street's own height at that
+        /// point rather than the caller's.
+        /// </summary>
+        private static Vector3 ClosestPointOnSegment(
+            Vector3 from,
+            Vector3 to,
+            Vector3 point)
+        {
+            Vector3 run = Flatten(to - from);
+            float lengthSquared = run.sqrMagnitude;
+            if (lengthSquared < 0.000001f)
+            {
+                return from;
+            }
+
+            float t = Mathf.Clamp01(
+                Vector3.Dot(Flatten(point - from), run) / lengthSquared);
+            return Vector3.Lerp(from, to, t);
         }
 
         private static float PlanarDistanceSquared(

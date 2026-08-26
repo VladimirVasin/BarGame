@@ -772,7 +772,12 @@ namespace BarPromenade
                             departurePlan,
                             Layout,
                             forecourt,
-                            tunnelFloorY));
+                            tunnelFloorY),
+                        // The traffic he turns across. Both directors are
+                        // already up by here - the bus and the walkers are
+                        // raised long before the man on the bonnet is.
+                        Bus,
+                        Pedestrians);
                 }
             }
             BusRide = CityBusRideController.Create(

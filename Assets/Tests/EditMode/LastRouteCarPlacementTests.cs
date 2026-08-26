@@ -625,6 +625,203 @@ namespace BarPromenade.Tests.EditMode
                 $"outside the island's own {island.PublicBounds}.");
         }
 
+        /// <summary>
+        /// The imported-basis trap, seventh instance, and the first one that
+        /// blacked the screen out.
+        ///
+        /// The beams hang off the sprung body so they dip under braking, but
+        /// `LastRouteCarSuspension` copies that empty's `localRotation`
+        /// straight off the IMPORTED body node — whose forward on this car is
+        /// very nearly vertical. Aiming with a local Euler in that space threw
+        /// both beams at the sky, and because the ride blackout had already
+        /// put the sun out there was nothing else lighting the road: the
+        /// mountain came up pure black. Nothing threw and nothing logged.
+        ///
+        /// So the aim is asserted against the RUNTIME ROOT, which is the one
+        /// transform this project sets itself.
+        /// </summary>
+        [Test]
+        public void BurningHeadlights_PointDownTheRoadAndRideTheSprings()
+        {
+            var parent = new GameObject("Headlight Aim Test");
+            try
+            {
+                Vector3 facing = new Vector3(0.6f, 0f, -0.8f).normalized;
+                LastRouteCarAssetRegistry car = LastRouteCarFactory.Create(
+                    parent.transform,
+                    LastRouteCarPlan.At(new Vector3(12f, 0f, -30f), facing),
+                    default,
+                    null,
+                    true);
+                Assert.That(car, Is.Not.Null, "The car failed to spawn.");
+
+                Transform root = car.transform.parent != null
+                    ? car.transform.parent
+                    : car.transform;
+                var headlights = root.GetComponent<LastRouteCarHeadlights>();
+                Assert.That(
+                    headlights,
+                    Is.Not.Null,
+                    "A burning car must carry real headlights.");
+
+                var suspension = root.GetComponent<LastRouteCarSuspension>();
+                Assert.That(
+                    suspension?.SprungBody,
+                    Is.Not.Null,
+                    "The lamps need a sprung body to hang from.");
+
+                foreach (Light beam in new[]
+                         {
+                             headlights.LeftBeam,
+                             headlights.RightBeam,
+                             headlights.Spill
+                         })
+                {
+                    Assert.That(beam, Is.Not.Null);
+                    Assert.That(
+                        beam.transform.parent,
+                        Is.EqualTo(suspension.SprungBody),
+                        $"'{beam.name}' must ride the springs, so the beam " +
+                        "dips when the car brakes.");
+                    Assert.That(
+                        Vector3.Dot(beam.transform.forward, root.forward),
+                        Is.GreaterThan(0.95f),
+                        $"'{beam.name}' points somewhere other than down " +
+                        "the road. Its parent's axes are the imported " +
+                        "model's, so the aim must come from the root.");
+                    Assert.That(
+                        beam.transform.forward.y,
+                        Is.LessThan(0f),
+                        $"'{beam.name}' must rake down onto the asphalt.");
+                }
+
+                float left = Vector3.Dot(
+                    headlights.LeftBeam.transform.position - root.position,
+                    root.right);
+                float right = Vector3.Dot(
+                    headlights.RightBeam.transform.position - root.position,
+                    root.right);
+                Assert.That(
+                    left * right,
+                    Is.LessThan(0f),
+                    "The pair must straddle the car's centre line, or they " +
+                    "read as one lamp.");
+
+                // And every emitter stands OUTSIDE the car, in front of the
+                // bodywork, which is where a headlight is.
+                //
+                // They used to sit `1.8 m` BEHIND the lens, to flatten an
+                // inverse-square falloff that made the near field eleven
+                // times the pool at fourteen metres. The arithmetic was
+                // right and the place was wrong: `1.8 m` back from these
+                // lamps is the windscreen, so both beams emitted from inside
+                // the cabin and their cones opened out across the bonnet,
+                // the pillars and the door card. The white blobs in the
+                // frame were never the road - the car was lighting itself.
+                Bounds shell = MeasureCarBounds(root);
+                foreach (Light beam in new[]
+                         {
+                             headlights.LeftBeam,
+                             headlights.RightBeam,
+                             headlights.Spill
+                         })
+                {
+                    Vector3 emitter = beam.transform.position;
+                    Assert.That(
+                        shell.Contains(emitter),
+                        Is.False,
+                        $"'{beam.name}' emits from inside the car's own " +
+                        "bodywork.");
+
+                    float ahead = Vector3.Dot(
+                        emitter - shell.center,
+                        root.forward);
+                    Assert.That(
+                        ahead,
+                        Is.GreaterThan(0f),
+                        $"'{beam.name}' sits behind the middle of the car. " +
+                        "It has to be at the nose with the lamps.");
+                }
+
+                // Attached to the lamps, not merely somewhere in front: no
+                // further from the lit face than a hand's breadth.
+                Transform lensTransform = null;
+                for (int index = 0; index < car.Bindings.Count; index++)
+                {
+                    if (car.Bindings[index].Role == "headlight")
+                    {
+                        lensTransform =
+                            car.Bindings[index].Renderer.transform;
+                        break;
+                    }
+                }
+
+                Assert.That(lensTransform, Is.Not.Null, "no lens drawn");
+                Bounds lens = lensTransform
+                    .GetComponent<Renderer>()
+                    .bounds;
+                float halfDepth =
+                    (Mathf.Abs(root.forward.x) * lens.extents.x) +
+                    (Mathf.Abs(root.forward.y) * lens.extents.y) +
+                    (Mathf.Abs(root.forward.z) * lens.extents.z);
+                foreach (Light beam in new[]
+                         {
+                             headlights.LeftBeam,
+                             headlights.RightBeam,
+                             headlights.Spill
+                         })
+                {
+                    float proud = Vector3.Dot(
+                        beam.transform.position - lens.center,
+                        root.forward) - halfDepth;
+                    Assert.That(
+                        proud,
+                        Is.InRange(0f, 0.25f),
+                        $"'{beam.name}' stands {proud:0.00} m off the lit " +
+                        "face. It is meant to be the lamp, not a light " +
+                        "floating near it.");
+                }
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
+
+        /// <summary>
+        /// The car's drawn shell, off its renderers rather than off the
+        /// generator's numbers, so a redrawn body moves the test with it.
+        /// Lights, halos and the seat trigger are not bodywork.
+        /// </summary>
+        private static Bounds MeasureCarBounds(Transform root)
+        {
+            Renderer[] renderers =
+                root.GetComponentsInChildren<Renderer>(true);
+            Bounds bounds = default;
+            bool started = false;
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Renderer renderer = renderers[index];
+                if (renderer == null ||
+                    renderer.GetComponent<CityLightHalo>() != null)
+                {
+                    continue;
+                }
+
+                if (!started)
+                {
+                    bounds = renderer.bounds;
+                    started = true;
+                    continue;
+                }
+
+                bounds.Encapsulate(renderer.bounds);
+            }
+
+            Assert.That(started, Is.True, "the car drew nothing at all");
+            return bounds;
+        }
+
         private static IEnumerable<Vector3> Corners(
             CityDryingYardNpcStance stance)
         {

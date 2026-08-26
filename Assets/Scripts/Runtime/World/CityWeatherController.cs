@@ -18,11 +18,20 @@ namespace BarPromenade
         private CityThunderSoundPlayer thunder;
         private Transform listener;
         private Func<bool> isSheltered;
+        private ICityWeatherShaper shaper;
         private bool hasAppliedSample;
         private long lastThunderStrikeId = long.MinValue;
 
         public bool IsInitialized { get; private set; }
         public WeatherVisualSample CurrentSample { get; private set; }
+
+        /// <summary>
+        /// The wind actually applied this frame, after any shaping. Read it
+        /// rather than re-evaluating the schedule, or a place that shapes its
+        /// weather will disagree with itself.
+        /// </summary>
+        public WindSample CurrentWind { get; private set; }
+
         public int WeatherApplicationCount { get; private set; }
         public float SurfaceWetness =>
             CityWetSurfaceRegistry.CurrentWetness;
@@ -33,7 +42,8 @@ namespace BarPromenade
             CityLightningFlashLight lightningFlash,
             CityThunderSoundPlayer thunderPlayer,
             Transform listenerTransform,
-            Func<bool> shelterProvider)
+            Func<bool> shelterProvider,
+            ICityWeatherShaper weatherShaper = null)
         {
             if (IsInitialized)
             {
@@ -52,6 +62,7 @@ namespace BarPromenade
                 : throw new ArgumentNullException(
                     nameof(listenerTransform));
             isSheltered = shelterProvider;
+            shaper = weatherShaper;
             IsInitialized = true;
             ApplyCurrentWeather(true);
         }
@@ -67,6 +78,11 @@ namespace BarPromenade
             ApplyWind();
             WeatherVisualSample nextSample =
                 GameWeatherRules.EvaluateCurrent();
+            if (shaper != null)
+            {
+                nextSample = shaper.ShapePrecipitation(nextSample);
+            }
+
             ApplyWetSurfaces(nextSample, force);
             bool kindChanged =
                 !hasAppliedSample ||
@@ -117,6 +133,12 @@ namespace BarPromenade
             // wind runs before the visual-equivalence early-out, like
             // lightning.
             WindSample wind = GameWeatherRules.EvaluateCurrentWind();
+            if (shaper != null)
+            {
+                wind = shaper.ShapeWind(wind);
+            }
+
+            CurrentWind = wind;
             CityClothWindRegistry.SetWind(wind);
             Vector3 velocity = wind.Velocity(
                 GameWeatherRules.WindSpeedAtFullStrength);

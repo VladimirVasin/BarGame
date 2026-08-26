@@ -5,27 +5,67 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
+    /// The one place on a road where the car has to look before it goes.
+    ///
+    /// The city leg has exactly one: the left turn off the street into the
+    /// tunnel forecourt, which crosses the oncoming lane and the pavement in
+    /// front of it. The mountain leg has none - nothing lives up there and
+    /// nothing else drives it.
+    ///
+    /// <see cref="Distance"/> is the stop line, in metres along the path, far
+    /// enough back that the car is still square in its own lane when it stops.
+    /// <see cref="From"/> and <see cref="To"/> are the crossing itself - the
+    /// lane point the turn starts at and the forecourt mouth it ends at - and
+    /// they are what an oncoming bus or a walker is measured against.
+    /// </summary>
+    public readonly struct LastRouteCarGiveWayPoint
+    {
+        public LastRouteCarGiveWayPoint(float distance, Vector3 from, Vector3 to)
+        {
+            IsPresent = true;
+            Distance = distance;
+            From = from;
+            To = to;
+        }
+
+        public static LastRouteCarGiveWayPoint None => default;
+
+        public bool IsPresent { get; }
+        public float Distance { get; }
+        public Vector3 From { get; }
+        public Vector3 To { get; }
+    }
+
+    /// <summary>
     /// One drivable centreline, measured in metres from its own start.
     ///
     /// Both of the Ferryman's legs are this same type, deliberately. The city
-    /// leg is stitched together out of the bus graph's baked link samples, the
-    /// lot exit and the run into the tunnel; the mountain leg is
-    /// <see cref="MountainRoadRoutePlan"/> read out at a metre and given a
+    /// leg is stitched together out of the lot exit, a lane laid over the
+    /// layout's own street edges and the run into the tunnel; the mountain leg
+    /// is <see cref="MountainRoadRoutePlan"/> read out at a metre and given a
     /// lead-in and an apron manoeuvre. Sampling one of them is not a different
     /// operation from sampling the other, so there is one class and one set of
-    /// tests rather than an interface with two shapes behind it.
+    /// tests rather than an interface with two shapes behind it. A road may
+    /// also carry one <see cref="LastRouteCarGiveWayPoint"/>; the city leg
+    /// does and the mountain leg does not.
     ///
     /// Forward is kept in THREE dimensions - the climb is 26 m over 620 and a
     /// car that drives up it level reads as a hovercraft. Curvature, on the
     /// other hand, is measured on the ground plane only, because what limits
     /// cornering speed is how hard the road turns, not how steeply it rises.
+    /// The price of keeping the pitch is that two points sharing an X and a Z
+    /// but not a Y are a segment pointing straight UP, and
+    /// <see cref="BuildVertexForwards"/> averages it into a forward pitched
+    /// forty-five degrees. Nothing here can catch that - curvature is planar -
+    /// so a planner must not hand this a vertical step it did not mean.
     /// </summary>
     public sealed class LastRouteCarDrivePath
     {
         /// <summary>
-        /// Two points closer together than this are the same point. The bus
-        /// links are baked at about a decimetre and abut each other exactly,
-        /// so a naive concatenation carries a duplicate at every seam.
+        /// Two points closer together than this are the same point. A road
+        /// welded out of three sources carries a duplicate at every seam, and
+        /// the corner rounder puts its own arc ends within a millimetre of a
+        /// corner it barely cuts.
         /// </summary>
         public const float MinimumSegmentLength = 0.001f;
 
@@ -67,8 +107,81 @@ namespace BarPromenade
         public Vector3 Start => points[0];
         public Vector3 End => points[points.Length - 1];
 
+        /// <summary>
+        /// The one place on this road where the car gives way, or
+        /// <see cref="LastRouteCarGiveWayPoint.None"/> if it never has to.
+        /// </summary>
+        public LastRouteCarGiveWayPoint GiveWay { get; private set; }
+
         public Vector3 GetPoint(int index) => points[index];
         public float GetDistance(int index) => distances[index];
+
+        /// <summary>
+        /// Names the one place on this road where the car has to look before
+        /// it goes.
+        ///
+        /// Declared after construction, and only by the planner that laid the
+        /// road, because the line is measured in METRES ALONG it: rounding a
+        /// corner changes the arc length either side of it, so there is
+        /// nothing to measure against until the road exists.
+        /// </summary>
+        public void DeclareGiveWay(LastRouteCarGiveWayPoint giveWay)
+        {
+            if (GiveWay.IsPresent)
+            {
+                throw new InvalidOperationException(
+                    "A road gives way in one place at most.");
+            }
+
+            if (!giveWay.IsPresent)
+            {
+                return;
+            }
+
+            GiveWay = new LastRouteCarGiveWayPoint(
+                Mathf.Clamp(Sanitize(giveWay.Distance), 0f, Length),
+                giveWay.From,
+                giveWay.To);
+        }
+
+        /// <summary>
+        /// How far along this road the point on it nearest a place in the
+        /// world lies.
+        ///
+        /// This is how a planner's world-space stop line becomes the one
+        /// number the drive model understands. It measures against the
+        /// SEGMENTS rather than the vertices, because the road is sampled
+        /// every metre and a half and half of that is most of a car.
+        /// </summary>
+        public float FindNearestDistance(Vector3 point)
+        {
+            float best = float.PositiveInfinity;
+            float found = 0f;
+            for (int index = 0; index < points.Length - 1; index++)
+            {
+                Vector3 from = points[index];
+                Vector3 run = points[index + 1] - from;
+                float lengthSquared = run.sqrMagnitude;
+                float t = lengthSquared > 0.000001f
+                    ? Mathf.Clamp01(
+                        Vector3.Dot(point - from, run) / lengthSquared)
+                    : 0f;
+                Vector3 candidate = from + (run * t);
+                float distance = (candidate - point).sqrMagnitude;
+                if (distance >= best)
+                {
+                    continue;
+                }
+
+                best = distance;
+                found = Mathf.Lerp(
+                    distances[index],
+                    distances[index + 1],
+                    t);
+            }
+
+            return found;
+        }
 
         /// <summary>
         /// Where the car is and which way it is pointing, at a distance from

@@ -287,7 +287,11 @@ namespace BarPromenade.Tests.EditMode
             // This is the one number a player actually feels, and on a fixed
             // seed it is a pure function of the route and the drive profile -
             // so it is pinned rather than left to drift. It currently runs
-            // `289 m` in about `53 s`.
+            // `266 m` in about `48 s`; before the departure turned off where
+            // the forecourt actually opens it was `289 m` in `53 s`, and the
+            // band below is wide enough to hold both, so this is not what
+            // guards the routing. `CityDeparture_TurnsOffWhereTheTunnelIsAnd
+            // NotPastIt` is.
             //
             // The band is deliberately tight enough to have caught the reason
             // it exists: routing the departure over `CityBusPlan` instead of
@@ -320,9 +324,9 @@ namespace BarPromenade.Tests.EditMode
                     tunnelPlan.FloorSurfaceY);
 
             // Three sources are stitched together here - the lot exit, the
-            // bus graph's baked link samples and the forecourt corridor - and
-            // a seam that teleports would read as the car cutting a corner
-            // through a building.
+            // lane laid over the layout's street edges and the forecourt
+            // corridor - and a seam that teleports would read as the car
+            // cutting a corner through a building.
             for (int index = 1; index < path.PointCount; index++)
             {
                 float step = path.GetDistance(index) -
@@ -345,6 +349,299 @@ namespace BarPromenade.Tests.EditMode
                     Is.GreaterThan(0f),
                     $"The corner at point {index} would stop the car dead.");
             }
+        }
+
+        [Test]
+        public void CityDeparture_TurnsOffWhereTheTunnelIsAndNotPastIt()
+        {
+            CreateCityContext(
+                out CityLayout layout,
+                out CityTunnelForecourtDescriptor forecourt,
+                out CityTunnelTravelPlan tunnelPlan,
+                out LastRouteCarPlan carPlan);
+
+            LastRouteCarDrivePath path =
+                LastRouteCityDeparturePlanner.Create(
+                    carPlan,
+                    layout,
+                    forecourt,
+                    tunnelPlan.FloorSurfaceY);
+
+            // The defect this pins had one signature: on the approach the car
+            // got NEARER its turning, then further away again, then came
+            // back. It happened because the route ended at the junction
+            // nearest the forecourt opening, and the opening sits exactly
+            // halfway along its block - so both ends of that block tied to
+            // the centimetre and the tie fell to the far one. The car drove
+            // thirteen metres past the tunnel and swung back through a
+            // hundred and thirty-five degrees to reach it.
+            //
+            // Nothing about that is visible in the path's length, its ends or
+            // its seams, all of which stayed within their own assertions
+            // above while it happened.
+            const float watchFrom = 30f;
+            const float backtrack = 2f;
+            float closest = float.PositiveInfinity;
+            float worstBacktrack = 0f;
+            for (float distance = 0f;
+                 distance <= path.Length;
+                 distance += 0.25f)
+            {
+                path.Sample(distance, out Vector3 position, out _);
+                float toTurning = Vector2.Distance(
+                    new Vector2(position.x, position.z),
+                    new Vector2(
+                        forecourt.StreetAnchor.x,
+                        forecourt.StreetAnchor.z));
+                if (closest <= 0.5f)
+                {
+                    // Arrived. Past this it is driving INTO the tunnel and
+                    // going away from the opening is the whole point.
+                    break;
+                }
+
+                if (closest < watchFrom)
+                {
+                    worstBacktrack = Mathf.Max(
+                        worstBacktrack,
+                        toTurning - closest);
+                }
+
+                closest = Mathf.Min(closest, toTurning);
+            }
+
+            Assert.That(
+                closest,
+                Is.LessThan(0.5f),
+                "The drive never actually reaches the forecourt opening.");
+            Assert.That(
+                worstBacktrack,
+                Is.LessThan(backtrack),
+                $"On the run in the car gets {worstBacktrack:0.0} m further " +
+                "from its own turning than it had already been. It is " +
+                "driving past the tunnel and coming back.");
+        }
+
+        [Test]
+        public void CityDeparture_TakesTheTunnelTurnLikeAnyOtherRoadTurn()
+        {
+            CreateCityContext(
+                out CityLayout layout,
+                out CityTunnelForecourtDescriptor forecourt,
+                out CityTunnelTravelPlan tunnelPlan,
+                out LastRouteCarPlan carPlan);
+
+            LastRouteCarDrivePath path =
+                LastRouteCityDeparturePlanner.Create(
+                    carPlan,
+                    layout,
+                    forecourt,
+                    tunnelPlan.FloorSurfaceY);
+
+            // A right angle cut at the planner's own corner radius peaks at
+            // about `18` degrees per metre, and the sharpest thing on the
+            // whole route is the pull-away off the lot at about `23`. The
+            // turn into the forecourt used to peak at `1536` - a hundred and
+            // thirty-five degrees of heading inside three quarters of a
+            // metre - because the legs either side of it arrived
+            // pre-subdivided at `1.5 m` and a corner can only be cut as deep
+            // as half its shorter leg.
+            float worst = 0f;
+            int worstIndex = 0;
+            for (int index = 0; index < path.PointCount; index++)
+            {
+                if (path.GetTurnRate(index) <= worst)
+                {
+                    continue;
+                }
+
+                worst = path.GetTurnRate(index);
+                worstIndex = index;
+            }
+
+            Assert.That(
+                worst,
+                Is.LessThan(26f),
+                $"The road turns {worst:0} degrees per metre at " +
+                $"{path.GetDistance(worstIndex):0.0} m. Nothing a car drives " +
+                "turns that hard.");
+
+            // And what the passenger actually feels, which is the number the
+            // bug was really about. The profile is willing to carry
+            // `2.2 m/s^2` through a bend and the cornering floor lifts the
+            // worst corner a little over it; the old snap threw at least
+            // `7.8`, which is a car being pivoted rather than driven.
+            //
+            // Measured from the road rather than from the handbrake. The
+            // first few metres are the pull-away off the lot - a quadratic
+            // through a control point out along the car's own nose, at a
+            // walking pace, on a radius no street has - and it belongs to
+            // manoeuvring, not to driving.
+            const float offTheLot = 25f;
+            var model = new LastRouteCarDriveModel(
+                path,
+                LastRouteCarDriveProfile.City);
+            float worstLateral = 0f;
+            float worstOnTheRoad = 0f;
+            float worstAt = 0f;
+            const float step = 1f / 60f;
+            float elapsed = 0f;
+            while (!model.HasArrived && elapsed < 600f)
+            {
+                model.Advance(step);
+                elapsed += step;
+                float lateral = Mathf.Abs(model.LateralAcceleration);
+                worstLateral = Mathf.Max(worstLateral, lateral);
+                if (model.Distance <= offTheLot ||
+                    lateral <= worstOnTheRoad)
+                {
+                    continue;
+                }
+
+                worstOnTheRoad = lateral;
+                worstAt = model.Distance;
+            }
+
+            Assert.That(
+                model.HasArrived,
+                Is.True,
+                "The drive never finished, so both maxima below are zero and " +
+                "would pass on a car that never moved.");
+            Assert.That(
+                worstAt,
+                Is.GreaterThan(offTheLot),
+                "Nothing past the lot was ever sampled.");
+            Assert.That(
+                worstOnTheRoad,
+                Is.LessThan(3.2f),
+                $"The car is thrown sideways at {worstOnTheRoad:0.0} m/s^2 " +
+                $"at {worstAt:0.0} m, against a profile that is only willing " +
+                $"to carry " +
+                $"{LastRouteCarDriveProfile.City.MaximumLateralAcceleration}.");
+            Assert.That(
+                worstLateral,
+                Is.LessThan(4f),
+                $"Something on the whole drive throws {worstLateral:0.0} " +
+                "m/s^2. Even the pull-away off the lot does not do that.");
+        }
+
+        [Test]
+        public void CityDeparture_NeverPointsTheCarUpOrDownASlope()
+        {
+            CreateCityContext(
+                out CityLayout layout,
+                out CityTunnelForecourtDescriptor forecourt,
+                out CityTunnelTravelPlan tunnelPlan,
+                out LastRouteCarPlan carPlan);
+
+            LastRouteCarDrivePath path =
+                LastRouteCityDeparturePlanner.Create(
+                    carPlan,
+                    layout,
+                    forecourt,
+                    tunnelPlan.FloorSurfaceY);
+
+            // The city is about eight metres of range across its whole width,
+            // so nothing here is a hill and nothing should read as one.
+            //
+            // This exists because a vertex pair sharing an X and a Z but not
+            // a Y is a segment pointing straight UP, and
+            // `LastRouteCarDrivePath` averages the segments meeting at a
+            // vertex - so a step of any height at all, even the tunnel
+            // throat's three centimetres, produces a forward pitched forty
+            // five degrees and the car rears at the mouth. Curvature is
+            // measured on the ground plane everywhere in this system, so
+            // nothing else in it can see that at all.
+            float worst = 0f;
+            float worstAt = 0f;
+            for (float distance = 0f;
+                 distance <= path.Length;
+                 distance += 0.25f)
+            {
+                path.Sample(distance, out _, out Vector3 forward);
+                float pitch = Mathf.Abs(
+                    90f - Vector3.Angle(forward, Vector3.up));
+                if (pitch <= worst)
+                {
+                    continue;
+                }
+
+                worst = pitch;
+                worstAt = distance;
+            }
+
+            Assert.That(
+                worst,
+                Is.LessThan(15f),
+                $"The car is pointed {worst:0.0} degrees off level at " +
+                $"{worstAt:0.0} m of a drive across a flat city.");
+        }
+
+        [Test]
+        public void CityDeparture_GivesWayInItsOwnLaneBeforeCrossingTheRoad()
+        {
+            CreateCityContext(
+                out CityLayout layout,
+                out CityTunnelForecourtDescriptor forecourt,
+                out CityTunnelTravelPlan tunnelPlan,
+                out LastRouteCarPlan carPlan);
+
+            LastRouteCarDrivePath path =
+                LastRouteCityDeparturePlanner.Create(
+                    carPlan,
+                    layout,
+                    forecourt,
+                    tunnelPlan.FloorSurfaceY);
+            LastRouteCarGiveWayPoint giveWay = path.GiveWay;
+
+            Assert.That(
+                giveWay.IsPresent,
+                Is.True,
+                "The turn into the forecourt crosses the road, so it is a " +
+                "give-way and the road has to say where.");
+            Assert.That(
+                Vector3.Distance(giveWay.To, forecourt.StreetAnchor),
+                Is.LessThan(0.01f),
+                "The crossing ends at the opening the car is turning into.");
+
+            float turnDistance = path.FindNearestDistance(giveWay.From);
+            Assert.That(
+                giveWay.Distance,
+                Is.LessThan(turnDistance - 4f),
+                "The line has to be far enough back that a car stopped at " +
+                "it is still short of the turn rather than halfway round it.");
+
+            // And stopped square in its own lane, still pointing AT the turn
+            // rather than already part way round it. The lane is short - the
+            // opening is thirteen metres from the junction before it - so
+            // this is asserted against the car's own heading and not against
+            // a stretch of straight either side, which there is not room for.
+            path.Sample(
+                giveWay.Distance,
+                out Vector3 waiting,
+                out Vector3 heading);
+            Vector3 toTurn = giveWay.From - waiting;
+            toTurn.y = 0f;
+            heading.y = 0f;
+            Assert.That(
+                Vector3.Angle(heading, toTurn),
+                Is.LessThan(5f),
+                "The car gives way already part way into the swing.");
+
+            Vector3 crossing = giveWay.To - giveWay.From;
+            crossing.y = 0f;
+            Assert.That(
+                Vector3.Angle(heading, crossing),
+                Is.GreaterThan(60f),
+                "The car is pointing down the crossing before it has looked " +
+                "at it. It is meant to be waiting in the lane it is in.");
+
+            // The crossing itself is a real crossing - out of the lane, over
+            // the crown of the road and into the mouth.
+            Assert.That(
+                Vector3.Distance(giveWay.From, giveWay.To),
+                Is.GreaterThan(3f),
+                "The crossing is too short to be one.");
         }
 
         [Test]

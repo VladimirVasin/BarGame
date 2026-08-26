@@ -11,7 +11,8 @@ namespace BarPromenade
     /// runtime root, sized from the registry's own bounds. That is the bus's
     /// arrangement: the vehicle art stays a rendering asset and the physics
     /// belongs to whatever spawned it. Unlike the bus there is no rigidbody
-    /// and no actor, because this car never moves again.
+    /// and no actor: the driving is the ride controller's, and this only ever
+    /// stands the car up.
     /// </summary>
     public static class LastRouteCarFactory
     {
@@ -38,7 +39,8 @@ namespace BarPromenade
             Transform parent,
             LastRouteCarPlan plan,
             PlayerRuntime player,
-            Camera camera)
+            Camera camera,
+            bool burningHeadlights = false)
         {
             if (parent == null)
             {
@@ -79,7 +81,7 @@ namespace BarPromenade
             ValidatePassivePresentation(instance);
             AddObstacleCollider(root.gameObject, registry);
             InstallMechanisms(root, registry);
-            InstallHeadlightHalos(root, registry);
+            InstallHeadlights(root, registry, burningHeadlights);
             InstallPassengerSeat(root, registry, plan, player, camera);
 
             GameLog.Info(
@@ -139,13 +141,26 @@ namespace BarPromenade
         /// lot, so they are what has to carry: warm, low and paired, read as
         /// a waiting car long before the car itself resolves.
         ///
-        /// Halos rather than real Lights on purpose - the night light budget
-        /// belongs to the street masts, and the lighthouse already set the
-        /// precedent that a beacon does not need a Light to be seen.
+        /// In the city these are halos and nothing else, on purpose - the
+        /// night light budget belongs to the street masts, and the lighthouse
+        /// set the precedent that a beacon does not need a Light to be seen.
+        /// A car standing on a lot is a lamp you look at.
+        ///
+        /// A car CLIMBING A MOUNTAIN IN THE DARK is a lamp you see by, and
+        /// that is a different job. `burning` adds
+        /// <see cref="LastRouteCarHeadlights"/> on top - the halos are not
+        /// replaced, because the bloom was never the thing that was missing.
+        /// It also takes the halos out of the night registry, which is a real
+        /// trap and not tidiness: `CityNightGlowRegistry.nightFactor` is a
+        /// process-wide static that only the City ever writes, so a departure
+        /// in daylight leaves it near zero and the mountain car's lenses would
+        /// arrive dead while its beams blazed. Always-burning fixtures
+        /// initialize their halo directly for exactly this reason.
         /// </summary>
-        private static void InstallHeadlightHalos(
+        private static void InstallHeadlights(
             Transform root,
-            LastRouteCarAssetRegistry registry)
+            LastRouteCarAssetRegistry registry,
+            bool burning)
         {
             Transform lens = null;
             for (int index = 0; index < registry.Bindings.Count; index++)
@@ -174,14 +189,59 @@ namespace BarPromenade
             foreach (float side in new[] { 1f, -1f })
             {
                 Vector3 world = centre + root.right * (lateral * side * 0.72f);
-                CityLightHalo.CreateNightRegistered(
-                    root,
-                    root.InverseTransformPoint(world),
+                Vector3 local = root.InverseTransformPoint(world);
+                if (!burning)
+                {
+                    CityLightHalo.CreateNightRegistered(
+                        root,
+                        local,
+                        HeadlightHaloInnerSize,
+                        HeadlightHaloOuterSize,
+                        inner,
+                        outer);
+                    continue;
+                }
+
+                var haloObject = new GameObject("Fog Light Halo");
+                haloObject.transform.SetParent(root, false);
+                haloObject.transform.localPosition = local;
+                haloObject.AddComponent<CityLightHalo>().Initialize(
+                    CityNightResources.AtmosphereMaterial,
                     HeadlightHaloInnerSize,
                     HeadlightHaloOuterSize,
                     inner,
                     outer);
             }
+
+            if (!burning)
+            {
+                return;
+            }
+
+            // On the SPRUNG body, not the root: the beams should dip under
+            // braking and lift when the car pulls away, and the suspension
+            // already writes exactly that. The root deliberately does not
+            // rock — it carries the obstacle collider — which is why the
+            // halos above stay on it.
+            LastRouteCarSuspension suspension =
+                root.GetComponent<LastRouteCarSuspension>();
+            Transform carrier =
+                suspension != null && suspension.SprungBody != null
+                    ? suspension.SprungBody
+                    : root;
+            // How deep the lamp assembly is along the car's OWN forward, so
+            // the emitters can be put outside its glass rather than at the
+            // middle of it. The bounds are a world AABB, so the extent along
+            // an arbitrary axis is its support function - not `extents.z`,
+            // which is only the answer when the car happens to face down Z.
+            Vector3 heading = root.forward;
+            float halfDepth =
+                (Mathf.Abs(heading.x) * bounds.extents.x) +
+                (Mathf.Abs(heading.y) * bounds.extents.y) +
+                (Mathf.Abs(heading.z) * bounds.extents.z);
+            root.gameObject
+                .AddComponent<LastRouteCarHeadlights>()
+                .Initialize(root, carrier, centre, lateral, halfDepth);
         }
 
         /// <summary>

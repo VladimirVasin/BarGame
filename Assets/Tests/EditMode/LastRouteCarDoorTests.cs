@@ -298,5 +298,152 @@ namespace BarPromenade.Tests.EditMode
                 previous = openness;
             }
         }
+
+        /// <summary>
+        /// The hero's dock, doorway and seat as three metres apart on a line,
+        /// travelled by the transition the seat plan actually builds. Only the
+        /// timing is under test here, so the geometry is deliberately trivial
+        /// and legible: how far along that line he is IS his progress.
+        /// </summary>
+        private static PlayerAnimatedInteractionPelvisTransition
+            BuildSeatTransition()
+        {
+            return new PlayerAnimatedInteractionPelvisTransition(
+                new Vector3(0f, 0f, 1f),
+                LastRouteCarSeatPlan.EnterArrivalProgress,
+                LastRouteCarSeatPlan.EnterDepartureProgress,
+                LastRouteCarSeatPlan.ExitArrivalProgress,
+                LastRouteCarSeatPlan.ExitDepartureProgress,
+                LastRouteCarSeatPlan.EnterHoldProgress,
+                LastRouteCarSeatPlan.EnterSettleProgress,
+                LastRouteCarSeatPlan.ExitHoldProgress,
+                LastRouteCarSeatPlan.ExitSettleProgress);
+        }
+
+        private static readonly Vector3 Dock = Vector3.zero;
+        private static readonly Vector3 Seat = new Vector3(0f, 0f, 2f);
+
+        [Test]
+        public void Boarding_KeepsTheHeroStillUntilTheLeafStandsOpen()
+        {
+            PlayerAnimatedInteractionPelvisTransition transition =
+                BuildSeatTransition();
+
+            // The Ferryman opens his door and THEN gets in - his root is held
+            // to `TravelStartPhase` until his own leaf is open. The hero used
+            // to start travelling on the first frame of his clip and was
+            // ninety-two per cent of the way to the doorway by the time the
+            // leaf finished opening, so he walked through a door he was at
+            // the same time miming a pull on. Two men, one beat, and only one
+            // of them waited.
+            // Measured as a worst displacement rather than asserted per
+            // sample: NUnit compares a `Vector3` BITWISE, so an early sample
+            // that has crept a millimetre fails with "Expected (0,0,0) But
+            // was (0,0,0)" and says nothing at all.
+            float strayed = 0f;
+            float strayedAt = 0f;
+            for (int step = 0; step <= 60; step++)
+            {
+                float progress =
+                    LastRouteFerrymanBoardingTimeline.DoorOpenPhase *
+                    (step / 60f);
+                float moved = Vector3.Distance(
+                    transition.EvaluateEntering(Dock, Seat, progress),
+                    Dock);
+                if (moved <= strayed)
+                {
+                    continue;
+                }
+
+                strayed = moved;
+                strayedAt = progress;
+            }
+
+            Assert.That(
+                strayed,
+                Is.LessThan(0.001f),
+                $"He is {strayed:0.000} m off the dock at {strayedAt:0.00} " +
+                "of the clip, while the leaf is still swinging.");
+
+            Assert.That(
+                LastRouteFerrymanBoardingTimeline.EvaluateDoorOpenness(
+                    LastRouteCarSeatPlan.EnterHoldProgress),
+                Is.EqualTo(1f).Within(0.001f),
+                "The hold has to end on a leaf that is fully open, not on " +
+                "one that is nearly there.");
+
+            // And then he does actually go, or the assertion above is
+            // satisfied by a hero who never boards at all.
+            Assert.That(
+                transition.EvaluateEntering(Dock, Seat, 0.62f).z,
+                Is.GreaterThan(0.5f),
+                "He never leaves the dock.");
+        }
+
+        [Test]
+        public void Boarding_HasHimDownInTheSeatBeforeTheLeafIsPulledShut()
+        {
+            PlayerAnimatedInteractionPelvisTransition transition =
+                BuildSeatTransition();
+
+            // The other half of the same fault: the pelvis used to arrive
+            // only on the clip's closing frame, so he was still sliding down
+            // into the seat while the clip already had him sitting in it and
+            // reaching back for the leaf.
+            float short_ = Vector3.Distance(
+                transition.EvaluateEntering(
+                    Dock,
+                    Seat,
+                    LastRouteFerrymanBoardingTimeline.DoorShutStartPhase),
+                Seat);
+            Assert.That(
+                short_,
+                Is.LessThan(0.001f),
+                $"He is still {short_:0.000} m short of the seat when the " +
+                "door starts closing on him.");
+        }
+
+        [Test]
+        public void Alighting_KeepsHimInTheSeatUntilTheLeafIsShovedOpen()
+        {
+            PlayerAnimatedInteractionPelvisTransition transition =
+                BuildSeatTransition();
+
+            // Outward the leaf swings away from him rather than across him,
+            // so this reads as far less wrong - but it is the same defect and
+            // it is the same beat, so it is held to the same rule. What is
+            // NOT held: the leaf is deliberately still closing while he walks
+            // away from it, because that is what a person does.
+            float strayed = 0f;
+            float strayedAt = 0f;
+            for (int step = 0; step <= 60; step++)
+            {
+                float progress =
+                    LastRouteCarSeatInteraction.AlightDoorOpenPhase *
+                    (step / 60f);
+                float moved = Vector3.Distance(
+                    transition.EvaluateExiting(Seat, Dock, progress),
+                    Seat);
+                if (moved <= strayed)
+                {
+                    continue;
+                }
+
+                strayed = moved;
+                strayedAt = progress;
+            }
+
+            Assert.That(
+                strayed,
+                Is.LessThan(0.001f),
+                $"He is {strayed:0.000} m out of his seat at " +
+                $"{strayedAt:0.00} of the clip, with the leaf still " +
+                "swinging open in front of him.");
+
+            Assert.That(
+                transition.EvaluateExiting(Seat, Dock, 1f),
+                Is.EqualTo(Dock),
+                "And he does end up on his feet at the dock.");
+        }
     }
 }

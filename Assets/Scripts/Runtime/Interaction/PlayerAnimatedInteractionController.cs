@@ -5,9 +5,22 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Adds one grounded waypoint to the otherwise direct pelvis movement.
-    /// Arrival and departure are separate so an authored clip can visibly
-    /// settle at the waypoint before continuing.
+    /// Adds one grounded waypoint to the otherwise direct pelvis movement,
+    /// and says when the body is allowed to be moving at all.
+    ///
+    /// Four moments per direction, and the two outer ones exist because a
+    /// body that starts sliding on the first frame of a clip contradicts
+    /// whatever the clip's own first keys are doing. HOLD is how long he
+    /// stays put at the start - a man reaching for a door handle is standing
+    /// still, however far he has to travel afterwards - and SETTLE is when he
+    /// is finally there, so the last stretch of a clip can be something done
+    /// in place rather than a slide that only lands on the closing frame.
+    /// Arrival and departure between them are the waypoint's own, so an
+    /// authored clip can visibly settle there before continuing.
+    ///
+    /// Defaults reproduce the older two-marker behaviour exactly - move from
+    /// the first frame, arrive on the last - so a seat with no door to wait
+    /// for says nothing about either.
     /// </summary>
     public readonly struct PlayerAnimatedInteractionPelvisTransition
     {
@@ -16,13 +29,21 @@ namespace BarPromenade
             float enterArrivalProgress,
             float enterDepartureProgress,
             float exitArrivalProgress,
-            float exitDepartureProgress)
+            float exitDepartureProgress,
+            float enterHoldProgress = 0f,
+            float enterSettleProgress = 1f,
+            float exitHoldProgress = 0f,
+            float exitSettleProgress = 1f)
         {
             Waypoint = waypoint;
             EnterArrivalProgress = enterArrivalProgress;
             EnterDepartureProgress = enterDepartureProgress;
             ExitArrivalProgress = exitArrivalProgress;
             ExitDepartureProgress = exitDepartureProgress;
+            EnterHoldProgress = enterHoldProgress;
+            EnterSettleProgress = enterSettleProgress;
+            ExitHoldProgress = exitHoldProgress;
+            ExitSettleProgress = exitSettleProgress;
             Validate(nameof(waypoint));
         }
 
@@ -31,6 +52,17 @@ namespace BarPromenade
         public float EnterDepartureProgress { get; }
         public float ExitArrivalProgress { get; }
         public float ExitDepartureProgress { get; }
+
+        /// <summary>How long the body stays at the start of the entry before
+        /// it moves at all.</summary>
+        public float EnterHoldProgress { get; }
+
+        /// <summary>When the body has arrived, and after which the rest of
+        /// the entry clip happens in place.</summary>
+        public float EnterSettleProgress { get; }
+
+        public float ExitHoldProgress { get; }
+        public float ExitSettleProgress { get; }
 
         public Vector3 EvaluateEntering(
             Vector3 start,
@@ -41,8 +73,10 @@ namespace BarPromenade
                 start,
                 end,
                 progress,
+                EnterHoldProgress,
                 EnterArrivalProgress,
-                EnterDepartureProgress);
+                EnterDepartureProgress,
+                EnterSettleProgress);
         }
 
         public Vector3 EvaluateExiting(
@@ -54,8 +88,10 @@ namespace BarPromenade
                 start,
                 end,
                 progress,
+                ExitHoldProgress,
                 ExitArrivalProgress,
-                ExitDepartureProgress);
+                ExitDepartureProgress,
+                ExitSettleProgress);
         }
 
         internal void Validate(string parameterName)
@@ -68,13 +104,17 @@ namespace BarPromenade
             }
 
             ValidateProgressRange(
+                EnterHoldProgress,
                 EnterArrivalProgress,
                 EnterDepartureProgress,
+                EnterSettleProgress,
                 parameterName,
                 "enter");
             ValidateProgressRange(
+                ExitHoldProgress,
                 ExitArrivalProgress,
                 ExitDepartureProgress,
+                ExitSettleProgress,
                 parameterName,
                 "exit");
         }
@@ -83,16 +123,25 @@ namespace BarPromenade
             Vector3 start,
             Vector3 end,
             float progress,
+            float holdProgress,
             float arrivalProgress,
-            float departureProgress)
+            float departureProgress,
+            float settleProgress)
         {
             float clamped = Mathf.Clamp01(progress);
+            if (clamped <= holdProgress)
+            {
+                return start;
+            }
+
             if (clamped <= arrivalProgress)
             {
                 return Vector3.LerpUnclamped(
                     start,
                     Waypoint,
-                    Smooth(clamped / arrivalProgress));
+                    Smooth(
+                        (clamped - holdProgress) /
+                        (arrivalProgress - holdProgress)));
             }
 
             if (clamped <= departureProgress)
@@ -100,30 +149,41 @@ namespace BarPromenade
                 return Waypoint;
             }
 
+            if (clamped >= settleProgress)
+            {
+                return end;
+            }
+
             return Vector3.LerpUnclamped(
                 Waypoint,
                 end,
                 Smooth(
                     (clamped - departureProgress) /
-                    (1f - departureProgress)));
+                    (settleProgress - departureProgress)));
         }
 
         private static void ValidateProgressRange(
+            float hold,
             float arrival,
             float departure,
+            float settle,
             string parameterName,
             string phaseName)
         {
-            if (!IsFinite(arrival) ||
+            if (!IsFinite(hold) ||
+                !IsFinite(arrival) ||
                 !IsFinite(departure) ||
-                arrival <= 0f ||
+                !IsFinite(settle) ||
+                hold < 0f ||
+                arrival <= hold ||
                 departure < arrival ||
-                departure >= 1f)
+                settle <= departure ||
+                settle > 1f)
             {
                 throw new ArgumentOutOfRangeException(
                     parameterName,
                     $"The {phaseName} pelvis waypoint range must satisfy " +
-                    "0 < arrival <= departure < 1.");
+                    "0 <= hold < arrival <= departure < settle <= 1.");
             }
         }
 

@@ -6,6 +6,352 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-26 — The hero waits for his own door, the way the Ferryman does
+
+Reported as an asymmetry, and that is exactly what it was: "перевозчик
+сначала открывает дверь, а потом садится; герой не дожидается и проходит
+сквозь дверь".
+
+Both men's CLIPS are authored the same. `CarBoardEnter` is `relaxed 0.0,
+reach 0.10, pull 0.22, door_clear 0.34, seat_step 0.52, seat_settle 0.66,
+seat_down 0.78, door_shut 0.90, seated 1.0` — a man standing still at the
+handle for the first third of it. What differed was the ROOT.
+`LastRouteFerrymanBoardingTimeline` holds the Ferryman's at
+`TravelStartPhase 0.36`, after his leaf stands open. The hero's was driven by
+`PlayerAnimatedInteractionPelvisTransition`, which had only two markers —
+arrive at the waypoint, leave it — and therefore **started travelling on the
+clip's first frame and arrived only on its last**. Measured: `0.905 m` off
+the dock (ninety per cent of the way to the doorway) at `0.34`, the moment
+the leaf finished swinging; and still `0.301 m` short of the seat at `0.84`
+when the clip has him seated and pulling the door shut.
+
+The transition now carries a HOLD and a SETTLE either side of its waypoint,
+both defaulted to the old shape (`hold 0`, `settle 1`) so the bench, the bed
+and the bus seat — none of which has a door to wait for — say nothing and
+behave identically. The car seat names all eight as constants off its own
+clip's keys, and the contract is tested against the LEAF's phases rather than
+against the numbers, which is where it actually lives.
+
+Outward is the same defect and got the same fix (hold to `0.24`, the leaf
+having been shoved open from inside at `0.22`; settle at `0.94`), with one
+deliberate asymmetry kept: the leaf is still closing while he walks away from
+it, because that is what a person does and what the arm in `CarAlightExit` is
+authored to do.
+
+Verification: all three new door tests were run against the old constants and
+go red with the numbers above. They measure a DISTANCE and report it — NUnit
+compares a `Vector3` bitwise, and the first draft of these failed with
+"Expected (0,0,0) But was (0,0,0)", which is the colour/MPB trap in a new
+costume.
+
+## 2026-08-26 — The car turns off at the tunnel instead of past it, and looks first
+
+Reported as one fault and it was two, stacked, both of them invisible to
+every assertion the departure already had. A probe run that dumped every
+vertex of the finished road on the default seed named both in one pass; the
+numbers below are from that run.
+
+- **It drove `13 m` past its own turning and swung back through `135°`.**
+  The route ended at `TryFindNearestNode(streetAnchor)`, and the forecourt's
+  street anchor is `access.Center`, which `CitySurfacePlan` places at the
+  MIDDLE of its frontage edge. Both ends of that block were therefore
+  `13.60 m` away — equal to the centimetre — so "nearest junction" was a coin
+  toss decided by `Dictionary` key order, and it came down on the far one.
+  The lane ran west to `x=-25.4`, then a `12 m` diagonal came back east to
+  the opening at `x=-13`. The planner now finds the nearest drivable road
+  EDGE instead, drops a perpendicular foot onto it, costs both of its ends
+  (route length plus the run back along the block, or the far end wins on a
+  technicality) and stops the lane at the foot. Which end wins also decides
+  which lane the car is in when it arrives, which is what makes this a
+  give-way at all.
+- **The one corner that mattered was the one corner not rounded.** `cut =
+  Min(CornerRadiusMeters, |incoming|/2, |outgoing|/2)`, and the legs either
+  side of the forecourt turn arrived pre-subdivided at `1.5 m` because
+  `AppendStraight` cut as it built — so that corner got `0.75 m` against the
+  `4.5 m` every street junction got, and the class comment already claimed
+  the opposite ("Rounded first, then cut fine"). `AppendStraight` is gone;
+  straights are single `Append`s, a new `Straighten` pass drops the collinear
+  vertices the forecourt run carries (the street anchor and the tunnel floor
+  step, which alone held the turn to a `2.75 m` cut), `RoundCorners` measures
+  its angle on the ground plane the way `BuildTurnRates` already does, and
+  `Subdivide` puts the `1.5 m` sampling back at the end.
+- Result on the default seed: `289.1 m` in `52.6 s` → `266.4 m` in `48.0 s`;
+  worst curvature `1535.6` → `23.3` deg/m, and the `23.3` is the pull-away
+  off the parking lot, not a road turn — the two street turns now peak at
+  `17.77` and `17.78`, which is the same corner twice. Worst lateral on the
+  road `7.79` → `2.84 m/s²` against a profile willing to carry `2.2`.
+- **And it now looks before it crosses.** The turn is a left across the
+  oncoming carriageway and the pavement in front of the opening, so the
+  planner publishes a `LastRouteCarGiveWayPoint` on the road it lays: a stop
+  line `6.5 m` back up the LANE from the turning — not back along the finished
+  road, because a point on the arc is already committed to it — which the arc
+  shortens to `5.6 m` along the road, at `219.11 m`, where the car is still
+  square in its lane. `LastRouteCarDriveModel` gained `SetHold`, which works
+  as a speed ceiling and never as a clamp on distance covered, so a hold
+  armed late costs the hardest stop the car has and a metre over the line
+  rather than a frame in which the car is not where it was.
+  `LastRouteCarGiveWayModel` is the pure wait-or-go; `LastRouteCarGiveWay`
+  asks the live city, reusing Route 01's own rules — the same walker
+  exclusions and the same predict-them-a-second-ahead as
+  `CityBusDirector.ResolveObstacleState`, plus the bus itself swept forward
+  along its heading, because at this junction the bus IS the traffic.
+- **Two things an adversarial pass caught, both of them mine.** The turn's
+  crossing STARTS at the car's own lane centre, and `CityBusPlanner` lays
+  Route 01's links at the same `1.5 m` off the same crown — so a bus simply
+  following the car swept through the crossing, read as traffic, and would
+  have held him at the line for the whole `15 s` cap with nothing crossing.
+  The sweep is now gated on direction, which is what was asked for in the
+  first place ("на встречке"), and starts at the bus's TAIL rather than its
+  reported middle, so a dwelling bus with eight metres of body across the
+  mouth is not invisible. And dropping the pre-subdivision turned the tunnel
+  mouth's `3 cm` throat lift from a harmless kink into a visible one: the
+  forecourt ground and the tunnel floor were two vertices at the same X and
+  Z, `BuildVertexForwards` averages a vertical segment into a forward pitched
+  `45°`, and the car reared over three metres of road in first person right
+  at the last beat of the city. It was survivable while the rounder left arc
+  ends a centimetre and a half apart; at `1.5 m` it is a wheelie. The portal
+  is now one vertex carrying the floor's own height, and the lift rides the
+  approach as a `0.2%` grade. `CityDeparture_NeverPointsTheCarUpOrDownASlope`
+  guards it — nothing else in this system can, because curvature is measured
+  on the ground plane everywhere by design.
+
+Verification: the three new planner tests were run against the OLD planner
+(`git stash push` on that file alone, everything else kept) and all three go
+red with the right messages — `1536 degrees per metre at 238,5 m`, `gets
+8,2 m further from its own turning`, and no give-way declared. The give-way
+model's own tests caught a real defect while being written: the free-run
+branch fired on `!hasHeldBack` alone, so a crossing blocked the whole way in
+never stopped the car at all.
+
+## 2026-08-26 — The headlights were emitting from inside the cabin
+
+Second look at the pulled blackout, and the diagnosis in the entry below is
+half wrong. The white blobs were never the road, and they were never really
+about intensity: **the emitters sat `1.8 m` BEHIND the lens, which on this car
+is the windscreen.** Both beams were shining out from inside the cabin, so
+their `52°` cones opened across the bonnet, the A-pillars and the door card on
+the way out. What the frame showed was a car lighting itself.
+
+The setback had a reason and the arithmetic behind it was right — inverse
+square makes the four metres ahead of the bumper about eleven times the pool
+at fourteen, and pulling the source back flattens that to roughly four. It was
+the wrong fix for it. The emitters now sit `LensStandoffMeters = 0.12 m` proud
+of the lamp's own front face, measured with the world AABB's SUPPORT function
+along the car's forward (`|d·e|` summed per axis) rather than `extents.z`,
+which is only the answer when the car happens to face down Z. The `up * 0.10`
+nudge went with it — it was lifting the source toward the bonnet line, which
+is one of the surfaces that was being washed. The near-field hot spot the
+setback was hiding does come back, and from the passenger seat it falls behind
+the bonnet, which is where a real car puts it.
+
+`BurningHeadlights_PointDownTheRoadAndRideTheSprings` now also asserts every
+emitter is outside the car's drawn shell (measured off the renderers, halos
+excluded), ahead of its centre, and within `0.25 m` of the lit face — "at the
+lamps", not merely somewhere in front. Verified red against the old placement:
+"'Headlight Beam Left' emits from inside the car's own bodywork."
+
+A PlayMode capture across `0 / 2600 / 6000 / 11000` at two hours confirms the
+self-lighting is gone: **blown pixels `0.00%` at every intensity**, where the
+pulled build blew out at `2600`, and the road band rises monotonically
+`0.008 → 0.042 → 0.068 → 0.093`. The intensity was NOT re-tuned from those
+numbers and stays at `6000`: a manual `camera.Render()` into a RenderTexture
+skips part of the post stack, so the capture came back far darker than the
+editor's own view of the same scene — the project's standing rule that light
+intensities are never tuned from a capture that lacks post-processing applies
+in PlayMode too, not only in edit mode. What the capture is good for is the
+geometric fact and the relative ladder.
+
+Both suites green afterwards: EditMode `1670/1671` (the one red is the
+pre-existing `homeyard-booth`), PlayMode `185` passed / `1` skipped.
+
+## 2026-08-26 — The blackout is pulled; the headlights stay and burn harder
+
+The entry below shipped a ride in which the mountain's sun, ambient,
+reflection and fog were all taken out so the car's beams were the only light
+in the world. In the editor it came up as a black frame with two blown-white
+pools in it and the user pulled it on sight: "верни обычное нормальное
+освещение которое было до изменений, просто сильно усиль свет от фар".
+
+Reverted in full, and by `git checkout` rather than by hand so the two
+lighting files are byte-identical to what they were before the experiment:
+`RuntimeSceneSetup.cs` (the second `ApplyMountainRoadLighting` overload, the
+`grade.DirectionalScale` factors, the fog writes and the `directional.enabled`
+override), `MountainRoadAtmosphere.cs` (`BindRide`, `UpdateRideBlackout`,
+`ApplyRideBlackout`, `ApplyRideGradeToVolume`, the camera clear colour and the
+`EnvironmentRefreshStep` throttle), and `MountainRoadRideGrade.cs` is deleted
+outright along with the two EditMode tests that pinned its window. Nothing of
+the snow, the wind, the swaying crowns or the foliage shadows is touched —
+they were the same session's work but not the same feature.
+
+**The headlights stay, and they now own their own switch.** They were powered
+by `headlights.SetPower(rideBlackout)`, so deleting the grade would have left
+them permanently dark. `LastRouteCarHeadlights.Follow(ride)` polls the
+controller's flags in its own `Update` and ramps `1.2 s` up / `2.5 s` down on
+UNSCALED time; `MountainRoadRoot` wires it straight to `Ride` and the
+atmosphere no longer knows the journey exists. That coupling only ever existed
+because the thing putting the sun out was also the thing that would put it
+back every game minute; with the sun staying up, a headlight is a switch on a
+car again.
+
+`BeamIntensity` `2600 → 6000` and `SpillIntensity` `130 → 300`. **Not
+measured, and the comment says so.** The `2600` was measured, but against the
+blacked-out world that no longer exists, and the editor held the project lock
+for the whole of this change so no capture could be run — the doc comment
+carries the method (main camera to a RenderTexture, read back sRGB, camera not
+`0.6 m` behind the car) for whoever tunes it next. Note that reverting the
+grade also restores the area's own bloom threshold `0.55 → 0.72` and vignette
+`0.24 → 0.13`, so the pools bloom less hard at any intensity than the pulled
+screenshot showed.
+
+**Unverified by test run.** `dotnet build` is clean on all three assemblies;
+no EditMode or PlayMode suite could be run, because `Temp/UnityLockfile` was
+held by the user's own editor throughout.
+
+## 2026-08-26 — The climb happens in the dark, in the wind, in the snow
+
+**Superseded — the blackout half of this entry was pulled the same day; see
+the entry above. The wind, snow and foliage-shadow work stands.**
+
+The ride up the serpentine read as a daytime drive. Three separate things
+were missing, and each one had a mechanical reason it could not simply be
+switched on.
+
+- **The headlights were never lights.** `LastRouteCarFactory` hung two halo
+  billboards where the lamps are, on the stated ground that the night light
+  budget belongs to the street masts. That holds in the city. On a mountain
+  with no masts, no windows and no sun it left a bloom around a lamp that was
+  lighting nothing. `LastRouteCarHeadlights` now adds two shadow-casting
+  `46°` spots and one wide unshadowed spill on top — the halos are untouched,
+  because the glow was never what was missing. The virtual sources sit
+  `1.8 m` BEHIND the lens they shine out of: inverse-square otherwise makes
+  the four metres in front of the bumper eleven times brighter than the pool
+  at fourteen, and setting the source back flattens that to about four. They
+  hang off the sprung body, so the beam dips under braking for free; the
+  halos stay on the runtime root, which deliberately does not rock because it
+  carries the obstacle collider.
+- **The blackout had to live inside the per-minute lighting apply, not beside
+  it.** `MountainRoadAtmosphere.Update` re-applies the exterior grade every
+  time the game minute ticks, so anything written over it from outside would
+  be wiped within a second. `MountainRoadRideGrade` is therefore a PARAMETER
+  of `RuntimeSceneSetup.ApplyMountainRoadLighting`, and the atmosphere carries
+  its weight. The directional is switched off outright rather than dimmed —
+  URP then drops the main-light shadow map, which is what pays for the two new
+  shadow-casting beams, and it can never promote a headlight in its place
+  because only directional lights are eligible.
+- **Killing the sun was half of it. The fog was the other half.** The area's
+  fog is a pale grey-green `(0.265, 0.315, 0.300)` that is two thirds of the
+  frame by forty metres — on its own brighter than anything two headlights
+  will light. Kill the sun and leave it and the result is not a dark road but
+  a grey soup with a bright hole in it. Fog colour, camera clear colour,
+  ambient and reflection all travel on the one weight; density goes to
+  `0.042`, which doubles as what hides the far ridges nothing is lighting any
+  more. `DynamicGI.UpdateEnvironment` fires on the endpoints and a few times
+  across the ramp, never per frame.
+- **The trees needed a second URP Lit clone, and the reason is one vertex
+  channel.** All 420 crowns are two cones each merged into one mesh per
+  layer, so there is no transform to rotate. The four passes that must agree
+  on a displacement — forward, shadow, depth, depth-normals — share exactly
+  `POSITION` and `TEXCOORD0` between them: `ShadowCasterPass` and
+  `DepthOnlyPass` declare no `texcoord1` and no `COLOR`, and `DepthOnlyPass`
+  even names its position field `position` rather than `positionOS`. So the
+  crown's V now measures height above THAT TREE'S OWN FOOT instead of above
+  the world origin, which yields the bend lever, the tree's own altitude
+  (`positionWS.y - aboveBase`) and, with the vertex's world XZ, a per-tree
+  phase — all of it out of UV0. Altitude moved into the U phase, which is
+  where the vertical decorrelation between neighbouring trees used to come
+  from.
+- **`Ps1LitFoliage.shader` wraps FOUR passes where `Ps1Lit` wraps three, and
+  the extra one is ShadowCaster.** Snap and wind are not the same kind of
+  thing. The snap is a projection-space artefact of the camera's own grid, so
+  no snap in a shadow map can ever agree with it. The wind is an object-space
+  displacement identical under every projection, so the shadow must carry it
+  — a crown whose shadow stands still while the crown sways is the bug, and
+  on this road it is the most visible one there is, because the headlights
+  throw those shadows straight across the asphalt. `Ps1LitShaderParityTests`
+  is now parameterized over both clones, with one extra fixture asserting
+  three snaps and four bends in the foliage file.
+- **Snow is the same schedule, not a new kind of weather.** `WeatherKind`
+  gains nothing; `CityWeatherController` gains one optional
+  `ICityWeatherShaper`, and `MountainRoadWeatherShaper` re-reads the city's
+  own sample for a place that is higher. One hook rather than a second
+  component, because the controller already writes the cloth registry and the
+  precipitation drift every frame and anything else writing them would be a
+  race decided by execution order. `CityRainField` is parameterized by a
+  `CityPrecipitationProfile` rather than duplicated: a flake settles at about
+  a metre a second, which forces ten times the lifetime, which forces the
+  particle count up and the emission rate down, which is most of the table.
+- **Altitude, never ride progress.** `MountainRoadWeatherRules` keys
+  everything off world Y between the route's foot and its summit, so one
+  number serves the car, the hero on foot afterwards, and every individual
+  tree on the slope. The decision worth arguing about is the snow floor:
+  `55%` of weather slots are Clear, so a snowfall that were nothing but the
+  schedule would leave more than half of all rides dry — and the ride is
+  taken once. The summit therefore snows at `0.55` even in a Clear slot. The
+  sway amplitude the trees are driven with is deliberately UNCLAMPED up to
+  `1.6`, because `WindSample.Strength01` clamps by construction and pushing
+  the altitude gain through it would flatten exactly the case that should be
+  worst.
+- **The rain bed is gone from the mountain and a wind bed replaced it.** Snow
+  is silent; what the climb sounds like is the wind driving it sideways.
+  `MountainRoadWindSound` sits beside `CityRainSound` rather than inside
+  `MountainRoadSoundSynthesis`, whose whole contract is that every clip
+  belongs to a visible object — its snow-pole whine is a pole resonating, not
+  air.
+- **Shadows.** The far conifer layer now casts and receives (it stands
+  `17-28 m` out, inside both the `50 m` shadow distance and the beam, and is
+  the only thing between the light and the void), and the terminal apron
+  receives (the car parks on it under its own beams). The far snowy ring stays
+  off at `62 m`, and the haul cable stays off because `55 mm` of cable is
+  sub-texel at `640x360`. Crown mesh bounds are expanded by `2.5 m` so the
+  wind cannot bend a stand out of its own culling volume.
+
+### Corrections after the first build came up black
+
+Two defects, both in the lighting half, both found by looking rather than
+reasoning.
+
+- **The beams pointed at the sky.** `LastRouteCarSuspension` sets
+  `sprungBody.localRotation = body.localRotation`, so the sprung body inherits
+  the IMPORTED node's axes — and this car's imported forward is very nearly
+  vertical. The lamps were parented there and aimed with a local Euler, so they
+  burned at full power into nothing. The blackout had already put the sun out;
+  nothing threw and nothing logged, and the scene was pure black. This is the
+  seventh instance of the imported-basis trap in this project. Every axis now
+  comes from the runtime root and the WORLD pose is written after parenting, so
+  the spring still carries it.
+  `LastRouteCarPlacementTests.BurningHeadlights_PointDownTheRoadAndRideTheSprings`
+  is the guard that was missing.
+- **The fog, not the ambient, is what makes a night legible here — and it had
+  been set to near-black.** Distant geometry blends TO the fog colour, so the
+  forest beside the road is not lit at all: it IS the fog, and in a captured
+  frame it measures `0.088` against the road's `0.066` — brighter than the
+  road. Taking the fog to `(0.020, 0.024, 0.028)` therefore deleted every tree,
+  ridge and rail outside the beam. Sweeping `RenderSettings.ambientLight` from
+  `0.13` to `0.28` moved that same forest from `0.0000` to `0.0003`, which is
+  to say ambient is not a lever in this scene at all. Shipping: fog
+  `(0.115, 0.135, 0.142)` at density `0.028`, ambient `(0.045, 0.052, 0.058)`
+  as a floor only. The grade test now pins a WINDOW in both directions —
+  too pale is grey soup, too dark deletes the mountain.
+- **The beam intensity was twenty times short, and only a capture said so.**
+  Arithmetic against the street masts (`31` over `16.5 m`) gave `110`; a mast
+  lights a pavement eight metres below it and a headlight throws twenty. A
+  throwaway PlayMode probe — real world, forced grade, main camera rendered to
+  a RenderTexture, mean luminance reported — put the answer at `2600` over
+  `58 m` at `52°`, which lands the lit road at `0.083` against `0.066` for the
+  same view under ordinary lighting. Two traps inside the probe itself, both of
+  which produced convincing lies: a Linear readback encoded as PNG reads about
+  ten times too dark (use sRGB), and a camera `0.6 m` behind the car is inside
+  the cabin. The probe was deleted afterwards.
+- `additionalLightsShadowResolutionTier` throws outside play mode and takes the
+  whole car build down with it; it is guarded by `Application.isPlaying`.
+
+Verification: `MountainRoadRideWeatherTests` (new, pure — climb monotonicity,
+the snow floor and its two-axis monotonicity, summit-versus-tunnel wind in
+every slot, and the grade's identity at rest and blackout at full),
+`MountainRoadSurfaceAppearanceTests` and `Ps1LitShaderParityTests` in the same
+selection. The PlayMode ride suite and a player build were deliberately not
+run.
+
 ## 2026-08-26 — The mountain road stopped being flat colour
 
 The area was built entirely out of untextured tints. Six sheets are now

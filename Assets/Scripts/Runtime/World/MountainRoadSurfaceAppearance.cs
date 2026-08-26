@@ -106,8 +106,43 @@ namespace BarPromenade
         private static readonly int MetallicId =
             Shader.PropertyToID("_Metallic");
 
+        /// <summary>
+        /// The one material on the mountain that is NOT the shared runtime
+        /// primitive: the conifer crowns, which bend in the wind and so need
+        /// the foliage clone's vertex stage. Its `UnityPerMaterial` is
+        /// identical to stock URP Lit, exactly like the primitive material's,
+        /// so the property-block path below reaches it unchanged and the SRP
+        /// Batcher keeps batching. See `MountainWindSway.hlsl`.
+        /// </summary>
+        public const string FoliageMaterialResourcePath =
+            "Materials/MountainFoliageLit";
+
         private static Texture2D[] cachedTextures =
             new Texture2D[SurfaceCount];
+        private static Material cachedFoliageMaterial;
+
+        public static Material FoliageMaterial
+        {
+            get
+            {
+                if (cachedFoliageMaterial == null)
+                {
+                    cachedFoliageMaterial = Resources.Load<Material>(
+                        FoliageMaterialResourcePath);
+                }
+
+                if (cachedFoliageMaterial == null ||
+                    cachedFoliageMaterial.shader == null ||
+                    !cachedFoliageMaterial.shader.isSupported)
+                {
+                    throw new InvalidOperationException(
+                        "Missing or unsupported mountain foliage material " +
+                        $"'{FoliageMaterialResourcePath}'.");
+                }
+
+                return cachedFoliageMaterial;
+            }
+        }
 
         public static HomeSurfaceRecipe GetRecipe(
             MountainRoadSurfaceKind kind)
@@ -309,16 +344,43 @@ namespace BarPromenade
             MountainRoadSurfaceKind kind,
             Color sourceTint)
         {
+            ApplyCombined(
+                renderer,
+                kind,
+                sourceTint,
+                RuntimePrimitiveFactory.DefaultMaterial);
+        }
+
+        /// <summary>
+        /// The same combined path on a caller-chosen shared material. It
+        /// exists for one renderer family — the conifer crowns, which wear
+        /// <see cref="FoliageMaterial"/> so they can bend — and it takes the
+        /// material rather than a flag so no future surface can pick up wind
+        /// by accident. The material must still be SHARED; this path creates
+        /// no instances, exactly like the default one.
+        /// </summary>
+        public static void ApplyCombined(
+            Renderer renderer,
+            MountainRoadSurfaceKind kind,
+            Color sourceTint,
+            Material sharedMaterial)
+        {
             if (renderer == null)
             {
                 return;
+            }
+
+            if (sharedMaterial == null)
+            {
+                throw new ArgumentNullException(nameof(sharedMaterial));
             }
 
             ApplySharedProperties(
                 renderer,
                 kind,
                 sourceTint,
-                GetRecipe(kind));
+                GetRecipe(kind),
+                sharedMaterial);
         }
 
         internal static Color CreateDisplayTint(
@@ -336,7 +398,22 @@ namespace BarPromenade
             Color sourceTint,
             HomeSurfaceRecipe recipe)
         {
-            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+            ApplySharedProperties(
+                renderer,
+                kind,
+                sourceTint,
+                recipe,
+                RuntimePrimitiveFactory.DefaultMaterial);
+        }
+
+        private static void ApplySharedProperties(
+            Renderer renderer,
+            MountainRoadSurfaceKind kind,
+            Color sourceTint,
+            HomeSurfaceRecipe recipe,
+            Material sharedMaterial)
+        {
+            renderer.sharedMaterial = sharedMaterial;
             var properties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(properties);
             properties.SetTexture(BaseMapId, GetTexture(kind));
@@ -367,6 +444,7 @@ namespace BarPromenade
         private static void ResetCachedResources()
         {
             cachedTextures = new Texture2D[SurfaceCount];
+            cachedFoliageMaterial = null;
         }
     }
 }

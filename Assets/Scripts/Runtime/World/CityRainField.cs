@@ -4,10 +4,164 @@ using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
+    public enum CityPrecipitationKind
+    {
+        Rain = 0,
+        Snow = 1
+    }
+
     /// <summary>
-    /// Maintains a scene-local field of falling rain streaks around a follow
+    /// Everything that differs between the two things the sky drops.
+    ///
+    /// The field around them is identical — same follow, same box, same
+    /// sheltered donut, same continuous intensity, same shared atmosphere
+    /// material — so the kind is a table rather than a second component.
+    /// Rain's numbers are the ones the constants on
+    /// <see cref="CityRainField"/> still name, because the city is the
+    /// default and its contracts are asserted against those constants.
+    /// </summary>
+    public readonly struct CityPrecipitationProfile
+    {
+        private CityPrecipitationProfile(
+            int maximumParticles,
+            float maximumEmissionRate,
+            float emissionExponent,
+            float lifetimeSeconds,
+            float prewarmSeconds,
+            Vector2 fallSpeedRange,
+            Vector2 quietSizeRange,
+            Vector2 heavySizeRange,
+            Color tint,
+            Vector2 alphaRange,
+            bool stretched,
+            Vector2 velocityScaleRange,
+            Vector2 driftScaleRange,
+            float driftJitter,
+            float spinDegreesPerSecond,
+            Vector3 turbulence,
+            float edgePower,
+            float shaderNoiseStrength,
+            float softParticleDistance)
+        {
+            MaximumParticles = maximumParticles;
+            MaximumEmissionRate = maximumEmissionRate;
+            EmissionExponent = emissionExponent;
+            LifetimeSeconds = lifetimeSeconds;
+            PrewarmSeconds = prewarmSeconds;
+            FallSpeedRange = fallSpeedRange;
+            QuietSizeRange = quietSizeRange;
+            HeavySizeRange = heavySizeRange;
+            Tint = tint;
+            AlphaRange = alphaRange;
+            Stretched = stretched;
+            VelocityScaleRange = velocityScaleRange;
+            DriftScaleRange = driftScaleRange;
+            DriftJitter = driftJitter;
+            SpinDegreesPerSecond = spinDegreesPerSecond;
+            Turbulence = turbulence;
+            EdgePower = edgePower;
+            ShaderNoiseStrength = shaderNoiseStrength;
+            SoftParticleDistance = softParticleDistance;
+        }
+
+        public int MaximumParticles { get; }
+        public float MaximumEmissionRate { get; }
+        public float EmissionExponent { get; }
+        public float LifetimeSeconds { get; }
+        public float PrewarmSeconds { get; }
+        public Vector2 FallSpeedRange { get; }
+        public Vector2 QuietSizeRange { get; }
+        public Vector2 HeavySizeRange { get; }
+        public Color Tint { get; }
+        public Vector2 AlphaRange { get; }
+        public bool Stretched { get; }
+        public Vector2 VelocityScaleRange { get; }
+        public Vector2 DriftScaleRange { get; }
+        public float DriftJitter { get; }
+        public float SpinDegreesPerSecond { get; }
+
+        /// <summary>Strength, frequency and scroll of the swirl; zero
+        /// strength leaves the noise module off entirely.</summary>
+        public Vector3 Turbulence { get; }
+
+        public float EdgePower { get; }
+        public float ShaderNoiseStrength { get; }
+        public float SoftParticleDistance { get; }
+
+        public static CityPrecipitationProfile Rain { get; } =
+            new CityPrecipitationProfile(
+                CityRainField.MaximumParticles,
+                CityRainField.MaximumEmissionRate,
+                1.35f,
+                1.1f,
+                2.5f,
+                new Vector2(-16.5f, -12.5f),
+                new Vector2(0.013f, 0.018f),
+                new Vector2(0.018f, 0.028f),
+                new Color(0.78f, 0.84f, 0.90f, 1f),
+                new Vector2(0.10f, 0.16f),
+                true,
+                new Vector2(0.018f, 0.030f),
+                new Vector2(
+                    CityRainField.DriftScaleMin,
+                    CityRainField.DriftScaleMax),
+                0.2f,
+                0f,
+                Vector3.zero,
+                1.15f,
+                0f,
+                0.45f);
+
+        /// <summary>
+        /// The mountain road, where the same schedule falls frozen.
+        ///
+        /// Almost every number is a consequence of one of them: a flake
+        /// settles at about a metre a second, so it needs ten times the
+        /// lifetime to cross the same twelve metres, so it needs the same
+        /// factor more particles alive to look like weather, so the rate has
+        /// to come down to keep the count under the cap. It is a billboard
+        /// rather than a streak because a flake has no velocity smear, which
+        /// then forces a real size — the streak's two centimetres were only
+        /// ever legible because stretching drew them longer.
+        /// </summary>
+        public static CityPrecipitationProfile Snow { get; } =
+            new CityPrecipitationProfile(
+                760,
+                58f,
+                1.15f,
+                12f,
+                12f,
+                new Vector2(-1.45f, -0.95f),
+                new Vector2(0.030f, 0.052f),
+                new Vector2(0.048f, 0.075f),
+                new Color(0.90f, 0.93f, 0.97f, 1f),
+                new Vector2(0.32f, 0.55f),
+                false,
+                new Vector2(0f, 0f),
+                new Vector2(0.85f, 1.55f),
+                0.28f,
+                35f,
+                new Vector3(0.35f, 0.22f, 0.12f),
+                1.05f,
+                0.25f,
+                0.45f);
+
+        public static CityPrecipitationProfile For(
+            CityPrecipitationKind kind)
+        {
+            return kind == CityPrecipitationKind.Snow ? Snow : Rain;
+        }
+    }
+
+    /// <summary>
+    /// Maintains a scene-local field of falling precipitation around a follow
     /// target. Intensity is continuous so the deterministic weather schedule
-    /// can fade between clear, light and heavy rain without pops.
+    /// can fade between clear, light and heavy without pops.
+    ///
+    /// It carries whatever the sky is dropping: the city gets rain, the
+    /// mountain road gets the same schedule as snow. The name is the city's
+    /// because the city is the default and its contracts are written against
+    /// these constants; the kind is chosen at initialization.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CityRainField : MonoBehaviour
@@ -38,10 +192,8 @@ namespace BarPromenade
         public const float DriftScaleMax = 1.05f;
 
         private const string ParticleObjectName = "City Rain Particles";
-        private const float InitialFillSeconds = 2.5f;
         private const float MinimumVisibleIntensity = 0.005f;
         private const float DriftChangeThreshold = 0.05f;
-        private const float DriftJitter = 0.2f;
         private static readonly int EdgePowerId =
             Shader.PropertyToID("_EdgePower");
         private static readonly int NoiseStrengthId =
@@ -53,11 +205,15 @@ namespace BarPromenade
         [SerializeField] private ParticleSystemRenderer rainRenderer;
 
         private Transform followTarget;
+        private CityPrecipitationProfile profile =
+            CityPrecipitationProfile.Rain;
         private float appliedIntensity = -1f;
         private bool appliedSheltered;
         private Vector2 appliedWindDrift;
 
         public bool IsInitialized { get; private set; }
+        public CityPrecipitationKind Kind { get; private set; }
+        public CityPrecipitationProfile Profile => profile;
         public Transform FollowTarget => followTarget;
         public ParticleSystem Particles => particles;
         public ParticleSystemRenderer RainRenderer => rainRenderer;
@@ -70,7 +226,8 @@ namespace BarPromenade
             Transform target,
             Material rainMaterial,
             int seed,
-            float initialIntensity = 0f)
+            float initialIntensity = 0f,
+            CityPrecipitationKind kind = CityPrecipitationKind.Rain)
         {
             followTarget = target != null
                 ? target
@@ -80,6 +237,8 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(rainMaterial));
             }
 
+            Kind = kind;
+            profile = CityPrecipitationProfile.For(kind);
             EnsureParticleSystem();
             PositionEmitter();
             ConfigureParticleSystem(
@@ -198,10 +357,12 @@ namespace BarPromenade
             main.playOnAwake = false;
             main.simulationSpace = ParticleSystemSimulationSpace.World;
             main.useUnscaledTime = true;
-            main.maxParticles = MaximumParticles;
-            main.startLifetime = 1.1f;
+            main.maxParticles = profile.MaximumParticles;
+            main.startLifetime = profile.LifetimeSeconds;
             main.startSpeed = 0f;
-            main.startRotation = 0f;
+            main.startRotation = profile.SpinDegreesPerSecond > 0f
+                ? new ParticleSystem.MinMaxCurve(0f, Mathf.PI * 2f)
+                : new ParticleSystem.MinMaxCurve(0f);
             main.gravityModifier = 0f;
 
             ParticleSystem.EmissionModule emission = particles.emission;
@@ -215,16 +376,24 @@ namespace BarPromenade
                 particles.velocityOverLifetime;
             velocity.enabled = true;
             velocity.space = ParticleSystemSimulationSpace.World;
-            velocity.y = new ParticleSystem.MinMaxCurve(-16.5f, -12.5f);
+            velocity.y = new ParticleSystem.MinMaxCurve(
+                profile.FallSpeedRange.x,
+                profile.FallSpeedRange.y);
             appliedWindDrift = Vector2.zero;
             ApplyWindDrift(appliedWindDrift);
 
             DisableUnusedModules();
+            ConfigureSpin();
             ConfigureRenderer(rainMaterial);
             ApplyIntensity(initialIntensity);
             appliedIntensity = initialIntensity;
 
-            particles.Simulate(InitialFillSeconds, true, true, true);
+            // Long enough to fill the whole column. A flake takes ten
+            // seconds to fall the field's twelve metres, so a rain-sized
+            // prewarm would leave the sky empty for the first third of the
+            // climb - which is exactly the tunnel mouth the player arrives
+            // through.
+            particles.Simulate(profile.PrewarmSeconds, true, true, true);
             particles.Play(true);
         }
 
@@ -236,14 +405,36 @@ namespace BarPromenade
             velocity.z = CreateDriftCurve(wind.y);
         }
 
-        private static ParticleSystem.MinMaxCurve CreateDriftCurve(
+        private ParticleSystem.MinMaxCurve CreateDriftCurve(
             float windComponent)
         {
-            float near = windComponent * DriftScaleMin;
-            float far = windComponent * DriftScaleMax;
+            float near = windComponent * profile.DriftScaleRange.x;
+            float far = windComponent * profile.DriftScaleRange.y;
             return new ParticleSystem.MinMaxCurve(
-                Mathf.Min(near, far) - DriftJitter,
-                Mathf.Max(near, far) + DriftJitter);
+                Mathf.Min(near, far) - profile.DriftJitter,
+                Mathf.Max(near, far) + profile.DriftJitter);
+        }
+
+        /// <summary>
+        /// Tumble. Without it a field of soft discs reads as drifting dust
+        /// rather than as snow; a streak has an axis already and takes none.
+        /// </summary>
+        private void ConfigureSpin()
+        {
+            ParticleSystem.RotationOverLifetimeModule rotation =
+                particles.rotationOverLifetime;
+            if (profile.SpinDegreesPerSecond <= 0f)
+            {
+                rotation.enabled = false;
+                return;
+            }
+
+            float radians = profile.SpinDegreesPerSecond * Mathf.Deg2Rad;
+            rotation.enabled = true;
+            rotation.separateAxes = false;
+            rotation.z = new ParticleSystem.MinMaxCurve(
+                -radians,
+                radians);
         }
 
         private void ApplyShape(bool sheltered)
@@ -278,19 +469,31 @@ namespace BarPromenade
             }
 
             emission.rateOverTime =
-                MaximumEmissionRate * Mathf.Pow(intensity, 1.35f);
+                profile.MaximumEmissionRate *
+                Mathf.Pow(intensity, profile.EmissionExponent);
 
             ParticleSystem.MainModule main = particles.main;
             main.startSize = new ParticleSystem.MinMaxCurve(
-                Mathf.Lerp(0.013f, 0.018f, intensity),
-                Mathf.Lerp(0.018f, 0.028f, intensity));
+                Mathf.Lerp(
+                    profile.QuietSizeRange.x,
+                    profile.HeavySizeRange.x,
+                    intensity),
+                Mathf.Lerp(
+                    profile.QuietSizeRange.y,
+                    profile.HeavySizeRange.y,
+                    intensity));
             main.startColor = new Color(
-                0.78f,
-                0.84f,
-                0.90f,
-                Mathf.Lerp(0.10f, 0.16f, intensity));
-            rainRenderer.velocityScale =
-                Mathf.Lerp(0.018f, 0.030f, intensity);
+                profile.Tint.r,
+                profile.Tint.g,
+                profile.Tint.b,
+                Mathf.Lerp(
+                    profile.AlphaRange.x,
+                    profile.AlphaRange.y,
+                    intensity));
+            rainRenderer.velocityScale = Mathf.Lerp(
+                profile.VelocityScaleRange.x,
+                profile.VelocityScaleRange.y,
+                intensity);
         }
 
         private void DisableUnusedModules()
@@ -304,8 +507,28 @@ namespace BarPromenade
             trigger.enabled = false;
             ParticleSystem.TrailModule trails = particles.trails;
             trails.enabled = false;
+            // The swirl a flake takes on the way down. Rain falls too fast
+            // and lives too briefly for turbulence to show, so it stays off
+            // there and this module is the profile's to decide.
             ParticleSystem.NoiseModule noise = particles.noise;
-            noise.enabled = false;
+            if (profile.Turbulence.x > 0f)
+            {
+                noise.enabled = true;
+                noise.separateAxes = false;
+                noise.quality = ParticleSystemNoiseQuality.Medium;
+                noise.octaveCount = 1;
+                noise.damping = true;
+                noise.strength =
+                    new ParticleSystem.MinMaxCurve(profile.Turbulence.x);
+                noise.frequency = profile.Turbulence.y;
+                noise.scrollSpeed =
+                    new ParticleSystem.MinMaxCurve(profile.Turbulence.z);
+            }
+            else
+            {
+                noise.enabled = false;
+            }
+
             ParticleSystem.ColorOverLifetimeModule color =
                 particles.colorOverLifetime;
             color.enabled = false;
@@ -323,9 +546,12 @@ namespace BarPromenade
         private void ConfigureRenderer(Material rainMaterial)
         {
             rainRenderer.sharedMaterial = rainMaterial;
-            rainRenderer.renderMode = ParticleSystemRenderMode.Stretch;
+            rainRenderer.renderMode = profile.Stretched
+                ? ParticleSystemRenderMode.Stretch
+                : ParticleSystemRenderMode.Billboard;
+            rainRenderer.alignment = ParticleSystemRenderSpace.View;
             rainRenderer.lengthScale = 0f;
-            rainRenderer.velocityScale = 0.024f;
+            rainRenderer.velocityScale = profile.VelocityScaleRange.x;
             rainRenderer.cameraVelocityScale = 0f;
             rainRenderer.sortMode = ParticleSystemSortMode.None;
             rainRenderer.minParticleSize = 0f;
@@ -341,9 +567,13 @@ namespace BarPromenade
             rainRenderer.allowOcclusionWhenDynamic = true;
 
             var properties = new MaterialPropertyBlock();
-            properties.SetFloat(EdgePowerId, 1.15f);
-            properties.SetFloat(NoiseStrengthId, 0f);
-            properties.SetFloat(SoftParticleDistanceId, 0.45f);
+            properties.SetFloat(EdgePowerId, profile.EdgePower);
+            properties.SetFloat(
+                NoiseStrengthId,
+                profile.ShaderNoiseStrength);
+            properties.SetFloat(
+                SoftParticleDistanceId,
+                profile.SoftParticleDistance);
             rainRenderer.SetPropertyBlock(properties);
         }
 

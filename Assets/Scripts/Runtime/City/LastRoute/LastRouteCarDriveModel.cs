@@ -136,6 +136,7 @@ namespace BarPromenade
 
         private readonly LastRouteCarDrivePath path;
         private readonly LastRouteCarDriveProfile profile;
+        private float holdDistance = float.PositiveInfinity;
 
         public LastRouteCarDriveModel(
             LastRouteCarDrivePath drivePath,
@@ -177,6 +178,47 @@ namespace BarPromenade
 
         public bool HasArrived =>
             Remaining <= 0.01f && Speed <= StoppedSpeed;
+
+        /// <summary>
+        /// Where along the road the car will not go past, or
+        /// <see cref="float.PositiveInfinity"/> when nothing is holding it.
+        /// </summary>
+        public float HoldDistance => holdDistance;
+
+        /// <summary>
+        /// Standing still short of the end of the road because something is
+        /// holding it there. The end of the road is
+        /// <see cref="HasArrived"/>; this is a car waiting at a give-way
+        /// line, and the suspension and the audio both want to know the
+        /// difference.
+        /// </summary>
+        public bool IsWaiting =>
+            !float.IsPositiveInfinity(holdDistance) &&
+            Speed <= StoppedSpeed &&
+            Remaining > 0.01f;
+
+        /// <summary>
+        /// Puts a line across the road that the car will not cross.
+        ///
+        /// It works as a SPEED ceiling and never as a clamp on the distance
+        /// covered, which matters: a hold armed late - a bus that appears
+        /// round a corner - then costs the hardest stop the car has and a
+        /// metre or two over the line, exactly as it would in a real one,
+        /// instead of freezing the car mid-street in a single frame.
+        /// </summary>
+        public void SetHold(float distance)
+        {
+            holdDistance = float.IsNaN(distance)
+                ? float.PositiveInfinity
+                : Mathf.Max(0f, distance);
+        }
+
+        /// <summary>Lifts the hold. The car pulls away on its own
+        /// acceleration, from wherever it happens to be standing.</summary>
+        public void ReleaseHold()
+        {
+            holdDistance = float.PositiveInfinity;
+        }
 
         /// <summary>
         /// Starts the car somewhere other than stopped at the kerb.
@@ -242,6 +284,20 @@ namespace BarPromenade
             float limit = Mathf.Sqrt(
                 Mathf.Max(0f, 2f * profile.Braking * Remaining));
             limit = Mathf.Min(limit, profile.CruiseSpeed);
+
+            // And so is a give-way line, for as long as it is down. Same
+            // arithmetic, so a car braking to a stop line settles onto it
+            // the same way it settles onto the terminus.
+            if (!float.IsPositiveInfinity(holdDistance))
+            {
+                limit = Mathf.Min(
+                    limit,
+                    Mathf.Sqrt(
+                        Mathf.Max(
+                            0f,
+                            2f * profile.Braking *
+                            (holdDistance - Distance))));
+            }
 
             float horizon = Mathf.Max(
                 MinimumHorizonMeters,
