@@ -341,6 +341,9 @@ namespace BarPromenade
                 case CityDecorationKind.RoadsideCappedStandpipe:
                     miscKind = CityMiscKind.RoadsideCappedStandpipe;
                     return true;
+                case CityDecorationKind.LotGroundDownpipeOutfall:
+                    miscKind = CityMiscKind.LotGroundDownpipeOutfall;
+                    return true;
                 case CityDecorationKind.ParkFountainAndStatue:
                     miscKind = CityMiscKind.ParkFountainAndStatue;
                     return true;
@@ -486,6 +489,7 @@ namespace BarPromenade
                 // drain is, whatever the lot behind it measures.
                 case CityMiscKind.RoadsideDrainAndCover:
                 case CityMiscKind.RoadsideCappedStandpipe:
+                case CityMiscKind.LotGroundDownpipeOutfall:
                     return true;
                 default:
                     return false;
@@ -809,6 +813,9 @@ namespace BarPromenade
                 case CityDecorationKind.RoadsideCappedStandpipe:
                     BuildCappedStandpipe(context, parts);
                     break;
+                case CityDecorationKind.LotGroundDownpipeOutfall:
+                    BuildDownpipeOutfall(context, parts);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(descriptor),
@@ -841,6 +848,20 @@ namespace BarPromenade
                 0.215f, 0.044f, 0.215f);
             Add(parts, c, c.Primary, 0f, 0.115f, 0.44f,
                 0.86f, 0.180f, 0.40f);
+        }
+
+        private static void BuildDownpipeOutfall(
+            RecipeContext c,
+            ICollection<DecorationPart> parts)
+        {
+            Add(parts, c, c.Primary, 0f, 0.48f, -0.06f,
+                0.116f, 0.76f, 0.116f);
+            Add(parts, c, c.Primary, 0f, 0.115f, 0.06f,
+                0.124f, 0.124f, 0.30f);
+            Add(parts, c, c.Primary, 0f, 0.032f, 0.235f,
+                0.52f, 0.064f, 0.44f);
+            Add(parts, c, c.Primary, 0f, 0.012f, 0.64f,
+                0.30f, 0.024f, 0.42f);
         }
 
         private static void BuildChimneys(

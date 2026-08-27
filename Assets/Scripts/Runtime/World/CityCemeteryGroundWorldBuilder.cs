@@ -99,7 +99,14 @@ namespace BarPromenade
                     CityExteriorAppearance.CemeteryGround,
                     true,
                     CityCemeterySurfaceAppearance.GetRecipe(
-                        CityCemeterySurfaceKind.Soil).MetersPerTile);
+                        CityCemeterySurfaceKind.Soil).MetersPerTile,
+                    // The terrace is a solid slab, so wherever it meets
+                    // lower ground its side is a real wall the player
+                    // sees. Planar XZ smears the soil sheet down that
+                    // wall in vertical streaks; box projection gives
+                    // each face its own plane and leaves the top, which
+                    // is horizontal, projected exactly as before.
+                    RuntimeWorldUvMode.BoxProjected);
             CityCemeterySurfaceAppearance.ApplyCombined(
                 ground.GetComponent<Renderer>(),
                 CityCemeterySurfaceKind.Soil,

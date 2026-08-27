@@ -1153,4 +1153,16 @@ MonoBehaviour:
     role: 2
     surface: 0
     mesh: {fileID: -1789786195621452628, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: 43c0111050f9b485ee39bda0bfbf6ab70b609ce2bf7790334260b53ca9fe8eb6
+  - kind: 66
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 4121383090096701487, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 66
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 1678112186447561012, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  buildSignature: 0ff79a71f803ff38e5fdbf810a64c44365ed32da736ac28ebe0e3b36c9b11e08

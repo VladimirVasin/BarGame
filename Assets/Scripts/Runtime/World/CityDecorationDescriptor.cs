@@ -34,7 +34,12 @@ namespace BarPromenade
         // ironwork at the kerb: the city dies of its water and, until
         // these, showed none of it anywhere but the waterworks court.
         RoadsideDrainAndCover = 24,
-        RoadsideCappedStandpipe = 25
+        RoadsideCappedStandpipe = 25,
+
+        // The only kind that can live on the strip of bare soil
+        // between a lot's edge and its building: it is where the
+        // facade's downpipe finally reaches the ground.
+        LotGroundDownpipeOutfall = 26
     }
 
     public enum CityDecorationAnchorKind
@@ -45,7 +50,12 @@ namespace BarPromenade
         UrbanLandmark = 3,
         Roadside = 4,
         ParkFeature = 5,
-        ParkLandmark = 6
+        ParkLandmark = 6,
+
+        // The `1.25 m` band of bare soil ringing every building lot,
+        // inside the lot's own flattened pad. It is lot-anchored like a
+        // frontage but lies on the ground rather than against the wall.
+        LotGround = 7
     }
 
     public enum CityDecorationPalette
@@ -128,6 +138,7 @@ namespace BarPromenade
             AnchorKind == CityDecorationAnchorKind.BuildingRoof ||
             AnchorKind == CityDecorationAnchorKind.BuildingFacade ||
             AnchorKind == CityDecorationAnchorKind.BuildingFrontage ||
+            AnchorKind == CityDecorationAnchorKind.LotGround ||
             AnchorKind == CityDecorationAnchorKind.UrbanLandmark;
 
         public bool IsLandmark =>

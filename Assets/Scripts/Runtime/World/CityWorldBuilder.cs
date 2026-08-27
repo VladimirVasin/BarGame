@@ -319,13 +319,7 @@ namespace BarPromenade
                 }
             }
 
-            CityTerrainSurfaceWorldBuilder.Build(
-                "Active Land",
-                surfaces,
-                layout,
-                CitySurfaceKind.BuildableGround,
-                Color.white,
-                true);
+            BuildDistrictGround(surfaces, layout);
             parkLawn = BuildParkLawn(surfaces, layout);
             CityFringeYardGroundWorldBuilder.Build(
                 surfaces,
@@ -400,6 +394,75 @@ namespace BarPromenade
         /// own metre pitch, tinted with the green the flat lawn always
         /// had. Null when the layout has no park cells.
         /// </summary>
+        /// <summary>
+        /// The buildable ground, one mesh per district instead of one
+        /// for the whole city. Every district's soil carries its own
+        /// wear cast, so the four quadrants finally contribute to the
+        /// art bible's grayscale and three-second reads instead of
+        /// sharing one white-tinted sheet.
+        ///
+        /// Splitting costs three extra draws and no seam: the surfaces
+        /// are cut on `26 m` cell edges, which are street centrelines,
+        /// so every boundary between two districts' soil lies under the
+        /// middle of a road. Any buildable ground that belongs to no
+        /// district keeps the neutral sheet.
+        /// </summary>
+        private static void BuildDistrictGround(
+            Transform surfaces,
+            CityLayout layout)
+        {
+            var districtAreaIds = new List<string>();
+            for (int index = 0; index < layout.Districts.Count; index++)
+            {
+                CityDistrictDescriptor district = layout.Districts[index];
+                if (district.Kind == CityDistrictKind.CentralPark ||
+                    string.IsNullOrEmpty(district.AreaId) ||
+                    districtAreaIds.Contains(district.AreaId))
+                {
+                    continue;
+                }
+
+                districtAreaIds.Add(district.AreaId);
+                GameObject ground =
+                    CityTerrainSurfaceWorldBuilder.Build(
+                        $"Active Land ({district.AreaId})",
+                        surfaces,
+                        layout,
+                        CitySurfaceKind.BuildableGround,
+                        Color.white,
+                        true,
+                        null,
+                        null,
+                        CityTerrainSurfaceAreaFilter.IncludeOnly(
+                            new[] { district.AreaId }));
+                if (ground == null)
+                {
+                    continue;
+                }
+
+                // Build applies the neutral ground sheet itself, so the
+                // district cast has to be written after it, not through
+                // the colour argument it overwrites.
+                CityExteriorAppearance.ApplyGroundSurface(
+                    ground.GetComponent<Renderer>(),
+                    CityExteriorAppearance.ResolveDistrictGroundTint(
+                        CityDistrictPresentationPlanner
+                            .GetProfile(district.Kind)
+                            .Wear));
+            }
+
+            CityTerrainSurfaceWorldBuilder.Build(
+                "Active Land",
+                surfaces,
+                layout,
+                CitySurfaceKind.BuildableGround,
+                Color.white,
+                true,
+                null,
+                null,
+                CityTerrainSurfaceAreaFilter.Excluding(districtAreaIds));
+        }
+
         internal static GameObject BuildParkLawn(
             Transform parent,
             CityLayout layout)

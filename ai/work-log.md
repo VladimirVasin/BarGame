@@ -116,6 +116,71 @@ frontage placement, missing terrain joins, duplicate primitive masses and
 slot-window lighting. Full suites and a player build were intentionally not
 run in fast mode.
 
+## 2026-08-27 — Landscape pass finished: the tide mark, the terraces, the strip and the districts' own soil
+
+The last four items of the nine-item landscape analysis. Two of the three
+estimates I had published turned out to be wrong in the project's favour, and
+saying so is most of what this entry is for.
+
+**The wrack line.** `442 m` of sand carried no tide mark but the shader's foam.
+`AddWrackLine` now runs the whole row rather than one zone, because a wrack line
+does not care which mood of shore it crosses: the dead port, the esplanade and
+the wild east all get the same weed and the same litter at the same distance
+from the water. It wanders for the reason the foam does — the surf never reaches
+the same run of sand twice — and the mats lie ALONG the water within a few
+degrees, never across it. The river's cut through the sand is skipped; the mouth
+banks own that run. No new part kind: `Debris` was already in the enum.
+
+**The terraces.** The cemetery and church grounds are solid slabs, so wherever
+they meet lower ground their side is a real wall the player sees — and it was
+drawn with planar XZ UVs, which smear the soil sheet down that wall in vertical
+streaks. One argument each: `RuntimeWorldUvMode.BoxProjected`. `ProjectBoxUv`
+picks the plane from the face normal's dominant axis, so tops stay XZ and are
+byte-identical while the sides finally get their own.
+
+**The `1.25 m` strip, and the anchor it needed.** This is the one item that
+genuinely wanted a new `CityDecorationAnchorKind`, and the reason is worth
+keeping: the validator maps each decoration kind to exactly one anchor, so a
+ground anchor is meaningless without a kind that can only live there. That kind
+is `LotGroundDownpipeOutfall` — where a facade's downpipe finally reaches the
+ground, which the art bible has promised since its Old Town section and which
+has ended in nothing ever since. A cast shoe out of the wall, a splash block,
+and the runnel the water has cut across the bare soil. Catalogue `96 -> 97`
+assemblies, `190 -> 192` meshes, `GENERATOR_VERSION` `4.2.0`.
+
+Two things made it small. `ValidateAnchor` does not switch on anchor kind for
+lot-anchored descriptors, so `LotGround` needed no validation work — only an
+entry in `HasLotAnchor`, which is exactly the trap that would have sent it down
+the non-lot branch. And `TryCreateFrontageAnchor` already places on this strip
+and already samples the terrain through `CityTerrainSurfacePlan.TrySampleGroundTop`;
+it only needed an optional depth override, because most street furniture stands
+off the wall and an outfall is bolted to it.
+
+**The districts' own soil, and the seam that was not there.** I had reported
+this as blocked: either a hard colour seam down the middle of a street, or
+shader work the project forbids. Both horns were wrong. Each district is a
+single area id, and buildable surfaces are cut on `26 m` cell edges — which are
+street centrelines. So splitting the ground by district puts every boundary
+under four metres of asphalt on each side. `BuildDistrictGround` builds one mesh
+per district plus a neutral catch-all, costing three extra draws and no seam.
+
+The tint comes from `CityDistrictArtProfile.Wear`, which was authored long ago
+and read by nothing: the family says what the dirt here is made of and the
+amount says how much. Old Town gets brick dust and washed-down soot, Residential
+something swept and colder, Industrial the darkest soil in the city, Nightlife
+violet-cool and never quite dry. The cast is deliberately small — enough that
+the four quadrants separate in grayscale, which the art bible tests for, and not
+enough to make the ground a coloured floor. `Build` applies the neutral sheet
+itself, so the cast must be written after it rather than through the colour
+argument it overwrites.
+
+Verification: 569 EditMode City tests, 565 passed. The four reds are the same
+four, by name, as the sweep taken before any of this session's landscape work —
+all belong to the parallel buildings migration. The existing
+`DefaultCity_CoversEveryOrdinaryLotAndRequiredLandmarks` already demands at
+least one of every `CityDecorationKind` in the shipped city, so it is what
+proves the outfall actually places rather than silently failing to.
+
 ## 2026-08-27 — The city that dies of its water finally shows some
 
 The landscape analysis named this the strongest single addition available:

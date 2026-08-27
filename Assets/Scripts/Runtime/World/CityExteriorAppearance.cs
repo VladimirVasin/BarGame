@@ -114,6 +114,49 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// What a district's soil has taken on from the district. This
+        /// is the first consumer of <see cref="CityDistrictArtProfile"/>'s
+        /// wear channel, which was authored long ago and read by nothing:
+        /// the family says what the dirt here is made of and the amount
+        /// says how much of it there is.
+        ///
+        /// The cast stays small on purpose. It has to be enough that the
+        /// four districts separate in grayscale — the art bible tests
+        /// for that — and small enough that the ground never becomes a
+        /// coloured floor. Nothing here is a seam risk: the buildable
+        /// surfaces are cut on `26 m` cell edges, which run down the
+        /// middle of every street, so one district's soil meets the
+        /// next under four metres of asphalt.
+        /// </summary>
+        public static Color ResolveDistrictGroundTint(
+            CityDistrictWearProfile wear)
+        {
+            Color cast;
+            switch (wear.Family)
+            {
+                case CityDistrictWearFamily.SootWaterAndPatch:
+                    // Old Town: brick dust and soot washed down.
+                    cast = new Color(1.00f, 0.955f, 0.905f);
+                    break;
+                case CityDistrictWearFamily.RepairAndPersonalUse:
+                    // Residential: swept, greyer, colder.
+                    cast = new Color(0.955f, 0.975f, 1.00f);
+                    break;
+                case CityDistrictWearFamily.RustAndProcess:
+                    // Industrial: the darkest soil in the city.
+                    cast = new Color(0.965f, 0.905f, 0.845f);
+                    break;
+                default:
+                    // Nightlife: violet-cool, and never quite dry.
+                    cast = new Color(0.955f, 0.940f, 1.00f);
+                    break;
+            }
+
+            float amount = Mathf.Clamp01(wear.Amount);
+            return Color.Lerp(Color.white, cast, amount);
+        }
+
         public static void ApplyGroundSurface(Renderer renderer)
         {
             ApplyGroundSurface(renderer, Color.white);

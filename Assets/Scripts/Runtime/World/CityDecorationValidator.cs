@@ -454,6 +454,10 @@ namespace BarPromenade
                     expectedDistrict = CityDistrictKind.CentralPark;
                     expectedAnchor = CityDecorationAnchorKind.ParkFeature;
                     break;
+                case CityDecorationKind.LotGroundDownpipeOutfall:
+                    expectedDistrict = descriptor.District;
+                    expectedAnchor = CityDecorationAnchorKind.LotGround;
+                    break;
                 default:
                     throw new InvalidOperationException(
                         $"Unsupported decoration kind '{descriptor.Kind}'.");
@@ -541,6 +545,7 @@ namespace BarPromenade
             CityDecorationAnchorKind kind)
         {
             return kind == CityDecorationAnchorKind.BuildingFrontage ||
+                   kind == CityDecorationAnchorKind.LotGround ||
                    kind == CityDecorationAnchorKind.Roadside ||
                    kind == CityDecorationAnchorKind.ParkFeature ||
                    kind == CityDecorationAnchorKind.ParkLandmark;
@@ -571,6 +576,8 @@ namespace BarPromenade
                     return 1.1f;
                 case CityDecorationKind.RoadsideCappedStandpipe:
                     return 1.3f;
+                case CityDecorationKind.LotGroundDownpipeOutfall:
+                    return 1.0f;
                 case CityDecorationKind.ParkFountainAndStatue:
                     return 3.4f;
                 case CityDecorationKind.ParkBandstand:

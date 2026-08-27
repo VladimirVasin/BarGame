@@ -143,6 +143,7 @@ namespace BarPromenade
         private const uint PileSalt = 0x50494C45u;    // "PILE"
         private const uint DriftSalt = 0x44524654u;   // "DRFT"
         private const uint GrassSalt = 0x47525353u;   // "GRSS"
+        private const uint WrackSalt = 0x5752434Bu;   // "WRCK"
 
         internal const string PierDeckRootId = "seacoast-pier-deck-00";
         internal const string PierDeckHeadId = "seacoast-pier-deck-head";
@@ -218,6 +219,7 @@ namespace BarPromenade
             AddFootbridge(parts, layout, frame);
             AddPromenadeStairs(parts, layout, frame);
             AddWildShore(parts, layout, frame, layout.Seed, reserved);
+            AddWrackLine(parts, layout, frame, layout.Seed, reserved);
 
             var plan = new CitySeacoastPlan(parts, lamps, grounds, frame);
             ValidateOrThrow(layout, plan);
@@ -2518,6 +2520,83 @@ namespace BarPromenade
         // ------------------------------------------------------------------
         // the wild shore
         // ------------------------------------------------------------------
+
+        /// <summary>
+        /// The tide mark: what the sea leaves behind when it goes back
+        /// out. It runs the whole sand row rather than one zone,
+        /// because a wrack line does not care which mood of shore it
+        /// crosses — the dead port, the esplanade and the wild east all
+        /// get the same weed and the same litter at the same distance
+        /// from the water.
+        ///
+        /// It wanders for the reason the shader's foam line wanders:
+        /// the surf does not reach the same run of sand twice. The mats
+        /// lie ALONG the water within a few degrees, never across it.
+        /// </summary>
+        private static void AddWrackLine(
+            ICollection<CitySeacoastPartDescriptor> parts,
+            CityLayout layout,
+            in CitySeacoastFrame frame,
+            int seed,
+            IReadOnlyList<Rect> reserved)
+        {
+            const int stations = 54;
+            Rect row = frame.BeachRowBounds;
+            float from = row.xMin + 3f;
+            float to = row.xMax - 3f;
+            if (to - from < 40f)
+            {
+                return;
+            }
+
+            int emitted = 0;
+            for (int index = 0; index < stations; index++)
+            {
+                uint hash = StableHash(seed, index, 0, WrackSalt);
+                float x = Mathf.Lerp(
+                              from,
+                              to,
+                              (index + 0.5f) / stations) +
+                          ((hash & 0xFFu) / 255f - 0.5f) * 3.2f;
+                if (x > frame.ChannelXMin - 1.5f &&
+                    x < frame.ChannelXMax + 1.5f)
+                {
+                    // The river's cut through the sand: the mouth banks
+                    // own this run and no tide line crosses it.
+                    continue;
+                }
+
+                float z = frame.WaterlineZ -
+                          (0.55f +
+                           (((hash >> 8) & 0xFFu) / 255f) * 1.9f);
+                Rect footprint = Rect.MinMaxRect(
+                    x - 1.8f, z - 0.6f, x + 1.8f, z + 0.6f);
+                if (OverlapsAny(footprint, reserved, 0f))
+                {
+                    continue;
+                }
+
+                float ground = SampleSandTop(layout, x, z);
+                float length =
+                    1.15f + (((hash >> 16) & 0xFFu) / 255f) * 2.15f;
+                float width =
+                    0.30f + (((hash >> 24) & 0xFFu) / 255f) * 0.44f;
+                bool weed = (hash % 5u) != 0u;
+                parts.Add(Part(
+                    $"seacoast-wrack-{emitted:D2}",
+                    CitySeacoastPartKind.Debris,
+                    weed
+                        ? CitySeacoastStyle.Grass
+                        : CitySeacoastStyle.Litter,
+                    new Vector3(x, ground + 0.028f, z),
+                    Quaternion.Euler(
+                        0f,
+                        (float)((hash >> 4) % 25u) - 12f,
+                        0f),
+                    new Vector3(length, 0.055f, width)));
+                emitted++;
+            }
+        }
 
         private static void AddWildShore(
             ICollection<CitySeacoastPartDescriptor> parts,

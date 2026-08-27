@@ -357,7 +357,8 @@ namespace BarPromenade.Tests.EditMode
                 { CityDecorationKind.ParkChessTables, CityDecorationCollisionTier.Blocking },
                 { CityDecorationKind.ParkPlayground, CityDecorationCollisionTier.Blocking },
                 { CityDecorationKind.RoadsideDrainAndCover, CityDecorationCollisionTier.None },
-                { CityDecorationKind.RoadsideCappedStandpipe, CityDecorationCollisionTier.None }
+                { CityDecorationKind.RoadsideCappedStandpipe, CityDecorationCollisionTier.None },
+                { CityDecorationKind.LotGroundDownpipeOutfall, CityDecorationCollisionTier.None }
             };
 
             Array kinds = Enum.GetValues(typeof(CityDecorationKind));

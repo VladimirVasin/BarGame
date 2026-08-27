@@ -43,6 +43,7 @@ namespace BarPromenade
                 // the kerb. Nothing here takes a proxy.
                 case CityDecorationKind.RoadsideDrainAndCover:
                 case CityDecorationKind.RoadsideCappedStandpipe:
+                case CityDecorationKind.LotGroundDownpipeOutfall:
                     return CityDecorationCollisionTier.None;
                 default:
                     throw new ArgumentOutOfRangeException(

@@ -48,7 +48,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit  # noqa: E402
 
 
-GENERATOR_VERSION = "4.1.0"
+GENERATOR_VERSION = "4.2.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = "City Misc Citywide Catalog + Special Buildings"
 V2_GENERATOR_VERSION = "2.0.0"
@@ -1132,6 +1132,48 @@ def build_roadside_dumpster_and_utility() -> AssemblySpec:
         make_part(kind, variant, "Industrial", *industrial),
         make_part(kind, variant, "Street", *street),
     ))
+
+
+def build_lot_ground_downpipe_outfall() -> AssemblySpec:
+    """Where a facade downpipe finally reaches the ground.
+
+    The art bible has promised this since the Old Town section — «кабели,
+    водостоки и трубы образуют многолетнюю сеть» — and every downpipe in
+    the city has so far ended in nothing. This is the other end: a cast
+    shoe turning the pipe out of the wall, a splash block under it, and
+    the runnel the water has cut across the strip of bare soil that
+    rings every building. Forward is the wall's outward normal, so the
+    shoe leans out of the facade and the runnel runs away from it.
+    """
+    kind, variant = "LotGroundDownpipeOutfall", 0
+    street: list[Geometry] = [
+        # The last length of pipe against the wall, and the shoe that
+        # turns it out.
+        local_vertical_solid(0.0, 0.10, 0.86, -0.06,
+                             0.058, 0.058, top_scale=1.0, sides=9),
+        local_tube((0.0, 0.115, -0.055), (0.0, 0.115, 0.175),
+                   0.062, sides=9),
+        local_box(0.0, 0.905, -0.055, 0.185, 0.075, 0.075, 0.010),
+        # The strap that holds it to the brick.
+        local_box(0.0, 0.560, -0.098, 0.215, 0.038, 0.030, 0.006),
+    ]
+    masonry: list[Geometry] = [
+        # The splash block, and the runnel worn into the soil beyond it.
+        local_box(0.0, 0.032, 0.235, 0.52, 0.064, 0.44, 0.014),
+        local_box(0.0, 0.012, 0.640, 0.30, 0.024, 0.42, 0.008),
+        local_box(0.0, 0.008, 0.980, 0.22, 0.016, 0.30, 0.006),
+    ]
+    return AssemblySpec(
+        kind, variant, (
+            make_part(kind, variant, "Street", *street),
+            make_part(kind, variant, "Masonry", *masonry),
+        ),
+        root_derivation="LotGroundDownpipeOutfall.WallFoot+OutwardNormal",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+        canonical_reference=(
+            ("pipe_height", 0.94), ("runnel_reach", 1.13)),
+    )
 
 
 def build_roadside_drain_and_cover() -> AssemblySpec:
@@ -3508,6 +3550,7 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         # inserted — both compatibility signatures cover prefixes.
         build_roadside_drain_and_cover(),
         build_roadside_capped_standpipe(),
+        build_lot_ground_downpipe_outfall(),
     )
 
 
@@ -3661,6 +3704,7 @@ EXPECTED_VARIANTS = {
     "PlayerHomeBuildingShell": 1,
     "RoadsideDrainAndCover": 1,
     "RoadsideCappedStandpipe": 1,
+    "LotGroundDownpipeOutfall": 1,
 }
 
 EXPECTED_ROLES = {
@@ -3767,6 +3811,7 @@ EXPECTED_ROLES = {
         ("Masonry", "Street", "Industrial"),
     ("RoadsideDrainAndCover", 0): ("Street", "Masonry"),
     ("RoadsideCappedStandpipe", 0): ("Street", "Masonry"),
+    ("LotGroundDownpipeOutfall", 0): ("Street", "Masonry"),
 }
 
 
@@ -4020,11 +4065,11 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         if actual != list(range(count)):
             problems.append(
                 f"{kind} variants are {actual}, expected 0..{count - 1}")
-    if len(assemblies) != 96:
+    if len(assemblies) != 97:
         problems.append(
-            f"assembly count is {len(assemblies)}, expected 96")
-    if len(names) != 190:
-        problems.append(f"mesh count is {len(names)}, expected 190")
+            f"assembly count is {len(assemblies)}, expected 97")
+    if len(names) != 192:
+        problems.append(f"mesh count is {len(names)}, expected 192")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)

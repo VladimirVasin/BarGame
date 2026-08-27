@@ -75,7 +75,10 @@ namespace BarPromenade
                 boxes,
                 CityExteriorAppearance.ChurchGround,
                 true,
-                CityExteriorAppearance.GroundTextureTileSize);
+                CityExteriorAppearance.GroundTextureTileSize,
+                // Same reason as the cemetery terrace: a solid slab's
+                // exposed side is a wall, and planar XZ streaks it.
+                RuntimeWorldUvMode.BoxProjected);
             CityExteriorAppearance.ApplyGroundSurface(
                 ground.GetComponent<Renderer>(),
                 CityExteriorAppearance.ChurchGround);

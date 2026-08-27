@@ -75,7 +75,8 @@ namespace BarPromenade
         SupermarketBuildingShell = 62,
         PlayerHomeBuildingShell = 63,
         RoadsideDrainAndCover = 64,
-        RoadsideCappedStandpipe = 65
+        RoadsideCappedStandpipe = 65,
+        LotGroundDownpipeOutfall = 66
     }
 
     /// <summary>
@@ -164,11 +165,11 @@ namespace BarPromenade
     public sealed class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.1.0";
+        public const string GeneratorVersion = "4.2.0";
         public const string DesignId = "city_misc_citywide_v4";
-        public const int ExpectedAssemblyCount = 96;
-        public const int ExpectedMeshCount = 190;
-        public const int SupportedKindCount = 66;
+        public const int ExpectedAssemblyCount = 97;
+        public const int ExpectedMeshCount = 192;
+        public const int SupportedKindCount = 67;
 
         private const float GroundTolerance = 0.003f;
 
@@ -239,7 +240,8 @@ namespace BarPromenade
             CityMiscKind.SupermarketBuildingShell,
             CityMiscKind.PlayerHomeBuildingShell,
             CityMiscKind.RoadsideDrainAndCover,
-            CityMiscKind.RoadsideCappedStandpipe
+            CityMiscKind.RoadsideCappedStandpipe,
+            CityMiscKind.LotGroundDownpipeOutfall
         };
 
         private static readonly ExpectedPartSpec[] IndustrialStreetParts =
@@ -1163,6 +1165,7 @@ namespace BarPromenade
                     return SpecialBuildingParts;
                 case CityMiscKind.RoadsideDrainAndCover:
                 case CityMiscKind.RoadsideCappedStandpipe:
+                case CityMiscKind.LotGroundDownpipeOutfall:
                     return StreetMasonryParts;
                 default:
                     throw UnsupportedKind(kind);

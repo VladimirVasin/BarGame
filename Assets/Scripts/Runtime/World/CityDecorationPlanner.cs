@@ -32,6 +32,13 @@ namespace BarPromenade
         public const float CappedStandpipeMinimumSpacing = 110f;
         public const float CappedStandpipeCoverageSpacing = 150f;
 
+        // The outfall belongs to a building, not to a street, so it is
+        // spaced by lots rather than by walking distance. Only a few
+        // buildings per block ever show where their downpipe lands.
+        public const float DownpipeOutfallMinimumSpacing = 26f;
+        public const float DownpipeOutfallCoverageSpacing = 44f;
+        public const float DownpipeOutfallWallDepth = 0.10f;
+
         private const uint CoreKindSalt = 0x434F5245u;
         private const uint CoreVariantSalt = 0x43564152u;
         private const uint CorePaletteSalt = 0x4350414Cu;
@@ -689,6 +696,9 @@ namespace BarPromenade
             List<Vector3> standpipePositions = CollectKindPositions(
                 target,
                 CityDecorationKind.RoadsideCappedStandpipe);
+            List<Vector3> outfallPositions = CollectKindPositions(
+                target,
+                CityDecorationKind.LotGroundDownpipeOutfall);
             for (int index = 0; index < lots.Count; index++)
             {
                 BuildingLot lot = lots[index];
@@ -754,7 +764,84 @@ namespace BarPromenade
                     nightPlan,
                     target,
                     occupiedGroundPositions);
+                TryAddDownpipeOutfall(
+                    layout,
+                    lot,
+                    outfallPositions,
+                    fencePlan,
+                    nightPlan,
+                    target,
+                    occupiedGroundPositions);
             }
+        }
+
+        /// <summary>
+        /// Where one building's downpipe reaches the ground. This is the
+        /// only thing in the city that uses the LotGround anchor, and it
+        /// is why that anchor exists: the outfall belongs to the strip
+        /// of bare soil between a lot's edge and its own wall, and it
+        /// cannot be moved to the kerb without becoming a different
+        /// object. It sits at the wall foot rather than the usual
+        /// stand-off depth, because it is bolted to the facade.
+        /// </summary>
+        private static void TryAddDownpipeOutfall(
+            CityLayout layout,
+            BuildingLot lot,
+            List<Vector3> placedPositions,
+            RoadFencePlan fencePlan,
+            CityNightFixturePlan nightPlan,
+            ICollection<CityDecorationDescriptor> target,
+            ICollection<Vector3> occupiedGroundPositions)
+        {
+            const CityDecorationKind kind =
+                CityDecorationKind.LotGroundDownpipeOutfall;
+            if (target.Count >=
+                CityDecorationPlan.MaximumDescriptorCount ||
+                !IsSeparated(
+                    lot.Center,
+                    placedPositions,
+                    DownpipeOutfallCoverageSpacing))
+            {
+                return;
+            }
+
+            if (!TryCreateClearFrontageAnchor(
+                    layout,
+                    lot,
+                    0.34f,
+                    CityDecorationValidator.ResolveProtectionRadius(kind),
+                    fencePlan,
+                    nightPlan,
+                    occupiedGroundPositions,
+                    out Vector3 position,
+                    out Vector3 forward,
+                    DownpipeOutfallWallDepth) ||
+                !IsSeparated(
+                    position,
+                    placedPositions,
+                    DownpipeOutfallMinimumSpacing))
+            {
+                return;
+            }
+
+            target.Add(new CityDecorationDescriptor(
+                CreateLotId(layout.Seed, lot.Cell, "lotground-outfall"),
+                kind,
+                CityDecorationAnchorKind.LotGround,
+                lot.District,
+                lot.Cell,
+                position,
+                forward,
+                HashToVariant(StableHash(
+                    layout.Seed,
+                    lot.Cell.x,
+                    lot.Cell.y,
+                    UtilityVariantSalt ^ (uint)kind)),
+                CityDecorationPalette.StreetUtility,
+                CityDecorationVisibilityTier.Near,
+                CityDecorationCollisionCatalog.ResolveTier(kind)));
+            occupiedGroundPositions.Add(position);
+            placedPositions.Add(position);
         }
 
         private static void TryAddUtilityCoverage(
@@ -1034,7 +1121,8 @@ namespace BarPromenade
             CityNightFixturePlan nightPlan,
             ICollection<Vector3> occupiedGroundPositions,
             out Vector3 position,
-            out Vector3 forward)
+            out Vector3 forward,
+            float depthOverride = -1f)
         {
             float[] attempts =
             {
@@ -1049,7 +1137,8 @@ namespace BarPromenade
                         lot,
                         attempts[index],
                         out position,
-                        out forward) ||
+                        out forward,
+                        depthOverride) ||
                     CityDecorationValidator.IsProtectedGroundAnchor(
                         position,
                         objectRadius,
@@ -1076,7 +1165,8 @@ namespace BarPromenade
             BuildingLot lot,
             float lateralFraction,
             out Vector3 position,
-            out Vector3 forward)
+            out Vector3 forward,
+            float depthOverride = -1f)
         {
             forward = ResolveLotForward(
                 layout.Seed,
@@ -1109,7 +1199,11 @@ namespace BarPromenade
                 parallelSpan * lateralFraction,
                 -lateralLimit,
                 lateralLimit);
-            float depth = Mathf.Min(0.82f, clearance * 0.5f);
+            // Most street furniture stands off the wall; a downpipe
+            // outfall is bolted to it, so it asks for its own depth.
+            float depth = depthOverride >= 0f
+                ? Mathf.Min(depthOverride, clearance * 0.9f)
+                : Mathf.Min(0.82f, clearance * 0.5f);
             position =
                 lot.Center +
                 (forward * (buildingHalfDepth + depth)) +
