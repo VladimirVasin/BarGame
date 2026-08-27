@@ -255,7 +255,7 @@
       "runtime_wrapper_yaw_degrees": 0.0,
       "mesh_count": 23,
       "renderer_count": 23,
-      "triangle_count": 8804,
+      "triangle_count": 9520,
       "bounds_min": [
         -11.41,
         -22.01,
@@ -264,7 +264,7 @@
       "bounds_max": [
         11.41,
         22.01,
-        14.0
+        14.28
       ],
       "anchors": [
         {
@@ -350,8 +350,8 @@
           "name": "INT_PlasteredShell",
           "role": "narthex_nave_aisles_and_apse_shell",
           "material_slot": "Plaster",
-          "vertices": 40,
-          "triangles": 60
+          "vertices": 304,
+          "triangles": 456
         },
         {
           "name": "INT_WestDoor",
@@ -378,8 +378,8 @@
           "name": "INT_RibbedVault",
           "role": "pointed_nave_vault",
           "material_slot": "Mural",
-          "vertices": 6,
-          "triangles": 4
+          "vertices": 24,
+          "triangles": 36
         },
         {
           "name": "INT_VaultRibs",
@@ -392,8 +392,8 @@
           "name": "INT_Pews",
           "role": "twelve_nave_pew_halves",
           "material_slot": "Wood",
-          "vertices": 672,
-          "triangles": 1008
+          "vertices": 1120,
+          "triangles": 1680
         },
         {
           "name": "INT_Confessionals",
@@ -429,13 +429,6 @@
           "material_slot": "Plaster",
           "vertices": 512,
           "triangles": 896
-        },
-        {
-          "name": "INT_VotiveFlames",
-          "role": "votive_flame_emissives",
-          "material_slot": "CandleFlame",
-          "vertices": 256,
-          "triangles": 384
         },
         {
           "name": "INT_CommunionRail",
@@ -487,11 +480,18 @@
           "triangles": 836
         },
         {
-          "name": "INT_StainedGlass",
-          "role": "side_aisle_stained_glass",
+          "name": "INT_StainedGlassNorth",
+          "role": "north_aisle_stained_glass",
           "material_slot": "GlassCold",
-          "vertices": 80,
-          "triangles": 120
+          "vertices": 40,
+          "triangles": 60
+        },
+        {
+          "name": "INT_StainedGlassSouth",
+          "role": "south_aisle_stained_glass",
+          "material_slot": "GlassCold",
+          "vertices": 40,
+          "triangles": 60
         },
         {
           "name": "INT_WindowTracery",
@@ -524,8 +524,8 @@
             ]
           ],
           "footprint_xz_m": [
-            1.4,
-            1.4
+            1.56,
+            1.56
           ],
           "vertical_envelope_m": [
             0.0,
@@ -544,55 +544,87 @@
         },
         {
           "name": "pew_halves",
-          "count": 12,
+          "count": 20,
           "centers_xz": [
             [
               -2.9,
-              -12.0
+              -8.5
             ],
             [
               2.9,
-              -12.0
+              -8.5
             ],
             [
               -2.9,
-              -10.45
+              -6.95
             ],
             [
               2.9,
-              -10.45
+              -6.95
             ],
             [
               -2.9,
-              -8.9
+              -5.4
             ],
             [
               2.9,
-              -8.9
+              -5.4
             ],
             [
               -2.9,
-              -7.35
+              -3.85
             ],
             [
               2.9,
-              -7.35
+              -3.85
             ],
             [
               -2.9,
-              -5.8
+              -2.3
             ],
             [
               2.9,
-              -5.8
+              -2.3
             ],
             [
               -2.9,
-              -4.25
+              -0.75
             ],
             [
               2.9,
-              -4.25
+              -0.75
+            ],
+            [
+              -2.9,
+              0.8
+            ],
+            [
+              2.9,
+              0.8
+            ],
+            [
+              -2.9,
+              2.35
+            ],
+            [
+              2.9,
+              2.35
+            ],
+            [
+              -2.9,
+              3.9
+            ],
+            [
+              2.9,
+              3.9
+            ],
+            [
+              -2.9,
+              5.45
+            ],
+            [
+              2.9,
+              5.45
             ]
           ],
           "footprint_xz_m": [
@@ -605,29 +637,45 @@
           ],
           "centers_xz_flat": [
             -2.9,
-            -12.0,
+            -8.5,
             2.9,
-            -12.0,
+            -8.5,
             -2.9,
-            -10.45,
+            -6.95,
             2.9,
-            -10.45,
+            -6.95,
             -2.9,
-            -8.9,
+            -5.4,
             2.9,
-            -8.9,
+            -5.4,
             -2.9,
-            -7.35,
+            -3.85,
             2.9,
-            -7.35,
+            -3.85,
             -2.9,
-            -5.8,
+            -2.3,
             2.9,
-            -5.8,
+            -2.3,
             -2.9,
-            -4.25,
+            -0.75,
             2.9,
-            -4.25
+            -0.75,
+            -2.9,
+            0.8,
+            2.9,
+            0.8,
+            -2.9,
+            2.35,
+            2.9,
+            2.35,
+            -2.9,
+            3.9,
+            2.9,
+            3.9,
+            -2.9,
+            5.45,
+            2.9,
+            5.45
           ]
         },
         {
@@ -883,5 +931,5 @@
       ]
     }
   ],
-  "build_signature": "a0e3cf637b669cbaf170f3ea28f402858d2c92d93e1a1014d8dad93cf049f925"
+  "build_signature": "f38fcdb7b495752146f05741a8e9785e3cc6bebd8789c0312e0855fff560358d"
 }

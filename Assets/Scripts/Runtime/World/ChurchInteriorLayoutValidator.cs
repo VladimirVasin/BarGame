@@ -8,9 +8,21 @@ namespace BarPromenade
     {
         public const int RequiredZoneCount = 4;
         public const int RequiredPathCount = 5;
-        public const int RequiredFixtureCount = 31;
+        // Ten rows of pews, two halves each. The census below is
+        // derived from that rather than written out, because the last
+        // time the nave was re-seated three separate hardcoded totals
+        // had to be found by running into them one at a time.
+        public const int RequiredPewRowCount = 10;
+        public const int RequiredPewCount = RequiredPewRowCount * 2;
         public const int RequiredPierCount = 4;
-        public const int RequiredPewCount = 12;
+        public const int RequiredFixtureCount =
+            RequiredPierCount +
+            RequiredPewCount +
+            RequiredConfessionalCount +
+            RequiredVotiveStandCount +
+            RequiredChoirLoftSupportCount +
+            // rail, altar table, high altar, crucifix, font, loft, organ
+            7;
         public const int RequiredConfessionalCount = 2;
         public const int RequiredVotiveStandCount = 2;
         public const int RequiredChoirLoftSupportCount = 4;

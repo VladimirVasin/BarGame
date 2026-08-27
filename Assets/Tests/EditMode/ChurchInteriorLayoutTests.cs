@@ -16,11 +16,16 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.RoomSize,
                 Is.EqualTo(new Vector2(23f, 44f)));
-            Assert.That(plan.RoomHeight, Is.EqualTo(14.25f));
+            // 14.28 rather than 14.0 because the nave vault is a SOLID
+            // now. It used to be a single-sided surface at the ridge
+            // line - which cast no shadow at all, so the sun came
+            // straight through the roof - and giving it a thickness
+            // and a cap over the ridge joint raised the model's peak.
+            Assert.That(plan.RoomHeight, Is.EqualTo(14.5f));
             AssertBoundsNear(
                 plan.ModelLocalBounds,
                 new Vector3(-11.41f, -0.24f, -22.01f),
-                new Vector3(11.41f, 14f, 22.01f));
+                new Vector3(11.41f, 14.28f, 22.01f));
             Assert.That(
                 plan.ModelResourcePath,
                 Is.EqualTo("Church/ChurchInterior3D"));
@@ -87,7 +92,7 @@ namespace BarPromenade.Tests.EditMode
             AssertFixtureCount(
                 plan,
                 ChurchInteriorFixtureKind.Pew,
-                12);
+                ChurchInteriorLayoutValidator.RequiredPewCount);
             AssertFixtureCount(
                 plan,
                 ChurchInteriorFixtureKind.Confessional,
@@ -136,7 +141,7 @@ namespace BarPromenade.Tests.EditMode
                     new Vector2(-5.5f, 5.5f),
                     new Vector2(5.5f, 5.5f)
                 },
-                new Vector2(1.4f, 1.4f),
+                new Vector2(1.56f, 1.56f),
                 0f,
                 9.6f);
 
@@ -145,22 +150,55 @@ namespace BarPromenade.Tests.EditMode
                 ChurchInteriorFixtureKind.Pew,
                 new[]
                 {
-                    new Vector2(-2.9f, -12f),
-                    new Vector2(2.9f, -12f),
-                    new Vector2(-2.9f, -10.45f),
-                    new Vector2(2.9f, -10.45f),
-                    new Vector2(-2.9f, -8.9f),
-                    new Vector2(2.9f, -8.9f),
-                    new Vector2(-2.9f, -7.35f),
-                    new Vector2(2.9f, -7.35f),
-                    new Vector2(-2.9f, -5.8f),
-                    new Vector2(2.9f, -5.8f),
-                    new Vector2(-2.9f, -4.25f),
-                    new Vector2(2.9f, -4.25f)
+                    new Vector2(-2.9f, -8.5f),
+                    new Vector2(2.9f, -8.5f),
+                    new Vector2(-2.9f, -6.95f),
+                    new Vector2(2.9f, -6.95f),
+                    new Vector2(-2.9f, -5.4f),
+                    new Vector2(2.9f, -5.4f),
+                    new Vector2(-2.9f, -3.85f),
+                    new Vector2(2.9f, -3.85f),
+                    new Vector2(-2.9f, -2.3f),
+                    new Vector2(2.9f, -2.3f),
+                    new Vector2(-2.9f, -0.75f),
+                    new Vector2(2.9f, -0.75f),
+                    new Vector2(-2.9f, 0.8f),
+                    new Vector2(2.9f, 0.8f),
+                    new Vector2(-2.9f, 2.35f),
+                    new Vector2(2.9f, 2.35f),
+                    new Vector2(-2.9f, 3.9f),
+                    new Vector2(2.9f, 3.9f),
+                    new Vector2(-2.9f, 5.45f),
+                    new Vector2(2.9f, 5.45f)
                 },
                 new Vector2(3.8f, 0.72f),
                 0f,
                 1.5f);
+            // The nave was re-seated because six rows ended sixteen
+            // metres short of the rail; the front row must stay in
+            // front of the sanctuary and behind the transept crossing.
+            ChurchInteriorFixturePlan frontPew = plan.Fixtures
+                .Where(fixture =>
+                    fixture.Kind == ChurchInteriorFixtureKind.Pew)
+                .OrderByDescending(fixture => fixture.Bounds.center.y)
+                .First();
+            ChurchInteriorFixturePlan rail = plan.Fixtures.Single(
+                fixture =>
+                    fixture.Kind == ChurchInteriorFixtureKind.AltarRail);
+            Assert.That(
+                rail.Bounds.yMin - frontPew.Bounds.yMax,
+                Is.LessThan(7.5f),
+                "The pews must reach the sanctuary, not stop a nave " +
+                "away from it.");
+            ChurchInteriorPathPlan transept = plan.Paths.Single(
+                path =>
+                    path.Kind ==
+                    ChurchInteriorPathKind.TranseptChoirCrossing);
+            Assert.That(
+                frontPew.Bounds.yMax,
+                Is.LessThan(transept.Bounds.yMin),
+                "The front row may not block the transept crossing.");
+
             AssertFixtureContract(
                 plan,
                 ChurchInteriorFixtureKind.AltarRail,
@@ -328,7 +366,9 @@ namespace BarPromenade.Tests.EditMode
                 plan.ModelLocalBounds.max);
             Assert.That(
                 registry.LocalBounds.max.y,
-                Is.EqualTo(14f).Within(0.01f));
+                Is.EqualTo(
+                    ChurchInteriorLayoutPlanner.ModelMaximumHeight)
+                    .Within(0.01f));
             AssertAnchorXZ(
                 registry,
                 registry.SpawnAnchor,
@@ -413,6 +453,133 @@ namespace BarPromenade.Tests.EditMode
         {
             return plan.Fixtures.Single(
                 fixture => fixture.Kind == kind);
+        }
+
+        /// <summary>
+        /// The quarter turn between the interior's own axes and the
+        /// City's compass, derived rather than repeated.
+        ///
+        /// The interior is a scene of its own with the model at
+        /// identity, so nothing in it knows which way north is. The
+        /// old lighting simply used the world sun raw, which is how
+        /// both aisles came to be lit equally at every hour. Getting
+        /// this wrong is a quarter turn that looks like nothing in the
+        /// source and puts the sun through the wrong wall, so it is
+        /// pinned against the same Vector3.right that CityChurchPlan
+        /// enforces as the altar direction.
+        /// </summary>
+        [Test]
+        public void InteriorSunFrame_MatchesTheChurchsPlacementInTheCity()
+        {
+            Quaternion interiorToWorld = Quaternion.Inverse(
+                ChurchInteriorSunRules.InteriorFromWorld);
+
+            // The interior model's +Z is the altar, and the city puts
+            // the altar along the access normal, due east.
+            AssertDirection(
+                interiorToWorld * Vector3.forward,
+                Vector3.right,
+                "the altar must face east");
+            // Which leaves the +X aisle wall facing south - the wall
+            // the sun spends the day on.
+            AssertDirection(
+                interiorToWorld * Vector3.right,
+                Vector3.back,
+                "the +X aisle wall must face south");
+        }
+
+        /// <summary>
+        /// One wall is the sun wall and the other is not. A basilica
+        /// standing east-west in the northern hemisphere never takes
+        /// direct sun on its north aisle, and the reading of the whole
+        /// room depends on that being true rather than assumed.
+        /// </summary>
+        [Test]
+        public void LancetWalls_TakeTheSunOnTheSouthAisleOnly()
+        {
+            bool southWasEverLit = false;
+            for (double minute = 0d; minute < 1440d; minute += 5d)
+            {
+                Vector3 travel =
+                    ChurchInteriorSunRules.LocalTravelDirection(
+                        GameTimeDayNightRules.SunRotationAt(minute));
+                float north = ChurchInteriorSunRules.WallFacing(
+                    ChurchInteriorSunRules.NorthWallSide,
+                    travel);
+                float south = ChurchInteriorSunRules.WallFacing(
+                    ChurchInteriorSunRules.SouthWallSide,
+                    travel);
+
+                Assert.That(
+                    north,
+                    Is.LessThanOrEqualTo(0.0001f),
+                    $"the north aisle took direct sun at minute {minute}");
+                southWasEverLit |= south > 0.3f;
+            }
+
+            Assert.That(
+                southWasEverLit,
+                Is.True,
+                "the south aisle never took the sun at all");
+        }
+
+        /// <summary>
+        /// The church's light is BAKED at one pose and does not track
+        /// the sun. What still has to be true of that pose is that it
+        /// comes from the south, points down hard enough to reach the
+        /// ground inside the building, and lands its pools on floor a
+        /// person actually walks on rather than up the far wall.
+        /// </summary>
+        [Test]
+        public void BakedSun_LandsItsPoolsOnTheSouthAisleFloor()
+        {
+            Vector3 travel = ChurchInteriorSunRules.BakedLocalTravel;
+
+            Assert.That(
+                ChurchInteriorSunRules.WallFacing(
+                    ChurchInteriorSunRules.SouthWallSide,
+                    travel),
+                Is.GreaterThan(
+                    ChurchInteriorSunRules.FacingFadeEnd),
+                "the baked pose must light the south aisle fully");
+            Assert.That(
+                ChurchInteriorSunRules.WallFacing(
+                    ChurchInteriorSunRules.NorthWallSide,
+                    travel),
+                Is.LessThanOrEqualTo(0f),
+                "and must never light the north one");
+
+            foreach (float depth in
+                     ChurchInteriorAtmosphere.WindowDepths)
+            {
+                Vector3 pool = ChurchInteriorSunRules.FloorPool(
+                    new Vector3(
+                        ChurchInteriorAtmosphere.ShaftApertureX,
+                        ChurchInteriorAtmosphere.WindowCenterY,
+                        depth),
+                    travel);
+                Assert.That(
+                    pool.x,
+                    Is.InRange(4f, 10.5f),
+                    $"the pool from the lancet at z={depth} misses the " +
+                    "aisle floor");
+                Assert.That(
+                    pool.z,
+                    Is.InRange(-21f, 21f),
+                    $"the pool from the lancet at z={depth} falls " +
+                    "outside the building");
+            }
+        }
+
+        private static void AssertDirection(
+            Vector3 actual,
+            Vector3 expected,
+            string because)
+        {
+            Assert.That(
+                Vector3.Angle(actual, expected),
+                Is.LessThan(0.01f),
+                $"{because}: got {actual}, expected {expected}");
         }
 
         private static void AssertAnchorXZ(

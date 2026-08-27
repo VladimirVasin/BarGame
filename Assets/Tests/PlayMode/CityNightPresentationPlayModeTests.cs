@@ -464,6 +464,7 @@ namespace BarPromenade.Tests.PlayMode
                     (pooled.position, pooled.rotation));
             }
 
+            Quaternion stableSunRotation = directional.transform.rotation;
             directional.transform.hasChanged = false;
             GameSessionState.AdvanceGameTime(1f);
             city.DayNight.ApplyCurrentTime();
@@ -471,10 +472,26 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 city.DayNight.AppliedMinute,
                 Is.EqualTo(12 * 60 + 1));
+
+            // The sun MOVES now, so a minute of daylight is no longer a
+            // no-op and this test used to assert that it was. It has to
+            // apply, and the thing that must actually move is the sun's
+            // pose - a quarter degree of hour angle, small but real.
+            // What the test is about survives untouched below: the fog,
+            // the lamp assignment and every pooled pose stay put.
             Assert.That(
                 city.DayNight.VisualApplicationCount,
-                Is.EqualTo(stableDayApplicationCount));
-            Assert.That(directional.transform.hasChanged, Is.False);
+                Is.EqualTo(stableDayApplicationCount + 1),
+                "A daytime minute must re-apply, because the sun moved.");
+            Assert.That(directional.transform.hasChanged, Is.True);
+            float sweep = Quaternion.Angle(
+                stableSunRotation,
+                directional.transform.rotation);
+            Assert.That(
+                sweep,
+                Is.InRange(0.05f, 1f),
+                "One game minute is a quarter degree of hour angle, not " +
+                "a jump and not nothing.");
 
             // What must not change is the ASSIGNMENT, not the counter.
             // `RefreshImmediate` forces a recompute by definition, so it

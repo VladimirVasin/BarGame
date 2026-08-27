@@ -111,13 +111,27 @@ namespace BarPromenade.Tests.PlayMode
                         HomeDayNightController
                             .DayWindowLightIntensity)
                     .Within(0.001f));
+            // A minute of daylight used to be a no-op because the sun
+            // was one fixed pose all day. It moves now, so the schedule
+            // re-applies; what this test is really about - that the
+            // window light's own colour and intensity are flat across
+            // the day - is asserted above and is unaffected.
             int stableDayApplicationCount =
                 home.DayNight.VisualApplicationCount;
+            Color stableWindowColor = home.Atmosphere.WindowLight.color;
+            float stableWindowIntensity =
+                home.Atmosphere.WindowLight.intensity;
             GameSessionState.AdvanceGameTime(1f);
             yield return null;
             Assert.That(
                 home.DayNight.VisualApplicationCount,
-                Is.EqualTo(stableDayApplicationCount));
+                Is.EqualTo(stableDayApplicationCount + 1));
+            Assert.That(
+                home.Atmosphere.WindowLight.color,
+                Is.EqualTo(stableWindowColor));
+            Assert.That(
+                home.Atmosphere.WindowLight.intensity,
+                Is.EqualTo(stableWindowIntensity).Within(0.001f));
             AssertExteriorAtmosphere(home);
             AssertRenderedExteriorBarFacade(home);
             AssertRenderedExteriorDecorations(home.ExteriorView);

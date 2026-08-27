@@ -7,15 +7,20 @@ namespace BarPromenade
     {
         public const float RoomWidth = 23f;
         public const float RoomDepth = 44f;
-        public const float ModelMaximumHeight = 14f;
-        public const float RoomHeight = 14.25f;
+        // The vault used to be a surface, not a solid, and stopped at
+        // the ridge line. Now that it has a thickness and a cap over
+        // the joint, the model's own peak stands 28 cm higher. The
+        // ceiling a player sees has not moved: the undersides are at
+        // the heights they always were.
+        public const float ModelMaximumHeight = 14.28f;
+        public const float RoomHeight = 14.5f;
         public const float WallThickness = 0.35f;
         public const float SanctuaryBoundaryZ = 12.2f;
         public const string ModelResourcePath =
             "Church/ChurchInterior3D";
         public static readonly Bounds ModelLocalBounds = new Bounds(
-            new Vector3(0f, 6.88f, 0f),
-            new Vector3(22.82f, 14.24f, 44.02f));
+            new Vector3(0f, 7.02f, 0f),
+            new Vector3(22.82f, 14.52f, 44.02f));
 
         public static ChurchInteriorLayoutPlan Generate(int citySeed)
         {
@@ -131,7 +136,10 @@ namespace BarPromenade
                 fixtures.Add(new ChurchInteriorFixturePlan(
                     $"pier-{index + 1}",
                     ChurchInteriorFixtureKind.Pier,
-                    CenteredRect(center.x, center.y, 1.4f, 1.4f),
+                    // Base and capital flare past the .70 shaft; the
+                    // envelope is the widest part, as the generator's
+                    // PIER_FOOTPRINT declares.
+                    CenteredRect(center.x, center.y, 1.56f, 1.56f),
                     0f,
                     9.6f,
                     true));
@@ -166,14 +174,23 @@ namespace BarPromenade
                 4.7f,
                 false));
 
+            // Ten rows carried up to the crossing. Six rows ending at
+            // z -4.25 left sixteen metres of bare floor between the
+            // last pew and the communion rail; PEW_ROW_YS in
+            // tools/build-church-3d-model.py is the same list and the
+            // layout contract check fails the moment they disagree.
             float[] pewRows =
             {
-                -12f,
-                -10.45f,
-                -8.9f,
-                -7.35f,
-                -5.8f,
-                -4.25f
+                -8.5f,
+                -6.95f,
+                -5.4f,
+                -3.85f,
+                -2.3f,
+                -0.75f,
+                0.8f,
+                2.35f,
+                3.9f,
+                5.45f
             };
             for (int row = 0; row < pewRows.Length; row++)
             {

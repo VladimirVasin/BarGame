@@ -88,20 +88,68 @@ namespace BarPromenade
     public static class CityChurchPlanner
     {
         public const string DefaultAreaId = "church";
-        public const float ModelWidth = 23f;
-        public const float ModelHeight = 32f;
-        public const float ModelLength = 44f;
-        public const float StreetSetback = 8f;
+
+        /// <summary>
+        /// The authored Blender dimensions of the exterior model. One
+        /// source asset serves both this landmark and the ChurchInterior
+        /// scene, so the City shrinks it at the placer instead of
+        /// re-authoring the model and its interior layout contract.
+        /// </summary>
+        public const float SourceModelWidth = 23f;
+        public const float SourceModelHeight = 32f;
+        public const float SourceModelLength = 44f;
+
+        /// <summary>
+        /// A 44 x 23 x 32 m basilica eight metres off its own frontage
+        /// was not a building the player could look at: from the
+        /// pavement it filled the whole frame edge to edge, and the town
+        /// around it is 18 m blocks. Placed at this fraction it reads as
+        /// the provincial parish church it is meant to be and still
+        /// towers over the cemetery beside it. The interior is a
+        /// separate area and keeps its authored size.
+        /// </summary>
+        public const float ExteriorModelScale = 0.55f;
+
+        public const float StreetSetback = 16f;
         public const float MinimumCemeteryClearance = 5f;
         public const float FoundationHeight = 0.32f;
         public const float FoundationTopAboveGround = 0.08f;
         public const float ApproachWidth = 3.2f;
-        public const float ApproachSurfaceHeight = 0.04f;
-        public const float DoorDockOutwardDistance = 0.9f;
-        public const float InteractionOutwardDistance = 0.55f;
-        public const float InteractionHeight = 0.9f;
+
+        /// <summary>
+        /// The forecourt paving is presentation and carries no collider,
+        /// so it must never sit between the hero and the ground he is
+        /// really standing on. It is laid barely proud of the church
+        /// ground - less than the controller's own skin width - and the
+        /// slab runs down into the ground rather than floating on it.
+        /// </summary>
+        public const float ApproachSurfaceTopAboveGround = 0.012f;
+        public const float ApproachSurfaceHeight = 0.24f;
+
+        // The ordinary City doors - bar, supermarket, home - all dock
+        // and read their trigger at one point 0.8 m out from the leaf,
+        // so the hero stands exactly where the prompt is measured.
+        public const float DoorDockOutwardDistance = 0.82f;
+        public const float InteractionOutwardDistance = 0.82f;
+        public const float InteractionHeight = 0.82f;
+
+        /// <summary>
+        /// The frontage access point sits on the street's outer edge,
+        /// where the pavement is still a couple of decimetres above the
+        /// church ground. Leaving the church puts the hero this far in
+        /// from it, standing on the forecourt he walked in over rather
+        /// than straddling the kerb.
+        /// </summary>
+        public const float CityReturnInsetFromFrontage = 1.6f;
         public const float ExteriorEntranceAnchorLocalX = 0f;
         public const float ExteriorEntranceAnchorLocalZ = 22.05f;
+
+        public static float ModelWidth =>
+            SourceModelWidth * ExteriorModelScale;
+        public static float ModelHeight =>
+            SourceModelHeight * ExteriorModelScale;
+        public static float ModelLength =>
+            SourceModelLength * ExteriorModelScale;
 
         public static Vector3 ModelLocalSize =>
             new Vector3(ModelWidth, ModelHeight, ModelLength);
@@ -109,13 +157,22 @@ namespace BarPromenade
         /// <summary>
         /// XZ contract of ANCHOR_Exterior.Entrance in the presentation
         /// prefab. The Catholic basilica has one central west door; local
-        /// +Z points out through that door.
+        /// +Z points out through that door. This is the prefab's own
+        /// unscaled local position - see
+        /// <see cref="ExteriorEntranceModelOffset"/> for the placed one.
         /// </summary>
         public static Vector3 ExteriorEntranceAnchorLocalPosition =>
             new Vector3(
                 ExteriorEntranceAnchorLocalX,
                 0f,
                 ExteriorEntranceAnchorLocalZ);
+
+        /// <summary>
+        /// The same anchor after the placer's uniform shrink: the offset
+        /// from the model root to the visible door in world metres.
+        /// </summary>
+        public static Vector3 ExteriorEntranceModelOffset =>
+            ExteriorEntranceAnchorLocalPosition * ExteriorModelScale;
 
         /// <summary>
         /// Returns null for a blueprint without a church precinct. A present
@@ -209,7 +266,18 @@ namespace BarPromenade
                 Vector3.up);
 
             float modelWest = grounds.xMin + StreetSetback;
-            float modelSouth = grounds.yMin + MinimumCemeteryClearance;
+            // The nave is laid on the frontage's own axis so the walk
+            // from the street runs straight at the door, the way every
+            // other City entrance approach does. It still keeps its
+            // clearance from the cemetery to the south.
+            float southernmost = grounds.yMin + MinimumCemeteryClearance;
+            float northernmost = grounds.yMax - ModelWidth;
+            float modelSouth = northernmost < southernmost
+                ? southernmost
+                : Mathf.Clamp(
+                    access.Center.z - ModelWidth * 0.5f,
+                    southernmost,
+                    northernmost);
             var modelFootprint = new Rect(
                 modelWest,
                 modelSouth,
@@ -218,7 +286,7 @@ namespace BarPromenade
             if (!Contains(grounds, modelFootprint))
             {
                 throw new InvalidOperationException(
-                    "The nominal 44 x 23 m church does not fit its grounds.");
+                    "The placed church does not fit its grounds.");
             }
 
             float modelBaseY = groundTopY + FoundationTopAboveGround;
@@ -247,10 +315,17 @@ namespace BarPromenade
                     modelFootprint.height));
 
             Vector3 transformedEntranceAnchor = modelRootPosition +
-                modelRotation * ExteriorEntranceAnchorLocalPosition;
+                modelRotation * ExteriorEntranceModelOffset;
+            // The door sits on the church ground itself, NOT on the
+            // forecourt paving laid over it. The paving has no collider,
+            // so a dock measured from its top floats above every height
+            // the hero can actually reach - and the door action refuses
+            // any dock further than InteractionVerticalTolerance from
+            // where he stands, which is how this door came to show its
+            // prompt and then do nothing at all when pressed.
             var doorGround = new Vector3(
                 transformedEntranceAnchor.x,
-                groundTopY + ApproachSurfaceHeight,
+                groundTopY,
                 transformedEntranceAnchor.z);
             if (Mathf.Abs(doorGround.z - modelFootprint.center.y) > 0.001f)
             {
@@ -261,19 +336,24 @@ namespace BarPromenade
 
             Vector3 dock = doorGround +
                            entranceOutward * DoorDockOutwardDistance;
-            dock.y += PlayerFactory.GroundedRootOffset;
+            dock.y = groundTopY + PlayerFactory.GroundedRootOffset;
             Vector3 interaction = doorGround +
                                   entranceOutward *
                                   InteractionOutwardDistance;
             interaction.y = groundTopY + InteractionHeight;
-            Vector3 cityReturn = access.Center;
+            Vector3 cityReturn = access.Center +
+                                 altarDirection *
+                                 CityReturnInsetFromFrontage;
             cityReturn.y = groundTopY + PlayerFactory.GroundedRootOffset;
+            // Paved from the frontage the walk starts at all the way to
+            // the door line, so the docked hero's whole capsule stands
+            // inside it rather than on its lip.
             Rect approach = Rect.MinMaxRect(
-                Mathf.Min(cityReturn.x, dock.x),
-                Mathf.Min(cityReturn.z, doorGround.z) -
+                Mathf.Min(access.Center.x, doorGround.x),
+                Mathf.Min(access.Center.z, doorGround.z) -
                 ApproachWidth * 0.5f,
-                Mathf.Max(cityReturn.x, dock.x) + 0.15f,
-                Mathf.Max(cityReturn.z, doorGround.z) +
+                Mathf.Max(access.Center.x, doorGround.x),
+                Mathf.Max(access.Center.z, doorGround.z) +
                 ApproachWidth * 0.5f);
             if (!Contains(grounds, approach))
             {
@@ -351,7 +431,7 @@ namespace BarPromenade
             }
 
             Vector3 transformedEntranceAnchor = plan.ModelRootPosition +
-                plan.ModelRotation * ExteriorEntranceAnchorLocalPosition;
+                plan.ModelRotation * ExteriorEntranceModelOffset;
             Vector2 anchorXZ = new Vector2(
                 transformedEntranceAnchor.x,
                 transformedEntranceAnchor.z);
@@ -384,6 +464,22 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The church door action must dock at the visible " +
                     "central entrance.");
+            }
+
+            // The door action refuses any dock the hero cannot already
+            // be standing on, and the church ground is one flat slab, so
+            // both docks are the grounded root height over it or the
+            // prompt appears and pressing it does nothing.
+            float grounded = plan.GroundTopY +
+                             PlayerFactory.GroundedRootOffset;
+            if (Mathf.Abs(plan.DoorDockPosition.y - grounded) >
+                    PlayerMotor.InteractionVerticalTolerance ||
+                Mathf.Abs(plan.ReturnPosition.y - grounded) >
+                    PlayerMotor.InteractionVerticalTolerance)
+            {
+                throw new InvalidOperationException(
+                    "The church door dock and City return must stand on " +
+                    "the church ground the hero can actually reach.");
             }
         }
 

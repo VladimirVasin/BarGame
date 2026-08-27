@@ -171,11 +171,23 @@ namespace BarPromenade
                 new Color(0.075f, 0.068f, 0.060f));
             camera.farClipPlane = 70f;
             SetPostProcessing(camera, true);
+            // The night end of the church's own schedule.
+            // ChurchInteriorDayNightController owns the sun, the
+            // ambient and both light layers from its first frame; this
+            // is only the state the scene opens on.
+            // Nearly opaque shadows, and this is the number the whole
+            // feature turns on. At 0.48 half the sun survived every
+            // wall in the building, so a window could not be the way
+            // light gets in - it was already everywhere. Soft, because
+            // an aperture resolves to a few dozen shadow texels at
+            // nave distance and a hard edge on that crawls.
             ConfigureDirectionalLighting(
-                new Color(0.72f, 0.80f, 0.88f),
-                0.68f,
-                new Color(0.22f, 0.205f, 0.185f),
-                0.48f);
+                ChurchInteriorDayNightController.NightSunColor,
+                ChurchInteriorDayNightController.NightSunIntensity,
+                ChurchInteriorDayNightController.NightAmbientColor,
+                ChurchInteriorDayNightController.SunShadowStrength,
+                ChurchInteriorSunRules.BakedInteriorSun,
+                LightShadows.Soft);
 
             RenderSettings.fog = false;
             RenderSettings.reflectionIntensity = 0.42f;
@@ -422,11 +434,28 @@ namespace BarPromenade
                 1f);
         }
 
+        /// <summary>
+        /// Finds, or makes, the one directional light a scene is lit
+        /// by.
+        ///
+        /// <paramref name="rotation"/> exists because an interior does
+        /// not share the City's compass: the church's model stands at
+        /// identity in its own scene, so the world sun has to be
+        /// carried into that frame before it means anything. Left null
+        /// the moon's world pose is used, which is what every exterior
+        /// wants.
+        ///
+        /// <paramref name="shadows"/> because a room whose only light
+        /// comes through five windows lives or dies on the quality of
+        /// the shadow that shapes them.
+        /// </summary>
         private static Light ConfigureDirectionalLighting(
             Color color,
             float intensity,
             Color ambientColor,
-            float shadowStrength)
+            float shadowStrength,
+            Quaternion? rotation = null,
+            LightShadows shadows = LightShadows.Hard)
         {
             Light directional = RenderSettings.sun;
             if (directional == null ||
@@ -452,12 +481,13 @@ namespace BarPromenade
                 directional.type = LightType.Directional;
             }
 
-            directional.transform.rotation = CityMoonlightRotation;
+            directional.transform.rotation =
+                rotation ?? CityMoonlightRotation;
             directional.color = color;
             directional.intensity = intensity;
             directional.enabled = true;
             directional.cullingMask = ~0;
-            directional.shadows = LightShadows.Hard;
+            directional.shadows = shadows;
             directional.shadowStrength = shadowStrength;
             directional.shadowBias = PlayerMeshShadowBias;
             directional.shadowNormalBias = PlayerMeshShadowNormalBias;

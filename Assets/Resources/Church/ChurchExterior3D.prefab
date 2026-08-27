@@ -129,7 +129,7 @@ MonoBehaviour:
   sourceTriangleCount: 6412
   sourceGeneratorVersion: 1.2.0
   designId: provincial_catholic_gothic_basilica_v1
-  buildSignature: a0e3cf637b669cbaf170f3ea28f402858d2c92d93e1a1014d8dad93cf049f925
+  buildSignature: f38fcdb7b495752146f05741a8e9785e3cc6bebd8789c0312e0855fff560358d
 --- !u!1001 &5071495316805346421
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -187,6 +187,14 @@ PrefabInstance:
       value: 
       objectReference: {fileID: 2100000, guid: 494c0b87eb05560449840e3f53ccd36b, type: 2}
     - target: {fileID: -6098847063715302517, guid: bbd56236da102a241a7a2a1047026d4c, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6098847063715302517, guid: bbd56236da102a241a7a2a1047026d4c, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -6098847063715302517, guid: bbd56236da102a241a7a2a1047026d4c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 5db5cbe15d5e9d04c8be95d5bd1b61a1, type: 2}
@@ -206,6 +214,14 @@ PrefabInstance:
       propertyPath: 'm_Materials.Array.data[0]'
       value: 
       objectReference: {fileID: 2100000, guid: 5ea4bdccc5d787b4a9764688d3ea8706, type: 2}
+    - target: {fileID: -12093712426324774, guid: bbd56236da102a241a7a2a1047026d4c, type: 3}
+      propertyPath: m_CastShadows
+      value: 0
+      objectReference: {fileID: 0}
+    - target: {fileID: -12093712426324774, guid: bbd56236da102a241a7a2a1047026d4c, type: 3}
+      propertyPath: m_ReceiveShadows
+      value: 0
+      objectReference: {fileID: 0}
     - target: {fileID: -12093712426324774, guid: bbd56236da102a241a7a2a1047026d4c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
       value: 

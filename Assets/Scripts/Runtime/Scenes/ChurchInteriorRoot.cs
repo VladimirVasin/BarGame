@@ -62,6 +62,11 @@ namespace BarPromenade
             get;
             private set;
         }
+        public ChurchInteriorDayNightController DayNight
+        {
+            get;
+            private set;
+        }
         public ChurchExit Exit { get; private set; }
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
@@ -92,7 +97,11 @@ namespace BarPromenade
                 Layout);
             Atmosphere = ChurchInteriorAtmosphere.Install(
                 transform,
-                Layout);
+                Layout,
+                World.Registry);
+            DayNight = ChurchInteriorDayNightController.Install(
+                transform,
+                Atmosphere);
 
             GameObject ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);

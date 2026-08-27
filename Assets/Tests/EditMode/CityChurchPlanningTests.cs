@@ -88,29 +88,54 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(CityPathKind.Street));
             Assert.That(plan.Access.OutwardNormal, Is.EqualTo(Vector3.right));
 
+            // The authored basilica is 23 x 32 x 44 m; the City places
+            // that same prefab shrunk, so the town keeps a church it can
+            // be looked at from its own pavement.
+            Assert.That(
+                new Vector3(
+                    CityChurchPlanner.SourceModelWidth,
+                    CityChurchPlanner.SourceModelHeight,
+                    CityChurchPlanner.SourceModelLength),
+                Is.EqualTo(new Vector3(23f, 32f, 44f)));
+            Assert.That(
+                CityChurchPlanner.ExteriorModelScale,
+                Is.LessThan(1f));
             Assert.That(
                 CityChurchPlanner.ModelLocalSize,
-                Is.EqualTo(new Vector3(23f, 32f, 44f)));
+                Is.EqualTo(
+                    new Vector3(23f, 32f, 44f) *
+                    CityChurchPlanner.ExteriorModelScale));
             Assert.That(
                 Vector3.Distance(
                     plan.ModelRotation * Vector3.forward,
                     Vector3.left),
                 Is.LessThan(Tolerance));
             Assert.That(plan.AltarDirection, Is.EqualTo(Vector3.right));
-            Assert.That(plan.ModelFootprint.width, Is.EqualTo(44f));
-            Assert.That(plan.ModelFootprint.height, Is.EqualTo(23f));
+            Assert.That(
+                plan.ModelFootprint.width,
+                Is.EqualTo(CityChurchPlanner.ModelLength).Within(Tolerance));
+            Assert.That(
+                plan.ModelFootprint.height,
+                Is.EqualTo(CityChurchPlanner.ModelWidth).Within(Tolerance));
             Assert.That(
                 plan.ModelFootprint.yMin - plan.Grounds.yMin,
-                Is.EqualTo(5f).Within(Tolerance));
+                Is.GreaterThanOrEqualTo(
+                    CityChurchPlanner.MinimumCemeteryClearance - Tolerance));
             Assert.That(
                 plan.CemeteryClearance,
-                Is.EqualTo(5f).Within(Tolerance));
+                Is.GreaterThanOrEqualTo(
+                    CityChurchPlanner.MinimumCemeteryClearance - Tolerance));
             Vector3 transformedEntranceAnchor = plan.ModelRootPosition +
                 plan.ModelRotation *
-                CityChurchPlanner.ExteriorEntranceAnchorLocalPosition;
+                CityChurchPlanner.ExteriorEntranceModelOffset;
             Assert.That(
                 CityChurchPlanner.ExteriorEntranceAnchorLocalPosition,
                 Is.EqualTo(new Vector3(0f, 0f, 22.05f)));
+            Assert.That(
+                CityChurchPlanner.ExteriorEntranceModelOffset,
+                Is.EqualTo(
+                    new Vector3(0f, 0f, 22.05f) *
+                    CityChurchPlanner.ExteriorModelScale));
             Assert.That(
                 new Vector2(
                     plan.DoorGroundPosition.x,
@@ -121,13 +146,21 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 plan.DoorGroundPosition.z,
                 Is.EqualTo(plan.ModelFootprint.center.y).Within(Tolerance));
+            // The nave is laid on the frontage's axis, so the walk in
+            // from the street is straight rather than a dog-leg across
+            // the forecourt.
             Assert.That(
                 plan.DoorGroundPosition.z,
-                Is.Not.EqualTo(plan.ReturnPosition.z).Within(Tolerance));
+                Is.EqualTo(plan.ReturnPosition.z).Within(Tolerance));
+            // Leaving the church stands the hero on its own forecourt,
+            // a stride in from the frontage: the access point itself is
+            // on the street's outer edge, where the pavement is still
+            // two decimetres above the church ground.
             Assert.That(
                 plan.ReturnPosition,
                 Is.EqualTo(new Vector3(
-                    plan.Access.Center.x,
+                    plan.Access.Center.x +
+                    CityChurchPlanner.CityReturnInsetFromFrontage,
                     plan.GroundTopY + PlayerFactory.GroundedRootOffset,
                     plan.Access.Center.z)));
             Assert.That(
@@ -151,6 +184,70 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(plan.AltarDirection));
             Assert.DoesNotThrow(
                 () => CityChurchPlanner.ValidateOrThrow(layout, plan));
+        }
+
+        /// <summary>
+        /// The forecourt paving carries no collider, so a dock measured
+        /// from its top stands where nobody can. The door action refuses
+        /// an entry pose further than InteractionVerticalTolerance from
+        /// the hero's own root, so four centimetres of decorative slab
+        /// is the whole difference between a door that opens and a
+        /// prompt that does nothing when it is pressed.
+        /// </summary>
+        [Test]
+        [Category("CityChurch")]
+        public void DoorDock_StandsOnTheCollideredChurchGround()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityChurchPlan plan = CityChurchPlanner.Create(layout);
+
+            CitySurfaceDescriptor ground = layout.Surfaces.First(surface =>
+                surface.Kind == CitySurfaceKind.ChurchGround);
+            float standing =
+                ground.PhysicalTopY + PlayerFactory.GroundedRootOffset;
+
+            Assert.That(
+                plan.GroundTopY,
+                Is.EqualTo(ground.PhysicalTopY).Within(Tolerance));
+            Assert.That(
+                plan.DoorDockPosition.y,
+                Is.EqualTo(standing).Within(
+                    PlayerMotor.InteractionVerticalTolerance),
+                "The hero can only start the door action from a dock " +
+                "within the interaction tolerance of where he stands.");
+            Assert.That(
+                plan.ReturnPosition.y,
+                Is.EqualTo(standing).Within(
+                    PlayerMotor.InteractionVerticalTolerance));
+            Assert.That(
+                CityChurchPlanner.ApproachSurfaceTopAboveGround,
+                Is.LessThan(PlayerFactory.GroundedRootOffset),
+                "Collider-free paving must stay under the controller's " +
+                "own skin, or the hero visibly wades through it.");
+
+            // Standing at the dock, the hero's whole capsule has to be
+            // inside the forecourt rather than balanced on its lip.
+            Assert.That(
+                plan.ApproachBounds.xMin +
+                CityGroundTraversalPlanner.MaximumAgentRadius,
+                Is.LessThanOrEqualTo(plan.DoorDockPosition.x));
+            Assert.That(
+                plan.ApproachBounds.xMax -
+                CityGroundTraversalPlanner.MaximumAgentRadius,
+                Is.GreaterThanOrEqualTo(plan.DoorDockPosition.x));
+            Assert.That(
+                Vector3.Distance(
+                    plan.DoorDockPosition,
+                    plan.InteractionPosition) -
+                Mathf.Abs(
+                    plan.DoorDockPosition.y -
+                    plan.InteractionPosition.y),
+                Is.LessThan(Tolerance),
+                "The City's ordinary doors put the dock and the prompt " +
+                "at one point; the church now does too.");
         }
 
         [Test]
@@ -263,6 +360,10 @@ namespace BarPromenade.Tests.EditMode
                 model.transform.SetPositionAndRotation(
                     plan.ModelRootPosition,
                     plan.ModelRotation);
+                // The placer shrinks the prefab; the anchor stays at its
+                // authored prefab-local position and travels with it.
+                model.transform.localScale =
+                    Vector3.one * CityChurchPlanner.ExteriorModelScale;
                 anchor.transform.SetParent(model.transform, false);
                 anchor.transform.localPosition =
                     CityChurchPlanner.ExteriorEntranceAnchorLocalPosition;

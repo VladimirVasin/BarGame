@@ -423,8 +423,19 @@ namespace BarPromenade.Editor
                     }
 
                     renderer.sharedMaterial = materials[slot];
-                    renderer.shadowCastingMode = ShadowCastingMode.On;
-                    renderer.receiveShadows = true;
+                    // Glazing transmits. The panes sit INSIDE the
+                    // lancet apertures now, so a pane that casts would
+                    // plug the only hole the sun has - the whole
+                    // opening would be shadowed by the window filling
+                    // it, and the aisle walls would go back to being
+                    // solid as far as light is concerned.
+                    bool glazing =
+                        slot == ChurchMaterialSlot.GlassCold ||
+                        slot == ChurchMaterialSlot.GlassWarm;
+                    renderer.shadowCastingMode = glazing
+                        ? ShadowCastingMode.Off
+                        : ShadowCastingMode.On;
+                    renderer.receiveShadows = !glazing;
                     bindings.Add(new ChurchRendererBinding(
                         part.name,
                         part.role,

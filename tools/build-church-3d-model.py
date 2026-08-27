@@ -107,8 +107,72 @@ INTERIOR_NARTHEX_NAVE_WALK_VOLUME = (
     (8.2, -14.8, 2.2),
 )
 
+AISLE_WINDOW_YS = (-11.0, -6.0, 0.0, 6.0, 11.0)
+AISLE_WINDOW_WIDTH = 1.25
+
+# The aisle wall is two leaves with a step between them, and the step
+# IS the reveal. The outer leaf carries the true aperture - the hole the
+# sun actually comes through, exactly the size of the glass - and the
+# inner leaf carries a wider one, so the opening splays into the room
+# the way a thick wall's embrasure does. Before this the wall was one
+# unbroken 0.32 m slab with a decorative pane glued to its inside face:
+# there was no hole, and no light could ever have passed through a
+# window in this building.
+AISLE_WALL_INNER_X = 11.09
+AISLE_WALL_OUTER_X = 11.41
+AISLE_LEAF_THICKNESS = 0.16
+AISLE_WALL_TOP_Z = 10.0
+# Outer leaf: the aperture proper. Its width IS the window's width -
+# one census, not two.
+LANCET_APERTURE_WIDTH = AISLE_WINDOW_WIDTH
+LANCET_APERTURE_SILL_Z = 3.85
+LANCET_APERTURE_HEAD_Z = 6.95
+# Inner leaf: the splay, 0.20 m clear of the aperture on all four sides.
+LANCET_SPLAY_WIDTH = 1.65
+LANCET_SPLAY_SILL_Z = 3.65
+LANCET_SPLAY_HEAD_Z = 7.15
+
+# The vault springs here and the aisle lean-to takes over outboard of
+# it, carrying the roof to the wall head.
+VAULT_SPRING_X = 8.0
+VAULT_SPRING_Z = 9.6
+VAULT_RIDGE_Z = 14.0
+ROOF_THICKNESS = 0.30
+AISLE_ROOF_EAVE_Z = 8.3
+# The lean-to dies INSIDE the wall rather than at its outer face, so
+# that the slab's own thickness does not push the model wider than the
+# 22.82 m the layout contract measures.
+AISLE_ROOF_EAVE_X = 11.28
+# The shell now runs the full length, roofing the narthex and the
+# sanctuary, which stood open to the sky - the narthex being exactly
+# where the hero opens his eyes.
+SHELL_END_Y = 21.85
+SHELL_TOP_Z = 14.0
+STATION_YS = (-13.8, -8.5, -4.2, -1.8, 1.8, 4.2, 8.5)
+STATION_WIDTH = 1.2
+STATION_HEIGHT = 1.75
+# The backrest sits on the NEAR side of the bench so the sitter faces
+# the sanctuary at +y. Negative is the whole point; see validate_pews.
+PEW_BACKREST_OFFSET = -0.27
+
+# .78 and not more: the north and south aisle routes begin at
+# x 6.3, and a pier centred at 5.5 may not reach them.
+VOTIVE_STAND_CENTERS = ((-8.8, 10.5), (8.8, 10.5))
+VOTIVE_CANDLE_COUNT = 16
+VOTIVE_CLUSTER_RADIUS = .28
+VOTIVE_RING_TOP = 1.02
+# The flames are NOT authored here. They are the one part of this model
+# that has to move, so ChurchInteriorAtmosphere builds and animates them
+# at this height from the same ring rule; the geometry below keeps them
+# only to declare the fixture's vertical envelope.
+VOTIVE_FLAME_HEIGHT = 1.28
+
+PIER_FLARE_RADIUS = .78
+PIER_FOOTPRINT = (PIER_FLARE_RADIUS * 2, PIER_FLARE_RADIUS * 2)
+
 PEW_CENTER_XS = (-2.9, 2.9)
-PEW_ROW_YS = (-12.0, -10.45, -8.9, -7.35, -5.8, -4.25)
+PEW_ROW_YS = (-8.5, -6.95, -5.4, -3.85, -2.3,
+              -0.75, 0.8, 2.35, 3.9, 5.45)
 PEW_FOOTPRINT = (3.8, .72)
 PEW_VERTICAL_ENVELOPE = (0.0, 1.5)
 ALTAR_TABLE_CENTER = (0.0, 15.7)
@@ -127,8 +191,10 @@ ORGAN_VERTICAL_ENVELOPE = (4.8, 11.7)
 INTERIOR_LAYOUT_CONTRACT = [
     {"name": "nave_piers", "count": 4,
      "centers_xz": [[-5.5, -3.5], [5.5, -3.5], [-5.5, 5.5], [5.5, 5.5]],
-     "footprint_xz_m": [1.4, 1.4], "vertical_envelope_m": [0.0, 9.6]},
-    {"name": "pew_halves", "count": 12,
+     "footprint_xz_m": list(PIER_FOOTPRINT),
+     "vertical_envelope_m": [0.0, 9.6]},
+    {"name": "pew_halves",
+     "count": len(PEW_ROW_YS) * len(PEW_CENTER_XS),
      "centers_xz": [[x, z] for z in PEW_ROW_YS for x in PEW_CENTER_XS],
      "footprint_xz_m": list(PEW_FOOTPRINT),
      "vertical_envelope_m": list(PEW_VERTICAL_ENVELOPE)},
@@ -261,6 +327,47 @@ def gable_roof(
         (0, 1, 2), (5, 4, 3), (0, 2, 5, 3), (1, 4, 5, 2),
         (6, 8, 9, 7), (0, 6, 7, 1), (3, 4, 9, 8),
         (0, 3, 8, 6), (1, 7, 9, 4),
+    ]
+    return vertices, faces
+
+
+def sloped_slab(
+    x0: float,
+    z0: float,
+    x1: float,
+    z1: float,
+    y0: float,
+    y1: float,
+    thickness: float,
+) -> Geometry:
+    """A SOLID ramp. The quoted line is the underside - what you see
+    standing in the room - and the slab stands `thickness` above it,
+    measured perpendicular to the pitch.
+
+    Solid is the entire point. The nave vault this replaces was six
+    vertices and two quads with no thickness at all, and its faces
+    pointed DOWN into the room. URP's ShadowCaster pass culls back
+    faces, so from the sun's side there was nothing there: the roof of
+    this church has never once stopped a ray of sunlight, and the
+    interior's daylight has been arriving over the walls the whole
+    time. Always pass x0 < x1 so the computed normal points up.
+    """
+    run, rise = x1 - x0, z1 - z0
+    length = math.hypot(run, rise)
+    if length <= 0.0:
+        raise ValueError("a sloped slab needs a run")
+    offset_x, offset_z = -rise / length * thickness, run / length * thickness
+    vertices = [
+        (x0, y0, z0), (x1, y0, z1), (x1, y1, z1), (x0, y1, z0),
+        (x0 + offset_x, y0, z0 + offset_z),
+        (x1 + offset_x, y0, z1 + offset_z),
+        (x1 + offset_x, y1, z1 + offset_z),
+        (x0 + offset_x, y1, z0 + offset_z),
+    ]
+    # The same winding as box(): underside, top, then the four flanks.
+    faces = [
+        (0, 3, 2, 1), (4, 5, 6, 7), (0, 1, 5, 4),
+        (1, 2, 6, 5), (2, 3, 7, 6), (3, 0, 4, 7),
     ]
     return vertices, faces
 
@@ -463,19 +570,76 @@ def create_material(slot: str) -> bpy.types.Material:
     return material
 
 
-def assign_world_uv(mesh: bpy.types.Mesh, scale: float = 2.0) -> None:
+def assign_world_uv(
+        mesh: bpy.types.Mesh,
+        scale: float = 2.0,
+        wrap_upright: bool = False) -> None:
+    """Planar world projection, choosing the axis per polygon.
+
+    On a box that is exactly right. On a CYLINDER it is not: the side
+    normals sweep the whole XY circle, so every facet past 45 degrees
+    picks a different projection axis than its neighbour and the sheet
+    mirrors at each of those seams - the blotching reported on the nave
+    piers. `wrap_upright` maps those upright curved faces by angle
+    instead, per connected component so a merged part of four piers
+    still wraps around each one rather than around their common centre.
+    """
     layer = mesh.uv_layers.new(name="UVMap")
+    axis_centres: dict[int, tuple[float, float, float]] = {}
+    if wrap_upright:
+        for component in polygon_components(mesh):
+            xs, ys, radii = [], [], []
+            for polygon_index in component:
+                for vertex_index in mesh.polygons[polygon_index].vertices:
+                    coordinate = mesh.vertices[vertex_index].co
+                    xs.append(coordinate.x)
+                    ys.append(coordinate.y)
+            centre_x = (min(xs) + max(xs)) * 0.5
+            centre_y = (min(ys) + max(ys)) * 0.5
+            for polygon_index in component:
+                for vertex_index in mesh.polygons[polygon_index].vertices:
+                    coordinate = mesh.vertices[vertex_index].co
+                    radii.append(math.hypot(coordinate.x - centre_x,
+                                            coordinate.y - centre_y))
+            radius = max(sum(radii) / len(radii), 1e-4)
+            for polygon_index in component:
+                axis_centres[polygon_index] = (centre_x, centre_y, radius)
+
     for polygon in mesh.polygons:
         axis = max(range(3), key=lambda index: abs(polygon.normal[index]))
-        for loop_index in polygon.loop_indices:
+        wrapped = wrap_upright and axis != 2 and polygon.index in axis_centres
+        centre_x, centre_y, radius = axis_centres.get(
+            polygon.index, (0.0, 0.0, 1.0))
+        angles = []
+        if wrapped:
+            for vertex_index in polygon.vertices:
+                coordinate = mesh.vertices[vertex_index].co
+                angles.append(math.atan2(coordinate.y - centre_y,
+                                         coordinate.x - centre_x))
+            # Keep one facet's corners on the same turn of the circle,
+            # or the seam facet spans the whole sheet.
+            reference = angles[0]
+            angles = [reference + wrapped_delta(angle - reference)
+                      for angle in angles]
+        for offset, loop_index in enumerate(polygon.loop_indices):
             coordinate = mesh.vertices[mesh.loops[loop_index].vertex_index].co
-            if axis == 0:
+            if wrapped:
+                uv = (angles[offset] * radius / scale, coordinate.z / scale)
+            elif axis == 0:
                 uv = (coordinate.y / scale, coordinate.z / scale)
             elif axis == 1:
                 uv = (coordinate.x / scale, coordinate.z / scale)
             else:
                 uv = (coordinate.x / scale, coordinate.y / scale)
             layer.data[loop_index].uv = uv
+
+
+def wrapped_delta(angle: float) -> float:
+    while angle > math.pi:
+        angle -= math.tau
+    while angle < -math.pi:
+        angle += math.tau
+    return angle
 
 
 def polygon_components(mesh: bpy.types.Mesh) -> list[list[int]]:
@@ -582,11 +746,12 @@ def assign_atlas_uv(mesh: bpy.types.Mesh, slot: str) -> None:
 def assign_material_uv(
         mesh: bpy.types.Mesh,
         slot: str,
-        world_scale: float) -> None:
+        world_scale: float,
+        wrap_upright: bool = False) -> None:
     if slot in ATLAS_SLOTS:
         assign_atlas_uv(mesh, slot)
     else:
-        assign_world_uv(mesh, world_scale)
+        assign_world_uv(mesh, world_scale, wrap_upright)
 
 
 def add_part(
@@ -597,13 +762,14 @@ def add_part(
     slot: str,
     materials: dict[str, bpy.types.Material],
     uv_scale: float = 2.0,
+    wrap_upright: bool = False,
 ) -> bpy.types.Object:
     vertices, faces = geometry
     mesh = bpy.data.meshes.new(f"{name}_Mesh")
     mesh.from_pydata(vertices, [], faces)
     mesh.materials.append(materials[slot])
     mesh.update(calc_edges=True)
-    assign_material_uv(mesh, slot, uv_scale)
+    assign_material_uv(mesh, slot, uv_scale, wrap_upright)
     obj = bpy.data.objects.new(name, mesh)
     asset.collection.objects.link(obj)
     obj.parent = asset.root
@@ -782,30 +948,95 @@ def build_exterior(asset: AssetBuild, materials: dict[str, bpy.types.Material]) 
 
 
 def pew_geometry(center_x: float, center_y: float) -> Geometry:
+    # +y is the sanctuary. The BACKREST must sit on the near side of
+    # the bench so the sitter faces the altar; it used to sit on the
+    # +y side, which turned the whole nave around to face the door.
     items = [
         box((center_x, center_y, .55), (*PEW_FOOTPRINT, .18)),
-        box((center_x, center_y + .27, 1.025),
+        box((center_x, center_y + PEW_BACKREST_OFFSET, 1.025),
             (PEW_FOOTPRINT[0], .16, .95)),
-        box((center_x, center_y - .30, .48), (3.55, .10, .14)),
+        box((center_x, center_y + .30, .48), (3.55, .10, .14)),
     ]
     for x in (center_x - 1.65, center_x + 1.65):
-        items.extend((box((x, center_y, .275), (.16, .52, .55)),
-                      box((x, center_y + .27, .6), (.16, .16, 1.2))))
+        items.extend((
+            box((x, center_y, .275), (.16, .52, .55)),
+            box((x, center_y + PEW_BACKREST_OFFSET, .6),
+                (.16, .16, 1.2))))
     return merge(*items)
+
+
+def votive_candle_xy(center_x: float, center_y: float,
+                     index: int, count: int,
+                     radius: float) -> tuple[float, float]:
+    """Three concentric rings, offset so no two candles line up.
+
+    ChurchInteriorAtmosphere.VotiveFlamePositions mirrors this exactly;
+    the flames it animates have to stand on the wicks authored here.
+    """
+    ring = index % 3
+    angle = math.tau * index / count + ring * .31
+    distance = radius * (0.3 + ring * .32)
+    return (center_x + math.cos(angle) * distance,
+            center_y + math.sin(angle) * distance)
 
 
 def candle_cluster(center_x: float, center_y: float, count: int, radius: float) -> tuple[Geometry, Geometry]:
     candles, flames = [], []
     for index in range(count):
-        ring = index % 3
-        angle = math.tau * index / count + ring * .31
-        distance = radius * (0.3 + ring * .32)
-        x = center_x + math.cos(angle) * distance
-        y = center_y + math.sin(angle) * distance
+        x, y = votive_candle_xy(center_x, center_y, index, count, radius)
         height = .15 + (index % 5) * .015
-        candles.append(cylinder((x, y, 1.02 + height * .5), .03, height, 8))
-        flames.append(diamond((x, y, 1.28), .04, .14))
+        candles.append(
+            cylinder((x, y, VOTIVE_RING_TOP + height * .5), .03, height, 8))
+        flames.append(diamond((x, y, VOTIVE_FLAME_HEIGHT), .04, .14))
     return merge(*candles), merge(*flames)
+
+
+def votive_stand_geometry(center_x: float, center_y: float) -> Geometry:
+    """Foot on the FLOOR. The plate used to be centred at z .36 with a
+    height of .12, so the whole stand hung thirty centimetres in the
+    air; the stem is now the part that makes up the difference and the
+    ring and its candles have not moved."""
+    return merge(
+        cylinder((center_x, center_y, .06), .375, .12, 18),
+        cylinder((center_x, center_y, .57), .08, .90, 10),
+        torus((center_x, center_y, VOTIVE_RING_TOP), .28, .055, 20, 7),
+    )
+
+
+def aisle_wall_leaf(
+    center_x: float,
+    opening_width: float,
+    sill_z: float,
+    head_z: float,
+    y0: float = -22.0,
+    y1: float = 22.0,
+) -> list[Geometry]:
+    """One leaf of an aisle wall, built as the masonry around its
+    openings rather than as a slab with panes stuck to it: a sill
+    course under every lancet, a head course over them, and the piers
+    that stand between.
+
+    The spans are DERIVED from AISLE_WINDOW_YS. There is no second
+    census of where the windows are, because this file has already been
+    bitten three times by a number that could have been derived and was
+    not.
+    """
+    half = opening_width * 0.5
+    pieces = [
+        box((center_x, (y0 + y1) * 0.5, sill_z * 0.5),
+            (AISLE_LEAF_THICKNESS, y1 - y0, sill_z)),
+        box((center_x, (y0 + y1) * 0.5, (head_z + AISLE_WALL_TOP_Z) * 0.5),
+            (AISLE_LEAF_THICKNESS, y1 - y0, AISLE_WALL_TOP_Z - head_z)),
+    ]
+    edges = [y0]
+    for window_y in AISLE_WINDOW_YS:
+        edges.extend((window_y - half, window_y + half))
+    edges.append(y1)
+    for start, end in zip(edges[0::2], edges[1::2]):
+        pieces.append(
+            box((center_x, (start + end) * 0.5, (sill_z + head_z) * 0.5),
+                (AISLE_LEAF_THICKNESS, end - start, head_z - sill_z)))
+    return pieces
 
 
 def build_interior(asset: AssetBuild, materials: dict[str, bpy.types.Material]) -> None:
@@ -814,13 +1045,50 @@ def build_interior(asset: AssetBuild, materials: dict[str, bpy.types.Material]) 
         box((0, 16.8, .04), (21.6, 8.6, .32)),
     ), "stone_floor_and_raised_sanctuary", "Floor", materials, 1.25)
 
-    walls = [
-        box((-11.25, 0, 5.0), (.32, 44.0, 10.0)),
-        box((11.25, 0, 5.0), (.32, 44.0, 10.0)),
-        box((0, 21.85, 5.0), (22.5, .32, 10.0)),
-        box((-6.6, -21.85, 5.0), (9.3, .32, 10.0)),
-        box((6.6, -21.85, 5.0), (9.3, .32, 10.0)),
-    ]
+    walls = []
+    inner_leaf_x = AISLE_WALL_INNER_X + AISLE_LEAF_THICKNESS * 0.5
+    outer_leaf_x = AISLE_WALL_OUTER_X - AISLE_LEAF_THICKNESS * 0.5
+    for side in (-1, 1):
+        walls.extend(aisle_wall_leaf(
+            side * inner_leaf_x,
+            LANCET_SPLAY_WIDTH,
+            LANCET_SPLAY_SILL_Z,
+            LANCET_SPLAY_HEAD_Z))
+        walls.extend(aisle_wall_leaf(
+            side * outer_leaf_x,
+            LANCET_APERTURE_WIDTH,
+            LANCET_APERTURE_SILL_Z,
+            LANCET_APERTURE_HEAD_Z))
+
+    # The end walls now reach the ridge. They stopped at z 10 under a
+    # vault that ridges at 14, and the west front carried an open
+    # rectangle over the door on top of that, so the sun came in over
+    # both ends of the building as well as over the aisles.
+    roof_y = SHELL_END_Y + 0.16
+    walls.extend((
+        box((0, SHELL_END_Y, SHELL_TOP_Z * 0.5), (22.5, .32, SHELL_TOP_Z)),
+        box((-6.325, -SHELL_END_Y, SHELL_TOP_Z * 0.5),
+            (9.85, .32, SHELL_TOP_Z)),
+        box((6.325, -SHELL_END_Y, SHELL_TOP_Z * 0.5),
+            (9.85, .32, SHELL_TOP_Z)),
+        box((0.0, -SHELL_END_Y, (DOOR_HEIGHT + SHELL_TOP_Z) * 0.5),
+            (DOOR_WIDTH, .32, SHELL_TOP_Z - DOOR_HEIGHT)),
+    ))
+
+    # Aisle lean-tos. The vault covers only |x| <= 8, so without these
+    # both side aisles ran the whole length of the building open to the
+    # sky - which is where the daylight the player currently reads as
+    # "light through the windows" has actually been coming from.
+    walls.extend((
+        sloped_slab(
+            -AISLE_ROOF_EAVE_X, AISLE_ROOF_EAVE_Z,
+            -VAULT_SPRING_X, VAULT_SPRING_Z,
+            -roof_y, roof_y, ROOF_THICKNESS),
+        sloped_slab(
+            VAULT_SPRING_X, VAULT_SPRING_Z,
+            AISLE_ROOF_EAVE_X, AISLE_ROOF_EAVE_Z,
+            -roof_y, roof_y, ROOF_THICKNESS),
+    ))
     add_part(asset, "INT_PlasteredShell", merge(*walls), "narthex_nave_aisles_and_apse_shell", "Plaster", materials, 2.0)
     add_part(asset, "INT_WestDoor",
              box((0, -21.66, 2.1), (DOOR_WIDTH, .18, DOOR_HEIGHT)),
@@ -829,23 +1097,47 @@ def build_interior(asset: AssetBuild, materials: dict[str, bpy.types.Material]) 
     piers, capitals, pier_groups = [], [], []
     for y in (-3.5, 5.5):
         for x in (-5.5, 5.5):
-            pier = cylinder((x, y, 4.8), .70, 9.6, 24)
+            # Base, shaft, capital - three solids meeting end to end.
+            # The shaft used to run the FULL 9.6 m with base and
+            # capital of its own .70 radius buried inside it, so a
+            # metre of curved wall was coincident with a curved wall
+            # and the two fought for the depth buffer. That is the
+            # flicker that was reported on the columns.
+            pier = cylinder((x, y, 4.77), .70, 8.66, 24)
             pier_capitals = (
-                cylinder((x, y, .22), .70, .44, 24),
-                cylinder((x, y, 9.35), .70, .50, 24),
+                cylinder((x, y, .22), PIER_FLARE_RADIUS, .44, 24),
+                cylinder((x, y, 9.35), PIER_FLARE_RADIUS, .50, 24),
             )
             piers.append(pier)
             capitals.extend(pier_capitals)
             pier_groups.append(merge(pier, *pier_capitals))
     asset.layout_geometry["nave_piers"] = pier_groups
-    add_part(asset, "INT_NavePiers", merge(*piers), "four_nave_piers", "Plaster", materials, .9)
-    add_part(asset, "INT_PierCapitals", merge(*capitals), "pier_bases_and_carved_capitals", "Stone", materials, .7)
+    add_part(asset, "INT_NavePiers", merge(*piers), "four_nave_piers", "Plaster", materials, .9,
+             wrap_upright=True)
+    add_part(asset, "INT_PierCapitals", merge(*capitals), "pier_bases_and_carved_capitals", "Stone", materials, .7,
+             wrap_upright=True)
 
-    vault_vertices = [
-        (-8.0, -15.0, 9.6), (0, -15.0, 14.0), (8.0, -15.0, 9.6),
-        (-8.0, 18.0, 9.6), (0, 18.0, 14.0), (8.0, 18.0, 9.6),
+    # Two SOLID pitches running the whole length of the building, plus
+    # a cap over the ridge. What stood here was six vertices and two
+    # quads - no thickness, faces pointing down into the room - and it
+    # spanned only y -15..18, so it neither covered the narthex and the
+    # sanctuary nor cast a shadow over the part it did cover. The
+    # undersides are at exactly the heights the old shell had, so the
+    # ceiling a player sees, and the ribs hung under it, are unchanged.
+    vault_shell = [
+        sloped_slab(
+            -VAULT_SPRING_X, VAULT_SPRING_Z, 0.0, VAULT_RIDGE_Z,
+            -roof_y, roof_y, ROOF_THICKNESS),
+        sloped_slab(
+            0.0, VAULT_RIDGE_Z, VAULT_SPRING_X, VAULT_SPRING_Z,
+            -roof_y, roof_y, ROOF_THICKNESS),
+        # The two pitches touch along one LINE at the ridge and their
+        # upper faces splay apart above it, which from overhead is a
+        # 29 cm slot straight down the middle of the nave. The cap is
+        # what shuts it.
+        box((0.0, 0.0, VAULT_RIDGE_Z + 0.14),
+            (0.4, roof_y * 2.0, 0.28)),
     ]
-    vault_shell = [(vault_vertices, [(0, 3, 4, 1), (1, 4, 5, 2)])]
     ribs = []
     for y in (-13.0, -8.5, -3.5, 1.0, 5.5, 10.0):
         ribs.extend((
@@ -895,23 +1187,20 @@ def build_interior(asset: AssetBuild, materials: dict[str, bpy.types.Material]) 
              "altar_frontal", "Textile", materials, .45)
 
     stands, candles, flames, votive_groups = [], [], [], []
-    for x in (-8.8, 8.8):
-        y = 10.5
-        stand_geometry = merge(
-            cylinder((x, y, .36), .375, .12, 18),
-            cylinder((x, y, .72), .08, .62, 10),
-            torus((x, y, 1.02), .28, .055, 20, 7),
-        )
+    for x, y in VOTIVE_STAND_CENTERS:
+        stand_geometry = votive_stand_geometry(x, y)
         stands.append(stand_geometry)
-        cluster_candles, cluster_flames = candle_cluster(x, y, 16, .28)
+        cluster_candles, cluster_flames = candle_cluster(
+            x, y, VOTIVE_CANDLE_COUNT, VOTIVE_CLUSTER_RADIUS)
         candles.append(cluster_candles)
         flames.append(cluster_flames)
+        # The flames stay in the LAYOUT group, which is what declares
+        # the fixture's envelope, and out of the rendered parts.
         votive_groups.append(merge(
             stand_geometry, cluster_candles, cluster_flames))
     asset.layout_geometry["votive_stands"] = votive_groups
     add_part(asset, "INT_VotiveStands", merge(*stands), "paired_votive_candle_stands", "Gold", materials, .45)
     add_part(asset, "INT_VotiveCandles", merge(*candles), "votive_wax_candles", "Plaster", materials, .25)
-    add_part(asset, "INT_VotiveFlames", merge(*flames), "votive_flame_emissives", "CandleFlame", materials, .20)
 
     rail = [box((0, 12.4, .22), (21.6, .40, .44)),
             box((0, 12.4, .84), (21.6, .16, .15))]
@@ -948,11 +1237,16 @@ def build_interior(asset: AssetBuild, materials: dict[str, bpy.types.Material]) 
     add_part(asset, "INT_Crucifix", crucifix_geometry,
              "sanctuary_latin_crucifix", "Wood", materials, .45)
 
+    # Seven a side, hung in the PIERS OF WALL BETWEEN the lancets at
+    # y -11, -6, 0, 6 and 11. The old even spacing put four of the
+    # seven straight across a window, one of them dead centre on it.
     stations = []
     for side in (-1, 1):
         x = side * 11.02
-        for y in (-11.0, -7.5, -4.0, -.5, 3.0, 6.5, 10.0):
-            stations.append(box((x, y, 6.75), (.07, 1.45, 1.9)))
+        for y in STATION_YS:
+            stations.append(
+                box((x, y, 6.75),
+                    (.07, STATION_WIDTH, STATION_HEIGHT)))
     add_part(asset, "INT_StationsOfCross", merge(*stations), "fourteen_stations_of_cross", "SacredArt", materials, .45)
 
     # Gameplay intentionally tracks only the walkable loft slab here.  Its
@@ -978,19 +1272,41 @@ def build_interior(asset: AssetBuild, materials: dict[str, bpy.types.Material]) 
     asset.layout_geometry["pipe_organ"] = [merge(organ_case, *pipes)]
     add_part(asset, "INT_OrganPipes", merge(*pipes), "pipe_organ_rank", "Iron", materials, .4)
 
-    windows, frames = [], []
+    # The panes move OUT of the room and into the aperture they belong
+    # to, and split by side. The side is the one thing about a lancet
+    # that varies through the day - the sun is on the south wall from
+    # mid-morning to late afternoon and never on the north one at all -
+    # so it is the seam the runtime needs in order to let one wall
+    # blaze while the other stays cold.
+    glass = {-1: [], 1: []}
+    frames = []
+    pane_inset = 0.01
     for side in (-1, 1):
-        x = side * 11.04
-        for y in (-11.0, -6.0, 0.0, 6.0, 11.0):
-            windows.append(box((x, y, 5.4), (.08, 1.25, 3.1)))
+        pane_x = side * outer_leaf_x
+        frame_x = side * (AISLE_WALL_INNER_X - 0.09)
+        for y in AISLE_WINDOW_YS:
+            glass[side].append(
+                box((pane_x, y, 5.4),
+                    (.06,
+                     LANCET_APERTURE_WIDTH - pane_inset * 2,
+                     LANCET_APERTURE_HEAD_Z - LANCET_APERTURE_SILL_Z -
+                     pane_inset * 2)))
+            # The tracery now frames the SPLAY, not the old decorative
+            # pane: it stands on the inner leaf's wider opening.
             frames.extend((
-                between((x, y - .72, 3.85), (x, y - .72, 6.3), .08, 8),
-                between((x, y + .72, 3.85), (x, y + .72, 6.3), .08, 8),
-                between((x, y - .72, 6.3), (x, y, 7.35), .08, 8),
-                between((x, y + .72, 6.3), (x, y, 7.35), .08, 8),
-                between((x, y, 3.85), (x, y, 7.1), .06, 8),
+                between((frame_x, y - .825, LANCET_SPLAY_SILL_Z),
+                        (frame_x, y - .825, 6.35), .08, 8),
+                between((frame_x, y + .825, LANCET_SPLAY_SILL_Z),
+                        (frame_x, y + .825, 6.35), .08, 8),
+                between((frame_x, y - .825, 6.35),
+                        (frame_x, y, LANCET_SPLAY_HEAD_Z), .08, 8),
+                between((frame_x, y + .825, 6.35),
+                        (frame_x, y, LANCET_SPLAY_HEAD_Z), .08, 8),
+                between((frame_x, y, LANCET_SPLAY_SILL_Z),
+                        (frame_x, y, 7.0), .06, 8),
             ))
-    add_part(asset, "INT_StainedGlass", merge(*windows), "side_aisle_stained_glass", "GlassCold", materials, .55)
+    add_part(asset, "INT_StainedGlassNorth", merge(*glass[-1]), "north_aisle_stained_glass", "GlassCold", materials, .55)
+    add_part(asset, "INT_StainedGlassSouth", merge(*glass[1]), "south_aisle_stained_glass", "GlassCold", materials, .55)
     add_part(asset, "INT_WindowTracery", merge(*frames), "interior_lancet_tracery", "Stone", materials, .45)
 
 
@@ -1238,6 +1554,9 @@ def validate_asset(asset: AssetBuild) -> AssetReport:
         if bounds_min.y > -21.8 or bounds_max.y < 21.8 or bounds_min.x > -11.2 or bounds_max.x < 11.2:
             problems.append("interior shell lost its full authored footprint")
         validate_audited_layout_geometry(asset, problems)
+        validate_church_furniture(problems)
+        validate_lancet_apertures(asset, problems)
+        validate_interior_is_sealed_above(asset, problems)
         walk_min, walk_max = INTERIOR_NARTHEX_NAVE_WALK_VOLUME
         for part in asset.parts:
             blocking_polygon = next((
@@ -1254,6 +1573,193 @@ def validate_asset(asset: AssetBuild) -> AssetReport:
     return AssetReport(len(asset.parts), triangle_count,
                        tuple(stable(v) for v in bounds_min),
                        tuple(stable(v) for v in bounds_max))
+
+
+def _shell_part(asset: AssetBuild, name: str):
+    return next((part for part in asset.parts if part.obj.name == name), None)
+
+
+def _polygon_covers_column(obj, polygon, x: float, y: float) -> bool:
+    """Does this polygon, seen from straight overhead, stand over the
+    point (x, y)? Convex containment in projection."""
+    points = [obj.matrix_world @ obj.data.vertices[index].co
+              for index in polygon.vertices]
+    sign = 0
+    count = len(points)
+    for index in range(count):
+        ax, ay = points[index][0], points[index][1]
+        bx, by = points[(index + 1) % count][0], points[(index + 1) % count][1]
+        cross = (bx - ax) * (y - ay) - (by - ay) * (x - ax)
+        if abs(cross) < 1e-9:
+            continue
+        step = 1 if cross > 0 else -1
+        if sign == 0:
+            sign = step
+        elif step != sign:
+            return False
+    return sign != 0
+
+
+def validate_lancet_apertures(asset: AssetBuild, problems: list[str]) -> None:
+    """Every lancet must be a real HOLE, and the masonry must still
+    close around it.
+
+    The aisle wall used to be one unbroken 0.32 m slab with a
+    decorative pane glued to its inside face. There was no opening at
+    all, so no light could ever have entered this building through a
+    window - and no check that read part NAMES would have noticed,
+    because the pane was present and correctly named the whole time.
+    This one probes the geometry from both sides: empty where the
+    aperture is, solid immediately around it.
+    """
+    shell = _shell_part(asset, "INT_PlasteredShell")
+    if shell is None:
+        problems.append("the interior has no plastered shell to open")
+        return
+
+    polygons = list(shell.obj.data.polygons)
+    depth_lo = AISLE_WALL_INNER_X - 0.02
+    depth_hi = AISLE_WALL_OUTER_X + 0.02
+
+    def occupied(side: int, y_lo: float, y_hi: float,
+                 z_lo: float, z_hi: float) -> bool:
+        xs = sorted((side * depth_lo, side * depth_hi))
+        volume_min = (xs[0], y_lo, z_lo)
+        volume_max = (xs[1], y_hi, z_hi)
+        return any(
+            polygon_aabb_intersects(shell.obj, polygon, volume_min, volume_max)
+            for polygon in polygons)
+
+    margin = 0.05
+    half = LANCET_APERTURE_WIDTH * 0.5
+    for side in (-1, 1):
+        wall = "south" if side > 0 else "north"
+        for window_y in AISLE_WINDOW_YS:
+            if occupied(side,
+                        window_y - half + margin, window_y + half - margin,
+                        LANCET_APERTURE_SILL_Z + margin,
+                        LANCET_APERTURE_HEAD_Z - margin):
+                problems.append(
+                    f"the {wall} lancet at y {window_y} has no aperture: "
+                    f"the wall is solid where the light must pass")
+            jambs = (
+                ("left jamb",
+                 window_y - half - 0.20, window_y - half - 0.06,
+                 LANCET_APERTURE_SILL_Z + margin,
+                 LANCET_APERTURE_HEAD_Z - margin),
+                ("right jamb",
+                 window_y + half + 0.06, window_y + half + 0.20,
+                 LANCET_APERTURE_SILL_Z + margin,
+                 LANCET_APERTURE_HEAD_Z - margin),
+                ("sill",
+                 window_y - half + margin, window_y + half - margin,
+                 LANCET_APERTURE_SILL_Z - 0.30,
+                 LANCET_APERTURE_SILL_Z - 0.06),
+                ("head",
+                 window_y - half + margin, window_y + half - margin,
+                 LANCET_APERTURE_HEAD_Z + 0.06,
+                 LANCET_APERTURE_HEAD_Z + 0.30),
+            )
+            for label, y_lo, y_hi, z_lo, z_hi in jambs:
+                if not occupied(side, y_lo, y_hi, z_lo, z_hi):
+                    problems.append(
+                        f"the {wall} lancet at y {window_y} has no "
+                        f"{label}: the opening runs into open wall")
+
+
+def validate_interior_is_sealed_above(
+        asset: AssetBuild,
+        problems: list[str]) -> None:
+    """Nothing but the lancets may be open to the sky.
+
+    Two defects hid here for the life of the model. The side aisles,
+    the narthex and the sanctuary had no roof at all - the vault spans
+    only |x| <= 8 - and the vault itself was a single-sided shell whose
+    faces pointed down into the room, which the ShadowCaster pass culls,
+    so it never blocked a ray either. Requiring TWO covering polygons
+    per column is what catches the second one: a solid has an underside
+    AND a top, a shell has one face and casts nothing.
+    """
+    roof_parts = [
+        part for part in (
+            _shell_part(asset, "INT_PlasteredShell"),
+            _shell_part(asset, "INT_RibbedVault"),
+        ) if part is not None
+    ]
+    if len(roof_parts) != 2:
+        problems.append("the interior is missing a shell or a vault")
+        return
+
+    candidates = []
+    for part in roof_parts:
+        for polygon in part.obj.data.polygons:
+            points = [part.obj.matrix_world @ part.obj.data.vertices[i].co
+                      for i in polygon.vertices]
+            if min(point[2] for point in points) > 8.0:
+                candidates.append((part.obj, polygon))
+
+    step = 0.7
+    open_columns = []
+    x = -AISLE_WALL_INNER_X + 0.24
+    while x <= AISLE_WALL_INNER_X - 0.24:
+        y = -SHELL_END_Y + 0.24
+        while y <= SHELL_END_Y - 0.24:
+            covers = sum(
+                1 for obj, polygon in candidates
+                if _polygon_covers_column(obj, polygon, x, y))
+            if covers < 2:
+                open_columns.append((stable(x), stable(y), covers))
+            y += step
+        x += step
+
+    if open_columns:
+        sample = open_columns[:4]
+        problems.append(
+            f"{len(open_columns)} interior roof columns are open to the "
+            f"sky or covered by a single-sided shell, first at {sample}")
+
+
+def validate_church_furniture(problems: list[str]) -> None:
+    """The two defects that shipped in the first church, each now a
+    build-time failure rather than something noticed in a screenshot.
+
+    Stations of the Cross were evenly spaced down a wall whose lancets
+    are NOT evenly spaced, so four of the seven a side crossed a window
+    and one sat dead centre on it. And the pews' backrests were on the
+    sanctuary side, which turned the whole nave around to face the door.
+    """
+    reach = (STATION_WIDTH + AISLE_WINDOW_WIDTH) * 0.5
+    for station in STATION_YS:
+        for window in AISLE_WINDOW_YS:
+            if abs(station - window) < reach:
+                problems.append(
+                    f"station of the cross at y {station} overlaps the "
+                    f"lancet at y {window}")
+
+    for center_x, center_y in VOTIVE_STAND_CENTERS:
+        vertices, _ = votive_stand_geometry(center_x, center_y)
+        lowest = min(vertex[2] for vertex in vertices)
+        if lowest > 1e-4:
+            problems.append(
+                f"votive stand at {center_x}, {center_y} floats "
+                f"{lowest:.3f} m above the floor")
+
+    if PEW_BACKREST_OFFSET >= 0.0:
+        problems.append(
+            "pew backrests sit toward the sanctuary, so the nave faces "
+            "the door instead of the altar")
+
+    # Read back from the authored geometry rather than the constant:
+    # the backrest is the only part of a pew above 0.8 m, and its
+    # vertices must all lie behind the seat centre.
+    vertices, _ = pew_geometry(0.0, 0.0)
+    backrest = [v for v in vertices if v[2] > 0.8]
+    if not backrest:
+        problems.append("pew geometry has no backrest above 0.8 m")
+    elif max(v[1] for v in backrest) > 0.0:
+        problems.append(
+            "pew backrest geometry reaches past the seat centre toward "
+            "the sanctuary")
 
 
 def texture_records() -> list[dict[str, str]]:

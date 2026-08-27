@@ -6,6 +6,523 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-27 — The sun came in through the roof, and the roof was not there
+
+*(The church's own light ended up BAKED at one pose — see the note partway
+down. The solar arc below is real and global, and the City and Mountain Road
+use it; the church simply stands at one hour of it and turns its shafts on and
+off with the clock.)*
+
+Asked how "light from the window" worked in the church by day, and whether
+it was not simply the City's own lighting arriving as though the sun passed
+through the roof. It was, and more literally than the question supposed.
+
+**Four separate reasons no light had ever entered this building through a
+window.**
+
+1. **There were no windows.** `INT_PlasteredShell` was five unbroken `0.32 m`
+   boxes and the generator contains no boolean anywhere. The "stained glass"
+   was an `8 cm` slab glued to the inside face of a solid wall.
+2. **There was no roof** over either side aisle, over the narthex — where the
+   hero opens his eyes, at `z −18.8` — or over the sanctuary. The vault spans
+   only `x ∈ [−8, 8]`, `z ∈ [−15, 18]`, and the aisle walls stop at `y 10`.
+3. **The vault cast no shadow either.** `INT_RibbedVault` was six vertices and
+   two quads — `4` triangles, no thickness — and both faces point DOWN into
+   the room. URP's ShadowCaster pass culls back faces, so from the sun's side
+   there was nothing there at all. The comment in
+   `ChurchInteriorDayNightController` claiming "the vault seals the nave from
+   the directional" was false and has been replaced with what is actually true.
+   There was also an open rectangle over the west door, `x ±1.4` by `z 4.2..14`.
+4. **`shadowStrength` was `0.48`**, so even where something did occlude, 52% of
+   the sun came through it. No amount of tuning anything else could have made
+   a window matter while that stood.
+
+What the player read as daylight was twenty hand-aimed lights — ten spots with
+their targets baked at build time, ten point glows — fired at **identical
+intensity into both aisles at every hour**, plus real sunlight pouring in over
+the tops of the walls. There is not one `Dot(sun, wallNormal)` in the old code.
+
+**The sun now moves.** `GameTimeDayNightRules` held one constant pose,
+`Euler(52, 28, 0)`, from 07:00 to 18:00 — and a test asserted that morning,
+noon and evening were byte-identical, which is exactly why nothing in the
+world could tell the time from the light. It is now a real solar arc: rises
+due east at 06:00, culminates due south at 52° at noon, sets due west at 18:00.
+
+**The model is an equinox, and that is not a simplification but the only
+consistent answer.** A twelve-hour day forces zero declination. Asking for a
+thirteen-hour day instead forces a POSITIVE declination and a sunrise north of
+east — and the church's north aisle would then catch an hour of grazing light
+that a basilica in this hemisphere must never see. Twelve hours keeps the
+azimuth inside `90°..270°` all day, so **the north aisle takes no direct sun at
+any minute**, which is what makes the room read.
+
+The peak elevation is the one authored number, and it is deliberately the `52°`
+the retired pose already carried: **the old fixed pose survives as the arc's
+13:07 pose**, `3.26°` off. The City's afternoon is the frame it always was;
+morning and evening are new around it.
+
+**The interior does not share the City's compass** and used the world sun raw.
+The model stands at identity in its own scene while the building stands in the
+City with its door west and altar east, so the frames differ by a quarter turn
+(`ChurchInteriorSunRules.InteriorFromWorld`). The interior's `+Z` is the altar
+— confirmed by three independent coordinate matches before anything was built
+on it — which puts local `+X` on the south. The constant is pinned by a test
+derived from the same `Vector3.right` the city planner enforces, because a
+quarter turn looks like nothing in the source.
+
+**What the shell is now.** Each aisle wall is two `0.16 m` leaves whose
+openings differ by `0.20 m` on all four sides, so the step between them IS the
+reveal and the embrasure splays into the room. Solid vault running the full
+length, aisle lean-tos out to the wall head, a ridge cap over the joint — the
+two pitches touch along one line and their upper faces splay apart above it,
+which from overhead is a `29 cm` slot straight down the middle of the nave.
+`23` parts, `9520` triangles, both inside budget.
+
+**Two new build-time validators, and both were proved red before being
+trusted.** `validate_lancet_apertures` probes the geometry from both sides:
+empty where the aperture is, solid immediately around it. `validate_interior_is_sealed_above`
+walks a grid of floor columns and requires **two** covering polygons above
+each — which is what catches a single-sided shell, since a solid has an
+underside and a top and a surface has one face. Reverting the walls named all
+ten lancets; reverting the vault named `1364` open columns, and the `558` that
+still passed were exactly the aisle columns under the lean-tos, which is the
+arithmetic that proves the check discriminates a shell from a solid.
+
+**The daylight layer now asks one question per window** — does the sun actually
+reach you — and the light, the beam and the glazing all read the same answer.
+The panes were opaque URP Unlit at a constant cyan at three in the morning and
+at noon alike; they now gain `0.10 / 0.55 / 2.60` for night, shaded and sunlit,
+and they no longer cast, or an opaque pane would plug the only hole the sun has.
+
+**The ten daylight SPOTS are gone entirely, and so is the reason they existed.**
+They stood in for a sun that could not get into the building. The sun gets in
+now, and it is a PARALLEL source: it delivers the same light at three metres
+and at thirteen. A spot cannot — sized by `illuminance × distance²` for the pool
+it aims at, it necessarily blasts everything nearer, and at a low morning sun
+"everything nearer" is the whole aisle wall. The last thing they were wanted
+for was the COLOUR the light picked up passing through coloured glass, and that
+is now the directional's own tint, `(0.734, 0.889, 0.917)` — which is not a
+cheat standing in for a light cookie but the physically true colour of the only
+light in the room, because every ray of it came through a lancet. Thirty-six
+runtime lights became twenty-six.
+
+**The SHADED aisle is not dark, and that is deliberate.** A north window takes
+no sun in this hemisphere but it passes sky all day, and the first pass had it
+at a gain of `0.55` — darker than the plaster around it, so the north aisle
+read as lit masonry with black slots cut in it. The panes now sit at `1.30`,
+above the grade's own `0.62` bloom threshold, so they read as lit glass; the
+sunlit wall keeps twice that again. Each shaded lancet's glow went `0.24` to
+`0.45` of the full value, which makes it a small diffuse source lifting its own
+reveal rather than a token. Photographed with the candles out and ambient at
+`0.05` to prove the wall is held by its own windows and not by the sconces.
+
+**And the light is BAKED at one pose, on the user's call.** The church does not
+track the sun. It stands at solar noon, due south, and the only thing the clock
+does to it is strength and colour: shafts while it is light, none after dark,
+with the dawn and dusk hours as the ramp. The pose was picked by measurement,
+not taste — any lean ALONG the nave lets each window's light slip past the piers
+and run the length of the building, taking the room from a mean brightness of
+`71` to `104` with the five columns dissolving into one wash. Square-on, each
+lancet keeps its own bay.
+
+**The method failure that cost four wrong diagnoses, and it is one line.**
+The first `Camera.Render()` of an edit-mode session draws before the shadow
+maps exist, so it comes back with the whole room lit and no shadow anywhere.
+Every "the 08:00 hour is washed out" frame was that first render. Three fixes
+were aimed at the phantom — an intensity ceiling on the cones, a cone narrowed
+to subtend its own pool, a beam brightness tied to the sun's descent — and each
+one **moved the measured mean by nothing**, which was the evidence and was read
+as a mystery three times. A fourth answer came from a bisect that disabled one
+light layer per arm without re-applying the others, so one arm silently
+inherited the previous loop iteration's glazing and "proved" the cones were the
+cause; deleting them outright changed the number by a tenth of a point. One
+discarded warm-up frame put the identical scene at `71`. **Throw the first
+frame away, and a bisect is only a bisect if every arm is built the same way.**
+The cones stayed deleted on the argument above rather than on that measurement,
+which is retracted.
+
+The measurement that did hold is the one that mattered: with the sun alone and
+ambient at `0.02`, the plan views are black but for five south patches. The
+shell is sealed.
+
+**The beams are an oblique prism, re-solved rather than rotated.** The near
+ring is the aperture and must stay welded to the wall; only the far ring
+travels. A right prism on a rotating transform would swing the window along
+with the beam. `ChurchLightShaft.shader` is `CityLighthouseBeam` plus a depth
+fade from `CityAtmosphereParticle`, a near fade, in-shader motes in the prism's
+own object space, and one thing found by looking: a pure inverse-Fresnel
+cross-section darkens the beam exactly when you look ALONG it — which is late
+afternoon, when the shafts rake down the nave and the path through the volume
+is longest. It left two bright rails with nothing between them. `_CoreGlow` is
+the floor that keeps a column a column from every angle.
+
+**Still open, and deliberately.** The interior has no west rose, though the
+exterior carries one — the door faces west and the sun sets due west, so a rose
+would throw a coloured disc straight down the nave into the altar at dusk. It
+costs the 24th and last part in the interior budget and a rebuilt west wall.
+And no light cookie: the coloured mosaic a real lancet projects is approximated
+by the directional's tint rather than drawn, which the RGB555 composite would
+have crushed most of anyway.
+
+- Verification: Blender validator green (`23` meshes, `9520/22000` triangles),
+  both new validators proved red on the defects they exist for and restored,
+  exterior FBX and preview returned to their committed bytes since that asset
+  did not change, prefabs rebuilt. Full EditMode `1736/1736`, full PlayMode
+  `193 passed / 9 skipped / 0 failed`, both re-run after the last change (all
+  nine skips pre-existing: the eight capture fixtures and the IMGUI batchmode
+  limit). The new north/south
+  assertion was proved red before being trusted — making `WallFacing` ignore
+  which wall it is asked about fails it with "the north aisle cannot take
+  direct sun", naming `19.72` where `0` is required. Frames plan and eye level
+  at 08:00 / 12:00 / 16:00 / 17:00 / 18:30 / 02:00 from a throwaway probe —
+  plan view first and always, because the last time this project judged a
+  light pool from eye level the pew backs stood between the camera and the
+  floor and produced a confidently wrong diagnosis.
+  **Intensities are NOT set from those frames** and must not be: an edit-mode
+  camera gets no ACES, no bloom and no exposure. The day frame measures a mean
+  brightness of `71` against night's `41`, with five discrete columns and a
+  dark nave; how that sits under the grade is an in-game question.
+
+## 2026-08-27 — The chandeliers were a heap of parts standing near each other
+
+Reported as "the chandeliers are unconnected elements", which is exactly
+what they were, for two independent reasons that both look like nothing in
+the source.
+
+**The hoop was laid radially.** `Quaternion.Euler(0, -angle, 0)` turns a
+box's local +X onto the RADIUS, so ten bars pointed outward like the spokes
+of a starburst instead of lying along the circle. A tangent needs the extra
+quarter turn: `-angle - 90`. Each bar now also spans the CHORD between its
+neighbours - `2 r sin(pi/n)` plus a little - rather than an arbitrary
+fraction of the radius, so the ring actually closes instead of leaving ten
+gaps whose size depended on how big the corona was.
+
+**And the chain came down to nothing.** It ran to the hoop's centre, where
+there was no hub and no arms, so it ended in mid air with the ring floating
+around it. There is now a boss at the centre for the chain to land on and
+five arms out to the hoop.
+
+**A quarter turn is invisible in a diff, so it is measured instead.** The
+PlayMode test takes each hoop bar's own outward radius and its long axis and
+asserts the dot product is near zero - one is what a spoke reads - and that
+a hub and its arms exist. It reports `0.0000` across all ten bars.
+
+- Verification: church PlayMode `3/3`, full EditMode `1726/1726`. Frames in
+  `Captures/ChurchCorona/`.
+
+## 2026-08-27 — The votive stand was hanging in the air with its flames painted on
+
+The one fixture the previous pass did not reach, reported precisely: every
+candle now behaves except the candelabrum, which still floats and whose
+flame is still baked. Both true, and both had the same root - it is the one
+lit fixture the IMPORTED MODEL owns end to end.
+
+**It floated by thirty centimetres, and the arithmetic was in plain sight.**
+The base plate was `cylinder((x, y, .36), .375, .12)`, which spans z `0.30`
+to `0.42` against a floor whose top is `0`. The stand is now a foot on the
+ground - plate `0..0.12` - and the STEM makes up the difference, lengthened
+from `.62` to `.90`, so the ring at `1.02` and every candle standing on it
+are exactly where they were. Nothing above the foot moved.
+
+The envelope check could never have caught this: it asserts geometry stays
+INSIDE the declared `0..1.35`, and a floating stand is inside. There is now
+a check for the other end - the lowest vertex of each stand must touch the
+floor - and reverting the plate to `.36` reproduces it for both stands.
+
+**Its flames were baked because they were the one thing that could not
+move.** `INT_VotiveFlames` was a single merged mesh of thirty-two diamonds,
+sixteen a stand. A merged mesh has no per-flame transform, so the previous
+pass gave those two fixtures a flickering LIGHT over frozen geometry, which
+is exactly what was reported.
+
+**The fix was to give the fixture one owner instead of two.** The generator
+no longer renders that part at all; the runtime builds sixteen flames per
+stand and animates them with the same `ChurchCandleFlame` driver as the
+sconces and coronas. The model keeps the wax and the ring - those do not
+move - and keeps the flame geometry in its LAYOUT group, which is what
+declares the fixture's `0..1.35` envelope, so no contract shifted.
+
+The ring rule is now the mirrored pair this codebase already uses for
+`PEW_ROW_YS`: `votive_candle_xy` in the generator and
+`ChurchInteriorAtmosphere.VotiveFlamePosition` in C#, each naming the other.
+The runtime flames have to stand on wicks the model authored, so if the two
+ever drift the flames float off their candles - visible immediately, which
+is the honest guard for a rule this small.
+
+Interior parts went 23 to 22 and triangles `9,476` to `9,092`.
+
+- Verification: the votive light now drives sixteen flame objects, and one
+  measured over 150 frames swung its Y scale `0.0976..0.1635` around a rest
+  of `0.13`. Blender validator green, prefabs rebuilt, full EditMode
+  `1726/1726`, church PlayMode `3/3`. Frames in `Captures/ChurchVotive/`.
+
+## 2026-08-27 — The piers fought the depth buffer, and the candles start burning
+
+Three reported things in the church interior, two of them plain defects and
+one a feature.
+
+**The columns flickered because they were fighting themselves.** Each pier
+was a `.70` shaft running the full `9.6 m` with a base and a capital of the
+SAME `.70` radius buried inside it - `0.94 m` of curved wall exactly
+coincident with curved wall, which is a depth-buffer fight and reads as
+shimmer the moment the camera moves. They are now three solids meeting end
+to end: base `0..0.44`, shaft `0.44..9.10`, capital `9.10..9.60`, with the
+base and capital flared to `.78` so they are a profile rather than a hidden
+duplicate.
+
+**And their texture mirrored at every facet.** `assign_world_uv` picks a
+projection axis per polygon from the dominant normal. On a box that is
+right; on a cylinder the side normals sweep the whole circle, so every facet
+past 45 degrees picks a different axis than its neighbour and the sheet
+mirrors at each seam - the blotching down the piers. `wrap_upright` now maps
+upright curved faces by ANGLE, per connected component, so a merged part
+holding four piers wraps around each one rather than around their shared
+centre.
+
+`.78` and not more: the aisle routes begin at `x 6.3` and a pier centred at
+`5.5` may not reach them. The route validator refused `.82` outright, which
+is the second time this week it has caught a change nobody thought was a
+gameplay change.
+
+**The coronas hung from nothing.** Their chains all stopped at a single
+hardcoded `y 9.4`, but the ceiling over them is not one plane: the vault
+ridge stands at `14` over the centre line and the narthex corona hangs under
+the choir loft slab at `4.4`. Chain top is now per fixture.
+
+**The candles burn.** `ChurchCandleFlame` drives each warm fixture: layered
+sine waves whose periods share no common multiple, so the pattern does not
+visibly repeat, plus a rare deeper "guttering" dip. The flame geometry
+stretches, narrows, leans and rises; the light it casts breathes at a
+FRACTION of that - `0.14` against the flame's `0.28` - because a candle's tip
+dances while the pool it throws only wavers, and matching them makes a room
+strobe. Every fixture takes its phase from a hash of its own index, or the
+whole church gutters in unison. Colour dips toward ember as the flame does.
+
+Measured, not asserted by eye: over 150 frames one sconce's light moved
+`1.508..1.919` around a base of `1.75`, and its flame's Y scale
+`0.0796..0.1312` around a rest of `0.11`.
+
+**Two owners of one field is the trap here.** The day and night schedule was
+writing `light.intensity` and now writes `ChurchCandleFlame.BaseIntensity`
+instead; the flame owns the light from frame to frame and flickers around
+that. The PlayMode test reads `BaseIntensity` too - asserting on
+`light.intensity` would have been flaky by construction, since the flicker
+band around the day value overlaps the night value.
+
+The votive stands, altar and font burn in geometry the imported model owns
+and the scene cannot move, so those fixtures flicker in light alone.
+
+- Verification: Blender validator green (`9,476` interior triangles,
+  exterior byte-identical and restored), prefabs rebuilt, full EditMode
+  `1726/1726`, church PlayMode `3/3`. Frames in `Captures/ChurchFlames/`.
+
+## 2026-08-27 — The nave faced the door, and the icons hung on the windows
+
+Two reported defects in the authored interior, both real and both now
+build-time failures.
+
+**The Stations of the Cross were hung across the lancets.** Fourteen
+stations were spaced evenly at `y −11, −7.5, −4, −0.5, 3, 6.5, 10` down a
+wall whose five windows sit at `−11, −6, 0, 6, 11`. Even spacing against
+uneven spacing: four of the seven a side overlapped a window, and the one at
+`−11` sat dead centre on it. They now hang in the wall between the lancets —
+`−13.8, −8.5, −4.2, −1.8, 1.8, 4.2, 8.5`, the two wide bays taking a pair —
+and are narrowed from `1.45` to `1.2 m` to fit the gaps with clearance.
+
+**The pews faced the door.** `pew_geometry` put the backrest at
+`center_y + 0.27`, and `+y` is the sanctuary, so every worshipper sat with
+his back to the altar. The backrest is now the negative offset and the
+kneeler swapped with it. The offset is a named constant because its SIGN is
+the whole contract.
+
+**And they stopped a nave short of the altar.** Six rows ended at `z −4.25`
+with the communion rail at `12.4` — `16.65 m` of bare floor between the last
+pew and the rail. Ten rows now run `−8.5` to `5.45`, ending just before the
+transept crossing.
+
+**Three separate hardcoded censuses had to be found by running into them one
+at a time** — the generator's `pew_halves` contract count `12`, the C#
+`ChurchInteriorLayoutValidator.RequiredFixtureCount = 31`, and the EditMode
+layout test's list of twelve centres. Each is a number that could have been
+derived from the row list and was not. The first two are now derived; the
+third is a test and is meant to be explicit, but it reads its count from the
+validator's constant instead of repeating `12`.
+
+**Both defects are now build-time failures, and the checks were proved red
+before being trusted.** `validate_church_furniture` in the generator fails if
+any station's span overlaps a lancet's, if `PEW_BACKREST_OFFSET` is
+non-negative, or — read back from the authored geometry rather than the
+constant — if any backrest vertex reaches past the seat centre toward the
+sanctuary. Reverting the two old values reproduces exactly three failures,
+naming the station at `−11` and both halves of the pew check. On the C# side
+the layout test now asserts the front row is within `7.5 m` of the rail and
+behind the transept crossing.
+
+The transept crossing check earned itself immediately: the first ten-row
+layout put the front row at `5.95`, whose `0.72 m` depth clipped the
+protected path at `6.3` by a centimetre, and the existing route validator
+refused the build. The rows were shifted back `0.5 m`.
+
+- Verification: Blender validator green (`6,412` exterior and `9,476`
+  interior triangles, exterior byte-identical and restored from HEAD),
+  `ChurchAssetSetup.RunBatch` rebuilt both prefabs, full EditMode
+  `1726/1726`, church PlayMode `3/3`. Frames in `Captures/ChurchFurniture/`.
+  An intermediate rebuild briefly rewrote a one-ULP `_Color` drift on
+  `ChurchRoof` and `ChurchGlassWarm`; the final run put both back to their
+  committed bytes, so no material is in the change.
+
+## 2026-08-27 — The church gets light, and a wrong diagnosis worth recording
+
+Reported: the church interior is too dark; it needs more light without losing
+the intimate mood, and by day the light should fall in through the stained
+glass.
+
+**What was there.** Six lights for a hall of `23 x 44 x 14 m`: two at the
+votive stands, two at the high altar, and two "Cool Stained Glass" spots
+authored at intensity `1.15`. The nave, the crossing and the narthex had
+none — and the narthex, under the choir loft at `z −18.8`, is exactly where
+the hero opens his eyes. The scene also had no clock, so it looked the same
+at noon as at midnight, and the default `05:59` is night.
+
+**What it has now.** Three layers. A **warm layer** of sixteen —
+votive stands, high altar, altar candles, font, six wall sconces (four down
+the aisles between the Stations of the Cross, two in the narthex) and four
+hanging coronas over the centre line. Every one is real geometry: the sconces
+are backplate, arm, cup, candle and flame; the coronas are a chain, a hoop of
+iron segments and candles standing on it. A pool of light with nothing making
+it reads as a mistake.
+
+**The coronas were the second round and the lesson in them is about
+placement, not brightness.** With only wall sconces the aisles and the
+windows read beautifully and the whole CENTRE of the room - the main aisle,
+the pews, the door the hero arrives by, and the hero himself - stayed one
+black hole. The sconces sit on walls eleven metres from the middle of a 23 m
+nave, so at the centre line they deliver `1.75 / 11²`, about `0.014`. No
+increase in their intensity fixes that without blowing the walls out; the
+centre needed its own fixtures, which is exactly what a nave of this size is
+lit by in life. The general ambient floor went up with them, `0.150` to
+`0.205` at night, because the user asked for general light and not only more
+pools.
+A **daylight cone** per authored lancet, ten of them, at the exact XZ of
+`INT_StainedGlass`, aimed down across the aisle so the pool lands on the
+floor a person walks on. And a **glass glow** per lancet, a point at the
+window lighting its own reveal — a real window both throws a pool and lights
+the wall around itself, and with only the cone the aisle wall stayed dead
+and the daylight seemed to come from nowhere.
+`ChurchInteriorDayNightController` trades them on `GameTimeDayNightRules`,
+the same sun the Home window uses: at noon the glass carries the hall and
+the candles drop to `0.62`; after dark the daylight dies and the wax is all
+there is; dawn and dusk pass through amber glass on the way.
+
+**The real cause of "the church is dark", and it is a rule not a fix.**
+URP falls off with the SQUARE of the distance, and the church's numbers were
+authored as if it did not. The two original stained-glass spots sat at
+`1.15` and had nine metres to cross: `1.15 / 9²` is about `0.014` arriving at
+the floor. The candles at `0.95` had a metre to cross and delivered `0.95`.
+Same-looking numbers, seventy times apart in effect. **Size a light by its
+throw**: the cones are at `110` for a `6.6 m` crossing, the glows at `9` for
+`1.7 m`, the sconces at `1.75` for `1.5 m`. That is what "the lighting works
+strangely" in this project has been.
+
+**A wrong diagnosis, recorded because the method failed and not just the
+conclusion.** Mid-task this log claimed `LightType.Spot` renders nothing in
+this pipeline. **It is false and the claim has been removed.** Spot lights
+work — proved twice since, in a bare scene and inside ChurchInterior, on
+both `Ps1Lit` and stock URP Lit, and the exact "dead" shaft configuration
+throws a plain pool when photographed from above.
+
+What went wrong was the measurement, not the reasoning on top of it. Every
+capture that "proved" spots dead was framed from eye level behind the pew
+backs, which are `1.5 m` tall and stand exactly between a nave camera and
+the floor a `36°` cone lands on. The control that seemed decisive — a Point
+and a Spot at one position, only the Point lighting anything — had the same
+flaw: the Point radiates in every direction and lit the pew backs facing the
+camera, while the Spot aimed straight down at a floor the camera could not
+see. **A control is only a control if both arms are visible to the
+instrument.** The habit that would have caught it on the first run is the
+one that caught it in the end: an orthographic camera straight down over the
+subject, which cannot be occluded by what stands beside it.
+
+Also: the interior model's aisles have no roof above `y 9.6` (the vault
+shell covers only the nave), so the directional pours down them. It is kept
+low on purpose — `0.30` at night, `0.62` by day — so the daylight the player
+reads comes through the glass rather than over the wall.
+
+- Verification: church PlayMode `3/3`, full EditMode green. Frames at night,
+  noon and dusk from five positions in `Captures/ChurchInteriorLight/`,
+  including a plan view of the north aisle added after the mistake above.
+  Every intensity in this entry was set from those frames.
+
+## 2026-08-27 — The church you could not walk into, and four centimetres of paving
+
+Reported: the church is far too big from outside, and its door does not work.
+Both were true and they were separate defects.
+
+**The door.** The prompt appeared. Pressing it did nothing, every time,
+forever. `PlayerAnimatedInteractionController.BeginPositionedInternal` refuses
+any entry pose further than `PlayerMotor.InteractionVerticalTolerance` —
+`0.02 m` — from the hero's own root, and the church handed it a dock at
+`GroundTopY + ApproachSurfaceHeight + GroundedRootOffset`. That middle term is
+the forecourt paving, which `CityChurchWorldBuilder` builds with
+`RuntimePrimitiveFactory.CreateBox(..., collider: false)`. So the dock stood
+`0.04 m` above the only height the hero could ever reach, twice the tolerance,
+and the door action declined silently — no exception, no log, `TryBegin`
+simply returning `false` up through `PlayerDoorActionTarget` and
+`ChurchEntrance`. **A decorative surface was baked into a gameplay height it
+does not physically provide.** The dock and the City return are now measured
+against the church ground itself, the paving is laid `12 mm` proud — under the
+controller's own skin width, so nobody wades through it — and
+`CityChurchPlanner.ValidateOrThrow` refuses any plan whose dock or return is
+not within the interaction tolerance of the grounded root over `GroundTopY`.
+
+The City return moved too, and that was the second thing the new test caught:
+`access.Center` sits on the street's *outer edge*, where the pavement is still
+`0.22 m` above the church ground, so leaving the church put the hero inside the
+kerb. It is now a stride in, standing on the forecourt.
+
+**Diagnosis order matters here.** Four probes said the door was fine — the
+walkable mask contains the dock, the trigger overlaps the interactor sphere,
+`CanInteract` returns `true`, the hero walks the approach without stalling.
+Every one of those was true and none of them was the bug. What settled it was
+calling `Interact()` in the real City scene and printing
+`PlayerDoorActionController.IsPlaying` and the animated phase on a timer:
+`playing=False phase=Idle` for twelve seconds. Same lesson as the bus-stop
+spawn refusal in August — **when an action silently declines, instrument the
+declining call's own state rather than re-deriving its preconditions from
+outside.**
+
+**The scale.** The authored basilica is `44 x 23 x 32 m` and stood `8 m` off
+its own frontage, in a town of `18 m` blocks. From the pavement it was not a
+building, it was a wall filling the frame edge to edge, with the rose window
+above the top of the screen. The placer now sets `localScale` to
+`ExteriorModelScale = 0.55` (`24.2 x 12.65 x 17.6 m`) and the setback to
+`16 m`, and the nave is laid on the frontage's own axis instead of hugging the
+cemetery, so the walk in is straight and the whole west front — rose window,
+bell tower, pinnacles — is visible from the street. One prefab serves both this
+landmark and the `ChurchInterior` scene, so nothing was re-authored in Blender
+and the interior keeps its size and its twelve layout contracts. The anchor
+contract is unchanged: `ExteriorEntranceAnchorLocalPosition` stays the prefab's
+own unscaled `(0, 0, 22.05)` that `ChurchAssetSetup` validates, and
+`ExteriorEntranceModelOffset` is the placed one.
+
+**The door is now the City's ordinary door.** The authored `EXT_WestDoors` is a
+`2.8 x 4.2 m` slab standing *behind* the facade's own stone plinth — its bottom
+`1.5 m` walled off, no frame, no handle, nothing marking it after dark. The
+placer hides that renderer (and throws if the prefab stops publishing it, so a
+re-authored model cannot leave two doors stacked) and draws a `1.8 x 2.6 m`
+leaf with a mullion, stone jambs, a lintel, two handles, a flush threshold and
+a bracket lamp in the model's own Wood/Stone/Iron colours. Dock, trigger and
+prompt now sit at one point `0.82 m` out at `0.82 m` up with a `1.05 m` radius
+— the bar's, the grocery's and the player's own front door, to the centimetre.
+
+- Verification: `CityChurchEntrance_OpensForAHeroWalkingInOffTheStreet` is new
+  and walks the whole thing — teleport to the return, settle, walk the
+  forecourt, assert the prompt, press it, assert `IsPlaying`, ride the
+  transition into `ChurchInterior`. It was red against the old code at exactly
+  the `IsPlaying` assert, which is the only evidence it is wired to the bug.
+  `3/3` church PlayMode; full EditMode suite green; captures written to
+  `Captures/ChurchExterior/`.
+
 ## 2026-08-27 — The drying yard's carpet rack is asked for as geometry
 
 `DryingYardBabushkaTests.Build_DryingYardCarriesTheCarpetRack` expected three
