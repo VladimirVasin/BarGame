@@ -499,11 +499,13 @@ namespace BarPromenade.Tests.EditMode
                 Is.True);
             Assert.That(
                 HomeYardUtilityPlanner.TryCreatePhoneBooth(
+                    layout,
                     site,
                     out HomeYardUtilityAnchor boothAnchor),
                 Is.True);
             Assert.That(
                 HomeYardUtilityPlanner.TryCreateDumpster(
+                    layout,
                     site,
                     out HomeYardUtilityAnchor dumpsterAnchor),
                 Is.True);

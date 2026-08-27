@@ -596,6 +596,7 @@ namespace BarPromenade
             }
 
             if (HomeYardUtilityPlanner.TryCreatePhoneBooth(
+                    layout,
                     site,
                     out HomeYardUtilityAnchor booth))
             {
@@ -612,6 +613,7 @@ namespace BarPromenade
             }
 
             if (HomeYardUtilityPlanner.TryCreateDumpster(
+                    layout,
                     site,
                     out HomeYardUtilityAnchor dumpster))
             {

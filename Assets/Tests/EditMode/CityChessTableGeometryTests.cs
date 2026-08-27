@@ -152,19 +152,42 @@ namespace BarPromenade.Tests.EditMode
         /// The board is drawn, not tiled. The park sheets ride world
         /// UVs, so the two halves have to reach the batcher as separate
         /// colours or the pattern is not there at all.
+        ///
+        /// The set is authored in Blender now, so the halves arrive as two
+        /// meshes - the light plate on the masonry role, the dark squares
+        /// and rim on the street role - and the imported batcher names them
+        /// with its own prefix. Only the plan is narrowed to the chess set:
+        /// the bandstand and the playground also draw park timber on the
+        /// masonry colour, so a city-wide assertion would stay green with
+        /// the board gone.
         /// </summary>
         [Test]
         public void Board_DrawsItsTwoColoursAsSeparateTimberBatches()
         {
             CityLayout layout = CreateLayout();
             CityDecorationPlan plan = CreatePlan(layout);
+            var chessOnly = new List<CityDecorationDescriptor>();
+            for (int index = 0; index < plan.Descriptors.Count; index++)
+            {
+                if (plan.Descriptors[index].Kind ==
+                    CityDecorationKind.ParkChessTables)
+                {
+                    chessOnly.Add(plan.Descriptors[index]);
+                }
+            }
+
+            Assert.That(
+                chessOnly,
+                Is.Not.Empty,
+                "The default city plants no chess set.");
+
             var parent = new GameObject("Chess Board Batch Test");
             try
             {
                 GameObject root = CityDecorationWorldBuilder.Build(
                     parent.transform,
                     layout,
-                    plan);
+                    new CityDecorationPlan(plan.Seed, chessOnly));
                 var names = new HashSet<string>();
                 foreach (Renderer renderer in
                          root.GetComponentsInChildren<Renderer>(true))
@@ -174,12 +197,12 @@ namespace BarPromenade.Tests.EditMode
 
                 Assert.That(
                     names,
-                    Contains.Item("Park Timber Masonry Details"),
+                    Contains.Item("Imported Park Timber Masonry Details"),
                     "The light squares are the timber sheet on the " +
                     "masonry batch colour.");
                 Assert.That(
                     names,
-                    Contains.Item("Park Timber Street Details"),
+                    Contains.Item("Imported Park Timber Street Details"),
                     "The dark squares are the timber sheet on the " +
                     "street batch colour.");
             }

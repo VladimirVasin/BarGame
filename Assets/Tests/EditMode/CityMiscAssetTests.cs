@@ -562,7 +562,12 @@ namespace BarPromenade.Tests.EditMode
                 .Where(descriptor =>
                     IsWaveOneDecoration(descriptor.Kind))
                 .ToArray();
-            Assert.That(migrated, Has.Length.EqualTo(81));
+            // A census, not a contract: it exists so that a migration is
+            // never allowed to quietly drop a wave-one prop. It moves when
+            // the city's composition moves, and it is expected to be
+            // re-counted then - fd691b8 cut the city from four bars to one,
+            // which handed three lots back to ordinary frontage dressing.
+            Assert.That(migrated, Has.Length.EqualTo(83));
 
             var parent = new GameObject("City Misc Runtime Test");
             try

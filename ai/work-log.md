@@ -6,6 +6,135 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-27 — The drying yard's carpet rack is asked for as geometry
+
+`DryingYardBabushkaTests.Build_DryingYardCarriesTheCarpetRack` expected three
+runtime boxes (`Carpet Rack Post South`/`North`, `Carpet Rack Bar`) that
+`87322d4` put behind `if (!shellImported)`. It went red at that commit — the
+test has not been touched since `ae2bca1` — and it was the last red in the
+suite.
+
+The rack was never missing. `tools/build-city-misc-3d-model.py` authors it
+explicitly: two eight-sided posts at `x −6.05`, `z −1.35` and `+1.55`, rising
+`0 → 1.62`, and a tube of radius `0.05` from `(−6.05, 1.62, −1.42)` to
+`(−6.05, 1.62, 1.62)`. Those are the four runtime constants exactly, and the
+tube's length is the deleted bar's `ZNorth − ZSouth + 0.14`. The measured
+manifest agrees and did so already at `87322d4`, byte-identical. The gating was
+deliberate: the assembly's `unity_owned_parts` lists what Unity keeps — cloth,
+lens, light, halo, NPCs, collision proxies — and pointedly omits the rack. In
+the same commit the author updated the *sibling* appearance test to assert the
+imported role meshes; this one was simply missed.
+
+Confirmed in the built world before touching anything, by a throwaway probe
+that dumped the hierarchy: the two rack-post colliders sit at
+`(−6.05, 0.81, ∓)` spanning `1.62`, both carpets' cloth hangs at `y 1.660` on
+`x −6.05`, and the painted-metal batch's local bounds run `x −6.12 … 4.65` —
+`−6.12` being the rack post's own west face, `−6.05 − 0.07`. Nothing else in
+that mesh comes west of `−4.65`.
+
+**Two fixes were considered and rejected, both because they would have left the
+test's own name a lie.** Copying the sibling and asserting the imported mesh is
+present duplicates `CityPointOfInterestSurfaceAppearanceTests` and stops
+checking the rack entirely — the same failure the chess rename was fixed to
+avoid. Giving the rack three named part meshes turns `metalCount ==` `1` red in
+that same sibling.
+
+**What the test guards now is the collider, not the crossbar, and that was a
+deliberate narrowing.** A first version proved the whole rack geometrically —
+metal at bar height between the carpets, metal on the paving outside them — and
+it worked, but `195` lines for one piece of yard scenery is not proportionate.
+The stakes are not equal either: a carpet hanging on a vanished bar is a
+cosmetic oddity, while the two obstacle colliders still standing at the posts
+become an **invisible wall** the player walks into. So the test asks the
+narrower question — each post collider must enclose some of the shell's
+triangles — and the crossbar is knowingly left unguarded, which the doc comment
+says outright. Nothing collides with the bar.
+
+Verification: the assertion was proved able to fail before it was trusted. A
+temporary control shifted each post collider `5 m` along Z and required the
+same probe to come back empty; it did, while the unshifted colliders both found
+metal. The control was deleted. Full EditMode suite green.
+
+Two incidental facts worth keeping. **`Mesh.isReadable` lies about runtime-
+combined meshes**: the imported chunks report `false` while `mesh.triangles`
+returns all `628` of them, so a triangle walker must never gate on that flag —
+an earlier probe that did silently measured only the runtime primitive boxes
+and produced a completely wrong answer. And a whole-city sweep of the point-of-
+interest builder found `26` of `30` colliders already backed by drawn geometry,
+the other four being an artifact of the sweep's own grouping — so this contract
+would pass today across the board.
+
+**Two silent holes named, not closed.** `BuildDryingYardFloodlight` and
+`BuildIslandMastFloodlight` carry the same gate over `Drying Yard Floodlight
+Pole`, `Floodlight Housing`, `Island Floodlight Bracket` and `Island Floodlight
+Housing`, and **no test names any of them** — so that authored geometry is
+unpinned without anything going red. And the root cause is general:
+`unity_owned_parts` is declared per assembly but only null-checked in
+`CityMiscAssetSetup`, never cross-checked against what the runtime actually
+builds. That is why this red shipped at all.
+
+## 2026-08-27 — The four EditMode reds, and one of them was a real defect
+
+Three were stale expectations and one was production. Taken in turn:
+
+`CityChessTableGeometryTests.Board_DrawsItsTwoColoursAsSeparateTimberBatches`
+expected the boxes-era batch names. The imported batcher prefixes its
+renderers, so the board now arrives as `Imported Park Timber Masonry Details`
+and `Imported Park Timber Street Details`. The two-colour contract itself never
+moved: the manifest ships the light plate on the masonry role and the dark
+squares plus rim on the street role, two `ParkBatchKey` buckets, two batch
+colours. The plan handed to the builder is now narrowed to the chess descriptor
+alone, because the bandstand and the playground also draw park timber on the
+masonry colour — a city-wide assertion would have stayed green with the board
+gone entirely.
+
+`CityMapAreaPresentationTests.CityTeleportLattice_TurnsTheStreetsThemselvesIntoPlaces`
+built its layout from the two-argument `CityLayoutGenerator.Generate`. That is
+the legacy overload, it lays no church ground, `CityChurchPlanner.Create`
+returns null on a city without any, and the church-footprint exclusion below it
+had therefore never been exercised. Switched to the blueprint overload. **This
+is the second time this session that the legacy overload cost a run** — see the
+puddle-planner entry below.
+
+`CityMiscAssetTests.DefaultCity_MigratesWaveOneWithoutMovingRuntimeContracts`
+counted `81` wave-one descriptors. Not the Blender migration: `fd691b8` cut the
+city from four bars to one, which handed three lots back to ordinary frontage
+dressing and two more wave-one props with them. Now `83`, with a comment saying
+the number is a census that is expected to move when the city's composition
+moves, so the next reader re-counts instead of hunting a regression.
+
+`CityWindDressingPlannerTests.DefaultCity_GroundsStreetMiscAndKeepsCourtyardLinesClear`
+was the real one, and it was not the migration either. `HomeYardUtilityPlanner`
+grounded the yard's phone booth and dumpster at `site.GroundY` — a single point
+sampled at the centre of a rectangle that spans two cells — while both objects
+stand several metres away along the bar wall. They sat `8.5 cm` under the
+terrain, and that plane is also the floor of their collision proxy and the
+stand height of the booth's interaction dock. Born ungrounded on 2026-08-14;
+continuous sloped ground arrived 2026-08-15; the assertion that catches it was
+written already-red on 2026-08-24. A latent defect a new assertion exposed, not
+behaviour that changed.
+
+**The fix went where the anchor is authored, not where the descriptor is
+written, and that distinction was the whole problem.** Re-grounding inside
+`AddHomeYardUtilityDescriptor` is the obvious patch and it is wrong:
+`CityDecorationPlannerTests.cs:524` asserts `booth.Position` equals the anchor
+*exactly*, so the obvious patch trades one red for another. `TryCreatePhoneBooth`,
+`TryCreateDumpster` and `TryPlaceAgainstAnchorWall` now take the `CityLayout`
+and sample `TrySampleGroundTop` at each object's own xz, with the yard datum
+kept as a fallback so a failed sample leaves the object standing rather than
+dropping it and breaking `CityStreetUtilityPlanTests`' `yardDockCount == 2`.
+Anchor and descriptor stay one value, so nothing downstream notices. The plan's
+composition is provably untouched: both `IsSeparated` and
+`IsProtectedGroundAnchor` compare `PlanarSquaredDistance`, so a change in Y
+cannot move a spacing decision. Eight call sites, four runtime and four test,
+all of which already had the layout in scope.
+
+Verification: full EditMode suite `1725` tests, `1724` passed. All four names
+confirmed present in the results XML — a filter that matches nothing also
+reports green. The two tests that the anchor change could have broken
+(`BarSideYard_LeansPhoneBoothAndDumpsterOnTheBarWall`,
+`BarSideYard_KeepsItsDressingOffTheLeaningUtilities`) are green.
+
 ## 2026-08-27 — The canonical bar becomes a complete old neighbourhood pub
 
 The interim three-role City misc bar shell and its generic Unity window bands

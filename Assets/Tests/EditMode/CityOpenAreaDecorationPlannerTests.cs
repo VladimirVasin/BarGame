@@ -495,6 +495,7 @@ namespace BarPromenade.Tests.EditMode
             var reserved = new List<Rect>(2);
             Assert.That(
                 HomeYardUtilityPlanner.TryCreatePhoneBooth(
+                    layout,
                     site,
                     out HomeYardUtilityAnchor booth),
                 Is.True,
@@ -502,6 +503,7 @@ namespace BarPromenade.Tests.EditMode
             reserved.Add(booth.Footprint);
             Assert.That(
                 HomeYardUtilityPlanner.TryCreateDumpster(
+                    layout,
                     site,
                     out HomeYardUtilityAnchor dumpster),
                 Is.True,

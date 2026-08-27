@@ -571,6 +571,7 @@ namespace BarPromenade
             // dressing only has to keep its slots off their ground.
             var reservedGround = new List<Rect>(2);
             if (HomeYardUtilityPlanner.TryCreatePhoneBooth(
+                    layout,
                     site,
                     out HomeYardUtilityAnchor booth))
             {
@@ -579,6 +580,7 @@ namespace BarPromenade
             }
 
             if (HomeYardUtilityPlanner.TryCreateDumpster(
+                    layout,
                     site,
                     out HomeYardUtilityAnchor dumpster))
             {

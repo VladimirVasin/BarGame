@@ -1141,7 +1141,11 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void CityTeleportLattice_TurnsTheStreetsThemselvesIntoPlaces()
         {
+            // The shipped catalogue, not the legacy two-argument overload:
+            // that one builds no church ground, so CityChurchPlanner would
+            // have nothing to plan and the exclusion below would go untested.
             CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
                 CityGenerationSettings.Default,
                 58021);
             var ground = new CityMapCityTeleportGround(layout);

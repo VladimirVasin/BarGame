@@ -645,6 +645,13 @@ namespace BarPromenade
     /// descriptors and the yard dressing keeps its slots off their
     /// ground, so the drawn objects, the collision proxies and the
     /// future interactions can never disagree.
+    ///
+    /// Each anchor is grounded at its OWN xz rather than at the yard
+    /// datum. The yard is one sampled point at the centre of a rectangle
+    /// that spans two cells, and these two stand several metres away
+    /// along a wall, so the datum is a few centimetres out under each of
+    /// them - enough to sink a phone booth, because the anchor plane is
+    /// also the floor of its collision proxy.
     /// </summary>
     public static class HomeYardUtilityPlanner
     {
@@ -673,10 +680,12 @@ namespace BarPromenade
         /// end, door into the yard.
         /// </summary>
         public static bool TryCreatePhoneBooth(
+            CityLayout layout,
             HomeYardSitePlan site,
             out HomeYardUtilityAnchor anchor)
         {
             return TryPlaceAgainstAnchorWall(
+                layout,
                 site,
                 BoothBackHalfDepth,
                 BoothFrontHalfDepth,
@@ -691,11 +700,13 @@ namespace BarPromenade
         /// into the yard, never overlapping the booth.
         /// </summary>
         public static bool TryCreateDumpster(
+            CityLayout layout,
             HomeYardSitePlan site,
             out HomeYardUtilityAnchor anchor)
         {
             Rect? obstacle = null;
             if (TryCreatePhoneBooth(
+                    layout,
                     site,
                     out HomeYardUtilityAnchor booth))
             {
@@ -703,6 +714,7 @@ namespace BarPromenade
             }
 
             return TryPlaceAgainstAnchorWall(
+                layout,
                 site,
                 DumpsterBackHalfDepth,
                 DumpsterFrontHalfDepth,
@@ -713,6 +725,7 @@ namespace BarPromenade
         }
 
         private static bool TryPlaceAgainstAnchorWall(
+            CityLayout layout,
             HomeYardSitePlan site,
             float backHalfDepth,
             float frontHalfDepth,
@@ -786,8 +799,21 @@ namespace BarPromenade
                     continue;
                 }
 
+                // The yard datum is the fallback, never the answer: a
+                // failed sample must leave the object standing where it
+                // stood rather than delete it from the yard.
+                float top = site.GroundY;
+                if (CityTerrainSurfacePlan.TrySampleGroundTop(
+                        layout,
+                        new Vector2(centerX, z),
+                        out float sampledTop,
+                        out _))
+                {
+                    top = sampledTop;
+                }
+
                 anchor = new HomeYardUtilityAnchor(
-                    new Vector3(centerX, site.GroundY, z),
+                    new Vector3(centerX, top, z),
                     new Vector3(forwardSign, 0f, 0f),
                     footprint);
                 return true;

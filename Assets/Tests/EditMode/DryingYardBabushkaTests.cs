@@ -137,6 +137,25 @@ namespace BarPromenade.Tests.EditMode
             return Vector3.Distance(point, start + segment * amount);
         }
 
+        /// <summary>
+        /// The carpets are Unity's - simulated cloth on the shared Home
+        /// rug albedo, each with its static fold cap over the bar - so
+        /// they are still asked for by name.
+        ///
+        /// The rack they hang on is not. It used to be three runtime
+        /// boxes this test named; it is authored geometry now, baked
+        /// into the yard's single painted-metal batch, and asking only
+        /// that the batch arrived would prove nothing - it carries the
+        /// drying frames and the floodlight too, and a sibling test
+        /// already pins its presence.
+        ///
+        /// What the rack still owns on Unity's side is a pair of
+        /// obstacle colliders at its posts, and that is the half worth
+        /// guarding: a collider with nothing drawn inside it is an
+        /// invisible wall. So the posts are checked as geometry and
+        /// the crossbar is knowingly left unguarded - nothing collides
+        /// with it, and a floating carpet is cheaper than a wall.
+        /// </summary>
         [Test]
         public void Build_DryingYardCarriesTheCarpetRack()
         {
@@ -151,11 +170,8 @@ namespace BarPromenade.Tests.EditMode
                         parent.transform,
                         layout);
 
-                string[] rackParts =
+                string[] carpetParts =
                 {
-                    "Carpet Rack Post South",
-                    "Carpet Rack Post North",
-                    "Carpet Rack Bar",
                     "Beaten Carpet South",
                     "Beaten Carpet North",
                     "Beaten Carpet South Fold",
@@ -168,7 +184,7 @@ namespace BarPromenade.Tests.EditMode
                 foreach (Renderer renderer in
                          root.GetComponentsInChildren<Renderer>(true))
                 {
-                    foreach (string part in rackParts)
+                    foreach (string part in carpetParts)
                     {
                         if (renderer.name != part)
                         {
@@ -176,20 +192,17 @@ namespace BarPromenade.Tests.EditMode
                         }
 
                         found.Add(part);
-                        if (part.StartsWith("Beaten Carpet"))
-                        {
-                            var properties =
-                                new MaterialPropertyBlock();
-                            renderer.GetPropertyBlock(properties);
-                            Assert.That(
-                                properties.GetTexture(BaseMapId),
-                                Is.SameAs(rugTexture),
-                                $"{part} must carry the rug albedo.");
-                        }
+                        var properties = new MaterialPropertyBlock();
+                        renderer.GetPropertyBlock(properties);
+                        Assert.That(
+                            properties.GetTexture(BaseMapId),
+                            Is.SameAs(rugTexture),
+                            $"{part} must carry the rug albedo.");
                     }
                 }
 
-                Assert.That(found, Is.EquivalentTo(rackParts));
+                Assert.That(found, Is.EquivalentTo(carpetParts));
+                AssertRackPostsAreDrawn(root);
 
                 // In the city each carpet is real simulated cloth,
                 // registered for the strike driver and deliberately
@@ -419,6 +432,115 @@ namespace BarPromenade.Tests.EditMode
                         $"'{descriptor.Accesses[accessIndex].Id}'.");
                 }
             }
+        }
+
+        /// <summary>
+        /// The rack the carpets hang on is authored geometry now - two
+        /// posts and a crossbar baked into the yard's one painted-metal
+        /// batch - so it has no part names left to ask for. What is
+        /// still Unity's is the pair of obstacle colliders standing at
+        /// the posts, and those are the half that hurts: a collider
+        /// with nothing drawn inside it is an invisible wall.
+        ///
+        /// So each post collider has to enclose some of the shell's
+        /// triangles. Deliberately narrow: it does not pin the
+        /// crossbar, which nothing collides with, nor the posts' size -
+        /// only that solid metal is drawn where the player is stopped.
+        /// </summary>
+        private static void AssertRackPostsAreDrawn(GameObject root)
+        {
+            Transform shell = FindNode(
+                root,
+                "Imported Residential Drying Yard " +
+                "Residential_PaintedMetal");
+            Mesh mesh = shell.GetComponent<MeshFilter>().sharedMesh;
+            Assert.That(mesh, Is.Not.Null);
+
+            string[] posts =
+            {
+                "Carpet Rack Post South Collider",
+                "Carpet Rack Post North Collider"
+            };
+            foreach (string post in posts)
+            {
+                Collider collider =
+                    FindNode(root, post).GetComponent<Collider>();
+                Assert.That(collider, Is.Not.Null);
+                Assert.That(
+                    DrawsInside(mesh, shell, collider.bounds),
+                    Is.True,
+                    $"'{post}' stops the player where the shell " +
+                    "draws nothing.");
+            }
+        }
+
+        /// <summary>
+        /// Whether a batched mesh puts any triangle inside a collider.
+        /// The shell is one mesh for the whole yard, so its bounds
+        /// cannot answer this. The mesh sits at the recipe's own
+        /// origin and the recipe carries the site's yaw, so the
+        /// collider is folded into the shell's frame corner by corner.
+        /// </summary>
+        private static bool DrawsInside(
+            Mesh mesh,
+            Transform frame,
+            Bounds worldBox)
+        {
+            var box = new Bounds();
+            for (int corner = 0; corner < 8; corner++)
+            {
+                var point = new Vector3(
+                    (corner & 1) == 0 ? worldBox.min.x : worldBox.max.x,
+                    (corner & 2) == 0 ? worldBox.min.y : worldBox.max.y,
+                    (corner & 4) == 0 ? worldBox.min.z : worldBox.max.z);
+                Vector3 local = frame.InverseTransformPoint(point);
+                if (corner == 0)
+                {
+                    box = new Bounds(local, Vector3.zero);
+                }
+                else
+                {
+                    box.Encapsulate(local);
+                }
+            }
+
+            Vector3[] vertices = mesh.vertices;
+            int[] triangles = mesh.triangles;
+            for (int index = 0; index < triangles.Length; index += 3)
+            {
+                Vector3 first = vertices[triangles[index]];
+                Vector3 second = vertices[triangles[index + 1]];
+                Vector3 third = vertices[triangles[index + 2]];
+                Vector3 low = Vector3.Min(
+                    first,
+                    Vector3.Min(second, third));
+                Vector3 high = Vector3.Max(
+                    first,
+                    Vector3.Max(second, third));
+                if (low.x <= box.max.x && high.x >= box.min.x &&
+                    low.y <= box.max.y && high.y >= box.min.y &&
+                    low.z <= box.max.z && high.z >= box.min.z)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static Transform FindNode(GameObject root, string name)
+        {
+            foreach (Transform node in
+                     root.GetComponentsInChildren<Transform>(true))
+            {
+                if (node.name == name)
+                {
+                    return node;
+                }
+            }
+
+            Assert.Fail($"The drying yard builds no '{name}'.");
+            return null;
         }
     }
 }
