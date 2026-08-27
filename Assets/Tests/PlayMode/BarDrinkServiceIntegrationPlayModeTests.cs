@@ -166,6 +166,33 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
         }
 
+        [UnityTest]
+        public IEnumerator DebugWindow_SetsOnlyDaysOneThroughSeven()
+        {
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            GameSessionState.AdvanceGameTime(394.5f);
+            double timeBeforeChange =
+                GameSessionState.GameTimeOfDayMinutes;
+
+            Assert.That(debugWindow.TrySetGameDayNumber(7), Is.False);
+            Assert.That(debugWindow.Open(), Is.True);
+            Assert.That(debugWindow.CurrentGameDayNumber, Is.EqualTo(1));
+            Assert.That(debugWindow.TrySetGameDayNumber(7), Is.True);
+            Assert.That(debugWindow.CurrentGameDayNumber, Is.EqualTo(7));
+            Assert.That(GameSessionState.GameDayIndex, Is.EqualTo(6));
+            Assert.That(
+                GameSessionState.GameTimeOfDayMinutes,
+                Is.EqualTo(timeBeforeChange));
+            Assert.That(debugWindow.TrySetGameDayNumber(0), Is.False);
+            Assert.That(debugWindow.TrySetGameDayNumber(8), Is.False);
+            Assert.That(debugWindow.TrySetGameDayNumber(3), Is.True);
+            Assert.That(debugWindow.CurrentGameDayNumber, Is.EqualTo(3));
+            Assert.That(debugWindow.Close(), Is.True);
+            yield return null;
+        }
+
         private static void CloseExistingModalOwners()
         {
             foreach (BarDrinkShopController controller in
@@ -185,8 +212,7 @@ namespace BarPromenade.Tests.PlayMode
 
         private static void ResetSession()
         {
-            GameSessionState.ResetEconomyState();
-            GameSessionState.ResetDrinkingState();
+            GameSessionState.BeginNewGame();
         }
 
         private static void Destroy(GameObject target)

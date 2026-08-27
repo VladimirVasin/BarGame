@@ -210,9 +210,9 @@ Assets/
         CityGameRoot.cs           city composition + deferred debug-map arrival
         AreaTravelTypes.cs        stable City/MountainRoad IDs + arrival token
         AreaTravelService.cs      guarded Single-load area handoff through AreaLoading
-        GameSessionState.cs       persistent clock/needs + one-shot debug-map handoff
-        GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed minute delta
-        GameTimeRuntime.cs        persistent scaled-delta driver
+        GameSessionState.cs       persistent clock/needs + debug day 1..7 + one-shot debug-map handoff
+        GameTimeState.cs          frozen 05:59 -> running 06:00, elapsed delta + one-based day
+        GameTimeRuntime.cs        persistent scaled-delta driver + day-announcement owner
         GameTimeDayNightRules.cs  night/dawn/day/dusk visual sample
         GameWeatherRules.cs       seeded 90-minute clear/light-rain/heavy-rain slots
         RuntimePrimitiveFactory.cs shared material primitives, oriented batches + opt-in XZ planar UVs
@@ -226,7 +226,7 @@ Assets/
         CitySoundSourceDescriptor.cs       physical-owner anchor and causal-mode contract
         CitySoundscapePlan.cs              stable-ID ordered loop/scheduled/triggered views
         CitySoundscapePlanner.cs           pure validation, profiles and stable hashes
-        CitySoundSchedulePlanner.cs        deterministic no-catch-up detail cursors
+        CitySoundSchedulePlanner.cs        deterministic no-catch-up/rebase detail cursors
         CitySoundscapeAnchorPlanner.cs     POI/fountain plans -> exact physical anchors
         CitySoundOcclusion.cs              coarse authored-building mass attenuation
         CitySoundscapeDirector.cs          bounded spatial pool + real-action bindings
@@ -649,7 +649,8 @@ Assets/
         PauseMenuModel.cs           pure main/confirmation navigation and actions
         PauseMenuController.cs      shared-lock time/audio/input pause ownership + IMGUI
         InventoryController.cs      modal inventory, selection and atomic Eat/Drink input
-        InventoryView.cs            640x360 status + HH:MM/grid/description/command UI
+        InventoryView.cs            640x360 status + DAY N/HH:MM/grid/description/command UI
+        GameDayAnnouncementView.cs  queued Wake/midnight DAY N overlay outside modal locks
         InventoryIconLibrary.cs     point-filtered icons + dedicated 3D hero portrait
         InventoryItemPreviewRenderer.cs hidden live 3D RenderTexture stage
         InventoryTargetInteractionController.cs shared modal target menu + atomic consumption
@@ -726,7 +727,7 @@ Assets/
       StairwellCat{Interaction,Runtime,Asset}Tests.cs  branches, staging, pose/grin models and prefab contract
       ProjectBuildSceneTests.cs             startup scene order/allow-list
       HomeOpeningTimelineTests.cs           persistent 05:59 flicker and Wake-only 06:00
-      GameTimeStateTests.cs                 freeze/start/elapsed delta/day/midnight/reset
+      GameTimeStateTests.cs                 freeze/start/day setter/announcement/midnight/reset
       GameTimeDayNightRulesTests.cs         phase boundaries and smooth transitions
       GameWeatherRulesTests.cs              slot determinism, targets and boundary ramps
       CityWetSurfaceTests.cs                film timing/tint persistence + bounded grounded puddles
@@ -743,11 +744,11 @@ Assets/
       InteractionPromptViewTests.cs          prompt callback lifecycle
       InteriorSoundscapeSynthesisTests.cs   deterministic distinct loop contracts
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
-      Audio/CitySound*.cs                   causal plan/schedule/synthesis/occlusion contracts
+      Audio/CitySound*.cs                   causal plan/schedule/rewind/synthesis/occlusion contracts
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
       AutomaticTestAudioMutePlayModeTests.cs  silent listener-output contract
       PauseMenuPlayModeTests.cs            Escape, modal exclusion and exact restoration
-      InventoryPlayModeTests.cs            I/Escape, clock/needs freeze and exact restoration
+      InventoryPlayModeTests.cs            I/Escape, day/time/needs freeze and exact restoration
       SupermarketPurchasePersistencePlayModeTests.cs  music bootstrap + buy/remove/re-enter contract
       StairwellInteriorPresentationPlayModeTests.cs  Talk/missing/feed GPU lifecycle
       HomeOpeningPlayModeTests.cs           launch, wake, Home F9 map skip and cleanup
@@ -836,11 +837,12 @@ build index 0 -> MainMenuRoot -> BeginNewGame
 startup Wake or accepted Home F9 debug skip -> session time 06:00
                                              -> GameTimeRuntime scaled delta
                                   -> 1440 real seconds per game day
+                                  -> one-based day -> queued DAY N announcement
                                   -> PlayerNeedsProgressionState
                                      -> hunger 0..100 / 1440 game minutes
                                      -> fatigue 0..100 / 1080 game minutes
                                      -> integer inventory Status bars
-                                  -> HomeAlarmClock HH:MM
+                                  -> HomeAlarmClock HH:MM / Inventory DAY N + HH:MM
                                   -> CityDayNightController
                                   -> HomeDayNightController
 City/MountainRoad map -> CityMapAreaController -> City / Mountain Road tabs
@@ -1321,6 +1323,7 @@ GameSessionState intoxication -> IntoxicationStageRules
                                  -> success or Fall clip -> bounded ragdoll
                                     -> one 50-frame Rise phase via all fours/crouch
 F9 -> MinigameDebugWindow -> Left/Right arrows or buttons -> intoxication +/-20
+                          -> direct day 1..7 -> day index only, keep HH:MM/needs
                           -> City test-teleport toggle -> CityMap all-lot selection
                                                        -> Yes -> PlayerMotor.Teleport
 Home F9 -> HomeDebugCityMapShortcut -> City at home -> open debug-teleport map

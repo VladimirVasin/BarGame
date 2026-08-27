@@ -85,6 +85,8 @@ namespace BarPromenade
         public const int DefaultHunger = 0;
         public const int DefaultStress = 0;
         public const int DefaultFatigue = 0;
+        public const int FirstDebugGameDayNumber = 1;
+        public const int LastDebugGameDayNumber = 7;
 
         private static readonly List<string> plannedBarRoute =
             new List<string>();
@@ -197,6 +199,7 @@ namespace BarPromenade
             collectedWorldItems.Count;
         public static bool IsGameTimeRunning => gameTime.IsRunning;
         public static int GameDayIndex => gameTime.DayIndex;
+        public static int GameDayNumber => gameTime.DayNumber;
         public static int GameHour => gameTime.Hour;
         public static int GameMinute => gameTime.Minute;
         public static int GameMinuteOfDay => gameTime.MinuteOfDay;
@@ -237,6 +240,32 @@ namespace BarPromenade
         public static bool TryStartGameTimeFromWake()
         {
             return gameTime.TryStartFromWake();
+        }
+
+        public static bool TrySetDebugGameDay(int dayNumber)
+        {
+            if (dayNumber < FirstDebugGameDayNumber ||
+                dayNumber > LastDebugGameDayNumber)
+            {
+                return false;
+            }
+
+            int previousDayNumber = gameTime.DayNumber;
+            if (!gameTime.TrySetDayNumber(dayNumber))
+            {
+                return false;
+            }
+
+            GameLog.Info(
+                "session",
+                "debug_game_day_changed",
+                GameLog.Field(
+                    "previous_day_number",
+                    previousDayNumber),
+                GameLog.Field("day_number", gameTime.DayNumber),
+                GameLog.Field("hour", gameTime.Hour),
+                GameLog.Field("minute", gameTime.Minute));
+            return true;
         }
 
         public static void AdvanceGameTime(float scaledDelta)

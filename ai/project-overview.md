@@ -69,9 +69,11 @@ The vertical slice contains:
   F9 debug skip sets it to `06:00`, and persists through Single-mode scene
   loads. It advances on scaled time at
   `1.0` game minute per real second, so a full `24 h` cycle takes exactly
-  `1440` real seconds (`24` minutes), crosses midnight with a day index and
-  naturally pauses wherever gameplay sets `timeScale` to zero. The Home clock
-  and inventory Status panel both show its current `HH:MM`;
+  `1440` real seconds (`24` minutes), crosses midnight with a zero-based day
+  index exposed to the player as one-based `DAY N`, and naturally pauses
+  wherever gameplay sets `timeScale` to zero. The Home clock shows `HH:MM`;
+  the inventory Status panel shows `DAY N · HH:MM`, while one persistent view
+  briefly announces day 1 after Wake and every later midnight;
 - a separately runtime-composed `MountainRoad` area. The hero arrives `6 m`
   inside a `9 m` exit tunnel, then follows one continuous `620 m` uphill road
   ribbon dimensioned for the `4.83 x 1.80 m` LastRouteCar: `4.8 m` wide on
@@ -1504,11 +1506,13 @@ The vertical slice contains:
   activity fixture (beer-pong table, stage) survives purely as layout
   dressing. The bar-visited mechanic is removed entirely: the map route is
   edited only by hand and entering a bar changes nothing about it;
-- an `F9` debug window in both `City` and `BarInterior`; opening it closes a
+- an `F9` debug window in `City`, `BarInterior` and `MountainRoad`; opening it closes a
   conflicting map before taking the modal lock; clickable controls or the
   Left/Right arrow keys change the session
   intoxication by `-20/+20`, clamped to `0–100`, without changing the
-  last-drink or consumed-drink context; a committed physical drink service
+  last-drink or consumed-drink context. Seven direct buttons select displayed
+  game days `1–7` while preserving the current `HH:MM`, running state and
+  needs; the ordinary calendar itself remains unbounded. A committed physical drink service
   cannot be interrupted through this debug path. In `City` the same window
   also owns a
   persistent scene-local test-teleport toggle consumed by the city map. In

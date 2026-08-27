@@ -21,6 +21,9 @@ namespace BarPromenade
 
         public bool IsRunning { get; private set; }
         public int DayIndex { get; private set; }
+        public int DayNumber => DayIndex == int.MaxValue
+            ? int.MaxValue
+            : DayIndex + 1;
         public int Hour => MinuteOfDay / MinutesPerHour;
         public int Minute => MinuteOfDay % MinutesPerHour;
         public int MinuteOfDay => (int)Math.Floor(timeOfDayMinutes);
@@ -44,6 +47,23 @@ namespace BarPromenade
             IsRunning = true;
             DayIndex = 0;
             timeOfDayMinutes = WakeMinuteOfDay;
+            return true;
+        }
+
+        public bool TrySetDayNumber(int dayNumber)
+        {
+            if (dayNumber < 1)
+            {
+                return false;
+            }
+
+            int dayIndex = dayNumber - 1;
+            if (DayIndex == dayIndex)
+            {
+                return false;
+            }
+
+            DayIndex = dayIndex;
             return true;
         }
 

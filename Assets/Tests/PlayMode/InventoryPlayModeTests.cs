@@ -160,12 +160,14 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator Open_ShowsCurrentGameTimeAndFreezesIt()
+        public IEnumerator Open_ShowsCurrentGameDayAndTimeAndFreezesIt()
         {
+            Assert.That(gameTimeRuntime.DayAnnouncement, Is.Not.Null);
+            Assert.That(gameTimeRuntime.DayAnnouncement.State, Is.Not.Null);
             Assert.That(
                 GameSessionState.TryStartGameTimeFromWake(),
                 Is.True);
-            GameSessionState.AdvanceGameTime(394f);
+            GameSessionState.AdvanceGameTime(1834f);
             double gameTimeBeforeOpen =
                 GameSessionState.GameTimeOfDayMinutes;
             int hungerBeforeOpen = GameSessionState.HungerLevel;
@@ -176,14 +178,23 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(inventory.Open(), Is.True);
             Assert.That(Time.timeScale, Is.Zero);
             Assert.That(
+                inventory.View.CurrentGameDayNumber,
+                Is.EqualTo(2));
+            Assert.That(
                 inventory.View.CurrentGameTimeText,
                 Is.EqualTo("12:34"));
+            Assert.That(
+                inventory.View.CurrentGameDayTimeText,
+                Does.Contain("2 · 12:34"));
 
             yield return null;
 
             Assert.That(
                 inventory.View.CurrentGameTimeText,
                 Is.EqualTo("12:34"));
+            Assert.That(
+                inventory.View.CurrentGameDayTimeText,
+                Does.Contain("2 · 12:34"));
             Assert.That(
                 GameSessionState.GameTimeOfDayMinutes,
                 Is.EqualTo(gameTimeBeforeOpen));

@@ -6,8 +6,9 @@ namespace BarPromenade
     /// <summary>
     /// The F9 debug window. The bar minigames it once launched are cut
     /// from the project; what remains is the debug surface itself:
-    /// intoxication adjustment, the City map's test-teleport toggle and
-    /// the F8 diagnostics hotkeys, under the same modal lock.
+    /// intoxication adjustment, game-day selection, the City map's
+    /// test-teleport toggle and the F8 diagnostics hotkeys, under the same
+    /// modal lock.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MinigameDebugWindow : MonoBehaviour
@@ -34,6 +35,8 @@ namespace BarPromenade
             string.Empty;
         public bool DebugTeleportEnabled =>
             cityMap != null && cityMap.DebugTeleportEnabled;
+        public int CurrentGameDayNumber =>
+            GameSessionState.GameDayNumber;
 
         public void Initialize(
             PlayerRuntime playerRuntime,
@@ -106,6 +109,18 @@ namespace BarPromenade
             cityMap.SetDebugTeleportEnabled(
                 !cityMap.DebugTeleportEnabled);
             RetroAudio.Play(RetroSfxId.UiConfirm);
+            return true;
+        }
+
+        public bool TrySetGameDayNumber(int dayNumber)
+        {
+            if (!IsOpen ||
+                !GameSessionState.TrySetDebugGameDay(dayNumber))
+            {
+                return false;
+            }
+
+            RetroAudio.Play(RetroSfxId.UiMove);
             return true;
         }
 
@@ -263,6 +278,7 @@ namespace BarPromenade
                     "debug.minigames.hint"),
                 hintStyle);
             DrawIntoxicationControls();
+            DrawDayControls();
             if (cityMap != null)
             {
                 DrawDebugTeleportControl();
@@ -305,7 +321,7 @@ namespace BarPromenade
 
         private void DrawDebugTeleportControl()
         {
-            Rect button = new Rect(132f, 125f, 376f, 24f);
+            Rect button = new Rect(132f, 156f, 376f, 24f);
             RetroUiTheme.DrawPanel(
                 button,
                 DebugTeleportEnabled
@@ -324,6 +340,54 @@ namespace BarPromenade
             if (GUI.Button(button, label, rowStyle))
             {
                 ToggleDebugTeleport();
+            }
+        }
+
+        private void DrawDayControls()
+        {
+            const float buttonWidth = 39f;
+            const float buttonGap = 3f;
+            GUI.Label(
+                new Rect(132f, 125f, 78f, 24f),
+                LocalizationService.Get("debug.day"),
+                hintStyle);
+
+            for (int dayNumber =
+                     GameSessionState.FirstDebugGameDayNumber;
+                 dayNumber <= GameSessionState.LastDebugGameDayNumber;
+                 dayNumber++)
+            {
+                int buttonIndex =
+                    dayNumber - GameSessionState.FirstDebugGameDayNumber;
+                Rect button = new Rect(
+                    214f + buttonIndex * (buttonWidth + buttonGap),
+                    125f,
+                    buttonWidth,
+                    24f);
+                bool selected = dayNumber == CurrentGameDayNumber;
+                RetroUiTheme.DrawPanel(
+                    button,
+                    selected
+                        ? RetroUiTheme.PanelRaised
+                        : RetroUiTheme.PanelInset,
+                    selected
+                        ? RetroUiTheme.Good
+                        : RetroUiTheme.BorderMuted,
+                    selected,
+                    2f,
+                    1f);
+
+                bool previousEnabled = GUI.enabled;
+                GUI.enabled = previousEnabled && !selected;
+                if (GUI.Button(
+                        button,
+                        dayNumber.ToString(),
+                        rowStyle))
+                {
+                    TrySetGameDayNumber(dayNumber);
+                }
+
+                GUI.enabled = previousEnabled;
             }
         }
 

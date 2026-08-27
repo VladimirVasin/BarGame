@@ -982,7 +982,11 @@
     },
     {
       "key": "inventory.time",
-      "value": "TIME: {0}"
+      "value": "DAY {0} · {1}"
+    },
+    {
+      "key": "day.number",
+      "value": "DAY {0}"
     },
     {
       "key": "inventory.action.use",
@@ -1146,15 +1150,19 @@
     },
     {
       "key": "debug.minigames.title",
-      "value": "DEBUG: MINIGAMES"
+      "value": "DEBUG"
     },
     {
       "key": "debug.minigames.hint",
-      "value": "Minigame launches remain isolated from progress"
+      "value": "TEST SESSION CONTROLS"
     },
     {
       "key": "debug.minigames.unavailable",
-      "value": "The minigame could not be launched"
+      "value": "DEBUG CONTROLS UNAVAILABLE"
+    },
+    {
+      "key": "debug.day",
+      "value": "DAY"
     },
     {
       "key": "debug.teleport.disabled",

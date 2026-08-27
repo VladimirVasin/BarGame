@@ -1383,7 +1383,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `GameTimeRuntime` persists across Single-mode loads and advances through
   `Time.deltaTime` at `1.0` game minute per real second, making one full `24 h`
   day exactly `1440` real seconds (`24` minutes). Midnight increments a
-  session day index. `GameTimeState.Advance` also returns the actually elapsed
+  zero-based session day index; runtime/UI code exposes its one-based
+  `DayNumber`. A persistent top-centre label announces the first Wake and each
+  later day change, while inventory keeps `DAY N` beside `HH:MM`.
+  The existing F9 window may directly select days `1–7` for testing, changing
+  only the day index and preserving time of day, running state and needs; this
+  debug limit does not cap ordinary midnight progression.
+  Stateful City one-shot audio detects a backward absolute-time jump and
+  rebases its schedule cursors and cooldown timestamps at the selected day.
+  `GameTimeState.Advance` also returns the actually elapsed
   game minutes so `GameSessionState` advances clock and needs from one delta;
   any owner that sets `timeScale` to zero naturally freezes both.
 - **Accepted — Bounded structured diagnostics:** Runtime support logging uses

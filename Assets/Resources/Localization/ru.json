@@ -982,7 +982,11 @@
     },
     {
       "key": "inventory.time",
-      "value": "ВРЕМЯ: {0}"
+      "value": "ДЕНЬ {0} · {1}"
+    },
+    {
+      "key": "day.number",
+      "value": "ДЕНЬ {0}"
     },
     {
       "key": "inventory.action.use",
@@ -1146,15 +1150,19 @@
     },
     {
       "key": "debug.minigames.title",
-      "value": "DEBUG: МИНИ-ИГРЫ"
+      "value": "DEBUG"
     },
     {
       "key": "debug.minigames.hint",
-      "value": "Запуски мини-игр изолированы от прогресса"
+      "value": "НАСТРОЙКИ ТЕСТОВОЙ СЕССИИ"
     },
     {
       "key": "debug.minigames.unavailable",
-      "value": "Не удалось запустить мини-игру"
+      "value": "DEBUG СЕЙЧАС НЕДОСТУПЕН"
+    },
+    {
+      "key": "debug.day",
+      "value": "ДЕНЬ"
     },
     {
       "key": "debug.teleport.disabled",

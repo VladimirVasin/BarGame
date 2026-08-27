@@ -107,6 +107,7 @@ namespace BarPromenade.Tests.EditMode
             "inventory.command",
             "inventory.cash",
             "inventory.time",
+            "day.number",
             "inventory.empty",
             "inventory.action.use",
             "inventory.action.eat",
@@ -334,6 +335,7 @@ namespace BarPromenade.Tests.EditMode
             "debug.minigames.title",
             "debug.minigames.hint",
             "debug.minigames.unavailable",
+            "debug.day",
             "debug.teleport.disabled",
             "debug.teleport.enabled"
         };
@@ -401,6 +403,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(valuesByKey["inventory.cash"], Does.Contain("$"));
             Assert.That(
                 valuesByKey["inventory.time"],
+                Does.Contain("{0}"));
+            Assert.That(
+                valuesByKey["inventory.time"],
+                Does.Contain("{1}"));
+            Assert.That(
+                valuesByKey["inventory.time"],
+                Does.Contain(" · "));
+            Assert.That(
+                valuesByKey["day.number"],
                 Does.Contain("{0}"));
             Assert.That(
                 valuesByKey["inventory.action.eat"],

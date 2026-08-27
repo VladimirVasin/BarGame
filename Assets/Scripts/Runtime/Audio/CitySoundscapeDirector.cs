@@ -269,7 +269,14 @@ namespace BarPromenade
                 return;
             }
 
+            bool movedBackward =
+                absoluteGameTime < currentAbsoluteGameTime;
             currentAbsoluteGameTime = absoluteGameTime;
+            if (movedBackward)
+            {
+                RebaseSchedules();
+            }
+
             occlusionCountdown -= deltaTime;
             bool refreshOcclusion = occlusionCountdown <= 0f;
             if (refreshOcclusion)
@@ -408,6 +415,14 @@ namespace BarPromenade
                         source.StableId,
                         currentAbsoluteGameTime));
             }
+        }
+
+        private void RebaseSchedules()
+        {
+            scheduleCursors.Clear();
+            StartSchedules(Plan.ScheduledSources);
+            lastScheduledEventTime = double.NegativeInfinity;
+            lastActionEventTime = double.NegativeInfinity;
         }
 
         private void SubscribeBabushkas(

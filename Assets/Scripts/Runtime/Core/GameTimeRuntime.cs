@@ -7,6 +7,8 @@ namespace BarPromenade
     {
         private static GameTimeRuntime instance;
 
+        public GameDayAnnouncementView DayAnnouncement { get; private set; }
+
         [RuntimeInitializeOnLoadMethod(
             RuntimeInitializeLoadType.SubsystemRegistration)]
         private static void ResetStatics()
@@ -24,6 +26,12 @@ namespace BarPromenade
 
             instance = this;
             DontDestroyOnLoad(gameObject);
+            DayAnnouncement = GetComponent<GameDayAnnouncementView>();
+            if (DayAnnouncement == null)
+            {
+                DayAnnouncement = gameObject.AddComponent<
+                    GameDayAnnouncementView>();
+            }
         }
 
         private void Update()

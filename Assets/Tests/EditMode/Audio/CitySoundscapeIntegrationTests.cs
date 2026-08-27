@@ -197,6 +197,58 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        public void Director_RebasesSchedulesWhenAbsoluteTimeMovesBackward()
+        {
+            GameSessionState.BeginNewGame();
+            CityLayout layout = CreateDefaultLayout();
+            CityDecorationPlan decorationPlan =
+                CityDecorationPlanner.CreatePlan(
+                    layout,
+                    RoadFencePlanner.CreatePlan(layout),
+                    CityNightFixturePlanner.CreatePlan(layout));
+            CitySoundscapePlan plan =
+                CitySoundscapeAnchorPlanner.Create(
+                    layout,
+                    decorationPlan);
+            var root = new GameObject("City sound rewind test root");
+            var listener = new GameObject("City sound rewind listener");
+            listener.transform.position =
+                plan.ScheduledSources[0].WorldPosition;
+
+            try
+            {
+                CitySoundscapeDirector director =
+                    CitySoundscapeDirector.Create(
+                        root.transform,
+                        plan,
+                        listener.transform,
+                        layout,
+                        Array.Empty<DryingYardBabushkaPresentation>(),
+                        null,
+                        Array.Empty<CityPlaygroundSwing>(),
+                        () => 1f);
+                var wind = new WindSample(0f, 1f);
+
+                director.Advance(0f, 10000d, true, wind, 1f);
+                int eventsBeforeRewind = director.PlayedEventCount;
+                Assert.That(eventsBeforeRewind, Is.GreaterThan(0));
+
+                director.Advance(0f, 1000d, true, wind, 1f);
+                director.Advance(0f, 1070d, true, wind, 1f);
+
+                Assert.That(
+                    director.PlayedEventCount,
+                    Is.GreaterThan(eventsBeforeRewind));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
+                UnityEngine.Object.DestroyImmediate(listener);
+                GameSessionState.BeginNewGame();
+            }
+        }
+
         private static CityLayout CreateDefaultLayout()
         {
             return CityLayoutGenerator.Generate(

@@ -6,6 +6,26 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-27 — Calendar days and the F9 day selector
+
+The existing continuous session clock now exposes its zero-based day index as
+player-facing `DAY N`. Wake and every later midnight queue a brief persistent
+announcement outside transitions and modal UI, while inventory keeps
+`DAY N · HH:MM` visible in its Status panel.
+
+The F9 window in City, Bar and Mountain Road now has direct day `1–7` buttons.
+A debug change preserves time of day, running/frozen state and needs; ordinary
+midnight progression remains unbounded. Moving backward also rebases City's
+scheduled and triggered one-shot audio timestamps so a `7 -> 3` test jump
+cannot silence the soundscape until the old date catches up.
+
+Verification: focused EditMode selection (`GameTimeStateTests`,
+`LocalizationCatalogTests`, `CitySoundscapeIntegrationTests`) — **18 passed,
+0 failed**; focused PlayMode day-selector and inventory day/time scenarios —
+**2 passed, 0 failed**. The first EditMode attempt met two transient compiler
+errors in concurrent Church work; after that work supplied the missing methods,
+the unchanged focused selection passed.
+
 ## 2026-08-27 — The sun came in through the roof, and the roof was not there
 
 *(The church's own light ended up BAKED at one pose — see the note partway

@@ -37,6 +37,13 @@ namespace BarPromenade
         public string CurrentGameTimeText =>
             $"{GameSessionState.GameHour:00}:" +
             $"{GameSessionState.GameMinute:00}";
+        public int CurrentGameDayNumber =>
+            GameSessionState.GameDayNumber;
+        public string CurrentGameDayTimeText =>
+            string.Format(
+                LocalizationService.Get("inventory.time"),
+                CurrentGameDayNumber,
+                CurrentGameTimeText);
 
         public void Initialize(InventoryController inventoryController)
         {
@@ -175,9 +182,7 @@ namespace BarPromenade
                 statusStyle);
             GUI.Label(
                 new Rect(23f, 151f, 128f, 18f),
-                string.Format(
-                    LocalizationService.Get("inventory.time"),
-                    CurrentGameTimeText),
+                CurrentGameDayTimeText,
                 statusStyle);
         }
 
