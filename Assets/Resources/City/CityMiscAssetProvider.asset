@@ -1075,4 +1075,82 @@ MonoBehaviour:
     role: 6
     surface: 0
     mesh: {fileID: 5809277177797752918, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: 3fff5efec42b67e97fe921c44bf22ec076523ae5dd6f0ddd87f6fd2a631c973a
+  - kind: 61
+    variant: 0
+    component: Shell_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 6841484685907385808, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 61
+    variant: 0
+    component: Roof_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -3929412918302018950, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 61
+    variant: 0
+    component: Trim_Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 7558655629259283559, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 62
+    variant: 0
+    component: Shell_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -216589512180497245, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 62
+    variant: 0
+    component: Roof_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 3909657283329294399, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 62
+    variant: 0
+    component: Trim_Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: -6007444849459705982, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 63
+    variant: 0
+    component: Shell_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -1903547588473705598, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 63
+    variant: 0
+    component: Roof_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 4860993619733783184, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 63
+    variant: 0
+    component: Trim_Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 5425028844775210960, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 64
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 4871698423382840683, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 64
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -2980131268845498703, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 65
+    variant: 0
+    component: Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 2017290354600973445, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 65
+    variant: 0
+    component: Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -1789786195621452628, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  buildSignature: 43c0111050f9b485ee39bda0bfbf6ab70b609ce2bf7790334260b53ca9fe8eb6

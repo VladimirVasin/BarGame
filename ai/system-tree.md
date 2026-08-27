@@ -119,13 +119,17 @@ Assets/
       StairwellCatProvider.asset      serialized link to the passive 3D cat prefab
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
-      CityMiscAssetProvider.asset   177 passive City role-mesh bindings + manifest signature
+      CityMiscAssetProvider.asset   186 passive City role-mesh bindings + manifest signature
       CityBuildingAssetProvider.asset  four district prototype-prefab bindings + signature
       Buildings/
         OldTownPrototype01.prefab      passive fixed-metre wrapper + semantic registry
         ResidentialPrototype01.prefab passive fixed-metre wrapper + semantic registry
         IndustrialPrototype01.prefab  passive fixed-metre wrapper + semantic registry
         NightlifePrototype01.prefab   passive fixed-metre wrapper + semantic registry
+    Bar/
+      BarFacade3D.prefab            complete fixed-metre bar_exterior_v2 + door/sign anchors
+      BarInterior3D.prefab          passive shared 22 x 16 x 4.8 m room model
+      Textures/                     four interior albedos + exterior brick/plaster sheets
     MountainRoad/
       MountainRoadCafeCastProvider.asset  four isolated staged cafe prefab links
     Church/
@@ -179,10 +183,16 @@ Assets/
     Models/
       CityChessSet3D.fbx                six turned chessmen and a draught, board-scaled
       CityChessSet3D.json               deterministic heights/footprints manifest
-      CityMisc3D.fbx                    91 citywide misc assemblies / 177 role meshes
+      CityMisc3D.fbx                    94 citywide misc assemblies / 186 role meshes
       CityMisc3D.json                   roots, roles, bounds, compatibility + build signature
       CityBuildings3D.fbx               four fixed-metre district prototypes / 24 role meshes
       CityBuildings3D.json              envelopes, attachments, window slots + build signature
+  Bar/
+    Models/
+      BarFacade3D.fbx                   38-part complete old-neighbourhood pub exterior
+      BarFacade3D.json                  bar_exterior_v2 bounds, parts, door/sign anchors + signature
+      BarInterior3D.fbx                 156-part shared interior
+      Bar3D.json                        interior layout/parts/groups + build signature
   Church/
     Models/                             split Catholic exterior/interior FBX + shared manifest
     Textures/                           nine deterministic plaster/stone/wood/glass/art sheets
@@ -295,6 +305,10 @@ Assets/
         CityStreetSurfacePlan.cs immutable oriented carriageway/sidewalk/marking geometry
         CityStreetSurfacePlanner.cs  graded strips, level pads, stair cuts, dashes + zebras
         CityWorldBuilder.cs      continuous terrain, fenced corner infill, river/bridges, graded streets, stairs + guarded drops
+        CityBuildingPrototypePlacement.cs fixed-metre front/roof/facade poses + Home half-space classification
+        CityBuildingPrototypeWorldBuilder.cs ordinary-lot Blender composition + foundation/collider authority split
+        CitySpecialBuildingWorldBuilder.cs supermarket/home shells + inset textured pub foundation/collision + Home projection
+        CityBuildingWindowSlotAppearance.cs UV2-addressed district window state binding
         HomeYardSitePlan.cs      shared roadless-gap, rider-ring, neighbour-light + leaning-utility geometry
         CityOpenAreaDecorationPlan.cs  deterministic inter-building bar-side yard/light descriptors
         CityOpenAreaWorldBuilder.cs    imported yard props/fixture shells + Unity collision, lens, halo and fixed Spot
@@ -341,9 +355,9 @@ Assets/
         CityDecorationPlan.cs        immutable ordered seeded decoration data
         CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. bar-side yard pair
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
-        CityMiscAssetProvider.cs     61 kinds / 91 assemblies / 177 passive role meshes with roots and bounds
+        CityMiscAssetProvider.cs     64 kinds / 94 assemblies / 186 passive role meshes with roots and bounds
         CityBuildingAssetRegistry.cs fixed envelope, frontage, role, attachment + window-slot contract
-        CityBuildingAssetProvider.cs four passive Resources prefab bindings; no world consumer yet
+        CityBuildingAssetProvider.cs four passive Resources prefab bindings used by City/Home builders
         CityDecorationWorldBuilder.cs  imported role batches, Unity collision proxies + utility dock read-back
         CityStreetUtilityDock.cs     booth-door/dumpster-lid docks the interactions stand on
         CityStreetUtilityWorldBuilder.cs  one placeholder trigger per utility dock
@@ -361,7 +375,8 @@ Assets/
         CityNightSiteLightRegistry.cs  authored site realtime lights scaled/disabled by the night factor
         CityFacadeGrid.cs            single source of the bay/floor pitch both walls and windows read
         CityFacadeAppearance.cs      district wall albedos tiled by that grid, not by metres
-        CityBarFacadeWorldBuilder.cs shared passive bar-front identity + 3D blade sign
+        CityBarFacadeWorldBuilder.cs complete fixed-metre pub exterior + preserved door/sign anchors
+        BarExteriorSurfaceAppearance.cs dedicated brick/plaster/roof sheet binding
         CitySupermarketFacadeWorldBuilder.cs  shared branded supermarket storefront
         SupermarketEntranceGeometry.cs  frontage, apron and fence-opening dimensions
         RoadFencePlan.cs         MapBoundary/DeadEnd/CornerGuard rails + clearance-opening metadata
@@ -644,6 +659,7 @@ Assets/
       City/CityMiscAssetSetup.cs  FBX import/provider binding + strict manifest/root/bounds validation
       City/CityBuilding{AssetSetup,ModelImporter}.cs passive FBX import + four wrappers/provider
       City/Church{AssetSetup,ModelImporter}.cs Catholic FBX import, materials, prefabs + validation
+      Bar/BarAssetSetup.cs       shared interior/exterior importer, prefab and manifest validation
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       MountainRoadCafeCastAssetSetup.cs  isolated model/clip import, validation + provider setup
       Player3D/       deterministic model/animation/portrait import + prefab setup
@@ -652,8 +668,10 @@ Assets/
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
-      CityMiscAssetTests.cs       177-entry catalog/signature/provider + affected-builder smoke contract
+      CityMiscAssetTests.cs       186-entry catalog/signature/provider + affected-builder smoke contract
       CityBuildingAssetTests.cs   4 prototypes / 24 meshes, importer, wrapper + provider contract
+      CityBuildingPrototypeRuntimeTests.cs City/Home placement, collision, slot shader + half-space policy
+      BarModelContractTests.cs    shared interior + complete bar_exterior_v2 manifest/runtime contract
       RuntimePrimitiveFactoryTests.cs four exterior assets/import/seam/MPB/UV contract incl. box-projected world UVs
       CityParkSurfaceAppearanceTests.cs  eight park sheets: recipes/import/source contract, UV mode, textured lawn/park build + landmark-only decoration texturing
       AutomaticTestAudioMuteTests.cs       run-level mute registration contract
@@ -770,6 +788,7 @@ ArtSource/
     fringe-textures.json          measured fringe texture manifest
     Facades/                     facade albedo contract, contact sheet and the cell-grid README
     Blender/                     park chess, CityMisc3D and four-prototype CityBuildings3D sources/previews
+  Bar/                           shared interior/exterior .blend, contact sheet and texture manifest
   Home/                          apartment albedo contract, manifest and contact sheet
   MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
   Church/Blender/                Catholic `.blend` source + accepted exterior/interior previews
@@ -789,9 +808,12 @@ tools/
   build-church-3d-model.py       deterministic Catholic exterior/interior Blender build + validator
   build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
-  build-city-misc-3d-model.py    61 kinds / 91 assemblies / 177 citywide role meshes
+  build-city-misc-3d-model.py    64 kinds / 94 assemblies / 186 citywide role meshes
   build-city-buildings-3d-model.py  four fixed-metre district prototypes / 24 role meshes
   city_building_parts.py         pure deterministic building geometry + attachment/window metadata
+  build-bar-3d-model.py          shared interior + complete fixed-metre pub exterior/export validator
+  bar_exterior.py                deterministic 38-part late-Victorian pub geometry
+  build-bar-textures.py          interior sheets + exterior brick/plaster albedos
   build-city-facade-textures.py     deterministic district wall albedos + validator
   build-city-poi-textures.py        deterministic district POI surface albedos + validator
   build-cemetery-textures.py        deterministic cemetery surface albedos (granite/stone/gravel/soil) + validator
@@ -1135,7 +1157,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                     -> same Route 01 plan -> nearby PlayerHome-target stop
                        -> static collider-free blue `01` pole in Home space
                     -> same CityDecorationWorldBuilder recipes in Home space
-                    -> shared City exterior appearance + passive bar facade
+                    -> shared City appearance + complete collider-free pub exterior
                     -> no second City root/player/camera
                     -> HomeExteriorPedestrianPlanner
                        -> same sidewalk/turn/zebra graph in Home coordinates

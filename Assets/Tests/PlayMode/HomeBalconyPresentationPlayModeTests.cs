@@ -931,16 +931,49 @@ namespace BarPromenade.Tests.PlayMode
                 "Home Exterior Building Silhouettes/" +
                 $"Exterior Bar {barLot.BarId}");
             Assert.That(bar, Is.Not.Null);
+            Transform foundation = AssertRequiredObject(
+                bar,
+                "Blender Special Building/" +
+                "Exterior Special Building Foundation");
             AssertUsesCityLitMaterial(
                 AssertRequiredObject(
                     bar,
-                    "Exterior Building Mass"));
+                    "Pub Brick Shell"));
             AssertUsesCityLitMaterial(
                 AssertRequiredObject(
                     bar,
-                    "Exterior Roof"));
+                    "Pub Rendered Upper Storey"));
+            AssertUsesCityLitMaterial(
+                AssertRequiredObject(
+                    bar,
+                    "Pub Slate Roof"));
+            Assert.That(
+                bar.Find(
+                    "Blender Special Building/Exterior Building Mass"),
+                Is.Null,
+                "The Home view must not retain the old CityMisc pub shell.");
+            Assert.That(
+                bar.Find("Blender Special Building/Exterior Roof"),
+                Is.Null);
+            Assert.That(bar.Find("Front Windows"), Is.Null);
+
+            Assert.That(bar.Find("Pub Ground Floor Glass"), Is.Not.Null);
+            Assert.That(bar.Find("Pub Upper Sash Frames"), Is.Not.Null);
+            Assert.That(
+                bar.Find("Bar Entrance Flanking Panels"),
+                Is.Not.Null,
+                "The pub entrance must close both gaps beside its bays.");
+            Assert.That(
+                bar.Find("Bar Outer Bay Flanking Panels"),
+                Is.Not.Null,
+                "The pub frontage must close both outer bay gaps.");
+            Assert.That(
+                bar.Find("Bar Entrance Reveal Panels"),
+                Is.Not.Null,
+                "The recessed pub door must keep its side reveals in Home.");
             Assert.That(bar.Find("Bar Door"), Is.Not.Null);
-            Assert.That(bar.Find("Bar Door Frame"), Is.Not.Null);
+            Assert.That(bar.Find("Bar Door Frame Left"), Is.Not.Null);
+            Assert.That(bar.Find("Bar Door Frame Right"), Is.Not.Null);
             Assert.That(bar.Find("Bar Door Header"), Is.Not.Null);
             Assert.That(bar.Find("Bar Entrance Canopy"), Is.Not.Null);
             Assert.That(
@@ -953,6 +986,67 @@ namespace BarPromenade.Tests.PlayMode
                 AssertRequiredObject(
                     bar,
                     "Bar Entrance Canopy"));
+
+            GameObject exteriorPrefab =
+                BarModelResources.LoadFacadePrefab();
+            Assert.That(exteriorPrefab, Is.Not.Null);
+            BarAssetRegistry exteriorRegistry =
+                exteriorPrefab.GetComponent<BarAssetRegistry>();
+            Assert.That(exteriorRegistry, Is.Not.Null);
+            Assert.That(
+                exteriorRegistry.DesignId,
+                Is.EqualTo("bar_exterior_v2"));
+            Assert.That(
+                exteriorPrefab.transform.localScale,
+                Is.EqualTo(Vector3.one));
+            Assert.That(
+                exteriorRegistry.Dimensions.Width,
+                Is.EqualTo(12.2645f).Within(0.0001f));
+            Assert.That(
+                exteriorRegistry.Dimensions.Depth,
+                Is.EqualTo(13.5237f).Within(0.0001f));
+            Assert.That(
+                exteriorRegistry.Dimensions.Height,
+                Is.EqualTo(9.3435f).Within(0.0001f));
+
+            Vector3 frontage =
+                PlayerHomeBalconyGeometry.ToHomeLocalDirection(
+                    home.ExteriorContext.PlayerHome,
+                    new Vector3(
+                        barLot.FrontageDirection.x,
+                        0f,
+                        barLot.FrontageDirection.y));
+            Vector3 doorAnchor =
+                PlayerHomeBalconyGeometry.ToHomeLocal(
+                    home.ExteriorContext.PlayerHome,
+                    barLot.DoorPosition);
+            Renderer doorRenderer =
+                bar.Find("Bar Door").GetComponent<Renderer>();
+            Assert.That(doorRenderer, Is.Not.Null);
+            Vector3 expectedDoorCentre = bar.TransformPoint(
+                doorAnchor -
+                (frontage * 0.16f) +
+                (Vector3.up * 1.17f));
+            Assert.That(
+                Vector3.Distance(
+                    doorRenderer.bounds.center,
+                    expectedDoorCentre),
+                Is.LessThan(0.02f),
+                "The Home pub moved away from its authored door anchor.");
+
+            Renderer canopyRenderer = bar
+                .Find("Bar Entrance Canopy")
+                .GetComponent<Renderer>();
+            Vector3 frontageOffset = canopyRenderer.bounds.center -
+                bar.TransformPoint(doorAnchor);
+            frontageOffset.y = 0f;
+            Vector3 worldFrontage = bar.TransformDirection(frontage);
+            worldFrontage.y = 0f;
+            worldFrontage.Normalize();
+            Assert.That(
+                Vector3.Dot(frontageOffset.normalized, worldFrontage),
+                Is.GreaterThan(0.999f),
+                "The Home pub facade must face the street below.");
 
             Transform markerTransform =
                 bar.Find("Bar Landmark Marker");
@@ -973,8 +1067,18 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 bar.GetComponentsInChildren<Collider>(true),
                 Is.Empty);
+            Assert.That(foundation.GetComponent<Collider>(), Is.Null);
+            Assert.That(
+                bar.Find(
+                    CityBuildingPrototypeWorldBuilder
+                        .LogicalCollisionObjectName),
+                Is.Null,
+                "Home must not import City's logical pub collider.");
             Assert.That(
                 bar.GetComponentsInChildren<Light>(true),
+                Is.Empty);
+            Assert.That(
+                bar.GetComponentsInChildren<Camera>(true),
                 Is.Empty);
         }
 

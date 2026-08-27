@@ -752,14 +752,17 @@ The vertical slice contains:
   frontage and roadside descriptors sample the rendered terrain at their
   final XZ anchor, so their geometry, collision proxies and interaction
   docks share the actual pavement height rather than the lot datum;
-- one deterministic `city_misc_citywide_v3` mesh library supplies the passive
-  visuals for the broad City misc pass: `61` semantic kinds resolve to `91`
-  assemblies, `177` role meshes and `32,642` triangles. It covers the 24-family
+- one deterministic `city_misc_citywide_v4` mesh library supplies the passive
+  visuals for the broad City misc pass: `64` semantic kinds resolve to `94`
+  assemblies, `186` role meshes and `33,454` triangles. It covers the 24-family
   decoration layer and park landmarks, street lamps and signal housings,
   Route 01 shelters/poles, the eastern yard, cemetery graves and vegetation,
   seacoast boats/barge/driftwood, fringe utility dressing and the static shells
-  of all four district points of interest. These are role meshes rather than
-  world prefabs: validated plans still own placement, terrain, collision,
+  of all four district points of interest, plus the live supermarket and
+  player-home shells. Its former bar shell remains in the catalog only for v4
+  compatibility and is not instantiated. These are role meshes rather than
+  world prefabs:
+  validated plans still own placement, terrain, collision,
   dynamics, interactions, realtime lights/halos, cloth and NPCs. Tilted
   cemetery monuments intentionally retain their legacy visual builder;
 - four first-class open district points of interest on their own full-block
@@ -857,22 +860,51 @@ The vertical slice contains:
 - rendered streets, park paths, lawn and plaza own matching static colliders,
   so the existing `0.28 m` controller step climbs their real height changes
   instead of letting the character mesh intersect raised surfaces;
-- ordinary building lots use their own `36–52 m` height envelope while
-  preserving the existing district bands inside it. From the conservative
+- ordinary `BuildingLot` planning and collision envelopes retain their own
+  `36–52 m` height range and the existing district bands inside it; visible
+  fixed prototype heights are described below. From the conservative
   `4 m` maximum chase-camera height, the lowest roof is at least `32 m` deep
   and retains only about `0.66%` of its source colour under City's fixed
   `0.070` Exp2 fog. The bar keeps its former `5–13 m` envelope, the player home
   stays `8.8 m`, and the supermarket stays `6.4 m`; public places and the park
   remain open land rather than receiving a tall mass;
-- alongside that live primitive path, a staged deterministic Blender catalog
-  now provides one fixed-metre prototype for each urban district: Old Town
+- the live ordinary-building path now instantiates one fixed-metre Blender
+  prototype for each urban district: Old Town
   `14 x 13.5 x 42 m`, Residential `11.5 x 11.5 x 40 m`, Industrial
   `14 x 13.5 x 36 m` and Nightlife `12.5 x 12 x 48 m`. Their four wrapper
   prefabs expose `24` passive role meshes, front/roof/facade attachment
   metadata and `194` addressable window slots through one Resources provider.
-  The catalog is not selected or instantiated by `CityWorldBuilder` or the
-  bounded Home exterior yet, so it changes no live building, material,
-  collision or navigation contract in this slice;
+  Every ordinary lot selects its district wrapper, keeps authored metre scale
+  and aligns the wrapper's `+Z` front anchor to the generated door. A UV2-slot
+  shader preserves deterministic Off/Cold/Warm window families and their
+  shared night factor without making the FBX readable. Unity retains a small
+  terrain foundation skirt and the former lot envelope as an invisible
+  collider; navigation and sound still use `BuildingLot`. Roof and facade
+  decoration anchors follow fixed prototype mounts. The bounded Home exterior
+  reuses the exact pose for whole exterior models, omits hidden models and
+  keeps the old clipped silhouette only where a non-readable model crosses
+  the apartment half-space;
+- the bar now uses the complete fixed-metre `bar_exterior_v2` from the shared
+  bar Blender pipeline instead of the City misc `BarBuildingShell` and generic
+  window bands. Its authored `12.2645 x 13.5237 x 9.3435 m`
+  width/depth/height envelope is a two-storey late-Victorian neighbourhood pub:
+  old brick and faded render, a pitched slate roof, unequal chimneys, a lower
+  service wing, bottle-green and oxblood faceted shopfront, individual sash
+  windows, gutters/downpipes and the retained pictorial tankard. Solid timber
+  cheeks between the door and bay windows, one recessed flank panel at each
+  outer bay edge and full-depth jamb returns close every oblique sightline into
+  the empty shell. It is placed at unit scale from the unchanged door and sign
+  anchors. Unity still owns the `0.08 m` front/side-inset, box-projected
+  `ExteriorBrick` foundation skirt, renderer-free full-size logical collider,
+  entrance apron, trigger,
+  transition and existing bar light. A fully visible Home reconstruction reuses
+  the same complete collider-free model; only a pub crossing the apartment
+  half-space keeps the clipped legacy silhouette;
+- the supermarket and player home retain their dedicated low-rise City misc
+  shells with canonical envelopes `15.5 x 15.5 x 6.4 m` and
+  `13 x 12 x 8.8 m`. Their bounded runtime scale, terrain skirt, renderer-free
+  logical mass, window bands, storefront/balcony/mailbox and interaction
+  ownership remain unchanged;
 - deterministic ochre guard rails, batched into `48 m` spatial chunks, only
   where a street faces water, unmapped space or the active map boundary, plus
   full-width caps at true degree-one street dead ends. Street-to-park
@@ -1303,7 +1335,7 @@ The vertical slice contains:
   view rebuilds only a bounded same-blueprint-and-seed slice of the actual
   street's asphalt, sidewalks, road markings, lots, windows, lamps and
   signals. City and Home share the exterior ground, street-surface, facade,
-  window and passive bar-front appearance
+  window and complete passive pub-exterior appearance
   recipe. It also reconstructs the target-derived Home stop as the same static
   blue `01` pole in Home-local space, deliberately without colliders. The balcony
   shot temporarily applies City's exact exponential-squared fog, matching

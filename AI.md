@@ -186,17 +186,30 @@ and derives first-person arms and the inventory portrait from the same
 production model. Ordinary building masses use a separate `36-52 m` height
 profile whose roofs fall below one-percent visibility in the fixed City fog;
 the bar, the supermarket and the player home retain their original low-rise
-heights. Building masses wear one of eight district wall albedos built by
-`tools/build-city-facade-textures.py`, tiled by the building's own bay and floor
-grid through `CityFacadeGrid` so the baked window band lands on the real panes
-rather than by metres. The broad passive City misc layer now resolves through
-one deterministic `city_misc_citywide_v3` Blender library: `61` semantic kinds,
-`91` assemblies, `177` role meshes and `32,642` triangles cover ordinary
-decoration and park landmarks, night fixtures, Route 01 stops, the eastern
-yard, cemetery, seacoast, fringe service belt and the static shells of all four
-district points of interest. Unity plans still own placement, terrain,
-collision, dynamics, interactions, lights, halos, cloth and NPCs; tilted
-cemetery monuments deliberately remain on their legacy geometry. Road v2 gives
+heights. Every ordinary lot now instantiates one fixed-metre Blender prototype
+for its district and preserves authored pane state through the shared
+Off/Cold/Warm slot shader. The single Residential bar separately uses the
+complete fixed-metre `bar_exterior_v2`: a two-storey late-Victorian urban pub
+with old brick/render, pitched slate roof, unequal chimneys, a lower service
+wing, bottle-green/oxblood faceted shopfront, individual sash windows and the
+retained door/sign anchors. Four solid flanking panels — two beside the
+entrance and one at each outer bay edge — plus full-depth jamb returns close
+every oblique sightline into the shell. Its visible terrain foundation uses
+the same rough box-projected exterior brick and sits `0.08 m` inside the front
+and side faces. It replaces the former
+CityMisc bar shell and generic window bands in City and in a fully visible Home
+reconstruction; a Home half-space crossing alone keeps the clipped legacy
+silhouette.
+The broad passive City misc layer now resolves through one deterministic
+`city_misc_citywide_v4` Blender library: `64` semantic kinds, `94` assemblies,
+`186` role meshes and `33,454` triangles cover ordinary decoration and park
+landmarks, night fixtures, Route 01 stops, the eastern yard, cemetery,
+seacoast, fringe service belt, the static shells of all four district points of
+interest and the live supermarket/player-home shells. Its former bar shell
+remains catalogued only for v4 compatibility and is not instantiated. Unity
+plans still own placement, terrain, collision, dynamics, interactions, lights,
+halos, cloth and NPCs; tilted cemetery monuments deliberately remain on their
+legacy geometry. Road v2 gives
 ordinary City streets an `8 m` footprint
 with a `6 m` carriageway and two raised `1 m` sidewalks. At selected eligible
 perpendicular two-way corners and three- or four-way nodes, Road v2.1 moves the
@@ -536,7 +549,9 @@ paths and event boundaries.
 1. Files currently present in the repository.
 2. Unity project and package settings.
 3. `ai/architecture-notes.md` for accepted decisions.
-4. Planning documents for intended work.
+4. `ai/city-zones-art-bible.md` and `ai/city-story-bible.md` for what the world
+   is allowed to be.
+5. Planning documents for intended work.
 
 Never report a planned system as implemented without inspecting relevant
 repository evidence. This does not require running every test layer.
@@ -549,6 +564,15 @@ repository evidence. This does not require running every test layer.
   is the requested deliverable or release gate; add a smoke only when requested
   or when packaged startup behavior is the changed contract.
 - Start from `ai/project-overview.md` and `ai/systems-map.md`.
+- **Anything the player sees, hears, reads or does in the world is governed by
+  two mandatory documents:** `ai/city-zones-art-bible.md` for form and
+  `ai/city-story-bible.md` for meaning. Before adding a detail, find the
+  `Нельзя` it would violate — none means allowed, one dated in the story
+  bible's §6 registry means allowed from that level, and one that is not in the
+  registry means the detail is not added. New in-fiction text must satisfy the
+  story bible's §21 register, its §16 laws are hard, and every scale level must
+  still pass all nine art bible §16 acceptance checks. See AGENTS.md, World
+  canon.
 - All future contextual player animations must follow the mandatory
   `ai/contextual-animation-standard.md`; do not add one-off teleport, root-motion
   gameplay transactions or visibility fades that conceal mismatched endpoints.

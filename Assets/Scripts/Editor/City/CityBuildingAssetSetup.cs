@@ -515,6 +515,20 @@ namespace BarPromenade.Editor
                     ModelPath,
                     StringComparison.Ordinal) ||
                 Mathf.Abs(manifest.unit_factor - 1f) > ContractTolerance ||
+                manifest.uv2_encoding == null ||
+                manifest.uv2_encoding.channel_index != 1 ||
+                !string.Equals(
+                    manifest.uv2_encoding.scheme,
+                    "u_centered_uint8",
+                    StringComparison.Ordinal) ||
+                Mathf.Abs(
+                    manifest.uv2_encoding.divisor -
+                    CityBuildingAssetRegistry.WindowSlotUv2Divisor) >
+                    ContractTolerance ||
+                !string.Equals(
+                    manifest.uv2_encoding.zero_means,
+                    "non_window_geometry",
+                    StringComparison.Ordinal) ||
                 manifest.prototype_count !=
                     CityBuildingAssetProvider.ExpectedPrototypeCount ||
                 manifest.mesh_count !=
@@ -775,7 +789,10 @@ namespace BarPromenade.Editor
                     string.IsNullOrWhiteSpace(slot.side) ||
                     slot.floor < 0 || slot.bay < 0 ||
                     size.x <= 0f || size.y <= 0f ||
-                    slot.uv2_slot_id < 0 ||
+                    slot.uv2_slot_id <= 0 ||
+                    slot.uv2_slot_id >
+                        CityBuildingAssetRegistry.MaximumWindowSlotId ||
+                    slot.uv2_slot_id != slot.slot_id ||
                     !slotIds.Add(slot.slot_id) ||
                     !uv2Ids.Add(slot.uv2_slot_id))
                 {
@@ -1370,6 +1387,7 @@ namespace BarPromenade.Editor
             public float unit_factor;
             public BuildingRootContract root_contract;
             public BuildingPassiveContract passive;
+            public BuildingUv2Encoding uv2_encoding;
             public int prototype_count;
             public int mesh_count;
             public int triangle_count;
@@ -1418,6 +1436,15 @@ namespace BarPromenade.Editor
             public bool cameras;
             public bool materials;
             public int animation_count;
+        }
+
+        [Serializable]
+        private sealed class BuildingUv2Encoding
+        {
+            public int channel_index;
+            public string scheme;
+            public float divisor;
+            public string zero_means;
         }
 
         [Serializable]

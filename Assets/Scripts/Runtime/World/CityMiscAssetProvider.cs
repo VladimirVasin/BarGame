@@ -70,7 +70,12 @@ namespace BarPromenade
         PoiOldTownWaterworksShell = 57,
         PoiResidentialDryingYardShell = 58,
         PoiIndustrialWeighbridgeShell = 59,
-        PoiNightlifeLastRouteIslandShell = 60
+        PoiNightlifeLastRouteIslandShell = 60,
+        BarBuildingShell = 61,
+        SupermarketBuildingShell = 62,
+        PlayerHomeBuildingShell = 63,
+        RoadsideDrainAndCover = 64,
+        RoadsideCappedStandpipe = 65
     }
 
     /// <summary>
@@ -159,10 +164,11 @@ namespace BarPromenade
     public sealed class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string DesignId = "city_misc_citywide_v3";
-        public const int ExpectedAssemblyCount = 91;
-        public const int ExpectedMeshCount = 177;
-        public const int SupportedKindCount = 61;
+        public const string GeneratorVersion = "4.1.0";
+        public const string DesignId = "city_misc_citywide_v4";
+        public const int ExpectedAssemblyCount = 96;
+        public const int ExpectedMeshCount = 190;
+        public const int SupportedKindCount = 66;
 
         private const float GroundTolerance = 0.003f;
 
@@ -228,7 +234,12 @@ namespace BarPromenade
             CityMiscKind.PoiOldTownWaterworksShell,
             CityMiscKind.PoiResidentialDryingYardShell,
             CityMiscKind.PoiIndustrialWeighbridgeShell,
-            CityMiscKind.PoiNightlifeLastRouteIslandShell
+            CityMiscKind.PoiNightlifeLastRouteIslandShell,
+            CityMiscKind.BarBuildingShell,
+            CityMiscKind.SupermarketBuildingShell,
+            CityMiscKind.PlayerHomeBuildingShell,
+            CityMiscKind.RoadsideDrainAndCover,
+            CityMiscKind.RoadsideCappedStandpipe
         };
 
         private static readonly ExpectedPartSpec[] IndustrialStreetParts =
@@ -452,6 +463,11 @@ namespace BarPromenade
             P("Masonry", CityMiscMeshRole.Masonry),
             P("Street", CityMiscMeshRole.Street)
         };
+        private static readonly ExpectedPartSpec[] StreetMasonryParts =
+        {
+            P("Street", CityMiscMeshRole.Street),
+            P("Masonry", CityMiscMeshRole.Masonry)
+        };
         private static readonly ExpectedPartSpec[] FoliagePart =
         {
             P("Foliage", CityMiscMeshRole.Foliage)
@@ -484,6 +500,12 @@ namespace BarPromenade
             P("Street", CityMiscMeshRole.Street),
             P("Residential", CityMiscMeshRole.Residential),
             P("Timber", CityMiscMeshRole.Timber)
+        };
+        private static readonly ExpectedPartSpec[] SpecialBuildingParts =
+        {
+            P("Shell_Masonry", CityMiscMeshRole.Masonry),
+            P("Roof_Street", CityMiscMeshRole.Street),
+            P("Trim_Industrial", CityMiscMeshRole.Industrial)
         };
 
         [SerializeField] private CityMiscMeshEntry[] entries =
@@ -1135,6 +1157,13 @@ namespace BarPromenade
                     return DryingYardParts;
                 case CityMiscKind.PoiNightlifeLastRouteIslandShell:
                     return IndustrialStreetResidentialTimberParts;
+                case CityMiscKind.BarBuildingShell:
+                case CityMiscKind.SupermarketBuildingShell:
+                case CityMiscKind.PlayerHomeBuildingShell:
+                    return SpecialBuildingParts;
+                case CityMiscKind.RoadsideDrainAndCover:
+                case CityMiscKind.RoadsideCappedStandpipe:
+                    return StreetMasonryParts;
                 default:
                     throw UnsupportedKind(kind);
             }

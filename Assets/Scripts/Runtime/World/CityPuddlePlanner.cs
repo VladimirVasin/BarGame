@@ -17,8 +17,22 @@ namespace BarPromenade
         public const float Thickness = 0.006f;
         public const float SurfaceOffset = 0.003f;
 
+        /// <summary>How many puddles the flat open precincts may carry
+        /// between them. Deliberately small: standing water in a yard
+        /// is a place nobody drains, not weather.</summary>
+        public const int MaximumOpenGroundPuddleCount = 16;
+
         private const float MinimumSurfaceSpan = 3.2f;
         private const float GutterInset = 0.28f;
+
+        /// <summary>How far inside its own cell an open-ground puddle
+        /// must sit. Only an open precinct's interior is guaranteed
+        /// flat: its datum is shared across the whole area, but the
+        /// terrain skin ramps toward whatever the neighbouring cell
+        /// sits at, and a flat slab on a ramp buries one end.</summary>
+        private const float OpenGroundEdgeInset = 4f;
+
+        private const float MinimumOpenGroundSpan = 3f;
 
         public static IReadOnlyList<RuntimeOrientedBox> Create(
             CityStreetSurfacePlan streetPlan,
@@ -78,6 +92,141 @@ namespace BarPromenade
             }
 
             return new ReadOnlyCollection<RuntimeOrientedBox>(result);
+        }
+
+        /// <summary>
+        /// Standing water on the flat open precincts — the fringe
+        /// yards, the cemetery terrace and the church ground. They are
+        /// the only ground in the city that is dead level: every cell
+        /// of an area declaring a street access is pinned to that one
+        /// access datum, so a flat slab lies true on it. Streets get
+        /// their own gutter patches from <see cref="Create"/>; the
+        /// sloped buildable ground and the beach get none, because a
+        /// six-millimetre box cannot follow a five-percent cross-fall.
+        /// </summary>
+        public static IReadOnlyList<RuntimeOrientedBox> CreateOpenGround(
+            CityLayout layout,
+            int citySeed)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            var flatAreas = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0;
+                 index < layout.OpenAreaAccesses.Count;
+                 index++)
+            {
+                flatAreas.Add(layout.OpenAreaAccesses[index].AreaId);
+            }
+
+            var candidates = new List<Candidate>();
+            for (int index = 0; index < layout.Surfaces.Count; index++)
+            {
+                CitySurfaceDescriptor surface = layout.Surfaces[index];
+                if (!IsLevelOpenGround(surface) ||
+                    !flatAreas.Contains(surface.AreaId))
+                {
+                    continue;
+                }
+
+                Rect interior = Inset(
+                    surface.WorldBounds,
+                    OpenGroundEdgeInset);
+                if (interior.width < MinimumOpenGroundSpan ||
+                    interior.height < MinimumOpenGroundSpan)
+                {
+                    continue;
+                }
+
+                uint hash = CityExteriorAppearance.Mix(
+                    unchecked((uint)citySeed),
+                    unchecked((uint)(0x9E3779B9 + index)));
+                if ((hash % 100u) >= 34u)
+                {
+                    continue;
+                }
+
+                candidates.Add(
+                    new Candidate(
+                        hash,
+                        index,
+                        CreateGroundPatch(
+                            interior,
+                            surface.PhysicalTopY,
+                            hash)));
+            }
+
+            candidates.Sort(CompareCandidates);
+            int count = Mathf.Min(
+                MaximumOpenGroundPuddleCount,
+                candidates.Count);
+            var result = new List<RuntimeOrientedBox>(count);
+            for (int index = 0; index < count; index++)
+            {
+                result.Add(candidates[index].Patch);
+            }
+
+            return new ReadOnlyCollection<RuntimeOrientedBox>(result);
+        }
+
+        private static bool IsLevelOpenGround(
+            CitySurfaceDescriptor surface)
+        {
+            if (!surface.IsWalkable || surface.IsWater)
+            {
+                return false;
+            }
+
+            switch (surface.Kind)
+            {
+                case CitySurfaceKind.OpenGround:
+                case CitySurfaceKind.CemeteryGround:
+                case CitySurfaceKind.ChurchGround:
+                    return true;
+                default:
+                    // The park keeps its emptiness, the beach slopes to
+                    // the waterline, and the buildable ground carries
+                    // the valley's cross-fall.
+                    return false;
+            }
+        }
+
+        private static Rect Inset(Rect source, float amount)
+        {
+            return new Rect(
+                source.xMin + amount,
+                source.yMin + amount,
+                Mathf.Max(0f, source.width - (amount * 2f)),
+                Mathf.Max(0f, source.height - (amount * 2f)));
+        }
+
+        private static RuntimeOrientedBox CreateGroundPatch(
+            Rect area,
+            float topY,
+            uint hash)
+        {
+            // Wider and squarer than a gutter patch: nothing channels
+            // this water, so it spreads until the ground stops it.
+            float sizeX = Mathf.Min(
+                Mathf.Lerp(1.3f, 3.3f, Unit(hash, 0)),
+                area.width);
+            float sizeZ = Mathf.Min(
+                Mathf.Lerp(1.1f, 2.6f, Unit(hash, 8)),
+                area.height);
+            float travelX = Mathf.Max(0f, (area.width - sizeX) * 0.5f);
+            float travelZ = Mathf.Max(0f, (area.height - sizeZ) * 0.5f);
+            var center = new Vector3(
+                area.center.x +
+                Mathf.Lerp(-travelX, travelX, Unit(hash, 16)),
+                topY + SurfaceOffset,
+                area.center.y +
+                Mathf.Lerp(-travelZ, travelZ, Unit(hash, 24)));
+            return new RuntimeOrientedBox(
+                center,
+                Quaternion.identity,
+                new Vector3(sizeX, Thickness, sizeZ));
         }
 
         private static RuntimeOrientedBox CreatePatch(

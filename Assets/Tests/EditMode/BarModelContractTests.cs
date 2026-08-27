@@ -22,6 +22,10 @@ namespace BarPromenade.Tests.EditMode
         private const string ManifestPath = "Assets/Bar/Models/Bar3D.json";
         private const string ModelPath =
             "Assets/Bar/Models/BarInterior3D.fbx";
+        private const string ExteriorManifestPath =
+            "Assets/Bar/Models/BarFacade3D.json";
+        private const string ExteriorModelPath =
+            "Assets/Bar/Models/BarFacade3D.fbx";
         private const float Tolerance = 0.01f;
 
         [Test]
@@ -53,6 +57,164 @@ namespace BarPromenade.Tests.EditMode
                 importer.materialImportMode,
                 Is.EqualTo(ModelImporterMaterialImportMode.None),
                 "materials from the FBX would break district tinting");
+        }
+
+        [Test]
+        public void BarExterior_IsAFixedMetrePassiveAuthoredBuilding()
+        {
+            BarManifest manifest = LoadManifest(ExteriorManifestPath);
+
+            Assert.That(manifest.design_id, Is.EqualTo("bar_exterior_v2"));
+            Assert.That(manifest.dimensions_m.width,
+                Is.EqualTo(12.2645f).Within(0.0001f));
+            Assert.That(manifest.dimensions_m.depth,
+                Is.EqualTo(13.5237f).Within(0.0001f));
+            Assert.That(manifest.dimensions_m.height,
+                Is.EqualTo(9.3435f).Within(0.0001f));
+            Assert.That(manifest.colliders, Is.False);
+            Assert.That(manifest.lights, Is.False);
+            Assert.That(manifest.cameras, Is.False);
+            Assert.That(manifest.animation_count, Is.Zero);
+
+            BarManifestAnchor door = manifest.anchors.Single(
+                anchor => anchor.role == "exterior_door");
+            Assert.That(door.name, Is.EqualTo("Door"));
+            Assert.That(door.local_position, Has.Length.EqualTo(3));
+            Assert.That(door.local_position,
+                Is.EqualTo(new[] { 0f, 0f, 0f }));
+            Assert.That(
+                manifest.anchors.Count(anchor =>
+                    anchor.role == "sign_pivot"),
+                Is.EqualTo(1));
+            BarManifestAnchor sign = manifest.anchors.Single(anchor =>
+                anchor.role == "sign_pivot");
+            Assert.That(sign.local_position, Has.Length.EqualTo(3));
+            Assert.That(
+                sign.local_position[1],
+                Is.InRange(0.90f, 2.80f),
+                "The blade sign must attach to the solid pier, not the " +
+                "centre upper window axis.");
+
+            string[] requiredParts =
+            {
+                "Pub Brick Shell",
+                "Pub Rendered Upper Storey",
+                "Pub Slate Roof",
+                "Pub Brick Chimneys",
+                "Pub Chimney Pots",
+                "Pub Ground Floor Glass",
+                "Pub Upper Sash Frames",
+                "Pub Upper Windows Warm",
+                "Pub Upper Window Dark",
+                "Pub Side Service Door",
+                "Bar Entrance Flanking Panels",
+                "Bar Outer Bay Flanking Panels",
+                "Bar Entrance Reveal Panels",
+                "Bar Door",
+                "Bar Door Frame Left",
+                "Bar Door Frame Right",
+                "Bar Entrance Canopy"
+            };
+            for (int index = 0; index < requiredParts.Length; index++)
+            {
+                Assert.That(
+                    manifest.parts.Any(part =>
+                        part.name == requiredParts[index]),
+                    Is.True,
+                    $"the exterior has no '{requiredParts[index]}' part");
+            }
+
+            BarManifestPart brick = manifest.parts.Single(part =>
+                part.name == "Pub Brick Shell");
+            BarManifestPart plaster = manifest.parts.Single(part =>
+                part.name == "Pub Rendered Upper Storey");
+            Assert.That(brick.sheet, Is.EqualTo("ExteriorBrick"));
+            Assert.That(plaster.sheet, Is.EqualTo("ExteriorPlaster"));
+            Assert.That(
+                BarExteriorSurfaceAppearance.TryResolveSheet(
+                    brick.sheet,
+                    out BarExteriorSurfaceKind brickSurface),
+                Is.True);
+            Assert.That(brickSurface,
+                Is.EqualTo(BarExteriorSurfaceKind.Brick));
+            Assert.That(
+                BarExteriorSurfaceAppearance.GetRecipe(brickSurface)
+                    .ResourcePath,
+                Is.EqualTo(
+                    BarExteriorSurfaceAppearance.BrickTextureResourcePath));
+            Assert.That(
+                BarExteriorSurfaceAppearance.TryResolveSheet(
+                    plaster.sheet,
+                    out BarExteriorSurfaceKind plasterSurface),
+                Is.True);
+            Assert.That(plasterSurface,
+                Is.EqualTo(BarExteriorSurfaceKind.Plaster));
+            Assert.That(
+                BarExteriorSurfaceAppearance.GetRecipe(plasterSurface)
+                    .ResourcePath,
+                Is.EqualTo(
+                    BarExteriorSurfaceAppearance
+                        .PlasterTextureResourcePath));
+
+            ModelImporter importer =
+                AssetImporter.GetAtPath(ExteriorModelPath) as ModelImporter;
+            Assert.That(importer, Is.Not.Null, "the exterior did not import");
+            Assert.That(importer.animationType,
+                Is.EqualTo(ModelImporterAnimationType.None));
+            Assert.That(importer.importCameras, Is.False);
+            Assert.That(importer.importLights, Is.False);
+            Assert.That(importer.addCollider, Is.False);
+
+            GameObject prefab = BarModelResources.LoadFacadePrefab();
+            Assert.That(prefab, Is.Not.Null);
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                BarAssetRegistry registry =
+                    instance.GetComponent<BarAssetRegistry>();
+                Assert.That(registry, Is.Not.Null);
+                Assert.That(registry.DesignId,
+                    Is.EqualTo("bar_exterior_v2"));
+                Assert.That(instance.transform.localScale,
+                    Is.EqualTo(Vector3.one));
+                Assert.That(registry.Dimensions.Width,
+                    Is.EqualTo(12.2645f).Within(0.0001f));
+                Assert.That(registry.Dimensions.Depth,
+                    Is.EqualTo(13.5237f).Within(0.0001f));
+                Assert.That(registry.Dimensions.Height,
+                    Is.EqualTo(9.3435f).Within(0.0001f));
+                AssertAnchor(
+                    registry,
+                    instance.transform,
+                    "exterior_door",
+                    Vector3.zero);
+                Assert.That(
+                    registry.TryGetAnchor(
+                        "sign_pivot",
+                        out Transform signPivot),
+                    Is.True);
+                Assert.That(signPivot, Is.Not.Null);
+                Vector3 signPosition = instance.transform
+                    .InverseTransformPoint(signPivot.position);
+                Assert.That(
+                    signPosition.z,
+                    Is.InRange(0.90f, 2.80f),
+                    "The imported blade-sign anchor must remain on the " +
+                    "solid pier beside the upper windows.");
+                Assert.That(
+                    instance.GetComponentsInChildren<Collider>(true),
+                    Is.Empty);
+                Assert.That(
+                    instance.GetComponentsInChildren<Light>(true),
+                    Is.Empty);
+                Assert.That(
+                    instance.GetComponentsInChildren<Camera>(true),
+                    Is.Empty);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
         }
 
         [Test]
@@ -524,12 +686,17 @@ namespace BarPromenade.Tests.EditMode
 
         private static BarManifest LoadManifest()
         {
+            return LoadManifest(ManifestPath);
+        }
+
+        private static BarManifest LoadManifest(string path)
+        {
             TextAsset source =
-                AssetDatabase.LoadAssetAtPath<TextAsset>(ManifestPath);
+                AssetDatabase.LoadAssetAtPath<TextAsset>(path);
             Assert.That(
                 source,
                 Is.Not.Null,
-                $"'{ManifestPath}' is missing; run the Blender generator");
+                $"'{path}' is missing; run the Blender generator");
             BarManifest manifest =
                 JsonUtility.FromJson<BarManifest>(source.text);
             Assert.That(manifest, Is.Not.Null);
@@ -549,7 +716,16 @@ namespace BarPromenade.Tests.EditMode
             public bool cameras;
             public int animation_count;
             public int triangle_count;
+            public BarManifestAnchor[] anchors;
             public BarManifestPart[] parts;
+        }
+
+        [Serializable]
+        private sealed class BarManifestAnchor
+        {
+            public string name;
+            public string role;
+            public float[] local_position;
         }
 
         [Serializable]

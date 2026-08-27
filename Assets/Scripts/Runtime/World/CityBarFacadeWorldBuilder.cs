@@ -1,21 +1,18 @@
 using System;
-using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
 
 namespace BarPromenade
 {
     /// <summary>
-    /// Places the passive, collider-free identity of a bar facade. City and
-    /// the bounded Home exterior share this recipe; gameplay entrances remain
-    /// owned by CityWorldBuilder.
+    /// Places the complete passive, collider-free pub exterior. City and the
+    /// bounded Home exterior share the same fixed-metre authored building;
+    /// gameplay entrances and logical collision remain plan-owned.
     ///
-    /// The geometry is one authored model
-    /// (`tools/build-bar-3d-model.py`, facade asset) placed at the door and
-    /// TURNED to face the street. The primitive version instead carried two
-    /// hand-written size triples per part - one for an X frontage and one for
-    /// a Z frontage - which are the same box rotated ninety degrees, written
-    /// down twice and free to disagree.
+    /// Its source origin is the gameplay door, local +X faces the street and
+    /// local Z runs across the frontage. The imported door anchor is measured
+    /// in world space before the FBX hierarchy is flattened, so the importer's
+    /// 100/0.01 unit conversion cannot move the building away from the route.
     /// </summary>
     public static class CityBarFacadeWorldBuilder
     {
@@ -23,6 +20,12 @@ namespace BarPromenade
             Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId =
             Shader.PropertyToID("_Color");
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
+        private static readonly int SmoothnessId =
+            Shader.PropertyToID("_Smoothness");
+        private static readonly int MetallicId =
+            Shader.PropertyToID("_Metallic");
 
         public static void BuildCity(
             Transform parent,
@@ -33,10 +36,7 @@ namespace BarPromenade
                 parent,
                 lot.DoorPosition,
                 ResolveDirection(lot),
-                lot.BarId,
-                null,
-                1f,
-                false);
+                lot.BarId);
         }
 
         public static void BuildHomeExterior(
@@ -58,20 +58,14 @@ namespace BarPromenade
                 PlayerHomeBalconyGeometry.ToHomeLocalDirection(
                     context.PlayerHome,
                     ResolveDirection(lot)),
-                lot.BarId,
-                null,
-                1f,
-                true);
+                lot.BarId);
         }
 
         private static void Build(
             Transform parent,
             Vector3 doorPosition,
             Vector3 direction,
-            string barId,
-            Material material,
-            float colorScale,
-            bool clipToHomeExterior)
+            string barId)
         {
             direction.y = 0f;
             direction.Normalize();
@@ -80,19 +74,20 @@ namespace BarPromenade
             if (prefab == null)
             {
                 throw new InvalidOperationException(
-                    "The bar facade model is missing. Run " +
+                    "The bar exterior model is missing. Run " +
                     "tools/build-bar-3d-model.py through Blender, then " +
                     "Bar Promenade/Bar/Build Runtime Prefabs.");
             }
 
             GameObject instance = Object.Instantiate(prefab, parent);
-            instance.name = $"Bar Facade {barId}";
+            instance.name = $"Bar Exterior {barId}";
             instance.transform.localPosition = doorPosition;
-            //  The model is authored facing +X; one rotation replaces the
-            //  whole frontageIsX branch.
+            // The model is authored with +X outward. LookRotation maps local
+            // +Z to its first argument, so direction x up is the forward that
+            // makes the imported local +X land on the lot frontage.
             instance.transform.localRotation =
                 Quaternion.LookRotation(
-                    new Vector3(direction.z, 0f, -direction.x),
+                    Vector3.Cross(direction, Vector3.up),
                     Vector3.up);
             instance.transform.localScale = Vector3.one;
 
@@ -101,25 +96,41 @@ namespace BarPromenade
             if (registry == null)
             {
                 throw new InvalidOperationException(
-                    "The bar facade prefab has no BarAssetRegistry.");
+                    "The bar exterior prefab has no BarAssetRegistry.");
             }
 
-            Vector3 signPivot = registry.TryGetAnchor(
-                "sign_pivot",
-                out Transform anchor)
-                ? anchor.localPosition
-                : new Vector3(0.74f, 3.42f, 0f);
+            if (!registry.TryGetAnchor(
+                    "exterior_door",
+                    out Transform doorAnchor))
+            {
+                throw new InvalidOperationException(
+                    "The bar exterior has no exterior_door anchor.");
+            }
+
+            // Never read localPosition from an FBX anchor. Unity imports the
+            // authoring root at 100 and each child at 0.01; only the measured
+            // world point survives that split unchanged.
+            Vector3 targetDoor = parent.TransformPoint(doorPosition);
+            instance.transform.position += targetDoor - doorAnchor.position;
+
+            if (!registry.TryGetAnchor(
+                    "sign_pivot",
+                    out Transform signAnchor))
+            {
+                throw new InvalidOperationException(
+                    "The bar exterior has no sign_pivot anchor.");
+            }
 
             Transform marker = BuildMarker(
                 parent,
-                instance.transform,
                 barId,
-                doorPosition,
-                signPivot,
-                clipToHomeExterior,
+                parent.InverseTransformPoint(signAnchor.position),
+                Quaternion.Inverse(parent.rotation) *
+                instance.transform.rotation,
                 out BarBuildingMarker markerComponent);
+            Vector3 signOffset =
+                signAnchor.position - doorAnchor.position;
 
-            var properties = new MaterialPropertyBlock();
             foreach (BarPartBinding binding in registry.Parts)
             {
                 Renderer renderer = binding?.Renderer;
@@ -142,34 +153,30 @@ namespace BarPromenade
                     continue;
                 }
 
+                if (sign)
+                {
+                    // Sign meshes are authored around their own zero and the
+                    // anchor carries the hanging point. Move them to that
+                    // point before preserving their imported world scale.
+                    part.position += signOffset;
+                }
+
                 //  KeepWorld: an imported FBX splits its unit conversion
                 //  across the hierarchy - the authoring root arrives scaled
                 //  100 and every part scaled 0.01 - so lifting a part out
                 //  without preserving its world transform shrinks it by a
                 //  hundred.
                 part.SetParent(destination, true);
-
-                if (!ClipToHome(part, clipToHomeExterior))
-                {
-                    Object.DestroyImmediate(part.gameObject);
-                    continue;
-                }
-
-                properties.Clear();
-                Color tint = ScaleColor(
-                    binding.Tint.Resolve(default),
-                    colorScale);
-                properties.SetColor(BaseColorId, tint);
-                properties.SetColor(ColorId, tint);
-                renderer.SetPropertyBlock(properties);
-                if (material != null)
-                {
-                    renderer.sharedMaterial = material;
-                }
+                ApplyAppearance(binding, renderer);
 
                 if (sign && markerComponent != null)
                 {
-                    markerComponent.RegisterSignPart(part.gameObject);
+                    markerComponent.RegisterSignPart(
+                        part.gameObject,
+                        string.Equals(
+                            binding.SourceName,
+                            "Bar Sign Panel",
+                            StringComparison.Ordinal));
                 }
             }
 
@@ -177,85 +184,74 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Hangs the blade sign's own object, or reports that this facade
-        /// has none because the marker falls behind the home's facade.
+        /// Hangs the blade sign's own object at the imported semantic anchor.
         /// </summary>
         private static Transform BuildMarker(
             Transform parent,
-            Transform facade,
             string barId,
-            Vector3 doorPosition,
-            Vector3 signPivot,
-            bool clipToHomeExterior,
+            Vector3 markerPosition,
+            Quaternion markerRotation,
             out BarBuildingMarker markerComponent)
         {
-            Vector3 markerPosition =
-                facade.localRotation * signPivot + doorPosition;
-            if (clipToHomeExterior &&
-                markerPosition.x <=
-                HomeExteriorViewBuilder.ExteriorMinimumX)
-            {
-                markerComponent = null;
-                return null;
-            }
-
             var markerObject = new GameObject("Bar Landmark Marker");
             markerObject.transform.SetParent(parent, false);
             markerObject.transform.localPosition = markerPosition;
-            markerObject.transform.localRotation = facade.localRotation;
+            markerObject.transform.localRotation = markerRotation;
             markerComponent =
                 markerObject.AddComponent<BarBuildingMarker>();
             markerComponent.Initialize(barId);
             return markerObject.transform;
         }
 
-        /// <summary>
-        /// Trims a part back to the home exterior's half-space, or reports
-        /// that nothing of it survives.
-        ///
-        /// The primitive version rebuilt each box from the clipped bounds,
-        /// which is a shift and a scale rather than a true cut - so doing
-        /// exactly that to the authored part reproduces it.
-        /// </summary>
-        private static bool ClipToHome(Transform part, bool clip)
+        private static void ApplyAppearance(
+            BarPartBinding binding,
+            Renderer renderer)
         {
-            if (!clip)
+            string role = binding.Role ?? string.Empty;
+            if (role == "exterior_window_ground")
             {
-                return true;
+                renderer.sharedMaterial =
+                    CityWindowAppearance.ResolveLitMaterial(
+                        CityWindowFamily.Bar);
+                CityWindowAppearance.ApplyPlainPane(renderer);
+                return;
             }
 
-            Renderer renderer = part.GetComponent<Renderer>();
-            if (renderer == null)
+            uint paneHash = StableHash(binding.SourceName);
+            if (role == "exterior_window_upper_warm")
             {
-                return true;
+                renderer.sharedMaterial =
+                    CityWindowAppearance.ResolveLitMaterial(
+                        CityWindowFamily.Bar);
+                CityWindowAppearance.ApplyLitPane(renderer, paneHash);
+                return;
             }
 
-            Bounds bounds = renderer.bounds;
-            if (!HomeExteriorViewBuilder.TryClipToExteriorHalfSpace(
-                    bounds,
-                    out Bounds clipped))
+            Color tint = binding.Tint.Resolve(default);
+            if (role == "exterior_window_upper_dark")
             {
-                return false;
+                ApplyFlat(renderer, tint, 0.18f, 0f);
+                CityWindowAppearance.ApplyDarkPane(renderer, paneHash);
+                return;
             }
 
-            if (Mathf.Approximately(bounds.size.x, clipped.size.x))
+            if (BarExteriorSurfaceAppearance.TryResolveSheet(
+                    binding.Sheet,
+                    out BarExteriorSurfaceKind surface))
             {
-                return true;
+                BarExteriorSurfaceAppearance.Apply(
+                    renderer,
+                    surface,
+                    tint);
+                return;
             }
 
-            float factor = bounds.size.x > 0.0001f
-                ? clipped.size.x / bounds.size.x
-                : 1f;
-            Vector3 scale = part.localScale;
-            part.localScale = new Vector3(
-                scale.x * factor,
-                scale.y,
-                scale.z);
-            part.position += new Vector3(
-                clipped.center.x - bounds.center.x,
-                0f,
-                0f);
-            return true;
+            bool metal = role == "exterior_metal";
+            ApplyFlat(
+                renderer,
+                tint,
+                metal ? 0.24f : 0.10f,
+                metal ? 0.38f : 0f);
         }
 
         private static Vector3 ResolveDirection(BuildingLot lot)
@@ -266,15 +262,36 @@ namespace BarPromenade
                 lot.FrontageDirection.y);
         }
 
-        private static Color ScaleColor(
-            Color color,
-            float scale)
+        private static void ApplyFlat(
+            Renderer renderer,
+            Color tint,
+            float smoothness,
+            float metallic)
         {
-            return new Color(
-                color.r * scale,
-                color.g * scale,
-                color.b * scale,
-                color.a);
+            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            properties.SetTexture(BaseMapId, Texture2D.whiteTexture);
+            properties.SetColor(BaseColorId, tint);
+            properties.SetColor(ColorId, tint);
+            properties.SetFloat(SmoothnessId, smoothness);
+            properties.SetFloat(MetallicId, metallic);
+            renderer.SetPropertyBlock(properties);
+        }
+
+        private static uint StableHash(string value)
+        {
+            const uint offset = 2166136261u;
+            const uint prime = 16777619u;
+            uint hash = offset;
+            string text = value ?? string.Empty;
+            for (int index = 0; index < text.Length; index++)
+            {
+                hash ^= text[index];
+                hash *= prime;
+            }
+
+            return hash;
         }
 
         private static void Validate(
@@ -295,7 +312,7 @@ namespace BarPromenade
                 !lot.HasRoadFrontage)
             {
                 throw new ArgumentException(
-                    "A passive bar facade requires a bar lot with street frontage.",
+                    "A passive bar exterior requires a bar lot with street frontage.",
                     nameof(lot));
             }
         }

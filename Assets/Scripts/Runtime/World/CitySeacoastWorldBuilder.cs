@@ -170,12 +170,30 @@ namespace BarPromenade
             CitySeacoastSeaLayout.CreateShelfBoxes(frame, shelves);
             if (shelves.Count > 0)
             {
-                RuntimePrimitiveFactory.CreateCombinedBoxes(
-                    "Sea Bed Shelf",
-                    sea,
-                    shelves,
-                    Silt,
-                    false);
+                // The bed reads through the water's `1.4 m` depth fade
+                // along the whole shore, so it is the first thing the
+                // eye meets at the waterline. It carries the sand sheet
+                // on world-planar UVs at the shore's own pitch, keeping
+                // the silt tint it always had: the compensation rule
+                // preserves the brightness, so this adds grain without
+                // lifting the bed out of the dark.
+                GameObject bed =
+                    RuntimePrimitiveFactory.CreateCombinedBoxes(
+                        "Sea Bed Shelf",
+                        sea,
+                        shelves,
+                        Silt,
+                        false,
+                        CitySeacoastSurfaceAppearance
+                            .GetRecipe(CitySeacoastSurfaceKind.Sand)
+                            .MetersPerTile);
+                if (bed != null)
+                {
+                    CitySeacoastSurfaceAppearance.ApplyCombined(
+                        bed.GetComponent<Renderer>(),
+                        CitySeacoastSurfaceKind.Sand,
+                        Silt);
+                }
             }
         }
 

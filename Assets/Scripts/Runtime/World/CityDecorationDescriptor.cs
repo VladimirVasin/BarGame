@@ -28,7 +28,13 @@ namespace BarPromenade
         ParkFountainAndStatue = 20,
         ParkBandstand = 21,
         ParkChessTables = 22,
-        ParkPlayground = 23
+        ParkPlayground = 23,
+
+        // The ground-level water network. Both are flush municipal
+        // ironwork at the kerb: the city dies of its water and, until
+        // these, showed none of it anywhere but the waterworks court.
+        RoadsideDrainAndCover = 24,
+        RoadsideCappedStandpipe = 25
     }
 
     public enum CityDecorationAnchorKind

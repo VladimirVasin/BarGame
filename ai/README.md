@@ -15,6 +15,7 @@ source-of-truth order.
 | `player-art-spec.md` | Locked player design and layered puppet-atlas contract |
 | `contextual-animation-standard.md` | Mandatory entry/exit, hard-handoff, authoring and test contract for contextual player atlas animations |
 | `city-zones-art-bible.md` | Current zone facts and locked target visual, spatial, emotional, light and sound identity |
+| `city-story-bible.md` | Planned. Locked story canon: the crime, the hero, the poisoning scale, the Cat, what every built place means, and the register every written line must keep |
 | `work-log.md` | Reverse-chronological implementation record |
 | `tutorial-scenario.md` | Planned vertical-slice walkthrough and acceptance path |
 | `release-notes.md` | Player-visible milestone notes |

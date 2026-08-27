@@ -29,10 +29,29 @@ namespace BarPromenade
         /// plank.</summary>
         public const float MinimumPushOffset = 0.05f;
 
+        /// <summary>Below this peak pace a half-swing is a nudge, and
+        /// the ropes carry it without complaining. It is also what makes
+        /// a swing go quiet on its own: the arc decays, the peak falls
+        /// under the gate, and the creaking stops before the motion
+        /// does.</summary>
+        public const float MinimumCreakSpeed = 0.55f;
+
         private Rigidbody body;
         private Vector3 seatLocalCenter;
         private Vector3 pushAxis = Vector3.forward;
         private Collider lastNonWalkerCollider;
+        private float previousSignedSpeed;
+        private float halfSwingPeakSpeed;
+
+        /// <summary>Raised once per half-swing, at the top of the arc,
+        /// when that half-swing was wide enough to be heard. The
+        /// soundscape subscribes; nothing else does, and the swing does
+        /// not own a voice of its own.</summary>
+        public event Action<CityPlaygroundSwing> CreakOccurred;
+
+        /// <summary>How many times this seat has reached the top of a
+        /// wide enough arc. Zero while nobody has pushed it.</summary>
+        public int CreakCount { get; private set; }
 
         public bool IsInitialized { get; private set; }
 
@@ -70,6 +89,47 @@ namespace BarPromenade
                 ? axis.normalized
                 : Vector3.forward;
             IsInitialized = true;
+        }
+
+        private void FixedUpdate()
+        {
+            if (!IsInitialized || body == null)
+            {
+                return;
+            }
+
+            float signed = Vector3.Dot(
+                body.GetPointVelocity(SeatCenter),
+                pushAxis);
+            float speed = Mathf.Abs(signed);
+            if (speed > halfSwingPeakSpeed)
+            {
+                halfSwingPeakSpeed = speed;
+            }
+
+            // The rope complains where the load reverses, and that is the
+            // TOP of the arc, not the bottom: the plank stops, the knot
+            // takes the weight back the other way and creaks once. Firing
+            // at the fastest point instead would put the sound under the
+            // pivot, where a rope is quietest.
+            bool turned = previousSignedSpeed > 0f
+                ? signed <= 0f
+                : previousSignedSpeed < 0f && signed >= 0f;
+            previousSignedSpeed = signed;
+            if (!turned)
+            {
+                return;
+            }
+
+            float peak = halfSwingPeakSpeed;
+            halfSwingPeakSpeed = 0f;
+            if (peak < MinimumCreakSpeed)
+            {
+                return;
+            }
+
+            CreakCount++;
+            CreakOccurred?.Invoke(this);
         }
 
         private void OnTriggerStay(Collider other)

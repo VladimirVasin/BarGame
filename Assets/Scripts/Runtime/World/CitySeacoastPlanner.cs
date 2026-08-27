@@ -2201,7 +2201,16 @@ namespace BarPromenade
             // What the port left on the sand: bollards that moored
             // nothing for years, a fallen gantry beam, crates nobody
             // came back to claim, rope gone stiff as wood.
-            const int stations = 12;
+            //
+            // Eighteen stations rather than twelve, and a band that
+            // reaches back into the sand instead of ruling one line
+            // along the old quay. The city blames this place for
+            // killing it, so it has to carry that much: at twelve, in
+            // a three-metre strip, it read as a tidy row of props with
+            // twenty empty metres behind them. It is still one item per
+            // seventy-odd square metres — dense enough to be a yard,
+            // far too sparse to be the scrapyard the art bible bans.
+            const int stations = 18;
             float from = frame.WestZone.xMin + 8f;
             float to = frame.ChannelXMin - 10f;
             int bollard = 0;
@@ -2216,11 +2225,14 @@ namespace BarPromenade
                               to,
                               (index + 0.5f) / stations) +
                           ((hash & 0xFFu) / 255f - 0.5f) * 4f;
-                // The band hugs the old quay line north of the shore
-                // lane, so what the port dropped never blocks the walk
-                // the pedestrians take along the esplanade axis.
+                // The band still starts at the old quay line north of
+                // the shore lane, so what the port dropped never blocks
+                // the walk the pedestrians take along the esplanade
+                // axis — but it now reaches `10.6 m` back instead of
+                // `5.2 m`, because a working yard scattered inland and
+                // a decorative row does not.
                 float z = frame.WaterlineZ -
-                          (2.2f + (((hash >> 8) & 0xFFu) / 255f) * 3.0f);
+                          (2.2f + (((hash >> 8) & 0xFFu) / 255f) * 8.4f);
                 Rect footprint = Rect.MinMaxRect(
                     x - 1.2f, z - 1.2f, x + 1.2f, z + 1.2f);
                 if (OverlapsAny(footprint, reserved, 0f) ||

@@ -37,6 +37,12 @@ namespace BarPromenade
                 case CityDecorationKind.IndustrialGantry:
                 case CityDecorationKind.NightlifeBillboard:
                 case CityDecorationKind.NightlifeCinema:
+                // The water network is flush ironwork: a grate and a lid
+                // are walked over, and the capped column is slim enough
+                // that a collider on it would only catch a shoulder at
+                // the kerb. Nothing here takes a proxy.
+                case CityDecorationKind.RoadsideDrainAndCover:
+                case CityDecorationKind.RoadsideCappedStandpipe:
                     return CityDecorationCollisionTier.None;
                 default:
                     throw new ArgumentOutOfRangeException(

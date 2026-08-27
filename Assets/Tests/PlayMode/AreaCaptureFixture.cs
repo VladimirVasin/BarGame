@@ -190,6 +190,21 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
+        public IEnumerator CitySpecialBuildings()
+        {
+            CityGameRoot cityRoot = null;
+            yield return Capture(
+                SceneIds.City,
+                () =>
+                {
+                    cityRoot = Object.FindAnyObjectByType<CityGameRoot>();
+                    return cityRoot;
+                },
+                () => CitySpecialBuildingShots(cityRoot));
+        }
+
+        [UnityTest]
+        [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator MountainRoad()
         {
             yield return Capture(
@@ -241,10 +256,145 @@ namespace BarPromenade.Tests.PlayMode
             return () => Object.FindAnyObjectByType<T>();
         }
 
+        private static Shot[] CitySpecialBuildingShots(CityGameRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.Layout, Is.Not.Null);
+
+            BuildingLot bar = null;
+            BuildingLot supermarket = null;
+            BuildingLot playerHome = null;
+            foreach (BuildingLot lot in root.Layout.BuildingLots)
+            {
+                if (lot.IsBar)
+                {
+                    bar = lot;
+                }
+                else if (lot.IsSupermarket)
+                {
+                    supermarket = lot;
+                }
+                else if (lot.IsPlayerHome)
+                {
+                    playerHome = lot;
+                }
+            }
+
+            Assert.That(bar, Is.Not.Null);
+            Assert.That(supermarket, Is.Not.Null);
+            Assert.That(playerHome, Is.Not.Null);
+            return new[]
+            {
+                FrameSpecialBuilding("00-bar", bar),
+                FrameSpecialEntrance("00-bar-entrance", bar, 2.35f),
+                FrameSpecialEntrance(
+                    "00-bar-entrance-opposite",
+                    bar,
+                    -2.35f),
+                FrameSpecialFrontageEdge(
+                    "00-bar-edge-left",
+                    bar,
+                    -1f),
+                FrameSpecialFrontageEdge(
+                    "00-bar-edge-right",
+                    bar,
+                    1f),
+                FrameSpecialFoundation("00-bar-foundation", bar),
+                FrameSpecialBuilding("01-supermarket", supermarket),
+                FrameSpecialBuilding("02-player-home", playerHome)
+            };
+        }
+
+        private static Shot FrameSpecialEntrance(
+            string name,
+            BuildingLot lot,
+            float lateralOffset)
+        {
+            Vector3 forward = new Vector3(
+                lot.FrontageDirection.x,
+                0f,
+                lot.FrontageDirection.y).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3 target = lot.DoorPosition + Vector3.up * 1.35f;
+            Vector3 position = lot.DoorPosition +
+                forward * 4.2f +
+                right * lateralOffset +
+                Vector3.up * 1.72f;
+            return Shot.At(name, position, target, 54f);
+        }
+
+        private static Shot FrameSpecialFrontageEdge(
+            string name,
+            BuildingLot lot,
+            float side)
+        {
+            Vector3 forward = new Vector3(
+                lot.FrontageDirection.x,
+                0f,
+                lot.FrontageDirection.y).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3 edge = lot.DoorPosition + right * (side * 5.28f);
+            Vector3 target = edge + Vector3.up * 1.55f;
+            Vector3 position = edge +
+                forward * 3.15f -
+                right * (side * 1.60f) +
+                Vector3.up * 1.75f;
+            return Shot.At(name, position, target, 50f);
+        }
+
+        private static Shot FrameSpecialFoundation(
+            string name,
+            BuildingLot lot)
+        {
+            Vector3 forward = new Vector3(
+                lot.FrontageDirection.x,
+                0f,
+                lot.FrontageDirection.y).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3 target = lot.DoorPosition -
+                forward * 2.15f -
+                right * 6f +
+                Vector3.up * 0.10f;
+            Vector3 position = lot.DoorPosition +
+                forward * 0.45f -
+                right * 8.65f +
+                Vector3.up * 0.78f;
+            return Shot.At(name, position, target, 42f);
+        }
+
+        private static Shot FrameSpecialBuilding(
+            string name,
+            BuildingLot lot)
+        {
+            Vector3 forward = new Vector3(
+                lot.FrontageDirection.x,
+                0f,
+                lot.FrontageDirection.y).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            bool frontsAlongX = lot.FrontageDirection.x != 0;
+            float depth = frontsAlongX ? lot.Size.x : lot.Size.y;
+            float frontage = frontsAlongX ? lot.Size.y : lot.Size.x;
+            Vector3 target = lot.Center +
+                (Vector3.up * (lot.Height * 0.42f));
+            Vector3 position = lot.Center +
+                (forward * ((depth * 0.5f) + 8f)) +
+                (right * (frontage * 0.42f)) +
+                (Vector3.up * ((lot.Height * 0.58f) + 1f));
+            return Shot.At(name, position, target, 60f);
+        }
+
         private static IEnumerator Capture(
             string sceneName,
             Func<Component> findRoot,
             Shot[] shots)
+        {
+            return Capture(sceneName, findRoot, () => shots);
+        }
+
+        private static IEnumerator Capture(
+            string sceneName,
+            Func<Component> findRoot,
+            Func<Shot[]> resolveShots)
         {
             AsyncOperation operation = SceneManager.LoadSceneAsync(
                 sceneName,
@@ -274,6 +424,9 @@ namespace BarPromenade.Tests.PlayMode
                 findRoot(),
                 Is.Not.Null,
                 $"Scene '{sceneName}' never built its root.");
+
+            Shot[] shots = resolveShots();
+            Assert.That(shots, Is.Not.Null.And.Not.Empty);
 
             for (int frame = 0; frame < SettleFrames; frame++)
             {

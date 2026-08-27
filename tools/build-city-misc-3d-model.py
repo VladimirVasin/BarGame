@@ -48,9 +48,9 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit  # noqa: E402
 
 
-GENERATOR_VERSION = "3.0.0"
-DESIGN_ID = "city_misc_citywide_v3"
-DISPLAY_NAME = "City Misc Citywide Catalog"
+GENERATOR_VERSION = "4.1.0"
+DESIGN_ID = "city_misc_citywide_v4"
+DISPLAY_NAME = "City Misc Citywide Catalog + Special Buildings"
 V2_GENERATOR_VERSION = "2.0.0"
 V2_DESIGN_ID = "city_misc_all_decor_v2"
 V2_COMPATIBILITY_SIGNATURE = (
@@ -1132,6 +1132,92 @@ def build_roadside_dumpster_and_utility() -> AssemblySpec:
         make_part(kind, variant, "Industrial", *industrial),
         make_part(kind, variant, "Street", *street),
     ))
+
+
+def build_roadside_drain_and_cover() -> AssemblySpec:
+    """A gutter grate and a valve lid, both flush with the pavement.
+
+    The city dies of its water and shows none of it: until now the only
+    municipal water anywhere on the ground was the one waterworks court.
+    This is the network the rest of the time — walked over, never looked
+    at. Everything sits within `56 mm` of the ground so nothing here is
+    ever an obstacle; the runtime gives it no collider at all.
+    """
+    kind, variant = "RoadsideDrainAndCover", 0
+    street: list[Geometry] = [
+        # The grate: a frame sunk at the kerb line with five bars.
+        local_box(0.0, 0.020, 0.0, 0.66, 0.040, 0.42, 0.008),
+        *(local_box(bar_x, 0.048, 0.0, 0.052, 0.016, 0.34, 0.004)
+          for bar_x in (-0.20, -0.10, 0.0, 0.10, 0.20)),
+        # The lid, set apart the way a valve chamber always is.
+        local_vertical_solid(0.62, 0.0, 0.034, 0.10,
+                             0.155, 0.155, top_scale=0.94, sides=12),
+        local_vertical_solid(0.62, 0.034, 0.050, 0.10,
+                             0.048, 0.048, top_scale=0.80, sides=8),
+    ]
+    masonry: list[Geometry] = [
+        # The concrete the ironwork is bedded into, proud by a
+        # centimetre so the joint reads without becoming a lip.
+        local_box(0.0, 0.014, 0.0, 0.80, 0.028, 0.56, 0.010),
+        local_vertical_solid(0.62, 0.0, 0.022, 0.10,
+                             0.205, 0.205, top_scale=0.96, sides=12),
+    ]
+    return AssemblySpec(
+        kind, variant, (
+            make_part(kind, variant, "Street", *street),
+            make_part(kind, variant, "Masonry", *masonry),
+        ),
+        root_derivation="RoadsideDrainAndCover.DescriptorGround+Forward",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+        canonical_reference=(
+            ("grate_width", 0.66), ("lid_offset", 0.62)),
+    )
+
+
+def build_roadside_capped_standpipe() -> AssemblySpec:
+    """A street standpipe welded shut, over a trough gone dry.
+
+    The municipal answer to the water happened years before the hero and
+    was abandoned: the column was not removed, it was capped, and the
+    trough it fed was left where it stood. It is the same municipal
+    grammar as the working waterworks court at the other end of the
+    pipe, which is the point — one is used, this one was given up on.
+    """
+    kind, variant = "RoadsideCappedStandpipe", 0
+    street: list[Geometry] = [
+        local_vertical_solid(0.0, 0.0, 0.09, 0.0,
+                             0.145, 0.145, top_scale=0.82, sides=10),
+        local_vertical_solid(0.0, 0.06, 0.96, 0.0,
+                             0.085, 0.085, top_scale=0.86, sides=10),
+        # The cap and its weld bead: not a lid, a plate run round.
+        local_vertical_solid(0.0, 0.950, 0.978, 0.0,
+                             0.098, 0.098, top_scale=1.06, sides=10),
+        local_box(0.0, 1.000, 0.0, 0.215, 0.044, 0.215, 0.010),
+        # The spout, cut off and blanked where it used to run.
+        local_tube((0.0, 0.700, 0.02), (0.0, 0.700, 0.185),
+                   0.036, sides=8),
+        local_box(0.0, 0.700, 0.200, 0.092, 0.092, 0.020, 0.006),
+        # The chain that held the cup, still on its eye.
+        local_tube((0.072, 0.905, 0.055), (0.070, 0.745, 0.095),
+                   0.011, sides=6),
+    ]
+    masonry: list[Geometry] = [
+        local_box(0.0, 0.025, 0.0, 0.72, 0.050, 0.62, 0.015),
+        local_box(0.0, 0.115, 0.44, 0.86, 0.180, 0.40, 0.020),
+        local_box(0.0, 0.218, 0.44, 0.86, 0.026, 0.40, 0.010),
+    ]
+    return AssemblySpec(
+        kind, variant, (
+            make_part(kind, variant, "Street", *street),
+            make_part(kind, variant, "Masonry", *masonry),
+        ),
+        root_derivation="RoadsideCappedStandpipe.DescriptorGround+Forward",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+        canonical_reference=(
+            ("column_height", 1.022), ("trough_width", 0.86)),
+    )
 
 
 def build_street_lamp_shell() -> AssemblySpec:
@@ -3182,6 +3268,170 @@ def build_poi_nightlife_last_route_island_shell() -> AssemblySpec:
     )
 
 
+def special_building_scale_metadata(
+    frontage_width: float,
+    depth: float,
+    height: float,
+) -> tuple[tuple[tuple[str, float], ...], tuple[ScaleParameterSpec, ...]]:
+    canonical = (
+        ("lot_frontage_width", frontage_width),
+        ("lot_depth", depth),
+        ("lot_height", height),
+    )
+    parameters = (
+        scale_parameter(
+            "lot_frontage_width", ("X",), frontage_width, 6.0, 24.0),
+        scale_parameter(
+            "lot_depth", ("Y",), depth, 6.0, 24.0),
+        scale_parameter(
+            "lot_height", ("Z",), height, 4.5, 14.0),
+    )
+    return canonical, parameters
+
+
+def make_special_building(
+    kind: str,
+    frontage_width: float,
+    depth: float,
+    height: float,
+    shell: Sequence[Geometry],
+    roof: Sequence[Geometry],
+    trim: Sequence[Geometry],
+    unity_owned_parts: tuple[str, ...],
+) -> AssemblySpec:
+    canonical, parameters = special_building_scale_metadata(
+        frontage_width, depth, height)
+    return AssemblySpec(
+        kind,
+        0,
+        (
+            make_named_part(
+                kind, 0, "Shell_Masonry", "Masonry", *shell),
+            make_named_part(
+                kind, 0, "Roof_Street", "Street", *roof),
+            make_named_part(
+                kind, 0, "Trim_Industrial", "Industrial", *trim),
+        ),
+        canonical_reference=canonical,
+        scale_parameters=parameters,
+        unity_owned_parts=("Terrain foundation skirt", *unity_owned_parts),
+        root_derivation="BuildingLot.Center+FrontageDirection",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+def build_bar_building_shell() -> AssemblySpec:
+    kind = "BarBuildingShell"
+    width, depth, height = 12.2645, 13.5237, 9.3435
+    shell = (
+        local_box(0.0, height * 0.50, 0.0,
+                  width, height, depth, 0.16),
+        local_box(-width * 0.31, height * 0.36, -depth * 0.43,
+                  width * 0.25, height * 0.58, depth * 0.14, 0.10),
+    )
+    roof = (
+        local_box(0.0, height + 0.15, 0.0,
+                  width + 0.34, 0.30, depth + 0.34, 0.08),
+        local_box(-width * 0.20, height + 0.43, -depth * 0.16,
+                  width * 0.52, 0.26, depth * 0.58, 0.07),
+    )
+    trim: list[Geometry] = [
+        local_box(0.0, 0.18, 0.0,
+                  width + 0.08, 0.36, depth + 0.08, 0.04),
+        local_box(0.0, height * 0.74, depth * 0.496,
+                  width, 0.24, 0.18, 0.035),
+    ]
+    for side in (-1, 1):
+        trim.append(local_box(
+            side * width * 0.465, height * 0.48, depth * 0.496,
+            0.34, height * 0.88, 0.18, 0.035))
+        trim.append(local_box(
+            side * width * 0.465, height * 0.48, -depth * 0.496,
+            0.34, height * 0.88, 0.18, 0.035))
+    return make_special_building(
+        kind, width, depth, height, shell, roof, trim,
+        (
+            "Building Mass collider", "Window bands", "Bar door",
+            "Bar canopy", "Bar sign", "Entrance trigger",
+        ),
+    )
+
+
+def build_supermarket_building_shell() -> AssemblySpec:
+    kind = "SupermarketBuildingShell"
+    width, depth, height = 15.5, 15.5, 6.4
+    shell = (
+        local_box(0.0, height * 0.50, 0.0,
+                  width, height, depth, 0.14),
+        local_box(0.0, height * 0.60, -depth * 0.43,
+                  width * 0.52, height * 0.42, depth * 0.14, 0.08),
+    )
+    roof: list[Geometry] = [
+        local_box(0.0, height + 0.14, 0.0,
+                  width + 0.38, 0.28, depth + 0.38, 0.07),
+    ]
+    for lane in (-1, 0, 1):
+        roof.append(local_box(
+            lane * width * 0.235, height + 0.43, -depth * 0.06,
+            width * 0.27, 0.22, depth * 0.70, 0.055,
+            roll_forward_degrees=-7.5))
+    trim: list[Geometry] = [
+        local_box(0.0, 0.16, 0.0,
+                  width + 0.08, 0.32, depth + 0.08, 0.035),
+        local_box(0.0, height * 0.78, depth * 0.497,
+                  width, 0.34, 0.16, 0.035),
+    ]
+    for side in (-1, 1):
+        trim.append(local_box(
+            side * width * 0.472, height * 0.48, depth * 0.497,
+            0.30, height * 0.88, 0.16, 0.03))
+    return make_special_building(
+        kind, width, depth, height, shell, roof, trim,
+        (
+            "Building Mass collider", "Window bands", "Storefront glass",
+            "Supermarket door", "Canopy", "Signs", "Entrance trigger",
+        ),
+    )
+
+
+def build_player_home_building_shell() -> AssemblySpec:
+    kind = "PlayerHomeBuildingShell"
+    width, depth, height = 13.0, 12.0, 8.8
+    shell = (
+        local_box(0.0, height * 0.50, 0.0,
+                  width, height, depth, 0.12),
+        local_box(width * 0.22, height * 0.58, -depth * 0.41,
+                  width * 0.26, height * 0.72, depth * 0.16, 0.07),
+    )
+    roof = (
+        local_box(0.0, height + 0.20, 0.0,
+                  width + 0.48, 0.40, depth + 0.48, 0.065),
+        local_box(-width * 0.28, height + 0.88, depth * 0.20,
+                  0.68, 1.36, 0.68, 0.055),
+        local_box(-width * 0.28, height + 1.60, depth * 0.20,
+                  0.82, 0.16, 0.82, 0.045),
+    )
+    trim: list[Geometry] = [
+        local_box(0.0, 0.17, 0.0,
+                  width + 0.06, 0.34, depth + 0.06, 0.035),
+        local_box(0.0, height * 0.36, depth * 0.498,
+                  width, 0.20, 0.15, 0.03),
+        local_box(0.0, height * 0.68, depth * 0.498,
+                  width, 0.20, 0.15, 0.03),
+        local_box(width * 0.22, height * 0.49, depth * 0.499,
+                  width * 0.18, height * 0.86, 0.16, 0.035),
+    ]
+    return make_special_building(
+        kind, width, depth, height, shell, roof, trim,
+        (
+            "Building Mass collider", "Window bands", "Home balcony",
+            "Home door", "Mailbox", "Entrance lamp", "House number",
+            "Roof beacon", "Entrance trigger",
+        ),
+    )
+
+
 def make_assemblies() -> tuple[AssemblySpec, ...]:
     return (
         # Wave 1 compatibility block. Keep these first 15 assemblies and their
@@ -3251,6 +3501,13 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         build_poi_residential_drying_yard_shell(),
         build_poi_industrial_weighbridge_shell(),
         build_poi_nightlife_last_route_island_shell(),
+        build_bar_building_shell(),
+        build_supermarket_building_shell(),
+        build_player_home_building_shell(),
+        # Citywide v4.1: the ground-level water network. Appended, never
+        # inserted — both compatibility signatures cover prefixes.
+        build_roadside_drain_and_cover(),
+        build_roadside_capped_standpipe(),
     )
 
 
@@ -3399,6 +3656,11 @@ EXPECTED_VARIANTS = {
     "PoiResidentialDryingYardShell": 1,
     "PoiIndustrialWeighbridgeShell": 1,
     "PoiNightlifeLastRouteIslandShell": 1,
+    "BarBuildingShell": 1,
+    "SupermarketBuildingShell": 1,
+    "PlayerHomeBuildingShell": 1,
+    "RoadsideDrainAndCover": 1,
+    "RoadsideCappedStandpipe": 1,
 }
 
 EXPECTED_ROLES = {
@@ -3497,6 +3759,14 @@ EXPECTED_ROLES = {
     ("PoiIndustrialWeighbridgeShell", 0): ("Industrial", "Street"),
     ("PoiNightlifeLastRouteIslandShell", 0):
         ("Masonry", "Street", "Residential", "Timber"),
+    ("BarBuildingShell", 0):
+        ("Masonry", "Street", "Industrial"),
+    ("SupermarketBuildingShell", 0):
+        ("Masonry", "Street", "Industrial"),
+    ("PlayerHomeBuildingShell", 0):
+        ("Masonry", "Street", "Industrial"),
+    ("RoadsideDrainAndCover", 0): ("Street", "Masonry"),
+    ("RoadsideCappedStandpipe", 0): ("Street", "Masonry"),
 }
 
 
@@ -3523,6 +3793,13 @@ EXPECTED_MESH_SUFFIXES = {
         "BenchPad_Masonry_Stone",
         "BenchLeg_Masonry_Stone",
     ),
+    **{(kind, 0): (
+        "Shell_Masonry", "Roof_Street", "Trim_Industrial")
+       for kind in (
+           "BarBuildingShell",
+           "SupermarketBuildingShell",
+           "PlayerHomeBuildingShell",
+       )},
 }
 
 
@@ -3726,8 +4003,16 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
             if assembly.kind not in FORWARD_ANCHORED_KINDS and not (
                     low[1] <= 0.0 <= high[1]):
                 problems.append(f"{key} does not straddle its forward origin")
-        if high[2] > 10.0 + BOUNDS_EPSILON:
-            problems.append(f"{key} exceeds the 10 m catalog height budget")
+        special_building = assembly.kind in {
+            "BarBuildingShell",
+            "SupermarketBuildingShell",
+            "PlayerHomeBuildingShell",
+        }
+        height_budget = 12.0 if special_building else 10.0
+        if high[2] > height_budget + BOUNDS_EPSILON:
+            problems.append(
+                f"{key} exceeds the {height_budget:g} m catalog height "
+                "budget")
 
     for kind, count in EXPECTED_VARIANTS.items():
         actual = sorted(variant for item_kind, variant in keys
@@ -3735,11 +4020,11 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         if actual != list(range(count)):
             problems.append(
                 f"{kind} variants are {actual}, expected 0..{count - 1}")
-    if len(assemblies) != 91:
+    if len(assemblies) != 96:
         problems.append(
-            f"assembly count is {len(assemblies)}, expected 91")
-    if len(names) != 177:
-        problems.append(f"mesh count is {len(names)}, expected 177")
+            f"assembly count is {len(assemblies)}, expected 96")
+    if len(names) != 190:
+        problems.append(f"mesh count is {len(names)}, expected 190")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)

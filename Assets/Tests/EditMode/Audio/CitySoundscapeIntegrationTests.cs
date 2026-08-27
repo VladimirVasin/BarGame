@@ -8,7 +8,7 @@ namespace BarPromenade.Tests.EditMode
     public sealed class CitySoundscapeIntegrationTests
     {
         [Test]
-        public void DefaultCity_AnchorsTenCausalSoundsToPhysicalOwners()
+        public void DefaultCity_AnchorsElevenCausalSoundsToPhysicalOwners()
         {
             CityLayout layout = CreateDefaultLayout();
             CityDecorationPlan decorationPlan =
@@ -22,10 +22,10 @@ namespace BarPromenade.Tests.EditMode
                     layout,
                     decorationPlan);
 
-            Assert.That(plan.Sources, Has.Count.EqualTo(10));
+            Assert.That(plan.Sources, Has.Count.EqualTo(11));
             Assert.That(plan.LoopingSources, Has.Count.EqualTo(5));
             Assert.That(plan.ScheduledSources, Has.Count.EqualTo(3));
-            Assert.That(plan.TriggeredSources, Has.Count.EqualTo(2));
+            Assert.That(plan.TriggeredSources, Has.Count.EqualTo(3));
 
             var owners = new HashSet<CitySoundPhysicalOwnerKind>();
             for (int index = 0; index < plan.Sources.Count; index++)
@@ -37,14 +37,6 @@ namespace BarPromenade.Tests.EditMode
                     Is.True,
                     source.StableId +
                     " must sit inside the visible fixture that emits it.");
-                Assert.That(
-                    source.Cue,
-                    Is.Not.EqualTo(CitySourceSoundId.ParkSwingCreak),
-                    "A swing cue needs a real motion binding first.");
-                Assert.That(
-                    source.PhysicalOwner,
-                    Is.Not.EqualTo(
-                        CitySoundPhysicalOwnerKind.ParkPlayground));
                 owners.Add(source.PhysicalOwner);
             }
 
@@ -52,7 +44,8 @@ namespace BarPromenade.Tests.EditMode
                 new[]
                 {
                     CitySourceSoundId.DryingYardCarpetStrike,
-                    CitySourceSoundId.IndustrialMetalStress
+                    CitySourceSoundId.IndustrialMetalStress,
+                    CitySourceSoundId.ParkSwingCreak
                 },
                 GetCues(plan.TriggeredSources));
             for (int index = 0;
@@ -81,7 +74,8 @@ namespace BarPromenade.Tests.EditMode
                     CitySoundPhysicalOwnerKind.ResidentialDryingYard,
                     CitySoundPhysicalOwnerKind.IndustrialWeighbridge,
                     CitySoundPhysicalOwnerKind.NightlifeLastRouteIsland,
-                    CitySoundPhysicalOwnerKind.ParkFountainAndStatue
+                    CitySoundPhysicalOwnerKind.ParkFountainAndStatue,
+                    CitySoundPhysicalOwnerKind.ParkPlayground
                 },
                 owners);
         }
@@ -156,6 +150,7 @@ namespace BarPromenade.Tests.EditMode
                         layout,
                         Array.Empty<DryingYardBabushkaPresentation>(),
                         null,
+                        Array.Empty<CityPlaygroundSwing>(),
                         () => 0f);
 
                 Assert.That(director.IsInitialized, Is.True);

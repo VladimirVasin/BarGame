@@ -585,6 +585,20 @@ namespace BarPromenade.Tests.PlayMode
                 cityRoot.World.Root.GetComponentsInChildren<BarBuildingMarker>(true);
             Assert.That(markers, Has.Length.EqualTo(cityRoot.World.Bars.Count));
 
+            GameObject exteriorPrefab =
+                BarModelResources.LoadFacadePrefab();
+            Assert.That(exteriorPrefab, Is.Not.Null);
+            BarAssetRegistry exteriorRegistry =
+                exteriorPrefab.GetComponent<BarAssetRegistry>();
+            Assert.That(exteriorRegistry, Is.Not.Null);
+            Assert.That(
+                exteriorRegistry.DesignId,
+                Is.EqualTo("bar_exterior_v2"));
+            Assert.That(
+                exteriorPrefab.transform.localScale,
+                Is.EqualTo(Vector3.one),
+                "The complete pub is authored directly in metres.");
+
             var markerIds = new HashSet<string>(StringComparer.Ordinal);
             Material sharedMarkerMaterial = null;
             for (int index = 0; index < markers.Length; index++)
@@ -600,6 +614,11 @@ namespace BarPromenade.Tests.PlayMode
                 // sprite, so the shared-asset rule it has to satisfy is the
                 // material one: no bar may instance its own.
                 Assert.That(marker.PanelRenderer, Is.Not.Null);
+                Assert.That(
+                    marker.PanelRenderer.name,
+                    Is.EqualTo("Bar Sign Panel"),
+                    "The marker must expose the backing panel, not whichever " +
+                    "alphabetically sorted hanger registered first.");
                 Assert.That(
                     marker.SignRenderers,
                     Is.Not.Empty,
@@ -670,36 +689,133 @@ namespace BarPromenade.Tests.PlayMode
                     markerLot.FrontageDirection.x,
                     0f,
                     markerLot.FrontageDirection.y);
-                Transform frontWindows = barBuilding.Find("Front Windows");
-                Assert.That(frontWindows, Is.Not.Null);
-                Vector3 windowOffset =
-                    frontWindows.position - markerLot.Center;
-                windowOffset.y = 0f;
                 Assert.That(
-                    Vector3.Dot(windowOffset.normalized, frontage),
-                    Is.GreaterThan(0.999f),
-                    $"Bar '{marker.BarId}' windows must face its frontage road.");
+                    barBuilding.Find("Front Windows"),
+                    Is.Null,
+                    "The authored pub must not keep generic window bands.");
 
-                int doorFrameCount = 0;
-                Transform[] barParts =
-                    barBuilding.GetComponentsInChildren<Transform>(true);
+                Transform model = barBuilding.Find(
+                    CitySpecialBuildingWorldBuilder.ModelRootName);
+                Assert.That(model, Is.Not.Null);
+                Transform foundation = model.Find(
+                    CitySpecialBuildingWorldBuilder.FoundationObjectName);
+                Assert.That(foundation, Is.Not.Null);
+                Assert.That(foundation.GetComponent<Collider>(), Is.Null);
+                Renderer foundationRenderer =
+                    foundation.GetComponent<Renderer>();
+                Assert.That(foundationRenderer, Is.Not.Null);
+                Assert.That(
+                    foundationRenderer.bounds.size.x,
+                    Is.LessThan(markerLot.Size.x - 0.07f));
+                Assert.That(
+                    foundationRenderer.bounds.size.z,
+                    Is.LessThan(markerLot.Size.y - 0.07f));
+                var foundationProperties = new MaterialPropertyBlock();
+                foundationRenderer.GetPropertyBlock(foundationProperties);
+                Assert.That(
+                    foundationProperties.GetTexture(
+                        Shader.PropertyToID("_BaseMap")),
+                    Is.EqualTo(
+                        BarExteriorSurfaceAppearance.GetTexture(
+                            BarExteriorSurfaceKind.Brick)));
+                Assert.That(
+                    model.Find(
+                        CitySpecialBuildingWorldBuilder.ShellObjectName),
+                    Is.Null,
+                    "The complete pub must replace the old CityMisc shell.");
+                Assert.That(
+                    model.Find(
+                        CitySpecialBuildingWorldBuilder.RoofObjectName),
+                    Is.Null);
+
+                string[] requiredParts =
+                {
+                    "Pub Brick Shell",
+                    "Pub Rendered Upper Storey",
+                    "Pub Slate Roof",
+                    "Pub Ground Floor Glass",
+                    "Pub Upper Sash Frames",
+                    "Bar Entrance Flanking Panels",
+                    "Bar Outer Bay Flanking Panels",
+                    "Bar Entrance Reveal Panels",
+                    "Bar Door",
+                    "Bar Door Frame Left",
+                    "Bar Door Frame Right"
+                };
                 for (int partIndex = 0;
-                     partIndex < barParts.Length;
+                     partIndex < requiredParts.Length;
                      partIndex++)
                 {
-                    if (barParts[partIndex].name == "Bar Door Frame")
-                    {
-                        doorFrameCount++;
-                        Assert.That(
-                            barParts[partIndex].GetComponent<Collider>(),
-                            Is.Null);
-                    }
+                    Transform part =
+                        barBuilding.Find(requiredParts[partIndex]);
+                    Assert.That(
+                        part,
+                        Is.Not.Null,
+                        $"Bar '{marker.BarId}' is missing " +
+                        $"'{requiredParts[partIndex]}'.");
+                    Assert.That(
+                        part.GetComponentsInChildren<Collider>(true),
+                        Is.Empty);
+                    Assert.That(
+                        part.GetComponentsInChildren<Light>(true),
+                        Is.Empty);
+                    Assert.That(
+                        part.GetComponentsInChildren<Camera>(true),
+                        Is.Empty);
                 }
 
+                float lotFrontage = Mathf.Abs(frontage.x) > 0.5f
+                    ? markerLot.Size.y
+                    : markerLot.Size.x;
+                float lotDepth = Mathf.Abs(frontage.x) > 0.5f
+                    ? markerLot.Size.x
+                    : markerLot.Size.y;
                 Assert.That(
-                    doorFrameCount,
-                    Is.EqualTo(2),
-                    $"Bar '{marker.BarId}' must have a two-sided door frame.");
+                    exteriorRegistry.Dimensions.Width,
+                    Is.EqualTo(lotFrontage).Within(0.001f));
+                Assert.That(
+                    exteriorRegistry.Dimensions.Depth,
+                    Is.EqualTo(lotDepth).Within(0.001f));
+                Assert.That(
+                    exteriorRegistry.Dimensions.Height,
+                    Is.EqualTo(markerLot.Height).Within(0.001f));
+
+                Renderer door = barBuilding
+                    .Find("Bar Door")
+                    .GetComponent<Renderer>();
+                Assert.That(door, Is.Not.Null);
+                Vector3 expectedDoorCentre = markerLot.DoorPosition -
+                    (frontage * 0.16f) +
+                    (Vector3.up * 1.17f);
+                Assert.That(
+                    Vector3.Distance(
+                        door.bounds.center,
+                        expectedDoorCentre),
+                    Is.LessThan(0.02f),
+                    $"Bar '{marker.BarId}' moved away from its door anchor.");
+
+                Renderer canopyRenderer =
+                    canopy.GetComponent<Renderer>();
+                Assert.That(canopyRenderer, Is.Not.Null);
+                Vector3 frontageOffset =
+                    canopyRenderer.bounds.center - markerLot.DoorPosition;
+                frontageOffset.y = 0f;
+                Assert.That(
+                    Vector3.Dot(frontageOffset.normalized, frontage),
+                    Is.GreaterThan(0.999f),
+                    $"Bar '{marker.BarId}' must face its frontage road.");
+
+                Assert.That(
+                    barBuilding.Find("Bar Door Frame"),
+                    Is.Null,
+                    "The obsolete duplicate frame object must not survive.");
+                Transform logicalCollision = barBuilding.Find(
+                    CityBuildingPrototypeWorldBuilder
+                        .LogicalCollisionObjectName);
+                Assert.That(logicalCollision, Is.Not.Null);
+                Assert.That(
+                    logicalCollision.GetComponent<BoxCollider>(),
+                    Is.Not.Null);
             }
 
             for (int index = 0; index < cityRoot.World.Bars.Count; index++)

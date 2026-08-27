@@ -273,6 +273,59 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void ShippedCity_PutsTheWaterNetworkOnTheGround()
+        {
+            CityDecorationPlan plan = CreateShippedPlan(
+                GameSessionState.DefaultCitySeed,
+                out CityLayout layout);
+
+            int drains = 0;
+            int standpipes = 0;
+            for (int index = 0; index < plan.Descriptors.Count; index++)
+            {
+                CityDecorationDescriptor descriptor =
+                    plan.Descriptors[index];
+                if (descriptor.Kind ==
+                    CityDecorationKind.RoadsideDrainAndCover)
+                {
+                    drains++;
+                }
+                else if (descriptor.Kind ==
+                         CityDecorationKind.RoadsideCappedStandpipe)
+                {
+                    standpipes++;
+                }
+                else
+                {
+                    continue;
+                }
+
+                Assert.That(
+                    descriptor.AnchorKind,
+                    Is.EqualTo(CityDecorationAnchorKind.Roadside));
+                Assert.That(
+                    CityDecorationCollisionCatalog.ResolveTier(
+                        descriptor.Kind),
+                    Is.EqualTo(CityDecorationCollisionTier.None),
+                    "Flush ironwork must never take a collider.");
+            }
+
+            // The city dies of its water: it has to show some. Drains
+            // are ordinary municipal frequency, the capped columns are
+            // deliberately rare — a failure, not street furniture.
+            Assert.That(
+                drains,
+                Is.GreaterThan(8),
+                "A walk should cross a drain without noticing one.");
+            Assert.That(standpipes, Is.GreaterThan(0));
+            Assert.That(
+                standpipes,
+                Is.LessThan(drains),
+                "A capped standpipe on every corner reads as a style.");
+            Assert.That(layout, Is.Not.Null);
+        }
+
+        [Test]
         public void CollisionCatalog_DefinesEveryVisualFamily()
         {
             var expected = new Dictionary<
@@ -302,7 +355,9 @@ namespace BarPromenade.Tests.EditMode
                 { CityDecorationKind.ParkFountainAndStatue, CityDecorationCollisionTier.Blocking },
                 { CityDecorationKind.ParkBandstand, CityDecorationCollisionTier.Blocking },
                 { CityDecorationKind.ParkChessTables, CityDecorationCollisionTier.Blocking },
-                { CityDecorationKind.ParkPlayground, CityDecorationCollisionTier.Blocking }
+                { CityDecorationKind.ParkPlayground, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.RoadsideDrainAndCover, CityDecorationCollisionTier.None },
+                { CityDecorationKind.RoadsideCappedStandpipe, CityDecorationCollisionTier.None }
             };
 
             Array kinds = Enum.GetValues(typeof(CityDecorationKind));

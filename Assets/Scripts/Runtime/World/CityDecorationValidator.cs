@@ -439,6 +439,8 @@ namespace BarPromenade
                 case CityDecorationKind.RoadsidePhoneBooth:
                 case CityDecorationKind.RoadsideBusShelter:
                 case CityDecorationKind.RoadsideRoadworkAndBicycle:
+                case CityDecorationKind.RoadsideDrainAndCover:
+                case CityDecorationKind.RoadsideCappedStandpipe:
                     expectedDistrict = descriptor.District;
                     expectedAnchor = CityDecorationAnchorKind.Roadside;
                     break;
@@ -565,6 +567,10 @@ namespace BarPromenade
                     return 3.1f;
                 case CityDecorationKind.RoadsideRoadworkAndBicycle:
                     return 2.4f;
+                case CityDecorationKind.RoadsideDrainAndCover:
+                    return 1.1f;
+                case CityDecorationKind.RoadsideCappedStandpipe:
+                    return 1.3f;
                 case CityDecorationKind.ParkFountainAndStatue:
                     return 3.4f;
                 case CityDecorationKind.ParkBandstand:

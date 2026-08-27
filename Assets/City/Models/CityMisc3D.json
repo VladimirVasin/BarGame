@@ -1,9 +1,9 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "3.0.0",
+  "generator_version": "4.1.0",
   "blender_version": "5.0.1",
-  "design_id": "city_misc_citywide_v3",
-  "display_name": "City Misc Citywide Catalog",
+  "design_id": "city_misc_citywide_v4",
+  "display_name": "City Misc Citywide Catalog + Special Buildings",
   "source_axes": {
     "right": "+X",
     "forward": "+Y",
@@ -57,9 +57,9 @@
   "materials": false,
   "preview_materials_in_presentation_only": true,
   "animation_count": 0,
-  "mesh_count": 177,
-  "assembly_count": 91,
-  "triangle_count": 32642,
+  "mesh_count": 190,
+  "assembly_count": 96,
+  "triangle_count": 34062,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -4012,6 +4012,319 @@
         5.567284,
         6.325,
         5.4
+      ]
+    },
+    {
+      "kind": "BarBuildingShell",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "lot_frontage_width": 12.2645,
+        "lot_depth": 13.5237,
+        "lot_height": 9.3435
+      },
+      "scale_parameters": [
+        {
+          "name": "lot_frontage_width",
+          "source_axes": [
+            "X"
+          ],
+          "reference": 12.2645,
+          "min": 6.0,
+          "max": 24.0
+        },
+        {
+          "name": "lot_depth",
+          "source_axes": [
+            "Y"
+          ],
+          "reference": 13.5237,
+          "min": 6.0,
+          "max": 24.0
+        },
+        {
+          "name": "lot_height",
+          "source_axes": [
+            "Z"
+          ],
+          "reference": 9.3435,
+          "min": 4.5,
+          "max": 14.0
+        }
+      ],
+      "unity_owned_parts": [
+        "Terrain foundation skirt",
+        "Building Mass collider",
+        "Window bands",
+        "Bar door",
+        "Bar canopy",
+        "Bar sign",
+        "Entrance trigger"
+      ],
+      "root_derivation": "BuildingLot.Center+FrontageDirection",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_BarBuildingShell_Variant01_Shell_Masonry",
+        "GEO_CMM_BarBuildingShell_Variant01_Roof_Street",
+        "GEO_CMM_BarBuildingShell_Variant01_Trim_Industrial"
+      ],
+      "bounds_min_source": [
+        -6.30225,
+        -6.93185,
+        0.0
+      ],
+      "bounds_max_source": [
+        6.30225,
+        6.93185,
+        9.9035
+      ],
+      "bounds_min_unity": [
+        -6.30225,
+        0.0,
+        -6.93185
+      ],
+      "bounds_max_unity": [
+        6.30225,
+        9.9035,
+        6.93185
+      ]
+    },
+    {
+      "kind": "SupermarketBuildingShell",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "lot_frontage_width": 15.5,
+        "lot_depth": 15.5,
+        "lot_height": 6.4
+      },
+      "scale_parameters": [
+        {
+          "name": "lot_frontage_width",
+          "source_axes": [
+            "X"
+          ],
+          "reference": 15.5,
+          "min": 6.0,
+          "max": 24.0
+        },
+        {
+          "name": "lot_depth",
+          "source_axes": [
+            "Y"
+          ],
+          "reference": 15.5,
+          "min": 6.0,
+          "max": 24.0
+        },
+        {
+          "name": "lot_height",
+          "source_axes": [
+            "Z"
+          ],
+          "reference": 6.4,
+          "min": 4.5,
+          "max": 14.0
+        }
+      ],
+      "unity_owned_parts": [
+        "Terrain foundation skirt",
+        "Building Mass collider",
+        "Window bands",
+        "Storefront glass",
+        "Supermarket door",
+        "Canopy",
+        "Signs",
+        "Entrance trigger"
+      ],
+      "root_derivation": "BuildingLot.Center+FrontageDirection",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_SupermarketBuildingShell_Variant01_Shell_Masonry",
+        "GEO_CMM_SupermarketBuildingShell_Variant01_Roof_Street",
+        "GEO_CMM_SupermarketBuildingShell_Variant01_Trim_Industrial"
+      ],
+      "bounds_min_source": [
+        -7.94,
+        -7.94,
+        0.0
+      ],
+      "bounds_max_source": [
+        7.94,
+        7.94,
+        7.206442
+      ],
+      "bounds_min_unity": [
+        -7.94,
+        0.0,
+        -7.94
+      ],
+      "bounds_max_unity": [
+        7.94,
+        7.206442,
+        7.94
+      ]
+    },
+    {
+      "kind": "PlayerHomeBuildingShell",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "lot_frontage_width": 13.0,
+        "lot_depth": 12.0,
+        "lot_height": 8.8
+      },
+      "scale_parameters": [
+        {
+          "name": "lot_frontage_width",
+          "source_axes": [
+            "X"
+          ],
+          "reference": 13.0,
+          "min": 6.0,
+          "max": 24.0
+        },
+        {
+          "name": "lot_depth",
+          "source_axes": [
+            "Y"
+          ],
+          "reference": 12.0,
+          "min": 6.0,
+          "max": 24.0
+        },
+        {
+          "name": "lot_height",
+          "source_axes": [
+            "Z"
+          ],
+          "reference": 8.8,
+          "min": 4.5,
+          "max": 14.0
+        }
+      ],
+      "unity_owned_parts": [
+        "Terrain foundation skirt",
+        "Building Mass collider",
+        "Window bands",
+        "Home balcony",
+        "Home door",
+        "Mailbox",
+        "Entrance lamp",
+        "House number",
+        "Roof beacon",
+        "Entrance trigger"
+      ],
+      "root_derivation": "BuildingLot.Center+FrontageDirection",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_PlayerHomeBuildingShell_Variant01_Shell_Masonry",
+        "GEO_CMM_PlayerHomeBuildingShell_Variant01_Roof_Street",
+        "GEO_CMM_PlayerHomeBuildingShell_Variant01_Trim_Industrial"
+      ],
+      "bounds_min_source": [
+        -6.74,
+        -6.24,
+        0.0
+      ],
+      "bounds_max_source": [
+        6.74,
+        6.24,
+        10.48
+      ],
+      "bounds_min_unity": [
+        -6.74,
+        0.0,
+        -6.24
+      ],
+      "bounds_max_unity": [
+        6.74,
+        10.48,
+        6.24
+      ]
+    },
+    {
+      "kind": "RoadsideDrainAndCover",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "grate_width": 0.66,
+        "lid_offset": 0.62
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "RoadsideDrainAndCover.DescriptorGround+Forward",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_RoadsideDrainAndCover_Variant01_Street",
+        "GEO_CMM_RoadsideDrainAndCover_Variant01_Masonry"
+      ],
+      "bounds_min_source": [
+        -0.4,
+        -0.28,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.825,
+        0.305,
+        0.056
+      ],
+      "bounds_min_unity": [
+        -0.4,
+        0.0,
+        -0.28
+      ],
+      "bounds_max_unity": [
+        0.825,
+        0.056,
+        0.305
+      ]
+    },
+    {
+      "kind": "RoadsideCappedStandpipe",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "column_height": 1.022,
+        "trough_width": 0.86
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "RoadsideCappedStandpipe.DescriptorGround+Forward",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_RoadsideCappedStandpipe_Variant01_Street",
+        "GEO_CMM_RoadsideCappedStandpipe_Variant01_Masonry"
+      ],
+      "bounds_min_source": [
+        -0.43,
+        -0.31,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.43,
+        0.64,
+        1.022
+      ],
+      "bounds_min_unity": [
+        -0.43,
+        0.0,
+        -0.31
+      ],
+      "bounds_max_unity": [
+        0.43,
+        1.022,
+        0.64
       ]
     }
   ],
@@ -11095,7 +11408,527 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "mesh": "GEO_CMM_BarBuildingShell_Variant01_Shell_Masonry",
+      "kind": "BarBuildingShell",
+      "variant": 0,
+      "part_role": "Masonry",
+      "surface_kind": "Masonry",
+      "tint_role": "Masonry",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -6.13225,
+        -6.76185,
+        0.0
+      ],
+      "bounds_max_source": [
+        6.13225,
+        6.76185,
+        9.3435
+      ],
+      "bounds_min_unity": [
+        -6.13225,
+        0.0,
+        -6.76185
+      ],
+      "bounds_max_unity": [
+        6.13225,
+        9.3435,
+        6.76185
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_BarBuildingShell_Variant01_Roof_Street",
+      "kind": "BarBuildingShell",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -6.30225,
+        -6.93185,
+        9.3435
+      ],
+      "bounds_max_source": [
+        6.30225,
+        6.93185,
+        9.9035
+      ],
+      "bounds_min_unity": [
+        -6.30225,
+        9.3435,
+        -6.93185
+      ],
+      "bounds_max_unity": [
+        6.30225,
+        9.9035,
+        6.93185
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_BarBuildingShell_Variant01_Trim_Industrial",
+      "kind": "BarBuildingShell",
+      "variant": 0,
+      "part_role": "Industrial",
+      "surface_kind": "IndustrialMetal",
+      "tint_role": "Industrial",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min_source": [
+        -6.17225,
+        -6.80185,
+        0.0
+      ],
+      "bounds_max_source": [
+        6.17225,
+        6.80185,
+        8.59602
+      ],
+      "bounds_min_unity": [
+        -6.17225,
+        0.0,
+        -6.80185
+      ],
+      "bounds_max_unity": [
+        6.17225,
+        8.59602,
+        6.80185
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SupermarketBuildingShell_Variant01_Shell_Masonry",
+      "kind": "SupermarketBuildingShell",
+      "variant": 0,
+      "part_role": "Masonry",
+      "surface_kind": "Masonry",
+      "tint_role": "Masonry",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -7.75,
+        -7.75,
+        0.0
+      ],
+      "bounds_max_source": [
+        7.75,
+        7.75,
+        6.4
+      ],
+      "bounds_min_unity": [
+        -7.75,
+        0.0,
+        -7.75
+      ],
+      "bounds_max_unity": [
+        7.75,
+        6.4,
+        7.75
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SupermarketBuildingShell_Variant01_Roof_Street",
+      "kind": "SupermarketBuildingShell",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -7.94,
+        -7.94,
+        6.4
+      ],
+      "bounds_max_source": [
+        7.94,
+        7.94,
+        7.206442
+      ],
+      "bounds_min_unity": [
+        -7.94,
+        6.4,
+        -7.94
+      ],
+      "bounds_max_unity": [
+        7.94,
+        7.206442,
+        7.94
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_SupermarketBuildingShell_Variant01_Trim_Industrial",
+      "kind": "SupermarketBuildingShell",
+      "variant": 0,
+      "part_role": "Industrial",
+      "surface_kind": "IndustrialMetal",
+      "tint_role": "Industrial",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -7.79,
+        -7.79,
+        0.0
+      ],
+      "bounds_max_source": [
+        7.79,
+        7.79,
+        5.888
+      ],
+      "bounds_min_unity": [
+        -7.79,
+        0.0,
+        -7.79
+      ],
+      "bounds_max_unity": [
+        7.79,
+        5.888,
+        7.79
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_PlayerHomeBuildingShell_Variant01_Shell_Masonry",
+      "kind": "PlayerHomeBuildingShell",
+      "variant": 0,
+      "part_role": "Masonry",
+      "surface_kind": "Masonry",
+      "tint_role": "Masonry",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -6.5,
+        -6.0,
+        0.0
+      ],
+      "bounds_max_source": [
+        6.5,
+        6.0,
+        8.8
+      ],
+      "bounds_min_unity": [
+        -6.5,
+        0.0,
+        -6.0
+      ],
+      "bounds_max_unity": [
+        6.5,
+        8.8,
+        6.0
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_PlayerHomeBuildingShell_Variant01_Roof_Street",
+      "kind": "PlayerHomeBuildingShell",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -6.74,
+        -6.24,
+        8.8
+      ],
+      "bounds_max_source": [
+        6.74,
+        6.24,
+        10.48
+      ],
+      "bounds_min_unity": [
+        -6.74,
+        8.8,
+        -6.24
+      ],
+      "bounds_max_unity": [
+        6.74,
+        10.48,
+        6.24
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_PlayerHomeBuildingShell_Variant01_Trim_Industrial",
+      "kind": "PlayerHomeBuildingShell",
+      "variant": 0,
+      "part_role": "Industrial",
+      "surface_kind": "IndustrialMetal",
+      "tint_role": "Industrial",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -6.53,
+        -6.03,
+        0.0
+      ],
+      "bounds_max_source": [
+        6.53,
+        6.068,
+        8.096
+      ],
+      "bounds_min_unity": [
+        -6.53,
+        0.0,
+        -6.03
+      ],
+      "bounds_max_unity": [
+        6.53,
+        8.096,
+        6.068
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_RoadsideDrainAndCover_Variant01_Street",
+      "kind": "RoadsideDrainAndCover",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 136,
+      "triangles": 240,
+      "bounds_min_source": [
+        -0.33,
+        -0.21,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.775,
+        0.255,
+        0.056
+      ],
+      "bounds_min_unity": [
+        -0.33,
+        0.0,
+        -0.21
+      ],
+      "bounds_max_unity": [
+        0.775,
+        0.056,
+        0.255
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_RoadsideDrainAndCover_Variant01_Masonry",
+      "kind": "RoadsideDrainAndCover",
+      "variant": 0,
+      "part_role": "Masonry",
+      "surface_kind": "Masonry",
+      "tint_role": "Masonry",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 40,
+      "triangles": 72,
+      "bounds_min_source": [
+        -0.4,
+        -0.28,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.825,
+        0.305,
+        0.028
+      ],
+      "bounds_min_unity": [
+        -0.4,
+        0.0,
+        -0.28
+      ],
+      "bounds_max_unity": [
+        0.825,
+        0.028,
+        0.305
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_RoadsideCappedStandpipe_Variant01_Street",
+      "kind": "RoadsideCappedStandpipe",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 120,
+      "triangles": 212,
+      "bounds_min_source": [
+        -0.145,
+        -0.137903,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.145,
+        0.21,
+        1.022
+      ],
+      "bounds_min_unity": [
+        -0.145,
+        0.0,
+        -0.137903
+      ],
+      "bounds_max_unity": [
+        0.145,
+        1.022,
+        0.21
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_RoadsideCappedStandpipe_Variant01_Masonry",
+      "kind": "RoadsideCappedStandpipe",
+      "variant": 0,
+      "part_role": "Masonry",
+      "surface_kind": "Masonry",
+      "tint_role": "Masonry",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.43,
+        -0.31,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.43,
+        0.64,
+        0.231
+      ],
+      "bounds_min_unity": [
+        -0.43,
+        0.0,
+        -0.31
+      ],
+      "bounds_max_unity": [
+        0.43,
+        0.231,
+        0.64
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
     }
   ],
-  "build_signature": "3fff5efec42b67e97fe921c44bf22ec076523ae5dd6f0ddd87f6fd2a631c973a"
+  "build_signature": "43c0111050f9b485ee39bda0bfbf6ab70b609ce2bf7790334260b53ca9fe8eb6"
 }

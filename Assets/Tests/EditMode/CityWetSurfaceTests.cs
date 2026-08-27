@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -123,6 +124,99 @@ namespace BarPromenade.Tests.EditMode
                 0f);
             Assert.That(dryPuddle.Tint, Is.EqualTo(dry.Tint));
             Assert.That(dryPuddle.Smoothness, Is.EqualTo(dry.Smoothness));
+        }
+
+        [Test]
+        public void PuddlePlanner_PoolsOnlyOnTheLevelOpenPrecincts()
+        {
+            // The blueprint overload, not the legacy two-argument one:
+            // only this city has the yards, the cemetery terrace and
+            // the church ground that this planner pools on.
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+
+            var first = CityPuddlePlanner.CreateOpenGround(
+                layout,
+                layout.Seed);
+            var second = CityPuddlePlanner.CreateOpenGround(
+                layout,
+                layout.Seed);
+
+            Assert.That(first, Is.Not.Empty);
+            Assert.That(
+                first.Count,
+                Is.LessThanOrEqualTo(
+                    CityPuddlePlanner.MaximumOpenGroundPuddleCount));
+            Assert.That(second.Count, Is.EqualTo(first.Count));
+
+            var levelAreas = new HashSet<string>();
+            for (int index = 0;
+                 index < layout.OpenAreaAccesses.Count;
+                 index++)
+            {
+                levelAreas.Add(layout.OpenAreaAccesses[index].AreaId);
+            }
+
+            for (int index = 0; index < first.Count; index++)
+            {
+                RuntimeOrientedBox patch = first[index];
+                Assert.That(second[index].Center, Is.EqualTo(patch.Center));
+                Assert.That(second[index].Size, Is.EqualTo(patch.Size));
+                Assert.That(
+                    patch.Rotation,
+                    Is.EqualTo(Quaternion.identity),
+                    "Level ground has no direction to align a pool to.");
+                Assert.That(
+                    patch.Size.y,
+                    Is.EqualTo(CityPuddlePlanner.Thickness));
+
+                // Every pool must sit inside one level precinct cell,
+                // clear of the edge where the terrain skin starts
+                // ramping toward its neighbour.
+                bool insideALevelCell = false;
+                for (int s = 0; s < layout.Surfaces.Count; s++)
+                {
+                    CitySurfaceDescriptor surface = layout.Surfaces[s];
+                    if (!levelAreas.Contains(surface.AreaId) ||
+                        surface.IsWater ||
+                        surface.Kind == CitySurfaceKind.Beach ||
+                        surface.Kind == CitySurfaceKind.BuildableGround ||
+                        surface.Kind == CitySurfaceKind.ParkGround)
+                    {
+                        continue;
+                    }
+
+                    Rect bounds = surface.WorldBounds;
+                    if (patch.Center.x - (patch.Size.x * 0.5f) <
+                            bounds.xMin ||
+                        patch.Center.x + (patch.Size.x * 0.5f) >
+                            bounds.xMax ||
+                        patch.Center.z - (patch.Size.z * 0.5f) <
+                            bounds.yMin ||
+                        patch.Center.z + (patch.Size.z * 0.5f) >
+                            bounds.yMax)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(
+                        patch.Center.y,
+                        Is.EqualTo(
+                                surface.PhysicalTopY +
+                                CityPuddlePlanner.SurfaceOffset)
+                            .Within(1e-4f),
+                        $"Pool {index} does not lie on its own ground.");
+                    insideALevelCell = true;
+                    break;
+                }
+
+                Assert.That(
+                    insideALevelCell,
+                    Is.True,
+                    $"Pool {index} is not inside a level precinct cell.");
+            }
         }
 
         [Test]

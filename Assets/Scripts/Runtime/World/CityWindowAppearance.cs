@@ -41,6 +41,8 @@ namespace BarPromenade
             Shader.PropertyToID("_Color");
         private static readonly int BaseMapStId =
             Shader.PropertyToID("_BaseMap_ST");
+        private static readonly int GlobalNightFactorId =
+            Shader.PropertyToID("_CityWindowNightFactor");
 
         private static Texture2D texture;
         private static Material[] litMaterials;
@@ -131,6 +133,7 @@ namespace BarPromenade
         public static void SetNightFactor(float factor)
         {
             float clamped = Mathf.Clamp01(factor);
+            Shader.SetGlobalFloat(GlobalNightFactorId, clamped);
             if (clamped.Equals(nightFactor))
             {
                 return;
@@ -269,6 +272,7 @@ namespace BarPromenade
             }
 
             nightFactor = 1f;
+            Shader.SetGlobalFloat(GlobalNightFactorId, nightFactor);
         }
     }
 }

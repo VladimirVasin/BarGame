@@ -335,6 +335,12 @@ namespace BarPromenade
                 case CityDecorationKind.RoadsideDumpsterAndUtility:
                     miscKind = CityMiscKind.RoadsideDumpsterAndUtility;
                     return true;
+                case CityDecorationKind.RoadsideDrainAndCover:
+                    miscKind = CityMiscKind.RoadsideDrainAndCover;
+                    return true;
+                case CityDecorationKind.RoadsideCappedStandpipe:
+                    miscKind = CityMiscKind.RoadsideCappedStandpipe;
+                    return true;
                 case CityDecorationKind.ParkFountainAndStatue:
                     miscKind = CityMiscKind.ParkFountainAndStatue;
                     return true;
@@ -476,6 +482,10 @@ namespace BarPromenade
                 case CityMiscKind.ParkFountainAndStatue:
                 case CityMiscKind.ParkBandstand:
                 case CityMiscKind.ParkPlayground:
+                // Fixed-metre municipal ironwork: a drain is the size a
+                // drain is, whatever the lot behind it measures.
+                case CityMiscKind.RoadsideDrainAndCover:
+                case CityMiscKind.RoadsideCappedStandpipe:
                     return true;
                 default:
                     return false;
@@ -793,12 +803,44 @@ namespace BarPromenade
                 case CityDecorationKind.ParkPlayground:
                     BuildPlayground(context, parts);
                     break;
+                case CityDecorationKind.RoadsideDrainAndCover:
+                    BuildDrainAndCover(context, parts);
+                    break;
+                case CityDecorationKind.RoadsideCappedStandpipe:
+                    BuildCappedStandpipe(context, parts);
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(descriptor),
                         descriptor.Kind,
                         "Unsupported city decoration kind.");
             }
+        }
+
+        // The box fallbacks below only run if the Blender assembly is
+        // missing; both kinds normally take the imported path. They are
+        // deliberately the same measured metres as the generator so a
+        // fallback frame is not a different-sized object.
+        private static void BuildDrainAndCover(
+            RecipeContext c,
+            ICollection<DecorationPart> parts)
+        {
+            Add(parts, c, c.Primary, 0f, 0.014f, 0f, 0.80f, 0.028f, 0.56f);
+            Add(parts, c, c.Primary, 0f, 0.040f, 0f, 0.66f, 0.040f, 0.42f);
+            Add(parts, c, c.Primary, 0.62f, 0.022f, 0.10f,
+                0.41f, 0.044f, 0.41f);
+        }
+
+        private static void BuildCappedStandpipe(
+            RecipeContext c,
+            ICollection<DecorationPart> parts)
+        {
+            Add(parts, c, c.Primary, 0f, 0.025f, 0f, 0.72f, 0.050f, 0.62f);
+            Add(parts, c, c.Primary, 0f, 0.510f, 0f, 0.17f, 0.960f, 0.17f);
+            Add(parts, c, c.Primary, 0f, 1.000f, 0f,
+                0.215f, 0.044f, 0.215f);
+            Add(parts, c, c.Primary, 0f, 0.115f, 0.44f,
+                0.86f, 0.180f, 0.40f);
         }
 
         private static void BuildChimneys(

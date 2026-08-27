@@ -114,6 +114,54 @@
       "contrast": 60,
       "channelRatio": 1.0412,
       "sha256": "4AF39B259ED3B13BD314F8A679217292EECF7588E5E731BD20262865FD8D37DE"
+    },
+    {
+      "key": "BarExteriorBrickAlbedo",
+      "grammar": "bar_exterior_brick",
+      "resourcePath": "Bar/Textures/BarExteriorBrickAlbedo",
+      "meanLinearLuminance": 0.459949,
+      "albedoCompensation": 1.498,
+      "brightnessError": 0.069072,
+      "metersPerTile": 1.2,
+      "smoothness": 0.04,
+      "metallic": 0.0,
+      "exposure": 0.868121,
+      "tints": {
+        "bar_exterior.py.BRICK": [
+          0.3,
+          0.12,
+          0.075
+        ]
+      },
+      "edgeDelta": 1.6292,
+      "seamRatio": 0.4947,
+      "contrast": 70,
+      "channelRatio": 1.0918,
+      "sha256": "48BA773798EE8404AE3174D87322A30EC07447903F072B3CBBF7A9EFEA72720D"
+    },
+    {
+      "key": "BarExteriorPlasterAlbedo",
+      "grammar": "bar_exterior_plaster",
+      "resourcePath": "Bar/Textures/BarExteriorPlasterAlbedo",
+      "meanLinearLuminance": 0.480204,
+      "albedoCompensation": 1.4065,
+      "brightnessError": 0.013383,
+      "metersPerTile": 2.6,
+      "smoothness": 0.035,
+      "metallic": 0.0,
+      "exposure": 0.826433,
+      "tints": {
+        "bar_exterior.py.PLASTER": [
+          0.48,
+          0.44,
+          0.34
+        ]
+      },
+      "edgeDelta": 1.9604,
+      "seamRatio": 0.9848,
+      "contrast": 67,
+      "channelRatio": 1.0691,
+      "sha256": "7B712A7096C9845D97C03063E5703F3A39164E3EF58464948F16089B8D9BE68C"
     }
   ]
 }

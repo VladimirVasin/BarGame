@@ -21,6 +21,17 @@ namespace BarPromenade
         public const float DumpsterCoverageSpacingHousing = 65f;
         public const float DumpsterCoverageSpacingShowcase = 100f;
 
+        // The ground-level water network. Drains are ordinary municipal
+        // frequency — a walk should cross one without noticing. The
+        // capped standpipes are rare on purpose: they are what is left
+        // of a service the city gave up on, not street furniture, and
+        // one on every corner would read as a style instead of a
+        // failure.
+        public const float DrainMinimumSpacing = 34f;
+        public const float DrainCoverageSpacing = 52f;
+        public const float CappedStandpipeMinimumSpacing = 110f;
+        public const float CappedStandpipeCoverageSpacing = 150f;
+
         private const uint CoreKindSalt = 0x434F5245u;
         private const uint CoreVariantSalt = 0x43564152u;
         private const uint CorePaletteSalt = 0x4350414Cu;
@@ -184,15 +195,17 @@ namespace BarPromenade
                     (kindHash & 1u) != 0u);
                 CityDecorationAnchorKind anchorKind =
                     ResolveCoreAnchorKind(kind);
-                Vector3 forward = ResolveLotForward(
-                    layout.Seed,
-                    lot,
-                    CoreKindSalt);
+                Vector3 forward = CityBuildingPrototypePlacement
+                    .ResolveForward(lot);
                 Vector3 position = anchorKind ==
                     CityDecorationAnchorKind.BuildingRoof
-                    ? lot.Center +
-                      (Vector3.up * (lot.Height + 0.18f))
-                    : CreateFacadeAnchor(lot, forward);
+                    ? CityBuildingPrototypePlacement.ResolveRoofAnchor(
+                        lot,
+                        kind,
+                        0.18f)
+                    : CityBuildingPrototypePlacement.ResolveFacadeAnchor(
+                        lot,
+                        kindHash);
                 uint paletteHash = StableHash(
                     layout.Seed,
                     lot.Cell.x,
@@ -236,21 +249,31 @@ namespace BarPromenade
 
                 BuildingLot lot = SelectLandmarkLot(layout, district);
                 CityDecorationKind kind = ResolveLandmarkKind(district);
-                Vector3 forward = ResolveLotForward(
-                    layout.Seed,
-                    lot,
-                    LandmarkLotSalt);
-                Vector3 position = kind ==
-                    CityDecorationKind.NightlifeCinema
-                    ? CreateFacadeAnchor(lot, forward)
-                    : lot.Center +
-                      (Vector3.up * (lot.Height + 0.22f));
+                Vector3 forward = lot.IsOrdinaryBuilding
+                    ? CityBuildingPrototypePlacement.ResolveForward(lot)
+                    : ResolveLotForward(
+                        layout.Seed,
+                        lot,
+                        LandmarkLotSalt);
                 uint variantHash = StableHash(
                     layout.Seed,
                     lot.Cell.x,
                     lot.Cell.y,
                     LandmarkVariantSalt);
-
+                Vector3 position = kind ==
+                    CityDecorationKind.NightlifeCinema
+                    ? lot.IsOrdinaryBuilding
+                        ? CityBuildingPrototypePlacement.ResolveFacadeAnchor(
+                            lot,
+                            variantHash)
+                        : CreateFacadeAnchor(lot, forward)
+                    : lot.IsOrdinaryBuilding
+                        ? CityBuildingPrototypePlacement.ResolveRoofAnchor(
+                            lot,
+                            kind,
+                            0.22f)
+                        : lot.Center +
+                          (Vector3.up * (lot.Height + 0.22f));
                 target.Add(new CityDecorationDescriptor(
                     CreateDistrictId(layout.Seed, district, "landmark"),
                     kind,
@@ -660,6 +683,12 @@ namespace BarPromenade
             List<Vector3> dumpsterPositions = CollectKindPositions(
                 target,
                 CityDecorationKind.RoadsideDumpsterAndUtility);
+            List<Vector3> drainPositions = CollectKindPositions(
+                target,
+                CityDecorationKind.RoadsideDrainAndCover);
+            List<Vector3> standpipePositions = CollectKindPositions(
+                target,
+                CityDecorationKind.RoadsideCappedStandpipe);
             for (int index = 0; index < lots.Count; index++)
             {
                 BuildingLot lot = lots[index];
@@ -695,6 +724,32 @@ namespace BarPromenade
                     lot.District == CityDistrictKind.Industrial
                         ? DumpsterCoverageSpacingHousing
                         : DumpsterCoverageSpacingShowcase,
+                    fencePlan,
+                    nightPlan,
+                    target,
+                    occupiedGroundPositions);
+                TryAddUtilityCoverage(
+                    layout,
+                    lot,
+                    CityDecorationKind.RoadsideDrainAndCover,
+                    "utility-drain",
+                    side,
+                    drainPositions,
+                    DrainMinimumSpacing,
+                    DrainCoverageSpacing,
+                    fencePlan,
+                    nightPlan,
+                    target,
+                    occupiedGroundPositions);
+                TryAddUtilityCoverage(
+                    layout,
+                    lot,
+                    CityDecorationKind.RoadsideCappedStandpipe,
+                    "utility-standpipe",
+                    -side,
+                    standpipePositions,
+                    CappedStandpipeMinimumSpacing,
+                    CappedStandpipeCoverageSpacing,
                     fencePlan,
                     nightPlan,
                     target,

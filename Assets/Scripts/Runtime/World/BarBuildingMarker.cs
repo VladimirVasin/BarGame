@@ -40,11 +40,13 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Records the geometry the facade builder placed under this marker.
-        /// The first plate registered is the backing, which is what the
-        /// shared-material contract is read from.
+        /// Records geometry placed beneath this marker. The builder marks the
+        /// actual backing panel explicitly because generated bindings are
+        /// sorted by source name and a hanger may otherwise arrive first.
         /// </summary>
-        public void RegisterSignPart(GameObject part)
+        public void RegisterSignPart(
+            GameObject part,
+            bool isPanel = false)
         {
             if (part == null)
             {
@@ -58,7 +60,7 @@ namespace BarPromenade
             }
 
             signRenderers.Add(partRenderer);
-            if (panelRenderer == null)
+            if (isPanel || panelRenderer == null)
             {
                 panelRenderer = partRenderer;
             }

@@ -94,14 +94,16 @@ namespace BarPromenade
 
     /// <summary>
     /// Semantic metadata attached to one passive building-prototype wrapper.
-    /// Geometry remains authored in Blender; a later integration pass will
-    /// decide how a prototype is fitted to an ordinary City lot.
+    /// Geometry remains authored in Blender; runtime placement fits the
+    /// wrapper to an ordinary City lot through its stable front anchor.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CityBuildingAssetRegistry : MonoBehaviour
     {
         public const int ExpectedRoleCount = 6;
         public const int MaximumTriangleCount = 3500;
+        public const int MaximumWindowSlotId = 63;
+        public const int WindowSlotUv2Divisor = 256;
 
         private static readonly CityBuildingMeshRole[] ExpectedRoles =
         {
@@ -359,7 +361,9 @@ namespace BarPromenade
                     slot.Bay < 0 ||
                     slot.SizeMeters.x <= 0f ||
                     slot.SizeMeters.y <= 0f ||
-                    slot.Uv2SlotId < 0 ||
+                    slot.Uv2SlotId <= 0 ||
+                    slot.Uv2SlotId > MaximumWindowSlotId ||
+                    slot.Uv2SlotId != slot.SlotId ||
                     !slotIds.Add(slot.SlotId) ||
                     !uv2Ids.Add(slot.Uv2SlotId))
                 {

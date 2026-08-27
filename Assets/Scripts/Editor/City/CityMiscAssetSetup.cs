@@ -355,7 +355,10 @@ namespace BarPromenade.Editor
             }
 
             if (string.IsNullOrWhiteSpace(manifest.generator) ||
-                string.IsNullOrWhiteSpace(manifest.generator_version) ||
+                !string.Equals(
+                    manifest.generator_version,
+                    CityMiscAssetProvider.GeneratorVersion,
+                    StringComparison.Ordinal) ||
                 string.IsNullOrWhiteSpace(manifest.blender_version) ||
                 string.IsNullOrWhiteSpace(manifest.display_name) ||
                 !IsSha256(manifest.build_signature) ||
@@ -763,9 +766,32 @@ namespace BarPromenade.Editor
                 case CityMiscKind.PoiIndustrialWeighbridgeShell:
                 case CityMiscKind.PoiNightlifeLastRouteIslandShell:
                     return new[] { S("public_width", 15f, 10.8f, 16.2f, "X", "Y") };
+                case CityMiscKind.BarBuildingShell:
+                    return SpecialBuildingScaleParameters(
+                        12.2645f, 13.5237f, 9.3435f);
+                case CityMiscKind.SupermarketBuildingShell:
+                    return SpecialBuildingScaleParameters(
+                        15.5f, 15.5f, 6.4f);
+                case CityMiscKind.PlayerHomeBuildingShell:
+                    return SpecialBuildingScaleParameters(
+                        13f, 12f, 8.8f);
                 default:
                     return Array.Empty<ExpectedScaleParameter>();
             }
+        }
+
+        private static ExpectedScaleParameter[]
+            SpecialBuildingScaleParameters(
+                float frontageWidth,
+                float depth,
+                float height)
+        {
+            return new[]
+            {
+                S("lot_frontage_width", frontageWidth, 6f, 24f, "X"),
+                S("lot_depth", depth, 6f, 24f, "Y"),
+                S("lot_height", height, 4.5f, 14f, "Z")
+            };
         }
 
         private static ExpectedScaleParameter S(

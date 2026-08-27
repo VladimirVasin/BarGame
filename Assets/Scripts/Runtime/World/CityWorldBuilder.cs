@@ -487,9 +487,15 @@ namespace BarPromenade
                 false,
                 CityExteriorAppearance.RoadMarkingTextureTileSize,
                 CityExteriorAppearance.ApplyRoadMarkingSurface);
-            CityPuddleWorldBuilder.Build(
-                roads,
+            // Gutters and the flat open precincts pool separately but
+            // draw as one sheet: the yards, the cemetery terrace and
+            // the church ground are the only ground level enough for a
+            // six-millimetre slab to lie true on.
+            var puddles = new List<RuntimeOrientedBox>(
                 CityPuddlePlanner.Create(plan, layout.Seed));
+            puddles.AddRange(
+                CityPuddlePlanner.CreateOpenGround(layout, layout.Seed));
+            CityPuddleWorldBuilder.Build(roads, puddles);
         }
 
         private static void AddRoadGeometry(
@@ -877,48 +883,36 @@ namespace BarPromenade
                             : $"Building {lot.Cell.x}-{lot.Cell.y}").transform;
             building.SetParent(parent, false);
 
-            Color facadeColor =
-                CityExteriorAppearance.CreateNightFacadeColor(lot);
             float foundationDepth = ResolveBuildingFoundationDepth(
                 layout,
                 lot);
-            GameObject mass = RuntimePrimitiveFactory.CreateBox(
-                "Building Mass",
+
+            if (lot.IsOrdinaryBuilding)
+            {
+                CityBuildingPrototypeWorldBuilder.BuildCity(
+                    building,
+                    lot,
+                    citySeed,
+                    foundationDepth);
+                return;
+            }
+
+            if (lot.IsBar)
+            {
+                CitySpecialBuildingWorldBuilder
+                    .BuildBarCityInfrastructure(
+                        building,
+                        lot,
+                        foundationDepth);
+                BuildBarFront(building, lot, walkableArea, bars);
+                return;
+            }
+
+            CitySpecialBuildingWorldBuilder.BuildCity(
                 building,
-                lot.Center +
-                (Vector3.up *
-                 (lot.Height * 0.5f +
-                  CityFacadeGrid.MassBaseElevation -
-                  foundationDepth * 0.5f)),
-                new Vector3(
-                    lot.Size.x,
-                    lot.Height + foundationDepth,
-                    lot.Size.y),
-                facadeColor);
-            CityFacadeAppearance.Apply(
-                mass.GetComponent<Renderer>(),
                 lot,
                 citySeed,
-                facadeColor,
-                new CityFacadePlacement(
-                    CityFacadeGrid.FrontageRunsAlongX(lot)
-                        ? CityFacadeProjection.BoxZY
-                        : CityFacadeProjection.BoxXY,
-                    0f,
-                    CityFacadeGrid.MassBaseElevation));
-            Color roofColor = CityExteriorAppearance.Darken(
-                facadeColor,
-                0.055f);
-            GameObject roof = RuntimePrimitiveFactory.CreateBox(
-                "Roof",
-                building,
-                lot.Center + (Vector3.up * (lot.Height + 0.22f)),
-                new Vector3(lot.Size.x + 0.35f, 0.28f, lot.Size.y + 0.35f),
-                roofColor,
-                false);
-            CityFacadeAppearance.ApplyRoof(
-                roof.GetComponent<Renderer>(),
-                roofColor);
+                foundationDepth);
             BuildWindowBands(building, lot, citySeed);
 
             if (lot.IsPlayerHome)
@@ -942,15 +936,9 @@ namespace BarPromenade
                 return;
             }
 
-            if (!lot.IsBar)
-            {
-                return;
-            }
-
-            BuildBarFront(building, lot, walkableArea, bars);
         }
 
-        private static float ResolveBuildingFoundationDepth(
+        internal static float ResolveBuildingFoundationDepth(
             CityLayout layout,
             BuildingLot lot)
         {

@@ -6,6 +6,414 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-27 — The canonical bar becomes a complete old neighbourhood pub
+
+The interim three-role City misc bar shell and its generic Unity window bands
+were replaced by `bar_exterior_v2`, authored in the existing deterministic bar
+Blender pipeline. The fixed-metre `12.2645 x 13.5237 x 9.3435 m` exterior is a
+two-storey late-Victorian urban pub: old brick and faded render, a real pitched
+slate roof, two unequal chimneys, a lower service wing, bottle-green/oxblood
+faceted shopfront, individual upper sash windows, gutters/downpipes and the
+retained pictorial tankard. Generator `2.1.0` exports `38` passive meshes and
+`4,308` triangles with no imported colliders, lights, cameras or animation.
+Full-depth jamb returns close the recessed door itself, while two solid timber
+cheeks close the former `0.35–0.41 m` gaps between its central pilasters and
+the faceted bay frames. The new `Bar Outer Bay Flanking Panels` mesh closes the
+remaining `0.34 m` sightline at both outer bay edges, between the last frame and
+the end pilaster, so the empty shell cannot be seen from either side.
+The blade-sign anchor and its wall bracket sit on the solid pier beside the
+upper sashes rather than sharing a window axis.
+
+`CityBarFacadeWorldBuilder` now places that whole asset at unit scale from its
+unchanged `exterior_door` anchor, preserves the `sign_pivot` and
+`Bar Landmark Marker` hierarchy, binds dedicated brick/plaster/roof sheets and
+hands authored window panes to the existing bar day/night family. City retains
+a collider-free, box-projected `ExteriorBrick` foundation skirt, now lowered to
+the intended `0.04 m` overlap and inset `0.08 m` from the street and both side
+edges so it cannot z-fight with the authored shell. The renderer-free logical
+collision stays full-size; the entrance apron, trigger, transition and single
+established light/halo are unchanged.
+
+The full Home exterior reconstruction uses the same collider-free pub. A pub
+crossing the apartment half-space still receives the clipped legacy silhouette;
+hidden pubs are omitted. `CityMiscKind.BarBuildingShell` stays in the v4 catalog
+for compatibility but neither City nor the full Home path instantiates it.
+
+Verification: the Blender exterior validator passed with `38` parts and `4,308`
+triangles; the explicit `AreaCaptureFixture.CitySpecialBuildings` selection
+passed `1/1`, and its general bar frame, two opposing `1280 x 720` entrance
+close-ups, both outer bay edges and a low foundation view were reviewed. The
+focused
+`CityBuildingPrototypeRuntimeTests.DefaultCity_PlacesDistrictPrototypesAndClipsHomeExterior`
+selection passed `1/1`; the final
+`SceneFlowSmokeTests.CityScene_BarsHaveUniqueColliderFreeSignGeometry`
+selection also passed `1/1` after the sign-pier, full frontage closure and
+inset brick-foundation regressions were added. Full suites and a player build
+were intentionally not run in fast mode.
+
+## 2026-08-27 — The three low-rise City buildings move to Blender
+
+The bar, supermarket and player home now use dedicated Blender-authored
+shells instead of visible primitive masses and roofs. Each assembly exposes
+three passive roles (`Shell_Masonry`, `Roof_Street`, `Trim_Industrial`) and is
+bounded-scaled from a canonical source envelope to the existing procedural
+special lot. Their established low-rise height rules remain authoritative.
+
+`CitySpecialBuildingWorldBuilder` owns the shared City/Home placement path.
+It aligns source `+Z` to the true frontage, adds only a shallow terrain skirt
+and leaves the former building mass renderer-free as the logical collider.
+Existing window bands, signs, storefronts, doors, balcony, mailbox, triggers
+and transitions remain plan-owned Unity composition. Home projects the same
+model into apartment-local space: Full models are reused without colliders,
+Hidden models are omitted and Crossing models retain the legacy clipped
+fallback.
+
+The deterministic City misc source advanced to `city_misc_citywide_v4`:
+`64` kinds, `94` assemblies, `186` role meshes and `33,454` triangles under
+signature
+`10335b02af0035e0e9ec9f5da2726ade86f5d1d23fc43503e2022f8deb304397`.
+The wave-one and v2 compatibility signatures stayed unchanged.
+
+Verification: the full deterministic Blender build/validator passed and Unity
+rebound all `186` provider entries. The focused
+`CityBuildingPrototypeRuntimeTests` selection passed `1/1`, covering all three
+City shells, logical collision and the Home Full/Crossing/Hidden policy. The
+explicit `AreaCaptureFixture.CitySpecialBuildings` selection passed `1/1`;
+its three `1280 x 720` facade frames were reviewed for scale, terrain joins,
+legacy roof duplication and preserved frontage composition. Full suites and a
+player build were intentionally not run in fast mode.
+
+## 2026-08-27 — Fixed-metre Blender buildings entered the live City
+
+The four staged `city_buildings_prototypes_v1` wrappers now replace the visible
+primitive mass, roof and generic pane rows on every ordinary lot. Placement is
+front-anchor driven (`+Z` to frontage, anchor to door plus `0.08 m`) and never
+scales or detaches imported meshes. Unity retains only a shallow visible
+terrain skirt and the former renderer-free logical BoxCollider, preserving
+navigation, sound and special-building behavior.
+
+The combined unreadable glass role now consumes its authored UV2 slot IDs
+through one shared URP/PS1-snapped shader. A per-building 64-entry MPB table
+keeps deterministic Off/Cold/Warm choices and brightness variants under the
+existing global night factor without cloning meshes or creating pane objects.
+Because v1 UV0 spans the complete glass role, the shader intentionally uses
+flat slot colours instead of pretending to address the old 2x2 curtain sheet.
+
+Roof and facade decoration anchors moved from randomized logical heights and
+depths to kind-specific fixed prototype mounts derived from the authored roof
+planes. The two v1 roofs without a large flat pad deliberately bed the clock
+tower/greenhouse into their host geometry; nothing is placed at an empty
+attachment-bounds centre. Home maps the same City pose into its
+local frame: hidden models are omitted, whole exterior models remain intact,
+and only a model crossing the apartment half-space uses the legacy clipped
+silhouette. Bar, supermarket and player-home composition remains unchanged.
+
+Verification: the focused
+`BarPromenade.Tests.EditMode.CityBuildingPrototypeRuntimeTests` selection
+passed `1/1`. The explicit `AreaCaptureFixture.City` selection also passed
+`1/1`; all three `1280 x 720` frames were reviewed for prototype scale,
+frontage placement, missing terrain joins, duplicate primitive masses and
+slot-window lighting. Full suites and a player build were intentionally not
+run in fast mode.
+
+## 2026-08-27 — The city that dies of its water finally shows some
+
+The landscape analysis named this the strongest single addition available:
+a city built as a watershed, whose whole plot turns on what was poured into its
+supply, had **no visible water infrastructure on the ground anywhere** — no
+grate, no gutter drain, no valve cover, no standpipe outside the one Old Town
+waterworks court. The facades already promise it (art bible §6: «кабели,
+водостоки и трубы образуют многолетнюю сеть») and the downpipes terminate in
+nothing.
+
+Two Blender assemblies now exist. **`RoadsideDrainAndCover`** is a gutter grate
+— frame, five bars — bedded in concrete beside a round valve lid set apart the
+way a valve chamber always is; nothing rises above `56 mm`. **`RoadsideCappedStandpipe`**
+is a street column **welded shut**: base flange, `0.96 m` shaft, a weld bead and
+a cap plate run over the top, the spout cut off and blanked, the chain that held
+the cup still on its eye, and the trough it fed left dry at its foot. It is the
+same municipal grammar as the working waterworks court at the other end of the
+pipe, which is the whole point — one is used, this one was given up on, years
+before the hero and for its own reasons. It is also, quietly, his cover.
+
+The coupling I had assumed turned out to be weaker than reported: the analysis
+said a ground fixture needs a new `CityDecorationAnchorKind`, but **`Roadside`
+is already the non-lot anchor** and a colonka historically stands at the kerb
+anyway. So this shipped with no anchor work at all. And because both are flush,
+their collision tier is `None` — no proxy recipe, no `BoxCollider`, and not one
+line of walkable-mask work.
+
+The chain, end to end: `tools/build-city-misc-3d-model.py` gains two
+`build_*` functions in the modern `local_*` / `root_local_direct` profile,
+appended to `make_assemblies` (never inserted — both compatibility signatures
+cover prefixes, and both came back unchanged). Catalogue `94 → 96` assemblies,
+`186 → 190` meshes, `33,454 → 34,062` triangles against a `240,000` budget;
+`GENERATOR_VERSION` `4.0.0 → 4.1.0`. `CityMiscAssetProvider` gains the two
+`CityMiscKind` values, the bumped constants and a `StreetMasonryParts` layout;
+`CityMiscAssetSetup.RunBatch` rebound the asset headlessly and its
+`buildSignature` matches the manifest's `43c01110…`. Then two
+`CityDecorationKind` values, the `Roadside` district/anchor contract, protection
+radii, `TryResolveImportedKind`, the fixed-metre branch of
+`TryResolveImportedTransform`, box fallbacks authored at the generator's own
+metres, and a planner pass reusing the existing `TryAddUtilityCoverage` helper
+— drains at `34/52 m` spacing, capped standpipes at `110/150 m`, rare on
+purpose because one on every corner reads as a style instead of a failure.
+
+Verification: `CityDecorationPlannerTests` 11/11, including a new
+`ShippedCity_PutsTheWaterNetworkOnTheGround` that proves the shipped city
+actually plans both kinds, on the right anchor, at tier `None`, with the
+standpipes rarer than the drains — a silent non-placement is exactly the failure
+this kind of pass invites. `CityMiscAssetTests` 5/6, the sixth being the
+neighbour's. Broad `BarPromenade.Tests.EditMode.City` sweep: **569 tests, 565
+passed**, and the four reds are byte-identical in name to the four from the
+sweep taken *before* any of this session's work — all four belong to the
+parallel Blender buildings migration.
+
+## 2026-08-27 — Landscape pass: standing water off the road, a bed with grain, a denser dead port
+
+Three items out of a nine-item landscape analysis. Each is small, each closes a
+gap the analysis named, and each is green.
+
+**Puddles now pool off the carriageway.** `CityPuddlePlanner.Create` only ever
+walked `streetPlan.StreetGeometry`, so a game whose subject is water had no
+standing water in the yards, on the cemetery terrace or on the church ground.
+The blocker is real and is why this was never trivial: a puddle is a flat
+`6 mm` slab and the buildable ground carries the valley's cross-fall — up to
+`5.44 %`, which is `17 cm` across a three-metre pool, one end buried and the
+other in the air. So the new `CreateOpenGround` pass takes only the ground that
+is provably level: `AlignOpenAreasToAccesses` pins **every** cell of an area
+declaring a street access to that one access datum, so the fringe yards, the
+cemetery and the church ground are dead flat by construction. Each candidate is
+inset `4 m` from its cell edge, because only the interior is flat — the terrain
+skin ramps toward whatever the neighbour sits at. Park and beach are excluded
+by kind: the park keeps its emptiness and the sand slopes to the waterline.
+`MaximumOpenGroundPuddleCount = 16` on top of the road cap of `42`, and both
+lists draw as the one existing sheet, so this costs no draw call. The street
+pass and its signature are untouched, which keeps
+`PuddlePlanner_IsDeterministicAndKeepsPatchesBounded` and its "left its source
+road surface" assertion meaningful.
+
+**The sea bed has grain.** "Sea Bed Shelf" was combined boxes in flat
+`Silt (0.10,0.10,0.085)` with no texture, read through the water's `1.4 m`
+depth fade along all `442 m` of shore — the first thing the eye meets at the
+waterline. It now carries the seacoast sand sheet on world-planar XZ UVs at the
+shore's own pitch, keeping the silt tint: the linear compensation rule
+preserves the brightness, so this adds grain without lifting the bed out of the
+dark.
+
+**The dead port is denser and reaches inland.** The city blames this place for
+killing it — it is the hero's alibi — and it was twelve stations in a
+three-metre strip along the old quay line, one item every `12 m`, with twenty
+metres of bare sand behind them. Now eighteen stations over a band reaching
+`10.6 m` back instead of `5.2 m`. Still one item per seventy-odd square metres:
+dense enough to read as a yard, far too sparse to be the scrapyard the art
+bible bans. The band still starts north of the shore lane, so nothing blocks
+the esplanade walk.
+
+Verification: 74 passed, 0 failed across `CitySound*`, `CityWetSurface*`,
+`CityPuddleWater*`, `CitySeacoast*`, `SeacoastFisherman*` and
+`CityPedestrianSeacoast*`. A new `PuddlePlanner_PoolsOnlyOnTheLevelOpenPrecincts`
+proves every pool sits inside one level precinct cell at exactly that cell's
+own `PhysicalTopY + SurfaceOffset`. It cost one failed run first, for the
+reason worth repeating: **the two-argument `CityLayoutGenerator.Generate` is
+the legacy overload and has no yards, cemetery or church at all** — the
+blueprint overload is the only one that builds the city this planner pools on.
+
+A broader `BarPromenade.Tests.EditMode.City` sweep (568 tests) showed four reds,
+none of them from this work: `CityChessTableGeometryTests` (batch renamed to
+`Imported ...`), `CityMiscAssetTests` (81 → 83 meshes),
+`CityMapAreaPresentationTests`, and the `homeyard-booth` ground sample in
+`CityWindDressingPlannerTests` — the last already recorded as a known
+pre-existing red. All four belong to systems a **parallel session** is actively
+migrating to Blender (`CityMiscAssetProvider`, `CityMiscAssetSetup`,
+`CityDecorationPlanner`, `CityMisc3D.json` are all dirty in its name). The
+usual stash-and-rerun proof was attempted and had to be abandoned: with another
+session editing the same tree, stashing this session's files left the project
+uncompilable and blocked the pop, because that session had meanwhile changed
+`CityWorldBuilder.cs` too. Recovery was per-file `git checkout stash@{0} -- …`
+for the nine uncontested files plus a manual re-apply on top of their version
+of the tenth. **Do not run a stash baseline probe while a neighbour is editing
+the tree.**
+
+## 2026-08-27 — The park swing creaks, and the causal soundscape is complete
+
+`ParkSwingCreak` was the most obviously reserved empty slot in the repo: the cue
+existed, was synthesised, routed, given a district and a `ParkPlayground` owner,
+marked `RequiresPhysicalTrigger` and allowed by the park's profile — and nothing
+ever emitted it. Two tests actively pinned it absent, with the reason written
+into the assertion: *"A swing cue needs a real motion binding first."* The seats
+have been honest hinged rigid bodies pushed by any `CharacterController` since
+they were built. Only the binding was missing.
+
+`CityPlaygroundSwing` now watches the seat's signed pace along its own push axis
+in `FixedUpdate`, keeps the peak of the current half-swing, and raises
+`CreakOccurred` when that pace crosses zero — **the top of the arc, not the
+bottom**, because that is where the load reverses and a rope actually complains;
+firing at the fastest point would put the sound under the pivot, where a rope is
+quietest. A `MinimumCreakSpeed` of `0.55 m/s` gates it, which is also what makes
+a swing go quiet on its own: the arc decays, the peak falls under the gate, and
+the creaking stops before the motion does.
+
+`CitySoundscapeAnchorPlanner.AddPlaygrounds` anchors the descriptor to the beam
+at `RopeAnchorY`, inside an envelope squared off on the wider of the top beam and
+twice `SeatReach` so it holds every point the plank can reach — the integration
+test requires the emitter to sit inside the fixture that emits it, and the
+runtime plays from the moving seat. `CitySoundscapeDirector` subscribes to the
+swings exactly as it subscribes to the carpet-beating babushkas, plays through
+the existing `TryPlayPhysicalAction` with the seat as the position override, and
+unsubscribes in `OnDestroy`. `CityGameRoot` finds the swings under `World.Root`
+rather than being handed them: they are built inside the decoration pass and are
+the only moving physical owner the root does not create itself.
+
+The city plan now carries **11 sources, 3 of them triggered**, and every cue in
+the catalogue has a physical owner. `ai/systems-map.md`'s causal-soundscape row
+loses its stated gap and moves from `Partial` to `Current`.
+
+Verification: `CitySoundscapeIntegrationTests` — 3 passed, and the whole
+`CitySound*` EditMode set — **23 passed, 0 failed**. `BarPromenade.EditModeTests`
+also builds clean through the Unity-bundled SDK
+(`Editor/Data/DotNetSdk/dotnet.exe`, which is the one carrying an SDK; the
+`NetCoreRuntime` copy is runtime-only).
+
+Three environment traps cost most of this session and are worth writing down.
+Unity batchmode first died on `[Licensing::Module] Error: Failed to handshake to
+channel`, which was **not** a licence problem: the licence is present and valid
+at `%LOCALAPPDATA%\Unity\licenses\UnityEntitlementLicense.xml`, and the client
+log names the real fault — `Unsupported protocol version '1.18.3'`. A stale
+`Unity.Licensing.Client` from `Program Files\Unity Hub\UnityLicensingClient_V1`
+(**version 1.17.4**, up for two days) was holding the
+`Unity-LicenseClient-tushk-6000.5.10` pipe and bouncing the editor's own 1.18.3
+client. Killing it clears the handshake; Hub respawns it, so this will recur
+until Hub itself is updated. Second, `Unity.exe` is a GUI-subsystem binary, so
+`&` does not block and `$LASTEXITCODE` comes back empty — it needs
+`Start-Process -Wait -PassThru`. Third, **`-quit` must not be combined with
+`-runTests`**: the editor exits before the Test Framework runs and reports
+success with no results file.
+
+## 2026-08-27 — The story bible: the game is about alcoholism
+
+`ai/city-story-bible.md` (1,749 lines, 26 sections, 38 `Нельзя` and 31
+`Проверка`) is the peer to `ai/city-zones-art-bible.md`: the art bible owns
+form, this one owns meaning. It keeps the art bible's register and conventions —
+hard-wrapped Russian, `Короткая формула:`, append-only numbering, and a
+`Нельзя` / `Проверка` pair closing every section about a place, a character or
+a mechanism.
+
+**The subject is the hero's alcoholism; the poisoning is the plot.** He killed
+the woman he lived with, carried what a body becomes up the mountain to the
+alpine village he is from, and poured it into the spring that feeds the city.
+Two weeks pass. He drinks nothing but alcohol because he is the one person who
+knows the water kills — and thirst makes stopping impossible, so the thing
+destroying him is the only thing keeping him alive.
+
+The machine closes on itself without a line of dialogue. The city's one bar
+shuts for good because there is nobody left to drink there; there is nobody left
+because he buried them; thirst sends him to his own tap; he drinks what he
+poured into the spring, and **the player presses the key**, an ordinary
+interaction with no cutscene and no warning, exactly as they did for every drink
+before it. Then the debris on the stairwell's sealed upper flight is gone, the
+Cat walks ahead, the bar door waits at the top presented as gates, there is
+nothing behind them, and he does not get up. The staircase is not delirium: it
+is what everyone he buried saw before they went down. Black screen; nothing is
+explained.
+
+Two more symmetries fall out of the same decisions and cost nothing to build.
+The first glass of water in the game is poured by his mother in the prologue and
+he drinks it without noticing; the last he pours himself, and does not notice
+either. And the one pedestrian the city already ships in a single copy, with his
+own headlamp burning outside the city's schedule "because a person switched it
+on", is a miner — from the mine up the mountain where the hero's father died.
+The game never says so.
+
+That single decision collapses the world model into one rule: **everything
+strange in the game is his.** The six-armed bartender, the cashier's
+eighteen-metre neck, the mouthless Длиннорукий, the kettle head, the hopping
+miner — none of it is the poison and none of it is metaphor; it is what a man
+four months into this sees. The citizens are ordinary, nobody ever reacts, and
+that absence of reaction is how the player reads the world. Three things are
+real: the water is poisoned, people die of it, and he buries them for `150`
+apiece. A grave is the only object in the game that cannot be doubted, because
+he dug it with his hands.
+
+Almost none of it needs building, which is the point of §2. The intoxication
+ladder, the six stages, the balance arc above `60`, the real fall on 13 bodies,
+the nine-drink menu where **water is the cheapest item and the only lethal
+one**, the flat the README already calls an old alcoholic's — all shipped. So
+is the standpipe court (a fenceless working waterworks, the lower end of the
+pipe), the Cat's grin switched off behind `SetGrinProgress`, the gravedigger
+who is paid per hole by a watchman who *always has another one* — now explained
+by the epidemic — and the stairwell's **sealed upper flight from `3.2` to
+`4.8 m`**, which is the staircase into the sky the finale walks up.
+
+Structure: a village prologue plus five city acts over about two game weeks.
+The prologue opens with him already at the table — dinner with his fading
+mother, who asks after that girl, speaks of his father in the present tense
+because she cannot hold when it was, and does not register the one time he says
+«Я сделал нечто плохое». Then the chapel, where **the player sees the pour in
+full**: the only thing the game ever shows directly, ten minutes in, before the
+player knows what it was. The murder is never shown.
+
+The gravedigging is the moral engine. The watchman *always has another hole* —
+already true in the code, now explained by an epidemic — and the six-to-eight
+people going into them are the city's own built cast. Each has a real errand
+(medicine, find someone, get them to the one feldsher in town); some live after
+it, some were already lost, and it is never knowable which. He understands
+exactly what killed each one and says nothing, and when the woman's turn comes
+he carries her wrapped through the city at the height of the epidemic — nobody
+looks, because everyone is carrying bodies — and drops her in without a coffin,
+a stone, a plaque or the eight words he writes for strangers at `150` apiece.
+When someone dies, **everything of theirs stays except them**: the lamp on the
+pier rail still burns, the rod is still against the end board, the stool by the
+lodge door is still there. That cashes the art bible's six families of
+round-the-clock practicals, written long before this story, as literal fact.
+
+New geometry for the entire story is two things: the village and the sealed
+room in his flat, whose free pocket at `X ∈ [-0.10, 1.46]`, `Z ∈ [0.82, 3.65]`
+reuses the bathroom's west partition and must be built outside the validated
+catalogue (the `HomeAlarmClockPlan` precedent) so the count assertions in
+`HomeInteriorLayoutValidator` and `PlayerHomeLayoutTests` stay intact.
+
+The one conflict is recorded in `ai/architecture-notes.md` rather than resolved
+quietly: the art bible bans mysticism in five place sections and §Статус left
+the supernatural undefined. Those bans now describe **level `0-1`** of an
+act-driven, monotone, never-displayed `0-5` scale, and above it a ban lifts
+only by name and by level through a seven-entry registry in §6. The permanent
+list never lifts, and every level must still pass all nine of the art bible's
+§16 checks. The art bible's §Статус points at the story bible and states the
+rule; nothing else in it was touched.
+
+Verification: every quoted line checked verbatim against
+`Assets/Resources/Localization/ru.json`; every claimed world fact checked
+against the file that builds it; no line over 80 characters outside tables; 28
+locked decisions in §24 and a §25 that keeps the remaining blanks blank —
+narrative order stays deliberately open, because a fractured chronology would
+force a redesign of the scale, the decay track and the act ladder at once, all
+three of which assume time runs one way.
+
+§23 lists honestly what does not exist: act structure and saving, the scale, the
+irreversible decay track, thirst as a fourth need, a dialogue system, the roster
+with its errands and deaths, removing a dead NPC without touching anything
+around them, the Cat outside the stairwell, the sealed room, the body's journey
+through the city, the village, the opened flight, the final fall with no rise,
+and removing the starting `999`. No code was changed and no test was touched.
+
+**Both bibles are now binding, not merely discoverable.** Registering the story
+bible in `ai/README.md` made it findable; nothing obliged anyone to follow it,
+and the art bible had the same gap — neither was named in `AGENTS.md`, and
+`AI.md` mentioned the art bible once, in prose, about the chess exception. So
+`AGENTS.md` gains a `## World canon` section stating which document owns form
+and which owns meaning, and the procedure that makes them enforceable: before
+adding a detail, find the `Нельзя` it would violate — none means allowed, one
+dated in the story bible's §6 registry means allowed from that level, and one
+absent from the registry means **the detail is not added** and the discussion
+becomes whether to add a registry row. New in-fiction text must satisfy §21,
+§16's laws are hard, every scale level must still pass all nine art-bible §16
+checks, and a deviation needs an explicit user decision recorded in
+`ai/architecture-notes.md` — the same escalation `ai/contextual-animation-
+standard.md` already uses. `AI.md` carries the matching Working-agreement
+bullet, and the source-of-truth order gains both bibles as a new rank 4, above
+planning documents and below accepted decisions.
+
 ## 2026-08-27 — The first four City building prototypes are staged in Blender
 
 The ordinary-building migration now has a deliberately non-runtime foundation:

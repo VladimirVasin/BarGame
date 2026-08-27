@@ -8,6 +8,34 @@ These instructions apply to the entire repository.
 2. Inspect the actual project before trusting planned documentation.
 3. Keep current facts separate from proposed architecture.
 
+## World canon
+
+Two documents govern everything the player sees, hears, reads or does in the
+world. Read both before adding or altering any of it.
+
+- `ai/city-zones-art-bible.md` owns **form**: mass, silhouette, facade,
+  material, palette, light, traces of life, sound.
+- `ai/city-story-bible.md` owns **meaning**: the crime, the hero, the poisoning
+  scale, the Cat, what each built place signifies, and the register every
+  written line must keep.
+
+Rules:
+
+- Before adding a detail, find the `Нельзя` it would violate. None → allowed.
+  One dated to a level in the story bible's §6 registry → allowed from that
+  level. One that is not in the registry → **the detail is not added**, and the
+  discussion is about adding a registry row, not about the detail.
+- The story bible's §16 «Законы сюжета» are hard constraints, not guidance.
+- Any new in-fiction text — `Assets/Resources/Localization/{ru,en}.json`
+  included — must satisfy the story bible's §21 «Регистр текста».
+- Every level of the story bible's `0-5` scale must still pass all nine art
+  bible §16 acceptance checks.
+- A deviation from either bible requires an explicit user decision recorded as
+  an accepted architecture exception in `ai/architecture-notes.md`. The same
+  rule already governs `ai/contextual-animation-standard.md`.
+- Update the relevant bible when its facts change, exactly as for the documents
+  listed under Quality and documentation.
+
 ## Host power state
 
 - Never put the user's PC into sleep mode unless the user explicitly requests
@@ -63,6 +91,8 @@ These instructions apply to the entire repository.
   also compiles its dependencies; do not require compilation plus both Unity
   test layers for every change.
 - Update `ai/project-overview.md`, `ai/system-tree.md`, or `ai/systems-map.md` when their facts change.
+- Update `ai/city-zones-art-bible.md` or `ai/city-story-bible.md` when their
+  facts change; see World canon above for how they bind a change.
 - Record meaningful implementation sessions in `ai/work-log.md`.
 - Put player-visible milestones in `ai/release-notes.md`.
 - Keep `README.md` in step with player-visible reality. It is the only

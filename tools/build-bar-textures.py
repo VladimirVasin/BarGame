@@ -1,15 +1,14 @@
 #!/usr/bin/env python3
-"""Build the deterministic surface albedos for the worn bar interior.
+"""Build deterministic surface albedos for the bar interior and exterior.
 
-Four seamless 1024x1024 sheets, imported by Unity at 512, tiled by
-metres through `BarSurfaceAppearance` exactly the way the home and
-supermarket pipelines do it. This is the Residential district's bar —
-a bar for people without money: trodden plank floor, old wallpaper
-over the panels, dark tired wood and upholstery rubbed to the weave.
+Six seamless 1024x1024 sheets, imported by Unity at 512. Four carry the
+worn Residential interior and two carry the old neighbourhood-pub exterior:
+small urban brick with no painted windows, and dirty patched whitewash.
 
 The whole measured contract is imported from `build-home-textures.py`
-and every sheet reuses an existing home grammar (planks, wallpaper,
-veneer, weave) — the worn look is the home look; that is the point.
+and the interior sheets reuse its established home grammars. The two exterior
+grammars remain here because their coursed brick and weather-exposed plaster
+belong to the pub, not to a generic room.
 """
 
 from __future__ import annotations
@@ -21,7 +20,7 @@ import json
 import sys
 from pathlib import Path
 
-from PIL import Image
+from PIL import Image, ImageDraw
 
 ROOT = Path(__file__).resolve().parents[1]
 DEFAULT_TEXTURE_DIR = ROOT / "Assets" / "Resources" / "Bar" / "Textures"
@@ -36,6 +35,153 @@ sys.modules["build_home_textures"] = home
 _home_spec.loader.exec_module(home)
 
 SHEET_SIZE = home.SHEET_SIZE
+
+
+def draw_exterior_brick(base: Image.Image, rng) -> Image.Image:
+    """Small stretcher-bond brick, periodic by construction.
+
+    The 128 x 64 px cell gives a deliberately old, fine urban course at the
+    sheet's 1.2 m pitch. Every line wraps; the albedo contains material grain
+    and repair only, never windows or architectural markings.
+    """
+    draw = ImageDraw.Draw(base)
+    brick_width = 128
+    course_height = 64
+    mortar = 5
+
+    for row in range(SHEET_SIZE // course_height):
+        y = row * course_height
+        offset = brick_width // 2 if row % 2 else 0
+        for column in range(-1, SHEET_SIZE // brick_width + 1):
+            x = column * brick_width + offset
+            tone = home.BASE + rng.randint(-15, 13)
+            home.wrap_rect(
+                draw,
+                (
+                    x + mortar,
+                    y + mortar,
+                    x + brick_width - mortar,
+                    y + course_height - mortar,
+                ),
+                tone,
+            )
+
+            # Fired flecks and chipped arrises survive the 512 import without
+            # turning the wall into a noisy damage decal.
+            for _ in range(rng.randint(1, 3)):
+                fleck_x = x + rng.randint(12, brick_width - 15)
+                fleck_y = y + rng.randint(11, course_height - 13)
+                fleck_width = rng.randint(3, 8)
+                home.wrap_rect(
+                    draw,
+                    (
+                        fleck_x,
+                        fleck_y,
+                        fleck_x + fleck_width,
+                        fleck_y + rng.randint(2, 4),
+                    ),
+                    tone + rng.choice((-22, -16, 12)),
+                )
+
+        mortar_tone = home.BASE + rng.randint(19, 28)
+        home.wrap_rect(
+            draw,
+            (0, y - mortar // 2, SHEET_SIZE, y + mortar // 2),
+            mortar_tone,
+        )
+        for column in range(-1, SHEET_SIZE // brick_width + 1):
+            x = column * brick_width + offset
+            home.wrap_rect(
+                draw,
+                (
+                    x - mortar // 2,
+                    y + mortar // 2,
+                    x + mortar // 2,
+                    y + course_height - mortar // 2,
+                ),
+                mortar_tone + rng.randint(-5, 4),
+            )
+
+    def soot_and_lime(layer_draw: ImageDraw.ImageDraw) -> None:
+        for _ in range(7):
+            x = rng.randrange(SHEET_SIZE)
+            y = rng.randrange(SHEET_SIZE)
+            home.wrap_ellipse(
+                layer_draw,
+                (x, y, x + rng.randint(80, 190), y + rng.randint(90, 240)),
+                fill=128 - rng.randint(7, 14),
+            )
+        for _ in range(5):
+            x = rng.randrange(SHEET_SIZE)
+            y = rng.randrange(SHEET_SIZE)
+            home.wrap_ellipse(
+                layer_draw,
+                (x, y, x + rng.randint(45, 130), y + rng.randint(35, 90)),
+                fill=128 + rng.randint(5, 10),
+            )
+
+    return home.soft_overlay(base, 18.0, soot_and_lime)
+
+
+def draw_exterior_plaster(base: Image.Image, rng) -> Image.Image:
+    """Weathered stucco/whitewash without concrete formwork marks."""
+    plaster = home.draw_whitewash(base, rng)
+    draw = ImageDraw.Draw(plaster)
+
+    # Thin trowel scars and small repairs keep the close read handmade. They
+    # remain sparse so the wall does not become a map of narrative damage.
+    for _ in range(18):
+        x = rng.randrange(SHEET_SIZE)
+        y = rng.randrange(SHEET_SIZE)
+        length = rng.randint(45, 150)
+        home.wrap_line(
+            draw,
+            (x, y, x + length, y + rng.randint(-3, 3)),
+            home.BASE + rng.randint(-10, 8),
+            width=rng.randint(1, 2),
+        )
+    for _ in range(4):
+        x = rng.randrange(SHEET_SIZE)
+        y = rng.randrange(SHEET_SIZE)
+        width = rng.randint(70, 170)
+        height = rng.randint(45, 120)
+        home.wrap_rect(
+            draw,
+            (x, y, x + width, y + height),
+            home.BASE + rng.randint(5, 13),
+        )
+        home.wrap_line(
+            draw,
+            (x, y + height, x + width, y + height),
+            home.BASE - rng.randint(11, 18),
+            width=2,
+        )
+
+    def runoff(layer_draw: ImageDraw.ImageDraw) -> None:
+        for _ in range(13):
+            x = rng.randrange(SHEET_SIZE)
+            y = rng.randrange(SHEET_SIZE)
+            width = rng.randint(5, 19)
+            length = rng.randint(80, 260)
+            steps = 4
+            for step in range(steps):
+                tone = 128 - 18 + step * 4
+                home.wrap_rect(
+                    layer_draw,
+                    (
+                        x,
+                        y + length * step // steps,
+                        x + width,
+                        y + length * (step + 1) // steps,
+                    ),
+                    tone,
+                )
+
+    return home.soft_overlay(plaster, 13.0, runoff)
+
+
+home.GRAMMARS["bar_exterior_brick"] = draw_exterior_brick
+home.GRAMMARS["bar_exterior_plaster"] = draw_exterior_plaster
 
 
 BAR_SHEET_SPECS: tuple[home.HomeSheetSpec, ...] = (
@@ -99,6 +245,34 @@ BAR_SHEET_SPECS: tuple[home.HomeSheetSpec, ...] = (
         tints=(
             ("BarInteriorWorldBuilder.Leather",
              (0.30, 0.035, 0.045)),
+        ),
+    ),
+    home.HomeSheetSpec(
+        key="BarExteriorBrickAlbedo",
+        grammar="bar_exterior_brick",
+        seed=0x42455842,
+        cast=(1.04, 0.99, 0.94),
+        mean_target=0.46,
+        meters_per_tile=1.2,
+        smoothness=0.04,
+        metallic=0.0,
+        tints=(
+            ("bar_exterior.py.BRICK",
+             (0.30, 0.12, 0.075)),
+        ),
+    ),
+    home.HomeSheetSpec(
+        key="BarExteriorPlasterAlbedo",
+        grammar="bar_exterior_plaster",
+        seed=0x42455850,
+        cast=(1.03, 1.00, 0.95),
+        mean_target=0.48,
+        meters_per_tile=2.6,
+        smoothness=0.035,
+        metallic=0.0,
+        tints=(
+            ("bar_exterior.py.PLASTER",
+             (0.48, 0.44, 0.34)),
         ),
     ),
 )

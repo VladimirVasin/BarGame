@@ -40,7 +40,7 @@ namespace BarPromenade.Editor
             "Assets/Resources/Materials/CityNoirEmission.mat";
 
         private const string ExpectedDesignId = "bar_interior_v2";
-        private const string ExpectedFacadeDesignId = "bar_facade_v1";
+        private const string ExpectedFacadeDesignId = "bar_exterior_v2";
         private const int MaximumTriangles = 24000;
         private const int MaximumRenderers = 200;
 
@@ -171,7 +171,7 @@ namespace BarPromenade.Editor
                         FacadeManifestPath, ExpectedFacadeDesignId),
                     FacadeModelPath,
                     FacadePrefabPath,
-                    "BarFacade3D");
+                    "BarExterior3D");
             }
             finally
             {

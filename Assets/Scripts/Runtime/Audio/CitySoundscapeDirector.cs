@@ -99,6 +99,8 @@ namespace BarPromenade
         private readonly List<DryingYardBabushkaPresentation>
             subscribedBabushkas =
                 new List<DryingYardBabushkaPresentation>();
+        private readonly List<CityPlaygroundSwing> subscribedSwings =
+            new List<CityPlaygroundSwing>();
         private readonly CitySoundProvenanceEntry[] provenance =
             new CitySoundProvenanceEntry[ProvenanceCapacity];
 
@@ -128,6 +130,7 @@ namespace BarPromenade
             CityLayout layout,
             IReadOnlyList<DryingYardBabushkaPresentation> babushkas,
             CityWeighbridgeNeedleController weighbridgeNeedle,
+            IReadOnlyList<CityPlaygroundSwing> playgroundSwings,
             Func<float> nightFactorProvider)
         {
             if (parent == null)
@@ -144,6 +147,7 @@ namespace BarPromenade
                 layout,
                 babushkas,
                 weighbridgeNeedle,
+                playgroundSwings,
                 nightFactorProvider);
             return director;
         }
@@ -154,6 +158,7 @@ namespace BarPromenade
             CityLayout layout,
             IReadOnlyList<DryingYardBabushkaPresentation> babushkas,
             CityWeighbridgeNeedleController needle,
+            IReadOnlyList<CityPlaygroundSwing> playgroundSwings,
             Func<float> nightProvider)
         {
             if (IsInitialized)
@@ -192,6 +197,7 @@ namespace BarPromenade
             BindLoopSources(plan.LoopingSources);
             StartSchedules(plan.ScheduledSources);
             SubscribeBabushkas(babushkas);
+            SubscribeSwings(playgroundSwings);
             IsInitialized = true;
         }
 
@@ -428,6 +434,27 @@ namespace BarPromenade
             }
         }
 
+        private void SubscribeSwings(
+            IReadOnlyList<CityPlaygroundSwing> swings)
+        {
+            if (swings == null)
+            {
+                return;
+            }
+
+            for (int index = 0; index < swings.Count; index++)
+            {
+                CityPlaygroundSwing swing = swings[index];
+                if (swing == null)
+                {
+                    continue;
+                }
+
+                swing.CreakOccurred += OnSwingCreak;
+                subscribedSwings.Add(swing);
+            }
+        }
+
         private void UpdateLoopVoices(
             float deltaTime,
             WindSample wind,
@@ -635,6 +662,21 @@ namespace BarPromenade
                 CitySoundPhysicalOwnerKind.ResidentialDryingYard,
                 CitySourceSoundId.DryingYardCarpetStrike,
                 strikePosition);
+        }
+
+        private void OnSwingCreak(CityPlaygroundSwing swing)
+        {
+            // Played from the plank rather than the beam: the seat is
+            // what the listener can see moving, and by the time the
+            // creak fires it is at the far end of its arc.
+            Vector3? seatPosition = swing != null
+                ? swing.SeatCenter
+                : (Vector3?)null;
+
+            TryPlayPhysicalAction(
+                CitySoundPhysicalOwnerKind.ParkPlayground,
+                CitySourceSoundId.ParkSwingCreak,
+                seatPosition);
         }
 
         private void TryPlayPhysicalAction(
@@ -887,6 +929,16 @@ namespace BarPromenade
             }
 
             subscribedBabushkas.Clear();
+            for (int index = 0; index < subscribedSwings.Count; index++)
+            {
+                CityPlaygroundSwing swing = subscribedSwings[index];
+                if (swing != null)
+                {
+                    swing.CreakOccurred -= OnSwingCreak;
+                }
+            }
+
+            subscribedSwings.Clear();
             for (int index = 0; index < loopVoices.Length; index++)
             {
                 loopVoices[index]?.Source?.Stop();

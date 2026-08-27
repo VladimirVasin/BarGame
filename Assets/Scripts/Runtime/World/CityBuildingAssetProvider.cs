@@ -132,6 +132,27 @@ namespace BarPromenade
                 prototype.Depth);
         }
 
+        public static Vector3 GetExpectedEnvelope(
+            CityDistrictKind district)
+        {
+            for (int index = 0; index < ExpectedPrototypes.Length; index++)
+            {
+                PrototypeSpec prototype = ExpectedPrototypes[index];
+                if (prototype.District == district)
+                {
+                    return new Vector3(
+                        prototype.FrontageWidth,
+                        prototype.Height,
+                        prototype.Depth);
+                }
+            }
+
+            throw new ArgumentOutOfRangeException(
+                nameof(district),
+                district,
+                "Only ordinary urban districts own prototypes.");
+        }
+
         public static bool IsSha256(string value)
         {
             if (string.IsNullOrWhiteSpace(value) || value.Length != 64)
@@ -229,6 +250,8 @@ namespace BarPromenade
 
                 CityBuildingAssetRegistry registry =
                     entry.Prefab.GetComponent<CityBuildingAssetRegistry>();
+                Bounds expectedRoof = CityBuildingPrototypePlacement
+                    .GetExpectedRoofAttachmentBounds(expected.District);
                 if (registry == null ||
                     !string.Equals(
                         registry.StableId,
@@ -242,7 +265,13 @@ namespace BarPromenade
                     !string.Equals(
                         registry.BuildSignature,
                         buildSignature,
-                        StringComparison.Ordinal))
+                        StringComparison.Ordinal) ||
+                    Vector3.Distance(
+                        registry.RoofAttachmentBounds.center,
+                        expectedRoof.center) > 0.003f ||
+                    Vector3.Distance(
+                        registry.RoofAttachmentBounds.size,
+                        expectedRoof.size) > 0.003f)
                 {
                     throw new InvalidOperationException(
                         $"City building prefab '{entry.StableId}' is stale.");

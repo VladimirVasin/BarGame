@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the whole bar interior from one Blender source.
+"""Build the bar interior and its complete old-pub exterior.
 
 Every visible thing in the bar - the shell, the counter, the backbar and
 its bottles, the booths, the stage, the tables and stools, the dressing,
@@ -50,8 +50,9 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402  (after the sys.path fix)
 import bar_parts as bp  # noqa: E402
+import bar_exterior as exterior  # noqa: E402
 
-GENERATOR_VERSION = "2.0.0"
+INTERIOR_GENERATOR_VERSION = "2.0.0"
 DESIGN_ID = "bar_interior_v2"
 DISPLAY_NAME = "Bar Promenade Bar Interior"
 
@@ -104,22 +105,6 @@ DEFAULT_MANIFEST = ROOT / "Assets" / "Bar" / "Models" / "Bar3D.json"
 FACADE_FBX = ROOT / "Assets" / "Bar" / "Models" / "BarFacade3D.fbx"
 FACADE_MANIFEST = (
     ROOT / "Assets" / "Bar" / "Models" / "BarFacade3D.json")
-FACADE_DESIGN_ID = "bar_facade_v1"
-
-#: The facade is authored ONCE, facing +X, and rotated into place by
-#: whichever way its lot fronts the street.  The primitive version
-#: instead carried two hand-written size triples per part - one for an
-#: X frontage and one for a Z frontage - which are the same box turned
-#: ninety degrees, written down twice and able to disagree.
-FACADE_TRIM = (0.84, 0.55, 0.18)
-FACADE_AWNING = (0.24, 0.018, 0.045)
-FACADE_DOOR = (0.055, 0.025, 0.022)
-SIGN_OUTLINE = (0.137, 0.071, 0.114)
-SIGN_FIELD = (0.357, 0.086, 0.169)
-SIGN_PALE = (0.976, 0.914, 0.722)
-SIGN_DRINK = (0.871, 0.545, 0.165)
-CANOPY_WIDTH = 2.85
-SIGN_PIVOT = (0.74, 3.42, 0.0)
 
 #: Sheet -> the metres-per-tile it is measured at, from
 #: `ArtSource/Bar/bar-textures.json` and read back by
@@ -132,6 +117,9 @@ SHEET_PITCH = {
     "Wallpaper": 1.8,
     "DarkWood": 1.1,
     "WornLeather": 0.9,
+    "ExteriorBrick": 1.2,
+    "ExteriorPlaster": 2.6,
+    "CityRoof": 4.0,
     "": 1.0,
 }
 
@@ -140,6 +128,9 @@ PREVIEW_COLORS = {
     "Wallpaper": (0.29, 0.075, 0.075, 1.0),
     "DarkWood": (0.075, 0.024, 0.017, 1.0),
     "WornLeather": (0.30, 0.035, 0.045, 1.0),
+    "ExteriorBrick": (0.30, 0.12, 0.075, 1.0),
+    "ExteriorPlaster": (0.48, 0.44, 0.34, 1.0),
+    "CityRoof": (0.095, 0.105, 0.115, 1.0),
     "": (0.34, 0.29, 0.13, 1.0),
     "emissive": (1.0, 0.62, 0.28, 1.0),
 }
@@ -1057,81 +1048,29 @@ def build_activities(asset: AssetBuild, materials: dict) -> None:
 
 
 def build_facade(materials: dict) -> AssetBuild:
-    """The bar's street identity: door, canopy, bracket and blade sign.
-
-    Authored in its own frame with the street direction along +X and the
-    frontage across +Z, at the door's own position. The runtime turns it
-    to face whichever way the lot fronts.
-
-    Nothing here collides. The bar's entrance trigger belongs to
-    `CityWorldBuilder`, and always has.
-    """
-    collection = bpy.data.collections.new("Facade")
+    """The complete two-storey pub, authored once around its front door."""
+    collection = bpy.data.collections.new("Exterior")
     bpy.context.scene.collection.children.link(collection)
-    root = bpy.data.objects.new("ROOT_BarFacade3D", None)
+    root = bpy.data.objects.new("ROOT_BarExterior3D", None)
     root.empty_display_type = "PLAIN_AXES"
     collection.objects.link(root)
     asset = AssetBuild(root, collection)
 
-    add_part(
-        asset, materials, "Bar Door",
-        bp.u_box((0.045, 1.05, 0.0), (0.12, 2.1, 1.45), 0.014),
-        "facade_door", bp.rgb(*FACADE_DOOR), sheet="DarkWood")
-    for side in (-1, 1):
+    for recipe in exterior.build_parts():
         add_part(
-            asset, materials, f"Bar Door Frame {'Left' if side < 0 else 'Right'}",
-            bp.u_box((0.10, 1.14, side * 0.86), (0.18, 2.35, 0.16), 0.012),
-            "facade_trim", bp.rgb(*FACADE_TRIM))
-    add_part(
-        asset, materials, "Bar Door Header",
-        bp.u_box((0.10, 2.30, 0.0), (0.18, 0.22, 2.05), 0.012),
-        "facade_trim", bp.rgb(*FACADE_TRIM))
-    add_part(
-        asset, materials, "Bar Entrance Canopy",
-        bp.u_box((0.38, 2.52, 0.0), (0.82, 0.18, CANOPY_WIDTH), 0.016),
-        "facade_trim", bp.rgb(*FACADE_TRIM))
-    add_part(
-        asset, materials, "Bar Entrance Canopy Inset",
-        bp.u_box((0.40, 2.46, 0.0),
-                 (0.82 * 0.88, 0.18 * 0.55, CANOPY_WIDTH * 0.88), 0.012),
-        "facade_awning", bp.rgb(*FACADE_AWNING))
-    add_part(
-        asset, materials, "Bar Sign Bracket",
-        bp.u_box((0.34, 4.10, 0.0), (1.25, 0.10, 0.10), 0.008),
-        "facade_trim", bp.rgb(*FACADE_TRIM))
+            asset,
+            materials,
+            recipe.name,
+            recipe.geometry,
+            recipe.role,
+            recipe.tint,
+            group=recipe.group,
+            sheet=recipe.sheet,
+            emissive=recipe.emissive,
+            shadows=recipe.shadows)
 
-    #  The blade sign, authored around its own pivot so the runtime can
-    #  hang it off the marker the way it always has.
-    sign = "pivot:Bar Landmark Marker"
-    for label, along in (("Inner", -0.30), ("Outer", 0.30)):
-        add_part(
-            asset, materials, f"Bar Sign Hanger {label}",
-            bp.u_box((along, 0.46, 0.0), (0.06, 0.30, 0.05), 0.006),
-            "sign_part", bp.rgb(*SIGN_OUTLINE), group=sign, shadows=False)
-    for name, size, tint in (
-        ("Bar Sign Panel", (0.90, 0.70, 0.10), SIGN_OUTLINE),
-        ("Bar Sign Panel Frame", (0.84, 0.64, 0.12), FACADE_TRIM),
-        ("Bar Sign Panel Field", (0.72, 0.52, 0.13), SIGN_FIELD),
-    ):
-        add_part(
-            asset, materials, name,
-            bp.u_box((0.0, 0.0, 0.0), size, 0.008),
-            "sign_part", bp.rgb(*tint), group=sign, shadows=False)
-
-    for name, offset, size, tint in (
-        ("Bar Sign Tankard", (-0.05, 0.0, 0.0), (0.26, 0.34, 0.15), SIGN_PALE),
-        ("Bar Sign Tankard Fill", (-0.05, -0.04, 0.0), (0.18, 0.20, 0.16),
-         SIGN_DRINK),
-        ("Bar Sign Tankard Handle", (0.13, -0.02, 0.0), (0.09, 0.18, 0.14),
-         SIGN_PALE),
-    ):
-        add_part(
-            asset, materials, name,
-            bp.u_box(offset, size, 0.006),
-            "sign_part", bp.rgb(*tint), group=sign, shadows=False)
-
-    add_anchor(asset, "Door", "facade_door", (0.0, 0.0, 0.0))
-    add_anchor(asset, "SignMarker", "sign_pivot", SIGN_PIVOT)
+    add_anchor(asset, "Door", "exterior_door", exterior.DOOR_ANCHOR)
+    add_anchor(asset, "SignMarker", "sign_pivot", exterior.SIGN_PIVOT)
     return asset
 
 
@@ -1152,12 +1091,118 @@ def validate_facade(asset: AssetBuild) -> None:
                 f"'{part.name}' has inverted normals "
                 f"(signed volume {volume:.5f})")
 
+    required_roles = {
+        "exterior_masonry",
+        "exterior_plaster",
+        "exterior_roof",
+        "exterior_wood",
+        "exterior_window_ground",
+        "exterior_window_upper_warm",
+        "exterior_window_upper_dark",
+        "exterior_door",
+        "exterior_metal",
+        "sign_part",
+    }
+    roles = {part.role for part in asset.parts}
+    for role in sorted(required_roles - roles):
+        problems.append(f"the exterior has no '{role}' geometry")
     if not any(part.group.startswith("pivot:") for part in asset.parts):
-        problems.append("the facade has no hanging sign")
+        problems.append("the exterior has no hanging sign")
+
+    reveal = next(
+        (part for part in asset.parts
+         if part.name == "Bar Entrance Reveal Panels"),
+        None)
+    if reveal is None:
+        problems.append("the recessed entrance has no reveal panels")
+    else:
+        reveal_low, reveal_high = kit.bounds(reveal.geometry)
+        # Geometry is in Blender source space: source Y is Unity Z and
+        # source Z is Unity Y. Both jambs must bridge from the recessed door
+        # to behind the projecting trim and pilasters on both sides of the
+        # opening without burying the cream frames.
+        if reveal_low[0] > -0.23 or reveal_high[0] < 0.095 or \
+                reveal_low[1] > -1.005 or reveal_high[1] < 1.005 or \
+                reveal_high[2] < 2.77:
+            problems.append(
+                "the entrance reveals no longer seal the recessed portal")
+
+    flanks = next(
+        (part for part in asset.parts
+         if part.name == "Bar Entrance Flanking Panels"),
+        None)
+    if flanks is None:
+        problems.append("the entrance has no flanking infill panels")
+    else:
+        flank_low, flank_high = kit.bounds(flanks.geometry)
+        # The panels bridge the open strips between the inner pilasters and
+        # the faceted bay returns. Source Y is Unity Z; source Z is Unity Y.
+        if flank_low[0] > -0.065 or flank_high[0] < 0.225 or \
+                flank_low[1] > -1.635 or flank_high[1] < 1.635 or \
+                flank_low[2] > 0.225 or flank_high[2] < 3.135:
+            problems.append(
+                "the entrance flanking panels no longer close the shopfront")
+
+    outer_flanks = next(
+        (part for part in asset.parts
+         if part.name == "Bar Outer Bay Flanking Panels"),
+        None)
+    if outer_flanks is None:
+        problems.append("the outer bay edges have no flanking panels")
+    else:
+        outer_vertices, _ = outer_flanks.geometry
+        for side in (-1, 1):
+            side_vertices = [
+                vertex for vertex in outer_vertices
+                if vertex[1] * side > 0.0
+            ]
+            side_low, side_high = kit.bounds((side_vertices, []))
+            common_gap = (
+                side_low[0] > -0.135 or side_high[0] < 0.075 or
+                side_low[2] > 0.225 or side_high[2] < 3.135
+            )
+            frontage_gap = (
+                side < 0 and
+                (side_low[1] > -5.53 or side_high[1] < -5.14)
+            ) or (
+                side > 0 and
+                (side_low[1] > 5.14 or side_high[1] < 5.53)
+            )
+            if not side_vertices or common_gap or frontage_gap:
+                problems.append(
+                    "the outer bay flanking panels no longer close both "
+                    "shopfront edges")
+                break
+
+    fixed = [
+        part.geometry for part in asset.parts
+        if not part.group.startswith("pivot:")
+    ]
+    low, high = kit.bounds(kit.merge_all(fixed))
+    if low[0] > -exterior.DEPTH + 0.20 or high[0] < 0.9:
+        problems.append(
+            "the exterior no longer spans its rear service wing and canopy")
+    # `Part.geometry` is already in Blender source space here: Unity Y/Z
+    # arrive as source Z/Y respectively.
+    if high[2] > exterior.HEIGHT + 0.001:
+        problems.append(
+            f"the exterior is {high[2]:.4f} m high against its "
+            f"{exterior.HEIGHT:.4f} m envelope")
+    if high[2] < exterior.HEIGHT - 0.01:
+        problems.append(
+            f"the chimney pots stop at {high[2]:.4f} m instead of "
+            f"{exterior.HEIGHT:.4f} m")
+    # Repair skins and rain goods may sit up to eight centimetres proud of
+    # the masonry footprint; the roof and structural shell stay inside it.
+    if low[1] < -exterior.HALF_WIDTH - 0.08 or \
+            high[1] > exterior.HALF_WIDTH + 0.08:
+        problems.append(
+            f"the exterior spans Z {low[1]:.4f}..{high[1]:.4f} against "
+            f"+/-{exterior.HALF_WIDTH:.4f}")
 
     if problems:
         raise SystemExit(
-            "Bar facade failed validation:\n  " + "\n  ".join(problems))
+            "Bar exterior failed validation:\n  " + "\n  ".join(problems))
 
 
 # ------------------------------------------------------------ build ---
@@ -1264,12 +1309,14 @@ def validate(asset: AssetBuild) -> None:
 def signature_for(
     asset: AssetBuild,
     design_id: str = DESIGN_ID,
+    generator_version: str = INTERIOR_GENERATOR_VERSION,
 ) -> str:
+    used_sheets = sorted({part.sheet for part in asset.parts})
     payload = {
         "design_id": design_id,
-        "generator_version": GENERATOR_VERSION,
+        "generator_version": generator_version,
         "sheet_pitch": {
-            key: stable(value) for key, value in sorted(SHEET_PITCH.items())
+            key: stable(SHEET_PITCH[key]) for key in used_sheets
         },
         "parts": [
             {
@@ -1324,29 +1371,43 @@ def write_manifest(
     asset: AssetBuild,
     path: Path,
     design_id: str = DESIGN_ID,
+    *,
+    generator_version: str = INTERIOR_GENERATOR_VERSION,
+    display_name: str = DISPLAY_NAME,
+    dimensions: Sequence[float] = (ROOM_WIDTH, ROOM_DEPTH, ROOM_HEIGHT),
+    wall_thickness: float = WALL_THICKNESS,
+    door_opening: Sequence[float] = (DOOR_WIDTH, ROOM_HEIGHT),
+    unity_outward_axis: str = "-Z",
+    activity_kinds: Sequence[str] = ACTIVITY_KINDS,
+    district_moods: Sequence[str] = DISTRICT_MOODS,
 ) -> dict:
     merged = kit.merge_all([part.geometry for part in asset.parts])
     low, high = kit.bounds(merged)
     manifest = {
         "generator": "tools/build-bar-3d-model.py",
-        "generator_version": GENERATOR_VERSION,
+        "generator_version": generator_version,
         "blender_version": bpy.app.version_string,
         "design_id": design_id,
-        "display_name": DISPLAY_NAME,
+        "display_name": display_name,
         "dimensions_m": {
-            "width": ROOM_WIDTH, "depth": ROOM_DEPTH, "height": ROOM_HEIGHT,
+            "width": dimensions[0],
+            "depth": dimensions[1],
+            "height": dimensions[2],
         },
-        "wall_thickness_m": WALL_THICKNESS,
-        "door_opening_m": {"width": DOOR_WIDTH, "height": ROOM_HEIGHT},
+        "wall_thickness_m": wall_thickness,
+        "door_opening_m": {
+            "width": door_opening[0],
+            "height": door_opening[1],
+        },
         "blender_forward_axis": "-Y",
-        "unity_entrance_outward_axis": "-Z",
+        "unity_entrance_outward_axis": unity_outward_axis,
         "runtime_wrapper_yaw_degrees": 0.0,
         "colliders": False,
         "lights": False,
         "cameras": False,
         "animation_count": 0,
-        "activity_kinds": list(ACTIVITY_KINDS),
-        "district_moods": list(DISTRICT_MOODS),
+        "activity_kinds": list(activity_kinds),
+        "district_moods": list(district_moods),
         "bounds_min": [stable(value) for value in low],
         "bounds_max": [stable(value) for value in high],
         "mesh_count": len(asset.parts),
@@ -1360,7 +1421,10 @@ def write_manifest(
             for name, anchor in sorted(asset.anchors.items())
         ],
         "parts": [manifest_part(part) for part in asset.parts],
-        "build_signature": signature_for(asset, design_id),
+        "build_signature": signature_for(
+            asset,
+            design_id,
+            generator_version),
     }
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(
@@ -1417,7 +1481,17 @@ def main() -> None:
     manifest = write_manifest(interior, args.manifest)
     export_fbx(interior, args.fbx)
     facade_manifest = write_manifest(
-        facade, FACADE_MANIFEST, FACADE_DESIGN_ID)
+        facade,
+        FACADE_MANIFEST,
+        exterior.DESIGN_ID,
+        generator_version=exterior.GENERATOR_VERSION,
+        display_name=exterior.DISPLAY_NAME,
+        dimensions=(exterior.WIDTH, exterior.DEPTH, exterior.HEIGHT),
+        wall_thickness=exterior.WALL_THICKNESS,
+        door_opening=(exterior.DOOR_WIDTH, exterior.DOOR_HEIGHT),
+        unity_outward_axis="+X",
+        activity_kinds=(),
+        district_moods=())
     export_fbx(facade, FACADE_FBX)
     args.blend.parent.mkdir(parents=True, exist_ok=True)
     bpy.ops.wm.save_as_mainfile(filepath=str(args.blend))
@@ -1426,7 +1500,7 @@ def main() -> None:
         f"{manifest['triangle_count']} triangles, "
         f"signature {manifest['build_signature'][:12]}.")
     print(
-        f"Bar facade written: {facade_manifest['mesh_count']} parts, "
+        f"Bar exterior written: {facade_manifest['mesh_count']} parts, "
         f"{facade_manifest['triangle_count']} triangles, "
         f"signature {facade_manifest['build_signature'][:12]}.")
 

@@ -932,6 +932,31 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   seated contract and lost it when he was authored standing, on the rule that
   an unused declared contract is worse than none. This one is used by the only
   design that declares it and is read by the runtime that seats him.
+- **Accepted architecture exception — the art bible's prohibitions describe a
+  scale level, not an absolute:** `ai/city-story-bible.md` makes the
+  supernatural explicit, which `ai/city-zones-art-bible.md` §Статус had left
+  deliberately undefined and which several place sections ban outright
+  («никакой мистики» at the cemetery, the mourner, the watchman, the fisherman
+  and the church). Rather than weaken those bans, they are re-read as
+  describing **level `0-1`** of the story bible's `0-5` scale, which is the
+  city exactly as it ships today — strange pedestrians, six-armed bartender
+  and eighteen-metre cashier neck included. The explanation the story bible
+  supplies is not supernatural at all: **everything strange in the game is the
+  hero's, because the game is about his alcoholism.** The citizens are
+  ordinary and nobody ever reacts to any of it, which is the single rule the
+  player uses to read the world. Above level 1 a ban is lifted only by name,
+  dated to a level, in the story bible's §6 registry, and nowhere else; seven
+  entries exist and the permanent list (skeletons, blood, monsters, sirens,
+  cults, otherworld transitions, rust-as-aesthetic, daytime flickering
+  lanterns, local fog, screamers) is never lifted at any level. The binding
+  constraint is that **every level must still pass all nine of the art bible's
+  own §16 acceptance checks**, so a level change alters the behaviour of
+  objects already standing and almost never their form. The scale is driven by
+  acts, is monotone, and is never displayed. `ai/README.md` carries the story
+  bible at status `Planned`; the art bible's §Статус now points at it and
+  states the level-`0` rule. This follows the precedent below: a ban is
+  replaced by a positive statement of what it was protecting, in writing,
+  rather than quietly ignored.
 - **Accepted architecture exception — there are pieces on the boards, and
   they are in the starting position:** `ai/city-zones-art-bible.md` §10 listed
   «фигуры на досках» among the things the chess set may not have, next to a
@@ -1482,17 +1507,20 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   outside this wave: the first already owns bespoke batched geometry and the
   other three have terrain, span or dynamic-renderer coupling.
 - **Accepted — City misc is one citywide role-mesh library, not world
-  prefabs:** final design `city_misc_citywide_v3` contains `61` semantic kinds,
-  `91` assemblies and `177` role meshes (`32,642` triangles) under build
+  prefabs:** final design `city_misc_citywide_v4` contains `64` semantic kinds,
+  `94` assemblies and `186` role meshes (`33,454` triangles) under build
   signature
-  `3fff5efec42b67e97fe921c44bf22ec076523ae5dd6f0ddd87f6fd2a631c973a`.
+  `10335b02af0035e0e9ec9f5da2726ade86f5d1d23fc43503e2022f8deb304397`.
   The provider resolves kind, stable variant and semantic role; the affected
   builders then place or combine those meshes from their existing plans. The
   catalog spans the 24-family decoration layer and parks, street lamps and
   traffic housings, Route 01 shelters/poles, the eastern yard, cemetery,
   seacoast, fringe service belt and the static shells of all four district
-  points of interest. Per-assembly roots and fixed metre-scale bounds are part
-  of the manifest contract. The earlier wave-one and v2 subsets remain frozen
+  points of interest, plus the supermarket and player-home shells. The former
+  `BarBuildingShell` remains addressable but unused so the v4 catalog and its
+  compatibility signature do not change under a separate bar-art milestone.
+  Per-assembly roots and fixed metre-scale bounds are part of the manifest
+  contract. The earlier wave-one and v2 subsets remain frozen
   by compatibility signatures
   `dd2e814d906fd2c7a7855c6d75ee54fe912ebb90f7cd02633c95c558d752f9f6`
   and `8ec3ffe04ffbcfba94cbf708d9c8263afbe853aeea4ffdeabfe638857a043193`.
@@ -1500,8 +1528,48 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   dynamics, interactions, realtime lights and halos, cloth and NPCs. Tilted
   cemetery monuments deliberately stay on the legacy builder because their
   non-rigid tilt is outside the rigid assembly-placement contract.
-- **Accepted — Ordinary-building prototypes are staged before runtime
-  replacement:** design `city_buildings_prototypes_v1` is one deterministic,
+
+  The supermarket and player-home assemblies expose `Shell_Masonry`,
+  `Roof_Street` and `Trim_Industrial` at source envelopes
+  `15.5 x 15.5 x 6.4 m` and `13 x 12 x 8.8 m`.
+  `CitySpecialBuildingWorldBuilder` applies only bounded envelope scale to the
+  generated special lot and aligns source `+Z` to its frontage. Unity retains
+  their shallow terrain skirt, renderer-free logical mass, windows, storefront
+  or balcony dressing, doors, triggers and transitions. Home maps the same pose
+  into apartment-local space and uses the shared Full/Crossing/Hidden policy.
+
+- **Accepted — The canonical bar is one complete fixed-metre pub exterior:**
+  design `bar_exterior_v2` replaces both the City misc `BarBuildingShell` and
+  generic window bands for the standard City bar and every fully visible Home
+  reconstruction. The existing shared bar generator exports this colliderless,
+  lightless model at its authored `12.2645 x 13.5237 x 9.3435 m`
+  width/depth/height envelope and unit runtime scale. Its two-storey
+  late-Victorian urban form owns the masonry/render shell, pitched slate roof,
+  unequal chimneys, lower service wing, bottle-green/oxblood faceted shopfront,
+  individual sash windows, gutters/downpipes, a fully closed recessed
+  door/canopy portal and pictorial tankard as one passive asset. The current
+  export is `38` passive meshes / `4,308` triangles. Inner entrance cheeks,
+  one recessed flank panel at each outer bay edge and full-depth jamb returns
+  form one seam-closure contract: no oblique street view may expose the empty
+  shell. It adds no
+  country name, brewery text, flag or other
+  in-fiction writing.
+
+  Source local `+X` faces the street and the origin remains the gameplay door.
+  `CityBarFacadeWorldBuilder` aligns the imported `exterior_door` anchor to the
+  unchanged lot door and retains the `sign_pivot`/`Bar Landmark Marker`
+  contract. Unity still owns a collider-free foundation skirt with metre-scaled
+  box-projected `ExteriorBrick`; its visible front and side faces sit `0.08 m`
+  inside the authored shell to prevent coplanar flicker. The separately
+  plan-owned logical collider remains full-size. Unity also retains the
+  entrance apron, trigger, transition and the single established bar
+  light/halo. Home reuses the whole model without colliders
+  when it is fully exterior, omits it when hidden and keeps the legacy clipped
+  silhouette only for a half-space crossing; imported topology is never cut or
+  non-uniformly scaled. The v4 City misc bar shell remains catalogued but is not
+  instantiated.
+- **Accepted — Ordinary buildings use fixed-metre district prototypes:**
+  design `city_buildings_prototypes_v1` is one deterministic,
   fixed-metre Blender source with four district grammars: Old Town's
   `FragmentedPerimeter` at `14 x 13.5 x 42 m`, Residential's
   `SetbackCourtyard` at `11.5 x 11.5 x 40 m`, Industrial's
@@ -1520,16 +1588,37 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Unity wraps the four roots in passive Resources prefabs and binds them
   through `CityBuildingAssetProvider`. Each `CityBuildingAssetRegistry`
   preserves the fixed envelope, front anchor, roof and four facade attachment
-  bounds, plus `194` explicit window slots whose UV2 IDs reserve a later
-  per-pane appearance channel. This is an asset boundary, not a completed
-  world migration: neither `CityWorldBuilder` nor `HomeExteriorViewBuilder`
-  loads the provider. The live City therefore keeps its primitive masses,
-  roofs and pane rows. A separate integration decision must still align the
-  authored frontage and terrain foundation, bind the six roles to
-  `CityFacadeAppearance` and `CityWindowAppearance`, reconcile logical
-  `BuildingLot` bounds with collision, sound occlusion and decoration
-  attachments, and decide how the bounded Home exterior clips imported
-  topology at its half-space.
+  bounds, plus `194` explicit window slots. `CityWorldBuilder` now selects the
+  matching wrapper for every ordinary lot, rotates authored `+Z` to the lot's
+  frontage, aligns `FrontAnchor` to `DoorPosition + 0.08 m`, and never changes
+  scale or the imported hierarchy. A shallow Unity foundation skirt closes
+  terrain variation below the Blender shell. The old mass survives only as a
+  renderer-free BoxCollider with the exact former lot/foundation envelope, so
+  navigation, sound occlusion and special buildings keep their authority.
+
+  Role renderers use shared materials and MPBs. The combined non-readable
+  `WindowGlass` mesh decodes `(slotId + 0.5) / 256` from UV2 and indexes a
+  64-entry per-building state table produced by the existing district window
+  rules. It preserves per-pane Off/Cold/Warm choice, a four-step brightness
+  variant, the shared day/night factor and PS1 vertex snap. It deliberately
+  does not sample the old 2x2 curtain sheet: v1 glass UV0 is normalized over
+  the combined role rather than per pane, so claiming exact quadrants would
+  be false. Roof decorations use kind-specific fixed mounts derived from the
+  Blender generator's actual gables, decks and sawtooth planes; the Old Town
+  clock base and Residential greenhouse deliberately bed into their roofs
+  because v1 has no separate flat pads. Facade mounts and descriptor forward
+  share the prototype's actual frontage pose, including roadless lots.
+  `BuildingLot` remains the collision and planning envelope.
+
+  `HomeExteriorViewBuilder` maps that exact City pose into Home-local space
+  and classifies all eight padded prototype-bound corners against the
+  apartment half-space. A wholly hidden wrapper is omitted and a wholly
+  exterior wrapper is instantiated unchanged and collider-free. A crossing
+  wrapper alone keeps the previous bounds-clipped primitive silhouette: the
+  runtime never shears, scales or cuts the deliberately non-readable Blender
+  topology. The supermarket and player home follow the bounded special-shell
+  contract above; the bar follows its separate fixed-metre complete-exterior
+  contract.
 - **Accepted — The summit opens exactly once, and the opening is a
   terrain mask:** the terminal plateau carries a `MountainRoadBrinkDescriptor`
   on its own descriptor rather than on the terminal plan, because

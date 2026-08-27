@@ -36,6 +36,7 @@ namespace BarPromenade
             }
 
             AddFountains(layout, decorationPlan, sources);
+            AddPlaygrounds(layout, decorationPlan, sources);
             return CitySoundscapePlanner.Create(layout.Seed, sources);
         }
 
@@ -184,6 +185,66 @@ namespace BarPromenade
                     ownerBounds,
                     definition.MaxDistance,
                     CitySourceSoundPlayback.Loop,
+                    CitySoundScheduleInterval.None));
+            }
+        }
+
+        private static void AddPlaygrounds(
+            CityLayout layout,
+            CityDecorationPlan decorationPlan,
+            ICollection<CitySoundSourceDescriptor> target)
+        {
+            for (int index = 0;
+                 index < decorationPlan.Descriptors.Count;
+                 index++)
+            {
+                CityDecorationDescriptor decoration =
+                    decorationPlan.Descriptors[index];
+                if (decoration.Kind !=
+                    CityDecorationKind.ParkPlayground)
+                {
+                    continue;
+                }
+
+                CityDecorationWorldBuilder.GetDecorationFrame(
+                    layout,
+                    decoration,
+                    out Vector3 origin,
+                    out _,
+                    out _);
+
+                // The creak belongs to the beam, not to the plank: that
+                // is where the rope is tied and where it takes the load
+                // back. The seat's own position arrives at play time as
+                // the override, so this only has to be the fixture's
+                // honest resting anchor.
+                Vector3 position = origin +
+                    Vector3.up * CityPlaygroundGeometry.RopeAnchorY;
+
+                // A Bounds is axis aligned and the frame is not, so the
+                // envelope is squared off on the wider of the two spans.
+                // It has to hold every point the seat can reach as well
+                // as the beam, because the runtime plays from the seat.
+                float span = Mathf.Max(
+                    CityPlaygroundGeometry.TopBeamWidth,
+                    CityPlaygroundGeometry.SeatReach * 2f);
+                float top = CityPlaygroundGeometry.TopBeamY +
+                    (CityPlaygroundGeometry.TopBeamThickness * 0.5f);
+                var ownerBounds = new Bounds(
+                    origin + Vector3.up * (top * 0.5f),
+                    new Vector3(span, top, span));
+                CitySourceSoundDefinition definition =
+                    CitySourceSoundSynthesis.GetDefinition(
+                        CitySourceSoundId.ParkSwingCreak);
+                target.Add(new CitySoundSourceDescriptor(
+                    decoration.StableId + ".sound.swing-creak",
+                    CityDistrictKind.CentralPark,
+                    CitySoundPhysicalOwnerKind.ParkPlayground,
+                    CitySourceSoundId.ParkSwingCreak,
+                    position,
+                    ownerBounds,
+                    definition.MaxDistance,
+                    CitySourceSoundPlayback.OneShot,
                     CitySoundScheduleInterval.None));
             }
         }

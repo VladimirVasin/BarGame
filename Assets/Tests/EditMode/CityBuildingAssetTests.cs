@@ -98,6 +98,18 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.passive.cameras, Is.False);
             Assert.That(manifest.passive.materials, Is.False);
             Assert.That(manifest.passive.animation_count, Is.Zero);
+            Assert.That(manifest.uv2_encoding, Is.Not.Null);
+            Assert.That(manifest.uv2_encoding.channel_index, Is.EqualTo(1));
+            Assert.That(
+                manifest.uv2_encoding.scheme,
+                Is.EqualTo("u_centered_uint8"));
+            Assert.That(
+                manifest.uv2_encoding.divisor,
+                Is.EqualTo(
+                    CityBuildingAssetRegistry.WindowSlotUv2Divisor));
+            Assert.That(
+                manifest.uv2_encoding.zero_means,
+                Is.EqualTo("non_window_geometry"));
 
             int triangleTotal = 0;
             for (int index = 0; index < Expected.Length; index++)
@@ -613,6 +625,7 @@ namespace BarPromenade.Tests.EditMode
             public ContractUnityAxes unity_axes;
             public ContractRoot root_contract;
             public ContractPassive passive;
+            public ContractUv2Encoding uv2_encoding;
             public int prototype_count;
             public int mesh_count;
             public int triangle_count;
@@ -649,6 +662,15 @@ namespace BarPromenade.Tests.EditMode
             public bool cameras;
             public bool materials;
             public int animation_count;
+        }
+
+        [Serializable]
+        private sealed class ContractUv2Encoding
+        {
+            public int channel_index;
+            public string scheme;
+            public float divisor;
+            public string zero_means;
         }
 
         [Serializable]

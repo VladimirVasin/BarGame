@@ -323,6 +323,103 @@ namespace BarPromenade
                     continue;
                 }
 
+                if (lot.IsBar || lot.IsSupermarket)
+                {
+                    float foundationDepth = CityWorldBuilder
+                        .ResolveBuildingFoundationDepth(
+                            context.Layout,
+                            lot);
+                    CityBuildingExteriorFit specialFit =
+                        CitySpecialBuildingWorldBuilder
+                            .ClassifyHomeExterior(
+                                context,
+                                lot,
+                                foundationDepth);
+                    if (specialFit == CityBuildingExteriorFit.Hidden)
+                    {
+                        continue;
+                    }
+
+                    if (specialFit == CityBuildingExteriorFit.Full)
+                    {
+                        Transform specialBuilding = new GameObject(
+                            lot.IsBar
+                                ? $"Exterior Bar {lot.BarId}"
+                                : "Exterior Supermarket")
+                            .transform;
+                        specialBuilding.SetParent(buildings, false);
+                        if (lot.IsBar)
+                        {
+                            CitySpecialBuildingWorldBuilder
+                                .BuildBarHomeInfrastructure(
+                                    specialBuilding,
+                                    context,
+                                    lot,
+                                    foundationDepth);
+                            CityBarFacadeWorldBuilder.BuildHomeExterior(
+                                specialBuilding,
+                                context,
+                                lot);
+                        }
+                        else
+                        {
+                            CitySpecialBuildingWorldBuilder.BuildHomeExterior(
+                                specialBuilding,
+                                context,
+                                lot,
+                                foundationDepth);
+                            BuildWindowBands(
+                                specialBuilding,
+                                context,
+                                lot);
+                            CitySupermarketFacadeWorldBuilder
+                                .BuildHomeExterior(
+                                    specialBuilding,
+                                    context,
+                                    lot);
+                        }
+
+                        continue;
+                    }
+
+                    // Crossing special shells retain the clipped legacy
+                    // silhouette below. A non-readable imported mesh must
+                    // never be sheared at the apartment facade.
+                }
+
+                if (lot.IsOrdinaryBuilding)
+                {
+                    CityBuildingExteriorFit fit =
+                        CityBuildingPrototypeWorldBuilder
+                            .ClassifyHomeExterior(context, lot);
+                    if (fit == CityBuildingExteriorFit.Hidden)
+                    {
+                        continue;
+                    }
+
+                    if (fit == CityBuildingExteriorFit.Full)
+                    {
+                        Transform prototypeBuilding = new GameObject(
+                            $"Exterior Building {lot.Cell.x}-{lot.Cell.y}")
+                            .transform;
+                        prototypeBuilding.SetParent(buildings, false);
+                        CityBuildingPrototypeWorldBuilder
+                            .BuildHomeExterior(
+                                prototypeBuilding,
+                                context,
+                                lot,
+                                CityWorldBuilder
+                                    .ResolveBuildingFoundationDepth(
+                                        context.Layout,
+                                        lot));
+                        continue;
+                    }
+
+                    // A fixed-metre, non-readable Blender mesh is never
+                    // sheared at the apartment wall. Only this rare crossing
+                    // case retains the existing bounds-clipped silhouette.
+                }
+
                 Vector3 cityCenter =
                     lot.Center +
                     Vector3.up *
@@ -420,15 +517,7 @@ namespace BarPromenade
                     building,
                     context,
                     lot);
-                if (lot.IsBar)
-                {
-                    CityBarFacadeWorldBuilder
-                        .BuildHomeExterior(
-                            building,
-                            context,
-                            lot);
-                }
-                else if (lot.IsSupermarket)
+                if (lot.IsSupermarket)
                 {
                     CitySupermarketFacadeWorldBuilder
                         .BuildHomeExterior(
@@ -436,6 +525,9 @@ namespace BarPromenade
                             context,
                             lot);
                 }
+                // A crossing pub keeps this clipped legacy silhouette only.
+                // Stretch-clipping a pitched authored roof or chimney would
+                // visibly deform it at the apartment facade.
             }
         }
 
