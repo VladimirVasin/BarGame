@@ -151,8 +151,19 @@ namespace BarPromenade
 
             // Facing up the lane. The composition only works from the bottom
             // looking up, and that is the first thing an arrival should see.
+            //
+            // EXCEPT off the cabin, where he is standing on a `1.37 m` strip
+            // with a `0.64 m` drop off both long sides. The lane bears
+            // `19.9°` off the flight's own axis here, so pointing him up it
+            // walks him off the side of his own staircase after two metres and
+            // `0.48 m` down onto the pad - which he then cannot climb back.
+            // From the cabin he is turned down the steps; the lane is what he
+            // sees the moment he is off them.
+            Vector3 facing = ArrivalToken == AreaArrivalToken.Cableway
+                ? -Plan.Station.Cableway.LineForward
+                : Plan.SpawnForward;
             Player.GameObject.transform.rotation = Quaternion.LookRotation(
-                Plan.SpawnForward,
+                facing,
                 Vector3.up);
 
             CameraFollow = areaCamera.GetComponent<PlayerCameraFollow>();

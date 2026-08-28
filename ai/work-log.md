@@ -6,6 +6,71 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-28 — Four walls between the cabin and the village, and my test could not see any of them
+
+The player reported he could not leave the upper station. I fixed the walkable
+mask, shipped it, and he reported it again — **because the test I trusted walked
+the MASK and he was walking into COLLIDERS.** The mask is a polygon and knows
+nothing about furniture; the mountain's own site validator says that about
+itself in a comment I had read. The instrument that settled it in one run is the
+one the summit already had and the village did not:
+`AlpineVillageStationExitPlayModeTests` builds the real world and walks a real
+`CharacterController` at the foot of the lane, and its failure message names the
+metre it stops at.
+
+Four causes, each of which stops him on its own:
+
+- **The fence.** The previous entry closed the drive terminal's centre gate and
+  put the way through beside the strip - right for a terminal you ARRIVE at
+  across a yard. The village is one you LEAVE, so the same fence stood across
+  the whole exit with its gap at the far end: walking at the village he met the
+  rails broadside, slid their length and wedged on the end post `5.94 m` short.
+  Moving the gap inboard only walled off the steps, which are the only way down.
+  A barrier is drive-terminal furniture - the village has no yard, no freight
+  and no machinery, and the cabins carry no colliders - so the return terminal
+  now has none, and the "boarding closed" sign goes with it, being the summit's
+  sign about the summit's line.
+- **The pad was a table in the air.** `CreateStation` sets it `7 m` downhill of
+  the lane foot and forces its height to the foot's, and nothing flattened
+  anything underneath: `0.19 m` to `1.32 m` of air, edge lips of `0.34 m` to
+  `1.50 m` against a `0.28 m` step offset, ONE-WAY. The sampler now cuts the
+  station its own shelf, like the lane's and the plots'.
+- **The mask was square to the HILL, the station to the LINE** - `19.9°` apart.
+  It refused `3.71 m²` of real concrete at the corners and granted `7.59 m²` of
+  thin air off the sides. At the summit the two frames are the same pair of
+  vectors, which is exactly why no test ever saw it.
+- **He was turned the wrong way.** The arrival faced him up the lane, which
+  bears `19.9°` off the flight's axis - so two metres of walking straight took
+  him off the side of his own staircase and `0.48 m` down onto the pad, which
+  he could not then climb. Off the cabin he now faces down the steps.
+
+One more that was a bound rather than a sighting, and worth keeping: the shelf
+was `1.4 m` wide against a `2 m` terrain grid, and a shelf narrower than a cell
+is not reproduced at its own rim - the outward vertex bracketing the edge sits
+on the raw slope and drags the rim down by up to `0.16 m`, which on the slab is
+a `0.32 m` lip. `StationApron` is now the cell size, and the cell size lives in
+the sampler because the sampler is the contract.
+
+**And the canon rule.** The user set one: the city is overcast and foggy day and
+night, so every lighting fixture burns always. It is written into story bible
+§20 with a number - the day takes a third off a fixture, no more - and the
+village is explicitly out of scope, being canonically the one warm bright place.
+Writing it forced two corrections. My own first draft claimed the day differs
+from the night in visibility; it does not - `CityFogDensity` and
+`CityFarClipPlane` are written once and never touched by hour. And §19 held
+"light that does not go out" as a piece of EVIDENCE, which the law destroys: the
+evidence is now the emptiness under the lamp, not the lamp, and §8 was re-hinged
+onto that. The fixture-side implementation is NOT done - it crosses four
+lighting systems and eight art-bible entries that say lamps go dark by day, and
+it is not something to start blind at the end of a long session.
+
+Verification: EditMode **1780 passed, 3 failed** - the same `CityMiscAssetTests`
+catalog reds. PlayMode **4 passed**, including the new village exit. The two
+EditMode village tests were proved red first: on the hill frame the pad axes
+come back `-0.94` against `1.0`, and without the shelf the pad "stands 1.23 m
+clear of the ground". The exit test was red before the fence came out, naming
+the wedge. No player build; the hand pass is what settles whether it reads.
+
 ## 2026-08-28 — The station was invisible to the validator, and the hut was not the cut
 
 `MountainCablewayObstaclePlan` is the new one-list-two-readers piece: every

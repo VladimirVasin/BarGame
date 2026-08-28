@@ -371,11 +371,6 @@ namespace BarPromenade
             AlpineVillageLaneSample foot = lane.Sample(0f);
             Vector3 padCenter = foot.Position - uphill * StationSetback;
             padCenter.y = foot.Position.y;
-            var padArea = new MountainRoadTerminalRect(
-                padCenter,
-                right,
-                uphill,
-                StationPadSize);
 
             // The line leaves the village downhill and a little across, so it
             // does not run straight back down the lane the hero is about to
@@ -384,6 +379,27 @@ namespace BarPromenade
                 .normalized;
             Vector3 lineRight = Vector3.Cross(Vector3.up, lineForward)
                 .normalized;
+
+            // THE PAD IS SQUARE TO THE LINE, not to the hill, and getting that
+            // wrong was an invisible wall you could walk into while standing
+            // on visible concrete.
+            //
+            // `MountainCablewayWorldBuilder` poses the whole station with
+            // `LookRotation(plan.LineForward)` and lays every solid box on
+            // `LineRight`/`LineForward`, but this rectangle used to be built
+            // on `right`/`uphill` - and at the village those two frames are
+            // `19.9°` apart. `AlpineVillageWalkableArea` takes its pad rect
+            // from here, so the mask sat skewed across the concrete: it
+            // refused `3.71 m²` of real pad at all four corners, up to
+            // `1.35 m` deep, and granted `7.59 m²` of thin air off the sides.
+            // At the summit `MountainRoadTerminalPlanner` builds its rect from
+            // the line axes, which is why the two ends never disagreed in a
+            // test.
+            var padArea = new MountainRoadTerminalRect(
+                padCenter,
+                lineRight,
+                lineForward,
+                StationPadSize);
 
             Vector3 nearCable = padCenter +
                                 lineForward * 1.9f +

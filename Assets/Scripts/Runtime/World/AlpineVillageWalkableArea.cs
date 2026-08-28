@@ -173,6 +173,18 @@ namespace BarPromenade
                 ToXZ(pad.Forward),
                 pad.Size * 0.5f));
 
+            // The boarding strip runs off the FRONT of the pad and stands on
+            // its own apron, so the mask has to follow it out there. Without
+            // this the far half metre of the platform - and the whole apron -
+            // is a wall the hero walks into while standing on concrete.
+            MountainRoadTerminalRect apron =
+                station.Cableway.BoardingApronArea;
+            rects.Add(new OrientedRect(
+                ToXZ(apron.Center),
+                ToXZ(apron.Right),
+                ToXZ(apron.Forward),
+                apron.Size * 0.5f));
+
             // The pad sits behind the lane foot; join the two so the step off
             // the platform is not a hole in the mask.
             capsules.Add(new Capsule(
@@ -182,6 +194,25 @@ namespace BarPromenade
             capsules.Add(new Capsule(
                 ToXZ(pad.Center),
                 ToXZ(station.BoardingDockPosition),
+                1.6f));
+
+            // And a second way out, from the FOOT OF THE STEPS to the lane.
+            //
+            // The corridor above leaves the pad from its centre, so where it
+            // crosses the pad's village edge it admits a window barely half a
+            // metre wide once the capsule is inset for a body - on a nine
+            // metre edge, with the flattened shelf visibly running on past it.
+            // A hero coming down the flight is four metres to one side of
+            // that window and meets a wall he cannot see while standing on
+            // concrete. This is the lane the steps actually deliver him into.
+            capsules.Add(new Capsule(
+                ToXZ(
+                    pad.Center +
+                    station.Cableway.LineRight *
+                    station.Cableway.BoardingPlatformCenterOffset +
+                    station.Cableway.LineForward *
+                    station.Cableway.BoardingFenceForward),
+                ToXZ(plan.Lane.Start),
                 1.6f));
         }
 

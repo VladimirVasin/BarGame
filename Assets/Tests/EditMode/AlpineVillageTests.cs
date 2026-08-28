@@ -416,5 +416,177 @@ namespace BarPromenade.Tests.EditMode
                     out _),
                 Is.False);
         }
+
+        /// <summary>
+        /// The station stands on GROUND, not in the air.
+        ///
+        /// It did not. `CreateStation` sets the pad `7 m` downhill of the lane
+        /// foot and then forces its height to the foot's, and nothing
+        /// flattened anything underneath: the slab hung `0.19 m` to `1.32 m`
+        /// clear of the snow and every edge was a lip of `0.34 m` to `1.50 m`
+        /// against a `0.28 m` step offset. The drop was ONE-WAY - a hero who
+        /// got off could never get back on - which is what "there are no steps
+        /// and I cannot leave the station" was.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void Station_StandsOnItsOwnFlattenedShelf()
+        {
+            AlpineVillagePlan plan = AlpineVillagePlanner.Create(
+                GameSessionState.DefaultCitySeed);
+            MountainRoadTerminalRect pad = plan.Station.PadArea;
+            float padBase = pad.Center.y;
+
+            // Under the slab, and a stride outside each edge, the ground is
+            // the pad's own base.
+            for (int corner = 0; corner < 4; corner++)
+            {
+                Vector3 point = pad.GetCorner(corner);
+                float under = AlpineVillageTerrainSampler.SampleHeight(
+                    plan,
+                    new Vector2(point.x, point.z));
+                Assert.That(
+                    under,
+                    Is.EqualTo(padBase).Within(0.05f),
+                    $"Corner {corner} of the pad stands " +
+                    $"{padBase - under:0.00} m clear of the ground.");
+            }
+
+            // And the step OFF the pad is one a person takes. Sampled a stride
+            // out from every edge, all the way round.
+            for (int side = 0; side < 4; side++)
+            {
+                Vector3 outward = side switch
+                {
+                    0 => pad.Right,
+                    1 => -pad.Right,
+                    2 => pad.Forward,
+                    _ => -pad.Forward
+                };
+                float reach = side < 2
+                    ? pad.Size.x * 0.5f
+                    : pad.Size.y * 0.5f;
+                for (float slide = -0.4f; slide <= 0.41f; slide += 0.4f)
+                {
+                    Vector3 across = side < 2 ? pad.Forward : pad.Right;
+                    float halfAcross = side < 2
+                        ? pad.Size.y * 0.5f
+                        : pad.Size.x * 0.5f;
+                    Vector3 point = pad.Center +
+                                    outward * (reach + 0.35f) +
+                                    across * (slide * halfAcross);
+                    float outside = AlpineVillageTerrainSampler.SampleHeight(
+                        plan,
+                        new Vector2(point.x, point.z));
+                    float lip = padBase +
+                                AlpineVillagePlanner.StationPadTopOffset -
+                                outside;
+                    Assert.That(
+                        lip,
+                        Is.LessThan(PlayerFactory.StepOffset),
+                        $"A {lip:0.00} m lip off side {side}; the hero " +
+                        "cannot step down it and can never climb back.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// The mask is square to the CONCRETE.
+        ///
+        /// `MountainCablewayWorldBuilder` poses the station with
+        /// `LookRotation(plan.LineForward)` and lays every solid box on the
+        /// line axes, while this rectangle used to be built on `right`/
+        /// `uphill` - `19.9°` apart at the village. The mask refused `3.71 m²`
+        /// of real pad at its corners and granted `7.59 m²` of thin air off
+        /// its sides. That is an invisible wall on visible ground.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void Station_MaskIsSquareToTheStationItself()
+        {
+            AlpineVillagePlan plan = AlpineVillagePlanner.Create(
+                GameSessionState.DefaultCitySeed);
+            MountainRoadCablewayPlan cableway = plan.Station.Cableway;
+
+            Assert.That(
+                Vector3.Dot(plan.Station.PadArea.Right, cableway.LineRight),
+                Is.GreaterThan(0.9999f),
+                "The pad rectangle is skewed against the station built on it.");
+            Assert.That(
+                Vector3.Dot(plan.Station.PadArea.Forward, cableway.LineForward),
+                Is.GreaterThan(0.9999f));
+
+            // Every corner of the real pad is walkable ground. Inset half a
+            // metre ON EACH AXIS - the mask holds a capsule off its own edge,
+            // so a diagonal inset of the same length would be measuring the
+            // test's arithmetic rather than the mask.
+            var area = new AlpineVillageWalkableArea(plan);
+            MountainRoadTerminalRect pad = plan.Station.PadArea;
+            for (int corner = 0; corner < 4; corner++)
+            {
+                Vector3 point = pad.GetCorner(corner);
+                Vector3 inset = point +
+                                pad.Right *
+                                ((corner & 1) == 0 ? 0.5f : -0.5f) +
+                                pad.Forward *
+                                ((corner & 2) == 0 ? 0.5f : -0.5f);
+                Assert.That(
+                    area.Contains(inset, 0.32f),
+                    Is.True,
+                    $"The mask refuses corner {corner} of its own pad.");
+            }
+        }
+
+        /// <summary>
+        /// The one that would have caught all of it: a hero who arrives by
+        /// cabin can WALK from the boarding dock into the village.
+        ///
+        /// There was no such check anywhere. `AlpineVillageValidator` asserts
+        /// three things about the station and not one of them is the ground,
+        /// the mask or the concrete.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void Station_LetsTheHeroWalkFromTheDockIntoTheVillage()
+        {
+            AlpineVillagePlan plan = AlpineVillagePlanner.Create(
+                GameSessionState.DefaultCitySeed);
+            var area = new AlpineVillageWalkableArea(plan);
+            MountainRoadCablewayPlan cableway = plan.Station.Cableway;
+            Vector3 pad = plan.Station.PadArea.Center;
+
+            // Dock -> back along the strip -> across the pad -> the lane foot.
+            // Straight legs between points the PLAN names; what is measured is
+            // whether the mask and the ground allow a body to do it.
+            Vector3[] route =
+            {
+                cableway.BoardingDockPosition,
+                pad +
+                cableway.LineRight * cableway.BoardingDockRightOffset +
+                cableway.LineForward * cableway.BoardingFenceForward,
+                pad,
+                plan.Lane.Start
+            };
+
+            for (int leg = 0; leg + 1 < route.Length; leg++)
+            {
+                Vector3 from = route[leg];
+                Vector3 to = route[leg + 1];
+                int steps = Mathf.CeilToInt(
+                    Vector3.Distance(from, to) / 0.2f) + 1;
+                for (int step = 0; step <= steps; step++)
+                {
+                    Vector3 point = Vector3.Lerp(
+                        from,
+                        to,
+                        step / (float)steps);
+                    Assert.That(
+                        area.Contains(point, 0.32f),
+                        Is.True,
+                        $"Leg {leg} leaves the walkable mask at {point} - " +
+                        "an invisible wall on the way out of the station.");
+                }
+            }
+        }
     }
 }

@@ -233,7 +233,7 @@ namespace BarPromenade
                 }
             }
 
-            AppendBoardingSide(plan, Add);
+            AppendBoardingSide(plan, drive, Add);
 
             Vector3 bullwheel = LocalBullwheel(plan);
             if (drive)
@@ -309,6 +309,7 @@ namespace BarPromenade
         /// </summary>
         private static void AppendBoardingSide(
             MountainRoadCablewayPlan plan,
+            bool drive,
             Action<MountainCablewayObstacleKind, string, Vector3, Vector3> add)
         {
             float apronTop = MountainRoadCablewayPlan.StationPadTopY;
@@ -329,13 +330,40 @@ namespace BarPromenade
                     apronTop - apronBottom,
                     apronFar - apronNear));
 
-            float jamb = plan.BoardingGateJambOffset;
+            // The fence's run, and WHICH END IT STOPS AT is the whole of it.
+            // At the drive terminal the way through is outboard, beside the
+            // strip, because the yard is behind the fence. At the return
+            // terminal the hero is on the platform and the village is inboard,
+            // so the fence ends inboard instead and the rest of the pad is the
+            // way out. Both still stand across the track.
+            // NO BARRIER AT THE RETURN TERMINAL, and this took three tries to
+            // get right.
+            //
+            // The drive terminal's fence separates a working yard - freight
+            // kerb, machinery, a cafe across the pad - from the boarding, and
+            // its opening belongs beside the strip because that is where the
+            // yard's traffic is going. The village has no yard. The hero
+            // arrives ON the platform and everything he wants is behind the
+            // fence, so wherever the opening went it was wrong: at the strip
+            // it left a pocket between the platform, the rails and the track
+            // that he slid along and WEDGED IN, `5.94 m` short of the lane;
+            // moved inboard, it walled off the steps that are the only way
+            // down. A barrier is drive-terminal furniture and the copy of it
+            // up here was the wall the player kept walking into. The cabins
+            // carry no colliders, so there is nothing here to be fenced off
+            // from.
+            if (!drive)
+            {
+                AppendBoardingStrip(plan, add);
+                return;
+            }
+
             float[] posts =
             {
                 MountainRoadCablewayPlan.BoardingFenceLeftEndOffset,
                 -0.8f,
                 0.8f,
-                jamb
+                plan.BoardingGateJambOffset
             };
             for (int index = 0; index < posts.Length; index++)
             {
@@ -378,6 +406,15 @@ namespace BarPromenade
                 }
             }
 
+            AppendBoardingStrip(plan, add);
+        }
+
+        /// <summary>The raised strip and the flight that climbs it - the part
+        /// both terminals share.</summary>
+        private static void AppendBoardingStrip(
+            MountainRoadCablewayPlan plan,
+            Action<MountainCablewayObstacleKind, string, Vector3, Vector3> add)
+        {
             float top = plan.BoardingPlatformLocalTop;
             if (top <= 0.18f)
             {

@@ -423,7 +423,7 @@ namespace BarPromenade
                 root.transform,
                 MountainCablewayObstaclePlan.Create(plan, stationKind));
             BuildStationFrame(root.transform, stationSize, drive);
-            BuildBoardingZone(root.transform, plan);
+            BuildBoardingZone(root.transform, plan, drive);
 
             Transform bullwheel = BuildLowerBullwheel(root.transform, plan);
             Transform reducer = null;
@@ -736,10 +736,25 @@ namespace BarPromenade
         /// </summary>
         private static void BuildBoardingZone(
             Transform parent,
-            MountainRoadCablewayPlan plan)
+            MountainRoadCablewayPlan plan,
+            bool drive)
         {
             float fenceForward =
                 plan.BoardingFenceForward;
+
+            // The leaf hangs on whichever end the fence actually stops at.
+            // At the return terminal that is the INBOARD end: the hero is on
+            // the platform and everything he wants is behind the fence, so a
+            // copy of the drive terminal's opening put a wall across his whole
+            // way out with its gap at the far end from the village.
+            if (!drive)
+            {
+                // No barrier at the return terminal, so no leaf and no sign -
+                // see MountainCablewayObstaclePlan for why.
+                BuildBoardingPlatform(parent, plan);
+                return;
+            }
+
             float jamb = plan.BoardingGateJambOffset;
 
             // The posts and the three bays of rail are in the obstacle plan.

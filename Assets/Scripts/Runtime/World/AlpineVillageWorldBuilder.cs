@@ -57,7 +57,11 @@ namespace BarPromenade
     {
         /// <summary>Terrain grid pitch. Fine enough that a gentle slope reads
         /// as ground rather than as facets.</summary>
-        public const float TerrainCellSize = 2f;
+        /// <summary>Sampling pitch of the ground mesh. The sampler owns the
+        /// number, because its station shelf has to be at least this wide to
+        /// survive being turned into triangles.</summary>
+        public const float TerrainCellSize =
+            AlpineVillageTerrainSampler.TerrainCell;
 
         private static readonly Color SnowColor =
             new Color(0.695f, 0.685f, 0.655f, 1f);

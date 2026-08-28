@@ -34,6 +34,30 @@ namespace BarPromenade
         internal const float PlotApron = 1.1f;
 
         /// <summary>
+        /// Flat ground kept around the station pad, measured from its own
+        /// edge.
+        ///
+        /// It has to be at least ONE TERRAIN CELL, and that is a correctness
+        /// bound rather than a look. The ground the hero actually stands on is
+        /// a mesh sampled on a `2 m` grid and linearly interpolated between
+        /// samples, so a shelf narrower than a cell is not reproduced at its
+        /// own rim: the outward vertex bracketing the edge sits on the raw
+        /// slope and drags the rim down with it, by up to `0.16 m` on the
+        /// downhill flank - which on top of the pad's own `0.16 m` slab is a
+        /// `0.32 m` lip against a `0.28 m` step offset. One cell guarantees
+        /// every vertex bracketing the rim is itself on the flat.
+        /// </summary>
+        internal const float StationApron = TerrainCell;
+
+        /// <summary>
+        /// The pitch the village ground mesh is sampled at. It lives here
+        /// rather than in the world builder because the SAMPLER is the
+        /// contract and the mesh is one of its readers - and because the
+        /// apron above has to be measured against it.
+        /// </summary>
+        internal const float TerrainCell = 2f;
+
+        /// <summary>
         /// Where the enclosing ridge starts to climb, as a distance outside
         /// the walkable extent.
         /// </summary>
@@ -116,6 +140,33 @@ namespace BarPromenade
                 pastEdge);
             height = Mathf.Lerp(height, laneBed, laneWeight);
 
+            // THE STATION STANDS ON GROUND, and until this it did not.
+            //
+            // The planner sets the pad `7 m` DOWNHILL of the lane foot and
+            // then forces its height to the foot's - and nothing flattened
+            // anything underneath. The slab hung between `0.19 m` and
+            // `1.32 m` in the air, every edge of it was a lip of `0.34 m` to
+            // `1.50 m` against a `0.28 m` step offset, and the drop was
+            // ONE-WAY: a hero who got off the station could never get back on
+            // it. That is what "there are no steps and I cannot leave the
+            // station" was.
+            //
+            // The shelf is cut to the pad's own base, so the `0.16 m` slab
+            // stands on it as a single step, exactly as the summit's pad
+            // stands on its plateau.
+            float outsideStation = DistanceOutsideStation(plan.Station, point);
+            if (outsideStation < ShelfBlendDistance)
+            {
+                float stationWeight = 1f - Mathf.SmoothStep(
+                    0f,
+                    ShelfBlendDistance,
+                    outsideStation);
+                height = Mathf.Lerp(
+                    height,
+                    plan.Station.PadArea.Center.y,
+                    stationWeight);
+            }
+
             // Every plot stands on level ground. A door threshold on a slope
             // is a step the hero cannot use, and the dock tolerance is two
             // centimetres.
@@ -185,6 +236,36 @@ namespace BarPromenade
             float outsideWidth = Mathf.Max(0f, alongWidth);
             return Mathf.Sqrt(
                 outsideDepth * outsideDepth + outsideWidth * outsideWidth);
+        }
+
+        /// <summary>
+        /// How far the point lies outside the station's flat apron. Zero
+        /// anywhere on the shelf the pad and its boarding strip stand on.
+        /// </summary>
+        internal static float DistanceOutsideStation(
+            AlpineVillageStationPlan station,
+            Vector2 point)
+        {
+            if (station == null)
+            {
+                throw new ArgumentNullException(nameof(station));
+            }
+
+            MountainRoadTerminalRect pad = station.PadArea;
+            Vector2 center = new Vector2(pad.Center.x, pad.Center.z);
+            Vector2 right = new Vector2(pad.Right.x, pad.Right.z).normalized;
+            Vector2 forward =
+                new Vector2(pad.Forward.x, pad.Forward.z).normalized;
+            Vector2 delta = point - center;
+            float acrossRight = Mathf.Abs(Vector2.Dot(delta, right)) -
+                                (pad.Size.x * 0.5f + StationApron);
+            float acrossForward = Mathf.Abs(Vector2.Dot(delta, forward)) -
+                                  (pad.Size.y * 0.5f + StationApron);
+            float outsideRight = Mathf.Max(0f, acrossRight);
+            float outsideForward = Mathf.Max(0f, acrossForward);
+            return Mathf.Sqrt(
+                outsideRight * outsideRight +
+                outsideForward * outsideForward);
         }
 
         private static float DistanceOutsideRect(Rect rect, Vector2 point)

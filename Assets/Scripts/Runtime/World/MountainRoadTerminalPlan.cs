@@ -495,6 +495,34 @@ namespace BarPromenade
             (BoardingGateJambOffset + BoardingFencePostThickness * 0.5f);
 
         /// <summary>
+        /// How wide the way out is at a RETURN terminal, and it opens the
+        /// other way.
+        ///
+        /// The fence is one barrier serving two opposite journeys. At the
+        /// drive terminal the hero comes off the yard BEHIND it and the
+        /// platform is in front, so the opening belongs beside the strip. At
+        /// the village he arrives ON the platform and everything he wants is
+        /// behind the fence, on the inboard side, up the lane - and a copy of
+        /// the drive terminal's fence put a wall across the whole of that with
+        /// its one gap at the far end from where he is going. Walking straight
+        /// at the village he met the rails broadside, slid the length of them
+        /// and wedged on the end post `5.94 m` short.
+        ///
+        /// So the return terminal's fence ends INBOARD and the way out is the
+        /// rest of the pad. It still stands across the track, which is the
+        /// thing a barrier at a cable station is actually for.
+        /// </summary>
+        public const float BoardingReturnGateWidth = 2.4f;
+
+        public float BoardingReturnGateJambOffset =>
+            -(StationArea.Size.x * 0.5f - BoardingReturnGateWidth);
+
+        /// <summary>The fence's outboard end at a return terminal, just clear
+        /// of the station's own column.</summary>
+        public float BoardingReturnFenceEndOffset =>
+            StationColumnInnerFace - 0.09f;
+
+        /// <summary>
         /// How far back from the dock the strip begins, and how far past it it
         /// runs. The strip is centred on the dock, so a cabin always stands
         /// against its middle.
@@ -568,6 +596,28 @@ namespace BarPromenade
 
         public float BoardingApronFarForward =>
             BoardingPlatformFarForward + 0.2f;
+
+        /// <summary>
+        /// The apron as a rectangle in world space - the ground the boarding
+        /// strip stands on, and the shape a walkable mask has to follow.
+        ///
+        /// The strip runs off the FRONT of the pad by design, so a mask that
+        /// stops at the pad's edge turns the far end of the platform into a
+        /// wall the hero walks into while standing on concrete.
+        /// </summary>
+        public MountainRoadTerminalRect BoardingApronArea =>
+            new MountainRoadTerminalRect(
+                StationArea.Center +
+                LineRight *
+                ((BoardingApronInnerOffset + BoardingApronOuterOffset) *
+                 0.5f) +
+                LineForward *
+                ((BoardingApronNearForward + BoardingApronFarForward) * 0.5f),
+                LineRight,
+                LineForward,
+                new Vector2(
+                    BoardingApronOuterOffset - BoardingApronInnerOffset,
+                    BoardingApronFarForward - BoardingApronNearForward));
 
         public bool ContainsClearanceXZ(Vector2 point, float clearance)
         {
