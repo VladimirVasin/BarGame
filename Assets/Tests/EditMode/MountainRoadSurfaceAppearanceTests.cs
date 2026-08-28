@@ -63,13 +63,16 @@ namespace BarPromenade.Tests.EditMode
                 ["Cold Service Strip"] = "emissive",
                 ["Visible Station Practical Lens"] = "emissive",
                 ["Visible Boarding Flood Lens"] = "emissive",
-                ["Cabin Front Window"] = "emissive",
-                ["Cabin Rear Window"] = "emissive",
+                ["Visible Boarding Dock Lens"] = "emissive",
+                // Glazing, not emissive: these were the lamp-lens material
+                // and the passenger rides behind them.
+                ["Cabin Front Window"] = "glazing",
+                ["Cabin Rear Window"] = "glazing",
 
                 // There is no right window any more: the outboard face is
                 // the DOORWAY, and it is a doorway by omission - the pane is
                 // simply not built. Only the inboard side still carries glass.
-                ["Cabin Left Window"] = "emissive",
+                ["Cabin Left Window"] = "glazing",
                 ["Windsock"] = "skinned cloth on the shared two-sided panel",
                 ["Load Tarp"] = "skinned cloth on the shared two-sided panel",
                 ["Vista Silhouette"] =

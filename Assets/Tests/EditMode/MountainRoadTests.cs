@@ -435,9 +435,24 @@ namespace BarPromenade.Tests.EditMode
                     Is.InRange(35, 60),
                     "The cafe should own a bounded physical shell and " +
                     "furniture set.");
+                // Exactly the station's own obstacle plan, and nothing else.
+                // A magic range used to stand here; it read `20` as a ceiling
+                // and said nothing about WHICH solids those were - which is
+                // how a drive hut came to be standing across the boarding
+                // lane with the suite green. The list is now the contract:
+                // the builder places these and the site validator floods with
+                // them, so a collider that is in the world and not in the
+                // plan is exactly the kind of thing nothing would notice.
                 Assert.That(
                     stationColliders,
-                    Is.InRange(8, 20),
+                    Is.EqualTo(
+                        MountainCablewayObstaclePlan.Create(
+                            first.Terminal.Cableway,
+                            MountainCablewayStationKind.Drive).Count),
+                    "The station's solids must be its obstacle plan.");
+                Assert.That(
+                    stationColliders,
+                    Is.InRange(8, 30),
                     "Only the lower station needs a compact physical set.");
                 Assert.That(
                     cablewayColliders,

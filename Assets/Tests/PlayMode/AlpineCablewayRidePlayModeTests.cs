@@ -11,11 +11,17 @@ namespace BarPromenade.Tests.PlayMode
     /// for him, whether he ends up on the bench, whether a moving cabin
     /// carries him, and whether the offer to get out is refused while it does.
     ///
-    /// Built on the real mountain terminal's cableway plan rather than an
-    /// invented one, so the heights the boarding depends on are the shipped
-    /// ones. The ground slab is placed at the plan's own station height -
-    /// a synthetic scene whose floor disagrees with its plan has already cost
-    /// this project two "impossible" bus failures.
+    /// Built on the REAL summit - `MountainRoadWorldBuilder` over the shipped
+    /// plan, the station's own furniture, `MountainRoadWalkableArea` - and not
+    /// on an invented slab.
+    ///
+    /// It used to be a bare cube with an always-walkable area, and that is the
+    /// whole reason this suite was green through a release in which the cabin
+    /// could not be entered: the drive hut stood across the only lane to the
+    /// strip, and a synthetic scene has no drive hut. A synthetic floor that
+    /// disagrees with its own plan had already cost this project two
+    /// "impossible" bus failures; a synthetic scene that omits the obstacle is
+    /// the same mistake one level up.
     /// </summary>
     public sealed class AlpineCablewayRidePlayModeTests
     {
@@ -52,14 +58,18 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Boarding_StopsTheLineSeatsHimAndCarriesHim()
         {
-            Harness harness = BuildHarness(out GameObject scene);
+            Harness harness = BuildHarness(out GameObject scene, true);
             try
             {
                 MountainCablewayController line = harness.Line;
                 AlpineCablewayCabinSeat seat = harness.Seat;
                 Transform heroRoot = harness.Player.GameObject.transform;
 
-                Assert.That(line.IsDocked, Is.False);
+                // The line stands at the platform with a cabin on the point
+                // and turns only once he is in it. There is no call and no
+                // wait: the offer and the boarding are the same instant.
+                Assert.That(line.IsDocked, Is.True);
+                Assert.That(line.DockedCabin, Is.Not.Null);
                 Assert.That(seat.IsSeated, Is.False);
                 Assert.That(
                     seat.CanInteract(harness.Player.Interactor),
@@ -68,21 +78,8 @@ namespace BarPromenade.Tests.PlayMode
 
                 seat.Interact(harness.Player.Interactor);
 
-                // The line has to come to rest before anything else happens.
+                // He is played into it.
                 int steps = 0;
-                while (!line.IsDocked && steps++ < MaximumSteps)
-                {
-                    yield return null;
-                }
-
-                Assert.That(
-                    line.IsDocked,
-                    Is.True,
-                    "The line never stopped for him.");
-                Assert.That(line.DockedCabin, Is.Not.Null);
-
-                // Then he is played into it.
-                steps = 0;
                 while (!seat.IsSeated && steps++ < MaximumSteps)
                 {
                     yield return null;
@@ -155,7 +152,7 @@ namespace BarPromenade.Tests.PlayMode
         [UnityTest]
         public IEnumerator Ride_OnlyLeavesTheAreaOnceTheScreenIsBlack()
         {
-            Harness harness = BuildHarness(out GameObject scene);
+            Harness harness = BuildHarness(out GameObject scene, true);
             try
             {
                 harness.Seat.Interact(harness.Player.Interactor);
@@ -198,21 +195,100 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
-        private Harness BuildHarness(out GameObject scene)
+        /// <summary>
+        /// He walks in off the road and up onto the platform himself, through
+        /// the station's real furniture.
+        ///
+        /// This is the test the two above could not be: they used to stand him
+        /// on a bare slab with an always-walkable area and never built the
+        /// station at all, which is precisely why they stayed green while the
+        /// drive hut sat across the only lane to the strip and the cabin could
+        /// not be entered in the shipped game.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Approach_WalksInOffTheRoadAndReachesTheDock()
+        {
+            Harness harness = BuildHarness(out GameObject scene, false);
+            try
+            {
+                PlayerMotor motor = harness.Player.Motor;
+                Transform root = harness.Player.GameObject.transform;
+                Vector3 dock = cableway.BoardingDockPosition;
+
+                Assert.That(
+                    Vector3.Distance(root.position, dock),
+                    Is.GreaterThan(12f),
+                    "He has to start away from the platform for this to " +
+                    "measure an approach at all.");
+
+                foreach (Vector3 waypoint in ApproachWaypoints())
+                {
+                    bool arrived = false;
+                    for (int step = 0; step < MaximumSteps && !arrived; step++)
+                    {
+                        arrived = motor.MoveTowardsApproachWaypoint(
+                            waypoint,
+                            0.35f,
+                            Time.deltaTime);
+                        yield return null;
+                    }
+
+                    Assert.That(
+                        arrived,
+                        Is.True,
+                        $"He never reached {waypoint}; he stopped at " +
+                        $"{root.position} " +
+                        $"(stalled: {motor.InteractionPoseMoveStalled}).");
+                }
+
+                motor.CancelInteractionPoseMove();
+                yield return null;
+
+                // On the strip, at the strip's height - which is what the
+                // dock's own vertical tolerance will demand of him.
+                Assert.That(
+                    root.position.y - cableway.BoardingPlatformTopY,
+                    Is.EqualTo(PlayerFactory.GroundedRootOffset)
+                        .Within(0.12f),
+                    "He is not standing on the boarding strip.");
+                Assert.That(
+                    harness.Seat.CanInteract(harness.Player.Interactor),
+                    Is.True,
+                    "He walked to the dock and is still not offered a seat.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(scene);
+            }
+        }
+
+        /// <summary>
+        /// Mouth of the road, the yard in front of the station, the gate, and
+        /// the dock. Straight legs between points the PLAN names, because the
+        /// approach walk has no pathfinder - the connected-ness of the route
+        /// is what the EditMode flood proves, and what is being measured here
+        /// is whether real colliders and real step heights let a body do it.
+        /// </summary>
+        private Vector3[] ApproachWaypoints()
+        {
+            Vector3 center = cableway.StationArea.Center;
+            Vector3 dock = cableway.BoardingDockPosition;
+            float gateForward =
+                cableway.BoardingFenceForward - 1.1f;
+            return new[]
+            {
+                center - cableway.LineForward * 5.4f,
+                center +
+                cableway.LineRight * cableway.BoardingDockRightOffset +
+                cableway.LineForward * gateForward,
+                dock
+            };
+        }
+
+        private Harness BuildHarness(out GameObject scene, bool atTheDock)
         {
             scene = new GameObject("Alpine Cableway Ride Test");
             Transform parent = scene.transform;
-
-            // The slab tops out at the boarding platform, which is where the
-            // plan says the hero stands.
-            GameObject ground = GameObject.CreatePrimitive(PrimitiveType.Cube);
-            ground.name = "Cableway Ride Test Ground";
-            ground.transform.SetParent(parent, false);
-            ground.transform.position = new Vector3(
-                cableway.BoardingDockPosition.x,
-                cableway.BoardingPlatformTopY - 0.5f,
-                cableway.BoardingDockPosition.z);
-            ground.transform.localScale = new Vector3(60f, 1f, 60f);
 
             var cameraObject = new GameObject("Camera");
             cameraObject.transform.SetParent(parent, false);
@@ -223,26 +299,39 @@ namespace BarPromenade.Tests.PlayMode
             InteractionPromptView prompt =
                 promptObject.AddComponent<InteractionPromptView>();
 
+            // The real summit: real terrain, the real station and its real
+            // walkable mask. Building it also runs the site validator, which
+            // is now the thing that would refuse a station the hero cannot
+            // walk into.
+            MountainRoadPlan road = MountainRoadPlanner.Create(
+                GameSessionState.DefaultCitySeed);
+            MountainRoadWorldResult world = MountainRoadWorldBuilder.Build(
+                parent,
+                road,
+                camera);
+
+            MountainRoadVehicleApronPlan apron = road.Terminal.VehicleApron;
+            Vector3 start = atTheDock
+                ? cableway.BoardingDockPosition
+                : world.WalkableArea.ClosestPoint(
+                    apron.EntryCenter + apron.Forward * 2.5f);
             PlayerRuntime player = PlayerFactory.Create(
                 parent,
-                cableway.BoardingDockPosition +
-                Vector3.up * PlayerFactory.GroundedRootOffset,
+                start + Vector3.up * PlayerFactory.GroundedRootOffset,
                 camera,
-                new AlwaysWalkableArea(),
+                world.WalkableArea,
                 prompt);
 
             PlayerCameraFollow follow =
                 cameraObject.AddComponent<PlayerCameraFollow>();
             follow.Initialize(camera, player.GameObject.transform, false);
 
-            MountainCablewayWorldResult world =
-                MountainCablewayWorldBuilder.Build(parent, cableway);
             AlpineCablewayRideFactory.Installation installation =
                 AlpineCablewayRideFactory.Install(
                     parent,
                     player,
                     camera,
-                    world,
+                    world.Cableway,
                     cableway,
                     GameAreaId.AlpineVillage,
                     false);
@@ -252,7 +341,7 @@ namespace BarPromenade.Tests.PlayMode
             return new Harness
             {
                 Player = player,
-                Line = world.Controller,
+                Line = world.Cableway.Controller,
                 Seat = installation.Seat,
                 Ride = installation.Ride
             };
@@ -264,27 +353,6 @@ namespace BarPromenade.Tests.PlayMode
             public MountainCablewayController Line;
             public AlpineCablewayCabinSeat Seat;
             public AlpineCablewayRideController Ride;
-        }
-
-        private sealed class AlwaysWalkableArea : IWalkableArea
-        {
-            public bool Contains(Vector3 position, float radius = 0f)
-            {
-                return true;
-            }
-
-            public Vector3 Constrain(
-                Vector3 currentPosition,
-                Vector3 desiredPosition,
-                float radius = 0f)
-            {
-                return desiredPosition;
-            }
-
-            public Vector3 ClosestPoint(Vector3 position, float radius = 0f)
-            {
-                return position;
-            }
         }
     }
 }

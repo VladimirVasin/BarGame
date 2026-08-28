@@ -169,5 +169,146 @@ namespace BarPromenade.Tests.EditMode
                     0.2f),
                 Is.True);
         }
+
+        /// <summary>
+        /// The one that would have caught it: a person who walks in off the
+        /// road can reach the cableway's boarding dock ON FOOT.
+        ///
+        /// He could not. The drive service hut stood at `+3.25` on the
+        /// boarding side, its body running from `2.20` to `4.30` across
+        /// exactly the lane the platform steps rise out of; `0.20 m` of pad
+        /// remained outboard of it and the fence's end post closed the other
+        /// side. The station's furniture was invisible to every check the
+        /// terminal has - the flood fill only ever walked `site.Parts`, and
+        /// the site planner has no idea the cableway exists - so the suite
+        /// stayed green through a release in which the cabin could not be
+        /// entered at all.
+        ///
+        /// The synthetic PlayMode ride passed for the same reason: it stands
+        /// the hero on a bare slab and never builds the station.
+        /// </summary>
+        [Test]
+        [Category("MountainRoad")]
+        public void Site_LetsTheHeroWalkFromTheRoadToTheBoardingDock()
+        {
+            MountainRoadPlan plan = MountainRoadPlanner.Create(
+                GameSessionState.DefaultCitySeed);
+            MountainRoadCablewayPlan cableway = plan.Terminal.Cableway;
+
+            Assert.That(
+                MountainRoadTerminalSiteValidator.CanWalkTo(
+                    plan,
+                    cableway.BoardingDockPosition),
+                Is.True,
+                "There is no walkable route from the road mouth to the " +
+                "cableway boarding dock.");
+
+            // The check has to be about the STRIP and not the ground beside
+            // it, or a reachable cell at pad level would answer for a
+            // platform nobody can climb.
+            Vector3 offStrip = cableway.BoardingDockPosition;
+            offStrip.y = plan.Terminal.Site.YardTopY;
+            Assert.That(
+                cableway.BoardingPlatformLocalTop -
+                MountainRoadCablewayPlan.StationPadTopY,
+                Is.GreaterThan(PlayerFactory.StepOffset),
+                "The strip no longer stands over a step; this test is then " +
+                "vacuous.");
+            Assert.That(
+                MountainRoadTerminalSiteValidator.CanWalkTo(plan, offStrip),
+                Is.False,
+                "Yard-level ground under the dock must not vouch for the " +
+                "platform.");
+        }
+
+        /// <summary>
+        /// The station's own solids are laid out once and read twice: the
+        /// world builder places them, the validator floods with them. This
+        /// pins the two facts that made the lane impassable, at the source
+        /// rather than in the built scene.
+        /// </summary>
+        [Test]
+        [Category("MountainRoad")]
+        public void StationObstacles_KeepTheBoardingLaneClear()
+        {
+            MountainRoadCablewayPlan cableway = MountainRoadPlanner
+                .Create(GameSessionState.DefaultCitySeed)
+                .Terminal.Cableway;
+
+            // The strip stops short of the station's own corner column, which
+            // it used to be built straight through.
+            Assert.That(
+                cableway.BoardingPlatformOuterOffset,
+                Is.LessThan(cableway.StationColumnInnerFace));
+            Assert.That(
+                cableway.BoardingPlatformInnerOffset,
+                Is.GreaterThan(cableway.BoardingCabinOuterOffset));
+
+            // And the dock stands on it with room either side of a body.
+            Assert.That(
+                cableway.BoardingDockRightOffset -
+                cableway.BoardingPlatformInnerOffset,
+                Is.GreaterThan(0.32f));
+            Assert.That(
+                cableway.BoardingPlatformOuterOffset -
+                cableway.BoardingDockRightOffset,
+                Is.GreaterThan(0.32f));
+
+            // The steps are PAST the fence, not inside it.
+            Assert.That(
+                cableway.BoardingStepsNearForward,
+                Is.GreaterThan(
+                    cableway.BoardingFenceForward +
+                    MountainRoadCablewayPlan.BoardingFencePostThickness *
+                    0.5f));
+
+            // The gate is on the strip, and wide enough to walk through.
+            Assert.That(
+                cableway.BoardingGateJambOffset,
+                Is.LessThan(cableway.BoardingPlatformInnerOffset));
+            Assert.That(cableway.BoardingGateWidth, Is.GreaterThan(0.8f));
+
+            // Nothing solid stands in the bay between the jamb and the
+            // column, all the way from the yard to the foot of the steps.
+            System.Collections.Generic.IReadOnlyList<
+                MountainCablewayObstacle> boxes =
+                MountainCablewayObstaclePlan.Create(
+                    cableway,
+                    MountainCablewayStationKind.Drive);
+            float laneInner = cableway.BoardingPlatformInnerOffset;
+            float laneOuter = cableway.BoardingPlatformOuterOffset;
+            foreach (MountainCablewayObstacle box in boxes)
+            {
+                if (box.Kind == MountainCablewayObstacleKind.Pad ||
+                    box.Kind == MountainCablewayObstacleKind.BoardingApron)
+                {
+                    continue;
+                }
+
+                float top = box.LocalCenter.y + box.Size.y * 0.5f;
+                if (top - MountainRoadCablewayPlan.StationPadTopY <=
+                    PlayerFactory.StepOffset)
+                {
+                    continue;
+                }
+
+                float near = box.LocalCenter.z - box.Size.z * 0.5f;
+                float far = box.LocalCenter.z + box.Size.z * 0.5f;
+                if (far <= -cableway.StationArea.Size.y * 0.5f ||
+                    near >= cableway.BoardingStepsNearForward)
+                {
+                    continue;
+                }
+
+                float inner = box.LocalCenter.x - box.Size.x * 0.5f;
+                float outer = box.LocalCenter.x + box.Size.x * 0.5f;
+                Assert.That(
+                    inner >= laneOuter || outer <= laneInner,
+                    Is.True,
+                    $"'{box.Name}' stands in the boarding lane " +
+                    $"({inner:0.00}..{outer:0.00} against " +
+                    $"{laneInner:0.00}..{laneOuter:0.00}).");
+            }
+        }
     }
 }

@@ -58,10 +58,11 @@ namespace BarPromenade.Tests.EditMode
 
                 Assert.That(
                     onTheSummit,
-                    Has.Count.EqualTo(5),
-                    "The summit burns three in the cafe and two at the " +
-                    "cable station; the yard lamp belongs to the " +
-                    "atmosphere and is not built here.");
+                    Has.Count.EqualTo(6),
+                    "The summit burns three in the cafe and three at the " +
+                    "cable station - the pad lens, the yard flood and the " +
+                    "boom over the boarding dock; the yard lamp belongs to " +
+                    "the atmosphere and is not built here.");
 
                 for (int index = 0; index < onTheSummit.Count; index++)
                 {

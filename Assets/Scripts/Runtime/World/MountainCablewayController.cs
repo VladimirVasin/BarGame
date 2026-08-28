@@ -318,13 +318,60 @@ namespace BarPromenade
 
             travelledDistance = 0f;
             travelledSinceResume = float.PositiveInfinity;
-            currentSpeed = plan.CabinSpeed;
+
+            // The line is built STANDING, with a cabin already on the boarding
+            // point, and turns only once somebody is in it.
+            //
+            // It used to be built running, and boarding was: press, wait about
+            // nineteen seconds of silence while the rope brought one round,
+            // then be seated. That wait carried a whole knot with it - a
+            // `waitingForCabin` flag, a poll in `Update`, and the unanswered
+            // question of what confirms to the player that the call landed.
+            // A cabin that is simply there costs none of it, and it is the
+            // honest reading of a freight line living out its last years: it
+            // runs when somebody needs it, not around the clock.
+            dockedCabinIndex = FindCabinOnPoint(plan.BoardingLoopDistance);
+            docked = dockedCabinIndex >= 0;
+            docking = false;
+            dockRemaining = 0f;
+            currentSpeed = docked ? 0f : plan.CabinSpeed;
             initialized = true;
             ApplyPresentation(0f, 0f, false);
+            ApplyMotorVoice();
             if (Application.isPlaying && motorSource != null)
             {
                 motorSource.Play();
             }
+        }
+
+        /// <summary>
+        /// Which cabin is standing on the boarding point at build time, or
+        /// `-1` if none is.
+        ///
+        /// A search rather than "cabin zero", so the two planners stay free to
+        /// author their phases in any order - and so a line whose cabins
+        /// happen to straddle the point starts running and is called in the
+        /// old way rather than pretending to be docked somewhere it is not.
+        /// </summary>
+        private int FindCabinOnPoint(float loopDistance)
+        {
+            float dock = MountainCablewayMotion.WrapDistance(
+                loopDistance,
+                plan.LoopLength);
+            for (int index = 0; index < phases.Count; index++)
+            {
+                float offset = MountainCablewayMotion.WrapDistance(
+                    phases[index] * plan.LoopLength - dock,
+                    plan.LoopLength);
+                if (offset <= MountainCablewayDriveRules.DockEpsilon ||
+                    plan.LoopLength - offset <=
+                    MountainCablewayDriveRules.DockEpsilon)
+                {
+                    return index;
+                }
+            }
+
+            return -1;
         }
 
         /// <summary>
@@ -491,7 +538,12 @@ namespace BarPromenade
 
             float fraction = Mathf.Clamp01(currentSpeed / plan.CabinSpeed);
             motorSource.pitch = Mathf.Lerp(0.42f, 0.94f, fraction);
-            motorSource.volume = Mathf.Lerp(0.05f, 0.17f, fraction);
+
+            // To SILENCE at rest, not to an idle hum. The line now spends most
+            // of its life standing at the platform, and a gearbox murmuring
+            // under a drive that is not turning would be the loudest wrong
+            // thing on the summit.
+            motorSource.volume = Mathf.Lerp(0f, 0.17f, fraction);
         }
 
         private void ApplyPresentation(

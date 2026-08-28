@@ -165,6 +165,15 @@ namespace BarPromenade
                 return false;
             }
 
+            // No offer while the line is turning. Boarding is immediate now,
+            // so a prompt that appears without a cabin in the bay would be one
+            // that does nothing when pressed - the same silence a dock out of
+            // vertical tolerance gives, and just as hard to read.
+            if (!line.IsDocked)
+            {
+                return false;
+            }
+
             Transform root = player.GameObject.transform;
             return Mathf.Abs(
                        root.position.y - plan.EntryRootPosition.y) <=
@@ -188,29 +197,21 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Calls a cabin and, once it is standing at the platform, plays the
-        /// hero into it. Returns false when the line refuses.
+        /// Plays the hero straight into the cabin standing at the platform.
+        ///
+        /// There is nothing to call and nothing to wait for: the line is built
+        /// docked and only moves once somebody is aboard, so the offer and the
+        /// boarding are the same instant. <see cref="CanInteract"/> refuses
+        /// while the line runs, so the prompt is never showing over a bay with
+        /// no cabin in it.
         /// </summary>
         private void BeginBoarding()
         {
-            if (!line.IsDocked && !line.IsDocking)
-            {
-                line.RequestDockAt(plan.BoardingLoopDistance);
-            }
-
-            waitingForCabin = true;
+            TrySeat();
         }
-
-        private bool waitingForCabin;
 
         private void Update()
         {
-            if (waitingForCabin && line != null && line.IsDocked)
-            {
-                waitingForCabin = false;
-                TrySeat();
-            }
-
             if (viewOwned)
             {
                 UpdateOwnedCamera();

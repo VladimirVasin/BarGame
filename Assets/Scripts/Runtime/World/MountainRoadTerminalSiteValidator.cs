@@ -46,6 +46,14 @@ namespace BarPromenade
         private const float SeatApproachDepth = 1f;
         private const float ApproachClearance = 0.4f;
 
+        /// <summary>
+        /// How far a dock check may look for a cell it will accept. One cell
+        /// each way - `0.25 m` - because the boarding strip is only `1.37 m`
+        /// wide and the generous four-cell window the yard checks use would
+        /// let ground OFF the strip answer for it.
+        /// </summary>
+        private const int DockSearchCells = 1;
+
         public static void ValidateOrThrow(MountainRoadPlan plan)
         {
             if (plan == null)
@@ -399,11 +407,131 @@ namespace BarPromenade
             MountainRoadTerminalSitePlan site,
             ICollection<string> problems)
         {
-            Rect bounds = plateau.BoundsXZ;
+            bool[,] reached = BuildReachability(
+                plateau,
+                terminal,
+                site,
+                out Rect bounds,
+                out bool[,] open,
+                out float[,] height);
+            if (reached == null)
+            {
+                problems.Add("the road mouth is not open ground.");
+                return;
+            }
+
+            CheckReached(
+                bounds,
+                reached,
+                open,
+                terminal.Cafe.DoorCenter +
+                terminal.Cafe.DoorForward * 1.2f,
+                "the cafe doorstep",
+                problems);
+            CheckReached(
+                bounds,
+                reached,
+                open,
+                terminal.Cableway.StationArea.Center -
+                terminal.Cableway.LineForward * 5.4f,
+                "the cable station",
+                problems);
+            CheckReached(
+                bounds,
+                reached,
+                open,
+                MountainRoadTerminalPlanner.LocalToWorld(
+                    plateau,
+                    MountainRoadTerminalSitePlanner.TerraceLeftRight + 4f,
+                    0f,
+                    MountainRoadTerminalSitePlanner.TerraceRimForward -
+                    1.4f),
+                "the terrace",
+                problems);
+
+            // The yard in front of the station is not the platform. That check
+            // above aims `5.4 m` SHORT of the station centre and passed
+            // happily while the drive hut stood across the only lane to the
+            // boarding strip and the cabin could not be entered at all. This
+            // one lands on the dock itself and demands the cell be at the
+            // strip's own height, because a reachable cell a metre away at pad
+            // level proves nothing about a platform you cannot climb onto.
+            if (!IsStandableAt(
+                    bounds,
+                    reached,
+                    open,
+                    height,
+                    terminal.Cableway.BoardingDockPosition,
+                    DockSearchCells))
+            {
+                problems.Add(
+                    "the site cut the cableway boarding platform off from " +
+                    "the arrival.");
+            }
+        }
+
+        /// <summary>
+        /// Whether a person who walked in off the road can stand at
+        /// <paramref name="target"/> - at the height the target itself is at.
+        ///
+        /// The same fill the site validation runs, exposed so a test can ask
+        /// the question directly rather than reading it out of an exception
+        /// message.
+        /// </summary>
+        public static bool CanWalkTo(MountainRoadPlan plan, Vector3 target)
+        {
+            if (plan == null)
+            {
+                throw new ArgumentNullException(nameof(plan));
+            }
+
+            MountainRoadTerminalSitePlan site = plan.Terminal.Site;
+            if (site == null)
+            {
+                throw new InvalidOperationException(
+                    "The terminal needs its site plan.");
+            }
+
+            bool[,] reached = BuildReachability(
+                plan.Plateau,
+                plan.Terminal,
+                site,
+                out Rect bounds,
+                out bool[,] open,
+                out float[,] height);
+            return reached != null &&
+                   IsStandableAt(
+                       bounds,
+                       reached,
+                       open,
+                       height,
+                       target,
+                       DockSearchCells);
+        }
+
+        /// <summary>
+        /// One flood fill from the mouth of the road. Heights, not flags:
+        /// a cell is reachable from its neighbour when the step between
+        /// them is one the player's own controller would take.
+        ///
+        /// It walks the site's parts AND the cableway station's, which for a
+        /// long time it did not: `MountainRoadTerminalSitePlanner` has no idea
+        /// the cableway exists, so the pad, the columns, the drive hut, the
+        /// fence and the whole boarding strip were holes in this map.
+        /// </summary>
+        private static bool[,] BuildReachability(
+            MountainRoadPlateauDescriptor plateau,
+            MountainRoadTerminalPlan terminal,
+            MountainRoadTerminalSitePlan site,
+            out Rect bounds,
+            out bool[,] open,
+            out float[,] height)
+        {
+            bounds = plateau.BoundsXZ;
             int columns = Mathf.CeilToInt(bounds.width / FillCell) + 1;
             int rows = Mathf.CeilToInt(bounds.height / FillCell) + 1;
-            var open = new bool[columns, rows];
-            var height = new float[columns, rows];
+            open = new bool[columns, rows];
+            height = new float[columns, rows];
             var corners = new Vector2[4];
 
             for (int column = 0; column < columns; column++)
@@ -434,39 +562,33 @@ namespace BarPromenade
                 }
 
                 part.GetFootprintCorners(corners);
-                Rect footprint = Enclose(corners);
-                float top = part.Center.y + part.Size.y * 0.5f;
-                int minColumn = Mathf.Max(
-                    0,
-                    Mathf.FloorToInt(
-                        (footprint.xMin - bounds.xMin) / FillCell));
-                int maxColumn = Mathf.Min(
-                    columns - 1,
-                    Mathf.CeilToInt(
-                        (footprint.xMax - bounds.xMin) / FillCell));
-                int minRow = Mathf.Max(
-                    0,
-                    Mathf.FloorToInt(
-                        (footprint.yMin - bounds.yMin) / FillCell));
-                int maxRow = Mathf.Min(
-                    rows - 1,
-                    Mathf.CeilToInt(
-                        (footprint.yMax - bounds.yMin) / FillCell));
-                for (int column = minColumn; column <= maxColumn; column++)
-                {
-                    for (int row = minRow; row <= maxRow; row++)
-                    {
-                        Vector2 point = CellPoint(bounds, column, row);
-                        if (!ContainsXZ(corners, point))
-                        {
-                            continue;
-                        }
+                RaiseFootprint(
+                    bounds,
+                    height,
+                    corners,
+                    part.Center.y + part.Size.y * 0.5f);
+            }
 
-                        height[column, row] = Mathf.Max(
-                            height[column, row],
-                            top);
-                    }
-                }
+            IReadOnlyList<MountainCablewayObstacle> station =
+                MountainCablewayObstaclePlan.Create(
+                    terminal.Cableway,
+                    MountainCablewayStationKind.Drive);
+            for (int index = 0; index < station.Count; index++)
+            {
+                // An obstruction is widened by the capsule that has to get
+                // past it; a surface is rasterized exactly. Without that, the
+                // fill is a POINT and it walks the `0.20 m` slot between the
+                // drive hut and the edge of the pad - which is not a gap
+                // anybody fits through, and which kept this very check green
+                // while the boarding lane was blocked.
+                station[index].GetFootprintCorners(
+                    corners,
+                    station[index].IsWalkableSurface ? 0f : CapsuleRadius);
+                RaiseFootprint(
+                    bounds,
+                    height,
+                    corners,
+                    station[index].TopY);
             }
 
             // A stride inside the mouth, because the entry sample sits ON
@@ -485,8 +607,7 @@ namespace BarPromenade
                     rows - 1));
             if (!open[start.x, start.y])
             {
-                problems.Add("the road mouth is not open ground.");
-                return;
+                return null;
             }
 
             var reached = new bool[columns, rows];
@@ -528,34 +649,91 @@ namespace BarPromenade
                 }
             }
 
-            CheckReached(
-                bounds,
-                reached,
-                open,
-                terminal.Cafe.DoorCenter +
-                terminal.Cafe.DoorForward * 1.2f,
-                "the cafe doorstep",
-                problems);
-            CheckReached(
-                bounds,
-                reached,
-                open,
-                terminal.Cableway.StationArea.Center -
-                terminal.Cableway.LineForward * 5.4f,
-                "the cable station",
-                problems);
-            CheckReached(
-                bounds,
-                reached,
-                open,
-                MountainRoadTerminalPlanner.LocalToWorld(
-                    plateau,
-                    MountainRoadTerminalSitePlanner.TerraceLeftRight + 4f,
-                    0f,
-                    MountainRoadTerminalSitePlanner.TerraceRimForward -
-                    1.4f),
-                "the terrace",
-                problems);
+            return reached;
+        }
+
+        private static void RaiseFootprint(
+            Rect bounds,
+            float[,] height,
+            Vector2[] corners,
+            float top)
+        {
+            int columns = height.GetLength(0);
+            int rows = height.GetLength(1);
+            Rect footprint = Enclose(corners);
+            int minColumn = Mathf.Max(
+                0,
+                Mathf.FloorToInt((footprint.xMin - bounds.xMin) / FillCell));
+            int maxColumn = Mathf.Min(
+                columns - 1,
+                Mathf.CeilToInt((footprint.xMax - bounds.xMin) / FillCell));
+            int minRow = Mathf.Max(
+                0,
+                Mathf.FloorToInt((footprint.yMin - bounds.yMin) / FillCell));
+            int maxRow = Mathf.Min(
+                rows - 1,
+                Mathf.CeilToInt((footprint.yMax - bounds.yMin) / FillCell));
+            for (int column = minColumn; column <= maxColumn; column++)
+            {
+                for (int row = minRow; row <= maxRow; row++)
+                {
+                    Vector2 point = CellPoint(bounds, column, row);
+                    if (!ContainsXZ(corners, point))
+                    {
+                        continue;
+                    }
+
+                    height[column, row] = Mathf.Max(height[column, row], top);
+                }
+            }
+        }
+
+        /// <summary>
+        /// A reachable cell close to the target AND at the target's own
+        /// standing height. The height half is what stops a cell on the yard
+        /// beside a platform from vouching for the platform.
+        /// </summary>
+        private static bool IsStandableAt(
+            Rect bounds,
+            bool[,] reached,
+            bool[,] open,
+            float[,] height,
+            Vector3 target,
+            int searchCells)
+        {
+            int columns = reached.GetLength(0);
+            int rows = reached.GetLength(1);
+            int centreColumn = Mathf.RoundToInt(
+                (target.x - bounds.xMin) / FillCell);
+            int centreRow = Mathf.RoundToInt(
+                (target.z - bounds.yMin) / FillCell);
+            for (int column = centreColumn - searchCells;
+                 column <= centreColumn + searchCells;
+                 column++)
+            {
+                for (int row = centreRow - searchCells;
+                     row <= centreRow + searchCells;
+                     row++)
+                {
+                    if (column < 0 ||
+                        row < 0 ||
+                        column >= columns ||
+                        row >= rows)
+                    {
+                        continue;
+                    }
+
+                    if (open[column, row] &&
+                        reached[column, row] &&
+                        Mathf.Abs(height[column, row] - target.y) <=
+                        StepOffset)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static void CheckReached(

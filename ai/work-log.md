@@ -6,6 +6,196 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-28 — The station was invisible to the validator, and the hut was not the cut
+
+`MountainCablewayObstaclePlan` is the new one-list-two-readers piece: every
+solid box a station puts on the ground, as a pure function of its plan. The
+world builder places them and gives them their colliders; the site validator
+floods with them. Before it, the station was a **hole in every check the
+terminal has**. `MountainRoadTerminalSiteValidator` already walks the summit
+with the player's own `0.32 m` capsule and `0.28 m` step offset, and its own
+comment says neither the walkable mask nor any other validator would notice
+furniture cutting the yard in two — but the fill only ever walked `site.Parts`,
+and `MountainRoadTerminalSitePlanner` contains no mention of the cableway. The
+pad, the four columns, the drive hut, the fence and the whole boarding strip
+were invisible to it. `MountainRoadTests` measured the station only as "between
+8 and 20 colliders", which says nothing about WHICH.
+
+The boarding side is rebuilt from the plan rather than from literals in the
+builder. `MountainRoadCablewayPlan` now derives the column offsets the frame is
+built from, the strip's inner and outer edges, the gate jamb, the step run and
+the apron; the builder reads them. Three things it fixes, all authored wrong
+and none of them noticed:
+
+- **the strip was built through a column.** It ran to `4.075` and the corner
+  columns stand at `3.81`–`4.09`. It now stops at `3.75`, derived from
+  `StationColumnInnerFace` rather than from `dock + 1 m`.
+- **the steps straddled the fence.** Treads at `0.88`–`1.90` with the fence at
+  `1.56`: the way up and the thing barring it were the same half metre. They
+  now start at `1.75`, past it.
+- **the strip stood on open ground.** The bullwheel is `4.5 m` forward of the
+  station centre on a `6.2 m` pad — "outside the canopy footprint entirely", by
+  the builder's own comment — so most of the strip is off the concrete. A
+  `Physical Boarding Apron` now carries it. Kept to the STRIP's width and not
+  the pad's: at the pad's width its outer-forward corner lands `0.068 m` from
+  the plateau polygon, which was checked numerically before it was authored.
+
+**The correction that matters more than the fix.** The premise was that the
+drive service hut physically blocked the approach — it stood at `+3.25`, its
+body running `2.20`–`4.30` across the lane the steps rise out of, with `0.20 m`
+to the pad's edge. The first half is true and the hut has moved to the machine
+side where the drive is. The second half **does not survive measurement**: the
+hut is `2.1 m` of a `9 m` pad, and it is not a cut. Restoring it to `+3.25`
+leaves `Site_LetsTheHeroWalkFromTheRoadToTheBoardingDock` green, and — the
+decisive one — leaves the new PlayMode approach test green too, with a real
+`CharacterController` sliding around it and reaching the dock. So the hut was
+never what stopped anybody boarding. On the evidence the remaining candidate is
+the nineteen seconds: the line was built RUNNING, `CanInteract` did not require
+a docked cabin, so pressing `E` called one and set a `waitingForCabin` flag and
+then nothing happened, visibly or audibly, for about nineteen seconds. That is
+now gone by construction rather than by fixing it — see below — but it is an
+inference, and the hand pass is what settles it.
+
+Two things had to change before the new tests could bite at all, and both are
+worth keeping:
+
+- **the fill was a POINT.** With station boxes rasterized cell-centre-in-
+  footprint, it walked the `0.20 m` slot between the hut and the pad's edge.
+  Obstructions are now widened by the capsule that has to pass them; SURFACES
+  are not, because widening the strip would swallow the treads that climb it
+  and wall off its own steps. `MountainCablewayObstacle.IsWalkableSurface` is
+  that distinction and it is not cosmetic.
+- **`CheckReached` was too loose to mean anything here.** It accepts any open
+  reached cell within `±4` cells — a metre — and the existing station check
+  aims `5.4 m` SHORT of the station centre, at the yard. On a `1.37 m` strip
+  that lets ground beside the platform vouch for the platform. The dock check
+  searches `±1` cell and demands the cell be at the DOCK'S OWN HEIGHT.
+
+**The line is built standing**, with a cabin already on the boarding point, and
+turns only once somebody is in it. `Initialize` searches for the cabin whose
+phase puts it on the point rather than assuming index zero, and starts running
+in the old way if none is. That one change deletes the whole waiting knot —
+`waitingForCabin`, the poll in `Update`, and the unanswered question of what
+confirms a call to the player — and `CanInteract` now refuses while the line
+runs, so the prompt never shows over an empty bay. `RequestDockAt` stays: the
+arrival still uses it, and it is the way back if the line is somehow moving.
+`ApplyMotorVoice` goes to SILENCE at rest rather than to a `0.05` idle hum,
+because the line now spends most of its life parked.
+
+The faded sign moved `1.2 m` inboard onto the fence's last bay. It stays — that
+is still the truest thing about the place — but the gate is now where it used
+to cantilever out to, and a board at chest height across the only way in is one
+the hero walks through. The gate itself has no outboard jamb: the station's own
+column is already at `3.81` and a second post cannot stand there, so the fence
+ends at the jamb and the bay beside it is the way through. Worth knowing and
+not fixed here: **that fence does not seal the boarding side**. It spans
+`-2.2`–`2.295` on a `9 m` pad, so closing the gate entirely still leaves the
+dock reachable around its end — which is why the reachability test is really a
+guard on the STEPS, and is proved so by removing the treads.
+
+**The cabin windows were the lamp lens.** `CreateCabinWindow` passed
+`CityNightResources.EmissiveMaterial` — `Assets/Resources/Materials/CityNoirEmission.mat`,
+`RenderType: Opaque`, `_Blend 0`, `URP/Unlit` — so the three panes on each of
+four cabins were glowing plates and the alpha authored on the tint was
+discarded outright. The whole ride is first-person specifically so the hero can
+watch the slope fall away, and he was looking at a wall. They now wear
+`HomeBalconyResources.GlassMaterial`, which is the glazing the cafe two hundred
+metres down the same road already carries: a `HideFlags.HideAndDontSave` runtime
+singleton on `Bar Promenade/Home Window Glass`, whose `Queue`/`RenderType`
+Transparent, `Blend SrcAlpha OneMinusSrcAlpha`, `ZWrite Off` and `Cull Back` all
+live in ShaderLab rather than in a `.mat` — so there is nothing for a URP
+ShaderGUI to rewrite behind us, which is the `_SrcBlend 1↔5` trap that has bitten
+`CityBusGlass.mat` repeatedly. Tint alpha `0.24`, just under the cafe's `0.28` on
+the same shader, because this is the only pane in the game the hero rides BEHIND;
+the fragment adds edge highlight and grime on top of it.
+
+Three things that are decisions and not details. The material is **shared and
+read-only** — the cabin's tint rides the per-renderer property block `CreateBox`
+already writes, because writing it on the material would repaint the cafe's
+three window walls, its boiler sight glass and the hero's own balcony; a test
+pins that. The panes stay **closed boxes and not quads**: `Cull Back` plus a box
+gives the passenger the inner face and the platform the outer one, while a
+flattened plane would look right from the platform and be invisible from the
+bench — the church vault's lesson in a smaller room, and the test pins
+`vertexCount == 24` for it. And the two **practical lenses stay opaque
+emissive**, because each has a real spot light parented under it.
+
+Considered and rejected: a new `MountainCabinGlass.mat` plus its own loader
+(same shader, so identical pixels, in exchange for an asset, a guid and a new
+runtime invariant), and a `Glass` member on `MountainRoadSurfaceKind` — that one
+is structurally impossible, since `MountainRoadSurfaceAppearance` assigns one
+shared opaque material and writes six properties into an MPB, and blend, ZWrite,
+cull and queue are per-material state an MPB cannot carry. The sweep found no
+other call site worth changing in the same pass: the church's stained glass is
+deliberately opaque unlit HDR driven per-minute, and the city's facade windows
+are actively locked opaque by `CityWindowAppearanceTests`. Left as backlog, not
+touched: the pub and supermarket storefront glass, which need a third branch in
+an editor manifest→material mapping and a prefab rebuild.
+
+**The dock had no light on it, and chasing that found a worse bug.** The
+station's two fixtures both hang under the canopy on the yard side and both
+throw BACKWARDS: measured against the dock they are `92.7°` and `52.5°` off
+axis, against half-angles of `50` and `39`. The one square metre of this
+station a passenger has to find was the darkest ground on it. Re-aiming either
+is arithmetically dead — from `8.4 m` and `7.0 m`, delivering even the pad's own
+wash needs `28` and `19`, and this mountain's band tops out at `16` with the
+tests refusing anything over `18`. So: a boom off the outboard-forward column,
+housing and emissive lens at the flood's own `4.21`, one spot at `7.0` / range
+`9` / `72°`, aimed at a standing chest rather than at the concrete. It delivers
+`0.61` at the strip against the station practical's `0.42` on the pad — half
+again as bright as the ground beside it, which is what makes a marker.
+
+**And the reason its coordinates are derived is a defect that had already
+shipped.** The head is placed at `BoardingDockRightOffset + 0.52` /
+`BoardingDockForwardOffset`, because **the two terminals do not hang their cable
+in the same place**: the summit puts it `4.50 m` in front of the pad centre,
+`AlpineVillagePlanner` puts it at `1.90`. Anything authored at `4.50` stands
+`2.6 m` behind the village dock — which is exactly where the arriving hero opens
+his eyes.
+
+Chasing that number down exposed the entry above as half-wrong. The boarding
+side was ordered off a fence line authored at a fixed `1.56`, with the strip
+running from the top of the steps to twice the dock minus that. At the summit
+the chain came out fine. **At the village it solved to `2.77` → `1.03`: a strip
+`1.74 m` long IN THE WRONG DIRECTION**, with its own steps past its far end. No
+test saw it, because the only test that measured the strip built the summit —
+the same shape of blindness as the synthetic PlayMode scene, one level down. The
+whole side is now ordered from the DOCK outwards (strip, then the flight to its
+near end, then the barrier behind that), which reproduces the summit's authored
+numbers to the millimetre and gives the village a boarding side that exists.
+`BoardingFenceForward` stops being a constant, and that is the point.
+
+Verification: full EditMode — **1777 passed, 3 failed**. The three are the
+`CityMiscAssetTests` catalog reds carried in from the church-courtyard commit
+(`97`/`192` asserted against `106`/`205` built) and are untouched by this work.
+PlayMode `AlpineCablewayRidePlayModeTests` — **3 passed**, now built on
+`MountainRoadWorldBuilder` over the shipped plan with the real
+`MountainRoadWalkableArea` instead of a bare cube and an always-walkable area;
+that synthetic scene is exactly why the suite was green through a release in
+which the cabin could not be entered. Each new test was proved red before being
+trusted: `StationObstacles_KeepTheBoardingLaneClear` fails naming the hut and
+the lane when it is put back on the boarding side, and removing the treads
+makes the validator itself throw `the site cut the cableway boarding platform
+off from the arrival` out of `MountainRoadPlanner.Create`. The glass tests were
+proved red the same way: reverted to the old material they fail naming
+`Universal Render Pipeline/Unlit` where the glazing shader belongs. So was the
+inside-out strip: put back on the fence-ordered chain,
+`BoardingSide_IsOrderedFromTheDockAtBothTerminals(False)` fails with
+`-1.74001217`, which is the arithmetic exactly. Two light-count equalities had
+to move with the new fixture — `MountainCablewayTests` 2→3 under the cableway
+root, `MountainRoadSummitLightingTests` 5→6 within `45 m` of the apron; both
+were equalities rather than floors, which is why a third lamp could not be
+added quietly. No player build; no hand pass in the editor, and the hand pass is
+the open question above.
+
+Not settled from the files, for whoever runs the hand pass: whether `0.24` is
+right from the bench rather than on paper — the near pane sits about `0.4 m`
+from the eye and the far one about `1.15 m`, and the hero sees both plus the
+open doorway at once. And these panes used to be emissive, so the cabin has lost
+what faint self-glow it had on a climb that is deliberately dark; if it now
+reads as a black hole against the valley, the answer is a small practical inside
+the cabin, not a thicker glass.
+
 ## 2026-08-28 — The village is built, and a door that scales is not a door
 
 `tools/build-village-3d-model.py` is the fourth deterministic Blender kit, cloned

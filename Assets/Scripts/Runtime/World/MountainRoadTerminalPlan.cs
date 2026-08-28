@@ -407,6 +407,168 @@ namespace BarPromenade
         public float BoardingCabinOuterOffset =>
             TrackSeparation * 0.5f + CabinSize.x * 0.5f;
 
+        /// <summary>
+        /// The top of the station's own concrete pad, over the station frame's
+        /// origin. Everything on the pad is a step measured from here.
+        /// </summary>
+        public const float StationPadTopY = 0.16f;
+
+        /// <summary>
+        /// How far the four corner columns stand in from the pad's edges, and
+        /// how thick they are.
+        ///
+        /// These were literals inside the world builder, and the boarding
+        /// strip was laid out without them: it ran to `4.075` and the columns
+        /// stand at `3.81` to `4.09`, so the strip was built THROUGH one. The
+        /// strip now stops against a number the frame is also built from.
+        /// </summary>
+        public const float StationColumnRightInset = 0.55f;
+
+        public const float StationColumnForwardInset = 0.48f;
+        public const float StationColumnThickness = 0.28f;
+        public const float StationColumnHeight = 4.5f;
+
+        public float StationColumnRightOffset =>
+            StationArea.Size.x * 0.5f - StationColumnRightInset;
+
+        public float StationColumnForwardOffset =>
+            StationArea.Size.y * 0.5f - StationColumnForwardInset;
+
+        /// <summary>The inboard face of an outboard corner column.</summary>
+        public float StationColumnInnerFace =>
+            StationColumnRightOffset - StationColumnThickness * 0.5f;
+
+        private const float BoardingPlatformCabinGap = 0.06f;
+        private const float BoardingPlatformColumnGap = 0.06f;
+
+        /// <summary>Where the raised strip starts, just clear of a docked
+        /// cabin's outboard face.</summary>
+        public float BoardingPlatformInnerOffset =>
+            BoardingCabinOuterOffset + BoardingPlatformCabinGap;
+
+        /// <summary>And where it stops, just short of the station's own
+        /// column.</summary>
+        public float BoardingPlatformOuterOffset =>
+            StationColumnInnerFace - BoardingPlatformColumnGap;
+
+        public float BoardingPlatformWidth =>
+            BoardingPlatformOuterOffset - BoardingPlatformInnerOffset;
+
+        public float BoardingPlatformCenterOffset =>
+            (BoardingPlatformInnerOffset + BoardingPlatformOuterOffset) * 0.5f;
+
+        /// <summary>The dock's own offsets in the station frame, which is the
+        /// frame every piece of boarding furniture is laid out in.</summary>
+        public float BoardingDockRightOffset =>
+            Vector3.Dot(BoardingDockPosition - StationArea.Center, LineRight);
+
+        public float BoardingDockForwardOffset =>
+            Vector3.Dot(BoardingDockPosition - StationArea.Center, LineForward);
+
+        /// <summary>How high the strip stands over the station frame's own
+        /// origin.</summary>
+        public float BoardingPlatformLocalTop =>
+            BoardingPlatformTopY - StationArea.Center.y;
+
+        public const float BoardingFencePostThickness = 0.13f;
+        public const float BoardingFenceRailThickness = 0.10f;
+        public const float BoardingFencePostHeight = 1.55f;
+        public const float BoardingFenceLeftEndOffset = -2.2f;
+        public const int BoardingTreadCount = 3;
+        public const float BoardingTreadDepth = 0.34f;
+
+        /// <summary>
+        /// The jamb the gate leaf hangs off: the fence's outboard end, set
+        /// against the strip rather than on the station's centre line.
+        ///
+        /// The opening runs from here out to <see cref="StationColumnInnerFace"/>,
+        /// which is the far side of the bay and is the building's own column.
+        /// A second jamb post cannot stand outboard of the strip - the column
+        /// is already there - so the fence ends and the way through is the bay
+        /// beside it.
+        /// </summary>
+        public float BoardingGateJambOffset =>
+            BoardingPlatformInnerOffset - 0.09f;
+
+        public float BoardingGateWidth =>
+            StationColumnInnerFace -
+            (BoardingGateJambOffset + BoardingFencePostThickness * 0.5f);
+
+        /// <summary>
+        /// How far back from the dock the strip begins, and how far past it it
+        /// runs. The strip is centred on the dock, so a cabin always stands
+        /// against its middle.
+        /// </summary>
+        public const float BoardingPlatformReach = 1.73f;
+
+        /// <summary>The clear ground between the barrier and the first tread.
+        /// </summary>
+        public const float BoardingFenceStepGap = 0.19f;
+
+        /// <summary>
+        /// THE WHOLE BOARDING SIDE HANGS OFF THE DOCK, and this is the fix for
+        /// a defect that shipped invisible.
+        ///
+        /// It used to hang off a fence line authored at a fixed `1.56`, with
+        /// the strip running from the top of the steps to twice the dock minus
+        /// that. At the summit the dock is `4.50` forward and the chain came
+        /// out fine. **At the village it is `1.90`** - `AlpineVillagePlanner`
+        /// puts the near cable `1.9 m` in front of its pad, not `4.5` - so the
+        /// strip was solved as `2.77` to `1.03`: a box **`1.74 m` LONG IN THE
+        /// WRONG DIRECTION**, with its steps in front of its own far end. No
+        /// test saw it, because the only test that measured the strip built
+        /// the SUMMIT.
+        ///
+        /// Ordered from the dock outwards, every terminal gets the same
+        /// boarding side wherever its cable happens to fall. At the summit
+        /// these reproduce the authored numbers to the millimetre.
+        /// </summary>
+        public float BoardingPlatformNearForward =>
+            BoardingDockForwardOffset - BoardingPlatformReach;
+
+        public float BoardingPlatformFarForward =>
+            BoardingDockForwardOffset + BoardingPlatformReach;
+
+        public float BoardingPlatformLength =>
+            BoardingPlatformFarForward - BoardingPlatformNearForward;
+
+        /// <summary>The flight climbs to the strip's near end.</summary>
+        public float BoardingStepsFarForward => BoardingPlatformNearForward;
+
+        public float BoardingStepsNearForward =>
+            BoardingStepsFarForward - BoardingTreadDepth * BoardingTreadCount;
+
+        /// <summary>
+        /// And the barrier stands back of the flight. It was a constant
+        /// `1.56`; deriving it is what stops a terminal whose cable sits close
+        /// to the pad from putting its own fence on top of its own steps.
+        /// </summary>
+        public float BoardingFenceForward =>
+            BoardingStepsNearForward - BoardingFenceStepGap;
+
+        /// <summary>
+        /// The concrete under the boarding strip where it runs off the front
+        /// of the pad.
+        ///
+        /// The bullwheel is authored `4.5 m` forward of the station centre -
+        /// outside the canopy footprint entirely - and the pad is only
+        /// `6.2 m` deep, so the strip that serves a docked cabin stands over
+        /// open ground for most of its length. It is kept to the STRIP's width
+        /// rather than the pad's: at the pad's width its outer-forward corner
+        /// lands `0.07 m` from the plateau's rim, and the ground it is meant
+        /// to be standing on stops there.
+        /// </summary>
+        public float BoardingApronInnerOffset =>
+            BoardingPlatformInnerOffset - 0.385f;
+
+        public float BoardingApronOuterOffset => BoardingPlatformOuterOffset;
+
+        public float BoardingApronNearForward =>
+            StationArea.Size.y * 0.5f - 0.5f;
+
+        public float BoardingApronFarForward =>
+            BoardingPlatformFarForward + 0.2f;
+
         public bool ContainsClearanceXZ(Vector2 point, float clearance)
         {
             Vector2 start = new Vector2(

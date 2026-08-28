@@ -204,11 +204,17 @@ namespace BarPromenade
                 yield break;
             }
 
-            // Bring a cabin in and seat him in it before anything is shown.
-            line.RequestDockAt(cableway.BoardingLoopDistance);
-            while (!line.IsDocked)
+            // Seat him before anything is shown. The line at this end is built
+            // standing with a cabin on the point, so there is normally nothing
+            // to call and nothing to wait for; the request stays as the way
+            // back for a line that is somehow already running.
+            if (!line.IsDocked)
             {
-                yield return null;
+                line.RequestDockAt(cableway.BoardingLoopDistance);
+                while (!line.IsDocked)
+                {
+                    yield return null;
+                }
             }
 
             // Re-solve the seat against THIS station before anything reads
