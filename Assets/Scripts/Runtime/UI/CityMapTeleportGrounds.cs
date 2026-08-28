@@ -13,23 +13,23 @@ namespace BarPromenade
     /// the nearest legal point is used, and its height re-sampled, rather
     /// than dropping the player in.
     ///
-    /// A building footprint is the one thing the mask does NOT exclude: the
-    /// ground under a block is walkable and the building is a collider
-    /// standing on it, which is right for walking and wrong for arriving.
-    /// The lattice would otherwise offer every block square as a destination
-    /// inside its own building, so the footprints are subtracted here.
+    /// Solid obstacle footprints are the one thing the mask does NOT exclude:
+    /// their underlying ground is walkable and a collider stands on it, which
+    /// is right for walking and wrong for arriving. The lattice would
+    /// otherwise offer buildings and courtyard fixtures as destinations, so
+    /// their footprints are subtracted here.
     /// </summary>
     public sealed class CityMapCityTeleportGround : ICityMapTeleportGround
     {
         private readonly CityLayout layout;
-        private readonly List<Rect> buildingFootprints;
+        private readonly List<Rect> obstacleFootprints;
         private RoadWalkableArea walkableArea;
 
         public CityMapCityTeleportGround(CityLayout layout)
         {
             this.layout = layout ??
                           throw new ArgumentNullException(nameof(layout));
-            buildingFootprints = CollectBuildingFootprints(layout);
+            obstacleFootprints = CollectObstacleFootprints(layout);
         }
 
         public GameAreaId Area => GameAreaId.City;
@@ -49,7 +49,7 @@ namespace BarPromenade
             if (!mask.Contains(
                     new Vector3(landing.x, 0f, landing.y),
                     radius) ||
-                IsInsideBuilding(landing))
+                IsInsideObstacle(landing))
             {
                 return false;
             }
@@ -130,11 +130,11 @@ namespace BarPromenade
             return false;
         }
 
-        private bool IsInsideBuilding(Vector2 worldXZ)
+        private bool IsInsideObstacle(Vector2 worldXZ)
         {
-            for (int index = 0; index < buildingFootprints.Count; index++)
+            for (int index = 0; index < obstacleFootprints.Count; index++)
             {
-                if (buildingFootprints[index].Contains(worldXZ))
+                if (obstacleFootprints[index].Contains(worldXZ))
                 {
                     return true;
                 }
@@ -151,7 +151,7 @@ namespace BarPromenade
             return walkableArea ??= RoadWalkableArea.FromLayout(layout);
         }
 
-        private static List<Rect> CollectBuildingFootprints(
+        private static List<Rect> CollectObstacleFootprints(
             CityLayout layout)
         {
             float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
@@ -178,6 +178,26 @@ namespace BarPromenade
             if (church != null)
             {
                 footprints.Add(Expand(church.ModelFootprint, radius));
+                CityChurchCemeteryPassagePlan passage =
+                    CityChurchCemeteryPassagePlanner.Create(
+                        layout,
+                        church);
+                CityChurchCourtyardPlan courtyard =
+                    CityChurchCourtyardPlanner.Create(
+                        layout,
+                        church,
+                        passage);
+                if (courtyard != null)
+                {
+                    for (int index = 0;
+                         index < courtyard.Fixtures.Count;
+                         index++)
+                    {
+                        footprints.Add(Expand(
+                            courtyard.Fixtures[index].BlockerBounds,
+                            radius));
+                    }
+                }
             }
 
             return footprints;
@@ -333,6 +353,81 @@ namespace BarPromenade
             }
 
             return bestTop;
+        }
+    }
+
+    /// <summary>
+    /// The village's teleport ground.
+    ///
+    /// Simpler than the mountain's, because the village has one shared height
+    /// contract: <c>AlpineVillageTerrainSampler.SampleHeight</c> answers for
+    /// the lane, the shelves and the slope between them, and it is the same
+    /// function the ground mesh was built from. So a landed square stands on
+    /// exactly the surface the player can see, with no per-feature special
+    /// case to keep in step.
+    /// </summary>
+    public sealed class CityMapAlpineVillageTeleportGround
+        : ICityMapTeleportGround
+    {
+        private readonly AlpineVillagePlan plan;
+        private readonly AlpineVillageWalkableArea walkableArea;
+
+        public CityMapAlpineVillageTeleportGround(AlpineVillagePlan plan)
+            : this(new AlpineVillageWalkableArea(plan))
+        {
+        }
+
+        public CityMapAlpineVillageTeleportGround(
+            AlpineVillageWalkableArea area)
+        {
+            walkableArea = area ??
+                           throw new ArgumentNullException(nameof(area));
+            plan = area.Plan;
+        }
+
+        public GameAreaId Area => GameAreaId.AlpineVillage;
+
+        public bool TryResolveStandingPosition(
+            Vector2 worldXZ,
+            out Vector3 standingPosition)
+        {
+            standingPosition = default;
+            float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            var probe = new Vector3(worldXZ.x, 0f, worldXZ.y);
+            Vector3 candidate = walkableArea.Contains(probe, radius)
+                ? probe
+                : walkableArea.ClosestPoint(probe, radius);
+            var landing = new Vector2(candidate.x, candidate.z);
+
+            // Re-tested at the FULL radius the motor enforces rather than
+            // trusted: a square whose only access is a hair outside the mask
+            // is not a destination, and its neighbour usually is.
+            if (!walkableArea.Contains(
+                    new Vector3(landing.x, 0f, landing.y),
+                    radius))
+            {
+                return false;
+            }
+
+            standingPosition = new Vector3(
+                landing.x,
+                AlpineVillageTerrainSampler.SampleHeight(plan, landing) +
+                PlayerFactory.GroundedRootOffset,
+                landing.y);
+            return true;
+        }
+
+        /// <summary>
+        /// The height is always re-derived, never taken from the arrival. A
+        /// village point is authored at whatever height suited the thing it
+        /// names - a door threshold, a cable centre - and that is no promise
+        /// about the ground under it.
+        /// </summary>
+        public bool TryClampArrival(Vector3 arrival, out Vector3 destination)
+        {
+            return TryResolveStandingPosition(
+                new Vector2(arrival.x, arrival.z),
+                out destination);
         }
     }
 }

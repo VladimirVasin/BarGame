@@ -1,0 +1,1399 @@
+{
+  "generator": "tools/build-mountain-road-misc-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "design_id": "village_wave1_v1",
+  "display_name": "Village Wave 1",
+  "source_axes": {
+    "right": "+X",
+    "forward": "+Y",
+    "up": "+Z"
+  },
+  "unity_axes": {
+    "right": "+X",
+    "forward": "+Z",
+    "up": "+Y",
+    "fbx_axis_forward": "-Z",
+    "fbx_axis_up": "+Y",
+    "bake_space_transform": true
+  },
+  "root_contract": {
+    "origin": "descriptor_center",
+    "source_ground_axis": "Z",
+    "source_ground_value": -0.5,
+    "unity_ground_axis": "Y",
+    "unity_ground_value": -0.5,
+    "normalized_descriptor_min": [
+      -0.5,
+      -0.5,
+      -0.5
+    ],
+    "normalized_descriptor_max": [
+      0.5,
+      0.5,
+      0.5
+    ]
+  },
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "mesh_count": 27,
+  "assembly_count": 11,
+  "triangle_count": 1844,
+  "assemblies": [
+    {
+      "kind": "House",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_House_Variant00_Walls",
+        "GEO_VIL_House_Variant00_Roof",
+        "GEO_VIL_House_Variant00_Plinth",
+        "GEO_VIL_House_Variant00_Chimney"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.465,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.465,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.465
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.5,
+        0.465
+      ]
+    },
+    {
+      "kind": "House",
+      "variant": 1,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_House_Variant01_Walls",
+        "GEO_VIL_House_Variant01_Roof",
+        "GEO_VIL_House_Variant01_Plinth",
+        "GEO_VIL_House_Variant01_Chimney"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.47,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.47,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.47
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.5,
+        0.47
+      ]
+    },
+    {
+      "kind": "House",
+      "variant": 2,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_House_Variant02_Walls",
+        "GEO_VIL_House_Variant02_Roof",
+        "GEO_VIL_House_Variant02_Plinth",
+        "GEO_VIL_House_Variant02_Chimney"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.475,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.475,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.475
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.5,
+        0.475
+      ]
+    },
+    {
+      "kind": "House",
+      "variant": 3,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_House_Variant03_Walls",
+        "GEO_VIL_House_Variant03_Roof",
+        "GEO_VIL_House_Variant03_Plinth",
+        "GEO_VIL_House_Variant03_Chimney"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.48,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.48,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.48
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.5,
+        0.48
+      ]
+    },
+    {
+      "kind": "Chapel",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_Chapel_Walls",
+        "GEO_VIL_Chapel_Roof",
+        "GEO_VIL_Chapel_Plinth"
+      ],
+      "bounds_min_source": [
+        -0.49,
+        -0.463516,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.49,
+        0.455,
+        0.4
+      ],
+      "bounds_min_unity": [
+        -0.49,
+        -0.5,
+        -0.463516
+      ],
+      "bounds_max_unity": [
+        0.49,
+        0.4,
+        0.455
+      ]
+    },
+    {
+      "kind": "MineCart",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_MineCart_Body",
+        "GEO_VIL_MineCart_Wheels"
+      ],
+      "bounds_min_source": [
+        -0.41,
+        -0.4825,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.41,
+        0.4825,
+        0.317169
+      ],
+      "bounds_min_unity": [
+        -0.41,
+        -0.5,
+        -0.4825
+      ],
+      "bounds_max_unity": [
+        0.41,
+        0.317169,
+        0.4825
+      ]
+    },
+    {
+      "kind": "AditFrame",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_AditFrame_Timber",
+        "GEO_VIL_AditFrame_Rubble"
+      ],
+      "bounds_min_source": [
+        -0.49,
+        -0.39,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.49,
+        0.47,
+        0.395
+      ],
+      "bounds_min_unity": [
+        -0.49,
+        -0.5,
+        -0.39
+      ],
+      "bounds_max_unity": [
+        0.49,
+        0.395,
+        0.47
+      ]
+    },
+    {
+      "kind": "GraveMarker",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_GraveMarker_Variant00_Stone"
+      ],
+      "bounds_min_source": [
+        -0.48,
+        -0.36,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.48,
+        0.36,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.48,
+        -0.5,
+        -0.36
+      ],
+      "bounds_max_unity": [
+        0.48,
+        0.5,
+        0.36
+      ]
+    },
+    {
+      "kind": "GraveMarker",
+      "variant": 1,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_GraveMarker_Variant01_Stone"
+      ],
+      "bounds_min_source": [
+        -0.48,
+        -0.36,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.48,
+        0.36,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.48,
+        -0.5,
+        -0.36
+      ],
+      "bounds_max_unity": [
+        0.48,
+        0.5,
+        0.36
+      ]
+    },
+    {
+      "kind": "GraveMarker",
+      "variant": 2,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_GraveMarker_Variant02_Stone"
+      ],
+      "bounds_min_source": [
+        -0.48,
+        -0.36,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.48,
+        0.36,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.48,
+        -0.5,
+        -0.36
+      ],
+      "bounds_max_unity": [
+        0.48,
+        0.5,
+        0.36
+      ]
+    },
+    {
+      "kind": "Firewood",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_Firewood_Wood"
+      ],
+      "bounds_min_source": [
+        -0.462272,
+        -0.46259,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.475958,
+        0.462699,
+        0.391086
+      ],
+      "bounds_min_unity": [
+        -0.462272,
+        -0.5,
+        -0.46259
+      ],
+      "bounds_max_unity": [
+        0.475958,
+        0.391086,
+        0.462699
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "mesh": "GEO_VIL_House_Variant00_Walls",
+      "kind": "House",
+      "variant": 0,
+      "part_role": "Walls",
+      "surface_kind": "Timber",
+      "tint_role": "HouseWallA",
+      "vertices": 10,
+      "triangles": 16,
+      "bounds_min_source": [
+        -0.46,
+        -0.415,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.49,
+        0.415,
+        0.4
+      ],
+      "bounds_min_unity": [
+        -0.46,
+        -0.5,
+        -0.415
+      ],
+      "bounds_max_unity": [
+        0.49,
+        0.4,
+        0.415
+      ],
+      "uv_min": [
+        0.04,
+        0.0
+      ],
+      "uv_max": [
+        0.99,
+        0.915
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant00_Roof",
+      "kind": "House",
+      "variant": 0,
+      "part_role": "Roof",
+      "surface_kind": "Timber",
+      "tint_role": "HouseRoof",
+      "vertices": 32,
+      "triangles": 52,
+      "bounds_min_source": [
+        -0.5,
+        -0.465,
+        -0.09
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.465,
+        0.4606
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.09,
+        -0.465
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.4606,
+        0.465
+      ],
+      "uv_min": [
+        0.0,
+        0.035
+      ],
+      "uv_max": [
+        1.0,
+        0.965
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant00_Plinth",
+      "kind": "House",
+      "variant": 0,
+      "part_role": "Plinth",
+      "surface_kind": "LayeredStone",
+      "tint_role": "HousePlinth",
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.4825,
+        -0.44,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4825,
+        0.44,
+        -0.43
+      ],
+      "bounds_min_unity": [
+        -0.4825,
+        -0.5,
+        -0.44
+      ],
+      "bounds_max_unity": [
+        0.4825,
+        -0.43,
+        0.44
+      ],
+      "uv_min": [
+        0.0175,
+        0.0
+      ],
+      "uv_max": [
+        0.9825,
+        0.92425
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant00_Chimney",
+      "kind": "House",
+      "variant": 0,
+      "part_role": "Chimney",
+      "surface_kind": "Masonry",
+      "tint_role": "HouseChimney",
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        0.02075,
+        -0.25925,
+        0.16
+      ],
+      "bounds_max_source": [
+        0.16575,
+        -0.11425,
+        0.5
+      ],
+      "bounds_min_unity": [
+        0.02075,
+        0.16,
+        -0.25925
+      ],
+      "bounds_max_unity": [
+        0.16575,
+        0.5,
+        -0.11425
+      ],
+      "uv_min": [
+        0.24075,
+        0.24075
+      ],
+      "uv_max": [
+        0.66575,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant01_Walls",
+      "kind": "House",
+      "variant": 1,
+      "part_role": "Walls",
+      "surface_kind": "Timber",
+      "tint_role": "HouseWallB",
+      "vertices": 10,
+      "triangles": 16,
+      "bounds_min_source": [
+        -0.498,
+        -0.42,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.46,
+        0.42,
+        0.4
+      ],
+      "bounds_min_unity": [
+        -0.498,
+        -0.5,
+        -0.42
+      ],
+      "bounds_max_unity": [
+        0.46,
+        0.4,
+        0.42
+      ],
+      "uv_min": [
+        0.002,
+        0.0
+      ],
+      "uv_max": [
+        0.96,
+        0.92
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant01_Roof",
+      "kind": "House",
+      "variant": 1,
+      "part_role": "Roof",
+      "surface_kind": "Timber",
+      "tint_role": "HouseRoof",
+      "vertices": 32,
+      "triangles": 52,
+      "bounds_min_source": [
+        -0.5,
+        -0.47,
+        -0.115
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.47,
+        0.4478
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.115,
+        -0.47
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.4478,
+        0.47
+      ],
+      "uv_min": [
+        0.0,
+        0.03
+      ],
+      "uv_max": [
+        1.0,
+        0.97
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant01_Plinth",
+      "kind": "House",
+      "variant": 1,
+      "part_role": "Plinth",
+      "surface_kind": "LayeredStone",
+      "tint_role": "HousePlinth",
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.4825,
+        -0.445,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4825,
+        0.445,
+        -0.43
+      ],
+      "bounds_min_unity": [
+        -0.4825,
+        -0.5,
+        -0.445
+      ],
+      "bounds_max_unity": [
+        0.4825,
+        -0.43,
+        0.445
+      ],
+      "uv_min": [
+        0.0175,
+        0.0
+      ],
+      "uv_max": [
+        0.9825,
+        0.92925
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant01_Chimney",
+      "kind": "House",
+      "variant": 1,
+      "part_role": "Chimney",
+      "surface_kind": "Masonry",
+      "tint_role": "HouseChimney",
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -0.17925,
+        -0.2615,
+        0.16
+      ],
+      "bounds_max_source": [
+        -0.03425,
+        -0.1165,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.17925,
+        0.16,
+        -0.2615
+      ],
+      "bounds_max_unity": [
+        -0.03425,
+        0.5,
+        -0.1165
+      ],
+      "uv_min": [
+        0.2385,
+        0.2385
+      ],
+      "uv_max": [
+        0.46575,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant02_Walls",
+      "kind": "House",
+      "variant": 2,
+      "part_role": "Walls",
+      "surface_kind": "Timber",
+      "tint_role": "HouseWallC",
+      "vertices": 10,
+      "triangles": 16,
+      "bounds_min_source": [
+        -0.46,
+        -0.425,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.482,
+        0.425,
+        0.4
+      ],
+      "bounds_min_unity": [
+        -0.46,
+        -0.5,
+        -0.425
+      ],
+      "bounds_max_unity": [
+        0.482,
+        0.4,
+        0.425
+      ],
+      "uv_min": [
+        0.04,
+        0.0
+      ],
+      "uv_max": [
+        0.982,
+        0.925
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant02_Roof",
+      "kind": "House",
+      "variant": 2,
+      "part_role": "Roof",
+      "surface_kind": "Timber",
+      "tint_role": "HouseRoof",
+      "vertices": 32,
+      "triangles": 52,
+      "bounds_min_source": [
+        -0.5,
+        -0.475,
+        -0.025
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.475,
+        0.4654
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.025,
+        -0.475
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.4654,
+        0.475
+      ],
+      "uv_min": [
+        0.0,
+        0.025
+      ],
+      "uv_max": [
+        1.0,
+        0.975
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant02_Plinth",
+      "kind": "House",
+      "variant": 2,
+      "part_role": "Plinth",
+      "surface_kind": "LayeredStone",
+      "tint_role": "HousePlinth",
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.4825,
+        -0.45,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4825,
+        0.45,
+        -0.43
+      ],
+      "bounds_min_unity": [
+        -0.4825,
+        -0.5,
+        -0.45
+      ],
+      "bounds_max_unity": [
+        0.4825,
+        -0.43,
+        0.45
+      ],
+      "uv_min": [
+        0.0175,
+        0.0
+      ],
+      "uv_max": [
+        0.9825,
+        0.93425
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant02_Chimney",
+      "kind": "House",
+      "variant": 2,
+      "part_role": "Chimney",
+      "surface_kind": "Masonry",
+      "tint_role": "HouseChimney",
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -0.0175,
+        -0.26375,
+        0.16
+      ],
+      "bounds_max_source": [
+        0.1275,
+        -0.11875,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.0175,
+        0.16,
+        -0.26375
+      ],
+      "bounds_max_unity": [
+        0.1275,
+        0.5,
+        -0.11875
+      ],
+      "uv_min": [
+        0.23625,
+        0.23625
+      ],
+      "uv_max": [
+        0.6275,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant03_Walls",
+      "kind": "House",
+      "variant": 3,
+      "part_role": "Walls",
+      "surface_kind": "Timber",
+      "tint_role": "HouseWallD",
+      "vertices": 10,
+      "triangles": 16,
+      "bounds_min_source": [
+        -0.486,
+        -0.43,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.46,
+        0.43,
+        0.4
+      ],
+      "bounds_min_unity": [
+        -0.486,
+        -0.5,
+        -0.43
+      ],
+      "bounds_max_unity": [
+        0.46,
+        0.4,
+        0.43
+      ],
+      "uv_min": [
+        0.014,
+        0.0
+      ],
+      "uv_max": [
+        0.96,
+        0.93
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant03_Roof",
+      "kind": "House",
+      "variant": 3,
+      "part_role": "Roof",
+      "surface_kind": "Timber",
+      "tint_role": "HouseRoof",
+      "vertices": 32,
+      "triangles": 52,
+      "bounds_min_source": [
+        -0.5,
+        -0.48,
+        -0.13
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.48,
+        0.451
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.13,
+        -0.48
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.451,
+        0.48
+      ],
+      "uv_min": [
+        0.0,
+        0.02
+      ],
+      "uv_max": [
+        1.0,
+        0.98
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant03_Plinth",
+      "kind": "House",
+      "variant": 3,
+      "part_role": "Plinth",
+      "surface_kind": "LayeredStone",
+      "tint_role": "HousePlinth",
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.4825,
+        -0.455,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4825,
+        0.455,
+        -0.43
+      ],
+      "bounds_min_unity": [
+        -0.4825,
+        -0.5,
+        -0.455
+      ],
+      "bounds_max_unity": [
+        0.4825,
+        -0.43,
+        0.455
+      ],
+      "uv_min": [
+        0.0175,
+        0.0
+      ],
+      "uv_max": [
+        0.9825,
+        0.93925
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant03_Chimney",
+      "kind": "House",
+      "variant": 3,
+      "part_role": "Chimney",
+      "surface_kind": "Masonry",
+      "tint_role": "HouseChimney",
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -0.1535,
+        -0.266,
+        0.16
+      ],
+      "bounds_max_source": [
+        -0.0085,
+        -0.121,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.1535,
+        0.16,
+        -0.266
+      ],
+      "bounds_max_unity": [
+        -0.0085,
+        0.5,
+        -0.121
+      ],
+      "uv_min": [
+        0.234,
+        0.234
+      ],
+      "uv_max": [
+        0.4915,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_Chapel_Walls",
+      "kind": "Chapel",
+      "variant": 0,
+      "part_role": "Walls",
+      "surface_kind": "Masonry",
+      "tint_role": "ChapelWhitewash",
+      "vertices": 10,
+      "triangles": 16,
+      "bounds_min_source": [
+        -0.44,
+        -0.4,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.448,
+        0.4,
+        0.34
+      ],
+      "bounds_min_unity": [
+        -0.44,
+        -0.5,
+        -0.4
+      ],
+      "bounds_max_unity": [
+        0.448,
+        0.34,
+        0.4
+      ],
+      "uv_min": [
+        0.06,
+        0.0
+      ],
+      "uv_max": [
+        0.948,
+        0.9
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_Chapel_Roof",
+      "kind": "Chapel",
+      "variant": 0,
+      "part_role": "Roof",
+      "surface_kind": "Timber",
+      "tint_role": "ChapelRoof",
+      "vertices": 32,
+      "triangles": 52,
+      "bounds_min_source": [
+        -0.49,
+        -0.455,
+        0.05
+      ],
+      "bounds_max_source": [
+        0.49,
+        0.455,
+        0.4
+      ],
+      "bounds_min_unity": [
+        -0.49,
+        0.05,
+        -0.455
+      ],
+      "bounds_max_unity": [
+        0.49,
+        0.4,
+        0.455
+      ],
+      "uv_min": [
+        0.01,
+        0.045
+      ],
+      "uv_max": [
+        0.99,
+        0.955
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_Chapel_Plinth",
+      "kind": "Chapel",
+      "variant": 0,
+      "part_role": "Plinth",
+      "surface_kind": "LayeredStone",
+      "tint_role": "HousePlinth",
+      "vertices": 30,
+      "triangles": 52,
+      "bounds_min_source": [
+        -0.4775,
+        -0.463516,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4775,
+        0.43,
+        -0.371224
+      ],
+      "bounds_min_unity": [
+        -0.4775,
+        -0.5,
+        -0.463516
+      ],
+      "bounds_max_unity": [
+        0.4775,
+        -0.371224,
+        0.43
+      ],
+      "uv_min": [
+        0.0225,
+        0.0
+      ],
+      "uv_max": [
+        0.9775,
+        0.912
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_MineCart_Body",
+      "kind": "MineCart",
+      "variant": 0,
+      "part_role": "Body",
+      "surface_kind": "RustedIron",
+      "tint_role": "CartIron",
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min_source": [
+        -0.3725,
+        -0.4825,
+        -0.130331
+      ],
+      "bounds_max_source": [
+        0.375,
+        0.4825,
+        0.317169
+      ],
+      "bounds_min_unity": [
+        -0.3725,
+        -0.130331,
+        -0.4825
+      ],
+      "bounds_max_unity": [
+        0.375,
+        0.317169,
+        0.4825
+      ],
+      "uv_min": [
+        0.0175,
+        0.0175
+      ],
+      "uv_max": [
+        0.9825,
+        0.9825
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_MineCart_Wheels",
+      "kind": "MineCart",
+      "variant": 0,
+      "part_role": "Wheels",
+      "surface_kind": "RustedIron",
+      "tint_role": "CartWheel",
+      "vertices": 108,
+      "triangles": 192,
+      "bounds_min_source": [
+        -0.41,
+        -0.46,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.41,
+        0.46,
+        -0.195662
+      ],
+      "bounds_min_unity": [
+        -0.41,
+        -0.5,
+        -0.46
+      ],
+      "bounds_max_unity": [
+        0.41,
+        -0.195662,
+        0.46
+      ],
+      "uv_min": [
+        0.04,
+        0.0
+      ],
+      "uv_max": [
+        0.96,
+        0.929443
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_AditFrame_Timber",
+      "kind": "AditFrame",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "AditTimber",
+      "vertices": 60,
+      "triangles": 104,
+      "bounds_min_source": [
+        -0.422828,
+        -0.0775,
+        -0.494615
+      ],
+      "bounds_max_source": [
+        0.422854,
+        0.25,
+        0.395
+      ],
+      "bounds_min_unity": [
+        -0.422828,
+        -0.494615,
+        -0.0775
+      ],
+      "bounds_max_unity": [
+        0.422854,
+        0.395,
+        0.25
+      ],
+      "uv_min": [
+        0.077172,
+        0.005385
+      ],
+      "uv_max": [
+        0.922854,
+        0.895
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_AditFrame_Rubble",
+      "kind": "AditFrame",
+      "variant": 0,
+      "part_role": "Rubble",
+      "surface_kind": "LayeredStone",
+      "tint_role": "AditRubble",
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -0.49,
+        -0.39,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.49,
+        0.47,
+        -0.25
+      ],
+      "bounds_min_unity": [
+        -0.49,
+        -0.5,
+        -0.39
+      ],
+      "bounds_max_unity": [
+        0.49,
+        -0.25,
+        0.47
+      ],
+      "uv_min": [
+        0.01,
+        0.0
+      ],
+      "uv_max": [
+        0.99,
+        0.95
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_GraveMarker_Variant00_Stone",
+      "kind": "GraveMarker",
+      "variant": 0,
+      "part_role": "Stone",
+      "surface_kind": "LayeredStone",
+      "tint_role": "GraveStone",
+      "vertices": 26,
+      "triangles": 44,
+      "bounds_min_source": [
+        -0.48,
+        -0.36,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.48,
+        0.36,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.48,
+        -0.5,
+        -0.36
+      ],
+      "bounds_max_unity": [
+        0.48,
+        0.5,
+        0.36
+      ],
+      "uv_min": [
+        0.02,
+        0.0
+      ],
+      "uv_max": [
+        0.98,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_GraveMarker_Variant01_Stone",
+      "kind": "GraveMarker",
+      "variant": 1,
+      "part_role": "Stone",
+      "surface_kind": "LayeredStone",
+      "tint_role": "GraveStone",
+      "vertices": 26,
+      "triangles": 44,
+      "bounds_min_source": [
+        -0.48,
+        -0.36,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.48,
+        0.36,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.48,
+        -0.5,
+        -0.36
+      ],
+      "bounds_max_unity": [
+        0.48,
+        0.5,
+        0.36
+      ],
+      "uv_min": [
+        0.02,
+        0.0
+      ],
+      "uv_max": [
+        0.98,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_GraveMarker_Variant02_Stone",
+      "kind": "GraveMarker",
+      "variant": 2,
+      "part_role": "Stone",
+      "surface_kind": "LayeredStone",
+      "tint_role": "GraveStone",
+      "vertices": 26,
+      "triangles": 44,
+      "bounds_min_source": [
+        -0.48,
+        -0.36,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.48,
+        0.36,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.48,
+        -0.5,
+        -0.36
+      ],
+      "bounds_max_unity": [
+        0.48,
+        0.5,
+        0.36
+      ],
+      "uv_min": [
+        0.02,
+        0.0
+      ],
+      "uv_max": [
+        0.98,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_Firewood_Wood",
+      "kind": "Firewood",
+      "variant": 0,
+      "part_role": "Wood",
+      "surface_kind": "BarkAndDeadwood",
+      "tint_role": "Firewood",
+      "vertices": 238,
+      "triangles": 408,
+      "bounds_min_source": [
+        -0.462272,
+        -0.46259,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.475958,
+        0.462699,
+        0.391086
+      ],
+      "bounds_min_unity": [
+        -0.462272,
+        -0.5,
+        -0.46259
+      ],
+      "bounds_max_unity": [
+        0.475958,
+        0.391086,
+        0.462699
+      ],
+      "uv_min": [
+        0.03741,
+        0.0
+      ],
+      "uv_max": [
+        0.975958,
+        0.961892
+      ]
+    }
+  ],
+  "build_signature": "e6181b4c50c4b5e7a040e09ab38855e2f98ef74ab41b3eda22b8777469ff0d26"
+}

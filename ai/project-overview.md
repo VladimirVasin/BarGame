@@ -19,10 +19,11 @@
   `Assets/Scenes/HomeInterior.unity`,
   `Assets/Scenes/MountainRoad.unity` and
   `Assets/Scenes/AreaLoading.unity`, followed by
-  `Assets/Scenes/ChurchInterior.unity`. The last three are appended at build
-  indices `7`, `8` and `9`, preserving every previous index.
+  `Assets/Scenes/ChurchInterior.unity` and
+  `Assets/Scenes/AlpineVillage.unity`. The last four are appended at build
+  indices `7`, `8`, `9` and `10`, preserving every previous index.
 - Runtime assembly: `BarPromenade.Runtime`.
-- Player presentation: one modular `Player3D.prefab` in all seven gameplay
+- Player presentation: one modular `Player3D.prefab` in all eight gameplay
   roots, with independent mesh parts, a Generic in-place action set,
   same-prefab first-person subsets, a dedicated portrait, real mesh shadows
   and an analytic contact patch.
@@ -33,8 +34,9 @@
 
 ## Implemented MVP
 
-A runtime-composed 3D coastal city and separately loaded mountain road in which
-one modular low-poly 3D hero walks the streets and climb, approaches the
+A runtime-composed 3D coastal city, a separately loaded mountain road and the
+village above its cableway, in which
+one modular low-poly 3D hero walks the streets, the climb and the village lane, approaches the
 interactive home-adjacent bar, a supermarket, his home and the church north of
 the cemetery,
 enters separate interiors, and returns to the matching exterior entrance.
@@ -114,6 +116,39 @@ The vertical slice contains:
   including one loose bridge rail; one tunnel practical visibly flickers. Its
   root may generate the pure City layout/mountain plan needed by the City map
   tab, but it never calls a City world builder or creates City GameObjects;
+- a separately runtime-composed `AlpineVillage` area above the cableway, on the
+  same plan/validator/builder shape. One crooked lane climbs `82.1 m` and
+  `6.4 m` — an average `7.8%`, under the `8.3%` pedestrian ceiling, with no
+  step anywhere on it — from the cableway station on the lowest terrace to the
+  house at its head, which is the highest thing in the village and the only
+  thing the composition points at. Twelve houses stand either side; the chapel
+  over the source, the adit with its overgrown spoil and the burial ground sit
+  on side spurs, reached by branches of the capsule-chain walkable mask.
+  `AlpineVillageTerrainSampler` is the one height contract shared by planning,
+  validation, the ground mesh and the map's teleport ground; its enclosing
+  ridge climbs at `1.15` (`49°`), deliberately steeper than the hero's own
+  `45°` slope limit, so the bowl is closed by the mountain and not only by the
+  mask. Warm fog and warm key light are the zone's whole signature, and the
+  dimming grade §12 calls for is already a parameter of the per-minute
+  lighting apply rather than something written over it, held at `0`. Snow has
+  a ceiling as well as a floor because the storm is banned outright, and the
+  wind is damped where the exposed road amplified it. The cableway does not
+  carries in both directions. Pressing `E` on the platform brakes the line to
+  a stop with a cabin on the boarding point - a distance-driven profile, so
+  it comes to rest ON the point rather than near it - seats the hero on the
+  cabin bench in first person, lets the line go, and fades behind the snow
+  ridge into `AreaArrivalToken.Cableway` at the far terminal, which holds the
+  arrival under a black screen until the transition flag clears. The two
+  terminals differ by `MountainCablewayStationKind`: drive below with motor,
+  reducer and shaft, tension carriage and weight stack above with no motor at
+  all. Boarding is outboard of the outbound track, because the gap between the
+  two tracks is filled by the bullwheel pedestal. The village wears a fourth
+  deterministic Blender kit - `11` assemblies / `27` meshes of crooked houses,
+  chapel, mine cart, adit frame, grave markers and firewood - which raises no
+  new surface family and ships no doors or window panes, because both scale
+  with the descriptor across plots from `4.2` to `7 m` and are drawn by the
+  world builder at real metres on the wall face the mesh's own bounds report.
+  Garlands are emissive geometry with five real lamps behind them;
 - a finite, seed-reproducible coastal city driven by one immutable blueprint:
   the default preserves all 144 former road-and-lot cells inside a `13 x 12`
   urban envelope, using the added central column for a north-south river and
@@ -725,12 +760,20 @@ The vertical slice contains:
   function of its own rung in the book of work (`CemeteryGraveWorkLedger`,
   one stage and one epitaph per plot);
 - one deterministic Church precinct on the `4 x 2` open area immediately
-  north of that cemetery. Its sole frontage and exterior entrance face the
-  west street; the altar end faces east, the cemetery fence retains a clear
-  separation and there is no direct cemetery gate. City loads only the
-  `44 x 23 x 32 m` Blender-authored Catholic exterior — neo-Gothic west
-  tower and spire, buttresses, lancet windows, rose window, pitched roofs and
-  Latin crosses — with emissive windows but no new realtime exterior Light.
+  north of that cemetery. Its sole street frontage and exterior entrance face
+  west; the altar end faces east. City loads the `44 x 23 x 32 m`
+  Blender-authored Catholic exterior at `0.55` scale and a `10 m` setback from
+  its west street — neo-Gothic tower and spire, buttresses, lancet windows,
+  rose window, pitched roofs and Latin crosses — with emissive windows but no
+  new realtime exterior Light.
+  `CityChurchCourtyardPlan` gives the site a stone approach/forecourt and a
+  restrained north lawn/garden with two sittable benches, two small trees, six
+  clipped shrubs and two modest beds. `CityChurchCemeteryPassagePlan` continues the
+  cemetery's middle cross alley through one maintained `3 m` north-fence
+  opening into the south church path while preserving the west cemetery gate
+  as its only street gate and the route used by the mourner, watchman and grave
+  work. The safe shared threshold is an internal connection, not another
+  `CityOpenAreaAccessDescriptor`, and adds no sound, lore or realtime Light.
   A completed door action routes through the
   shared `DoorTransition` into `ChurchInterior`, whose validated plan owns a
   narthex, nave, crossing/choir, four piers, two side aisles, pew rows,
@@ -755,10 +798,12 @@ The vertical slice contains:
   final XZ anchor, so their geometry, collision proxies and interaction
   docks share the actual pavement height rather than the lot datum;
 - one deterministic `city_misc_citywide_v4` mesh library supplies the passive
-  visuals for the broad City misc pass: `64` semantic kinds resolve to `94`
-  assemblies, `186` role meshes and `33,454` triangles. It covers the 24-family
+  visuals for the broad City misc pass: `72` semantic kinds resolve to `106`
+  assemblies, `205` role meshes and `36,050` triangles. It covers the 24-family
   decoration layer and park landmarks, street lamps and signal housings,
   Route 01 shelters/poles, the eastern yard, cemetery graves and vegetation,
+    the church-yard surfaces and planting plus the modified cemetery
+    north-fence posts and rails,
   seacoast boats/barge/driftwood, fringe utility dressing and the static shells
   of all four district points of interest, plus the live supermarket and
   player-home shells. Its former bar shell remains in the catalog only for v4
@@ -1041,7 +1086,9 @@ The vertical slice contains:
 - a full-screen city map projected from a display envelope seeded by the
   blueprint's centered map bounds,
   with area colors and labels anchored on real active cells, distinct park,
-  beach, sea, river, promenade and cemetery surfaces and paths, the
+  beach, sea, river, promenade and cemetery surfaces and paths, the one
+  cemetery/church internal passage cut into both precinct outlines without
+  becoming a street gate or teleport anchor, the
   seacoast's landmarks (mol, pier, hut, piles, barge, and the
   lighthouse island's dot pinned to the chart's north border at its
   true easting),
@@ -1127,7 +1174,8 @@ The vertical slice contains:
   every map lot becomes selectable,
   the side panel asks for an explicit confirmation and a
   confirmed target moves the hero to that lot's street-front return point or
-  its nearest generated route when no frontage edge exists.
+  its nearest generated route when no frontage edge exists. City arrival
+  rejects both building footprints and the church-yard fixtures.
   Keep at least `22` logical pixels per map cell; clip overflowing content and
   pan it independently on X/Y with WASD, the right stick, mouse-wheel gestures
   or middle/right-button dragging while drawing scroll indicators only for

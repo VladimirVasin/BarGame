@@ -146,15 +146,74 @@ namespace BarPromenade
         private MountainRoadCablewayPlan plan;
         private Transform bullwheel;
         private Quaternion bullwheelBaseRotation;
+        private AudioSource motorSource;
         private AudioClip motorClip;
         private AudioClip clackClip;
-        private float elapsedSeconds;
+        private float travelledDistance;
+        private float currentSpeed;
         private bool initialized;
 
+        // The dock request, while one is in flight.
+        private bool docking;
+        private bool docked;
+        private int dockedCabinIndex = -1;
+        private float dockRemaining;
+
+        // How far the line has run since it was last let go, which is what
+        // the launch ramp is a function of.
+        private float travelledSinceResume;
+
+        /// <summary>
+        /// Raised the instant the cabins have been posed, before anything
+        /// else this frame.
+        ///
+        /// Anything CARRIED by a cabin listens to this rather than doing its
+        /// own work in a `LateUpdate` and trusting the two to be ordered.
+        /// They are not reliably: a component added during a scene build can
+        /// have its first update deferred a frame relative to one that
+        /// already existed, and a passenger written a frame late rides
+        /// visibly behind the box he is sitting in.
+        /// </summary>
+        public event Action Moved;
+
         public bool IsInitialized => initialized;
-        public float ElapsedSeconds => elapsedSeconds;
+
+        /// <summary>Rope run since the line was built, in metres. This is the
+        /// parameter everything visible is a function of.</summary>
+        public float TravelledDistance => travelledDistance;
+
+        public float CurrentSpeed => currentSpeed;
+
+        /// <summary>A cabin is standing on the boarding point and the line is
+        /// still.</summary>
+        public bool IsDocked => docked;
+
+        /// <summary>A cabin has been called and the line is slowing.</summary>
+        public bool IsDocking => docking;
+
         public IReadOnlyList<Transform> Cabins => cabins;
         public IReadOnlyList<AudioSource> AudioSources => audioSources;
+
+        /// <summary>
+        /// The cabin standing at the boarding point, or null while the line
+        /// runs. This is what a ride attaches its passenger to.
+        /// </summary>
+        public Transform DockedCabin =>
+            docked && dockedCabinIndex >= 0 && dockedCabinIndex < cabins.Count
+                ? cabins[dockedCabinIndex]
+                : null;
+
+        /// <summary>Loop distance of the cabin at <paramref name="index"/>.
+        /// </summary>
+        public float GetCabinDistance(int index)
+        {
+            if (!initialized || index < 0 || index >= phases.Count)
+            {
+                return 0f;
+            }
+
+            return phases[index] * plan.LoopLength + travelledDistance;
+        }
 
         internal void Initialize(
             MountainRoadCablewayPlan sourcePlan,
@@ -171,10 +230,12 @@ namespace BarPromenade
 
             plan = sourcePlan ??
                 throw new ArgumentNullException(nameof(sourcePlan));
+            // The reducer is optional: only a DRIVE station has one, and the
+            // return station at the other end of the line is not entitled to
+            // a motor it does not contain.
             if (cabinRoots == null ||
                 cabinRoots.Count != plan.Cabins.Count ||
                 visibleBullwheel == null ||
-                visibleReducer == null ||
                 supportRollerAnchors == null)
             {
                 throw new ArgumentException(
@@ -217,7 +278,12 @@ namespace BarPromenade
                 .CreateMotorRuntimeClip();
             clackClip = MountainCablewaySoundSynthesis
                 .CreateClackRuntimeClip();
-            AudioSource motor = CreateMotorSource(visibleReducer);
+            // A return station has no reducer, because the drive is at the
+            // other end of the line. It gets no motor voice at all rather
+            // than a silent one hung off a fictional gearbox.
+            motorSource = visibleReducer != null
+                ? CreateMotorSource(visibleReducer)
+                : null;
             AudioSource lowerClack = CreateClackSource(
                 visibleBullwheel,
                 20f,
@@ -250,13 +316,80 @@ namespace BarPromenade
                     supportSource));
             }
 
-            elapsedSeconds = 0f;
+            travelledDistance = 0f;
+            travelledSinceResume = float.PositiveInfinity;
+            currentSpeed = plan.CabinSpeed;
             initialized = true;
             ApplyPresentation(0f, 0f, false);
-            if (Application.isPlaying)
+            if (Application.isPlaying && motorSource != null)
             {
-                motor.Play();
+                motorSource.Play();
             }
+        }
+
+        /// <summary>
+        /// Calls the next cabin to a loop distance and brings the line to
+        /// rest with it standing there.
+        ///
+        /// The cabin is chosen and the distance fixed HERE, once. Re-deciding
+        /// every frame would let a cabin that drifts past the point be
+        /// re-targeted round the loop, and the line would never stop.
+        /// </summary>
+        public bool RequestDockAt(float loopDistance)
+        {
+            if (!initialized || docking || docked)
+            {
+                return false;
+            }
+
+            float dock = MountainCablewayMotion.WrapDistance(
+                loopDistance,
+                plan.LoopLength);
+            float best = float.PositiveInfinity;
+            int bestIndex = -1;
+            for (int index = 0; index < cabins.Count; index++)
+            {
+                float approach =
+                    MountainCablewayDriveRules.EvaluateApproachDistance(
+                        GetCabinDistance(index),
+                        dock,
+                        plan.LoopLength);
+                if (approach >= best)
+                {
+                    continue;
+                }
+
+                best = approach;
+                bestIndex = index;
+            }
+
+            if (bestIndex < 0)
+            {
+                return false;
+            }
+
+            docking = true;
+            docked = false;
+            dockedCabinIndex = bestIndex;
+            dockRemaining = best;
+            return true;
+        }
+
+        /// <summary>Lets the line go again. Safe to call when it is already
+        /// running.</summary>
+        public bool Resume()
+        {
+            if (!initialized || (!docking && !docked))
+            {
+                return false;
+            }
+
+            docking = false;
+            docked = false;
+            dockedCabinIndex = -1;
+            dockRemaining = 0f;
+            travelledSinceResume = 0f;
+            return true;
         }
 
         public void Advance(float deltaTime)
@@ -273,12 +406,15 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(deltaTime));
             }
 
-            float previousTime = elapsedSeconds;
-            elapsedSeconds += deltaTime;
+            float previousDistance = travelledDistance;
+            float step = AdvanceDistance(deltaTime);
+            travelledDistance = previousDistance + step;
+            ApplyMotorVoice();
             ApplyPresentation(
-                previousTime,
-                elapsedSeconds,
-                Application.isPlaying && deltaTime > 0f);
+                previousDistance,
+                travelledDistance,
+                Application.isPlaying && step > 0f);
+            Moved?.Invoke();
         }
 
         private void Update()
@@ -286,18 +422,88 @@ namespace BarPromenade
             Advance(Time.deltaTime);
         }
 
+        /// <summary>
+        /// How far the rope runs this frame, and the whole of the start/stop
+        /// behaviour.
+        ///
+        /// While a dock is in flight the speed is a function of the distance
+        /// LEFT rather than of time, so the cabin comes to rest exactly on the
+        /// point instead of near it - and the last step is clamped to what
+        /// remains, which is what makes "exactly" true down to the millimetre
+        /// at any frame rate.
+        /// </summary>
+        private float AdvanceDistance(float deltaTime)
+        {
+            if (docked)
+            {
+                currentSpeed = 0f;
+                return 0f;
+            }
+
+            if (docking)
+            {
+                currentSpeed =
+                    MountainCablewayDriveRules.EvaluateApproachSpeed(
+                        dockRemaining,
+                        plan.CabinSpeed);
+                float step = Mathf.Min(
+                    currentSpeed * deltaTime,
+                    dockRemaining);
+                dockRemaining -= step;
+                if (dockRemaining <= MountainCablewayDriveRules.DockEpsilon)
+                {
+                    // Take up the remainder in this same step. Leaving it for
+                    // a later frame is what turns an exact dock into an
+                    // asymptote nobody can seat a passenger against.
+                    step += dockRemaining;
+                    dockRemaining = 0f;
+                    docking = false;
+                    docked = true;
+                    currentSpeed = 0f;
+                }
+
+                return step;
+            }
+
+            currentSpeed = MountainCablewayDriveRules.EvaluateLaunchSpeed(
+                travelledSinceResume,
+                plan.CabinSpeed);
+            float running = currentSpeed * deltaTime;
+            if (!float.IsInfinity(travelledSinceResume))
+            {
+                travelledSinceResume += running;
+            }
+
+            return running;
+        }
+
+        /// <summary>
+        /// The gearbox is heard braking and picking up. It is one line
+        /// because the loop was already there; what it needed was a speed to
+        /// be a function of.
+        /// </summary>
+        private void ApplyMotorVoice()
+        {
+            if (motorSource == null || plan.CabinSpeed <= 0f)
+            {
+                return;
+            }
+
+            float fraction = Mathf.Clamp01(currentSpeed / plan.CabinSpeed);
+            motorSource.pitch = Mathf.Lerp(0.42f, 0.94f, fraction);
+            motorSource.volume = Mathf.Lerp(0.05f, 0.17f, fraction);
+        }
+
         private void ApplyPresentation(
-            float previousTime,
-            float currentTime,
+            float previousTravel,
+            float currentTravel,
             bool allowAudio)
         {
             for (int index = 0; index < cabins.Count; index++)
             {
                 float phaseDistance = phases[index] * plan.LoopLength;
-                float previousDistance = phaseDistance +
-                    previousTime * plan.CabinSpeed;
-                float currentDistance = phaseDistance +
-                    currentTime * plan.CabinSpeed;
+                float previousDistance = phaseDistance + previousTravel;
+                float currentDistance = phaseDistance + currentTravel;
                 MountainCablewayMotionSample sample =
                     MountainCablewayMotion.Sample(plan, currentDistance);
                 ApplyCabinPose(
@@ -314,8 +520,7 @@ namespace BarPromenade
             float circumference = Mathf.Max(
                 0.1f,
                 Mathf.PI * 2f * plan.TurnRadius);
-            float wheelDegrees =
-                currentTime * plan.CabinSpeed / circumference * 360f;
+            float wheelDegrees = currentTravel / circumference * 360f;
             bullwheel.localRotation = bullwheelBaseRotation *
                 Quaternion.AngleAxis(wheelDegrees, Vector3.up);
         }
@@ -420,6 +625,10 @@ namespace BarPromenade
             DestroyGeneratedClip(clackClip);
             motorClip = null;
             clackClip = null;
+            motorSource = null;
+            docking = false;
+            docked = false;
+            dockedCabinIndex = -1;
             cabins.Clear();
             phases.Clear();
             eventMarkers.Clear();

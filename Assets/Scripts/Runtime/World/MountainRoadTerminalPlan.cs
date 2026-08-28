@@ -314,6 +314,99 @@ namespace BarPromenade
         public float LoopLength => LineLength * 2f +
                                    Mathf.PI * TrackSeparation;
 
+        /// <summary>
+        /// A step into the cabin, not a climb. The cabin floor hangs `0.87 m`
+        /// over a bare station pad on the authored line, which is a height a
+        /// person hauls themselves up rather than steps over - so both
+        /// terminals raise a boarding strip until the move is this.
+        /// </summary>
+        public const float BoardingStepHeight = 0.42f;
+
+        /// <summary>
+        /// Clear air between the hero's dock and the cabin's near face. Wide
+        /// enough that the moving body never brushes him: contact is read
+        /// back as achieved movement here, so a graze zeroes his speed.
+        /// </summary>
+        public const float BoardingDockStandoff = 0.75f;
+
+        /// <summary>
+        /// Where on the loop a cabin stands when it is at the platform. Zero
+        /// is the near terminal on the outbound track, for both stations -
+        /// the village's line simply runs the other way down the hill.
+        /// </summary>
+        public float BoardingLoopDistance => 0f;
+
+        /// <summary>
+        /// How far the standable floor sits above the cabin's own underside.
+        /// The lower skirt is a solid `0.40 m` band and you stand on TOP of
+        /// it, not on the bottom of the box - measuring boarding against
+        /// <see cref="CabinAttachmentToBottom"/> alone puts the platform
+        /// `0.40 m` too low and turns the step straight back into the climb
+        /// it exists to remove.
+        /// </summary>
+        public const float CabinSkirtHeight = 0.4f;
+
+        public float CabinFloorY =>
+            LowerCableCenter.y -
+            CabinAttachmentToBottom +
+            CabinSkirtHeight;
+
+        public float BoardingPlatformTopY =>
+            CabinFloorY - BoardingStepHeight;
+
+        /// <summary>
+        /// Where the docked cabin GRIPS THE ROPE - which is about three
+        /// metres over the passenger's head, not the middle of the box. The
+        /// cabin transform is posed here, so this is what a cabin's
+        /// `position` equals while it stands at the platform.
+        /// </summary>
+        public Vector3 BoardingCabinAttachment =>
+            MountainCablewayMotion.SampleTrackPosition(this, 0f, 1);
+
+        /// <summary>The middle of the cabin's own floor while it is docked.
+        /// </summary>
+        public Vector3 BoardingCabinFloorCenter
+        {
+            get
+            {
+                Vector3 center = BoardingCabinAttachment;
+                center.y = CabinFloorY;
+                return center;
+            }
+        }
+
+        /// <summary>
+        /// Where the hero stands to board: OUTBOARD of the outbound track, on
+        /// the raised strip, facing in at the doorway.
+        ///
+        /// Outboard and not between the two tracks, which is where this first
+        /// went. The gap between them is `1.15 m` wide and the bullwheel's own
+        /// pedestal foot fills it - the dock landed inside a pillar, physics
+        /// shoved the hero half a metre clear of it at spawn, and he could
+        /// then never walk back to a point that was inside solid steel.
+        /// Boarding from the outside of the loop is also simply what a
+        /// station does.
+        /// </summary>
+        public Vector3 BoardingDockPosition
+        {
+            get
+            {
+                Vector3 dock = BoardingCabinFloorCenter + LineRight *
+                    (CabinSize.x * 0.5f + BoardingDockStandoff);
+                dock.y = BoardingPlatformTopY;
+                return dock;
+            }
+        }
+
+        /// <summary>Which way he faces while boarding: in at the cabin.
+        /// </summary>
+        public Vector3 BoardingFacing => -LineRight;
+
+        /// <summary>The outboard face of a docked cabin - where the platform
+        /// has to stop.</summary>
+        public float BoardingCabinOuterOffset =>
+            TrackSeparation * 0.5f + CabinSize.x * 0.5f;
+
         public bool ContainsClearanceXZ(Vector2 point, float clearance)
         {
             Vector2 start = new Vector2(

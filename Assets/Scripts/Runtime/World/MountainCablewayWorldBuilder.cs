@@ -48,12 +48,36 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Broad-strokes PS1 cableway presentation. Only the lower station is
-    /// physical; remote towers, cables and cabins cannot create invisible
-    /// airborne blockers.
+    /// Which end of the line a station is.
+    ///
+    /// One rope, two terminals, and they are not the same building. The drive
+    /// has the motor, the reducer and the shaft; the return has a tension
+    /// weight and nothing that turns under power. Building the second as a
+    /// copy of the first would put a second engine on a line that has one.
+    /// </summary>
+    public enum MountainCablewayStationKind
+    {
+        Drive = 0,
+        Return = 1
+    }
+
+    /// <summary>
+    /// Broad-strokes PS1 cableway presentation. Only the station this scene
+    /// builds is physical; remote towers, cables and cabins cannot create
+    /// invisible airborne blockers.
     /// </summary>
     public static class MountainCablewayWorldBuilder
     {
+        /// <summary>Seat height off the cabin floor - a plank, not a chair.
+        /// </summary>
+        public const float CabinBenchHeight = 0.44f;
+
+        public const float CabinBenchDepth = 0.42f;
+
+        /// <summary>Name of the pelvis anchor a ride binds its passenger to.
+        /// </summary>
+        public const string CabinSeatAnchorName = "CabinSeatAnchor";
+
         private static readonly Color Concrete =
             new Color(0.23f, 0.245f, 0.225f, 1f);
         private static readonly Color DarkSteel =
@@ -80,6 +104,14 @@ namespace BarPromenade
         public static MountainCablewayWorldResult Build(
             Transform parent,
             MountainRoadCablewayPlan plan)
+        {
+            return Build(parent, plan, MountainCablewayStationKind.Drive);
+        }
+
+        public static MountainCablewayWorldResult Build(
+            Transform parent,
+            MountainRoadCablewayPlan plan,
+            MountainCablewayStationKind stationKind)
         {
             if (parent == null)
             {
@@ -109,7 +141,8 @@ namespace BarPromenade
             BuildContinuousCable(root.transform, plan);
             StationPresentation station = BuildLowerStation(
                 root.transform,
-                plan);
+                plan,
+                stationKind);
             semanticObjects[plan.Nodes[0].StableId] =
                 station.Root.transform;
             var supports = new List<Transform>();
@@ -356,9 +389,14 @@ namespace BarPromenade
 
         private static StationPresentation BuildLowerStation(
             Transform parent,
-            MountainRoadCablewayPlan plan)
+            MountainRoadCablewayPlan plan,
+            MountainCablewayStationKind stationKind)
         {
-            var root = new GameObject("Lower Cableway Station");
+            bool drive = stationKind == MountainCablewayStationKind.Drive;
+            var root = new GameObject(
+                drive
+                    ? "Lower Cableway Station"
+                    : "Upper Cableway Return Station");
             root.transform.SetParent(parent, false);
             root.transform.SetPositionAndRotation(
                 plan.StationArea.Center,
@@ -375,30 +413,42 @@ namespace BarPromenade
                     true),
                 MountainRoadSurfaceKind.Concrete,
                 Concrete);
-            BuildStationFrame(root.transform, stationSize);
-            BuildClosedBoardingZone(root.transform);
+            BuildStationFrame(root.transform, stationSize, drive);
+            BuildBoardingZone(root.transform, plan);
 
             Transform bullwheel = BuildLowerBullwheel(root.transform, plan);
-            Transform reducer = BuildVisibleReducer(
-                root.transform,
-                bullwheel.localPosition);
-            BuildDriveHeadframe(
-                root.transform,
-                bullwheel.localPosition,
-                reducer.localPosition,
-                stationSize);
-            TextureSurface(
-                CreateBetween(
-                    "Visible Drive Shaft",
+            Transform reducer = null;
+            if (drive)
+            {
+                reducer = BuildVisibleReducer(
                     root.transform,
-                    reducer.localPosition + Vector3.up * 0.10f,
-                    bullwheel.localPosition + Vector3.down * 0.16f,
-                    0.14f,
-                    Rust,
-                    false),
-                MountainRoadSurfaceKind.RustedIron,
-                SurfaceProjection.BoxZY,
-                Rust);
+                    bullwheel.localPosition);
+                BuildDriveHeadframe(
+                    root.transform,
+                    bullwheel.localPosition,
+                    reducer.localPosition,
+                    stationSize);
+                TextureSurface(
+                    CreateBetween(
+                        "Visible Drive Shaft",
+                        root.transform,
+                        reducer.localPosition + Vector3.up * 0.10f,
+                        bullwheel.localPosition + Vector3.down * 0.16f,
+                        0.14f,
+                        Rust,
+                        false),
+                    MountainRoadSurfaceKind.RustedIron,
+                    SurfaceProjection.BoxZY,
+                    Rust);
+            }
+            else
+            {
+                BuildTensionCarriage(
+                    root.transform,
+                    bullwheel.localPosition,
+                    stationSize);
+            }
+
             Light light = BuildStationPractical(root.transform);
             BuildBoardingFlood(root.transform);
             return new StationPresentation(
@@ -410,7 +460,8 @@ namespace BarPromenade
 
         private static void BuildStationFrame(
             Transform parent,
-            Vector2 stationSize)
+            Vector2 stationSize,
+            bool drive)
         {
             float halfRight = stationSize.x * 0.5f - 0.55f;
             float halfForward = stationSize.y * 0.5f - 0.48f;
@@ -448,6 +499,13 @@ namespace BarPromenade
                     false),
                 MountainRoadSurfaceKind.PaintedMetal,
                 DarkSteel);
+            if (!drive)
+            {
+                // No service hut at the return end: there is no machinery in
+                // it to service.
+                return;
+            }
+
             TextureSurface(
                 RuntimePrimitiveFactory.CreateBox(
                     "Physical Drive Service Hut",
@@ -471,16 +529,214 @@ namespace BarPromenade
                 Rust);
         }
 
-        private static void BuildClosedBoardingZone(Transform parent)
+        /// <summary>
+        /// What holds the rope tight at the far end. A carriage on two rails
+        /// with a stack of weights hanging off it - the whole of a return
+        /// station, and nothing that turns under power.
+        /// </summary>
+        private static void BuildTensionCarriage(
+            Transform parent,
+            Vector3 bullwheelLocal,
+            Vector2 stationSize)
         {
-            const float fenceForward = 1.56f;
-            for (int index = -1; index <= 1; index++)
+            float halfForward = stationSize.y * 0.5f - 0.48f;
+            for (int side = -1; side <= 1; side += 2)
             {
                 TextureSurface(
                     RuntimePrimitiveFactory.CreateBox(
-                        "Physical Closed Boarding Post",
+                        "Tension Rail",
                         parent,
-                        new Vector3(index * 2.7f, 0.82f, fenceForward),
+                        new Vector3(
+                            bullwheelLocal.x + side * 0.5f,
+                            bullwheelLocal.y - 0.52f,
+                            -halfForward * 0.35f),
+                        new Vector3(0.14f, 0.14f, halfForward * 1.4f),
+                        Rust,
+                        false),
+                    MountainRoadSurfaceKind.RustedIron,
+                    SurfaceProjection.BoxZY,
+                    Rust);
+            }
+
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Physical Tension Carriage",
+                    parent,
+                    new Vector3(
+                        bullwheelLocal.x,
+                        bullwheelLocal.y - 0.62f,
+                        -halfForward * 0.72f),
+                    new Vector3(1.35f, 0.34f, 1.05f),
+                    DarkSteel,
+                    true),
+                MountainRoadSurfaceKind.PaintedMetal,
+                DarkSteel);
+
+            // The weights themselves, hanging into the pit. Five plates,
+            // because a stack reads as a stack and a block reads as a block.
+            for (int plate = 0; plate < 5; plate++)
+            {
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Tension Weight Plate",
+                        parent,
+                        new Vector3(
+                            bullwheelLocal.x,
+                            bullwheelLocal.y - 1.05f - plate * 0.24f,
+                            -halfForward * 0.72f),
+                        new Vector3(0.92f, 0.2f, 0.72f),
+                        Rust,
+                        false),
+                    MountainRoadSurfaceKind.RustedIron,
+                    SurfaceProjection.BoxXY,
+                    Rust);
+            }
+
+            TextureSurface(
+                CreateBetween(
+                    "Tension Hanger",
+                    parent,
+                    new Vector3(
+                        bullwheelLocal.x,
+                        bullwheelLocal.y - 0.62f,
+                        -halfForward * 0.72f),
+                    new Vector3(
+                        bullwheelLocal.x,
+                        bullwheelLocal.y - 1.05f,
+                        -halfForward * 0.72f),
+                    0.12f,
+                    DarkSteel,
+                    false),
+                MountainRoadSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxZY,
+                DarkSteel);
+        }
+
+        /// <summary>
+        /// The raised strip beside the outbound track, and the only reason
+        /// boarding works at all.
+        ///
+        /// The cabin floor hangs `0.87 m` over a bare pad here. That is a
+        /// climb, and a dock further than the motor's two-centimetre vertical
+        /// tolerance from the hero's root is refused SILENTLY - the prompt
+        /// shows and the key does nothing, forever. The plan derives the top
+        /// of this strip from the cabin's own hang, so the step is a fixed
+        /// `0.42 m` at both terminals and neither can drift.
+        /// </summary>
+        private static void BuildBoardingPlatform(
+            Transform parent,
+            MountainRoadCablewayPlan plan)
+        {
+            Vector3 dockLocal = parent.InverseTransformPoint(
+                plan.BoardingDockPosition);
+            float top = dockLocal.y;
+            if (top <= 0.18f)
+            {
+                // The pad is already at the right height for this line; a
+                // strip would be a lip to trip over rather than a step.
+                return;
+            }
+
+            // The strip runs from just clear of the cabin's outboard face to
+            // a metre past the dock. Derived rather than centred on the dock,
+            // because a centred `2.4 m` box reaches back UNDER the cabin.
+            float inner = plan.BoardingCabinOuterOffset + 0.06f;
+            float outer = dockLocal.x + 1f;
+            float width = Mathf.Max(1.2f, outer - inner);
+            float centerX = (inner + outer) * 0.5f;
+            const float length = 5.2f;
+
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Physical Boarding Platform",
+                    parent,
+                    new Vector3(centerX, top * 0.5f, dockLocal.z),
+                    new Vector3(width, top, length),
+                    Concrete,
+                    true),
+                MountainRoadSurfaceKind.Concrete,
+                Concrete);
+
+            // A kerb edge along the track side, so the drop is read before it
+            // is stepped off.
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Platform Edge Nosing",
+                    parent,
+                    new Vector3(
+                        inner + 0.04f,
+                        top - 0.03f,
+                        dockLocal.z),
+                    new Vector3(0.08f, 0.06f, length),
+                    FadedSign,
+                    false),
+                MountainRoadSurfaceKind.PaleEnamel,
+                SurfaceProjection.BoxZY,
+                FadedSign);
+
+            // And a way UP onto it, at the END the yard approaches from - the
+            // long sides are the cabin on one hand and the edge of the pad on
+            // the other. The strip stands well over the hero's `0.28 m` step
+            // offset, so without these he simply could not get on and the
+            // whole boarding would be unreachable while looking correct.
+            const int treadCount = 3;
+            float treadDepth = 0.34f;
+            for (int tread = 0; tread < treadCount; tread++)
+            {
+                float height = top * (tread + 1) / (treadCount + 1);
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Physical Platform Tread",
+                        parent,
+                        new Vector3(
+                            centerX,
+                            height * 0.5f,
+                            dockLocal.z - length * 0.5f - treadDepth *
+                            (treadCount - tread - 0.5f)),
+                        new Vector3(width, height, treadDepth),
+                        Concrete,
+                        true),
+                    MountainRoadSurfaceKind.Concrete,
+                    Concrete);
+            }
+        }
+
+        /// <summary>
+        /// The barrier, with a way through it, and the raised strip a person
+        /// steps off.
+        ///
+        /// The middle bay is open now and the leaf stands swung back against
+        /// its post: the line runs and people ride it. **The faded "boarding
+        /// closed" sign stays exactly where it was**, because nobody took it
+        /// down - which is the truer thing about this place than either the
+        /// fence or the gate.
+        /// </summary>
+        private static void BuildBoardingZone(
+            Transform parent,
+            MountainRoadCablewayPlan plan)
+        {
+            const float fenceForward = 1.56f;
+
+            // Two rails either side of a `1.6 m` gap, instead of one unbroken
+            // `5.45 m` run.
+            const float gateHalfWidth = 0.8f;
+            const float railHalfSpan = 2.2f;
+
+            // Ends and JAMBS. The middle post used to stand on the centre
+            // line, which is exactly where the opening now is - leaving it
+            // there put a physical bollard in the doorway and the hero could
+            // not reach the dock at all, while the fence looked open.
+            float[] postOffsets =
+            {
+                -railHalfSpan, -gateHalfWidth, gateHalfWidth, railHalfSpan
+            };
+            for (int index = 0; index < postOffsets.Length; index++)
+            {
+                TextureSurface(
+                    RuntimePrimitiveFactory.CreateBox(
+                        "Physical Boarding Post",
+                        parent,
+                        new Vector3(postOffsets[index], 0.82f, fenceForward),
                         new Vector3(0.13f, 1.55f, 0.13f),
                         Rust,
                         true),
@@ -489,28 +745,50 @@ namespace BarPromenade
                     Rust);
             }
 
+            float wingWidth = railHalfSpan - gateHalfWidth;
             for (int rail = 0; rail < 2; rail++)
             {
-                TextureSurface(
-                    RuntimePrimitiveFactory.CreateBox(
-                        "Physical Closed Boarding Rail",
-                        parent,
-                        new Vector3(
-                            0f,
-                            0.66f + rail * 0.58f,
-                            fenceForward),
-                        new Vector3(5.45f, 0.10f, 0.10f),
-                        DarkSteel,
-                        true),
-                    MountainRoadSurfaceKind.PaintedMetal,
-                    SurfaceProjection.BoxXY,
-                    DarkSteel);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    TextureSurface(
+                        RuntimePrimitiveFactory.CreateBox(
+                            "Physical Boarding Rail",
+                            parent,
+                            new Vector3(
+                                side * (gateHalfWidth + wingWidth * 0.5f),
+                                0.66f + rail * 0.58f,
+                                fenceForward),
+                            new Vector3(wingWidth, 0.10f, 0.10f),
+                            DarkSteel,
+                            true),
+                        MountainRoadSurfaceKind.PaintedMetal,
+                        SurfaceProjection.BoxXY,
+                        DarkSteel);
+                }
             }
+
+            // The leaf, standing open against the left post. No collider: an
+            // open gate is not a thing to walk into, and contact here is read
+            // back as achieved movement, so a graze would read as a crawl.
+            GameObject leaf = RuntimePrimitiveFactory.CreateBox(
+                "Boarding Gate Leaf Standing Open",
+                parent,
+                new Vector3(-gateHalfWidth - 0.06f, 0.95f, fenceForward),
+                new Vector3(0.08f, 1.12f, 1.5f),
+                Rust,
+                false);
+            TextureSurface(
+                leaf,
+                MountainRoadSurfaceKind.RustedIron,
+                SurfaceProjection.BoxZY,
+                Rust);
+
+            BuildBoardingPlatform(parent, plan);
 
             GameObject sign = RuntimePrimitiveFactory.CreateBox(
                 "Faded Sign - Boarding Closed",
                 parent,
-                new Vector3(0f, 1.62f, fenceForward - 0.08f),
+                new Vector3(2.7f, 1.62f, fenceForward - 0.08f),
                 new Vector3(1.55f, 0.56f, 0.06f),
                 FadedSign,
                 false);
@@ -1129,19 +1407,20 @@ namespace BarPromenade
                     false),
                 MountainRoadSurfaceKind.PaintedMetal,
                 body);
+            const float skirt = MountainRoadCablewayPlan.CabinSkirtHeight;
             TextureSurface(
                 RuntimePrimitiveFactory.CreateBox(
                     "Cabin Lower Skirt",
                     root,
-                    new Vector3(0f, floorY + 0.20f, 0f),
-                    new Vector3(size.x, 0.40f, size.z),
+                    new Vector3(0f, floorY + skirt * 0.5f, 0f),
+                    new Vector3(size.x, skirt, size.z),
                     body,
                     false),
                 MountainRoadSurfaceKind.PaintedMetal,
                 SurfaceProjection.BoxXY,
                 body);
-            float postY = Mathf.Lerp(roofY, floorY + 0.40f, 0.5f);
-            float postHeight = roofY - (floorY + 0.40f);
+            float postY = Mathf.Lerp(roofY, floorY + skirt, 0.5f);
+            float postHeight = roofY - (floorY + skirt);
             for (int right = -1; right <= 1; right += 2)
             {
                 for (int forward = -1; forward <= 1; forward += 2)
@@ -1175,17 +1454,102 @@ namespace BarPromenade
                 "Cabin Rear Window",
                 new Vector3(0f, windowY, -size.z * 0.5f - 0.006f),
                 new Vector3(size.x * 0.78f, windowHeight, 0.025f));
+
+            // Local `+X` is a DOORWAY, and it is a doorway by omission - the
+            // window that used to be here is simply not built. That is the
+            // bus's and the car's pattern, and it buys more than geometry:
+            // with no leaf there is no door-phase contract, so the boarding
+            // clips run with their stock timing instead of needing a hold
+            // while a leaf swings.
+            //
+            // It is always this side. The cabin yaws to face its own travel,
+            // so local `+X` is the OUTBOARD side at both terminals - which is
+            // where the platform is, because the gap between the two tracks
+            // is filled by the bullwheel's own pedestal.
             CreateCabinWindow(
                 root,
                 "Cabin Left Window",
                 new Vector3(-size.x * 0.5f - 0.006f, windowY, 0f),
                 new Vector3(0.025f, windowHeight, size.z * 0.72f));
-            CreateCabinWindow(
-                root,
-                "Cabin Right Window",
-                new Vector3(size.x * 0.5f + 0.006f, windowY, 0f),
-                new Vector3(0.025f, windowHeight, size.z * 0.72f));
+
+            BuildCabinInterior(root, size, floorY + skirt, roofY);
             return root;
+        }
+
+        /// <summary>
+        /// What a converted ore cabin has inside: one bench across the back,
+        /// a grab rail, and a bar that drops across the doorway.
+        ///
+        /// The bench is at local `-Z` and faces `+Z`, which is the way the
+        /// cabin is going - on the descending track the whole body yaws round,
+        /// so one bench serves both directions and the passenger is never
+        /// carried backwards.
+        /// </summary>
+        private static void BuildCabinInterior(
+            Transform root,
+            Vector3 size,
+            float floorTop,
+            float roofY)
+        {
+            float benchTop = floorTop + CabinBenchHeight;
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Cabin Bench",
+                    root,
+                    new Vector3(
+                        0f,
+                        benchTop - CabinBenchHeight * 0.5f,
+                        -size.z * 0.5f + CabinBenchDepth * 0.5f + 0.06f),
+                    new Vector3(
+                        size.x - 0.24f,
+                        CabinBenchHeight,
+                        CabinBenchDepth),
+                    Rust,
+                    false),
+                MountainRoadSurfaceKind.Timber,
+                SurfaceProjection.BoxXY,
+                Rust);
+
+            // The pelvis point the ride binds to. An empty, not a measurement
+            // taken later: the cabin moves, and anything solved once against
+            // a parked one goes stale the moment the line starts.
+            var seat = new GameObject("CabinSeatAnchor").transform;
+            seat.SetParent(root, false);
+            seat.localPosition = new Vector3(
+                0f,
+                benchTop,
+                -size.z * 0.5f + CabinBenchDepth * 0.5f + 0.06f);
+            seat.localRotation = Quaternion.identity;
+
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Cabin Grab Rail",
+                    root,
+                    new Vector3(
+                        -size.x * 0.5f + 0.12f,
+                        roofY - 0.30f,
+                        0f),
+                    new Vector3(0.06f, 0.06f, size.z * 0.7f),
+                    DarkSteel,
+                    false),
+                MountainRoadSurfaceKind.RustedIron,
+                SurfaceProjection.BoxZY,
+                DarkSteel);
+
+            TextureSurface(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Cabin Safety Bar",
+                    root,
+                    new Vector3(
+                        size.x * 0.5f - 0.05f,
+                        floorTop + 0.92f,
+                        0f),
+                    new Vector3(0.07f, 0.07f, size.z * 0.86f),
+                    Rust,
+                    false),
+                MountainRoadSurfaceKind.RustedIron,
+                SurfaceProjection.BoxZY,
+                Rust);
         }
 
         private static void CreateCabinWindow(

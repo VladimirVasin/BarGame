@@ -1,9 +1,9 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.2.0",
+  "generator_version": "4.3.3",
   "blender_version": "5.0.1",
   "design_id": "city_misc_citywide_v4",
-  "display_name": "City Misc Citywide Catalog + Special Buildings",
+  "display_name": "City Misc Citywide Catalog + Church Courtyard Kit",
   "source_axes": {
     "right": "+X",
     "forward": "+Y",
@@ -57,9 +57,9 @@
   "materials": false,
   "preview_materials_in_presentation_only": true,
   "animation_count": 0,
-  "mesh_count": 192,
-  "assembly_count": 97,
-  "triangle_count": 34266,
+  "mesh_count": 205,
+  "assembly_count": 106,
+  "triangle_count": 36050,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -4364,6 +4364,403 @@
         0.26,
         0.9425,
         1.13
+      ]
+    },
+    {
+      "kind": "ChurchCourtyardSurface",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "resolved_width": 1.0,
+        "resolved_depth": 1.0
+      },
+      "scale_parameters": [
+        {
+          "name": "resolved_width",
+          "source_axes": [
+            "X"
+          ],
+          "reference": 1.0,
+          "min": 0.25,
+          "max": 64.0
+        },
+        {
+          "name": "resolved_depth",
+          "source_axes": [
+            "Y"
+          ],
+          "reference": 1.0,
+          "min": 0.25,
+          "max": 64.0
+        }
+      ],
+      "unity_owned_parts": [],
+      "root_derivation": "CityChurchCourtyardPartDescriptor/CityCemeteryPartDescriptor.Ground+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ChurchCourtyardSurface_Variant01_Surface_Masonry_Stone"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.04
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.04,
+        0.5
+      ]
+    },
+    {
+      "kind": "ChurchCourtyardSurface",
+      "variant": 1,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "resolved_width": 1.0,
+        "resolved_depth": 1.0
+      },
+      "scale_parameters": [
+        {
+          "name": "resolved_width",
+          "source_axes": [
+            "X"
+          ],
+          "reference": 1.0,
+          "min": 0.25,
+          "max": 64.0
+        },
+        {
+          "name": "resolved_depth",
+          "source_axes": [
+            "Y"
+          ],
+          "reference": 1.0,
+          "min": 0.25,
+          "max": 64.0
+        }
+      ],
+      "unity_owned_parts": [],
+      "root_derivation": "CityChurchCourtyardPartDescriptor/CityCemeteryPartDescriptor.Ground+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ChurchCourtyardSurface_Variant02_Surface_Street_Gravel"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.04
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.04,
+        0.5
+      ]
+    },
+    {
+      "kind": "ChurchCourtyardSurface",
+      "variant": 2,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "resolved_width": 1.0,
+        "resolved_depth": 1.0
+      },
+      "scale_parameters": [
+        {
+          "name": "resolved_width",
+          "source_axes": [
+            "X"
+          ],
+          "reference": 1.0,
+          "min": 0.25,
+          "max": 64.0
+        },
+        {
+          "name": "resolved_depth",
+          "source_axes": [
+            "Y"
+          ],
+          "reference": 1.0,
+          "min": 0.25,
+          "max": 64.0
+        }
+      ],
+      "unity_owned_parts": [],
+      "root_derivation": "CityChurchCourtyardPartDescriptor/CityCemeteryPartDescriptor.Ground+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ChurchCourtyardSurface_Variant03_Surface_Foliage_Lawn"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.04
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.04,
+        0.5
+      ]
+    },
+    {
+      "kind": "ChurchCourtyardShrub",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "CityChurchCourtyardPartDescriptor.Ground+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ChurchCourtyardShrub_Variant01_Foliage"
+      ],
+      "bounds_min_source": [
+        -0.65,
+        -0.55,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.65,
+        0.55,
+        0.86
+      ],
+      "bounds_min_unity": [
+        -0.65,
+        0.0,
+        -0.55
+      ],
+      "bounds_max_unity": [
+        0.65,
+        0.86,
+        0.55
+      ]
+    },
+    {
+      "kind": "ChurchCourtyardShrub",
+      "variant": 1,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "CityChurchCourtyardPartDescriptor.Ground+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ChurchCourtyardShrub_Variant02_Foliage"
+      ],
+      "bounds_min_source": [
+        -1.1,
+        -0.425,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.1,
+        0.425,
+        0.84
+      ],
+      "bounds_min_unity": [
+        -1.1,
+        0.0,
+        -0.425
+      ],
+      "bounds_max_unity": [
+        1.1,
+        0.84,
+        0.425
+      ]
+    },
+    {
+      "kind": "ChurchCourtyardFlowerBed",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "CityChurchCourtyardPartDescriptor.Ground+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ChurchCourtyardFlowerBed_Variant01_Edging_Masonry_Stone",
+        "GEO_CMM_ChurchCourtyardFlowerBed_Variant01_Foliage",
+        "GEO_CMM_ChurchCourtyardFlowerBed_Variant01_Flowers_Residential"
+      ],
+      "bounds_min_source": [
+        -1.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.5,
+        0.5,
+        0.535
+      ],
+      "bounds_min_unity": [
+        -1.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        1.5,
+        0.535,
+        0.5
+      ]
+    },
+    {
+      "kind": "ChurchCourtyardFlowerBed",
+      "variant": 1,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "CityChurchCourtyardPartDescriptor.Ground+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ChurchCourtyardFlowerBed_Variant02_Edging_Masonry_Stone",
+        "GEO_CMM_ChurchCourtyardFlowerBed_Variant02_Foliage",
+        "GEO_CMM_ChurchCourtyardFlowerBed_Variant02_Flowers_Residential"
+      ],
+      "bounds_min_source": [
+        -2.1,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        2.1,
+        0.5,
+        0.535
+      ],
+      "bounds_min_unity": [
+        -2.1,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        2.1,
+        0.535,
+        0.5
+      ]
+    },
+    {
+      "kind": "CemeteryFencePost",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "CityCemeteryPartDescriptor.Ground+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_CemeteryFencePost_Variant01_Fixture"
+      ],
+      "bounds_min_source": [
+        -0.09,
+        -0.09,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.09,
+        0.09,
+        1.48
+      ],
+      "bounds_min_unity": [
+        -0.09,
+        0.0,
+        -0.09
+      ],
+      "bounds_max_unity": [
+        0.09,
+        1.48,
+        0.09
+      ]
+    },
+    {
+      "kind": "CemeteryFenceRail",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "resolved_length": 1.0
+      },
+      "scale_parameters": [
+        {
+          "name": "resolved_length",
+          "source_axes": [
+            "X"
+          ],
+          "reference": 1.0,
+          "min": 0.1,
+          "max": 48.0
+        }
+      ],
+      "unity_owned_parts": [],
+      "root_derivation": "CityCemeteryPartDescriptor.Ground+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_CemeteryFenceRail_Variant01_Fixture"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.08,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.08,
+        0.12
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.08
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.12,
+        0.08
       ]
     }
   ],
@@ -12047,7 +12444,527 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "mesh": "GEO_CMM_ChurchCourtyardSurface_Variant01_Surface_Masonry_Stone",
+      "kind": "ChurchCourtyardSurface",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.04
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.04,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ChurchCourtyardSurface_Variant02_Surface_Street_Gravel",
+      "kind": "ChurchCourtyardSurface",
+      "variant": 1,
+      "part_role": "Street_Gravel",
+      "surface_kind": "Gravel",
+      "tint_role": "Street_Gravel",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.04
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.04,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ChurchCourtyardSurface_Variant03_Surface_Foliage_Lawn",
+      "kind": "ChurchCourtyardSurface",
+      "variant": 2,
+      "part_role": "Foliage_Lawn",
+      "surface_kind": "Lawn",
+      "tint_role": "Foliage_Lawn",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.04
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.04,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ChurchCourtyardShrub_Variant01_Foliage",
+      "kind": "ChurchCourtyardShrub",
+      "variant": 0,
+      "part_role": "Foliage",
+      "surface_kind": "Foliage",
+      "tint_role": "Foliage",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 60,
+      "triangles": 116,
+      "bounds_min_source": [
+        -0.65,
+        -0.55,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.65,
+        0.55,
+        0.86
+      ],
+      "bounds_min_unity": [
+        -0.65,
+        0.0,
+        -0.55
+      ],
+      "bounds_max_unity": [
+        0.65,
+        0.86,
+        0.55
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ChurchCourtyardShrub_Variant02_Foliage",
+      "kind": "ChurchCourtyardShrub",
+      "variant": 1,
+      "part_role": "Foliage",
+      "surface_kind": "Foliage",
+      "tint_role": "Foliage",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -1.1,
+        -0.425,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.1,
+        0.425,
+        0.84
+      ],
+      "bounds_min_unity": [
+        -1.1,
+        0.0,
+        -0.425
+      ],
+      "bounds_max_unity": [
+        1.1,
+        0.84,
+        0.425
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ChurchCourtyardFlowerBed_Variant01_Edging_Masonry_Stone",
+      "kind": "ChurchCourtyardFlowerBed",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -1.5,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.5,
+        0.5,
+        0.16
+      ],
+      "bounds_min_unity": [
+        -1.5,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        1.5,
+        0.16,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ChurchCourtyardFlowerBed_Variant01_Foliage",
+      "kind": "ChurchCourtyardFlowerBed",
+      "variant": 0,
+      "part_role": "Foliage",
+      "surface_kind": "Foliage",
+      "tint_role": "Foliage",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 207,
+      "triangles": 366,
+      "bounds_min_source": [
+        -1.338569,
+        -0.328439,
+        0.07
+      ],
+      "bounds_max_source": [
+        1.347893,
+        0.31986,
+        0.46
+      ],
+      "bounds_min_unity": [
+        -1.338569,
+        0.07,
+        -0.328439
+      ],
+      "bounds_max_unity": [
+        1.347893,
+        0.46,
+        0.31986
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ChurchCourtyardFlowerBed_Variant01_Flowers_Residential",
+      "kind": "ChurchCourtyardFlowerBed",
+      "variant": 0,
+      "part_role": "Residential",
+      "surface_kind": "ResidentialGlass",
+      "tint_role": "Residential",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 105,
+      "triangles": 190,
+      "bounds_min_source": [
+        -1.089018,
+        -0.241845,
+        0.355
+      ],
+      "bounds_max_source": [
+        1.110302,
+        0.219704,
+        0.535
+      ],
+      "bounds_min_unity": [
+        -1.089018,
+        0.355,
+        -0.241845
+      ],
+      "bounds_max_unity": [
+        1.110302,
+        0.535,
+        0.219704
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ChurchCourtyardFlowerBed_Variant02_Edging_Masonry_Stone",
+      "kind": "ChurchCourtyardFlowerBed",
+      "variant": 1,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min_source": [
+        -2.1,
+        -0.5,
+        0.0
+      ],
+      "bounds_max_source": [
+        2.1,
+        0.5,
+        0.16
+      ],
+      "bounds_min_unity": [
+        -2.1,
+        0.0,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        2.1,
+        0.16,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ChurchCourtyardFlowerBed_Variant02_Foliage",
+      "kind": "ChurchCourtyardFlowerBed",
+      "variant": 1,
+      "part_role": "Foliage",
+      "surface_kind": "Foliage",
+      "tint_role": "Foliage",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 240,
+      "triangles": 424,
+      "bounds_min_source": [
+        -1.918569,
+        -0.308439,
+        0.07
+      ],
+      "bounds_max_source": [
+        1.929807,
+        0.30986,
+        0.46
+      ],
+      "bounds_min_unity": [
+        -1.918569,
+        0.07,
+        -0.308439
+      ],
+      "bounds_max_unity": [
+        1.929807,
+        0.46,
+        0.30986
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ChurchCourtyardFlowerBed_Variant02_Flowers_Residential",
+      "kind": "ChurchCourtyardFlowerBed",
+      "variant": 1,
+      "part_role": "Residential",
+      "surface_kind": "ResidentialGlass",
+      "tint_role": "Residential",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 126,
+      "triangles": 228,
+      "bounds_min_source": [
+        -1.669018,
+        -0.231845,
+        0.355
+      ],
+      "bounds_max_source": [
+        1.671724,
+        0.201998,
+        0.535
+      ],
+      "bounds_min_unity": [
+        -1.669018,
+        0.355,
+        -0.231845
+      ],
+      "bounds_max_unity": [
+        1.671724,
+        0.535,
+        0.201998
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryFencePost_Variant01_Fixture",
+      "kind": "CemeteryFencePost",
+      "variant": 0,
+      "part_role": "Fixture",
+      "surface_kind": "FixtureMetal",
+      "tint_role": "Fixture",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.09,
+        -0.09,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.09,
+        0.09,
+        1.48
+      ],
+      "bounds_min_unity": [
+        -0.09,
+        0.0,
+        -0.09
+      ],
+      "bounds_max_unity": [
+        0.09,
+        1.48,
+        0.09
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_CemeteryFenceRail_Variant01_Fixture",
+      "kind": "CemeteryFenceRail",
+      "variant": 0,
+      "part_role": "Fixture",
+      "surface_kind": "FixtureMetal",
+      "tint_role": "Fixture",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min_source": [
+        -0.5,
+        -0.08,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.08,
+        0.12
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        0.0,
+        -0.08
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.12,
+        0.08
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
     }
   ],
-  "build_signature": "0ff79a71f803ff38e5fdbf810a64c44365ed32da736ac28ebe0e3b36c9b11e08"
+  "build_signature": "64a77e3a537b3815d8cfa9a2d308995737c77c3ea17cbde79717d09dec7caf30"
 }

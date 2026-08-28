@@ -6,6 +6,244 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-28 — The village is built, and a door that scales is not a door
+
+`tools/build-village-3d-model.py` is the fourth deterministic Blender kit, cloned
+from the mountain misc generator and keeping all of its machinery — the pure
+authoring pass, the double run and `sha256` comparison before the filesystem is
+touched, `validate_assemblies`, the atomic manifest write, the fixed FBX axes.
+Eleven assemblies, twenty-seven meshes, `1844` triangles: four crooked houses,
+the chapel over the source, the mine cart, the adit frame, three grave markers
+and a firewood stack. `VillageAssetProvider` carries them on a flat entry table
+(the City kit's pattern, so a later wave is additive) and
+`Village/VillageAssetSetup` derives what it expects to import from that runtime
+catalog rather than from a second list, so the two halves of the pipeline cannot
+drift apart in silence.
+
+**Two decisions did more work than the geometry.**
+
+The kit ships **no doors and no window panes**. Both scale with the descriptor,
+and these plots run from a four-metre cottage to the seven-metre house at the
+head of the lane — one modelled door would be a hatch on one and a barn opening
+on the other. They are drawn by the world builder at real metres instead, which
+is the church's own doctrine: the imported model owns mass and material, the
+plan owns every opening a person uses and every collider gameplay touches. The
+first pass then hung them on the plot FOOTPRINT and they floated half a metre
+off the wall with their own shadows behind them — the authored shell stops at
+`0.415` of its cube so the roof can overhang it. Fixed by asking the walls mesh
+for its own bounds rather than mirroring the generator's constant in C#.
+
+And it raises **no new surface sheet**, per the art bible §10g entry written
+earlier the same day: every part wears one of the mountain area's fifteen. That
+is a real saving — no second texture generator, no second manifest — and it is
+also the correct reading of the zone, because what makes the village warm is its
+light and not its substance.
+
+The garlands are the zone. Bulbs are emissive geometry in one combined mesh per
+span with only every other span carrying a real lamp: five lights for the whole
+lane, against the eighty-odd that one-light-per-bulb would have asked URP for.
+
+The first contact sheet came back with four houses that read as the same house —
+the eaves and apex offsets were a couple of centimetres of the normalized cube,
+about fifteen real centimetres. Pushed to an apex a metre off centre and eaves
+half a metre apart, which is what makes two slopes of one roof visibly
+different. Three editor captures (from the lane foot, mid-lane and overhead)
+were rendered to check it and the probe was deleted afterwards; the first of
+them was thrown away, because the first `Camera.Render` of a session draws with
+no shadow maps. The probe's own first camera position was wrong in a useful way:
+it stood at the station pad centre, which put the lens inside a cabin — the near
+list it printed is what said so.
+
+`ai/system-tree.md` and `ai/systems-map.md` are now updated, which closes the
+documentation debt named in the two entries below.
+
+Verification: full Unity EditMode suite — **1766 passed, 3 failed, 0 skipped**.
+The three are the same `CityMiscAssetTests` reds as the entries below and are
+still not from this work: they assert the City misc catalog at HEAD's `97`/`192`
+while the uncommitted church-courtyard work in the tree has grown it to
+`106`/`205`, and `git diff` shows that test file untouched. PlayMode
+`AlpineCablewayRidePlayModeTests` re-run after the kit landed — **2 passed**.
+The Blender generator validates and builds with matching repeated signatures
+(`e6181b4c…`), and `VillageAssetSetup.RunBatch` imported and bound the provider
+headlessly. No player build; no hand pass in the editor.
+
+## 2026-08-28 — The cableway carries, and the dock was standing inside a pillar
+
+Boarding, the ride and the return are built. `MountainCablewayController` no
+longer derives position from `elapsedSeconds * CabinSpeed` but accumulates
+`travelledDistance`, which is what makes `RequestDockAt` / `Resume` possible at
+all; `MountainCablewayDriveRules` holds the two profiles as pure functions.
+Braking is `v = cruise * sqrt(d / brake)` against the distance REMAINING and
+the final step is clamped to it, so a cabin comes to rest ON the point rather
+than approaching it asymptotically — the EditMode test pins that to a
+centimetre at a coarse `1/30 s` step. A cabin already sitting on the point is
+sent round the whole loop instead: the offer is "the next one".
+
+**The boarding dock was inside the bullwheel pedestal, and only PlayMode found
+it.** Every EditMode number was correct — step height, tread risers, seat
+anchor, clearance — and the hero still could not board, because the dock had
+been placed between the two tracks. That gap is `1.15 m` wide and the
+pedestal's own foot fills it: physics shoved him half a metre clear at spawn
+and he then spent the whole test walking at a point inside solid steel, with
+nothing louder than one `entry was blocked` line to say so. Boarding is now
+OUTBOARD of the outbound track, which is also simply what a station does, and
+the cabin's doorway moved with it to local `+X`. Found by instrumenting the
+declining function's own branches rather than re-deriving its conditions from
+outside; the probe was removed once it had answered.
+
+Three smaller defects the tests caught before that:
+
+- **the launch ramp was a fixed point at zero.** Speed was a function of
+  distance run since resume, so at zero distance the speed was zero, the
+  distance never grew and the line sat there for ever looking like a stuck
+  dock. `MinimumLaunchFraction` is the floor that lets it start.
+- **`CabinAttachmentToBottom` is the cabin's UNDERSIDE**, and the standable
+  floor is `0.40 m` above it on the lower skirt. Measuring boarding against
+  the underside put the platform `0.40 m` too low and turned the `0.42 m`
+  step straight back into the `0.82 m` climb the platform exists to remove.
+  `CabinSkirtHeight` is now one constant the plan and the builder share.
+- **the open gate had a post standing in it.** The rails were cut for a
+  `1.6 m` opening and the middle fence post left on the centre line, so the
+  fence read as open and was not.
+
+The platform is `0.85 m` proud of the pad, well over the hero's `0.28 m` step
+offset, so it carries three treads at its yard end; `PlayerFactory.StepOffset`
+is named for the same reason `SlopeLimitDegrees` was.
+`MountainCablewayStationKind` splits the two terminals — the drive keeps motor,
+reducer and shaft, the return gets a tension carriage and weight stack and no
+motor voice at all, which meant relaxing `Initialize`'s reducer null-check
+rather than handing it a gearbox that is not there. The village station is now
+built by the cableway builder rather than hand-copied beside it.
+
+The passenger rides from `MountainCablewayController.Moved`, raised in the same
+call that posed the cabins, and is never reparented. `AreaArrivalToken.Cableway`
+arrives with him already in a contextual interaction, so the arrival only ARMS
+in `Awake` and its coroutine holds under an already-black screen until
+`IsTransitioning` clears — plus one further frame, so the force-complete pass on
+the falling edge has been and gone. The seat plan is re-solved against the far
+station before anything reads it, and `BeginPositionedLoop` is used rather than
+`BeginLooping`. `GameSessionState.IsRidingTheCableway` gates the three things
+that move him, and the map's checks now read `IsRidingAVehicle`; the window onto
+the map stays open, as it does in the car.
+
+Verification: full Unity EditMode suite — **1760 passed, 3 failed, 0 skipped**.
+The three reds are `CityMiscAssetTests` and are NOT from this work: they assert
+the City misc catalog at HEAD's `97` assemblies / `192` meshes while the
+uncommitted church-courtyard work in the tree has grown it to `106` / `205`, and
+`git diff` shows that test file untouched by this session. PlayMode
+`AlpineCablewayRidePlayModeTests` — **2 passed, 0 failed**: the line stops for
+him, he reaches the bench, the cabin carries him within `5 cm` of his captured
+offset over three seconds of pinned frames, getting out mid-air is refused, and
+the leg only leaves the area once the fade is fully black. No player build, and
+no hand pass in the editor yet.
+
+## 2026-08-28 — The village above the cableway exists, and its ridge had to out-climb the hero
+
+`GameAreaId.AlpineVillage` is the eleventh scene and the eighth gameplay root:
+`AlpineVillagePlanner` → `AlpineVillageValidator` → `AlpineVillageWorldBuilder`
+→ `AlpineVillageWorldResult`, composed by `AlpineVillageRoot` on the
+`MountainRoadRoot` shape. One crooked lane climbs `82.1 m` and `6.4 m` (an
+average `7.8%`, under the `8.3%` pedestrian ceiling) from the cableway station
+on the lowest terrace to the house at its head; twelve houses stand either
+side, and the chapel, the adit and the burial ground sit on side spurs so the
+head of the lane belongs to the house alone. `AlpineVillageTerrainSampler` is
+the single height contract for planning, validation, the ground mesh and the
+map's teleport ground, split into a bare-slope pass the planner lays the lane
+along and a finished pass that flattens the shelves.
+
+**The enclosing ridge was climbable, and the comment claiming otherwise was
+mine.** `RidgeRisePerMeter` was authored at `0.62` — `32°` — against a
+`CharacterController.slopeLimit` of `45°`, so "reachable only by cableway" was
+a promise kept by the walkable mask and by nothing in the world. The test that
+caught it was measuring the wrong thing too (it asked for `8 m` of rise on all
+four sides and got `6.95` on the downhill one, where the ground legitimately
+falls away as the line leaves). Fixed at the source: `1.15` is `49°`, which the
+controller refuses on its own, and `PlayerFactory.SlopeLimitDegrees` and
+`StepOffset` are now named constants so terrain meant to be a wall can be
+authored against the same numbers the hero is built with rather than against a
+literal repeated in two files.
+
+The map grew a third tab. `CityMapMountainRoadOverlay` is reused rather than
+duplicated — both tabs are one polyline and one rectangle, and here the
+polyline is the lane — while the places up there reach the chart as map POINTS,
+which is the mechanism the inspector and the teleport already read. Ordinary
+houses are deliberately not on it. The village label for the house at the top
+is «Дом на вершине», not «Дом матери»: the §6 registry row lifts the PLACE and
+not the events, and a map label naming her would be the one line about her the
+lift explicitly does not grant.
+
+`AlpineVillageWeatherShaper` re-reads the city's schedule with a ceiling as
+well as a floor, because §12 bans the storm outright, and damps the wind where
+the exposed road amplified it — `WindShelter 0.45` against the road's
+`WindExposureAtFoot 1.7`. The altitude multiplier lands after the clamp into
+`0..1`, the ordering the mountain road already paid for. `WarmthGrade` is
+plumbed as a PARAMETER of `RuntimeSceneSetup.ApplyAlpineVillageLighting` and
+`ApplyAlpineVillageVisibility` rather than something written over them, because
+the per-minute re-apply wipes anything written from outside inside a second;
+it stays at `0` until the prologue exists. Fog density `0.0145` was chosen
+against one shot rather than by feel: the house is `82 m` up the lane and about
+a quarter of it survives the haze, which is the warm shape the composition asks
+for, and the ridge still hides the edge of the world.
+
+Canon: the story bible's §6 registry gains a row lifting §15, §18, §25 and art
+bible §10f together, on the user's explicit decision, recorded as an accepted
+architecture exception. §12 gains a «Форма» section, §2 records that the
+cableway carries, §23 item 11 is restated and split, and the art bible gains
+`§10g` plus an amended §10f that no longer calls the plateau the only zone
+outside the city.
+
+Not done yet, and named so it is not mistaken for finished: the cableway does
+not carry anyone — boarding, the ride, the fade at the ridge and the return are
+Phase B, and the village is currently reachable only by the map tab, exactly as
+the mountain road already is. The houses are massing shells from runtime
+primitives; the village Blender kit, the garlands, the chapel interior, the
+mine cart and the graves are Phase C. `ai/system-tree.md` and
+`ai/systems-map.md` are not yet updated.
+
+Verification: focused Unity EditMode selection
+(`AlpineVillageTests`, `AreaTravelContractTests`, `LocalizationCatalogTests`,
+`MountainCablewayTests`, `MountainRoadTests`, `CityMapAreaPresentationTests`,
+`CityMapDistrictPresentationTests`, `MountainRoadTerminalTests`) — **81 passed,
+0 failed, 0 skipped**. Both localization catalogs parse and hold `447` keys
+each. `BarPromenade.Runtime` and `BarPromenade.EditModeTests` compile clean
+headlessly. An earlier run of the same selection was `44/45`: the one red was
+`CityMapAreaPresentationTests.CrossAreaTravel_UsesCallbackAndMapTeleportArrival`
+asserting exactly two area tabs, correctly updated to three. No PlayMode run,
+no player build, and no broad EditMode suite.
+
+## 2026-08-27 — The church moved toward the street and gained a maintained yard connection
+
+The user explicitly accepted one narrow exception to the previous Church and
+Cemetery site canon. The implementation keeps the City exterior at `0.55`
+scale, moves it from a `16 m` to a `10 m` west-street setback, and gives the
+precinct a stone forecourt plus a restrained north lawn/garden: two sittable
+benches, two small trees, six clipped shrubs and two modest beds, with no new
+realtime light, sound or lore. `CityChurchCourtyardPlan` owns every surface,
+fixture and reserved route. The visible yard, linked gravel extension and
+modified north-fence posts/rails consume passive Blender-authored City misc
+meshes while Unity keeps only placement, batching and collision. The added kit brings that
+catalog to `72` kinds, `106` assemblies, `205` role meshes and `36,050`
+triangles.
+
+One maintained `3 m` opening continues the cemetery's middle cross alley
+through its north fence into a south church path. The west cemetery gate stays
+the only street gate and remains the route for the mourner, watchman and grave
+work. `CityChurchCemeteryPassagePlan` is shared by cemetery and church
+composition: it selects an existing cross-alley axis, cuts exactly one
+post-ended fence interval, extends the gravel to the boundary and proves the
+shared threshold is capsule-clear and within the safe step contract. The map
+cuts that same interval out of both precinct outlines without making it a
+street gate or teleport anchor, and City map arrivals reject every courtyard
+fixture footprint.
+
+Verification: the focused Unity EditMode category
+`CityChurchCemeteryPassage` passed `2/2` in `0.744 s`; the final
+`CityChurchCourtyard` category passed `3/3` in `1.621 s`, with `0` failed or
+skipped. Unity exited cleanly after compiling Runtime and EditMode. The City
+misc Blender generate/validator finished at `106` assemblies / `205` meshes, and
+`CityMiscAssetSetup.RunBatch` imported and bound the expanded provider
+successfully. No broad Unity suites or player build were run.
+
 ## 2026-08-27 — Calendar days and the F9 day selector
 
 The existing continuous session clock now exposes its zero-based day index as

@@ -72,6 +72,15 @@ namespace BarPromenade
                     mountainBoundaryPlan);
             CityChurchPlan churchPlan =
                 CityChurchPlanner.Create(layout);
+            CityChurchCemeteryPassagePlan churchCemeteryPassagePlan =
+                CityChurchCemeteryPassagePlanner.Create(
+                    layout,
+                    churchPlan);
+            CityChurchCourtyardPlan churchCourtyardPlan =
+                CityChurchCourtyardPlanner.Create(
+                    layout,
+                    churchPlan,
+                    churchCemeteryPassagePlan);
             CityFringeYardPlan fringeYardPlan =
                 CityFringeYardPlanner.Create(
                     layout,
@@ -133,12 +142,18 @@ namespace BarPromenade
                     world,
                     openAreaDecorationPlan);
             CityCemeteryPlan cemeteryPlan =
-                CityCemeteryPlanner.Create(layout);
+                CityCemeteryPlanner.Create(
+                    layout,
+                    churchCemeteryPassagePlan);
             if (cemeteryPlan != null)
             {
                 CityCemeteryWorldBuilder.Build(world, cemeteryPlan);
             }
 
+            GameObject churchCourtyardRoot =
+                CityChurchCourtyardWorldBuilder.Build(
+                    world,
+                    churchCourtyardPlan);
             ChurchEntrance church = CityChurchWorldBuilder.Build(
                 world,
                 churchPlan,
@@ -226,6 +241,9 @@ namespace BarPromenade
                 playerHome,
                 supermarket,
                 churchPlan,
+                churchCemeteryPassagePlan,
+                churchCourtyardPlan,
+                churchCourtyardRoot,
                 church,
                 fencePlan,
                 parkRoot,

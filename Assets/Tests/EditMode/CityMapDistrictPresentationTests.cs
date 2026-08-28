@@ -275,10 +275,20 @@ namespace BarPromenade.Tests.EditMode
                 Is.Not.Empty);
             Assert.That(
                 byFeature[CityAreaFeatureKind.Cemetery].Gates,
-                Is.Not.Empty);
+                Has.Count.EqualTo(1));
             Assert.That(
                 byFeature[CityAreaFeatureKind.Church].Gates,
-                Is.Not.Empty);
+                Has.Count.EqualTo(1));
+            Assert.That(
+                byFeature[CityAreaFeatureKind.Cemetery]
+                    .InternalPassages,
+                Has.Count.EqualTo(1));
+            Assert.That(
+                byFeature[CityAreaFeatureKind.Church]
+                    .InternalPassages,
+                Is.EqualTo(
+                    byFeature[CityAreaFeatureKind.Cemetery]
+                        .InternalPassages));
             Assert.That(
                 byFeature[CityAreaFeatureKind.UrbanDistrict].IsUrban,
                 Is.True);

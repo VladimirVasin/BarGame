@@ -1,0 +1,125 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 09d576db562acf242a7812c51d119f67, type: 3}
+  m_Name: VillageAssetProvider
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.VillageAssetProvider
+  designId: village_wave1_v1
+  buildSignature: e6181b4c50c4b5e7a040e09ab38855e2f98ef74ab41b3eda22b8777469ff0d26
+  entries:
+  - kind: 0
+    variant: 0
+    role: 0
+    mesh: {fileID: -3776652178730527516, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 0
+    role: 1
+    mesh: {fileID: 213236192329817712, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 0
+    role: 2
+    mesh: {fileID: -1056671629208886078, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 0
+    role: 3
+    mesh: {fileID: -38219571086596350, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 1
+    role: 0
+    mesh: {fileID: -5768170750635533134, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 1
+    role: 1
+    mesh: {fileID: -4935723899867510308, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 1
+    role: 2
+    mesh: {fileID: -8439021521134698109, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 1
+    role: 3
+    mesh: {fileID: -1920528163649930892, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 2
+    role: 0
+    mesh: {fileID: -1809310067615020133, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 2
+    role: 1
+    mesh: {fileID: -293168554205909333, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 2
+    role: 2
+    mesh: {fileID: -5731008040921353394, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 2
+    role: 3
+    mesh: {fileID: 2617092289427539767, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 3
+    role: 0
+    mesh: {fileID: -6944993557328703731, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 3
+    role: 1
+    mesh: {fileID: 5924030858611887982, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 3
+    role: 2
+    mesh: {fileID: -3242224846430195177, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 3
+    role: 3
+    mesh: {fileID: -723268181779112580, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 1
+    variant: 0
+    role: 0
+    mesh: {fileID: -4457038565232357331, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 1
+    variant: 0
+    role: 1
+    mesh: {fileID: 3762618155465470819, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 1
+    variant: 0
+    role: 2
+    mesh: {fileID: 3547287168798818872, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 2
+    variant: 0
+    role: 4
+    mesh: {fileID: -6808166242078033834, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 2
+    variant: 0
+    role: 5
+    mesh: {fileID: -3112284861601184811, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 3
+    variant: 0
+    role: 6
+    mesh: {fileID: -3280297256960510048, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 3
+    variant: 0
+    role: 7
+    mesh: {fileID: 9025892189402718219, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 4
+    variant: 0
+    role: 8
+    mesh: {fileID: -8620656389706741463, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 4
+    variant: 1
+    role: 8
+    mesh: {fileID: -6426112716496242917, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 4
+    variant: 2
+    role: 8
+    mesh: {fileID: -7687064516913063235, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 5
+    variant: 0
+    role: 9
+    mesh: {fileID: -5659715079317125569, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}

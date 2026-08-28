@@ -65,8 +65,11 @@ namespace BarPromenade.Tests.EditMode
                 ["Visible Boarding Flood Lens"] = "emissive",
                 ["Cabin Front Window"] = "emissive",
                 ["Cabin Rear Window"] = "emissive",
+
+                // There is no right window any more: the outboard face is
+                // the DOORWAY, and it is a doorway by omission - the pane is
+                // simply not built. Only the inboard side still carries glass.
                 ["Cabin Left Window"] = "emissive",
-                ["Cabin Right Window"] = "emissive",
                 ["Windsock"] = "skinned cloth on the shared two-sided panel",
                 ["Load Tarp"] = "skinned cloth on the shared two-sided panel",
                 ["Vista Silhouette"] =

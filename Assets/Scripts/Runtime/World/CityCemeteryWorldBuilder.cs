@@ -87,7 +87,11 @@ namespace BarPromenade
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
 
-            BuildPartBatches(root, plan.Parts, "Cemetery Chunk");
+            BuildPartBatches(
+                root,
+                plan.Parts,
+                "Cemetery Chunk",
+                plan.ChurchPassage);
 
             for (int index = 0; index < plan.Lamps.Count; index++)
             {
@@ -116,7 +120,8 @@ namespace BarPromenade
         internal static void BuildPartBatches(
             Transform root,
             IReadOnlyList<CityCemeteryPartDescriptor> parts,
-            string namePrefix)
+            string namePrefix,
+            CityChurchCemeteryPassagePlan churchPassage = null)
         {
             if (root == null)
             {
@@ -156,6 +161,12 @@ namespace BarPromenade
                 importedIds);
             TryAppendImportedBenches(
                 parts,
+                miscProvider,
+                importedBatches,
+                importedIds);
+            TryAppendImportedChurchPassage(
+                parts,
+                churchPassage,
                 miscProvider,
                 importedBatches,
                 importedIds);
@@ -593,6 +604,179 @@ namespace BarPromenade
                     batches,
                     importedIds);
             }
+        }
+
+        private static void TryAppendImportedChurchPassage(
+            IReadOnlyList<CityCemeteryPartDescriptor> parts,
+            CityChurchCemeteryPassagePlan passage,
+            CityMiscAssetProvider provider,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches,
+            ISet<string> importedIds)
+        {
+            if (passage == null)
+            {
+                return;
+            }
+
+            if (provider == null ||
+                !TryGetImportedParts(
+                    provider,
+                    CityMiscKind.ChurchCourtyardSurface,
+                    (int)CityChurchCourtyardSurfaceKind.Gravel,
+                    out List<CityMiscMeshPart> gravelMeshes) ||
+                !TryGetImportedParts(
+                    provider,
+                    CityMiscKind.CemeteryFencePost,
+                    0,
+                    out List<CityMiscMeshPart> postMeshes) ||
+                !TryGetImportedParts(
+                    provider,
+                    CityMiscKind.CemeteryFenceRail,
+                    0,
+                    out List<CityMiscMeshPart> railMeshes))
+            {
+                throw new InvalidOperationException(
+                    "The church-cemetery passage requires its " +
+                    "Blender-authored surface, post and rail meshes.");
+            }
+
+            int alleyPartCount = 0;
+            int northRailCount = 0;
+            int northPostCount = 0;
+            int endPostCount = 0;
+            for (int index = 0; index < parts.Count; index++)
+            {
+                CityCemeteryPartDescriptor part = parts[index];
+                if (part.Kind == CityCemeteryPartKind.Alley &&
+                    ContainsXZ(
+                        passage.CemeteryAlleyExtensionBounds,
+                        part))
+                {
+                    Vector3 origin = new Vector3(
+                        part.Center.x,
+                        part.Center.y - part.Size.y * 0.5f,
+                        part.Center.z);
+                    AppendImportedMeshes(
+                        gravelMeshes,
+                        origin,
+                        part.Rotation,
+                        new Vector3(
+                            part.Size.x,
+                            part.Size.y /
+                            CityChurchCourtyardWorldBuilder
+                                .AuthoredSurfaceHeight,
+                            part.Size.z),
+                        CityCemeteryStyle.Gravel,
+                        batches);
+                    importedIds.Add(part.StableId);
+                    alleyPartCount++;
+                    continue;
+                }
+
+                if (Mathf.Abs(
+                        part.Center.z - passage.BoundaryZ) > 0.001f)
+                {
+                    continue;
+                }
+
+                if (part.Kind == CityCemeteryPartKind.FenceRail)
+                {
+                    AppendImportedMeshes(
+                        railMeshes,
+                        new Vector3(
+                            part.Center.x,
+                            part.Center.y - part.Size.y * 0.5f,
+                            part.Center.z),
+                        part.Rotation,
+                        new Vector3(
+                            part.Size.x,
+                            part.Size.y / 0.12f,
+                            part.Size.z / 0.16f),
+                        CityCemeteryStyle.Iron,
+                        batches);
+                    importedIds.Add(part.StableId);
+                    northRailCount++;
+                    continue;
+                }
+
+                if (part.Kind == CityCemeteryPartKind.FencePost)
+                {
+                    AppendImportedMeshes(
+                        postMeshes,
+                        new Vector3(
+                            part.Center.x,
+                            part.Center.y - part.Size.y * 0.5f,
+                            part.Center.z),
+                        part.Rotation,
+                        Vector3.one,
+                        CityCemeteryStyle.Iron,
+                        batches);
+                    importedIds.Add(part.StableId);
+                    northPostCount++;
+                    if (Mathf.Abs(
+                            part.Center.x -
+                            passage.FenceBreakBounds.xMin) <= 0.001f ||
+                        Mathf.Abs(
+                            part.Center.x -
+                            passage.FenceBreakBounds.xMax) <= 0.001f)
+                    {
+                        endPostCount++;
+                    }
+                }
+            }
+
+            if (alleyPartCount == 0 ||
+                northRailCount < 2 ||
+                northPostCount < 2 ||
+                endPostCount != 2)
+            {
+                throw new InvalidOperationException(
+                    "The church-cemetery passage lost its imported " +
+                    "gravel extension or north-fence mesh run.");
+            }
+        }
+
+        private static void AppendImportedMeshes(
+            IReadOnlyList<CityMiscMeshPart> meshes,
+            Vector3 origin,
+            Quaternion rotation,
+            Vector3 scale,
+            CityCemeteryStyle style,
+            IDictionary<BatchKey, List<RuntimeMeshPlacement>> batches)
+        {
+            var key = new BatchKey(
+                Mathf.FloorToInt(origin.x / SpatialChunkSize),
+                Mathf.FloorToInt(origin.z / SpatialChunkSize),
+                style);
+            if (!batches.TryGetValue(
+                    key,
+                    out List<RuntimeMeshPlacement> placements))
+            {
+                placements = new List<RuntimeMeshPlacement>();
+                batches.Add(key, placements);
+            }
+
+            for (int index = 0; index < meshes.Count; index++)
+            {
+                placements.Add(new RuntimeMeshPlacement(
+                    meshes[index].Mesh,
+                    origin,
+                    rotation,
+                    scale));
+            }
+        }
+
+        private static bool ContainsXZ(
+            Rect bounds,
+            CityCemeteryPartDescriptor part)
+        {
+            const float tolerance = 0.001f;
+            float halfX = part.Size.x * 0.5f;
+            float halfZ = part.Size.z * 0.5f;
+            return part.Center.x - halfX >= bounds.xMin - tolerance &&
+                   part.Center.x + halfX <= bounds.xMax + tolerance &&
+                   part.Center.z - halfZ >= bounds.yMin - tolerance &&
+                   part.Center.z + halfZ <= bounds.yMax + tolerance;
         }
 
         private static bool TryAppendAssembly(

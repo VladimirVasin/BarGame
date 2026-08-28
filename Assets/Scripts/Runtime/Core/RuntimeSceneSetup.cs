@@ -13,6 +13,23 @@ namespace BarPromenade
             new Color(0.330f, 0.380f, 0.355f);
         public static readonly Color MountainRoadFogColor =
             new Color(0.265f, 0.315f, 0.300f);
+
+        /// <summary>
+        /// The one warm haze in the game. Everywhere else the fog is the same
+        /// grey-green; up here it is pale and slightly amber, which is most of
+        /// why the village reads as a different temperature rather than a
+        /// different architecture.
+        /// </summary>
+        public static readonly Color AlpineVillageFogColor =
+            new Color(0.575f, 0.545f, 0.495f);
+
+        /// <summary>
+        /// What the village looks like once it has gone out - the ordinary
+        /// mountain dusk it ends the prologue as. Held here beside the warm
+        /// one so the two are read together and never drift apart.
+        /// </summary>
+        public static readonly Color AlpineVillageDimFogColor =
+            new Color(0.295f, 0.310f, 0.315f);
         public static readonly Color HomeBackgroundColor =
             new Color(0.105f, 0.080f, 0.070f);
         public static readonly Color CityAmbientColor =
@@ -26,6 +43,18 @@ namespace BarPromenade
         public const float CityFarClipPlane = 48f;
         public const float MountainRoadFogDensity = 0.026f;
         public const float MountainRoadFarClipPlane = 120f;
+
+        /// <summary>
+        /// Chosen against one shot, not by feel: the mother's house stands
+        /// `82 m` up the lane from the station platform, and at this density
+        /// roughly a quarter of it survives the haze - a warm shape you walk
+        /// into rather than a building you can read. Any denser and the whole
+        /// composition disappears; any thinner and the ridge stops hiding the
+        /// edge of the world, which is what keeps the alpine postcard out.
+        /// </summary>
+        public const float AlpineVillageFogDensity = 0.0145f;
+
+        public const float AlpineVillageFarClipPlane = 140f;
         public const float DoorTransitionFarClipPlane = 18f;
         public const float AreaLoadingFarClipPlane = 1f;
         public const float DefaultFarClipPlane = 220f;
@@ -118,6 +147,20 @@ namespace BarPromenade
             ApplyMountainRoadLighting(
                 GameTimeDayNightRules.Evaluate(
                     GameSessionState.GameTimeOfDayMinutes));
+            BindAuthoredVolumeDepthOfField();
+            return camera;
+        }
+
+        public static Camera EnsureAlpineVillage()
+        {
+            Camera camera = EnsureCamera(AlpineVillageFogColor);
+            camera.cullingMask = ~0;
+            SetPostProcessing(camera, true);
+            ApplyAlpineVillageVisibility(camera, 0f);
+            ApplyAlpineVillageLighting(
+                GameTimeDayNightRules.Evaluate(
+                    GameSessionState.GameTimeOfDayMinutes),
+                0f);
             BindAuthoredVolumeDepthOfField();
             return camera;
         }
@@ -303,6 +346,95 @@ namespace BarPromenade
                 sample.DirectionalLightRotation;
             RenderSettings.reflectionIntensity =
                 sample.ReflectionIntensity * 0.68f;
+            if (updateEnvironment)
+            {
+                DynamicGI.UpdateEnvironment();
+            }
+        }
+
+        /// <summary>
+        /// The village's haze, as a function of how far it has gone out.
+        ///
+        /// Fog is applied here and not somewhere else on purpose. Distant
+        /// geometry blends TO the fog colour, so a warm sun over a cold haze
+        /// is grey soup with a hole in it - the two have to move on one
+        /// weight, which means they have to be written by one call.
+        /// </summary>
+        public static void ApplyAlpineVillageVisibility(
+            Camera camera,
+            float warmthGrade)
+        {
+            if (camera == null)
+            {
+                throw new ArgumentNullException(nameof(camera));
+            }
+
+            float dim = Mathf.Clamp01(warmthGrade);
+            Color fog = Color.Lerp(
+                AlpineVillageFogColor,
+                AlpineVillageDimFogColor,
+                dim);
+            camera.backgroundColor = fog;
+            camera.farClipPlane = AlpineVillageFarClipPlane;
+            RenderSettings.fog = true;
+            RenderSettings.fogColor = fog;
+            RenderSettings.fogMode = FogMode.ExponentialSquared;
+
+            // It closes in a little as the place goes out. Not enough to be a
+            // weather event - «снежная буря» is forbidden - just enough that
+            // the top of the lane stops being visible from the bottom.
+            RenderSettings.fogDensity = Mathf.Lerp(
+                AlpineVillageFogDensity,
+                AlpineVillageFogDensity * 1.55f,
+                dim);
+        }
+
+        /// <summary>
+        /// The village grade, and the reason <paramref name="warmthGrade"/> is
+        /// a PARAMETER rather than something written over this afterwards.
+        ///
+        /// The area's atmosphere re-applies this every game minute. Anything
+        /// another component writes on top of it is wiped inside a second, so
+        /// the only place a dimming pass can live is here, inside the call
+        /// that keeps happening. The mountain road learned this the expensive
+        /// way with its ride blackout.
+        ///
+        /// `0` is the village as §12 describes it - warm, and warm is the
+        /// baseline, not an effect. `1` is an ordinary mountain village at
+        /// dusk. Nothing drives it above zero yet; the prologue will.
+        /// </summary>
+        public static void ApplyAlpineVillageLighting(
+            DayNightVisualSample sample,
+            float warmthGrade,
+            bool updateEnvironment = true)
+        {
+            float dim = Mathf.Clamp01(warmthGrade);
+
+            // Warm key, lifted ambient, soft shadows: the opposite of the
+            // mountain road's cold treatment, which the dim end lerps to.
+            Color warmDirectional = sample.DirectionalLightColor *
+                new Color(1.06f, 0.97f, 0.84f);
+            Color coldDirectional = sample.DirectionalLightColor *
+                new Color(0.84f, 0.92f, 0.94f);
+            Color warmAmbient = sample.AmbientLightColor *
+                new Color(1.10f, 0.99f, 0.86f);
+            Color coldAmbient = sample.AmbientLightColor *
+                new Color(0.74f, 0.86f, 0.88f);
+
+            Light directional = ConfigureDirectionalLighting(
+                Color.Lerp(warmDirectional, coldDirectional, dim),
+                sample.DirectionalLightIntensity *
+                Mathf.Lerp(1.06f, 0.86f, dim),
+                Color.Lerp(warmAmbient, coldAmbient, dim) *
+                Mathf.Lerp(1.22f, 0.88f, dim),
+                Mathf.Lerp(
+                    Mathf.Lerp(sample.ShadowStrength, 0.44f, 0.45f),
+                    Mathf.Lerp(sample.ShadowStrength, 0.55f, 0.30f),
+                    dim));
+            directional.transform.rotation =
+                sample.DirectionalLightRotation;
+            RenderSettings.reflectionIntensity =
+                sample.ReflectionIntensity * Mathf.Lerp(0.86f, 0.64f, dim);
             if (updateEnvironment)
             {
                 DynamicGI.UpdateEnvironment();

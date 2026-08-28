@@ -1165,4 +1165,82 @@ MonoBehaviour:
     role: 2
     surface: 0
     mesh: {fileID: 1678112186447561012, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: 0ff79a71f803ff38e5fdbf810a64c44365ed32da736ac28ebe0e3b36c9b11e08
+  - kind: 67
+    variant: 0
+    component: Surface_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -2365023098989039176, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 67
+    variant: 1
+    component: Surface_Street_Gravel
+    role: 1
+    surface: 4
+    mesh: {fileID: -1816492312903320888, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 67
+    variant: 2
+    component: Surface_Foliage_Lawn
+    role: 5
+    surface: 5
+    mesh: {fileID: -302736228402683633, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 68
+    variant: 0
+    component: Foliage
+    role: 5
+    surface: 0
+    mesh: {fileID: 230314923850369078, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 68
+    variant: 1
+    component: Foliage
+    role: 5
+    surface: 0
+    mesh: {fileID: -4326855287333896365, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 69
+    variant: 0
+    component: Edging_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: 7550603402566671924, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 69
+    variant: 0
+    component: Foliage
+    role: 5
+    surface: 0
+    mesh: {fileID: -816712546244917239, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 69
+    variant: 0
+    component: Flowers_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -1340545148101481996, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 69
+    variant: 1
+    component: Edging_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: 4353908621091256273, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 69
+    variant: 1
+    component: Foliage
+    role: 5
+    surface: 0
+    mesh: {fileID: -3550428536852301654, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 69
+    variant: 1
+    component: Flowers_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 4691452136293199760, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 70
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 5227088795236198014, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 71
+    variant: 0
+    component: Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 4681943332884206897, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  buildSignature: 64a77e3a537b3815d8cfa9a2d308995737c77c3ea17cbde79717d09dec7caf30

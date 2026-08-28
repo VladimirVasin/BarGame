@@ -76,7 +76,12 @@ namespace BarPromenade
         PlayerHomeBuildingShell = 63,
         RoadsideDrainAndCover = 64,
         RoadsideCappedStandpipe = 65,
-        LotGroundDownpipeOutfall = 66
+        LotGroundDownpipeOutfall = 66,
+        ChurchCourtyardSurface = 67,
+        ChurchCourtyardShrub = 68,
+        ChurchCourtyardFlowerBed = 69,
+        CemeteryFencePost = 70,
+        CemeteryFenceRail = 71
     }
 
     /// <summary>
@@ -102,7 +107,9 @@ namespace BarPromenade
         Default = 0,
         Stone = 1,
         Timber = 2,
-        PaintedMetal = 3
+        PaintedMetal = 3,
+        Gravel = 4,
+        Lawn = 5
     }
 
     /// <summary>
@@ -165,11 +172,11 @@ namespace BarPromenade
     public sealed class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.2.0";
+        public const string GeneratorVersion = "4.3.3";
         public const string DesignId = "city_misc_citywide_v4";
-        public const int ExpectedAssemblyCount = 97;
-        public const int ExpectedMeshCount = 192;
-        public const int SupportedKindCount = 67;
+        public const int ExpectedAssemblyCount = 106;
+        public const int ExpectedMeshCount = 205;
+        public const int SupportedKindCount = 72;
 
         private const float GroundTolerance = 0.003f;
 
@@ -241,7 +248,12 @@ namespace BarPromenade
             CityMiscKind.PlayerHomeBuildingShell,
             CityMiscKind.RoadsideDrainAndCover,
             CityMiscKind.RoadsideCappedStandpipe,
-            CityMiscKind.LotGroundDownpipeOutfall
+            CityMiscKind.LotGroundDownpipeOutfall,
+            CityMiscKind.ChurchCourtyardSurface,
+            CityMiscKind.ChurchCourtyardShrub,
+            CityMiscKind.ChurchCourtyardFlowerBed,
+            CityMiscKind.CemeteryFencePost,
+            CityMiscKind.CemeteryFenceRail
         };
 
         private static readonly ExpectedPartSpec[] IndustrialStreetParts =
@@ -510,6 +522,32 @@ namespace BarPromenade
             P("Trim_Industrial", CityMiscMeshRole.Industrial)
         };
 
+        private static readonly ExpectedPartSpec[] CourtyardStoneSurfacePart =
+        {
+            P("Surface_Masonry_Stone", CityMiscMeshRole.Masonry,
+                CityMiscSurfaceKind.Stone)
+        };
+
+        private static readonly ExpectedPartSpec[] CourtyardGravelSurfacePart =
+        {
+            P("Surface_Street_Gravel", CityMiscMeshRole.Street,
+                CityMiscSurfaceKind.Gravel)
+        };
+
+        private static readonly ExpectedPartSpec[] CourtyardLawnSurfacePart =
+        {
+            P("Surface_Foliage_Lawn", CityMiscMeshRole.Foliage,
+                CityMiscSurfaceKind.Lawn)
+        };
+
+        private static readonly ExpectedPartSpec[] CourtyardFlowerBedParts =
+        {
+            P("Edging_Masonry_Stone", CityMiscMeshRole.Masonry,
+                CityMiscSurfaceKind.Stone),
+            P("Foliage", CityMiscMeshRole.Foliage),
+            P("Flowers_Residential", CityMiscMeshRole.Residential)
+        };
+
         [SerializeField] private CityMiscMeshEntry[] entries =
             Array.Empty<CityMiscMeshEntry>();
         [SerializeField] private string buildSignature = string.Empty;
@@ -600,6 +638,11 @@ namespace BarPromenade
                 case CityMiscKind.SeacoastDriftwood:
                 case CityMiscKind.FringeRepairStock:
                     return 3;
+                case CityMiscKind.ChurchCourtyardSurface:
+                    return 3;
+                case CityMiscKind.ChurchCourtyardShrub:
+                case CityMiscKind.ChurchCourtyardFlowerBed:
+                    return 2;
                 default:
                     if (Supports(kind))
                     {
@@ -1167,6 +1210,23 @@ namespace BarPromenade
                 case CityMiscKind.RoadsideCappedStandpipe:
                 case CityMiscKind.LotGroundDownpipeOutfall:
                     return StreetMasonryParts;
+                case CityMiscKind.ChurchCourtyardSurface:
+                    switch (variant)
+                    {
+                        case 0:
+                            return CourtyardStoneSurfacePart;
+                        case 1:
+                            return CourtyardGravelSurfacePart;
+                        default:
+                            return CourtyardLawnSurfacePart;
+                    }
+                case CityMiscKind.ChurchCourtyardShrub:
+                    return FoliagePart;
+                case CityMiscKind.ChurchCourtyardFlowerBed:
+                    return CourtyardFlowerBedParts;
+                case CityMiscKind.CemeteryFencePost:
+                case CityMiscKind.CemeteryFenceRail:
+                    return FixturePart;
                 default:
                     throw UnsupportedKind(kind);
             }

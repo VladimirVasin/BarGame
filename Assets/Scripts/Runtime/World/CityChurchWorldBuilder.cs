@@ -6,8 +6,9 @@ namespace BarPromenade
 {
     /// <summary>
     /// Materialises the church exterior plan. The prefab is visual-only:
-    /// every imported collider is disabled and one plan-derived collider,
-    /// approach and interactive entrance own gameplay geometry.
+    /// every imported collider is disabled and one plan-derived collider
+    /// plus the interactive entrance own gameplay geometry. The separate
+    /// courtyard builder owns the Blender-authored approach surface.
     /// </summary>
     public static class CityChurchWorldBuilder
     {
@@ -32,8 +33,6 @@ namespace BarPromenade
 
         private static readonly Color FoundationStone =
             new Color(0.28f, 0.29f, 0.27f);
-        private static readonly Color ApproachStone =
-            new Color(0.38f, 0.37f, 0.34f);
         // The model's own Wood, Stone and Iron slots, so the door the
         // City draws belongs to the facade it is set into.
         private static readonly Color DoorTimber =
@@ -82,32 +81,6 @@ namespace BarPromenade
                     foundationRenderer,
                     CityCemeterySurfaceKind.Stone,
                     FoundationStone);
-            }
-
-            Rect approach = plan.ApproachBounds;
-            GameObject approachSurface = RuntimePrimitiveFactory.CreateBox(
-                "Church Entrance Approach",
-                root,
-                new Vector3(
-                    approach.center.x,
-                    plan.GroundTopY +
-                    CityChurchPlanner.ApproachSurfaceTopAboveGround -
-                    CityChurchPlanner.ApproachSurfaceHeight * 0.5f,
-                    approach.center.y),
-                new Vector3(
-                    approach.width,
-                    CityChurchPlanner.ApproachSurfaceHeight,
-                    approach.height),
-                ApproachStone,
-                false);
-            Renderer approachRenderer =
-                approachSurface.GetComponent<Renderer>();
-            if (approachRenderer != null)
-            {
-                CityCemeterySurfaceAppearance.ApplyCombined(
-                    approachRenderer,
-                    CityCemeterySurfaceKind.Stone,
-                    ApproachStone);
             }
 
             ChurchAssetRegistry registry;

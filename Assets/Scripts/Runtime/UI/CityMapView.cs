@@ -465,6 +465,13 @@ namespace BarPromenade
                 return;
             }
 
+            if (controller.SelectedArea == GameAreaId.AlpineVillage)
+            {
+                DrawAlpineVillageMap(projection);
+                DrawMapPointInspectionPass(projection);
+                return;
+            }
+
             RetroUiTheme.DrawPanel(
                 projection.ScreenRect,
                 MapVoid,
@@ -1800,6 +1807,15 @@ namespace BarPromenade
                 for (int gate = 0; gate < region.Gates.Count; gate++)
                 {
                     DrawAreaGate(projection, region.Gates[gate]);
+                }
+
+                for (int passage = 0;
+                     passage < region.InternalPassages.Count;
+                     passage++)
+                {
+                    DrawAreaGate(
+                        projection,
+                        region.InternalPassages[passage]);
                 }
             }
         }

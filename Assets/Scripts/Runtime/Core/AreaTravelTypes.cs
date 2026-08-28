@@ -11,7 +11,13 @@ namespace BarPromenade
     public enum GameAreaId
     {
         City = 0,
-        MountainRoad = 1
+        MountainRoad = 1,
+
+        /// <summary>
+        /// The village above the cableway. Reached only by the cabin - there is
+        /// no road, no path and no second way in from either end.
+        /// </summary>
+        AlpineVillage = 2
     }
 
     /// <summary>
@@ -41,7 +47,16 @@ namespace BarPromenade
         /// the car before it decides where to put him and then hands him
         /// straight back to it.
         /// </summary>
-        Ferryman = 4
+        Ferryman = 4,
+
+        /// <summary>
+        /// The hero is on the cableway cabin's bench and the line is still
+        /// running. Like <see cref="Ferryman"/> this arrives with the player
+        /// already inside a contextual interaction, so the destination root
+        /// raises the cabin before it decides where to put him and hands him
+        /// straight back to it.
+        /// </summary>
+        Cableway = 5
     }
 
     public readonly struct AreaTravelRequest : IEquatable<AreaTravelRequest>
@@ -148,7 +163,8 @@ namespace BarPromenade
         public static bool IsSupported(GameAreaId area)
         {
             return area == GameAreaId.City ||
-                   area == GameAreaId.MountainRoad;
+                   area == GameAreaId.MountainRoad ||
+                   area == GameAreaId.AlpineVillage;
         }
 
         public static string GetSceneName(GameAreaId area)
@@ -159,6 +175,8 @@ namespace BarPromenade
                     return SceneIds.City;
                 case GameAreaId.MountainRoad:
                     return SceneIds.MountainRoad;
+                case GameAreaId.AlpineVillage:
+                    return SceneIds.AlpineVillage;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(area),
@@ -186,6 +204,15 @@ namespace BarPromenade
                     StringComparison.Ordinal))
             {
                 area = GameAreaId.MountainRoad;
+                return true;
+            }
+
+            if (string.Equals(
+                    sceneName,
+                    SceneIds.AlpineVillage,
+                    StringComparison.Ordinal))
+            {
+                area = GameAreaId.AlpineVillage;
                 return true;
             }
 

@@ -97,6 +97,10 @@
       "value": "E — сесть в автобус 01"
     },
     {
+      "key": "interaction.board_cableway",
+      "value": "Сесть в кабину"
+    },
+    {
       "key": "interaction.exit_bus",
       "value": "E — выйти из автобуса"
     },
@@ -615,6 +619,30 @@
     {
       "key": "map.mountain_road.brink",
       "value": "Смотровая кромка"
+    },
+    {
+      "key": "map.area.alpine_village",
+      "value": "Деревня"
+    },
+    {
+      "key": "map.alpine_village.station",
+      "value": "Станция канатной дороги"
+    },
+    {
+      "key": "map.alpine_village.mothers_house",
+      "value": "Дом на вершине"
+    },
+    {
+      "key": "map.alpine_village.chapel",
+      "value": "Часовня"
+    },
+    {
+      "key": "map.alpine_village.adit",
+      "value": "Штольня"
+    },
+    {
+      "key": "map.alpine_village.cemetery",
+      "value": "Кладбище"
     },
     {
       "key": "map.route_title",

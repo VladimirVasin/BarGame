@@ -120,6 +120,10 @@ namespace BarPromenade
             {
                 EnsureMountainRoadInstalled();
             }
+            else if (scene.name == SceneIds.AlpineVillage)
+            {
+                EnsureAlpineVillageInstalled();
+            }
             else if (scene.name == SceneIds.AreaLoading)
             {
                 EnsureAreaLoadingInstalled();
@@ -137,6 +141,7 @@ namespace BarPromenade
                    sceneName == SceneIds.StairwellInterior ||
                    sceneName == SceneIds.DoorTransition ||
                    sceneName == SceneIds.MountainRoad ||
+                   sceneName == SceneIds.AlpineVillage ||
                    sceneName == SceneIds.AreaLoading;
         }
 
@@ -351,6 +356,28 @@ namespace BarPromenade
                 GameObject root = new GameObject(
                     "[Bar Promenade] Mountain Road Runtime");
                 return root.AddComponent<MountainRoadRoot>();
+            }
+            finally
+            {
+                creating = false;
+            }
+        }
+
+        public static AlpineVillageRoot EnsureAlpineVillageInstalled()
+        {
+            AlpineVillageRoot existing =
+                Object.FindAnyObjectByType<AlpineVillageRoot>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject(
+                    "[Bar Promenade] Alpine Village Runtime");
+                return root.AddComponent<AlpineVillageRoot>();
             }
             finally
             {

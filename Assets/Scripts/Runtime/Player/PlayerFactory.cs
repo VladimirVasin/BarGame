@@ -41,6 +41,17 @@ namespace BarPromenade
     {
         public const float GroundedRootOffset = 0.04f;
 
+        /// <summary>
+        /// The steepest ground the hero can walk up. Named because terrain
+        /// that is meant to be a WALL has to be authored against it - the
+        /// village ridge is the first place that mattered, where a slope
+        /// gentler than this made "reachable only by cableway" a promise kept
+        /// by the walkable mask instead of by the mountain.
+        /// </summary>
+        public const float SlopeLimitDegrees = 45f;
+
+        public const float StepOffset = 0.28f;
+
         public static PlayerRuntime Create(
             Transform parent,
             Vector3 position,
@@ -56,8 +67,8 @@ namespace BarPromenade
             controller.height = 1.7f;
             controller.radius = 0.32f;
             controller.center = new Vector3(0f, 0.85f, 0f);
-            controller.stepOffset = 0.28f;
-            controller.slopeLimit = 45f;
+            controller.stepOffset = StepOffset;
+            controller.slopeLimit = SlopeLimitDegrees;
             controller.skinWidth = GroundedRootOffset;
 
             // Cloth only presses against capsules listed per Cloth and a

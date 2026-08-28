@@ -205,6 +205,222 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        [Category("CityChurchCemeteryPassage")]
+        public void DefaultCity_OpensMiddleCrossAlleyIntoChurchGrounds()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityChurchPlan church = CityChurchPlanner.Create(layout);
+            CityChurchCemeteryPassagePlan passage =
+                CityChurchCemeteryPassagePlanner.Create(layout, church);
+            CityCemeteryPlan cemetery =
+                CityCemeteryPlanner.Create(layout);
+
+            Assert.That(church, Is.Not.Null);
+            Assert.That(passage, Is.Not.Null);
+            Assert.That(cemetery, Is.Not.Null);
+            Assert.That(cemetery.ChurchPassage, Is.EqualTo(passage));
+            Assert.That(
+                passage.AxisX,
+                Is.EqualTo(226f).Within(0.001f),
+                "The nearest clear real cross alley is the middle one.");
+            Assert.That(
+                passage.BoundaryZ,
+                Is.EqualTo(-104f).Within(0.001f));
+            Assert.That(
+                passage.OpeningWidth,
+                Is.EqualTo(3f).Within(0.001f));
+            Assert.That(
+                passage.FenceOpeningBounds.xMin,
+                Is.EqualTo(224.5f).Within(0.001f));
+            Assert.That(
+                passage.FenceOpeningBounds.xMax,
+                Is.EqualTo(227.5f).Within(0.001f));
+            Assert.That(
+                passage.StepHeight,
+                Is.InRange(0.18f, 0.19f));
+            Assert.That(
+                passage.StepHeight,
+                Is.LessThanOrEqualTo(
+                    CityVerticalTraversalAudit.MaximumSafeStep));
+            Assert.DoesNotThrow(() =>
+                CityChurchCemeteryPassagePlanner.ValidateOrThrow(
+                    layout,
+                    church,
+                    passage));
+
+            CityCemeteryPartDescriptor[] endPosts = cemetery.Parts
+                .Where(part =>
+                    part.Kind == CityCemeteryPartKind.FencePost &&
+                    Mathf.Abs(part.Center.z - passage.BoundaryZ) <
+                        0.001f &&
+                    (Mathf.Abs(
+                         part.Center.x -
+                         passage.FenceBreakBounds.xMin) < 0.001f ||
+                     Mathf.Abs(
+                         part.Center.x -
+                         passage.FenceBreakBounds.xMax) < 0.001f))
+                .ToArray();
+            Assert.That(endPosts, Has.Length.EqualTo(2));
+            Assert.That(
+                endPosts.Max(post => ToXZRect(post).xMin) -
+                endPosts.Min(post => ToXZRect(post).xMax),
+                Is.EqualTo(3f).Within(0.001f),
+                "Ordinary end posts leave three physical metres clear.");
+
+            Assert.That(
+                cemetery.Parts.Any(part =>
+                    part.Kind == CityCemeteryPartKind.Alley &&
+                    ContainsRect(
+                        ToXZRect(part),
+                        passage.CemeteryAlleyExtensionBounds)),
+                Is.True,
+                "The cross alley reaches the new north-fence opening.");
+            foreach (CityCemeteryPartDescriptor blocker in
+                     cemetery.Parts.Where(part =>
+                         part.BlocksMovement &&
+                         MinimumWorldY(part) <
+                            cemetery.GroundTopY + 2.1f))
+            {
+                Assert.That(
+                    OverlapsInterior(
+                        ToXZRect(blocker),
+                        passage.FenceOpeningBounds),
+                    Is.False,
+                    blocker.StableId);
+                Assert.That(
+                    OverlapsInterior(
+                        ToXZRect(blocker),
+                        passage.CemeteryAlleyExtensionBounds),
+                    Is.False,
+                    blocker.StableId);
+            }
+
+            RoadWalkableArea walkable =
+                RoadWalkableArea.FromLayout(layout);
+            for (float z = passage.BoundaryZ - 1.2f;
+                 z <= passage.BoundaryZ + 1.2f;
+                 z += 0.2f)
+            {
+                Assert.That(
+                    walkable.Contains(
+                        new Vector3(passage.AxisX, 0f, z),
+                        CityGroundTraversalPlanner.MaximumAgentRadius),
+                    Is.True,
+                    $"Passage centerline at world Z={z:0.0}");
+            }
+
+            Assert.That(
+                layout.OpenAreaAccesses.Count(access =>
+                    access.Feature == CityAreaFeatureKind.Cemetery),
+                Is.EqualTo(1),
+                "The internal passage is not a second street gate.");
+            Assert.That(
+                cemetery.GetCount(CityCemeteryPartKind.GatePillar),
+                Is.EqualTo(2));
+            Assert.That(
+                cemetery.GetCount(CityCemeteryPartKind.GateArch),
+                Is.EqualTo(2));
+            Assert.That(
+                cemetery.GetCount(CityCemeteryPartKind.GateLeaf),
+                Is.EqualTo(4));
+            Assert.That(
+                cemetery.GetCount(CityCemeteryPartKind.Lodge),
+                Is.GreaterThan(0));
+            Assert.That(
+                cemetery.GetLampCount(
+                    CityCemeteryLampKind.LodgePorch),
+                Is.EqualTo(1));
+        }
+
+        [Test]
+        [Category("CityChurchCemeteryPassage")]
+        public void PassageGround_IsNeverOfferedForGraveWork()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityCemeteryPlan connected =
+                CityCemeteryPlanner.Create(layout);
+            CityCemeteryPlan independent =
+                CityCemeteryPlanner.Create(layout, null);
+            CityChurchCemeteryPassagePlan passage =
+                connected.ChurchPassage;
+
+            Assert.That(passage, Is.Not.Null);
+            CityCemeteryPlotDescriptor[] graveWorkPlots = connected.Plots
+                .Where(plot =>
+                    plot.State == CityCemeteryPlotState.Vacant)
+                .ToArray();
+            Assert.That(
+                graveWorkPlots,
+                Is.Not.Empty,
+                "The passage must not consume the grave-work pool.");
+            foreach (CityCemeteryPlotDescriptor plot in graveWorkPlots)
+            {
+                Assert.That(
+                    OverlapsInterior(
+                        plot.Footprint,
+                        passage.CemeteryAlleyExtensionBounds),
+                    Is.False,
+                    plot.StableId);
+            }
+
+            Assert.That(connected.VacantPlotCount, Is.GreaterThan(0));
+            Assert.That(
+                connected.TryGetNextVacantPlot(out _),
+                Is.True);
+
+            Assert.That(
+                CemeteryMournerPlan.TryGetAccess(
+                    layout,
+                    out CityOpenAreaAccessDescriptor mournerAccess),
+                Is.True);
+            Assert.That(
+                mournerAccess.OutwardNormal,
+                Is.EqualTo(Vector3.right),
+                "The mourner still enters through the west street gate.");
+            Assert.That(
+                CemeteryMournerPlan.CollectCandidateGraves(connected),
+                Is.Not.Empty,
+                "The passage must not disable mourner visits.");
+
+            Assert.That(independent.ChurchPassage, Is.Null);
+            Assert.That(
+                independent.GetCount(CityCemeteryPartKind.GatePillar),
+                Is.EqualTo(
+                    connected.GetCount(
+                        CityCemeteryPartKind.GatePillar)));
+            Assert.That(
+                independent.GetCount(CityCemeteryPartKind.GateArch),
+                Is.EqualTo(
+                    connected.GetCount(
+                        CityCemeteryPartKind.GateArch)));
+            Assert.That(
+                independent.GetCount(CityCemeteryPartKind.GateLeaf),
+                Is.EqualTo(
+                    connected.GetCount(
+                        CityCemeteryPartKind.GateLeaf)));
+            Assert.That(
+                independent.GetCount(CityCemeteryPartKind.Lodge),
+                Is.EqualTo(
+                    connected.GetCount(CityCemeteryPartKind.Lodge)));
+
+            Vector2 closedPoint = new Vector2(
+                passage.AxisX,
+                passage.BoundaryZ);
+            Assert.That(
+                independent.Parts.Any(part =>
+                    part.Kind == CityCemeteryPartKind.FenceRail &&
+                    ToXZRect(part).Contains(closedPoint)),
+                Is.True,
+                "The compatible null overload retains the old north fence.");
+        }
+
+        [Test]
         public void DefaultCity_BuildsTexturedCemeteryWithNightLamps()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
@@ -748,6 +964,24 @@ namespace BarPromenade.Tests.EditMode
                    left.xMax > right.xMin &&
                    left.yMin < right.yMax &&
                    left.yMax > right.yMin;
+        }
+
+        private static bool OverlapsInterior(Rect left, Rect right)
+        {
+            const float epsilon = 0.001f;
+            return left.xMin < right.xMax - epsilon &&
+                   left.xMax > right.xMin + epsilon &&
+                   left.yMin < right.yMax - epsilon &&
+                   left.yMax > right.yMin + epsilon;
+        }
+
+        private static bool ContainsRect(Rect outer, Rect inner)
+        {
+            const float epsilon = 0.001f;
+            return inner.xMin >= outer.xMin - epsilon &&
+                   inner.xMax <= outer.xMax + epsilon &&
+                   inner.yMin >= outer.yMin - epsilon &&
+                   inner.yMax <= outer.yMax + epsilon;
         }
     }
 }

@@ -110,7 +110,7 @@ namespace BarPromenade
         /// </summary>
         public const float ExteriorModelScale = 0.55f;
 
-        public const float StreetSetback = 16f;
+        public const float StreetSetback = 10f;
         public const float MinimumCemeteryClearance = 5f;
         public const float FoundationHeight = 0.32f;
         public const float FoundationTopAboveGround = 0.08f;

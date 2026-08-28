@@ -48,9 +48,9 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit  # noqa: E402
 
 
-GENERATOR_VERSION = "4.2.0"
+GENERATOR_VERSION = "4.3.3"
 DESIGN_ID = "city_misc_citywide_v4"
-DISPLAY_NAME = "City Misc Citywide Catalog + Special Buildings"
+DISPLAY_NAME = "City Misc Citywide Catalog + Church Courtyard Kit"
 V2_GENERATOR_VERSION = "2.0.0"
 V2_DESIGN_ID = "city_misc_all_decor_v2"
 V2_COMPATIBILITY_SIGNATURE = (
@@ -102,6 +102,8 @@ PREVIEW_COLORS = {
     "Street_Timber": (0.10, 0.075, 0.050, 1.0),
     "Street_PaintedMetal": (0.075, 0.10, 0.115, 1.0),
     "Residential_PaintedMetal": (0.18, 0.30, 0.31, 1.0),
+    "Street_Gravel": (0.30, 0.29, 0.26, 1.0),
+    "Foliage_Lawn": (0.13, 0.24, 0.14, 1.0),
 }
 
 SURFACE_KINDS = {
@@ -122,6 +124,8 @@ SURFACE_KINDS = {
     "Street_Timber": "Timber",
     "Street_PaintedMetal": "PaintedMetal",
     "Residential_PaintedMetal": "PaintedMetal",
+    "Street_Gravel": "Gravel",
+    "Foliage_Lawn": "Lawn",
 }
 
 
@@ -3474,6 +3478,196 @@ def build_player_home_building_shell() -> AssemblySpec:
     )
 
 
+def build_church_courtyard_surface(variant: int) -> AssemblySpec:
+    """One-metre passive patch scaled by the courtyard plan in Unity."""
+    kind = "ChurchCourtyardSurface"
+    role, suffix = (
+        ("Masonry_Stone", "Surface_Masonry_Stone"),
+        ("Street_Gravel", "Surface_Street_Gravel"),
+        ("Foliage_Lawn", "Surface_Foliage_Lawn"),
+    )[variant]
+    return AssemblySpec(
+        kind,
+        variant,
+        (make_named_part(
+            kind,
+            variant,
+            suffix,
+            role,
+            local_box(0.0, 0.02, 0.0, 1.0, 0.04, 1.0, 0.01)),),
+        canonical_reference=(
+            ("resolved_width", 1.0),
+            ("resolved_depth", 1.0),
+        ),
+        scale_parameters=(
+            scale_parameter("resolved_width", ("X",), 1.0, 0.25, 64.0),
+            scale_parameter("resolved_depth", ("Y",), 1.0, 0.25, 64.0),
+        ),
+        root_derivation=(
+            "CityChurchCourtyardPartDescriptor/"
+            "CityCemeteryPartDescriptor.Ground+Rotation"),
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+def build_church_courtyard_shrub(variant: int) -> AssemblySpec:
+    kind = "ChurchCourtyardShrub"
+    if variant == 0:
+        foliage = ring_solid_z((
+            (0.00, 0.0, 0.0, 0.44, 0.37, 0.03),
+            (0.18, 0.0, 0.0, 0.61, 0.51, 0.08),
+            (0.50, 0.0, 0.0, 0.65, 0.55, 0.00),
+            (0.76, 0.0, 0.0, 0.45, 0.38, 0.17),
+            (0.86, 0.0, 0.0, 0.12, 0.12, 0.22),
+        ), 12)
+    else:
+        foliage = local_box(
+            0.0, 0.42, 0.0,
+            2.20, 0.84, 0.85, 0.15)
+    return AssemblySpec(
+        kind,
+        variant,
+        (make_part(kind, variant, "Foliage", foliage),),
+        root_derivation="CityChurchCourtyardPartDescriptor.Ground+Rotation",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+def build_church_courtyard_flower_bed(variant: int) -> AssemblySpec:
+    kind = "ChurchCourtyardFlowerBed"
+    width = 3.0 if variant == 0 else 4.2
+    depth, curb = 1.0, 0.16
+    edging: list[Geometry] = [
+        local_box(
+            0.0, 0.08, side * (depth * 0.5 - curb * 0.5),
+            width, 0.16, curb, 0.025)
+        for side in (-1, 1)
+    ]
+    edging.extend(
+        local_box(
+            side * (width * 0.5 - curb * 0.5), 0.08, 0.0,
+            curb, 0.16, depth - curb * 2.0, 0.025)
+        for side in (-1, 1)
+    )
+    if variant == 0:
+        foliage_positions = (
+            (-1.18, -0.18), (-0.80, 0.18), (-0.40, -0.12),
+            (0.00, 0.17), (0.40, -0.16), (0.80, 0.17),
+            (1.18, -0.18),
+        )
+        flower_positions = (
+            (-1.02, 0.06), (-0.52, -0.17), (0.0, 0.15),
+            (0.54, -0.11), (1.04, 0.10),
+        )
+    else:
+        # The long variant is divided into two maintained planting bays.
+        edging.append(local_box(
+            0.0, 0.08, 0.0,
+            curb, 0.16, depth - curb * 2.0, 0.025))
+        foliage_positions = (
+            (-1.76, -0.16), (-1.38, 0.17), (-0.98, -0.12),
+            (-0.55, 0.16), (0.55, -0.15), (0.98, 0.16),
+            (1.38, -0.12), (1.76, 0.16),
+        )
+        flower_positions = (
+            (-1.60, 0.05), (-1.15, -0.16), (-0.69, 0.13),
+            (0.68, -0.14), (1.14, 0.13), (1.60, -0.06),
+        )
+
+    foliage: list[Geometry] = []
+    for index, (x, forward) in enumerate(foliage_positions):
+        foliage.append(local_faceted_mass(
+            x,
+            0.07,
+            0.20 + (index % 2) * 0.025,
+            0.35 + (index % 3) * 0.018,
+            forward,
+            0.17,
+            0.15,
+            top_scale=0.18,
+            sides=7,
+            phase=index * 0.11))
+
+    blossoms: list[Geometry] = []
+    for index, (x, forward) in enumerate(flower_positions):
+        stem_top = 0.39 + (index % 3) * 0.035
+        foliage.append(local_vertical_solid(
+            x,
+            0.17,
+            stem_top,
+            forward,
+            0.014,
+            0.014,
+            top_scale=0.72,
+            sides=6))
+        blossoms.append(local_faceted_mass(
+            x,
+            stem_top - 0.035,
+            stem_top + 0.025,
+            stem_top + 0.075,
+            forward,
+            0.072,
+            0.072,
+            top_scale=0.28,
+            sides=7,
+            phase=0.08 + index * 0.13))
+
+    return AssemblySpec(
+        kind,
+        variant,
+        (
+            make_named_part(
+                kind, variant, "Edging_Masonry_Stone",
+                "Masonry_Stone", *edging),
+            make_part(kind, variant, "Foliage", *foliage),
+            make_named_part(
+                kind, variant, "Flowers_Residential",
+                "Residential", *blossoms),
+        ),
+        root_derivation="CityChurchCourtyardPartDescriptor.Ground+Rotation",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+def build_cemetery_fence_post() -> AssemblySpec:
+    kind, variant = "CemeteryFencePost", 0
+    fixture = (
+        local_box(0.0, 0.05, 0.0, 0.18, 0.10, 0.18, 0.012),
+        local_box(0.0, 0.73, 0.0, 0.12, 1.36, 0.12, 0.012),
+        local_box(0.0, 1.42, 0.0, 0.18, 0.12, 0.18, 0.018),
+    )
+    return AssemblySpec(
+        kind,
+        variant,
+        (make_part(kind, variant, "Fixture", *fixture),),
+        root_derivation="CityCemeteryPartDescriptor.Ground+Rotation",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+def build_cemetery_fence_rail() -> AssemblySpec:
+    kind, variant = "CemeteryFenceRail", 0
+    return AssemblySpec(
+        kind,
+        variant,
+        (make_part(
+            kind,
+            variant,
+            "Fixture",
+            local_box(0.0, 0.06, 0.0, 1.0, 0.12, 0.16, 0.0)),),
+        canonical_reference=(("resolved_length", 1.0),),
+        scale_parameters=(
+            scale_parameter("resolved_length", ("X",), 1.0, 0.1, 48.0),),
+        root_derivation="CityCemeteryPartDescriptor.Ground+Rotation",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
 def make_assemblies() -> tuple[AssemblySpec, ...]:
     return (
         # Wave 1 compatibility block. Keep these first 15 assemblies and their
@@ -3551,6 +3745,12 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         build_roadside_drain_and_cover(),
         build_roadside_capped_standpipe(),
         build_lot_ground_downpipe_outfall(),
+        # Citywide v4.3: passive, plan-scaled church courtyard dressing.
+        *(build_church_courtyard_surface(index) for index in range(3)),
+        *(build_church_courtyard_shrub(index) for index in range(2)),
+        *(build_church_courtyard_flower_bed(index) for index in range(2)),
+        build_cemetery_fence_post(),
+        build_cemetery_fence_rail(),
     )
 
 
@@ -3705,6 +3905,11 @@ EXPECTED_VARIANTS = {
     "RoadsideDrainAndCover": 1,
     "RoadsideCappedStandpipe": 1,
     "LotGroundDownpipeOutfall": 1,
+    "ChurchCourtyardSurface": 3,
+    "ChurchCourtyardShrub": 2,
+    "ChurchCourtyardFlowerBed": 2,
+    "CemeteryFencePost": 1,
+    "CemeteryFenceRail": 1,
 }
 
 EXPECTED_ROLES = {
@@ -3812,6 +4017,16 @@ EXPECTED_ROLES = {
     ("RoadsideDrainAndCover", 0): ("Street", "Masonry"),
     ("RoadsideCappedStandpipe", 0): ("Street", "Masonry"),
     ("LotGroundDownpipeOutfall", 0): ("Street", "Masonry"),
+    ("ChurchCourtyardSurface", 0): ("Masonry_Stone",),
+    ("ChurchCourtyardSurface", 1): ("Street_Gravel",),
+    ("ChurchCourtyardSurface", 2): ("Foliage_Lawn",),
+    **{("ChurchCourtyardShrub", index): ("Foliage",)
+       for index in range(2)},
+    **{("ChurchCourtyardFlowerBed", index): (
+        "Masonry_Stone", "Foliage", "Residential")
+       for index in range(2)},
+    ("CemeteryFencePost", 0): ("Fixture",),
+    ("CemeteryFenceRail", 0): ("Fixture",),
 }
 
 
@@ -3845,6 +4060,12 @@ EXPECTED_MESH_SUFFIXES = {
            "SupermarketBuildingShell",
            "PlayerHomeBuildingShell",
        )},
+    ("ChurchCourtyardSurface", 0): ("Surface_Masonry_Stone",),
+    ("ChurchCourtyardSurface", 1): ("Surface_Street_Gravel",),
+    ("ChurchCourtyardSurface", 2): ("Surface_Foliage_Lawn",),
+    **{("ChurchCourtyardFlowerBed", index): (
+        "Edging_Masonry_Stone", "Foliage", "Flowers_Residential")
+       for index in range(2)},
 }
 
 
@@ -4034,6 +4255,20 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
                     f"{key} scale parameter {parameter.name} has bad range")
 
         low, high = combined_bounds(assembly.parts)
+        if assembly.kind == "CemeteryFenceRail":
+            rail_vertices = assembly.parts[0].geometry[0]
+            rail_triangles = triangle_count(assembly.parts[0].geometry)
+            minimum_end = sum(
+                abs(vertex[0] + 0.5) <= BOUNDS_EPSILON
+                for vertex in rail_vertices)
+            maximum_end = sum(
+                abs(vertex[0] - 0.5) <= BOUNDS_EPSILON
+                for vertex in rail_vertices)
+            if len(rail_vertices) != 8 or rail_triangles != 12 or \
+                    minimum_end != 4 or maximum_end != 4:
+                problems.append(
+                    "CemeteryFenceRail must remain an 8-vertex/12-triangle "
+                    "unit box with four vertices on each flat X end")
         expected_ground = assembly.expected_source_min_z
         if expected_ground is None:
             expected_ground = 1.67 if assembly.kind == \
@@ -4065,11 +4300,11 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         if actual != list(range(count)):
             problems.append(
                 f"{kind} variants are {actual}, expected 0..{count - 1}")
-    if len(assemblies) != 97:
+    if len(assemblies) != 106:
         problems.append(
-            f"assembly count is {len(assemblies)}, expected 97")
-    if len(names) != 192:
-        problems.append(f"mesh count is {len(names)}, expected 192")
+            f"assembly count is {len(assemblies)}, expected 106")
+    if len(names) != 205:
+        problems.append(f"mesh count is {len(names)}, expected 205")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)

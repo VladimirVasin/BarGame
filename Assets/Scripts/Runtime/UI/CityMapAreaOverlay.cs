@@ -55,7 +55,8 @@ namespace BarPromenade
             IList<Rect> landBounds,
             IList<Rect> waterBounds,
             IList<CityMapAreaEdge> outline,
-            IList<Rect> gates)
+            IList<Rect> gates,
+            IList<Rect> internalPassages)
         {
             Definition = definition ??
                 throw new ArgumentNullException(nameof(definition));
@@ -66,6 +67,8 @@ namespace BarPromenade
             Outline = new ReadOnlyCollection<CityMapAreaEdge>(
                 new List<CityMapAreaEdge>(outline));
             Gates = new ReadOnlyCollection<Rect>(new List<Rect>(gates));
+            InternalPassages = new ReadOnlyCollection<Rect>(
+                new List<Rect>(internalPassages));
         }
 
         public CityAreaDefinition Definition { get; }
@@ -92,6 +95,12 @@ namespace BarPromenade
         /// is entered only through these, so the map marks them.
         /// </summary>
         public IReadOnlyList<Rect> Gates { get; }
+
+        /// <summary>
+        /// Deliberate links between adjacent precincts. They are drawn on
+        /// both outlines but never become street gates or teleport anchors.
+        /// </summary>
+        public IReadOnlyList<Rect> InternalPassages { get; }
     }
 
     /// <summary>
@@ -141,6 +150,15 @@ namespace BarPromenade
             var water = new List<Rect>();
             var outline = new List<CityMapAreaEdge>();
             var noGates = new List<Rect>();
+            var noInternalPassages = new List<Rect>();
+            var churchCemeteryPassages = new List<Rect>(1);
+            CityChurchCemeteryPassagePlan churchCemeteryPassage =
+                CityChurchCemeteryPassagePlanner.Create(layout);
+            if (churchCemeteryPassage != null)
+            {
+                churchCemeteryPassages.Add(
+                    churchCemeteryPassage.FenceOpeningBounds);
+            }
             for (int index = 0; index < areas.Count; index++)
             {
                 CityAreaPlacement area = areas[index];
@@ -155,7 +173,14 @@ namespace BarPromenade
                     outline,
                     gatesByArea.TryGetValue(area.Id, out List<Rect> gates)
                         ? gates
-                        : noGates));
+                        : noGates,
+                    (area.Definition.Feature ==
+                         CityAreaFeatureKind.Church ||
+                     area.Definition.Feature ==
+                         CityAreaFeatureKind.Cemetery) &&
+                    churchCemeteryPassages.Count > 0
+                        ? churchCemeteryPassages
+                        : noInternalPassages));
             }
 
             return new ReadOnlyCollection<CityMapAreaRegion>(regions);

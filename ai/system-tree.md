@@ -15,6 +15,7 @@ Assets/
     MountainRoad.unity
     AreaLoading.unity
     ChurchInterior.unity
+    AlpineVillage.unity
   Settings/
     CityNoirVolumeProfile.asset
     PCPresentationBaselineVolumeProfile.asset  project-owned Neutral/Bloom/Vignette baseline
@@ -119,7 +120,7 @@ Assets/
       StairwellCatProvider.asset      serialized link to the passive 3D cat prefab
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
-      CityMiscAssetProvider.asset   186 passive City role-mesh bindings + manifest signature
+      CityMiscAssetProvider.asset   205 passive City role-mesh bindings + manifest signature
       CityBuildingAssetProvider.asset  four district prototype-prefab bindings + signature
       Buildings/
         OldTownPrototype01.prefab      passive fixed-metre wrapper + semantic registry
@@ -183,7 +184,7 @@ Assets/
     Models/
       CityChessSet3D.fbx                six turned chessmen and a draught, board-scaled
       CityChessSet3D.json               deterministic heights/footprints manifest
-      CityMisc3D.fbx                    94 citywide misc assemblies / 186 role meshes
+      CityMisc3D.fbx                   106 citywide misc assemblies / 205 role meshes
       CityMisc3D.json                   roots, roles, bounds, compatibility + build signature
       CityBuildings3D.fbx               four fixed-metre district prototypes / 24 role meshes
       CityBuildings3D.json              envelopes, attachments, window slots + build signature
@@ -290,6 +291,11 @@ Assets/
         MountainRoadCafe{WorldBuilder,WorldResult,Geometry}.cs enterable glass cafe
         MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs four-role silent cast
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
+        MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
+        AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane at 7.8%, house at its head
+        AlpineVillage{WalkableArea,WorldBuilder,WeatherShaper}.cs capsule lane mask, kit dressing, capped snow
+        AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}.cs boarding, first-person ride, ridge fade
+        VillageAssetProvider.cs         11 assemblies / 27 passive village meshes, geometry only
         MountainRoadMiscAssetProvider.cs 19 passive Blender meshes + deterministic visual variants
         MountainRoadWalkableArea.cs route/plateau movement boundary
         MountainRoadWorldBuilder.cs separate mountain-only composition + 12 imported misc batches
@@ -323,6 +329,9 @@ Assets/
         CityCemeteryCoffinWorldBuilder.cs  six-sided turned-board coffin, overhanging lid, cross
         CityCemeterySealedGraveWorldBuilder.cs  turned mound courses + one planner monument, slab omitted
         CityChurchPlan.cs        `4 x 2` precinct, west door/approach, cemetery clearance + return
+        CityChurchCourtyardPlan.cs  stone forecourt, north garden furniture/planting + reserved routes
+        CityChurchCemeteryPassagePlan.cs  one 3 m middle-alley opening + safe shared threshold
+        CityChurchCourtyardWorldBuilder.cs imported surface/fixture batches, collision + bench seats
         CityChurch{Ground,World}WorldBuilder.cs typed ground and Catholic exterior composition
         ChurchAssetRegistry.cs   passive Blender-part/material/anchor contract shared by both prefabs
         ChurchResources.cs       typed Resources load/instantiate bridge for exterior and interior
@@ -355,7 +364,7 @@ Assets/
         CityDecorationPlan.cs        immutable ordered seeded decoration data
         CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. bar-side yard pair
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
-        CityMiscAssetProvider.cs     64 kinds / 94 assemblies / 186 passive role meshes with roots and bounds
+        CityMiscAssetProvider.cs     72 kinds / 106 assemblies / 205 passive role meshes with roots and bounds
         CityBuildingAssetRegistry.cs fixed envelope, frontage, role, attachment + window-slot contract
         CityBuildingAssetProvider.cs four passive Resources prefab bindings used by City/Home builders
         CityDecorationWorldBuilder.cs  imported role batches, Unity collision proxies + utility dock read-back
@@ -658,6 +667,7 @@ Assets/
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
       City/CityMiscAssetSetup.cs  FBX import/provider binding + strict manifest/root/bounds validation
+      Village/VillageAssetSetup.cs  village FBX import/binding; expectation derived from the runtime catalog
       City/CityBuilding{AssetSetup,ModelImporter}.cs passive FBX import + four wrappers/provider
       City/Church{AssetSetup,ModelImporter}.cs Catholic FBX import, materials, prefabs + validation
       Bar/BarAssetSetup.cs       shared interior/exterior importer, prefab and manifest validation
@@ -669,7 +679,7 @@ Assets/
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
-      CityMiscAssetTests.cs       186-entry catalog/signature/provider + affected-builder smoke contract
+      CityMiscAssetTests.cs       205-entry catalog/signature/provider + affected-builder smoke contract
       CityBuildingAssetTests.cs   4 prototypes / 24 meshes, importer, wrapper + provider contract
       CityBuildingPrototypeRuntimeTests.cs City/Home placement, collision, slot shader + half-space policy
       BarModelContractTests.cs    shared interior + complete bar_exterior_v2 manifest/runtime contract
@@ -707,6 +717,9 @@ Assets/
       MountainRoadTerminalTests.cs       apron, landmarks, terrain blend + cabin clearance
       MountainRoadCafeCastTests.cs       roles/gaps/passive assets/clip blend/world ownership
       MountainCablewayTests.cs            loop continuity, world ownership and causal audio
+      MountainCablewayRideTests.cs        exact docking, boarding step, treads, return station
+      AlpineVillageTests.cs               lane grade, composition, bowl, weather, teleport ground
+      VillageAssetTests.cs                kit catalog, plan-owned collision, garland light budget
       AreaTravelContractTests.cs         destination mapping and one-shot arrival state
       CityMapAreaPresentationTests.cs    tabs, player visibility + mountain schematic
       CityRiverPlannerTests.cs           core river builders + cave-aware south-rail ownership
@@ -718,6 +731,7 @@ Assets/
       SupermarketCityPlanningTests.cs     one eligible lot + open street approach
       CityOpenAreaDecorationPlannerTests.cs  yard identity, clearance and determinism
       CityCemeteryPlannerTests.cs         cemetery variety/clearance/determinism, textured build, night lamps + sittable benches
+      CityChurchCourtyardPlanningTests.cs  10 m setback, linked court composition/determinism + sittable benches
       CityMapViewportTests.cs             independent overflow axes, focus and clamping
       SupermarketInteriorLayoutTests.cs   room, paths, fixtures and finite slots
       SupermarketPurchaseRulesTests.cs    five offers, atomicity and new-run reset
@@ -792,6 +806,7 @@ ArtSource/
   Bar/                           shared interior/exterior .blend, contact sheet and texture manifest
   Home/                          apartment albedo contract, manifest and contact sheet
   MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
+  Village/Blender/               village kit `.blend` source and contact sheet (no sheet of its own)
   Church/Blender/                Catholic `.blend` source + accepted exterior/interior previews
 tools/
   build-city-bus-3d-model.py         real-scale bus model/export validator
@@ -809,7 +824,8 @@ tools/
   build-church-3d-model.py       deterministic Catholic exterior/interior Blender build + validator
   build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
-  build-city-misc-3d-model.py    64 kinds / 94 assemblies / 186 citywide role meshes
+  build-village-3d-model.py      11 assemblies / 27 village meshes; no doors, no panes, no new sheet
+  build-city-misc-3d-model.py    72 kinds / 106 assemblies / 205 citywide role meshes
   build-city-buildings-3d-model.py  four fixed-metre district prototypes / 24 role meshes
   city_building_parts.py         pure deterministic building geometry + attachment/window metadata
   build-bar-3d-model.py          shared interior + complete fixed-metre pub exterior/export validator
@@ -868,11 +884,25 @@ MountainRoadRoot -> MountainRoadPlanner -> validated 620 m continuous climb
                                          -> visible colliderless R7.5 m apron on shared collision
                                          -> enterable five-sided glass cafe on left
                                          -> 58 m relative-height cableway on right
+                                            -> boarding open; line brakes to a dock on request
+                                            -> outboard platform: pedestal fills the track gap
+                                            -> ride -> ridge fade -> AlpineVillage
                                       -> route-wide forest/misc + middle/far snowy layers
                                          -> 76 m terrain + grounded perimeter ridges
                                          -> ridge footprints clear route and trees
                                       -> five positioned sounds incl. loose bridge rail
                   -> pure City plan for the City map tab only
+AlpineVillageRoot -> AlpineVillagePlanner -> validated village above the rope
+                                        -> one 82.1 m lane, +6.4 m, 7.8% average
+                                           -> no step over 0.18 m anywhere on it
+                                        -> house at the head, highest thing in the village
+                                        -> 12 houses either side, 4 authored variants
+                                        -> chapel / adit / graves on side spurs
+                                        -> ridge at 1.15 (49 deg) closes the bowl
+                                           -> steeper than the hero's own slope limit
+                                        -> return station: tension weight, no motor
+                                        -> garlands: emissive bulbs, 5 real lamps
+                  -> pure City + mountain plans for the other two map tabs
 blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                           -> stable area IDs + categories/profiles
                                           -> sparse active-cell topology
@@ -881,7 +911,7 @@ blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                              -> two promenades + four lower landings
                                           -> split 16-cell centered park
                                           -> north-edge beach + water
-                                          -> default eastern Cemetery/yard areas
+                                          -> default eastern Cemetery/Church/yard areas
                                           -> default mountain boundary plan
                                              -> physical west/south ridges
                                                 -> shared opaque physical shader

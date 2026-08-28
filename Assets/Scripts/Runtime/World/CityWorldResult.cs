@@ -16,6 +16,9 @@ namespace BarPromenade
             HomeEntrance playerHome,
             SupermarketEntrance supermarket,
             CityChurchPlan churchPlan,
+            CityChurchCemeteryPassagePlan churchCemeteryPassagePlan,
+            CityChurchCourtyardPlan churchCourtyardPlan,
+            GameObject churchCourtyardRoot,
             ChurchEntrance church,
             RoadFencePlan fencePlan,
             GameObject parkRoot,
@@ -45,6 +48,9 @@ namespace BarPromenade
             PlayerHome = playerHome;
             Supermarket = supermarket;
             ChurchPlan = churchPlan;
+            ChurchCemeteryPassagePlan = churchCemeteryPassagePlan;
+            ChurchCourtyardPlan = churchCourtyardPlan;
+            ChurchCourtyardRoot = churchCourtyardRoot;
             Church = church;
             FencePlan = fencePlan ??
                 throw new ArgumentNullException(nameof(fencePlan));
@@ -107,6 +113,12 @@ namespace BarPromenade
         public HomeEntrance PlayerHome { get; }
         public SupermarketEntrance Supermarket { get; }
         public CityChurchPlan ChurchPlan { get; }
+        public CityChurchCemeteryPassagePlan ChurchCemeteryPassagePlan
+        {
+            get;
+        }
+        public CityChurchCourtyardPlan ChurchCourtyardPlan { get; }
+        public GameObject ChurchCourtyardRoot { get; }
         public ChurchEntrance Church { get; }
         public RoadFencePlan FencePlan { get; }
         public GameObject ParkRoot { get; }

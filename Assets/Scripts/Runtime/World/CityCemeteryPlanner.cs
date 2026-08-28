@@ -17,17 +17,21 @@ namespace BarPromenade
     /// </summary>
     public static class CityCemeteryPlanner
     {
-        private const float FenceThickness = 0.16f;
+        private const float FenceThickness =
+            CityChurchCemeteryPassagePlanner.FenceThickness;
         private const float FencePostSpacing = 3.2f;
         private const float AccessClearance = 0.45f;
         private const float SpatialChunkSize = 48f;
 
         // The dressed interior stays off the fence line so monuments
         // and trees never poke through the railing.
-        private const float FenceInset = 1.6f;
+        private const float FenceInset =
+            CityChurchCemeteryPassagePlanner.CemeteryFenceInset;
         private const float MainAlleyHalfWidth = 1.3f;
-        private const float CrossAlleyHalfWidth = 0.9f;
-        private const float CrossAlleySpacing = 20f;
+        private const float CrossAlleyHalfWidth =
+            CityChurchCemeteryPassagePlanner.CrossAlleyHalfWidth;
+        private const float CrossAlleySpacing =
+            CityChurchCemeteryPassagePlanner.CrossAlleySpacing;
         private const float AlleyThickness = 0.07f;
 
         // Grave grid pitch: wide enough for an enclosure (2.6 x 3.4 m
@@ -67,6 +71,25 @@ namespace BarPromenade
         /// open-area pass used, now visible to the caller).
         /// </summary>
         public static CityCemeteryPlan Create(CityLayout layout)
+        {
+            if (layout == null)
+            {
+                throw new ArgumentNullException(nameof(layout));
+            }
+
+            return Create(
+                layout,
+                CityChurchCemeteryPassagePlanner.Create(layout));
+        }
+
+        /// <summary>
+        /// Builds the cemetery around an optional shared church passage.
+        /// A null passage preserves the independent, single-street-gate
+        /// cemetery used by layouts without the adjoining church precinct.
+        /// </summary>
+        public static CityCemeteryPlan Create(
+            CityLayout layout,
+            CityChurchCemeteryPassagePlan churchPassage)
         {
             if (layout == null)
             {
@@ -134,13 +157,31 @@ namespace BarPromenade
 
             float groundTopY = surfaces[0].DatumY +
                                CityElevationPlan.GroundTopOffset;
+            if (churchPassage != null)
+            {
+                CityChurchPlan church = CityChurchPlanner.Create(layout);
+                CityChurchCemeteryPassagePlanner.ValidateOrThrow(
+                    layout,
+                    church,
+                    churchPassage);
+                if (!churchPassage.CemeteryGrounds.Equals(grounds) ||
+                    Mathf.Abs(
+                        churchPassage.CemeteryGroundTopY - groundTopY) >
+                    0.001f)
+                {
+                    throw new InvalidOperationException(
+                        "The church passage belongs to a different " +
+                        "cemetery site or elevation.");
+                }
+            }
+
             var frame = new Frame(grounds, groundTopY, access);
             var parts = new List<CityCemeteryPartDescriptor>(460);
             var lamps = new List<CityCemeteryLampDescriptor>(3);
 
-            List<Rect> alleys = CreateAlleys(frame);
+            List<Rect> alleys = CreateAlleys(frame, churchPassage);
             EmitAlleys(parts, frame, alleys);
-            AddFenceAndGate(parts, frame, access);
+            AddFenceAndGate(parts, frame, access, churchPassage);
             // Lamps and benches claim their alley-side spots first so
             // graves and trees are planned around them, never through
             // them.
@@ -180,7 +221,8 @@ namespace BarPromenade
                 lamps,
                 CreatePlotDescriptors(plots),
                 grounds,
-                groundTopY);
+                groundTopY,
+                churchPassage);
             ValidateOrThrow(layout, plan);
             return plan;
         }
@@ -295,6 +337,8 @@ namespace BarPromenade
                 }
             }
 
+            ValidateChurchPassage(plan);
+
             var lampIds = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < plan.Lamps.Count; index++)
             {
@@ -358,6 +402,94 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "A planned cemetery must contain at least one " +
                     "grave.");
+            }
+        }
+
+        private static void ValidateChurchPassage(CityCemeteryPlan plan)
+        {
+            CityChurchCemeteryPassagePlan passage = plan.ChurchPassage;
+            if (passage == null)
+            {
+                return;
+            }
+
+            if (!passage.CemeteryGrounds.Equals(plan.Grounds) ||
+                Mathf.Abs(
+                    passage.CemeteryGroundTopY - plan.GroundTopY) >
+                0.001f)
+            {
+                throw new InvalidOperationException(
+                    "The church passage drifted from the cemetery plan.");
+            }
+
+            bool hasExtension = false;
+            bool hasMinimumEndPost = false;
+            bool hasMaximumEndPost = false;
+            for (int index = 0; index < plan.Parts.Count; index++)
+            {
+                CityCemeteryPartDescriptor part = plan.Parts[index];
+                Rect footprint = ToXZRect(part);
+                if (part.Kind == CityCemeteryPartKind.Alley &&
+                    Contains(
+                        footprint,
+                        passage.CemeteryAlleyExtensionBounds))
+                {
+                    hasExtension = true;
+                }
+
+                if (part.Kind == CityCemeteryPartKind.FencePost &&
+                    Mathf.Abs(part.Center.z - passage.BoundaryZ) <=
+                        0.001f)
+                {
+                    hasMinimumEndPost |= Mathf.Abs(
+                        part.Center.x -
+                        passage.FenceBreakBounds.xMin) <= 0.001f;
+                    hasMaximumEndPost |= Mathf.Abs(
+                        part.Center.x -
+                        passage.FenceBreakBounds.xMax) <= 0.001f;
+                }
+
+                if (!part.BlocksMovement ||
+                    GetMinimumWorldY(part) >=
+                        plan.GroundTopY + OverheadClearance)
+                {
+                    continue;
+                }
+
+                if (OverlapsStrict(
+                        footprint,
+                        passage.FenceOpeningBounds) ||
+                    OverlapsStrict(
+                        footprint,
+                        passage.CemeteryAlleyExtensionBounds))
+                {
+                    throw new InvalidOperationException(
+                        $"Cemetery part '{part.StableId}' blocks the " +
+                        "shared church passage.");
+                }
+            }
+
+            if (!hasExtension ||
+                !hasMinimumEndPost ||
+                !hasMaximumEndPost)
+            {
+                throw new InvalidOperationException(
+                    "The church passage requires one gravel extension " +
+                    "and ordinary fence end posts on both sides.");
+            }
+
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                CityCemeteryPlotDescriptor plot = plan.Plots[index];
+                if (OverlapsStrict(
+                        plot.Footprint,
+                        passage.CemeteryAlleyExtensionBounds) &&
+                    plot.State != CityCemeteryPlotState.Obstructed)
+                {
+                    throw new InvalidOperationException(
+                        $"Cemetery plot '{plot.StableId}' remains " +
+                        "burial ground inside the church passage.");
+                }
             }
         }
 
@@ -498,7 +630,9 @@ namespace BarPromenade
         // alleys
         // ------------------------------------------------------------
 
-        private static List<Rect> CreateAlleys(Frame frame)
+        private static List<Rect> CreateAlleys(
+            Frame frame,
+            CityChurchCemeteryPassagePlan churchPassage)
         {
             var alleys = new List<Rect>(4);
             alleys.Add(frame.RectFromDepthLateral(
@@ -506,10 +640,13 @@ namespace BarPromenade
                 frame.DepthExtent - FenceInset,
                 frame.GateLateral - MainAlleyHalfWidth,
                 frame.GateLateral + MainAlleyHalfWidth));
-            for (float depth = CrossAlleySpacing;
-                 depth < frame.DepthExtent - CrossAlleySpacing * 0.55f;
-                 depth += CrossAlleySpacing)
+            List<float> crossAlleyDepths =
+                CreateCrossAlleyDepths(frame.DepthExtent);
+            for (int index = 0;
+                 index < crossAlleyDepths.Count;
+                 index++)
             {
+                float depth = crossAlleyDepths[index];
                 alleys.Add(frame.RectFromDepthLateral(
                     depth - CrossAlleyHalfWidth,
                     depth + CrossAlleyHalfWidth,
@@ -517,7 +654,30 @@ namespace BarPromenade
                     frame.LateralMax - FenceInset));
             }
 
+            if (churchPassage != null)
+            {
+                alleys.Add(churchPassage.CemeteryAlleyExtensionBounds);
+            }
+
             return alleys;
+        }
+
+        /// <summary>
+        /// The authoritative depth axes used by both cemetery dressing and
+        /// the shared church-passage selector.
+        /// </summary>
+        internal static List<float> CreateCrossAlleyDepths(
+            float depthExtent)
+        {
+            var depths = new List<float>(4);
+            for (float depth = CrossAlleySpacing;
+                 depth < depthExtent - CrossAlleySpacing * 0.55f;
+                 depth += CrossAlleySpacing)
+            {
+                depths.Add(depth);
+            }
+
+            return depths;
         }
 
         private static void EmitAlleys(
@@ -574,7 +734,8 @@ namespace BarPromenade
         private static void AddFenceAndGate(
             ICollection<CityCemeteryPartDescriptor> parts,
             Frame frame,
-            CityOpenAreaAccessDescriptor access)
+            CityOpenAreaAccessDescriptor access,
+            CityChurchCemeteryPassagePlan churchPassage)
         {
             Rect bounds = frame.Grounds;
             float groundTopY = frame.GroundTopY;
@@ -611,7 +772,14 @@ namespace BarPromenade
             AddFenceSide(
                 parts, ref id, true, bounds.yMax,
                 bounds.xMin, bounds.xMax,
-                gateOnNorth, gateMinimum, gateMaximum, groundTopY);
+                gateOnNorth || churchPassage != null,
+                gateOnNorth
+                    ? gateMinimum
+                    : churchPassage?.FenceBreakBounds.xMin ?? 0f,
+                gateOnNorth
+                    ? gateMaximum
+                    : churchPassage?.FenceBreakBounds.xMax ?? 0f,
+                groundTopY);
 
             AddCornerPillar(parts, "a", bounds.xMin, bounds.yMin, groundTopY);
             AddCornerPillar(parts, "b", bounds.xMax, bounds.yMin, groundTopY);
@@ -2379,6 +2547,14 @@ namespace BarPromenade
                 source.y - amount,
                 source.width + amount * 2f,
                 source.height + amount * 2f);
+        }
+
+        private static bool Contains(Rect outer, Rect inner)
+        {
+            return inner.xMin >= outer.xMin - 0.001f &&
+                   inner.xMax <= outer.xMax + 0.001f &&
+                   inner.yMin >= outer.yMin - 0.001f &&
+                   inner.yMax <= outer.yMax + 0.001f;
         }
 
         private static bool OverlapsStrict(Rect left, Rect right)

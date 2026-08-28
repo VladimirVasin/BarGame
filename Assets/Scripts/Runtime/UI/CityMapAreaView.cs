@@ -22,6 +22,15 @@ namespace BarPromenade
         private static readonly Color MountainRoadCableway =
             new Color32(125, 179, 171, 255);
 
+        // The village's three tones are warm where every other tab is cold.
+        // That is the whole difference the chart is allowed to state.
+        private static readonly Color AlpineVillageGround =
+            new Color32(74, 68, 58, 255);
+        private static readonly Color AlpineVillageSettled =
+            new Color32(104, 94, 78, 255);
+        private static readonly Color AlpineVillageLane =
+            new Color32(214, 186, 138, 255);
+
         private GameAreaId lastPresentedArea = GameAreaId.City;
 
         private void DrawAreaTabs(Rect panel)
@@ -96,6 +105,49 @@ namespace BarPromenade
                 panel.y + 31f,
                 tabWidth,
                 tabHeight);
+        }
+
+        /// <summary>
+        /// The village tab. Same primitives as the mountain road because it
+        /// is the same kind of chart - a line and a patch of ground - but on
+        /// a warmer field, which is the one thing the map says about the
+        /// place. The buildings are not drawn: the points carry them, and a
+        /// village drawn plan-view stops being a village and becomes a plan.
+        /// </summary>
+        private void DrawAlpineVillageMap(MapProjection projection)
+        {
+            RetroUiTheme.DrawPanel(
+                projection.ScreenRect,
+                AlpineVillageGround,
+                RetroUiTheme.BorderMuted,
+                true,
+                2f,
+                1f);
+            CityMapMountainRoadOverlay overlay =
+                controller.AlpineVillageOverlay;
+            if (overlay.IsEmpty)
+            {
+                return;
+            }
+
+            DrawMountainRoadHatches(projection, overlay);
+            Rect extent = ProjectWorldRect(
+                projection,
+                overlay.PlateauBounds);
+            DrawSolidRect(extent, AlpineVillageSettled);
+            RetroUiTheme.StrokeRect(extent, 1f, RetroUiTheme.BorderMuted);
+
+            IReadOnlyList<Vector3> lane = overlay.RoutePoints;
+            for (int index = 1; index < lane.Count; index++)
+            {
+                DrawLine(
+                    projection.WorldToScreen(lane[index - 1]),
+                    projection.WorldToScreen(lane[index]),
+                    4f,
+                    AlpineVillageLane);
+            }
+
+            DrawPlayer(projection);
         }
 
         private void DrawMountainRoadMap(MapProjection projection)

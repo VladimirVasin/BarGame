@@ -24,6 +24,16 @@ namespace BarPromenade
         Cafe,
         Cableway,
 
+        /// <summary>A village house, the chapel, the adit or the graves.
+        /// </summary>
+        Village,
+
+        /// <summary>
+        /// The one at the head of the lane. Its own kind because the whole
+        /// village points at it and the chart should say so too.
+        /// </summary>
+        MothersHouse,
+
         /// <summary>
         /// One square of the map's even teleport lattice. It names no
         /// landmark - it is the ground itself, offered so the whole chart is
@@ -99,7 +109,8 @@ namespace BarPromenade
                 new List<GameAreaId>
                 {
                     GameAreaId.City,
-                    GameAreaId.MountainRoad
+                    GameAreaId.MountainRoad,
+                    GameAreaId.AlpineVillage
                 });
 
         private readonly Queue<AreaMapCommand> pendingAreaMapCommands =
@@ -108,6 +119,8 @@ namespace BarPromenade
             new List<CityMapPointDescriptor>(176);
         private readonly List<CityMapPointDescriptor> mountainMapPoints =
             new List<CityMapPointDescriptor>(20);
+        private readonly List<CityMapPointDescriptor> villageMapPoints =
+            new List<CityMapPointDescriptor>(24);
 
         private Func<AreaTravelRequest, bool> areaTravelRequested;
         private bool areaTabsConfigured;
@@ -115,6 +128,16 @@ namespace BarPromenade
         private GameAreaId selectedArea = GameAreaId.City;
         private CityMapMountainRoadOverlay mountainRoadOverlay =
             CityMapMountainRoadOverlay.Empty;
+
+        // The village charts with the same presentation type: a polyline and
+        // a rectangle is all either tab is. Its polyline is the lane and its
+        // rectangle is the walkable extent, and it carries no landmarks -
+        // the places up there are map POINTS, which is the mechanism the
+        // inspector and the teleport already use.
+        private CityMapMountainRoadOverlay villageOverlay =
+            CityMapMountainRoadOverlay.Empty;
+        private IReadOnlyList<AlpineVillagePlotDescriptor> villagePlots =
+            Array.Empty<AlpineVillagePlotDescriptor>();
         private int selectedMapPointIndex = -1;
         private int mapPointFocusRevision;
 
@@ -144,11 +167,18 @@ namespace BarPromenade
         public GameAreaId SelectedArea => selectedArea;
         public CityMapMountainRoadOverlay MountainRoadOverlay =>
             mountainRoadOverlay;
+        public CityMapMountainRoadOverlay AlpineVillageOverlay =>
+            villageOverlay;
+
+        /// <summary>The overlay of whichever tab is showing, or empty on the
+        /// City tab, which draws itself from the layout.</summary>
+        public CityMapMountainRoadOverlay ActiveAreaOverlay =>
+            GetAreaOverlay(selectedArea);
         public bool IsSelectedAreaCurrent => selectedArea == currentArea;
         public bool CanRequestSelectedAreaTravel =>
             areaTabsConfigured &&
             selectedArea != currentArea &&
-            !GameSessionState.IsRidingTheFerryman &&
+            !GameSessionState.IsRidingAVehicle &&
             areaTravelRequested != null;
         public bool IsCityMapInteractionActive =>
             selectedArea == GameAreaId.City &&
@@ -161,11 +191,17 @@ namespace BarPromenade
         public IReadOnlyList<CityMapPointDescriptor> ActiveMapPoints =>
             GetMapPoints(selectedArea);
 
-        public Rect ActiveDisplayWorldXZBounds =>
-            selectedArea == GameAreaId.MountainRoad &&
-            !mountainRoadOverlay.IsEmpty
-                ? mountainRoadOverlay.DisplayWorldXZBounds
-                : DisplayWorldXZBounds;
+        public Rect ActiveDisplayWorldXZBounds
+        {
+            get
+            {
+                CityMapMountainRoadOverlay overlay =
+                    GetAreaOverlay(selectedArea);
+                return overlay != null && !overlay.IsEmpty
+                    ? overlay.DisplayWorldXZBounds
+                    : DisplayWorldXZBounds;
+            }
+        }
 
         public Vector2 ActiveMapReferenceWorldSize =>
             selectedArea == GameAreaId.City && Layout != null
@@ -173,6 +209,23 @@ namespace BarPromenade
                 : new Vector2(
                     MountainRoadTeleportCellSize,
                     MountainRoadTeleportCellSize);
+
+        /// <summary>
+        /// The chart data of one tab, or null for the City, which is drawn
+        /// from its own layout rather than from an overlay.
+        /// </summary>
+        public CityMapMountainRoadOverlay GetAreaOverlay(GameAreaId area)
+        {
+            switch (area)
+            {
+                case GameAreaId.MountainRoad:
+                    return mountainRoadOverlay;
+                case GameAreaId.AlpineVillage:
+                    return villageOverlay;
+                default:
+                    return null;
+            }
+        }
 
         /// <summary>
         /// The side of one teleport square on the selected tab. It is the
@@ -228,10 +281,11 @@ namespace BarPromenade
             GameAreaId activeArea,
             CityMapMountainRoadOverlay mountainPresentation,
             Func<AreaTravelRequest, bool> travelRequested,
-            ICityMapTeleportGround activeAreaGround = null)
+            ICityMapTeleportGround activeAreaGround = null,
+            CityMapMountainRoadOverlay villagePresentation = null,
+            IReadOnlyList<AlpineVillagePlotDescriptor> villageLandmarks = null)
         {
-            if (activeArea != GameAreaId.City &&
-                activeArea != GameAreaId.MountainRoad)
+            if (!IsKnownArea(activeArea))
             {
                 throw new ArgumentOutOfRangeException(nameof(activeArea));
             }
@@ -244,6 +298,22 @@ namespace BarPromenade
                     "The mountain-road tab needs a visible route.",
                     nameof(mountainPresentation));
             }
+
+            // The village tab may be absent - a caller charting only the two
+            // older areas is still valid - but standing in it without one is
+            // not, because the tab the player is on has to draw something.
+            villageOverlay = villagePresentation ??
+                CityMapMountainRoadOverlay.Empty;
+            if (activeArea == GameAreaId.AlpineVillage &&
+                villageOverlay.IsEmpty)
+            {
+                throw new ArgumentException(
+                    "The village tab needs a visible lane.",
+                    nameof(villagePresentation));
+            }
+
+            villagePlots = villageLandmarks ??
+                Array.Empty<AlpineVillagePlotDescriptor>();
 
             if (activeAreaGround != null &&
                 activeAreaGround.Area != activeArea)
@@ -313,7 +383,7 @@ namespace BarPromenade
             if (!areaTabsConfigured ||
                 !IsKnownArea(request.DestinationArea) ||
                 request.DestinationArea == currentArea ||
-                GameSessionState.IsRidingTheFerryman ||
+                GameSessionState.IsRidingAVehicle ||
                 areaTravelRequested == null)
             {
                 // The ride is itself an area travel already in flight. A
@@ -369,6 +439,9 @@ namespace BarPromenade
                 case GameAreaId.MountainRoad:
                     return LocalizationService.Get(
                         "map.area.mountain_road");
+                case GameAreaId.AlpineVillage:
+                    return LocalizationService.Get(
+                        "map.area.alpine_village");
                 default:
                     return area.ToString();
             }
@@ -379,6 +452,12 @@ namespace BarPromenade
             if (selectedArea == GameAreaId.MountainRoad)
             {
                 return mountainRoadOverlay.TunnelPosition;
+            }
+
+            if (selectedArea == GameAreaId.AlpineVillage)
+            {
+                // The lane foot, which is where the cabin puts you down.
+                return villageOverlay.TunnelPosition;
             }
 
             if (MountainBoundaryPlan != null &&
@@ -400,6 +479,8 @@ namespace BarPromenade
                     return cityMapPoints;
                 case GameAreaId.MountainRoad:
                     return mountainMapPoints;
+                case GameAreaId.AlpineVillage:
+                    return villageMapPoints;
                 default:
                     return Array.Empty<CityMapPointDescriptor>();
             }
@@ -535,7 +616,7 @@ namespace BarPromenade
         public bool CanTeleportToSelectedMapPoint =>
             MapPointInspectionEnabled &&
             IsOpen &&
-            !GameSessionState.IsRidingTheFerryman &&
+            !GameSessionState.IsRidingAVehicle &&
             player.GameObject != null &&
             player.Motor != null &&
             TryGetSelectedMapPoint(
@@ -696,12 +777,115 @@ namespace BarPromenade
         {
             cityMapPoints.Clear();
             mountainMapPoints.Clear();
+            villageMapPoints.Clear();
             selectedMapPointIndex = -1;
             teleportSquarePointOffset = -1;
             mapPointFocusRevision++;
 
             BuildCityMapPoints();
             BuildMountainMapPoints();
+            BuildVillageMapPoints();
+        }
+
+        /// <summary>
+        /// The village's own catalog. Short by design: the station you arrive
+        /// at, the house at the top, and the three things on the spurs. No
+        /// route furniture, because there is one lane and it needs no naming.
+        /// </summary>
+        private void BuildVillageMapPoints()
+        {
+            if (villageOverlay.IsEmpty)
+            {
+                return;
+            }
+
+            if (currentArea == GameAreaId.AlpineVillage &&
+                player.GameObject != null)
+            {
+                AddMapPoint(
+                    villageMapPoints,
+                    "alpine-village:player",
+                    GameAreaId.AlpineVillage,
+                    CityMapPointKind.Player,
+                    LocalizationService.Get("map.player"),
+                    PlayerWorldPosition,
+                    40,
+                    new Vector2(17f, 17f));
+            }
+
+            AddMapPoint(
+                villageMapPoints,
+                "alpine-village:station",
+                GameAreaId.AlpineVillage,
+                CityMapPointKind.Cableway,
+                LocalizationService.Get("map.alpine_village.station"),
+                villageOverlay.TunnelPosition,
+                30,
+                new Vector2(22f, 18f));
+
+            for (int index = 0;
+                 index < villagePlots.Count;
+                 index++)
+            {
+                AlpineVillagePlotDescriptor plot = villagePlots[index];
+                if (!TryDescribeVillagePlot(
+                        plot,
+                        out CityMapPointKind kind,
+                        out string label))
+                {
+                    continue;
+                }
+
+                AddMapPoint(
+                    villageMapPoints,
+                    "alpine-village:" + plot.StableId,
+                    GameAreaId.AlpineVillage,
+                    kind,
+                    label,
+                    plot.DoorDockPosition,
+                    kind == CityMapPointKind.MothersHouse ? 34 : 26,
+                    new Vector2(
+                        Mathf.Max(16f, plot.FootprintSize.x * 2.2f),
+                        Mathf.Max(14f, plot.FootprintSize.y * 2.2f)));
+            }
+        }
+
+        /// <summary>
+        /// Which plots the chart names. Ordinary houses are deliberately not
+        /// on it: a village where every door is labelled is a menu.
+        /// </summary>
+        private static bool TryDescribeVillagePlot(
+            AlpineVillagePlotDescriptor plot,
+            out CityMapPointKind kind,
+            out string label)
+        {
+            switch (plot.Kind)
+            {
+                case AlpineVillagePlotKind.MothersHouse:
+                    kind = CityMapPointKind.MothersHouse;
+                    label = LocalizationService.Get(
+                        "map.alpine_village.mothers_house");
+                    return true;
+                case AlpineVillagePlotKind.Chapel:
+                    kind = CityMapPointKind.Village;
+                    label = LocalizationService.Get(
+                        "map.alpine_village.chapel");
+                    return true;
+                case AlpineVillagePlotKind.Adit:
+                    kind = CityMapPointKind.Village;
+                    label = LocalizationService.Get(
+                        "map.alpine_village.adit");
+                    return true;
+                case AlpineVillagePlotKind.Cemetery:
+                    kind = CityMapPointKind.Village;
+                    label = LocalizationService.Get(
+                        "map.alpine_village.cemetery");
+                    return true;
+                default:
+                    kind = CityMapPointKind.Village;
+                    label = string.Empty;
+                    return false;
+            }
         }
 
         internal void ResetTeleportLattice()
@@ -1406,7 +1590,8 @@ namespace BarPromenade
         private static bool IsKnownArea(GameAreaId area)
         {
             return area == GameAreaId.City ||
-                   area == GameAreaId.MountainRoad;
+                   area == GameAreaId.MountainRoad ||
+                   area == GameAreaId.AlpineVillage;
         }
     }
 }

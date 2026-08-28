@@ -6,6 +6,7 @@ namespace BarPromenade.Tests.EditMode
     {
         [TestCase(GameAreaId.City, SceneIds.City)]
         [TestCase(GameAreaId.MountainRoad, SceneIds.MountainRoad)]
+        [TestCase(GameAreaId.AlpineVillage, SceneIds.AlpineVillage)]
         public void SceneCatalog_MapsEachAreaToOneSeparateScene(
             GameAreaId area,
             string expectedScene)

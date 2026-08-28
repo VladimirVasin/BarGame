@@ -97,6 +97,10 @@
       "value": "E — board Route 01"
     },
     {
+      "key": "interaction.board_cableway",
+      "value": "Board the cabin"
+    },
+    {
       "key": "interaction.exit_bus",
       "value": "E — get off the bus"
     },
@@ -615,6 +619,30 @@
     {
       "key": "map.mountain_road.brink",
       "value": "The Brink"
+    },
+    {
+      "key": "map.area.alpine_village",
+      "value": "The village"
+    },
+    {
+      "key": "map.alpine_village.station",
+      "value": "Cableway station"
+    },
+    {
+      "key": "map.alpine_village.mothers_house",
+      "value": "The house at the top"
+    },
+    {
+      "key": "map.alpine_village.chapel",
+      "value": "Chapel"
+    },
+    {
+      "key": "map.alpine_village.adit",
+      "value": "Adit"
+    },
+    {
+      "key": "map.alpine_village.cemetery",
+      "value": "Burial ground"
     },
     {
       "key": "map.route_title",

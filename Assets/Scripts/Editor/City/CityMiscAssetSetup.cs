@@ -775,6 +775,17 @@ namespace BarPromenade.Editor
                 case CityMiscKind.PlayerHomeBuildingShell:
                     return SpecialBuildingScaleParameters(
                         13f, 12f, 8.8f);
+                case CityMiscKind.ChurchCourtyardSurface:
+                    return new[]
+                    {
+                        S("resolved_width", 1f, 0.25f, 64f, "X"),
+                        S("resolved_depth", 1f, 0.25f, 64f, "Y")
+                    };
+                case CityMiscKind.CemeteryFenceRail:
+                    return new[]
+                    {
+                        S("resolved_length", 1f, 0.1f, 48f, "X")
+                    };
                 default:
                     return Array.Empty<ExpectedScaleParameter>();
             }

@@ -64,6 +64,18 @@ namespace BarPromenade
             private set;
         }
 
+        /// <summary>The offer to board the cableway, on the platform beside
+        /// the outbound track.</summary>
+        public AlpineCablewayCabinSeat CabinSeat { get; private set; }
+
+        /// <summary>The climb to the village, while it is being ridden.
+        /// </summary>
+        public AlpineCablewayRideController CablewayRide
+        {
+            get;
+            private set;
+        }
+
         private void Awake()
         {
             Initialize();
@@ -153,6 +165,7 @@ namespace BarPromenade
                 false);
             BuildAtmosphere(camera);
             BuildSeats(camera);
+            BuildCableway(camera);
             BuildCommonUi(ui);
             // After the camera follow, because arriving in the car takes the
             // lens on its very first frame and the seat resolves the follow
@@ -267,6 +280,32 @@ namespace BarPromenade
             // out and the two had to move together; the sun stays up now, so
             // a headlight is just a switch on a car again.
             carRoot.GetComponent<LastRouteCarHeadlights>()?.Follow(Ride);
+        }
+
+        /// <summary>
+        /// The cableway's boarding offer, and the ride if this visit is one.
+        ///
+        /// The line runs whether or not anyone uses it, so this adds the way
+        /// ON to a machine that was already turning: a dock request, a seat
+        /// and the leg up to the village. Arriving BY cabin takes the other
+        /// branch and is held under the black screen until the area
+        /// transition has finished with the hero.
+        /// </summary>
+        private void BuildCableway(Camera camera)
+        {
+            bool arrivingByCabin =
+                HadAreaArrival && ArrivalToken == AreaArrivalToken.Cableway;
+            AlpineCablewayRideFactory.Installation installation =
+                AlpineCablewayRideFactory.Install(
+                    transform,
+                    Player,
+                    camera,
+                    World.Cableway,
+                    Plan.Terminal.Cableway,
+                    GameAreaId.AlpineVillage,
+                    arrivingByCabin);
+            CabinSeat = installation.Seat;
+            CablewayRide = installation.Ride;
         }
 
         /// <summary>

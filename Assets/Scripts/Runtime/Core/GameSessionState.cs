@@ -187,6 +187,27 @@ namespace BarPromenade
         /// </summary>
         public static bool IsRidingTheFerryman =>
             FerrymanRide == LastRouteFerrymanRideStage.InTransit;
+
+        /// <summary>
+        /// True while the hero is on a cableway cabin's bench and the line is
+        /// running.
+        ///
+        /// Same rule as the car, and for the same reason. Unlike the car this
+        /// is a plain flag rather than a stage of a monotone ladder: the
+        /// cableway is a two-way, repeatable link, so there is nothing
+        /// permanent to remember - where he is IS which scene is loaded.
+        /// </summary>
+        public static bool IsRidingTheCableway { get; private set; }
+
+        public static void SetRidingTheCableway(bool riding)
+        {
+            IsRidingTheCableway = riding;
+        }
+
+        /// <summary>Either vehicle, for the gates that do not care which.
+        /// </summary>
+        public static bool IsRidingAVehicle =>
+            IsRidingTheFerryman || IsRidingTheCableway;
         public static float BalanceCheckDelayRemaining { get; private set; }
         public static int BalanceCheckSequence { get; private set; }
         public static IReadOnlyList<string> PlannedBarRoute =>

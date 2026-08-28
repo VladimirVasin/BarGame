@@ -367,7 +367,8 @@ namespace BarPromenade
             IList<CityCemeteryLampDescriptor> lampSource,
             IList<CityCemeteryPlotDescriptor> plotSource,
             Rect grounds,
-            float groundTopY)
+            float groundTopY,
+            CityChurchCemeteryPassagePlan churchPassage)
         {
             var partCopy = new List<CityCemeteryPartDescriptor>(
                 partSource);
@@ -404,6 +405,7 @@ namespace BarPromenade
 
             Grounds = grounds;
             GroundTopY = groundTopY;
+            ChurchPassage = churchPassage;
 
             variantGraveCounts = new int[6];
             var seenOrdinals = new HashSet<int>();
@@ -436,6 +438,12 @@ namespace BarPromenade
         public int Count => parts.Count;
         public Rect Grounds { get; }
         public float GroundTopY { get; }
+
+        /// <summary>
+        /// The optional non-street opening into the adjoining church yard.
+        /// It is null for cemetery-only and non-canonical layouts.
+        /// </summary>
+        public CityChurchCemeteryPassagePlan ChurchPassage { get; }
 
         /// <summary>Distinct grave ordinals in the plan.</summary>
         public int GraveCount { get; }

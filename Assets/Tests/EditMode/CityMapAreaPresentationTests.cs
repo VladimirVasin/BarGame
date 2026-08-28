@@ -432,7 +432,11 @@ namespace BarPromenade.Tests.EditMode
                         return true;
                     });
 
-                Assert.That(controller.AreaTabs.Count, Is.EqualTo(2));
+                // City, mountain road and the village above the cableway.
+                Assert.That(controller.AreaTabs.Count, Is.EqualTo(3));
+                Assert.That(
+                    controller.AreaTabs,
+                    Contains.Item(GameAreaId.AlpineVillage));
                 Assert.That(controller.CurrentArea, Is.EqualTo(GameAreaId.City));
                 Assert.That(controller.SelectedArea, Is.EqualTo(GameAreaId.City));
                 Assert.That(

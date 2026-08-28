@@ -422,8 +422,8 @@ namespace BarPromenade
         /// <summary>
         /// Collects every sittable seat the generated city carries:
         /// the repaired bar-side yard bench, the four park benches, the
-        /// two point-of-interest benches, the cemetery alley benches,
-        /// one shelter bench per bus stop, and the seats hidden in the
+        /// two point-of-interest benches, the cemetery alley benches, the
+        /// two church-yard benches, one shelter bench per bus stop, and the
         /// street decorations — the chess table benches, the discarded
         /// couches and the playground bench.
         /// </summary>
@@ -434,7 +434,8 @@ namespace BarPromenade
             CityBusPlan busPlan,
             CityDecorationPlan streetDecorations,
             CityStreetSurfacePlan streetSurfacePlan,
-            CitySeacoastPlan seacoastPlan = null)
+            CitySeacoastPlan seacoastPlan = null,
+            CityChurchCourtyardPlan churchCourtyardPlan = null)
         {
             if (layout == null)
             {
@@ -464,7 +465,7 @@ namespace BarPromenade
             }
 
             var plans = new List<CityBenchSitPlan>(
-                15 + busPlan.Stops.Count);
+                17 + busPlan.Stops.Count);
             if (TryCreateHomeYardSeat(
                     decorations,
                     out CityBenchSeat yardSeat))
@@ -481,6 +482,7 @@ namespace BarPromenade
                 layout,
                 streetSurfacePlan,
                 cemeteryPlan);
+            AddChurchCourtyardSeats(plans, churchCourtyardPlan);
             AddSeacoastSeats(plans, seacoastPlan);
             for (int index = 0;
                  index < layout.DistrictPointsOfInterest.Count;
@@ -530,6 +532,25 @@ namespace BarPromenade
             }
 
             return plans;
+        }
+
+        private static void AddChurchCourtyardSeats(
+            List<CityBenchSitPlan> plans,
+            CityChurchCourtyardPlan courtyardPlan)
+        {
+            if (courtyardPlan == null)
+            {
+                return;
+            }
+
+            var seats = new List<CityBenchSeat>(2);
+            CityChurchCourtyardWorldBuilder.AppendBenchSeats(
+                courtyardPlan,
+                seats);
+            for (int index = 0; index < seats.Count; index++)
+            {
+                Add(plans, seats[index]);
+            }
         }
 
         /// <summary>

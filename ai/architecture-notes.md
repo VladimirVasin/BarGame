@@ -99,6 +99,40 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   all walkability, barriers, colliders, entry/return points and lights. The
   transition uses appended `EnterChurch`/`ExitChurch` directions and the same
   accepted-request session semantics as the existing doors.
+- **Accepted architecture exception — 2026-08-28, explicit user request — the
+  cableway carries the player, and the village above it is a real area:** Four
+  canon rules banned this outright and are lifted together by one row in the
+  story bible's §6 registry. Story bible §15 («Ни дороги наверх, ни канатки, ни
+  приезда»), §18 («обещание того, что наверху, до пролога»), §25 («до того, как
+  это написано, деревня после пролога в игре не появляется») and art bible §10f
+  («любое обещание того, что находится наверху за тросом»). Boarding at the
+  mountain terminal opens, the cabin carries the hero in both directions, and
+  `GameAreaId.AlpineVillage` becomes the eleventh scene and the eighth gameplay
+  root. **What is lifted is the place, not the events:** the prologue still
+  opens on a man already at the table and never shows the road up; the mother,
+  the dinner and the news from above remain unwritten, so the village ships with
+  no scene, no line about her and no way into her house — the door is built,
+  lit and politely refuses. The terminal gains no view of the village, no lights
+  behind the ridge and no sign naming it: the player boards without being told
+  where the cabin goes. `10f` is amended from «Единственная зона за пределами
+  города» to name both, and a new `§10g` states the village's form.
+- **Accepted architecture exception — 2026-08-27, explicit user request — one
+  maintained Cemetery–Church connection:** The earlier art-bible rule that the
+  two precincts have no direct connection is lifted only for one internal
+  `3 m` opening. It continues the cemetery's middle cross alley through the
+  north fence into a south church path; the west cemetery gate remains its
+  only street gate, and the mourner, watchman and grave-work routes continue to
+  use it. The church door remains on the west facade and never becomes a door
+  in the cemetery fence. Random breaches and any second internal opening stay
+  forbidden. The accepted site upgrade keeps the exterior at `0.55` scale,
+  changes its west-street setback from `16 m` to `10 m`, and gives the precinct
+  a stone forecourt plus a restrained north lawn/garden with exactly two
+  benches, two small trees, `6–8` clipped shrubs and modest beds. It adds no
+  realtime Light, sound or lore. Data-first ownership is split
+  between `CityChurchCourtyardPlan` and
+  `CityChurchCemeteryPassagePlan`; the latter owns the fence opening, both
+  ground heights, safe shared threshold and capsule-clear route instead of
+  treating a missing fence segment as sufficient traversal.
 - **Accepted — The coastal basin closes only west and south:**
   `CityMountainBoundaryDefinition` opts in only `default-coastal`; custom and
   legacy layouts receive `CityMountainBoundaryPlan.Empty` instead of acquiring
@@ -1515,16 +1549,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   outside this wave: the first already owns bespoke batched geometry and the
   other three have terrain, span or dynamic-renderer coupling.
 - **Accepted — City misc is one citywide role-mesh library, not world
-  prefabs:** final design `city_misc_citywide_v4` contains `64` semantic kinds,
-  `94` assemblies and `186` role meshes (`33,454` triangles) under build
+  prefabs:** current design `city_misc_citywide_v4` contains `72` semantic
+  kinds, `106` assemblies and `205` role meshes (`36,050` triangles) under build
   signature
-  `10335b02af0035e0e9ec9f5da2726ade86f5d1d23fc43503e2022f8deb304397`.
+  `64a77e3a537b3815d8cfa9a2d308995737c77c3ea17cbde79717d09dec7caf30`.
   The provider resolves kind, stable variant and semantic role; the affected
   builders then place or combine those meshes from their existing plans. The
   catalog spans the 24-family decoration layer and parks, street lamps and
   traffic housings, Route 01 shelters/poles, the eastern yard, cemetery,
   seacoast, fringe service belt and the static shells of all four district
-  points of interest, plus the supermarket and player-home shells. The former
+  points of interest, plus the supermarket and player-home shells and the
+  church-yard surface/planting kit and the modified cemetery north-fence
+  posts/rails. The former
   `BarBuildingShell` remains addressable but unused so the v4 catalog and its
   compatibility signature do not change under a separate bar-art milestone.
   Per-assembly roots and fixed metre-scale bounds are part of the manifest
