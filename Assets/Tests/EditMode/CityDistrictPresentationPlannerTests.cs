@@ -193,7 +193,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void WindowResolver_UsesDistrictSchedulesAndActiveNightlifeBase()
+        public void WindowResolver_DistributesWarmLightAcrossEveryFloor()
         {
             float oldTown = SampleLitRatio(CityDistrictKind.OldTown);
             float residential = SampleLitRatio(
@@ -218,30 +218,25 @@ namespace BarPromenade.Tests.EditMode
                 1,
                 4);
 
+            Assert.That(
+                oldTown,
+                Is.EqualTo(ExpectedLitRatio(CityDistrictKind.OldTown)));
+            Assert.That(
+                residential,
+                Is.EqualTo(ExpectedLitRatio(
+                    CityDistrictKind.Residential)));
+            Assert.That(
+                industrial,
+                Is.EqualTo(ExpectedLitRatio(
+                    CityDistrictKind.Industrial)));
+            Assert.That(
+                nightlife,
+                Is.EqualTo(ExpectedLitRatio(CityDistrictKind.Nightlife)));
+            Assert.That(nightlifeBase, Is.EqualTo(nightlife));
+            Assert.That(nightlifeRearBase, Is.EqualTo(nightlife));
+            Assert.That(nightlifeUpper, Is.EqualTo(nightlife));
             Assert.That(residential, Is.GreaterThan(oldTown));
             Assert.That(oldTown, Is.GreaterThan(industrial));
-            Assert.That(nightlife, Is.GreaterThan(industrial));
-            Assert.That(nightlifeBase, Is.GreaterThan(0.45f));
-            Assert.That(nightlifeRearBase, Is.LessThan(0.22f));
-            Assert.That(nightlifeUpper, Is.LessThan(0.24f));
-            Assert.That(
-                nightlifeBase,
-                Is.GreaterThan(nightlifeRearBase * 2.5f));
-        }
-
-        [TestCase(CityDistrictKind.OldTown)]
-        [TestCase(CityDistrictKind.Residential)]
-        [TestCase(CityDistrictKind.Industrial)]
-        [TestCase(CityDistrictKind.Nightlife)]
-        public void WindowResolver_FollowsDistrictTemperatureShare(
-            CityDistrictKind district)
-        {
-            float actualWarmShare = SampleWarmShare(district);
-            float authoredWarmShare = Profile(district).Window.WarmShare;
-
-            Assert.That(
-                actualWarmShare,
-                Is.EqualTo(authoredWarmShare).Within(0.09f));
         }
 
         private static CityDistrictArtProfile Profile(
@@ -280,10 +275,14 @@ namespace BarPromenade.Tests.EditMode
                                     3000,
                                     floor,
                                     pane,
+                                    8,
                                     side,
                                     out _);
                             if (family != CityWindowFamily.Off)
                             {
+                                Assert.That(
+                                    family,
+                                    Is.EqualTo(CityWindowFamily.Warm));
                                 lit++;
                             }
 
@@ -296,46 +295,15 @@ namespace BarPromenade.Tests.EditMode
             return lit / (float)total;
         }
 
-        private static float SampleWarmShare(CityDistrictKind district)
+        private static float ExpectedLitRatio(CityDistrictKind district)
         {
-            int warm = 0;
-            int lit = 0;
-            for (int block = 0; block < 64; block++)
-            {
-                BuildingLot lot = CreateOrdinaryLot(
-                    district,
-                    new Vector2Int((block % 8) - 4, (block / 8) - 4));
-                for (int floor = 0; floor < 4; floor++)
-                {
-                    for (int pane = 0; pane < 8; pane++)
-                    {
-                        for (int side = 0; side < 2; side++)
-                        {
-                            CityWindowFamily family =
-                                CityExteriorAppearance.ResolveWindowFamily(
-                                    lot,
-                                    3000,
-                                    floor,
-                                    pane,
-                                    side,
-                                    out _);
-                            if (family == CityWindowFamily.Off)
-                            {
-                                continue;
-                            }
-
-                            lit++;
-                            if (family == CityWindowFamily.Warm)
-                            {
-                                warm++;
-                            }
-                        }
-                    }
-                }
-            }
-
-            Assert.That(lit, Is.GreaterThan(100));
-            return warm / (float)lit;
+            const int paneCount = 8;
+            float ratio = Profile(district).Window.LitWindowRatio;
+            int lit = Mathf.Clamp(
+                Mathf.RoundToInt(paneCount * ratio),
+                1,
+                paneCount - 1);
+            return lit / (float)paneCount;
         }
 
         private static BuildingLot CreateOrdinaryLot(

@@ -55,7 +55,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.design_id,
                 Is.EqualTo(CityBuildingAssetProvider.ExpectedDesignId));
-            Assert.That(manifest.generator_version, Is.EqualTo("1.0.0"));
+            Assert.That(manifest.generator_version, Is.EqualTo("1.1.0"));
             Assert.That(manifest.fbx_asset_path, Is.EqualTo(ModelPath));
             Assert.That(manifest.unit_factor, Is.EqualTo(1f));
             Assert.That(manifest.unity_axes, Is.Not.Null);
@@ -110,6 +110,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.uv2_encoding.zero_means,
                 Is.EqualTo("non_window_geometry"));
+            Assert.That(manifest.uv0_encoding, Is.Not.Null);
+            Assert.That(
+                manifest.uv0_encoding.window_glass_scheme,
+                Is.EqualTo("per_window_face_projected_0_1"));
 
             int triangleTotal = 0;
             for (int index = 0; index < Expected.Length; index++)
@@ -625,6 +629,7 @@ namespace BarPromenade.Tests.EditMode
             public ContractUnityAxes unity_axes;
             public ContractRoot root_contract;
             public ContractPassive passive;
+            public ContractUv0Encoding uv0_encoding;
             public ContractUv2Encoding uv2_encoding;
             public int prototype_count;
             public int mesh_count;
@@ -671,6 +676,12 @@ namespace BarPromenade.Tests.EditMode
             public string scheme;
             public float divisor;
             public string zero_means;
+        }
+
+        [Serializable]
+        private sealed class ContractUv0Encoding
+        {
+            public string window_glass_scheme;
         }
 
         [Serializable]

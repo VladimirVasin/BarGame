@@ -12,14 +12,15 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void ResolveWindowFamily_IsStableAndKeepsADarkDistrictMix()
+        public void ResolveWindowFamily_IsStableWarmAndEvenAcrossRows()
         {
             CityLayout layout = CityLayoutGenerator.Generate(
                 CityGenerationSettings.Default,
                 GameSessionState.DefaultCitySeed);
 
-            int total = 0;
-            int off = 0;
+            const int paneCount = 6;
+            int totalLit = 0;
+            int totalDark = 0;
             foreach (BuildingLot lot in layout.BuildingLots)
             {
                 if (!lot.HasBuilding)
@@ -27,68 +28,85 @@ namespace BarPromenade.Tests.EditMode
                     continue;
                 }
 
-                for (int floor = 0; floor < 3; floor++)
+                for (int floor = 0; floor < 8; floor++)
                 {
-                    for (int pane = 0; pane < 4; pane++)
+                    for (int side = 0; side < 4; side++)
                     {
-                        CityWindowFamily family =
-                            CityExteriorAppearance.ResolveWindowFamily(
-                                lot,
-                                layout.Seed,
-                                floor,
-                                pane,
-                                0,
-                                out uint paneHash);
-                        CityWindowFamily again =
-                            CityExteriorAppearance.ResolveWindowFamily(
-                                lot,
-                                layout.Seed,
-                                floor,
-                                pane,
-                                0,
-                                out uint hashAgain);
-                        Assert.That(again, Is.EqualTo(family));
-                        Assert.That(hashAgain, Is.EqualTo(paneHash));
-
-                        if (lot.IsBar)
+                        int rowLit = 0;
+                        for (int pane = 0; pane < paneCount; pane++)
                         {
+                            CityWindowFamily family =
+                                CityExteriorAppearance.ResolveWindowFamily(
+                                    lot,
+                                    layout.Seed,
+                                    floor,
+                                    pane,
+                                    paneCount,
+                                    side,
+                                    out uint paneHash);
+                            CityWindowFamily again =
+                                CityExteriorAppearance.ResolveWindowFamily(
+                                    lot,
+                                    layout.Seed,
+                                    floor,
+                                    pane,
+                                    paneCount,
+                                    side,
+                                    out uint hashAgain);
+                            Assert.That(again, Is.EqualTo(family));
+                            Assert.That(hashAgain, Is.EqualTo(paneHash));
+
+                            if (family == CityWindowFamily.Off)
+                            {
+                                totalDark++;
+                                continue;
+                            }
+
+                            rowLit++;
+                            totalLit++;
+                            CityWindowFamily expected =
+                                CityWindowFamily.Warm;
+                            if (lot.IsBar)
+                            {
+                                expected = CityWindowFamily.Bar;
+                            }
+
+                            if (lot.IsPlayerHome)
+                            {
+                                expected = CityWindowFamily.Home;
+                            }
+
+                            if (lot.IsSupermarket)
+                            {
+                                expected = CityWindowFamily.Supermarket;
+                            }
+
                             Assert.That(
                                 family,
-                                Is.EqualTo(CityWindowFamily.Bar));
-                            continue;
+                                Is.EqualTo(expected),
+                                $"Pane {floor}/{pane}/{side} on " +
+                                $"{lot.District} lost the warm family.");
                         }
 
-                        if (lot.IsPlayerHome)
-                        {
-                            Assert.That(
-                                family,
-                                Is.EqualTo(CityWindowFamily.Home));
-                            continue;
-                        }
-
-                        if (lot.IsSupermarket)
-                        {
-                            Assert.That(
-                                family,
-                                Is.EqualTo(
-                                    CityWindowFamily.Supermarket));
-                            continue;
-                        }
-
-                        total++;
-                        if (family == CityWindowFamily.Off)
-                        {
-                            off++;
-                        }
+                        float ratio = CityDistrictPresentationPlanner
+                            .GetProfile(lot.District)
+                            .Window
+                            .LitWindowRatio;
+                        int expectedLit = Mathf.Clamp(
+                            Mathf.RoundToInt(paneCount * ratio),
+                            1,
+                            paneCount - 1);
+                        Assert.That(
+                            rowLit,
+                            Is.EqualTo(expectedLit),
+                            $"Floor {floor}, side {side} on " +
+                            $"{lot.District} is vertically unbalanced.");
                     }
                 }
             }
 
-            // District schedules retain a mostly dark skyline without
-            // collapsing the production layout into a blackout.
-            Assert.That(total, Is.GreaterThan(200));
-            float darkShare = (float)off / total;
-            Assert.That(darkShare, Is.InRange(0.55f, 0.82f));
+            Assert.That(totalLit, Is.GreaterThan(1000));
+            Assert.That(totalDark, Is.GreaterThan(1000));
         }
 
         [Test]
@@ -98,8 +116,13 @@ namespace BarPromenade.Tests.EditMode
                 CityWindowFamily.Cold);
             Material warm = CityWindowAppearance.ResolveLitMaterial(
                 CityWindowFamily.Warm);
+            Material bar = CityWindowAppearance.ResolveLitMaterial(
+                CityWindowFamily.Bar);
+            Shader expectedShader = Resources.Load<Shader>(
+                CityWindowAppearance.LitShaderResourcePath);
             Assert.That(cold, Is.Not.Null);
             Assert.That(warm, Is.Not.SameAs(cold));
+            Assert.That(bar, Is.Not.SameAs(warm));
             Assert.That(
                 CityWindowAppearance.ResolveLitMaterial(
                     CityWindowFamily.Cold),
@@ -109,17 +132,48 @@ namespace BarPromenade.Tests.EditMode
                 cold.GetTexture("_BaseMap"),
                 Is.SameAs(CityWindowAppearance.Texture));
             Assert.That(
+                cold.GetTexture("_EmissionMap"),
+                Is.SameAs(CityWindowAppearance.Texture));
+            Assert.That(
                 cold.shader,
-                Is.SameAs(CityNightResources.EmissiveMaterial.shader));
+                Is.SameAs(expectedShader));
+            Assert.That(
+                cold.shader.name,
+                Is.EqualTo("Bar Promenade/PS1 Lit"));
+            Assert.That(cold.IsKeywordEnabled("_EMISSION"), Is.True);
+            Assert.That(bar.IsKeywordEnabled("_EMISSION"), Is.True);
+            AssertColor(
+                CityExteriorAppearance.ColdWindow,
+                CityNightAtmosphere.StreetLampColor);
+            AssertColor(
+                CityExteriorAppearance.WarmWindow,
+                CityNightAtmosphere.StreetLampColor);
+            AssertColor(
+                CityExteriorAppearance.BarWindow,
+                CityNightAtmosphere.StreetLampColor);
+            AssertColor(
+                CityExteriorAppearance.HomeWindow,
+                CityNightAtmosphere.StreetLampColor);
+            AssertColor(
+                CityExteriorAppearance.SupermarketWindow,
+                CityNightAtmosphere.StreetLampColor);
 
             CityWindowAppearance.SetNightFactor(1f);
             AssertColor(
                 cold.GetColor("_BaseColor"),
                 CityExteriorAppearance.ColdWindow);
+            AssertColor(
+                bar.GetColor("_EmissionColor"),
+                ScaleRgb(
+                    CityExteriorAppearance.BarWindow,
+                    CityWindowAppearance.EmissionStrength));
+            Assert.That(
+                Shader.GetGlobalFloat(
+                    CityWindowAppearance.FixtureFactorShaderProperty),
+                Is.EqualTo(1f).Within(0.0001f));
 
-            // §20 names the inhabited window a fixture: at noon it keeps
-            // two thirds of its evening warmth rather than falling to
-            // unlit glazing.
+            // A selected window is a §20 fixture: at noon it keeps two
+            // thirds of its evening warmth rather than going dark.
             CityWindowAppearance.SetNightFactor(0f);
             AssertColor(
                 cold.GetColor("_BaseColor"),
@@ -133,6 +187,23 @@ namespace BarPromenade.Tests.EditMode
                     CityWindowAppearance.DayGlass,
                     CityExteriorAppearance.WarmWindow,
                     GameTimeDayNightRules.DayFixtureFloor));
+            AssertColor(
+                bar.GetColor("_EmissionColor"),
+                ScaleRgb(
+                    CityExteriorAppearance.BarWindow,
+                    GameTimeDayNightRules.DayFixtureFloor *
+                    CityWindowAppearance.EmissionStrength));
+            Assert.That(
+                Shader.GetGlobalFloat(
+                    CityWindowAppearance.NightFactorShaderProperty),
+                Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(
+                Shader.GetGlobalFloat(
+                    CityWindowAppearance.FixtureFactorShaderProperty),
+                Is.EqualTo(GameTimeDayNightRules.DayFixtureFloor)
+                    .Within(0.0001f),
+                "The Blender prototype shader must receive the same " +
+                "fixture floor as the special-window materials.");
 
             CityWindowAppearance.SetNightFactor(0.5f);
             AssertColor(
@@ -141,6 +212,15 @@ namespace BarPromenade.Tests.EditMode
                     CityWindowAppearance.DayGlass,
                     CityExteriorAppearance.ColdWindow,
                     GameTimeDayNightRules.FixtureFactor(0.5f)));
+        }
+
+        private static Color ScaleRgb(Color color, float scale)
+        {
+            return new Color(
+                color.r * scale,
+                color.g * scale,
+                color.b * scale,
+                color.a);
         }
 
         private static void AssertColor(Color actual, Color expected)

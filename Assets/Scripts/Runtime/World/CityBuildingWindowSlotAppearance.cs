@@ -6,8 +6,9 @@ namespace BarPromenade
 {
     /// <summary>
     /// Binds the window-slot IDs authored into the combined Blender glass
-    /// mesh to the existing deterministic district light schedule. UV2 keeps
-    /// every pane addressable while the FBX remains non-readable at runtime.
+    /// mesh to deterministic, row-balanced warm-light and dark variants. UV2
+    /// keeps every pane addressable while the FBX remains non-readable at
+    /// runtime; pane-local UV0 carries one complete atlas window per slot.
     /// </summary>
     internal static class CityBuildingWindowSlotAppearance
     {
@@ -20,14 +21,16 @@ namespace BarPromenade
 
         private static readonly int WindowStatesId =
             Shader.PropertyToID("_CityBuildingWindowStates");
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
         private static readonly int OffColorId =
             Shader.PropertyToID("_OffColor");
         private static readonly int DayColorId =
             Shader.PropertyToID("_DayColor");
-        private static readonly int ColdColorId =
-            Shader.PropertyToID("_ColdColor");
         private static readonly int WarmColorId =
             Shader.PropertyToID("_WarmColor");
+        private static readonly int EmissionStrengthId =
+            Shader.PropertyToID("_EmissionStrength");
 
         private static Material material;
 
@@ -71,6 +74,7 @@ namespace BarPromenade
                         citySeed,
                         slot.Floor,
                         slot.Bay,
+                        ResolveRowPaneCount(registry, slot),
                         side,
                         out uint paneHash);
                 int variant = (int)((paneHash >> 8) %
@@ -109,6 +113,9 @@ namespace BarPromenade
                         name = "City Building Window Slots",
                         hideFlags = HideFlags.HideAndDontSave
                     };
+                    material.SetTexture(
+                        BaseMapId,
+                        CityWindowAppearance.Texture);
                     material.SetColor(
                         OffColorId,
                         CityExteriorAppearance.WindowOff);
@@ -116,11 +123,11 @@ namespace BarPromenade
                         DayColorId,
                         CityWindowAppearance.DayGlass);
                     material.SetColor(
-                        ColdColorId,
-                        CityExteriorAppearance.ColdWindow);
-                    material.SetColor(
                         WarmColorId,
                         CityExteriorAppearance.WarmWindow);
+                    material.SetFloat(
+                        EmissionStrengthId,
+                        CityWindowAppearance.EmissionStrength);
                     CityWindowAppearance.SetNightFactor(
                         CityWindowAppearance.NightFactor);
                 }
@@ -147,6 +154,30 @@ namespace BarPromenade
                         side,
                         "Unknown City building facade side.");
             }
+        }
+
+        private static int ResolveRowPaneCount(
+            CityBuildingAssetRegistry registry,
+            CityBuildingWindowSlot selected)
+        {
+            int count = 0;
+            for (int index = 0;
+                 index < registry.WindowSlots.Count;
+                 index++)
+            {
+                CityBuildingWindowSlot candidate =
+                    registry.WindowSlots[index];
+                if (candidate.Floor == selected.Floor &&
+                    string.Equals(
+                        candidate.Side,
+                        selected.Side,
+                        StringComparison.Ordinal))
+                {
+                    count++;
+                }
+            }
+
+            return count;
         }
 
         [RuntimeInitializeOnLoadMethod(

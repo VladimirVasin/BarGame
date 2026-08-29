@@ -31,9 +31,9 @@ namespace BarPromenade
     public enum CityDistrictWindowFamily
     {
         NarrowIrregular = 0,
-        OccupiedClusters = 1,
+        DomesticRows = 1,
         SparseUtility = 2,
-        DarkUpperActiveBase = 3
+        CommercialBaseResidentialRows = 3
     }
 
     public enum CityDistrictLightFamily
@@ -110,20 +110,14 @@ namespace BarPromenade
     {
         internal CityDistrictWindowProfile(
             CityDistrictWindowFamily family,
-            float litWindowRatio,
-            float warmShare,
-            float rhythmRegularity)
+            float litWindowRatio)
         {
             Family = family;
             LitWindowRatio = litWindowRatio;
-            WarmShare = warmShare;
-            RhythmRegularity = rhythmRegularity;
         }
 
         public CityDistrictWindowFamily Family { get; }
         public float LitWindowRatio { get; }
-        public float WarmShare { get; }
-        public float RhythmRegularity { get; }
     }
 
     public readonly struct CityDistrictLightProfile
@@ -281,10 +275,6 @@ namespace BarPromenade
                 nameof(Mass.SkylineIrregularity),
                 Mass.SkylineIrregularity);
             RequireUnit(nameof(Window.LitWindowRatio), Window.LitWindowRatio);
-            RequireUnit(nameof(Window.WarmShare), Window.WarmShare);
-            RequireUnit(
-                nameof(Window.RhythmRegularity),
-                Window.RhythmRegularity);
             RequireUnit(
                 nameof(Light.FixtureCoverage),
                 Light.FixtureCoverage);

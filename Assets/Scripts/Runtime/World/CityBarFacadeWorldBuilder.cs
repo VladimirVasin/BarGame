@@ -213,17 +213,16 @@ namespace BarPromenade
                 renderer.sharedMaterial =
                     CityWindowAppearance.ResolveLitMaterial(
                         CityWindowFamily.Bar);
-                CityWindowAppearance.ApplyPlainPane(renderer);
+                CityWindowAppearance.ApplyAuthoredGlassPane(renderer);
                 return;
             }
 
-            uint paneHash = StableHash(binding.SourceName);
             if (role == "exterior_window_upper_warm")
             {
                 renderer.sharedMaterial =
                     CityWindowAppearance.ResolveLitMaterial(
                         CityWindowFamily.Bar);
-                CityWindowAppearance.ApplyLitPane(renderer, paneHash);
+                CityWindowAppearance.ApplyAuthoredGlassPane(renderer);
                 return;
             }
 
@@ -231,7 +230,6 @@ namespace BarPromenade
             if (role == "exterior_window_upper_dark")
             {
                 ApplyFlat(renderer, tint, 0.18f, 0f);
-                CityWindowAppearance.ApplyDarkPane(renderer, paneHash);
                 return;
             }
 
@@ -277,21 +275,6 @@ namespace BarPromenade
             properties.SetFloat(SmoothnessId, smoothness);
             properties.SetFloat(MetallicId, metallic);
             renderer.SetPropertyBlock(properties);
-        }
-
-        private static uint StableHash(string value)
-        {
-            const uint offset = 2166136261u;
-            const uint prime = 16777619u;
-            uint hash = offset;
-            string text = value ?? string.Empty;
-            for (int index = 0; index < text.Length; index++)
-            {
-                hash ^= text[index];
-                hash *= prime;
-            }
-
-            return hash;
         }
 
         private static void Validate(

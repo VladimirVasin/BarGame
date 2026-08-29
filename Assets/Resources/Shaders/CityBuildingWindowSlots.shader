@@ -2,10 +2,11 @@ Shader "Bar Promenade/City Building Window Slots"
 {
     Properties
     {
+        [MainTexture][NoScaleOffset] _BaseMap("Window Atlas", 2D) = "white" {}
         _OffColor("Unlit Glass", Color) = (0.025, 0.035, 0.04, 1)
         _DayColor("Day Glass", Color) = (0.045, 0.055, 0.062, 1)
-        _ColdColor("Cold Light", Color) = (0.48, 0.72, 0.82, 1)
-        _WarmColor("Warm Light", Color) = (0.95, 0.62, 0.30, 1)
+        _WarmColor("Street Lamp Light", Color) = (1.0, 0.72, 0.42, 1)
+        _EmissionStrength("Emission Strength", Range(0, 2)) = 0.48
     }
 
     SubShader
@@ -41,14 +42,18 @@ Shader "Bar Promenade/City Building Window Slots"
             #include "Packages/com.unity.render-pipelines.universal/ShaderLibrary/Lighting.hlsl"
             #include "Ps1VertexJitter.hlsl"
 
+            TEXTURE2D(_BaseMap);
+            SAMPLER(sampler_BaseMap);
+
             CBUFFER_START(UnityPerMaterial)
                 half4 _OffColor;
                 half4 _DayColor;
-                half4 _ColdColor;
                 half4 _WarmColor;
+                half _EmissionStrength;
+                float4 _BaseMap_TexelSize;
             CBUFFER_END
 
-            float _CityWindowNightFactor;
+            float _CityWindowFixtureFactor;
             float _CityBuildingWindowStates[64];
             #define CITY_WINDOW_SLOT_DIVISOR 256.0
 
@@ -56,6 +61,7 @@ Shader "Bar Promenade/City Building Window Slots"
             {
                 float4 positionOS : POSITION;
                 float3 normalOS : NORMAL;
+                float2 paneUv : TEXCOORD0;
                 float2 slotUv : TEXCOORD1;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
             };
@@ -66,7 +72,8 @@ Shader "Bar Promenade/City Building Window Slots"
                 float3 positionWS : TEXCOORD0;
                 half3 normalWS : TEXCOORD1;
                 half fogFactor : TEXCOORD2;
-                nointerpolation float encodedState : TEXCOORD3;
+                float2 paneUv : TEXCOORD3;
+                nointerpolation float encodedState : TEXCOORD4;
                 UNITY_VERTEX_INPUT_INSTANCE_ID
                 UNITY_VERTEX_OUTPUT_STEREO
             };
@@ -93,6 +100,7 @@ Shader "Bar Promenade/City Building Window Slots"
                 output.normalWS = normalInputs.normalWS;
                 output.fogFactor = ComputeFogFactor(
                     positionInputs.positionCS.z);
+                output.paneUv = input.paneUv;
                 output.encodedState = _CityBuildingWindowStates[slot];
                 return output;
             }
@@ -107,16 +115,25 @@ Shader "Bar Promenade/City Building Window Slots"
                 int variant = encoded - family * 4;
                 half variantFactor =
                     0.88h + ((half)variant) * 0.04h;
-                half night = saturate(_CityWindowNightFactor);
-                half3 litColor = family == 1
-                    ? _ColdColor.rgb
-                    : _WarmColor.rgb;
+                half fixture = saturate(_CityWindowFixtureFactor);
+                half3 litColor = _WarmColor.rgb;
                 half3 glass = family == 0
                     ? _OffColor.rgb * variantFactor
                     : lerp(
                         _DayColor.rgb,
                         litColor * variantFactor,
-                        night);
+                        fixture);
+                half2 tileOrigin = half2(
+                    (variant & 1) * 0.5h,
+                    ((variant >> 1) & 1) * 0.5h);
+                half2 texel = (half2)_BaseMap_TexelSize.xy;
+                half2 atlasUv = tileOrigin + texel * 0.5h +
+                    saturate(input.paneUv) * (0.5h - texel);
+                half3 panePattern = SAMPLE_TEXTURE2D(
+                    _BaseMap,
+                    sampler_BaseMap,
+                    atlasUv).rgb;
+                glass *= panePattern;
 
                 InputData inputData = (InputData)0;
                 inputData.positionWS = input.positionWS;
@@ -142,7 +159,8 @@ Shader "Bar Promenade/City Building Window Slots"
                 surface.normalTS = half3(0.0h, 0.0h, 1.0h);
                 surface.emission = family == 0
                     ? half3(0.0h, 0.0h, 0.0h)
-                    : litColor * (night * 0.48h);
+                    : litColor * panePattern *
+                      (fixture * _EmissionStrength);
                 surface.occlusion = 1.0h;
                 surface.alpha = 1.0h;
 

@@ -49,7 +49,7 @@ from city_building_parts import (  # noqa: E402
 )
 
 
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "1.1.0"
 DESIGN_ID = "city_buildings_prototypes_v1"
 DISPLAY_NAME = "City Buildings 3D Prototype Catalog"
 FBX_ASSET_PATH = "Assets/City/Models/CityBuildings3D.fbx"
@@ -69,6 +69,7 @@ UV2_DIVISOR = 256.0
 UV2_LAYER_NAME = "UV2_SlotId"
 UV2_SCHEME = "u_centered_uint8"
 UV2_ZERO_MEANS = "non_window_geometry"
+UV0_WINDOW_SCHEME = "per_window_face_projected_0_1"
 FBX_AXIS_FORWARD = "-Z"
 FBX_AXIS_UP = "+Y"
 # Unity's importer bakes the FBX axis conversion into each mesh.  Keeping the
@@ -219,8 +220,50 @@ def uv0_values(geometry: Geometry) -> list[tuple[float, float]]:
     ]
 
 
-def uv0_bounds(geometry: Geometry) -> tuple[tuple[float, float], tuple[float, float]]:
-    values = uv0_values(geometry)
+def per_face_uv0_values(geometry: Geometry) -> list[tuple[float, float]]:
+    """Map every facade panel independently over the full 0..1 sheet.
+
+    WindowGlass combines every pane of a prototype into one mesh. Normalizing
+    that whole role at once makes each pane sample only a tiny, unrelated
+    fragment of the window atlas. Per-face projection keeps the combined mesh
+    and UV2 slot IDs intact while giving each authored pane a complete window.
+    """
+    values: list[tuple[float, float]] = []
+    for face in geometry.faces:
+        normal = face_normal(geometry.vertices, face)
+        dominant = max(range(3), key=lambda axis: abs(normal[axis]))
+        projected: list[tuple[float, float]] = []
+        for vertex_index in face:
+            x, y, z = geometry.vertices[vertex_index]
+            if dominant == 0:
+                projected.append((y, z))
+            elif dominant == 1:
+                projected.append((x, z))
+            else:
+                projected.append((x, y))
+
+        low_u = min(value[0] for value in projected)
+        high_u = max(value[0] for value in projected)
+        low_v = min(value[1] for value in projected)
+        high_v = max(value[1] for value in projected)
+        span_u = max(high_u - low_u, 1e-6)
+        span_v = max(high_v - low_v, 1e-6)
+        values.extend(
+            (stable((u - low_u) / span_u),
+             stable((v - low_v) / span_v))
+            for u, v in projected
+        )
+    return values
+
+
+def uv0_values_for_part(part: PartSpec) -> list[tuple[float, float]]:
+    if part.role == "WindowGlass":
+        return per_face_uv0_values(part.geometry)
+    return uv0_values(part.geometry)
+
+
+def uv0_bounds(part: PartSpec) -> tuple[tuple[float, float], tuple[float, float]]:
+    values = uv0_values_for_part(part)
     return (
         (min(value[0] for value in values),
          min(value[1] for value in values)),
@@ -262,7 +305,7 @@ def validate_geometry(part: PartSpec, problems: list[str]) -> None:
                 break
         if not area_found:
             problems.append(f"{part.object_name} face {face_index} is degenerate")
-    uv0 = uv0_values(geometry)
+    uv0 = uv0_values_for_part(part)
     uv2 = uv2_values(geometry)
     loop_count = sum(len(face) for face in geometry.faces)
     if len(uv0) != loop_count or len(uv2) != loop_count:
@@ -270,6 +313,21 @@ def validate_geometry(part: PartSpec, problems: list[str]) -> None:
     if any(value < -1e-6 or value > 1.0 + 1e-6
            for uv in uv0 for value in uv):
         problems.append(f"{part.object_name} UV0 escapes [0,1]")
+    if part.role == "WindowGlass":
+        cursor = 0
+        for face_index, face in enumerate(geometry.faces):
+            face_uv = uv0[cursor:cursor + len(face)]
+            cursor += len(face)
+            low_u = min(value[0] for value in face_uv)
+            high_u = max(value[0] for value in face_uv)
+            low_v = min(value[1] for value in face_uv)
+            high_v = max(value[1] for value in face_uv)
+            if (abs(low_u) > 1e-6 or abs(low_v) > 1e-6 or
+                    abs(high_u - 1.0) > 1e-6 or
+                    abs(high_v - 1.0) > 1e-6):
+                problems.append(
+                    f"{part.object_name} window face {face_index} does not "
+                    "span UV0 0..1")
 
 
 def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
@@ -443,6 +501,9 @@ def signature_for(prototypes: Sequence[PrototypeSpec]) -> str:
             "divisor": UV2_DIVISOR,
             "zero_means": UV2_ZERO_MEANS,
         },
+        "uv0_encoding": {
+            "window_glass_scheme": UV0_WINDOW_SCHEME,
+        },
         "unit_factor": 1.0,
         "origin": "footprint_center_ground",
         "scale_mode": "fixed_meters",
@@ -464,7 +525,7 @@ def manifest_for(
         parts: list[dict] = []
         for part in prototype.parts:
             part_low, part_high = geometry_bounds(part.geometry)
-            uv_low, uv_high = uv0_bounds(part.geometry)
+            uv_low, uv_high = uv0_bounds(part)
             parts.append({
                 "object_name": part.object_name,
                 "role": part.role,
@@ -569,6 +630,9 @@ def manifest_for(
             "divisor": UV2_DIVISOR,
             "zero_means": UV2_ZERO_MEANS,
         },
+        "uv0_encoding": {
+            "window_glass_scheme": UV0_WINDOW_SCHEME,
+        },
         "prototype_count": len(prototypes),
         "mesh_count": mesh_count,
         "triangle_count": total_triangles,
@@ -601,11 +665,11 @@ def reset_scene() -> tuple[bpy.types.Collection, bpy.types.Collection]:
     return source, presentation
 
 
-def assign_uv_layers(mesh: bpy.types.Mesh, geometry: Geometry) -> None:
+def assign_uv_layers(mesh: bpy.types.Mesh, part: PartSpec) -> None:
     uv0 = mesh.uv_layers.new(name="UV0")
     uv2 = mesh.uv_layers.new(name=UV2_LAYER_NAME)
-    values0 = uv0_values(geometry)
-    values2 = uv2_values(geometry)
+    values0 = uv0_values_for_part(part)
+    values2 = uv2_values(part.geometry)
     cursor = 0
     for polygon in mesh.polygons:
         for loop_index in polygon.loop_indices:
@@ -625,7 +689,7 @@ def create_part_object(
     mesh = bpy.data.meshes.new(f"{part.object_name}_Mesh")
     mesh.from_pydata(part.geometry.vertices, [], part.geometry.faces)
     mesh.update(calc_edges=True)
-    assign_uv_layers(mesh, part.geometry)
+    assign_uv_layers(mesh, part)
     obj = bpy.data.objects.new(part.object_name, mesh)
     source.objects.link(obj)
     obj.parent = root

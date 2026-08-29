@@ -48,6 +48,8 @@ namespace BarPromenade
         private static readonly Color BarHaloOuter =
             new Color(2.4f, 1.45f, 0.58f, 0.055f);
 
+        internal static Color StreetLampColor => StreetLightColor;
+
         private Transform player;
         private Transform[] lampAnchors = Array.Empty<Transform>();
         private CityFringePracticalAnchor[] practicalAnchors =

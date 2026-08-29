@@ -60,15 +60,15 @@ namespace BarPromenade
         public static readonly Color WindowOff =
             new Color(0.025f, 0.035f, 0.040f);
         public static readonly Color ColdWindow =
-            new Color(0.24f, 0.43f, 0.56f);
+            CityNightAtmosphere.StreetLampColor;
         public static readonly Color WarmWindow =
-            new Color(0.88f, 0.48f, 0.20f);
+            CityNightAtmosphere.StreetLampColor;
         public static readonly Color BarWindow =
-            new Color(1.35f, 0.72f, 0.28f);
+            CityNightAtmosphere.StreetLampColor;
         public static readonly Color HomeWindow =
-            new Color(0.82f, 1.10f, 1.22f);
+            CityNightAtmosphere.StreetLampColor;
         public static readonly Color SupermarketWindow =
-            new Color(0.50f, 0.82f, 0.66f);
+            CityNightAtmosphere.StreetLampColor;
 
         public static Texture2D GroundTexture
         {
@@ -344,20 +344,37 @@ namespace BarPromenade
 
         /// <summary>
         /// Which family a facade pane belongs to, plus the stable hash the
-        /// window appearance uses to pick its texture variant. Special
-        /// buildings keep their authored family; ordinary buildings read the
-        /// deterministic district presentation profile so residential rooms,
-        /// industrial work lights and Nightlife ground floors no longer share
-        /// one city-wide schedule.
+        /// window appearance uses to pick its texture variant. Every row gets
+        /// an exact district-sized share of lit panes, phase-shifted per floor
+        /// and facade so light reaches the whole building without turning it
+        /// into a full glowing grid. Every selected pane uses the same warm
+        /// street-lamp colour and remains on at every hour.
         /// </summary>
         public static CityWindowFamily ResolveWindowFamily(
             BuildingLot lot,
             int citySeed,
             int floor,
             int pane,
+            int paneCount,
             int side,
             out uint paneHash)
         {
+            if (paneCount <= 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(paneCount),
+                    paneCount,
+                    "A facade row must contain at least one pane.");
+            }
+
+            if (pane < 0 || pane >= paneCount)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(pane),
+                    pane,
+                    "The pane index must belong to its facade row.");
+            }
+
             paneHash = StableHash(
                 citySeed,
                 lot.Cell.x,
@@ -365,6 +382,23 @@ namespace BarPromenade
                 floor,
                 pane,
                 side);
+            float litRatio = TryGetUrbanWindowProfile(
+                lot.District,
+                out CityDistrictWindowProfile windowProfile)
+                ? windowProfile.LitWindowRatio
+                : 0.28f;
+            if (!IsEvenlySelectedLitPane(
+                    lot,
+                    citySeed,
+                    floor,
+                    pane,
+                    paneCount,
+                    side,
+                    litRatio))
+            {
+                return CityWindowFamily.Off;
+            }
+
             if (lot.IsBar)
             {
                 return CityWindowFamily.Bar;
@@ -380,54 +414,7 @@ namespace BarPromenade
                 return CityWindowFamily.Supermarket;
             }
 
-            if (!TryGetUrbanWindowProfile(
-                    lot.District,
-                    out CityDistrictWindowProfile windowProfile))
-            {
-                return ResolveLegacyWindowFamily(paneHash);
-            }
-
-            uint variationKey = CityDistrictPresentationPlanner
-                .ResolveWindowVariationKey(
-                    citySeed,
-                    lot.Cell.x,
-                    lot.Cell.y,
-                    lot.District);
-            int groupSize = 2 + (int)(variationKey % 2u);
-            int groupPhase = (int)(
-                (variationKey >> 8) % (uint)groupSize);
-            int groupPane = (pane + groupPhase) / groupSize;
-            uint clusterHash = StableHash(
-                citySeed ^ unchecked(
-                    (int)variationKey),
-                lot.Cell.x,
-                lot.Cell.y,
-                floor,
-                groupPane,
-                side);
-            uint clusterChoiceHash = Mix(clusterHash, 0x434C5354u);
-            bool useApartmentCluster =
-                (clusterChoiceHash % 10000u) <
-                Mathf.RoundToInt(
-                    windowProfile.RhythmRegularity * 10000f);
-            uint selectionHash = useApartmentCluster
-                ? Mix(clusterHash, 0x53454C45u)
-                : paneHash;
-            float litRatio = ResolveLitWindowRatio(
-                windowProfile,
-                floor,
-                side);
-            if ((selectionHash % 10000u) >=
-                Mathf.RoundToInt(litRatio * 10000f))
-            {
-                return CityWindowFamily.Off;
-            }
-
-            uint temperatureHash = Mix(selectionHash, 0x57494E44u);
-            return (temperatureHash % 10000u) <
-                   Mathf.RoundToInt(windowProfile.WarmShare * 10000f)
-                ? CityWindowFamily.Warm
-                : CityWindowFamily.Cold;
+            return CityWindowFamily.Warm;
         }
 
         private static bool TryGetUrbanWindowProfile(
@@ -450,47 +437,41 @@ namespace BarPromenade
             }
         }
 
-        private static CityWindowFamily ResolveLegacyWindowFamily(uint hash)
-        {
-            int selection = (int)(hash % 100u);
-            if (selection < 65)
-            {
-                return CityWindowFamily.Off;
-            }
-
-            return selection < 90
-                ? CityWindowFamily.Cold
-                : CityWindowFamily.Warm;
-        }
-
-        private static float ResolveLitWindowRatio(
-            CityDistrictWindowProfile profile,
+        private static bool IsEvenlySelectedLitPane(
+            BuildingLot lot,
+            int citySeed,
             int floor,
-            int side)
+            int pane,
+            int paneCount,
+            int side,
+            float litRatio)
         {
-            float offset;
-            switch (profile.Family)
-            {
-                case CityDistrictWindowFamily.NarrowIrregular:
-                    offset = floor == 0 ? -0.04f : 0.01f;
-                    break;
-                case CityDistrictWindowFamily.OccupiedClusters:
-                    offset = floor == 0 ? -0.06f : 0.02f;
-                    break;
-                case CityDistrictWindowFamily.SparseUtility:
-                    offset = floor == 0 ? -0.04f : 0.01f;
-                    break;
-                case CityDistrictWindowFamily.DarkUpperActiveBase:
-                    // The front threshold is active; the service/rear side
-                    // stays quiet so Nightlife does not glow as one volume.
-                    offset = floor == 0 && side == 0 ? 0.34f : -0.08f;
-                    break;
-                default:
-                    offset = 0f;
-                    break;
-            }
-
-            return Mathf.Clamp01(profile.LitWindowRatio + offset);
+            int maximumLit = paneCount > 1 ? paneCount - 1 : 1;
+            int litCount = Mathf.Clamp(
+                Mathf.RoundToInt(paneCount * litRatio),
+                1,
+                maximumLit);
+            uint rowHash = StableHash(
+                citySeed,
+                lot.Cell.x,
+                lot.Cell.y,
+                floor,
+                0,
+                side);
+            uint variationKey = CityDistrictPresentationPlanner
+                .ResolveWindowVariationKey(
+                    citySeed,
+                    lot.Cell.x,
+                    lot.Cell.y,
+                    lot.District);
+            int phase = (int)(Mix(rowHash, variationKey) %
+                (uint)paneCount);
+            int shiftedPane = (pane + phase) % paneCount;
+            int previousBand =
+                (shiftedPane * litCount) / paneCount;
+            int nextBand =
+                ((shiftedPane + 1) * litCount) / paneCount;
+            return nextBand > previousBand;
         }
 
         public static Color Darken(

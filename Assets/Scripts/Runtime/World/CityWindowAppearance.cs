@@ -1,5 +1,6 @@
 using System;
 using UnityEngine;
+using UnityEngine.Rendering;
 
 namespace BarPromenade
 {
@@ -16,20 +17,27 @@ namespace BarPromenade
     /// <summary>
     /// Shared appearance for every facade window pane in the City and its
     /// bounded Home view. Each lit family owns one runtime material carrying
-    /// the window sheet, so the day-night controller dims every lit window
+    /// the window sheet, so the day-night controller varies every lit window
     /// in the city by touching five materials instead of thousands of
     /// renderers; per-pane variety comes only from a UV quadrant chosen by
-    /// the pane's stable hash. Dark panes stay on the lit default material,
-    /// tinted like unlit glazing, and never change with the clock.
+    /// the pane's stable hash. The Blender-authored bar instead supplies its
+    /// own sash geometry and uses solid glass maps because its UVs are in
+    /// metres. Lit panes remain visibly on at every hour; dark panes retain
+    /// the same frame-and-curtain vocabulary without emission.
     /// </summary>
     internal static class CityWindowAppearance
     {
         public const string TextureResourcePath = "Textures/CityWindowAlbedo";
+        public const string LitShaderResourcePath = "Shaders/Ps1Lit";
+        public const string NightFactorShaderProperty =
+            "_CityWindowNightFactor";
+        public const string FixtureFactorShaderProperty =
+            "_CityWindowFixtureFactor";
         public const int VariantCount = 4;
+        public const float EmissionStrength = 0.48f;
 
-        // What a lit family's glass shows once the night factor reaches
-        // zero: unlit glazing, a shade lighter than the always-dark panes
-        // so a room that lights up at dusk still reads as glass by day.
+        // The neutral glass contribution under the fixture colour. Even at
+        // noon the fixture floor keeps every selected pane illuminated.
         public static readonly Color DayGlass =
             new Color(0.045f, 0.055f, 0.062f);
 
@@ -41,8 +49,14 @@ namespace BarPromenade
             Shader.PropertyToID("_Color");
         private static readonly int BaseMapStId =
             Shader.PropertyToID("_BaseMap_ST");
+        private static readonly int EmissionMapId =
+            Shader.PropertyToID("_EmissionMap");
+        private static readonly int EmissionColorId =
+            Shader.PropertyToID("_EmissionColor");
         private static readonly int GlobalNightFactorId =
-            Shader.PropertyToID("_CityWindowNightFactor");
+            Shader.PropertyToID(NightFactorShaderProperty);
+        private static readonly int GlobalFixtureFactorId =
+            Shader.PropertyToID(FixtureFactorShaderProperty);
 
         private static Texture2D texture;
         private static Material[] litMaterials;
@@ -111,13 +125,25 @@ namespace BarPromenade
             Material material = litMaterials[index];
             if (material == null)
             {
-                material = new Material(
-                    CityNightResources.EmissiveMaterial)
+                Shader shader = Resources.Load<Shader>(
+                    LitShaderResourcePath);
+                if (shader == null || !shader.isSupported)
+                {
+                    throw new InvalidOperationException(
+                        "Missing or unsupported City window shader " +
+                        $"'{LitShaderResourcePath}'.");
+                }
+
+                material = new Material(shader)
                 {
                     name = $"City Window {family}",
                     hideFlags = HideFlags.HideAndDontSave
                 };
+                material.EnableKeyword("_EMISSION");
+                material.globalIlluminationFlags =
+                    MaterialGlobalIlluminationFlags.None;
                 material.SetTexture(BaseMapId, Texture);
+                material.SetTexture(EmissionMapId, Texture);
                 ApplyNightFactor(material, family);
                 litMaterials[index] = material;
             }
@@ -134,6 +160,9 @@ namespace BarPromenade
         {
             float clamped = Mathf.Clamp01(factor);
             Shader.SetGlobalFloat(GlobalNightFactorId, clamped);
+            Shader.SetGlobalFloat(
+                GlobalFixtureFactorId,
+                GameTimeDayNightRules.FixtureFactor(clamped));
             if (clamped.Equals(nightFactor))
             {
                 return;
@@ -178,9 +207,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Gives a permanently dark pane the same frame-and-glass sheet on
-        /// the ordinary lit material, so day and night it reads as glazing
-        /// rather than as a painted rectangle.
+        /// Gives an unlit pane the same frame-and-glass sheet without
+        /// emission, so it still reads as a real window rather than paint.
         /// </summary>
         public static void ApplyDarkPane(
             Renderer renderer,
@@ -219,6 +247,27 @@ namespace BarPromenade
             renderer.SetPropertyBlock(properties);
         }
 
+        /// <summary>
+        /// Gives Blender-authored glazing a solid emissive sample. Those
+        /// meshes carry metre-scale planar UVs rather than zero-to-one pane
+        /// UVs, so sampling the clamped window atlas would pin both albedo
+        /// and emission to its dark border. Their frames and mullions are
+        /// separate authored geometry and do not need the sheet.
+        /// </summary>
+        public static void ApplyAuthoredGlassPane(Renderer renderer)
+        {
+            if (renderer == null)
+            {
+                throw new ArgumentNullException(nameof(renderer));
+            }
+
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            properties.SetTexture(BaseMapId, Texture2D.whiteTexture);
+            properties.SetTexture(EmissionMapId, Texture2D.whiteTexture);
+            renderer.SetPropertyBlock(properties);
+        }
+
         // The authored sheet keeps its plain cell top-left, which is
         // the (0, 0.5) quadrant once the image lands in UV space.
         public static readonly Vector4 PlainPaneScaleOffset =
@@ -238,18 +287,26 @@ namespace BarPromenade
             Material material,
             CityWindowFamily family)
         {
-            // Through the §20 fixture floor: an inhabited window is named
-            // a fixture by the law itself, and lerped by the raw factor
-            // every lit pane in the city fell to unlit glazing from seven
-            // to eighteen. At noon a lit window now keeps two thirds of
-            // its evening warmth - the overcast never lets the day put
-            // it out.
+            // Through the §20 fixture floor: every pane selected for light
+            // is a fixture, and lerping by the raw factor made it fall to
+            // unlit glazing from seven to eighteen. At noon a lit window
+            // keeps two thirds of its evening warmth - the overcast never
+            // lets the day put it out.
+            float fixtureFactor =
+                GameTimeDayNightRules.FixtureFactor(nightFactor);
+            Color litColor = ResolveLitColor(family);
             Color color = Color.Lerp(
                 DayGlass,
-                ResolveLitColor(family),
-                GameTimeDayNightRules.FixtureFactor(nightFactor));
+                litColor,
+                fixtureFactor);
+            Color emission = new Color(
+                litColor.r * fixtureFactor * EmissionStrength,
+                litColor.g * fixtureFactor * EmissionStrength,
+                litColor.b * fixtureFactor * EmissionStrength,
+                litColor.a);
             material.SetColor(BaseColorId, color);
             material.SetColor(ColorId, color);
+            material.SetColor(EmissionColorId, emission);
         }
 
         [RuntimeInitializeOnLoadMethod(
@@ -279,6 +336,9 @@ namespace BarPromenade
 
             nightFactor = 1f;
             Shader.SetGlobalFloat(GlobalNightFactorId, nightFactor);
+            Shader.SetGlobalFloat(
+                GlobalFixtureFactorId,
+                GameTimeDayNightRules.FixtureFactor(nightFactor));
         }
     }
 }

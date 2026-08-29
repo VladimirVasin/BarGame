@@ -40,9 +40,7 @@ namespace BarPromenade
                     0.78f),
                 new CityDistrictWindowProfile(
                     CityDistrictWindowFamily.NarrowIrregular,
-                    0.25f,
-                    0.34f,
-                    0.28f),
+                    0.25f),
                 new CityDistrictLightProfile(
                     CityDistrictLightFamily.BrokenAmberPools,
                     0.38f,
@@ -78,10 +76,8 @@ namespace BarPromenade
                     0.58f,
                     0.38f),
                 new CityDistrictWindowProfile(
-                    CityDistrictWindowFamily.OccupiedClusters,
-                    0.42f,
-                    0.64f,
-                    0.72f),
+                    CityDistrictWindowFamily.DomesticRows,
+                    0.42f),
                 new CityDistrictLightProfile(
                     CityDistrictLightFamily.DomesticWindowPools,
                     0.46f,
@@ -118,9 +114,7 @@ namespace BarPromenade
                     0.30f),
                 new CityDistrictWindowProfile(
                     CityDistrictWindowFamily.SparseUtility,
-                    0.14f,
-                    0.20f,
-                    0.58f),
+                    0.14f),
                 new CityDistrictLightProfile(
                     CityDistrictLightFamily.SparseTaskPools,
                     0.24f,
@@ -156,10 +150,9 @@ namespace BarPromenade
                     1f,
                     0.70f),
                 new CityDistrictWindowProfile(
-                    CityDistrictWindowFamily.DarkUpperActiveBase,
-                    0.24f,
-                    0.36f,
-                    0.44f),
+                    CityDistrictWindowFamily
+                        .CommercialBaseResidentialRows,
+                    0.24f),
                 new CityDistrictLightProfile(
                     CityDistrictLightFamily.ThresholdSignals,
                     0.48f,

@@ -26,4 +26,4 @@ MonoBehaviour:
     district: 3
     prefab: {fileID: 3171250783102549557, guid: 4ba307fec917a884fbf435c416d5da2b, type: 3}
   designId: city_buildings_prototypes_v1
-  buildSignature: a38ab8521b0470e080ea074204b2a948dc9bdbcc14bfd06cecc95a2d7506c1ac
+  buildSignature: aef1de8fd8ba280da1c7f560e6e0b11ec3f78fb94bf05cf693ff936163c2ea2e

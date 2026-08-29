@@ -1250,6 +1250,7 @@ namespace BarPromenade
                         citySeed,
                         floor,
                         pane,
+                        paneCount,
                         side,
                         out uint paneHash);
 

@@ -513,9 +513,9 @@ MonoBehaviour:
   height: 36
   unitFactor: 1
   sourceTriangleCount: 798
-  sourceGeneratorVersion: 1.0.0
+  sourceGeneratorVersion: 1.1.0
   designId: city_buildings_prototypes_v1
-  buildSignature: a38ab8521b0470e080ea074204b2a948dc9bdbcc14bfd06cecc95a2d7506c1ac
+  buildSignature: aef1de8fd8ba280da1c7f560e6e0b11ec3f78fb94bf05cf693ff936163c2ea2e
 --- !u!1 &3756267428188995223
 GameObject:
   m_ObjectHideFlags: 0

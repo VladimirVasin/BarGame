@@ -22,7 +22,7 @@ namespace BarPromenade.Editor
             "Assets/Resources/City/Buildings";
 
         private const string CatalogRootName = "ROOT_CityBuildings3D";
-        private const string ExpectedGeneratorVersion = "1.0.0";
+        private const string ExpectedGeneratorVersion = "1.1.0";
         private const float ContractTolerance = 0.003f;
         private const float BoundsTolerance = 0.02f;
 
@@ -515,6 +515,11 @@ namespace BarPromenade.Editor
                     ModelPath,
                     StringComparison.Ordinal) ||
                 Mathf.Abs(manifest.unit_factor - 1f) > ContractTolerance ||
+                manifest.uv0_encoding == null ||
+                !string.Equals(
+                    manifest.uv0_encoding.window_glass_scheme,
+                    "per_window_face_projected_0_1",
+                    StringComparison.Ordinal) ||
                 manifest.uv2_encoding == null ||
                 manifest.uv2_encoding.channel_index != 1 ||
                 !string.Equals(
@@ -1387,6 +1392,7 @@ namespace BarPromenade.Editor
             public float unit_factor;
             public BuildingRootContract root_contract;
             public BuildingPassiveContract passive;
+            public BuildingUv0Encoding uv0_encoding;
             public BuildingUv2Encoding uv2_encoding;
             public int prototype_count;
             public int mesh_count;
@@ -1445,6 +1451,12 @@ namespace BarPromenade.Editor
             public string scheme;
             public float divisor;
             public string zero_means;
+        }
+
+        [Serializable]
+        private sealed class BuildingUv0Encoding
+        {
+            public string window_glass_scheme;
         }
 
         [Serializable]

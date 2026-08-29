@@ -221,6 +221,14 @@ namespace BarPromenade.Tests.EditMode
                 windowGlass.sharedMaterial.shader.name,
                 Is.EqualTo(
                     "Bar Promenade/City Building Window Slots"));
+            Assert.That(
+                windowGlass.sharedMaterial.GetFloat(
+                    "_EmissionStrength"),
+                Is.EqualTo(CityWindowAppearance.EmissionStrength)
+                    .Within(0.0001f));
+            Assert.That(
+                windowGlass.sharedMaterial.GetTexture("_BaseMap"),
+                Is.SameAs(CityWindowAppearance.Texture));
 
             Assert.That(registry.WindowSlots, Is.Not.Empty);
             var slotIds = new HashSet<int>();
@@ -420,21 +428,36 @@ namespace BarPromenade.Tests.EditMode
             float maximumState =
                 ((int)CityWindowFamily.Supermarket + 1) *
                 CityWindowAppearance.VariantCount - 1;
-            bool hasNonZeroState = false;
+            bool hasLitState = false;
             for (int index = 0;
                  index < registry.WindowSlots.Count;
                  index++)
             {
                 CityBuildingWindowSlot slot =
                     registry.WindowSlots[index];
+                int paneCount = registry.WindowSlots.Count(candidate =>
+                    candidate.Floor == slot.Floor &&
+                    string.Equals(
+                        candidate.Side,
+                        slot.Side,
+                        System.StringComparison.Ordinal));
                 CityWindowFamily family = CityExteriorAppearance
                     .ResolveWindowFamily(
                         lot,
                         citySeed,
                         slot.Floor,
                         slot.Bay,
+                        paneCount,
                         ResolveWindowSide(slot.Side),
                         out uint paneHash);
+                if (family != CityWindowFamily.Off)
+                {
+                    Assert.That(
+                        family,
+                        Is.EqualTo(CityWindowFamily.Warm),
+                        $"Prototype '{registry.StableId}' gave slot " +
+                        $"{slot.SlotId} a non-lantern colour.");
+                }
                 float expectedState =
                     ((int)family *
                      CityWindowAppearance.VariantCount) +
@@ -450,14 +473,36 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(expectedState).Within(0.001f),
                     $"Window slot {slot.SlotId} in " +
                     $"'{registry.StableId}' lost its deterministic state.");
-                hasNonZeroState |= actualState > 0f;
+                hasLitState |= family != CityWindowFamily.Off;
             }
 
             Assert.That(
-                hasNonZeroState,
+                hasLitState,
                 Is.True,
-                $"Prototype '{registry.StableId}' wrote only zero window " +
+                $"Prototype '{registry.StableId}' wrote no lit window " +
                 "states into its material property block.");
+            foreach (var row in registry.WindowSlots.GroupBy(slot =>
+                         $"{slot.Side}:{slot.Floor}"))
+            {
+                int lit = row.Count(slot =>
+                    Mathf.FloorToInt(
+                        states[slot.Uv2SlotId] /
+                        CityWindowAppearance.VariantCount) !=
+                    (int)CityWindowFamily.Off);
+                Assert.That(
+                    lit,
+                    Is.GreaterThanOrEqualTo(1),
+                    $"Prototype '{registry.StableId}' left row " +
+                    $"'{row.Key}' entirely dark.");
+                if (row.Count() > 1)
+                {
+                    Assert.That(
+                        lit,
+                        Is.LessThan(row.Count()),
+                        $"Prototype '{registry.StableId}' lit every pane " +
+                        $"in row '{row.Key}'.");
+                }
+            }
         }
 
         private static int ResolveWindowSide(string side)
@@ -846,6 +891,7 @@ namespace BarPromenade.Tests.EditMode
                 "Pub Slate Roof",
                 "Pub Ground Floor Glass",
                 "Pub Upper Sash Frames",
+                "Pub Upper Windows Warm",
                 "Bar Door",
                 "Bar Door Frame Left",
                 "Bar Door Frame Right",
@@ -931,6 +977,34 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 building.GetComponentsInChildren<Camera>(true),
                 Is.Empty);
+
+            string[] authoredLitGlass =
+            {
+                "Pub Ground Floor Glass",
+                "Pub Upper Windows Warm"
+            };
+            for (int index = 0; index < authoredLitGlass.Length; index++)
+            {
+                Renderer pane = FindRenderer(
+                    building,
+                    authoredLitGlass[index]);
+                Assert.That(pane, Is.Not.Null);
+                Assert.That(
+                    pane.sharedMaterial,
+                    Is.SameAs(
+                        CityWindowAppearance.ResolveLitMaterial(
+                            CityWindowFamily.Bar)));
+                var properties = new MaterialPropertyBlock();
+                pane.GetPropertyBlock(properties);
+                Assert.That(
+                    properties.GetTexture(
+                        Shader.PropertyToID("_BaseMap")),
+                    Is.SameAs(Texture2D.whiteTexture));
+                Assert.That(
+                    properties.GetTexture(
+                        Shader.PropertyToID("_EmissionMap")),
+                    Is.SameAs(Texture2D.whiteTexture));
+            }
         }
 
         private static void AssertSpecialHomeExterior(

@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-buildings-3d-model.py",
-  "generator_version": "1.0.0",
+  "generator_version": "1.1.0",
   "blender_version": "5.0.1",
   "design_id": "city_buildings_prototypes_v1",
   "display_name": "City Buildings 3D Prototype Catalog",
@@ -43,6 +43,9 @@
     "scheme": "u_centered_uint8",
     "divisor": 256.0,
     "zero_means": "non_window_geometry"
+  },
+  "uv0_encoding": {
+    "window_glass_scheme": "per_window_face_projected_0_1"
   },
   "prototype_count": 4,
   "mesh_count": 24,
@@ -4901,5 +4904,5 @@
       ]
     }
   ],
-  "build_signature": "a38ab8521b0470e080ea074204b2a948dc9bdbcc14bfd06cecc95a2d7506c1ac"
+  "build_signature": "aef1de8fd8ba280da1c7f560e6e0b11ec3f78fb94bf05cf693ff936163c2ea2e"
 }

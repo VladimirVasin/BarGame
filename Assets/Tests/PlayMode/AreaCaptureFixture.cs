@@ -235,6 +235,27 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
+        public IEnumerator CityWindowLighting()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            GameSessionState.AdvanceGameTime(360f);
+
+            CityGameRoot cityRoot = null;
+            yield return Capture(
+                SceneIds.City,
+                () =>
+                {
+                    cityRoot = Object.FindAnyObjectByType<CityGameRoot>();
+                    return cityRoot;
+                },
+                () => CityWindowLightingShots(cityRoot));
+        }
+
+        [UnityTest]
+        [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator MountainRoad()
         {
             // A direct scene load otherwise freezes at 05:59, one minute
@@ -372,6 +393,179 @@ namespace BarPromenade.Tests.PlayMode
                 FrameSpecialBuilding("01-supermarket", supermarket),
                 FrameSpecialBuilding("02-player-home", playerHome)
             };
+        }
+
+        private static Shot[] CityWindowLightingShots(CityGameRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.Layout, Is.Not.Null);
+            Assert.That(root.DayNight, Is.Not.Null);
+            Assert.That(
+                root.DayNight.CurrentSample.NightFactor,
+                Is.EqualTo(0f),
+                "The window contact sheet must hold the noon fixture " +
+                "floor, not a dawn or dusk blend.");
+            Assert.That(
+                Shader.GetGlobalFloat(
+                    CityWindowAppearance.FixtureFactorShaderProperty),
+                Is.EqualTo(GameTimeDayNightRules.DayFixtureFloor)
+                    .Within(0.0001f));
+
+            BuildingLot bar = null;
+            foreach (BuildingLot lot in root.Layout.BuildingLots)
+            {
+                if (lot.IsBar)
+                {
+                    bar = lot;
+                    break;
+                }
+            }
+
+            Assert.That(bar, Is.Not.Null);
+            var districts = new[]
+            {
+                CityDistrictKind.OldTown,
+                CityDistrictKind.Residential,
+                CityDistrictKind.Industrial,
+                CityDistrictKind.Nightlife
+            };
+            var shots = new Shot[districts.Length + 1];
+            shots[0] = FrameWindowFacade("window-noon-bar", bar);
+            for (int index = 0; index < districts.Length; index++)
+            {
+                CityDistrictKind district = districts[index];
+                BuildingLot lot = FindOrdinaryFrontage(
+                    root.Layout,
+                    district);
+                AssertEveryWindowRowIsDistributed(
+                    root.Layout,
+                    lot,
+                    district);
+                shots[index + 1] = FrameWindowFacade(
+                    "window-noon-" +
+                    district.ToString().ToLowerInvariant(),
+                    lot);
+            }
+
+            return shots;
+        }
+
+        private static BuildingLot FindOrdinaryFrontage(
+            CityLayout layout,
+            CityDistrictKind district)
+        {
+            foreach (BuildingLot lot in layout.BuildingLots)
+            {
+                if (lot.IsOrdinaryBuilding &&
+                    lot.HasRoadFrontage &&
+                    lot.District == district)
+                {
+                    return lot;
+                }
+            }
+
+            Assert.Fail(
+                $"The default {district} district has no ordinary " +
+                "building with a road frontage.");
+            return null;
+        }
+
+        private static void AssertEveryWindowRowIsDistributed(
+            CityLayout layout,
+            BuildingLot lot,
+            CityDistrictKind district)
+        {
+            CityBuildingAssetRegistry registry =
+                CityBuildingAssetProvider.LoadOrThrow()
+                    .GetPrefabOrThrow(district)
+                    .GetComponent<CityBuildingAssetRegistry>();
+            Assert.That(registry, Is.Not.Null);
+            for (int index = 0;
+                 index < registry.WindowSlots.Count;
+                 index++)
+            {
+                CityBuildingWindowSlot slot = registry.WindowSlots[index];
+                if (slot.Bay != 0)
+                {
+                    continue;
+                }
+
+                int side;
+                switch (slot.Side)
+                {
+                    case "Front":
+                        side = 0;
+                        break;
+                    case "Rear":
+                        side = 1;
+                        break;
+                    case "Left":
+                        side = 2;
+                        break;
+                    case "Right":
+                        side = 3;
+                        break;
+                    default:
+                        Assert.Fail($"Unknown facade side '{slot.Side}'.");
+                        return;
+                }
+
+                int paneCount = 0;
+                for (int candidateIndex = 0;
+                     candidateIndex < registry.WindowSlots.Count;
+                     candidateIndex++)
+                {
+                    CityBuildingWindowSlot candidate =
+                        registry.WindowSlots[candidateIndex];
+                    if (candidate.Floor == slot.Floor &&
+                        string.Equals(
+                            candidate.Side,
+                            slot.Side,
+                            System.StringComparison.Ordinal))
+                    {
+                        paneCount++;
+                    }
+                }
+
+                int lit = 0;
+                for (int pane = 0; pane < paneCount; pane++)
+                {
+                    CityWindowFamily family =
+                        CityExteriorAppearance.ResolveWindowFamily(
+                            lot,
+                            layout.Seed,
+                            slot.Floor,
+                            pane,
+                            paneCount,
+                            side,
+                            out _);
+                    if (family == CityWindowFamily.Off)
+                    {
+                        continue;
+                    }
+
+                    Assert.That(
+                        family,
+                        Is.EqualTo(CityWindowFamily.Warm),
+                        $"{district} floor {slot.Floor} has a " +
+                        "non-lantern window colour.");
+                    lit++;
+                }
+
+                Assert.That(
+                    lit,
+                    Is.GreaterThanOrEqualTo(1),
+                    $"{district} floor {slot.Floor} side {slot.Side} " +
+                    "is entirely dark.");
+                if (paneCount > 1)
+                {
+                    Assert.That(
+                        lit,
+                        Is.LessThan(paneCount),
+                        $"{district} floor {slot.Floor} side " +
+                        $"{slot.Side} lights every pane.");
+                }
+            }
         }
 
         private static Shot[] CityArchShelterShots(CityGameRoot root)
@@ -781,6 +975,64 @@ namespace BarPromenade.Tests.PlayMode
                 (right * (frontage * 0.42f)) +
                 (Vector3.up * ((lot.Height * 0.58f) + 1f));
             return Shot.At(name, position, target, 60f);
+        }
+
+        private static Shot FrameWindowFacade(
+            string name,
+            BuildingLot lot)
+        {
+            Vector3 forward = new Vector3(
+                lot.FrontageDirection.x,
+                0f,
+                lot.FrontageDirection.y).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            float height = lot.Height;
+            float frontage = lot.FrontageDirection.x != 0
+                ? lot.Size.y
+                : lot.Size.x;
+            if (lot.IsOrdinaryBuilding)
+            {
+                CityBuildingAssetRegistry registry =
+                    CityBuildingAssetProvider.LoadOrThrow()
+                        .GetPrefabOrThrow(lot.District)
+                        .GetComponent<CityBuildingAssetRegistry>();
+                Assert.That(registry, Is.Not.Null);
+                height = registry.Height;
+                frontage = registry.FrontageWidth;
+            }
+
+            // City's fixed Exp2 fog hides nearly the whole facade beyond
+            // thirty metres. Stay in a player's street-level range and use
+            // the vertical FOV to hold the roof instead of backing into fog.
+            float facadeDistance = Mathf.Clamp(
+                height * 0.20f,
+                8f,
+                9.5f);
+            // The fixed-metre prototype is locked to DoorPosition through
+            // its authored +Z front anchor. Generated lot.Center can be
+            // offset from that plane, so it is not a reliable camera target.
+            Vector3 facade = lot.DoorPosition +
+                Vector3.up * CityFacadeGrid.MassBaseElevation;
+            Vector3 position = facade +
+                forward * facadeDistance +
+                right * (frontage * 0.12f) +
+                Vector3.up * 1.72f;
+            float bottomAngle = Mathf.Atan2(
+                0.15f - 1.72f,
+                facadeDistance);
+            float topAngle = Mathf.Atan2(
+                height - 1.72f,
+                facadeDistance);
+            float aimAngle = (bottomAngle + topAngle) * 0.5f;
+            float aimHeight = 1.72f +
+                Mathf.Tan(aimAngle) * facadeDistance;
+            Vector3 target = facade +
+                Vector3.up * aimHeight;
+            float fieldOfView = Mathf.Clamp(
+                (topAngle - bottomAngle) * Mathf.Rad2Deg + 8f,
+                72f,
+                105f);
+            return Shot.At(name, position, target, fieldOfView);
         }
 
         private static IEnumerator Capture(

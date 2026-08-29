@@ -744,6 +744,7 @@ namespace BarPromenade
                         context.Layout.Seed,
                         floor,
                         pane,
+                        paneCount,
                         side,
                         out uint paneHash);
 
