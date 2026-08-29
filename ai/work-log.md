@@ -105,13 +105,21 @@ renderer budget was the `58 m` line's - nine towers and eight cabins draw
 `251` - now scaled to the plan (`60 + 22/tower + 12/cabin`) but not yet
 re-run. Two earlier runs of the same selection failed `34` tests apiece on the
 terminal validator's own pins (`5` nodes, `4` cabins, `58 m`; a five-entry
-node-kind table), both relaxed to the planner's constants. NOT run at the
-time of writing: the cableway PlayMode classes and the capture series - a
-parallel session's `Player3DFacialAtlasTests.cs` did not compile (`Array`,
-`BaseColorId`) for the whole half hour those runs were attempted, and one
-uncompilable file aborts every batch run. Both are queued behind that fix;
-the ride controller is untouched by this change and the geometry the
-captures would show is what the EditMode sweep proves.
+node-kind table), both relaxed to the planner's constants. The cableway
+PlayMode classes and the capture series were blocked for an hour by a
+parallel session's uncompilable `Player3DFacialAtlasTests.cs` (`Array`,
+`BaseColorId`; one uncompilable file aborts every batch run) and ran the
+moment it compiled: `AlpineCablewayRidePlayModeTests` `3 / 3` - the walk in
+off the road, boarding, and the area left only once the screen is black -
+with `Station_HeGetsOutWalkingStraightAtTheVillage` throwing the same
+order-dependent `MissingReferenceException` on its own player that it throws
+after the ride class every time and passes alone; the re-run budget test
+`2 / 2`; and `AreaCaptureFixture.MountainCableway` `1 / 1`. The captures are
+the proof the user asked for: from beside the towers the rope runs on past
+tower after tower into the haze with the far cabins dissolving; from the
+seat at `65 m` and at the cut (`73 m`) the frame is one tower ahead, the
+next a ghost, two cabins fading, and no end anywhere. Not run: a player
+build, and no eye on it in motion.
 
 ## 2026-08-29 — The cableway drove into a mountain, and the fix had timed the crash
 
