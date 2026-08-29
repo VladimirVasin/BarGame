@@ -674,6 +674,107 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// The climb, heard. The bus has had a voice since Route 01 opened
+        /// and this car drove six hundred metres in silence - the work-log
+        /// said so plainly. What a running frame loop proves that the pure
+        /// model cannot: that the five voices are driven by the car the
+        /// hero is actually in, come up with it and go down with it.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Ride_IsHeardFromTheEngineBayAndFallsSilentOnTheApron()
+        {
+            Harness harness = BuildHarness(out GameObject scene);
+            try
+            {
+                LastRouteCarAudio audio = harness.Audio;
+                Assert.That(
+                    audio.OwnedSources.Count,
+                    Is.EqualTo(LastRouteCarAudio.OwnedSourceCount));
+                Assert.That(
+                    audio.EngineSource.outputAudioMixerGroup,
+                    Is.SameAs(GameAudioMixer.SfxWorldGroup));
+
+                yield return null;
+                yield return null;
+                Assert.That(harness.Driver.IsDriving, Is.True);
+                Assert.That(
+                    audio.Engine.IsRunning,
+                    Is.True,
+                    "It came out of the tunnel running.");
+                Assert.That(
+                    audio.StarterCueCount,
+                    Is.Zero,
+                    "A car that never stopped has no starter to hear.");
+                Assert.That(audio.EngineSource.isPlaying, Is.True);
+
+                float idlePitch = LastRouteCarAudioMix.EvaluateEnginePitch(
+                    LastRouteCarEngineModel.IdleRpm01);
+                float peakPitch = 0f;
+                float peakTyres = 0f;
+                float peakCabin = 0f;
+                int peakGear = 0;
+                int steps = 0;
+                while (steps < MaximumSteps && harness.Driver.IsDriving)
+                {
+                    yield return null;
+                    steps++;
+                    peakPitch = Mathf.Max(peakPitch, audio.EngineSource.pitch);
+                    peakTyres = Mathf.Max(peakTyres, audio.TyreSource.volume);
+                    peakCabin = Mathf.Max(peakCabin, audio.CabinBlend);
+                    peakGear = Mathf.Max(peakGear, audio.Engine.Gear);
+                }
+
+                Assert.That(
+                    harness.Driver.HasArrived,
+                    Is.True,
+                    $"The car never finished its road in {steps} frames.");
+                Assert.That(
+                    peakPitch,
+                    Is.GreaterThan(idlePitch + 0.2f),
+                    "The revs climbed with the speed.");
+                Assert.That(
+                    peakGear,
+                    Is.GreaterThanOrEqualTo(1),
+                    "Seventy metres is enough road to change up in.");
+                Assert.That(
+                    peakTyres,
+                    Is.GreaterThan(0f),
+                    "The tyres were heard on the road.");
+                Assert.That(
+                    peakCabin,
+                    Is.EqualTo(1f).Within(0.001f),
+                    "The hero is in the seat, so the cabin loop came up " +
+                    "round him.");
+                Assert.That(
+                    audio.ShutdownCueCount,
+                    Is.EqualTo(1),
+                    "Key off, once, on the apron.");
+
+                steps = 0;
+                while (steps < MaximumSteps && audio.Engine.IsAudible)
+                {
+                    yield return null;
+                    steps++;
+                }
+
+                Assert.That(
+                    audio.Engine.Phase,
+                    Is.EqualTo(LastRouteCarEnginePhase.Off));
+                Assert.That(audio.EngineSource.volume, Is.Zero);
+                Assert.That(
+                    audio.EngineSource.isPlaying,
+                    Is.False,
+                    "A parked car is silent.");
+                Assert.That(audio.TyreSource.isPlaying, Is.False);
+                Assert.That(audio.CabinSource.isPlaying, Is.False);
+            }
+            finally
+            {
+                Object.DestroyImmediate(scene);
+            }
+        }
+
         private sealed class Harness
         {
             public PlayerRuntime Player;
@@ -683,6 +784,7 @@ namespace BarPromenade.Tests.PlayMode
             public LastRouteCarSeatInteraction Seat;
             public LastRouteFerrymanPresentation Ferryman;
             public LastRouteRideController Ride;
+            public LastRouteCarAudio Audio;
         }
 
         /// <summary>
@@ -758,6 +860,17 @@ namespace BarPromenade.Tests.PlayMode
                     ferryman,
                     () => new LastRouteCarDrivePath(road));
 
+            // Exactly as the mountain terrace binds it: snow under the
+            // tyres, no tunnel on this test road.
+            var audio = carRoot.GetComponent<LastRouteCarAudio>();
+            Assert.That(audio, Is.Not.Null, "The car has no voice.");
+            audio.Bind(
+                seat,
+                ferryman,
+                ride,
+                null,
+                LastRouteCarRoadSurface.PackedSnow);
+
             return new Harness
             {
                 Player = player,
@@ -766,7 +879,8 @@ namespace BarPromenade.Tests.PlayMode
                 Driver = driver,
                 Seat = seat,
                 Ferryman = ferryman,
-                Ride = ride
+                Ride = ride,
+                Audio = audio
             };
         }
 

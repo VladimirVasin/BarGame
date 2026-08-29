@@ -798,6 +798,224 @@ namespace BarPromenade.Tests.PlayMode
             return result;
         }
 
+        /// <summary>
+        /// The rain shared the fog's anchor once - 25.5 m out at street
+        /// level - and the nearest streak stood 12 m from the balcony
+        /// lens, half gone to the city's Exp2 haze, two centimetres wide
+        /// at a tenth alpha: enabled, simulating and invisible through
+        /// every slot of the schedule. The contract is now the street's
+        /// own: the lens stands inside the field's footprint under the
+        /// spawn plane, a streak passes within reach of it, the drift is
+        /// the city's wind turned into the balcony's frame, and nothing
+        /// crosses the bedroom behind the glass.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator HomeScene_RainFallsPastTheBalconyLens()
+        {
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            AsyncOperation load =
+                SceneManager.LoadSceneAsync(
+                    SceneIds.HomeInterior,
+                    LoadSceneMode.Single);
+            Assert.That(load, Is.Not.Null);
+            while (!load.isDone)
+            {
+                yield return null;
+            }
+
+            HomeInteriorRoot home = null;
+            float deadline =
+                Time.realtimeSinceStartup + TimeoutSeconds;
+            while (Time.realtimeSinceStartup < deadline)
+            {
+                home = Object.FindAnyObjectByType<HomeInteriorRoot>();
+                if (home != null && home.IsInitialized)
+                {
+                    break;
+                }
+
+                yield return null;
+            }
+
+            Assert.That(home, Is.Not.Null);
+            HomeBalconyExteriorAtmosphere atmosphere =
+                home.ExteriorAtmosphere;
+            Assert.That(atmosphere, Is.Not.Null);
+            CityRainField rain = atmosphere.RainField;
+            Assert.That(rain, Is.Not.Null);
+            Assert.That(rain.RainRenderer.enabled, Is.False);
+
+            Rect activation =
+                home.BalconyLayout.BalconyCameraActivationBounds;
+            home.Player.Motor.Teleport(
+                new Vector3(
+                    activation.center.x,
+                    home.Layout.PlayerSpawn.y,
+                    activation.center.y));
+            yield return null;
+
+            Assert.That(
+                home.FixedCamera.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.Balcony));
+            Assert.That(rain.RainRenderer.enabled, Is.True);
+            Assert.That(
+                rain.Intensity,
+                Is.GreaterThanOrEqualTo(
+                    CityEternalRainShaper.DrizzleIntensity),
+                "The balcony looks at the city, and the city is never dry.");
+
+            Camera camera = Camera.main;
+            Assert.That(camera, Is.Not.Null);
+            Vector3 lens = camera.transform.position;
+            float facade = HomeExteriorViewBuilder.ExteriorMinimumX;
+            ParticleSystem.ShapeModule shape = rain.Particles.shape;
+            Assert.That(
+                shape.shapeType,
+                Is.EqualTo(ParticleSystemShapeType.Box),
+                "The balcony is open sky, not a bus roof.");
+            Vector3 spawnCenter =
+                rain.Particles.transform.position + shape.position;
+            Vector3 spawnHalf = shape.scale * 0.5f;
+            Assert.That(
+                spawnCenter.x - spawnHalf.x,
+                Is.EqualTo(facade).Within(0.01f),
+                "Streaks are born ON the facade plane: never behind it, " +
+                "never a fog band away from it.");
+            Assert.That(
+                lens.x,
+                Is.InRange(
+                    spawnCenter.x - spawnHalf.x,
+                    spawnCenter.x + spawnHalf.x),
+                "The balcony lens stands inside the rain's footprint.");
+            Assert.That(
+                lens.z,
+                Is.InRange(
+                    spawnCenter.z - spawnHalf.z,
+                    spawnCenter.z + spawnHalf.z),
+                "The balcony lens stands inside the rain's footprint.");
+            Assert.That(
+                spawnCenter.y,
+                Is.GreaterThan(lens.y + 1f),
+                "The spawn plane hangs above the lens, so streaks fall " +
+                "past it rather than starting below the frame.");
+
+            Vector3 cityWind = GameWeatherRules
+                .EvaluateCurrentWind()
+                .Velocity(GameWeatherRules.WindSpeedAtFullStrength);
+            Vector3 localWind =
+                PlayerHomeBalconyGeometry.ToHomeLocalDirection(
+                    home.ExteriorContext.PlayerHome,
+                    cityWind);
+            Assert.That(
+                (rain.AppliedWindDrift -
+                 new Vector2(localWind.x, localWind.z)).magnitude,
+                Is.LessThan(0.06f),
+                "The streaks lean with the city's wind turned into the " +
+                "balcony's frame (the field ignores changes under " +
+                "0.05 m/s).");
+
+            BoxCollider shelter = atmosphere.RainShelter;
+            Assert.That(shelter, Is.Not.Null);
+            Assert.That(shelter.isTrigger, Is.True);
+            Assert.That(
+                shelter.gameObject.layer,
+                Is.EqualTo(LayerMask.NameToLayer("Ignore Raycast")));
+            Assert.That(
+                shelter.transform.IsChildOf(home.ExteriorView),
+                Is.False,
+                "The exterior view stays collider-free.");
+            Assert.That(
+                rain.LocalShelters,
+                Is.EqualTo(new Collider[] { shelter }));
+            Bounds building = shelter.bounds;
+            Assert.That(
+                building.max.x,
+                Is.EqualTo(facade).Within(0.01f),
+                "The shelter ends exactly where the rain begins.");
+            Assert.That(
+                building.min.x,
+                Is.LessThan(home.Layout.RoomBounds.xMin));
+            float roofLine =
+                PlayerHomeBalconyGeometry.PreferredBuildingHeight -
+                PlayerHomeBalconyGeometry.ApartmentFloorElevation;
+            Assert.That(
+                building.max.y,
+                Is.EqualTo(roofLine).Within(0.01f),
+                "The sky above the roof stays rain.");
+            Assert.That(
+                building.min.y,
+                Is.LessThan(home.BalconyLayout.StreetGroundY));
+            Assert.That(
+                building.size.z,
+                Is.EqualTo(
+                        home.Layout.RoomSize.y +
+                        HomeBalconyExteriorAtmosphere.RainShelterMargin *
+                        2f)
+                    .Within(0.01f));
+
+            // Two seconds of rain at a pinned clock: batch mode frames are
+            // milliseconds, and a streak lives 1.1 s.
+            var particles = new ParticleSystem.Particle[
+                rain.Particles.main.maxParticles];
+            float closestPlanar = float.PositiveInfinity;
+            int seen = 0;
+            float inset =
+                HomeBalconyExteriorAtmosphere.RainShelterMargin + 0.2f;
+            float previousCapture = Time.captureDeltaTime;
+            Time.captureDeltaTime = 1f / 60f;
+            try
+            {
+                for (int frame = 0; frame < 120; frame++)
+                {
+                    yield return null;
+                    int count = rain.Particles.GetParticles(particles);
+                    seen += count;
+                    for (int index = 0; index < count; index++)
+                    {
+                        Vector3 position = particles[index].position;
+                        float dx = position.x - lens.x;
+                        float dz = position.z - lens.z;
+                        float planar = Mathf.Sqrt(dx * dx + dz * dz);
+                        if (position.y < lens.y + 0.5f &&
+                            planar < closestPlanar)
+                        {
+                            closestPlanar = planar;
+                        }
+
+                        bool insideBuilding =
+                            position.x < facade - 0.2f &&
+                            position.y < building.max.y - 0.2f &&
+                            position.y > building.min.y + inset &&
+                            position.z > building.min.z + inset &&
+                            position.z < building.max.z - inset;
+                        Assert.That(
+                            insideBuilding,
+                            Is.False,
+                            $"A streak crossed the hero's building at " +
+                            $"{position} on frame {frame}.");
+                    }
+                }
+            }
+            finally
+            {
+                Time.captureDeltaTime = previousCapture;
+            }
+
+            Assert.That(
+                seen,
+                Is.GreaterThan(0),
+                "The field must be simulating while the balcony is in " +
+                "view.");
+            Assert.That(
+                closestPlanar,
+                Is.LessThan(8f),
+                $"No streak came within reach of the lens in two " +
+                $"seconds; the closest stood {closestPlanar:0.0} m out - " +
+                "that is the fog-band rain the balcony could never see.");
+        }
+
         private static void AssertExteriorAtmosphere(
             HomeInteriorRoot home)
         {
@@ -837,6 +1055,47 @@ namespace BarPromenade.Tests.PlayMode
                 Is.SameAs(
                     CityNightResources.AtmosphereMaterial));
             Assert.That(fog.FogRenderer.enabled, Is.False);
+
+            // The rain stands on its own anchor, not the fog's: half a
+            // field out, so the field is born on the facade plane and the
+            // balcony lens is inside it. On the fog's 25.5 m anchor the
+            // nearest streak stood 12 m off, fogged, and the balcony read
+            // dry through every slot of the schedule.
+            Assert.That(atmosphere.RainAnchor, Is.Not.Null);
+            Assert.That(
+                atmosphere.RainAnchor,
+                Is.Not.SameAs(atmosphere.FogAnchor));
+            Assert.That(
+                atmosphere.RainAnchor.localPosition.x,
+                Is.EqualTo(
+                        HomeExteriorViewBuilder.ExteriorMinimumX +
+                        HomeBalconyExteriorAtmosphere.RainAnchorDepth)
+                    .Within(0.001f));
+            Assert.That(
+                HomeBalconyExteriorAtmosphere.RainAnchorDepth,
+                Is.EqualTo(CityRainField.FieldExtent * 0.5f)
+                    .Within(0.001f));
+            Assert.That(
+                atmosphere.RainAnchor.localPosition.y,
+                Is.EqualTo(home.BalconyLayout.StreetGroundY)
+                    .Within(0.001f),
+                "Rain is born twelve metres over the STREET, as in the " +
+                "city, so it reaches the pavement below the balcony.");
+            CityRainField rain = atmosphere.RainField;
+            Assert.That(rain, Is.Not.Null);
+            Assert.That(rain.IsInitialized, Is.True);
+            Assert.That(
+                rain.FollowTarget,
+                Is.SameAs(atmosphere.RainAnchor));
+            Assert.That(rain.Kind, Is.EqualTo(CityPrecipitationKind.Rain));
+            Assert.That(
+                rain.RainRenderer.sharedMaterial,
+                Is.SameAs(CityNightResources.AtmosphereMaterial));
+            Assert.That(rain.RainRenderer.enabled, Is.False);
+            Assert.That(atmosphere.RainShelter, Is.Not.Null);
+            Assert.That(
+                rain.LocalShelters,
+                Is.EqualTo(new Collider[] { atmosphere.RainShelter }));
             Assert.That(
                 atmosphere.CityPostProcessVolume,
                 Is.Not.Null);

@@ -286,6 +286,28 @@ namespace BarPromenade
             // out and the two had to move together; the sun stays up now, so
             // a headlight is just a switch on a car again.
             carRoot.GetComponent<LastRouteCarHeadlights>()?.Follow(Ride);
+
+            // And the engine under the bonnet: the same journey, heard.
+            // The tunnel is the one enclosure on this road, the bridge the
+            // one deck, the road is snow-packed, and the wind bed drops
+            // behind the glass for as long as the hero is in the seat.
+            LastRouteCarAudio carAudio =
+                carRoot.GetComponent<LastRouteCarAudio>();
+            if (carAudio != null)
+            {
+                MountainRoadTunnelDescriptor tunnel = Plan.Tunnel;
+                carAudio.Bind(
+                    seat,
+                    LastRouteFerryman,
+                    Ride,
+                    () => IsInsideTunnel(tunnel, carRoot.position),
+                    LastRouteCarRoadSurface.PackedSnow,
+                    WindSound);
+                if (Plan.Bridge != null)
+                {
+                    carAudio.SetDeck(Plan.Bridge.Start, Plan.Bridge.End);
+                }
+            }
         }
 
         /// <summary>
@@ -432,6 +454,18 @@ namespace BarPromenade
                 MountainRoadSurfaceAppearance
                     .GetRecipe(MountainRoadSurfaceKind.ConiferNeedles)
                     .MetersPerTile);
+
+            // The car may already be standing in the tunnel by now, and its
+            // voice bound before this bed existed; whichever of the two was
+            // raised second closes the loop.
+            if (LastRouteCar != null)
+            {
+                Transform carRoot = LastRouteCar.transform.parent != null
+                    ? LastRouteCar.transform.parent
+                    : LastRouteCar.transform;
+                carRoot.GetComponent<LastRouteCarAudio>()
+                    ?.BindWindBed(WindSound);
+            }
         }
 
         private void BuildCommonUi(GameObject ui)
@@ -523,8 +557,26 @@ namespace BarPromenade
                 return true;
             }
 
-            MountainRoadTunnelDescriptor tunnel = Plan.Tunnel;
-            Vector3 offset = playerPosition - tunnel.PortalGroundCenter;
+            return IsInsideTunnel(Plan.Tunnel, playerPosition);
+        }
+
+        /// <summary>
+        /// Whether a point stands inside the tunnel's bore: a little past
+        /// the portal, up to the visual depth, inside the opening's width.
+        /// The weather reads it for the hero and the car's voice reads it
+        /// for the car, which is why it is a function of a point and not of
+        /// the player.
+        /// </summary>
+        public static bool IsInsideTunnel(
+            MountainRoadTunnelDescriptor tunnel,
+            Vector3 position)
+        {
+            if (tunnel == null)
+            {
+                return false;
+            }
+
+            Vector3 offset = position - tunnel.PortalGroundCenter;
             float along = Vector3.Dot(offset, tunnel.OutwardAxis);
             Vector3 planarOffset = offset -
                                    tunnel.OutwardAxis * along;

@@ -115,14 +115,27 @@ namespace BarPromenade
 
         private const float MinimumAudibleStrength = 0.005f;
 
+        /// <summary>
+        /// What a shut car takes off the wind: most of the level and most
+        /// of the top. The bed is still there under the engine - a gale
+        /// through a door seal is a real sound - but it is behind glass.
+        /// </summary>
+        public const float EnclosedVolumeMultiplier = 0.42f;
+
+        public const float EnclosedCutoffMultiplier = 0.45f;
+
         private AudioClip generatedClip;
         private float appliedStrength = -1f;
+        private float enclosure;
 
         public AudioSource Source { get; private set; }
         public AudioLowPassFilter ToneFilter { get; private set; }
         public AudioClip ActiveClip => generatedClip;
         public float Strength =>
             appliedStrength < 0f ? 0f : appliedStrength;
+
+        /// <summary>`0` in the open, `1` shut inside a car.</summary>
+        public float Enclosure => enclosure;
 
         private void Awake()
         {
@@ -174,23 +187,52 @@ namespace BarPromenade
             }
 
             appliedStrength = clamped;
+            Apply();
+        }
+
+        /// <summary>
+        /// How shut in the listener is, `0` open to `1` inside a car with
+        /// the doors closed. The wind driver goes on writing the strength
+        /// every frame; this is a second, independent factor on top of it,
+        /// so the car can muffle the bed without becoming a second writer
+        /// of the wind.
+        /// </summary>
+        public void SetEnclosure(float enclosure01)
+        {
+            float clamped = Mathf.Clamp01(enclosure01);
+            if (clamped.Equals(enclosure))
+            {
+                return;
+            }
+
+            enclosure = clamped;
+            Apply();
+        }
+
+        private void Apply()
+        {
             if (Source == null)
             {
                 return;
             }
 
-            if (clamped <= MinimumAudibleStrength)
+            float strength = Strength;
+            if (strength <= MinimumAudibleStrength)
             {
                 Source.volume = 0f;
                 return;
             }
 
             Source.volume =
-                MaximumVolume * Mathf.Pow(clamped, 0.85f);
-            ToneFilter.cutoffFrequency = Mathf.Lerp(
-                CalmCutoffFrequency,
-                GaleCutoffFrequency,
-                clamped);
+                MaximumVolume *
+                Mathf.Pow(strength, 0.85f) *
+                Mathf.Lerp(1f, EnclosedVolumeMultiplier, enclosure);
+            ToneFilter.cutoffFrequency =
+                Mathf.Lerp(
+                    CalmCutoffFrequency,
+                    GaleCutoffFrequency,
+                    strength) *
+                Mathf.Lerp(1f, EnclosedCutoffMultiplier, enclosure);
         }
 
         private void OnDestroy()

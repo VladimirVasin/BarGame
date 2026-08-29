@@ -314,6 +314,7 @@ namespace BarPromenade
                 ExteriorContext,
                 Player.GameObject.transform,
                 BalconyLayout,
+                Layout,
                 GameSessionState.CitySeed);
             ExteriorAtmosphere.BindPedestrians(Pedestrians);
             GameObject dayNightObject =

@@ -812,6 +812,19 @@ namespace BarPromenade
                         Bus,
                         Pedestrians);
                 }
+
+                // The engine under the bonnet he is sitting on. It turns
+                // over the moment he takes the wheel and idles while the
+                // hero walks round to his door; the street is wet, and the
+                // tunnel closes round it at the end. Bound whether or not
+                // a ride was armed, because a man at the wheel of a car
+                // that cannot leave still started it.
+                carRoot.GetComponent<LastRouteCarAudio>()?.Bind(
+                    carSeat,
+                    LastRouteFerryman,
+                    Ride,
+                    () => TunnelShelter != null && TunnelShelter.IsSheltered,
+                    LastRouteCarRoadSurface.WetAsphalt);
             }
             BusRide = CityBusRideController.Create(
                 Bus,

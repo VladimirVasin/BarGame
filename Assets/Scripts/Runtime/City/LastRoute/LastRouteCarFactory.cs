@@ -129,6 +129,13 @@ namespace BarPromenade
             root.gameObject
                 .AddComponent<LastRouteCarDriver>()
                 .Initialize(registry);
+            // And its voice. Silent until somebody is at the wheel, so a
+            // parked car costs five idle sources and nothing else; raised
+            // here so the bus's rule holds - every voice belongs to a
+            // mechanism the same factory built.
+            root.gameObject
+                .AddComponent<LastRouteCarAudio>()
+                .Initialize(registry);
         }
 
         /// <summary>

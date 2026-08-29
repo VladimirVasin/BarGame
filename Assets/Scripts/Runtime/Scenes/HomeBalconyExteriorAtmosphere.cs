@@ -18,6 +18,27 @@ namespace BarPromenade
         public const float FogAnchorDepth = 25.5f;
 
         /// <summary>
+        /// How far past the facade the rain's follow point stands. The
+        /// field is a <see cref="CityRainField.FieldExtent"/> box centred
+        /// on its target, so half an extent puts the near edge ON the
+        /// facade plane: the balcony camera stands inside the footprint
+        /// and streaks fall past the lens, as they do around the hero in
+        /// the street. The fog anchor could not serve here - at 25.5 m
+        /// the nearest streak stood 12 m out, half gone to the city's
+        /// Exp2 haze, two centimetres wide at a tenth alpha: enabled,
+        /// simulating and invisible through every slot of the schedule.
+        /// </summary>
+        public const float RainAnchorDepth =
+            CityRainField.FieldExtent * 0.5f;
+
+        /// <summary>
+        /// Slack around the hero's building in the rain shelter volume, so
+        /// a streak entering the wall is killed at the wall rather than a
+        /// radius past it.
+        /// </summary>
+        public const float RainShelterMargin = 0.5f;
+
+        /// <summary>
         /// How many AudioSources the weather outside the window adds to the
         /// Home scene: the rain and the two thunder voices behind the glass.
         /// Composed from the players' own constants rather than counted
@@ -36,13 +57,16 @@ namespace BarPromenade
         private DayNightVisualSample exteriorLightingSample;
         private bool hasExteriorLightingSample;
         private long lastThunderStrikeId = long.MinValue;
+        private BuildingLot homeLot;
 
         public bool IsInitialized { get; private set; }
         public bool IsBalconyVisibilityActive { get; private set; }
         public Transform ExteriorRoot { get; private set; }
         public Transform FogAnchor { get; private set; }
         public CityFogField FogField { get; private set; }
+        public Transform RainAnchor { get; private set; }
         public CityRainField RainField { get; private set; }
+        public BoxCollider RainShelter { get; private set; }
         public CityRainSoundPlayer RainSound { get; private set; }
         public CityLightningFlashLight LightningFlash
         {
@@ -67,6 +91,7 @@ namespace BarPromenade
             HomeExteriorContextPlan exteriorContext,
             Transform lightingFocus,
             HomeBalconyLayoutPlan balcony,
+            HomeInteriorLayoutPlan interior,
             int citySeed)
         {
             if (IsInitialized)
@@ -100,10 +125,16 @@ namespace BarPromenade
             {
                 throw new ArgumentNullException(nameof(balcony));
             }
+            if (interior == null)
+            {
+                throw new ArgumentNullException(nameof(interior));
+            }
 
+            homeLot = exteriorContext.PlayerHome;
             homeVisibility = VisibilitySnapshot.Capture(targetCamera);
             homeLighting = LightingSnapshot.Capture();
             BuildExteriorFog(balcony, citySeed);
+            BuildExteriorRain(interior, balcony, citySeed);
             BuildExteriorLighting(
                 exteriorNight,
                 exteriorContext,
@@ -193,9 +224,16 @@ namespace BarPromenade
                     ? Time.deltaTime
                     : 0f,
                 ResolveAbsoluteGameMinutes());
-            Vector3 windVelocity = GameWeatherRules
-                .EvaluateCurrentWind()
-                .Velocity(GameWeatherRules.WindSpeedAtFullStrength);
+            // The schedule's wind blows along CITY axes; the street below
+            // is that city turned so the facade faces +X, and the streaks
+            // must lean the way the city's own do.
+            Vector3 windVelocity =
+                PlayerHomeBalconyGeometry.ToHomeLocalDirection(
+                    homeLot,
+                    GameWeatherRules
+                        .EvaluateCurrentWind()
+                        .Velocity(
+                            GameWeatherRules.WindSpeedAtFullStrength));
             RainField.SetWindDrift(
                 new Vector2(windVelocity.x, windVelocity.z));
             RainSound.SetIntensity(
@@ -272,17 +310,6 @@ namespace BarPromenade
                 CityNightResources.AtmosphereMaterial,
                 citySeed);
 
-            GameObject rainObject = new GameObject(
-                "Home Exterior Rain Field");
-            rainObject.transform.SetParent(ExteriorRoot, false);
-            RainField = rainObject.AddComponent<CityRainField>();
-            RainField.Initialize(
-                FogAnchor,
-                CityNightResources.AtmosphereMaterial,
-                citySeed,
-                CityEternalRainShaper.FloorIntensity(
-                    GameWeatherRules.EvaluateCurrent().RainIntensity));
-
             GameObject rainSoundObject = new GameObject(
                 "Home Exterior Rain Sound");
             rainSoundObject.transform.SetParent(ExteriorRoot, false);
@@ -298,6 +325,82 @@ namespace BarPromenade
             thunderObject.transform.SetParent(ExteriorRoot, false);
             ThunderSound = thunderObject
                 .AddComponent<CityThunderSoundPlayer>();
+        }
+
+        private void BuildExteriorRain(
+            HomeInteriorLayoutPlan interior,
+            HomeBalconyLayoutPlan balcony,
+            int citySeed)
+        {
+            GameObject anchorObject = new GameObject(
+                "Home Exterior Rain Anchor");
+            RainAnchor = anchorObject.transform;
+            RainAnchor.SetParent(ExteriorRoot, false);
+            RainAnchor.localPosition = new Vector3(
+                HomeExteriorViewBuilder.ExteriorMinimumX +
+                RainAnchorDepth,
+                balcony.StreetGroundY,
+                PlayerHomeBalconyGeometry.BalconyCenterZ);
+
+            GameObject rainObject = new GameObject(
+                "Home Exterior Rain Field");
+            rainObject.transform.SetParent(ExteriorRoot, false);
+            RainField = rainObject.AddComponent<CityRainField>();
+            RainField.Initialize(
+                RainAnchor,
+                CityNightResources.AtmosphereMaterial,
+                citySeed,
+                CityEternalRainShaper.FloorIntensity(
+                    GameWeatherRules.EvaluateCurrent().RainIntensity));
+            RainShelter = BuildRainShelter(interior, balcony);
+            RainField.SetLocalShelters(new[] { RainShelter });
+        }
+
+        /// <summary>
+        /// The hero's own building, as a volume rain dies in. The field is
+        /// born on the facade plane, but the wind carries live streaks
+        /// through it, and the room behind is glazed: through the ajar
+        /// door and the window, a streak crossing the bedroom is in frame.
+        /// The volume is the building's whole column, street to roof lip -
+        /// what stands behind the solid facade was never visible, so
+        /// killing it costs nothing, and the sky above the roof stays rain.
+        /// It hangs off the atmosphere rather than the exterior view, which
+        /// is collider-free by contract, and sits as a trigger on the
+        /// Ignore Raycast layer so neither the hero's controller nor a
+        /// default query ever meets it.
+        /// </summary>
+        private BoxCollider BuildRainShelter(
+            HomeInteriorLayoutPlan interior,
+            HomeBalconyLayoutPlan balcony)
+        {
+            GameObject shelterObject = new GameObject(
+                "Home Building Rain Shelter");
+            shelterObject.transform.SetParent(transform, false);
+            shelterObject.transform.SetPositionAndRotation(
+                ExteriorRoot.position,
+                ExteriorRoot.rotation);
+            shelterObject.layer =
+                LayerMask.NameToLayer("Ignore Raycast");
+            BoxCollider shelter =
+                shelterObject.AddComponent<BoxCollider>();
+            shelter.isTrigger = true;
+            float back = interior.RoomBounds.xMin - RainShelterMargin;
+            float front = HomeExteriorViewBuilder.ExteriorMinimumX;
+            float bottom = balcony.StreetGroundY - RainShelterMargin;
+            float top =
+                PlayerHomeBalconyGeometry.PreferredBuildingHeight -
+                PlayerHomeBalconyGeometry.ApartmentFloorElevation;
+            float width =
+                interior.RoomSize.y + RainShelterMargin * 2f;
+            shelter.center = new Vector3(
+                (back + front) * 0.5f,
+                (bottom + top) * 0.5f,
+                0f);
+            shelter.size = new Vector3(
+                front - back,
+                top - bottom,
+                width);
+            return shelter;
         }
 
         private void BuildExteriorLighting(
