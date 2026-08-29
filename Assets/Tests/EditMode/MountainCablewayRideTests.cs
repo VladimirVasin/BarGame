@@ -854,121 +854,147 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// The screen must be FULLY OUT before the cabin touches the rock.
-        ///
-        /// The suite had a fade test already and it was green while the bug
-        /// was in front of it, because every assertion it made was a function
-        /// of along-line distances and the lead - never of the ridge. So the
-        /// cabin drove `3.9 m` into the mountain, in first person, with the
-        /// picture up, and nothing failed. This one measures the thing the
-        /// player actually sees: the near face of the ridge, the nose of his
-        /// own cabin, and how much dissolve is left when they meet.
+        /// The screen must be FULLY OUT before the cabin's roof lip reaches
+        /// the gallery mouth, with a metre of air still in front of it, on
+        /// both lines. The mouth is where the ride ends visibly now; a rock
+        /// planted across the rope is exactly what it replaced.
         /// </summary>
         [Test]
         [Category("MountainRoad")]
-        public void RideFade_IsCompleteBeforeTheCabinReachesTheRock()
+        public void RideFade_IsCompleteBeforeTheCabinReachesTheGalleryMouth()
         {
-            MountainRoadPlan road = MountainRoadPlanner.Create(
-                GameSessionState.DefaultCitySeed);
-            MountainRoadCablewayPlan plan = road.Terminal.Cableway;
-
-            MountainRoadRidgeDescriptor occluder = road.Ridges.First(
-                ridge => ridge.StableId == plan.UpperOccluderStableId);
-
-            // The plan's idea of where the rock starts has to be the ridge's
-            // own, or the whole derivation is a second guess.
-            Vector3 nearFace = MountainCablewayMotion.SampleTrackPosition(
-                plan,
-                plan.UpperOccluderNearFaceDistance,
-                1);
-            Vector3 justInside = MountainCablewayMotion.SampleTrackPosition(
-                plan,
-                plan.UpperOccluderNearFaceDistance + 0.25f,
-                1);
-            Assert.That(
-                MountainRoadRidgeGeometry.TryGetCrossing(
-                    occluder,
-                    justInside,
-                    out float crossing),
-                Is.True,
-                "A quarter metre past the near face must be inside the rock.");
-            Assert.That(
-                MountainRoadRidgeGeometry.CrestWorldY(occluder, crossing),
-                Is.GreaterThan(justInside.y),
-                "The built crest must stand over the cable, not beside it.");
-            Assert.That(
-                MountainRoadRidgeGeometry.TryGetCrossing(
-                    occluder,
-                    MountainCablewayMotion.SampleTrackPosition(
-                        plan,
-                        plan.UpperOccluderNearFaceDistance - 0.25f,
-                        1),
-                    out _),
-                Is.False,
-                "A quarter metre short of it must still be open air.");
-            Assert.That(nearFace.y, Is.LessThan(justInside.y + 1f));
-
-            float fadeAt = plan.LineLength -
-                           AlpineCablewayRideController
-                               .EvaluateFadeLeadMeters(plan);
-            float blackAt = fadeAt +
-                            plan.CabinSpeed *
-                            AlpineCablewayRideController.FadeOutSeconds;
-            // The ROOF, not the body. The slab oversails the walls by `8%`
-            // of the cabin's length, and a check that measures the body
-            // reproduces the plan's own error and so cannot catch it.
-            float noseTouchesRock = plan.UpperOccluderNearFaceDistance -
-                                    plan.CabinLeadingHalfLength;
-            Assert.That(
-                plan.CabinLeadingHalfLength,
-                Is.GreaterThan(plan.CabinSize.z * 0.5f),
-                "The cabin's leading edge is its roof lip, not its wall.");
-
-            Assert.That(
-                blackAt,
-                Is.LessThanOrEqualTo(noseTouchesRock),
-                "The picture is still up when the cabin enters the mountain.");
-            Assert.That(
-                noseTouchesRock - blackAt,
-                Is.GreaterThanOrEqualTo(
-                    MountainRoadCablewayPlan
-                        .UpperOccluderApproachClearance - 0.001f),
-                "The cut has to land with clear air still in front of it.");
-
-            // Both tracks: the descending one carries cabins too, and a rule
-            // that only holds on the side the hero rides is half a rule.
-            // (see also the seed sweep below)
-            for (int side = -1; side <= 1; side += 2)
+            foreach (MountainRoadCablewayPlan plan in BothLines())
             {
-                Vector3 sample = MountainCablewayMotion.SampleTrackPosition(
-                    plan,
-                    blackAt,
-                    side);
+                float fadeAt = plan.LineLength -
+                               AlpineCablewayRideController
+                                   .EvaluateFadeLeadMeters(plan);
+                float blackAt = fadeAt +
+                                plan.CabinSpeed *
+                                AlpineCablewayRideController.FadeOutSeconds;
+                float lipAtMouth = plan.UpperGalleryMouthDistance -
+                                   plan.CabinLeadingHalfLength;
                 Assert.That(
-                    MountainRoadRidgeGeometry.TryGetCrossing(
-                        occluder,
-                        sample,
-                        out _),
-                    Is.False,
-                    $"Track {side} is already in the rock at the cut.");
+                    plan.CabinLeadingHalfLength,
+                    Is.GreaterThan(plan.CabinSize.z * 0.5f),
+                    "The cabin's leading edge is its roof lip, not its wall.");
+                Assert.That(
+                    blackAt,
+                    Is.LessThanOrEqualTo(lipAtMouth),
+                    $"{plan.StableId}: the picture is still up when the " +
+                    "cabin enters the gallery.");
+                Assert.That(
+                    lipAtMouth - blackAt,
+                    Is.GreaterThanOrEqualTo(
+                        MountainRoadCablewayPlan
+                            .UpperOccluderApproachClearance - 0.001f),
+                    $"{plan.StableId}: the cut has to land with clear air " +
+                    "still in front of the mouth.");
+                Assert.That(
+                    blackAt,
+                    Is.EqualTo(plan.LastVisibleDistance).Within(0.001f),
+                    "The cut lands on the last visible metre.");
+                Assert.That(
+                    plan.UpperGalleryMouthDistance,
+                    Is.LessThan(plan.LineLength),
+                    "The mouth stands on the visible line.");
             }
         }
 
         /// <summary>
-        /// The rock has to be tall enough on EVERY seed, not on the two we
-        /// happen to ship.
-        ///
-        /// A ridge's crest carries a seeded variation in eight steps, and the
-        /// occluder used to be sized against the lid of its bounding box -
-        /// which stands well above the crest that is drawn. On one residue in
-        /// eight the drawn snow sat a third of a metre UNDER the cable it is
-        /// there to hide, and both known seeds miss that residue, which is
-        /// exactly how it would have shipped. The eight seeds below walk all
-        /// eight.
+        /// The gallery houses the turn and clears the cabin on both lines:
+        /// the last tower stands clear of the mouth, both tracks and their
+        /// cabins fit inside with air, the floor is under the cabin and the
+        /// roof over the rope everywhere inside, and the turn's arc runs
+        /// between the walls.
         /// </summary>
         [Test]
         [Category("MountainRoad")]
-        public void Occluder_CrestClearsTheCableOnEverySeedResidue()
+        public void UpperGallery_HousesTheTurnAndClearsTheCabinOnBothLines()
+        {
+            foreach (MountainRoadCablewayPlan plan in BothLines())
+            {
+                float lastSupport = plan.Nodes
+                    .Where(node =>
+                        node.Kind == MountainCablewayNodeKind.Support)
+                    .Max(node => node.Distance);
+                Assert.That(
+                    lastSupport,
+                    Is.LessThan(
+                        plan.UpperGalleryMouthDistance -
+                        plan.CabinLeadingHalfLength -
+                        0.5f),
+                    $"{plan.StableId}: the last tower stands in the mouth.");
+                Assert.That(
+                    plan.UpperGalleryBackWallDistance,
+                    Is.GreaterThan(plan.LineLength + plan.TurnRadius + 0.5f),
+                    "The back wall stands past the turn's far edge.");
+                Assert.That(
+                    MountainRoadCablewayPlan.UpperGalleryInteriorHalfWidth,
+                    Is.GreaterThan(
+                        plan.TurnRadius + (plan.CabinSize.x * 0.5f) + 0.5f),
+                    "Both tracks and their cabins fit inside with air.");
+
+                for (float distance = plan.UpperGalleryMouthDistance;
+                     distance <= plan.LineLength + 0.001f;
+                     distance += 0.25f)
+                {
+                    float clamped = Mathf.Min(distance, plan.LineLength);
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        Vector3 attachment =
+                            MountainCablewayMotion.SampleTrackPosition(
+                                plan,
+                                clamped,
+                                side);
+                        Assert.That(
+                            attachment.y - plan.CabinAttachmentToBottom,
+                            Is.GreaterThanOrEqualTo(
+                                plan.UpperGalleryFloorY + 0.4f),
+                            $"{plan.StableId}: the cabin is in the gallery " +
+                            $"floor at d={clamped}.");
+                        Assert.That(
+                            plan.UpperGalleryRoofY - attachment.y,
+                            Is.GreaterThanOrEqualTo(1.2f),
+                            $"{plan.StableId}: the rope is in the gallery " +
+                            $"roof at d={clamped}.");
+                    }
+                }
+
+                float turnLength = Mathf.PI * plan.TurnRadius;
+                for (float t = 0f; t <= turnLength; t += 0.2f)
+                {
+                    MountainCablewayMotionSample sample =
+                        MountainCablewayMotion.Sample(
+                            plan,
+                            plan.LineLength + t);
+                    Vector3 offset = sample.Position - plan.LowerCableCenter;
+                    float along = Vector3.Dot(offset, plan.LineForward);
+                    float across = Mathf.Abs(
+                        Vector3.Dot(offset, plan.LineRight));
+                    Assert.That(
+                        along,
+                        Is.LessThan(plan.UpperGalleryBackWallDistance - 0.3f),
+                        "The turn runs into the back wall.");
+                    Assert.That(
+                        across,
+                        Is.LessThan(
+                            MountainRoadCablewayPlan
+                                .UpperGalleryInteriorHalfWidth - 0.3f),
+                        "The turn runs into a side wall.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// The rock stands BEHIND the gallery and over its roof on every
+        /// seed residue - a ridge's crest carries a seeded variation in
+        /// eight steps, and a rule true on seven of them is not a rule -
+        /// and nothing but the gallery's own pedestal stands across the
+        /// visible line anywhere.
+        /// </summary>
+        [Test]
+        [Category("MountainRoad")]
+        public void Occluder_StandsBehindTheGalleryOverItsRoofOnEverySeedResidue()
         {
             for (int step = 0; step < 8; step++)
             {
@@ -980,37 +1006,247 @@ namespace BarPromenade.Tests.EditMode
                         ridge.StableId == cableway.UpperOccluderStableId);
 
                 Assert.That(
+                    cableway.UpperOccluderNearFaceDistance,
+                    Is.EqualTo(cableway.UpperGalleryBackWallDistance)
+                        .Within(0.001f),
+                    "The rock begins at the back wall.");
+                Assert.That(
+                    MountainRoadRidgeGeometry.TryGetCrossing(
+                        occluder,
+                        cableway.LineAxisPoint(
+                            cableway.UpperOccluderNearFaceDistance + 0.25f),
+                        out float crossing),
+                    Is.True,
+                    $"Seed {seed}: a quarter metre past the back wall must " +
+                    "be rock.");
+                Assert.That(
+                    MountainRoadRidgeGeometry.TryGetCrossing(
+                        occluder,
+                        cableway.LineAxisPoint(
+                            cableway.UpperOccluderNearFaceDistance - 0.25f),
+                        out _),
+                    Is.False,
+                    $"Seed {seed}: the rock reaches into the gallery.");
+                Assert.That(
                     MountainRoadRidgeGeometry.TryGetCrossing(
                         occluder,
                         cableway.UpperCableCenter,
-                        out float crossing),
-                    Is.True,
-                    $"Seed {seed}: the cable end left its own occluder.");
+                        out _),
+                    Is.False,
+                    $"Seed {seed}: the turn is inside the rock again.");
                 Assert.That(
-                    MountainRoadRidgeGeometry.CrestWorldY(
-                        occluder,
-                        crossing),
+                    MountainRoadRidgeGeometry.CrestWorldY(occluder, crossing),
                     Is.GreaterThanOrEqualTo(
-                        cableway.UpperCableCenter.y +
-                        MountainRoadCablewayPlan
-                            .UpperOccluderCrestClearance),
-                    $"Seed {seed}: the drawn crest is under the cable.");
+                        cableway.UpperGalleryRoofY +
+                        MountainRoadCablewayPlan.UpperOccluderCrestClearance),
+                    $"Seed {seed}: the drawn crest is under the gallery roof.");
 
-                // And the cut still fits between the last tower and the rock
-                // at every one of them.
-                float fadeAt = cableway.LineLength -
-                               AlpineCablewayRideController
-                                   .EvaluateFadeLeadMeters(cableway);
-                float blackAt = fadeAt +
-                                cableway.CabinSpeed *
-                                AlpineCablewayRideController.FadeOutSeconds;
-                Assert.That(
-                    blackAt,
-                    Is.LessThanOrEqualTo(
-                        cableway.UpperOccluderNearFaceDistance -
-                        cableway.CabinLeadingHalfLength),
-                    $"Seed {seed}: the picture is up inside the rock.");
+                foreach (MountainRoadRidgeDescriptor ridge in road.Ridges)
+                {
+                    if (ridge.StableId ==
+                        MountainRoadCablewayPlan.UpperPedestalStableId)
+                    {
+                        continue;
+                    }
+
+                    for (float distance = 0f;
+                         distance <= cableway.LineLength;
+                         distance += 0.5f)
+                    {
+                        for (int side = -1; side <= 1; side += 2)
+                        {
+                            Vector3 attachment =
+                                MountainCablewayMotion.SampleTrackPosition(
+                                    cableway,
+                                    distance,
+                                    side);
+                            if (!MountainRoadRidgeGeometry.TryGetCrossing(
+                                    ridge,
+                                    attachment,
+                                    out float at))
+                            {
+                                continue;
+                            }
+
+                            Assert.That(
+                                MountainRoadRidgeGeometry.CrestWorldY(
+                                    ridge,
+                                    at),
+                                Is.LessThan(
+                                    attachment.y -
+                                    cableway.CabinAttachmentToBottom -
+                                    0.5f),
+                                $"Seed {seed}: {ridge.StableId} stands " +
+                                $"across the line at d={distance}.");
+                        }
+                    }
+                }
             }
+        }
+
+        /// <summary>
+        /// The gallery stands on rock at the mountain terminal on every
+        /// seed: the crest under the floor at the line, and no daylight
+        /// under the plinth at any corner.
+        /// </summary>
+        [Test]
+        [Category("MountainRoad")]
+        public void UpperGallery_StandsOnRockAtTheMountainTerminalOnEverySeed()
+        {
+            for (int step = 0; step < 8; step++)
+            {
+                int seed = GameSessionState.DefaultCitySeed + step;
+                MountainRoadPlan road = MountainRoadPlanner.Create(seed);
+                MountainRoadCablewayPlan cableway = road.Terminal.Cableway;
+                MountainRoadRidgeDescriptor pedestal = road.Ridges.First(
+                    ridge =>
+                        ridge.StableId ==
+                        MountainRoadCablewayPlan.UpperPedestalStableId);
+                float floorY = cableway.UpperGalleryFloorY;
+                float middle =
+                    (cableway.UpperGalleryMouthDistance +
+                     cableway.UpperGalleryBackWallDistance) * 0.5f;
+                Assert.That(
+                    MountainRoadRidgeGeometry.TryGetCrossing(
+                        pedestal,
+                        cableway.LineAxisPoint(middle),
+                        out float crossing),
+                    Is.True);
+                float crest = MountainRoadRidgeGeometry.CrestWorldY(
+                    pedestal,
+                    crossing);
+                Assert.That(
+                    crest,
+                    Is.LessThan(floorY - 0.1f),
+                    $"Seed {seed}: the rock breaks through the floor.");
+                Assert.That(
+                    crest,
+                    Is.GreaterThan(
+                        floorY -
+                        MountainRoadCablewayPlan.UpperGalleryPlinthDepth),
+                    $"Seed {seed}: the plinth hangs over the rock at the line.");
+                for (int corner = 0; corner < 4; corner++)
+                {
+                    float along = (corner & 1) == 0
+                        ? cableway.UpperGalleryMouthDistance
+                        : cableway.UpperGalleryBackWallDistance;
+                    float side = (corner & 2) == 0 ? -1f : 1f;
+                    Vector3 point = cableway.LineAxisPoint(along) +
+                                    cableway.LineRight *
+                                    (side * cableway.UpperGalleryOuterHalfWidth);
+                    Assert.That(
+                        MountainRoadRidgeGeometry.TryGetCrossing(
+                            pedestal,
+                            point,
+                            out float cornerCrossing),
+                        Is.True,
+                        $"Seed {seed}: corner {corner} overhangs the rock.");
+                    Assert.That(
+                        MountainRoadRidgeGeometry.CrestWorldY(
+                            pedestal,
+                            cornerCrossing),
+                        Is.GreaterThanOrEqualTo(
+                            floorY -
+                            MountainRoadCablewayPlan.UpperGalleryPlinthDepth),
+                        $"Seed {seed}: daylight under the plinth at corner " +
+                        $"{corner}.");
+                }
+            }
+        }
+
+        /// <summary>
+        /// The builder raises the gallery around the turn where the plan
+        /// says, dark and without a collider - the cut lands inside it, and
+        /// nothing up there is ever walked to.
+        /// </summary>
+        [Test]
+        [Category("MountainRoad")]
+        public void WorldBuilder_RaisesTheGalleryAroundTheTurn()
+        {
+            MountainRoadCablewayPlan plan = MountainCableway();
+            var host = new GameObject("Cableway Gallery Test Host");
+            try
+            {
+                MountainCablewayWorldResult result =
+                    MountainCablewayWorldBuilder.Build(host.transform, plan);
+                Transform gallery =
+                    result.Root.transform.Find("Upper Gallery Station");
+                Assert.That(gallery, Is.Not.Null, "The line ends in no building.");
+                string[] parts =
+                {
+                    "Gallery Concrete Plinth",
+                    "Gallery Left Wall",
+                    "Gallery Right Wall",
+                    "Gallery Back Wall",
+                    "Gallery Corrugated Roof",
+                    "Gallery Mouth Lintel",
+                    "Gallery Mouth Left Post",
+                    "Gallery Mouth Right Post",
+                    "Gallery Bullwheel",
+                    "Gallery Machinery Frame"
+                };
+                foreach (string part in parts)
+                {
+                    Assert.That(
+                        gallery.Find(part),
+                        Is.Not.Null,
+                        $"Missing '{part}'.");
+                }
+
+                Assert.That(
+                    gallery.GetComponentsInChildren<Collider>(true),
+                    Is.Empty,
+                    "The gallery is presentation only.");
+                Assert.That(
+                    gallery.GetComponentsInChildren<Light>(true),
+                    Is.Empty,
+                    "The gallery is dark: the cut lands inside it.");
+
+                Vector3 post = gallery.Find("Gallery Mouth Left Post").position;
+                Assert.That(
+                    Vector3.Dot(post - plan.LowerCableCenter, plan.LineForward),
+                    Is.EqualTo(plan.UpperGalleryMouthDistance + 0.2f)
+                        .Within(0.05f),
+                    "The mouth posts stand at the plan's mouth.");
+                Vector3 backWall = gallery.Find("Gallery Back Wall").position;
+                Assert.That(
+                    Vector3.Dot(
+                        backWall - plan.LowerCableCenter,
+                        plan.LineForward),
+                    Is.EqualTo(
+                            plan.UpperGalleryBackWallDistance +
+                            MountainRoadCablewayPlan.UpperGalleryWallThickness *
+                            0.5f)
+                        .Within(0.05f),
+                    "The back wall stands at the plan's back wall.");
+                Renderer roof = gallery.Find("Gallery Corrugated Roof")
+                    .GetComponent<Renderer>();
+                Assert.That(
+                    roof.bounds.min.y,
+                    Is.GreaterThanOrEqualTo(plan.UpperGalleryRoofY - 0.01f),
+                    "The roof hangs into the headroom.");
+                Renderer plinth = gallery.Find("Gallery Concrete Plinth")
+                    .GetComponent<Renderer>();
+                Assert.That(
+                    plinth.bounds.max.y,
+                    Is.EqualTo(plan.UpperGalleryFloorY).Within(0.02f),
+                    "The floor is not the plinth's top.");
+                Assert.That(
+                    plinth.bounds.min.y,
+                    Is.EqualTo(
+                            plan.UpperGalleryFloorY -
+                            MountainRoadCablewayPlan.UpperGalleryPlinthDepth)
+                        .Within(0.02f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        private static MountainRoadCablewayPlan[] BothLines()
+        {
+            return new[] { MountainCableway(), VillageCableway() };
         }
     }
 }

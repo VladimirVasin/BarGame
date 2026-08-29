@@ -302,54 +302,99 @@ namespace BarPromenade
                 }
             }
 
-            MountainRoadRidgeDescriptor occluder = default;
-            bool foundOccluder = false;
-            for (int index = 0; index < plan.Ridges.Count; index++)
-            {
-                if (string.Equals(
-                        plan.Ridges[index].StableId,
-                        cableway.UpperOccluderStableId,
-                        StringComparison.Ordinal))
-                {
-                    occluder = plan.Ridges[index];
-                    foundOccluder = true;
-                    break;
-                }
-            }
-
-            if (!foundOccluder ||
-                Vector2.Distance(
-                    ToXZ(occluder.Center),
-                    ToXZ(cableway.UpperCableCenter)) >
-                Mathf.Max(occluder.Size.x, occluder.Size.z) * 0.35f ||
-                occluder.Center.y - occluder.Size.y * 0.5f >
-                    cableway.UpperCableCenter.y)
+            MountainRoadRidgeDescriptor occluder = FindRidge(
+                plan,
+                cableway.UpperOccluderStableId,
+                out bool foundOccluder);
+            if (!foundOccluder)
             {
                 throw new InvalidOperationException(
-                    "The upper cable turn needs a real mountain occluder.");
+                    "The upper gallery needs the rock behind it.");
             }
 
-            // Against the crest that is BUILT, not the top of the box it is
-            // authored in. A ridge is a polygonal sine: at its middle - which
-            // is exactly where the line crosses it, the occluder being
-            // centred on the line - the drawn rock stands about `14%` of the
-            // box's height below the box's lid. The old check read the lid
-            // and would have passed a ridge the cabin sails straight over.
+            // The rock begins at the gallery's back wall - a quarter metre
+            // past it the line's axis is inside the rock, a quarter metre
+            // short of it is still the gallery - and its crest stands over
+            // the gallery ROOF. Against the crest that is BUILT, not the lid
+            // of the box it is authored in: a ridge is a polygonal sine and
+            // its middle sits about `14%` of the box below the lid.
+            Vector3 insideRock = cableway.LineAxisPoint(
+                cableway.UpperOccluderNearFaceDistance + 0.25f);
+            Vector3 stillGallery = cableway.LineAxisPoint(
+                cableway.UpperOccluderNearFaceDistance - 0.25f);
             if (!MountainRoadRidgeGeometry.TryGetCrossing(
                     occluder,
-                    cableway.UpperCableCenter,
-                    out float crossing))
+                    insideRock,
+                    out float crossing) ||
+                MountainRoadRidgeGeometry.TryGetCrossing(
+                    occluder,
+                    stillGallery,
+                    out _))
             {
                 throw new InvalidOperationException(
-                    "The upper cable turn must cross its own occluder.");
+                    "The rock behind the gallery must begin at its back wall.");
             }
 
             if (MountainRoadRidgeGeometry.CrestWorldY(occluder, crossing) <
-                cableway.UpperCableCenter.y +
+                cableway.UpperGalleryRoofY +
                 MountainRoadCablewayPlan.UpperOccluderCrestClearance)
             {
                 throw new InvalidOperationException(
-                    "The occluder's built crest must stand over the cable.");
+                    "The rock behind the gallery must stand over its roof.");
+            }
+
+            // And the gallery stands on rock: under the floor at the line,
+            // and no daylight under the plinth at any of its four corners.
+            MountainRoadRidgeDescriptor pedestal = FindRidge(
+                plan,
+                MountainRoadCablewayPlan.UpperPedestalStableId,
+                out bool foundPedestal);
+            if (!foundPedestal)
+            {
+                throw new InvalidOperationException(
+                    "The upper gallery has no rock to stand on.");
+            }
+
+            float floorY = cableway.UpperGalleryFloorY;
+            float galleryMiddle =
+                (cableway.UpperGalleryMouthDistance +
+                 cableway.UpperGalleryBackWallDistance) * 0.5f;
+            if (!MountainRoadRidgeGeometry.TryGetCrossing(
+                    pedestal,
+                    cableway.LineAxisPoint(galleryMiddle),
+                    out float pedestalCrossing) ||
+                MountainRoadRidgeGeometry.CrestWorldY(
+                    pedestal,
+                    pedestalCrossing) > floorY - 0.1f)
+            {
+                throw new InvalidOperationException(
+                    "The pedestal rock breaks through the gallery floor.");
+            }
+
+            for (int corner = 0; corner < 4; corner++)
+            {
+                float along = (corner & 1) == 0
+                    ? cableway.UpperGalleryMouthDistance
+                    : cableway.UpperGalleryBackWallDistance;
+                float side = (corner & 2) == 0 ? -1f : 1f;
+                Vector3 cornerPoint = cableway.LineAxisPoint(along) +
+                                      cableway.LineRight *
+                                      (side *
+                                       cableway.UpperGalleryOuterHalfWidth);
+                if (!MountainRoadRidgeGeometry.TryGetCrossing(
+                        pedestal,
+                        cornerPoint,
+                        out float cornerCrossing) ||
+                    MountainRoadRidgeGeometry.CrestWorldY(
+                        pedestal,
+                        cornerCrossing) <
+                    floorY -
+                    MountainRoadCablewayPlan.UpperGalleryPlinthDepth)
+                {
+                    throw new InvalidOperationException(
+                        "Daylight under the gallery plinth at corner " +
+                        $"{corner}.");
+                }
             }
 
             // And the ride has to be able to hide inside it: the blackout
@@ -377,6 +422,27 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The cut must land after the last cable tower.");
             }
+        }
+
+        private static MountainRoadRidgeDescriptor FindRidge(
+            MountainRoadPlan plan,
+            string stableId,
+            out bool found)
+        {
+            for (int index = 0; index < plan.Ridges.Count; index++)
+            {
+                if (string.Equals(
+                        plan.Ridges[index].StableId,
+                        stableId,
+                        StringComparison.Ordinal))
+                {
+                    found = true;
+                    return plan.Ridges[index];
+                }
+            }
+
+            found = false;
+            return default;
         }
 
         private static void ValidateLandmarkSeparation(

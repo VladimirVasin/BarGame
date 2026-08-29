@@ -48,6 +48,96 @@ Residential, Industrial and Nightlife all show warm atlas-detailed panes on
 lower and upper rows with dark gaps between them. No broad Unity suite, player
 build or startup smoke was run.
 
+## 2026-08-29 — The cableway drove into a mountain, and the fix had timed the crash
+
+The user came back angry: the cableway still goes straight through the
+mountain, at least on the way up, and he had asked for it to be fixed. He
+was right on both counts. A day earlier the report "the cabin passes through
+rock at the end of the ride" had been answered by measuring the rock to the
+centimetre and moving the blackout a metre in front of its face - and the
+entry recording that fix says, in its own words, that the ridge is "planted
+ON the line" and the last `6.8 m` of visible rope are "inside solid rock BY
+DESIGN". The cut was derived correctly. The design it was derived from was
+the bug.
+
+Two instruments settled it before anything was touched. A throwaway EditMode
+probe walked the climb metre by metre: the cabin's underside clears the
+SAMPLED terrain everywhere (`1.1 m` at the platform, `8-18 m` after), no
+ridge but the occluder crosses the line, and the occluder crosses it from
+`d = 52` with a crest `8 m` over the cabin - the plan is clean and the plan
+is not what the player sees. Then a new `AreaCaptureFixture.MountainCableway`
+series rendered the line from the platform, from beside the towers and from
+the seat at seven distances: from every one of them two ropes run into a
+smooth `33 m` snow mass and stop. There is no picture in which that reads as
+anything but a cableway driving into a mountain, and a well-timed blackout
+does not change the picture the passenger has been looking at for forty
+metres.
+
+**A cableway ends in a building.** The top of the visible line is now the
+`Upper Gallery Station`: a timber gallery on a concrete plinth that the rope
+runs INTO, with the turn's bullwheel and machinery frame inside it, and the
+rock standing BEHIND its back wall rather than across the rope.
+
+- `MountainRoadCablewayPlan` gains the gallery as numbers the ride, the
+  planner, the validator, the builder and the village's terrain all read:
+  mouth `6.5 m` short of the line end, back wall `1.2 m` past the turn's far
+  edge, `3.2 m` of clear half-width (two tracks `2.9 m` apart, a `1.75 m`
+  cabin on each, better than `0.8 m` of air outside), `1.4 m` of headroom
+  over the rope's highest point inside and the floor `0.5 m` under the
+  cabin's underside at its lowest - both sampled off the sagged tracks, not
+  the node heights. `UpperOccluderSetback` is gone; the rock's near face IS
+  the back wall (`UpperOccluderNearFaceDistance` now says so), and its crest
+  is sized and validated against the gallery ROOF plus `2 m`, on the drawn
+  crest, over all eight seed residues as before.
+- `LastVisibleDistance` is now the mouth less the roof lip less the metre of
+  air, so the fade lead derives from the mouth exactly as it derived from the
+  rock: black at `49.66 m` on both lines, the mouth `1.84 m` ahead, filling
+  the frame. The ride controller is unchanged.
+- **The gallery stands on rock.** The planner raises a second FarSnow ridge,
+  `far-snow-cableway-gallery-pedestal`, `30 m` across the line and the
+  gallery's length plus `2.4 m` along it, its drawn crest solved to sit
+  `0.4 m` under the floor slab at the line for every seed. A ridge's crest is
+  a polygonal sine across its width, so the rock is lower under the walls
+  than under the rope; the plinth is `2.4 m` deep for exactly that, and the
+  terminal validator refuses a plan where the crest breaks through the floor
+  at the line or leaves daylight under the plinth at any of the four
+  corners.
+- The village end is the same builder, so the descent ends the same way: the
+  hill no longer closes over the rope in front of the cut but rises through
+  the gallery's back wall (`SampleCablewayBrink` closes from the back wall
+  over `4 m`), and the village's mesh reaches a cell past that closure. The
+  gallery there stands on the cut bed with its mouth half-sunk into the
+  hillside, which is what a gallery dug into a slope looks like.
+- The probe was deleted; the capture series stays as the instrument it is.
+
+Verification, headless on `6000.5.10f1`. EditMode over every
+`MountainCableway*`, `MountainRoad*` and `AlpineVillage*` class: `104 / 106`,
+with all five new or rewritten gallery tests green
+(`RideFade_IsCompleteBeforeTheCabinReachesTheGalleryMouth`,
+`UpperGallery_HousesTheTurnAndClearsTheCabinOnBothLines`,
+`Occluder_StandsBehindTheGalleryOverItsRoofOnEverySeedResidue`,
+`UpperGallery_StandsOnRockAtTheMountainTerminalOnEverySeed`,
+`WorldBuilder_RaisesTheGalleryAroundTheTurn`) and the village descent test
+re-anchored on the mouth and the closure behind it. The two reds are not
+this change's: `TerrainMesh_BuildsTheRidgeAndTheCablewayBrink` misses by the
+same `0.18 m` of mesh-versus-sampler interpolation at `support-01` that the
+2026-08-29 descent entry already records as the sibling session's, and
+`VisiblePaths_CarryEveryPermittedBranch` fails on a path half-width
+(`0.75` against `0.67` at `village-house-00-path`) in a planner this change
+never touched - its only edit here is the mesh bound past the turn. PlayMode:
+`AlpineCablewayRidePlayModeTests` `3 / 3` (boarding, the black before the
+area is left, the walk in off the road); `AlpineVillageStationExitPlayModeTests`
+`1 / 1` alone - in company with the ride class it threw a
+`MissingReferenceException` on the test's own player, which is the ride
+test's area travel landing in the next test's scene and is order-dependent,
+not the gallery. The capture series was rendered again after the change:
+from beside the towers the ropes now run into a shed on a snow shoulder with
+the rock behind it, from the seat at `40 m` the mouth is a tall dark opening
+with the far cabin inside it, and at the cut (`49.4 m`) the frame is the
+gallery's walls, floor slab and machinery in the dark. Not run: a player
+build, the broad suites, and no eye on it in motion - whether the gallery
+READS as a station from the road at speed is the user's to judge.
+
 ## 2026-08-29 — The Ferryman's car gets its voice, and the climb is heard
 
 The user asked for engine sound on the Ferryman's car and, more broadly,

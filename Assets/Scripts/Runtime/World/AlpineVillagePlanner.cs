@@ -688,9 +688,13 @@ namespace BarPromenade
             // Continue beyond the hidden turn. Otherwise the last sampled row
             // is the turn itself and the player can see the world end through
             // the single-sided crest as the cabin reaches the blackout.
+            float pastTurn = Mathf.Max(
+                AlpineVillageTerrainSampler.RidgeCrestDepth,
+                cableway.UpperGalleryHillClosureDistance -
+                cableway.LineLength +
+                AlpineVillageTerrainSampler.TerrainCell);
             Vector3 beyondTurn = cableway.UpperCableCenter +
-                                 cableway.LineForward *
-                                 AlpineVillageTerrainSampler.RidgeCrestDepth;
+                                 cableway.LineForward * pastTurn;
             Include(
                 beyondTurn.x,
                 beyondTurn.z,

@@ -1,4 +1,4 @@
-﻿using System;
+using System;
 using System.Collections;
 using System.IO;
 using NUnit.Framework;
@@ -299,6 +299,81 @@ namespace BarPromenade.Tests.PlayMode
                     return villageRoot;
                 },
                 () => AlpineVillageShots(villageRoot));
+        }
+
+        /// <summary>
+        /// The cableway climb as the passenger sees it: up the line from
+        /// the platform, the top from beside the line, and the first-person
+        /// eye on the last metres before the cut. This is the series that
+        /// showed the old rock planted across the rope for what it was.
+        /// </summary>
+        [UnityTest]
+        [Explicit("Capture, not a test. Run one area at a time.")]
+        public IEnumerator MountainCableway()
+        {
+            GameSessionState.TryStartGameTimeFromWake();
+            GameSessionState.AdvanceGameTime(90f);
+
+            MountainRoadRoot mountainRoot = null;
+            yield return Capture(
+                SceneIds.MountainRoad,
+                () =>
+                {
+                    mountainRoot = Object.FindAnyObjectByType<
+                        MountainRoadRoot>();
+                    return mountainRoot;
+                },
+                () => MountainCablewayShots(mountainRoot));
+        }
+
+        private static Shot[] MountainCablewayShots(MountainRoadRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            MountainRoadCablewayPlan cableway = root.Plan.Terminal.Cableway;
+            Vector3 forward = cableway.LineForward;
+            Vector3 right = cableway.LineRight;
+            Vector3 lower = cableway.LowerCableCenter;
+            var shots = new System.Collections.Generic.List<Shot>();
+            Vector3 platformEye = lower - forward * 4f;
+            platformEye.y = cableway.BoardingPlatformTopY + 1.6f;
+            shots.Add(Shot.At(
+                "c0-platform-up-the-line",
+                platformEye,
+                MountainCablewayMotion.SampleTrackPosition(cableway, 40f, 1),
+                62f));
+            Vector3 side = MountainCablewayMotion.SampleTrackPosition(cableway, 30f, 1) -
+                           right * 16f + Vector3.down * 5f;
+            shots.Add(Shot.At(
+                "c1-side-view-of-the-top",
+                side,
+                MountainCablewayMotion.SampleTrackPosition(cableway, 52f, 1),
+                58f));
+            Vector3 sideLow = MountainCablewayMotion.SampleTrackPosition(cableway, 44f, 1) +
+                              right * 18f + Vector3.down * 8f;
+            shots.Add(Shot.At(
+                "c2-right-side-of-the-top",
+                sideLow,
+                MountainCablewayMotion.SampleTrackPosition(cableway, 53f, 1),
+                58f));
+            float[] eyes = { 30f, 40f, 46f, 49.4f, 50.4f, 51.3f, 53f };
+            for (int index = 0; index < eyes.Length; index++)
+            {
+                float d = eyes[index];
+                Vector3 attachment = MountainCablewayMotion.SampleTrackPosition(cableway, d, 1);
+                Vector3 tangent = MountainCablewayMotion.SampleTrackTangent(cableway, d, 1);
+                Vector3 eye = attachment + Vector3.down *
+                              (cableway.CabinAttachmentToBottom - MountainRoadCablewayPlan.CabinSkirtHeight - 1.2f);
+                Vector3 look = tangent;
+                look.y = 0f;
+                look = look.normalized;
+                shots.Add(Shot.At(
+                    $"c{index + 3}-eye-d{d:00.0}",
+                    eye,
+                    eye + look * 12f + Vector3.up * 1.5f,
+                    70f));
+            }
+
+            return shots.ToArray();
         }
 
         [UnityTest]

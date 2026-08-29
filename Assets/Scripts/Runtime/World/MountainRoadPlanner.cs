@@ -1307,18 +1307,19 @@ namespace BarPromenade
                     seed + 2000 + index * 131));
             }
 
-            // The ridge that swallows the upper turn. Its setback and its
-            // depth are the cableway plan's own constants, not literals here,
-            // because the RIDE reads them too: the screen has to be fully out
-            // before the cabin reaches this near face, and for a long time it
-            // was not, because these numbers and the fade's were chosen apart.
+            // The rock BEHIND the upper gallery. It used to be planted
+            // across the rope with the turn inside it, and from every
+            // viewpoint the line simply drove into a mountain; now it begins
+            // at the gallery's back wall - the plan's own distance, which the
+            // ride reads too - and its crest stands over the gallery's roof.
             MountainRoadCablewayPlan cableway = terminal.Cableway;
-            Vector3 cableEnd = cableway.UpperCableCenter;
+            Vector3 lowerCable = cableway.LowerCableCenter;
+            float occluderAlong = cableway.UpperOccluderNearFaceDistance +
+                                  MountainRoadCablewayPlan.UpperOccluderDepth *
+                                  0.5f;
             Vector2 occluderCenter = new Vector2(
-                cableEnd.x - cableway.LineForward.x *
-                MountainRoadCablewayPlan.UpperOccluderSetback,
-                cableEnd.z - cableway.LineForward.z *
-                MountainRoadCablewayPlan.UpperOccluderSetback);
+                lowerCable.x + cableway.LineForward.x * occluderAlong,
+                lowerCable.z + cableway.LineForward.z * occluderAlong);
             float occluderYaw = Mathf.Atan2(
                 -cableway.LineForward.x,
                 -cableway.LineForward.z) * Mathf.Rad2Deg;
@@ -1345,7 +1346,7 @@ namespace BarPromenade
                 0.5f);
             occluderSize.y = Mathf.Max(
                 occluderSize.y,
-                (cableEnd.y +
+                (cableway.UpperGalleryRoofY +
                  MountainRoadCablewayPlan.UpperOccluderCrestClearance +
                  0.25f -
                  occluderBase) / crestFactor);
@@ -1359,6 +1360,46 @@ namespace BarPromenade
                 occluderSize,
                 occluderYaw,
                 occluderSeed));
+
+            // And the rock the gallery stands on: a snow shoulder under the
+            // whole shed, its drawn crest solved to sit just under the floor
+            // slab at the line. The crest is a polygonal sine across the
+            // ridge, so it is lower under the walls than under the rope,
+            // which is what the plinth's depth is for.
+            float pedestalAlong =
+                (cableway.UpperGalleryMouthDistance +
+                 cableway.UpperGalleryBackWallDistance) * 0.5f;
+            Vector2 pedestalCenter = new Vector2(
+                lowerCable.x + cableway.LineForward.x * pedestalAlong,
+                lowerCable.z + cableway.LineForward.z * pedestalAlong);
+            Vector3 pedestalSize = new Vector3(
+                30f,
+                1f,
+                cableway.UpperGalleryLength + 2.4f);
+            float pedestalBase = CalculateRidgeBaseY(
+                route,
+                plateau,
+                pedestalCenter,
+                pedestalSize,
+                occluderYaw);
+            int pedestalSeed = seed + 5233;
+            float pedestalCrestFactor = MountainRoadRidgeGeometry.CrestFactor(
+                pedestalSeed,
+                0.5f);
+            pedestalSize.y = Mathf.Max(
+                1f,
+                (cableway.UpperGalleryFloorY - 0.4f - pedestalBase) /
+                pedestalCrestFactor);
+            result.Add(new MountainRoadRidgeDescriptor(
+                MountainRoadCablewayPlan.UpperPedestalStableId,
+                MountainRoadRidgeLayer.FarSnow,
+                new Vector3(
+                    pedestalCenter.x,
+                    pedestalBase + pedestalSize.y * 0.5f,
+                    pedestalCenter.y),
+                pedestalSize,
+                occluderYaw,
+                pedestalSeed));
 
             return result;
         }

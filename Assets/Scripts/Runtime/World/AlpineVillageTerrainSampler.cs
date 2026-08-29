@@ -306,21 +306,14 @@ namespace BarPromenade
 
             float cutStart = cableway.StationArea.Size.y * 0.5f +
                              StationApron - TerrainCell * 0.5f;
-            float lastSupport = 0f;
-            for (int index = 0; index < cableway.Nodes.Count; index++)
-            {
-                if (cableway.Nodes[index].Kind ==
-                    MountainCablewayNodeKind.Support)
-                {
-                    lastSupport = Mathf.Max(
-                        lastSupport,
-                        cableway.Nodes[index].Distance);
-                }
-            }
-
-            float closeStart = lastSupport +
-                               CablewaySupportShelfHalfLength;
-            float closeEnd = cableway.UpperOccluderNearFaceDistance;
+            // The hill closes BEHIND the gallery now, not across the rope in
+            // front of it. The rope runs into a shed standing on the cut
+            // bed and the ground rises through the shed's back wall, so what
+            // the passenger sees at the cut is a dark mouth with the
+            // mountain over it - and the bed under the gallery's plinth is
+            // the same bed every pylon's shelf keeps.
+            float closeStart = cableway.UpperGalleryBackWallDistance - 1f;
+            float closeEnd = cableway.UpperGalleryHillClosureDistance;
             if (along > cutStart && alongCable < closeEnd &&
                 across < CablewayCutOuterHalfWidth)
             {

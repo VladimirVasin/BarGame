@@ -315,35 +315,81 @@ namespace BarPromenade
                                    Mathf.PI * TrackSeparation;
 
         /// <summary>
-        /// Where the far snow ridge that swallows the upper turn stands, in
-        /// the line's own frame.
+        /// The upper gallery: a shed at the top of the visible line that the
+        /// rope runs INTO, with the hidden turn inside it.
         ///
-        /// These two numbers used to be literals inside
-        /// `MountainRoadPlanner`, and the ride guessed its blackout
-        /// independently of them. That is the whole bug: the ridge is not
-        /// scenery that happens to be near the top, it is planted ON the
-        /// line, and the last `6.8 m` of the visible line - the upper turn
-        /// included - is inside solid rock BY DESIGN. A fade lead chosen
-        /// without them let the passenger ride `3.9 m` into the mountain with
-        /// his own eye, and a single-sided ridge has no back face, so what he
-        /// saw was the world straight through the rock.
+        /// For a week the top of this line was a snow ridge planted ACROSS
+        /// the rope, and the ride hid inside it - the screen went out a metre
+        /// before the cabin's nose touched the rock. It was measured to the
+        /// centimetre and it was still wrong, because from the platform,
+        /// from beside the towers and from the seat the picture was the same
+        /// one: a cableway driving straight into a mountain. What a real
+        /// line does at its top is enter a building. So the rock stands
+        /// BEHIND the turn now, and the last metres of rope run into a
+        /// timber gallery on a concrete plinth: the cut lands on its dark
+        /// mouth, and the mouth is where the mountain begins. The village
+        /// end of the other line is built by the same builder, so its
+        /// descent ends the same way, in a gallery with the hill closing
+        /// over its back.
         /// </summary>
-        public const float UpperOccluderSetback = 1.8f;
+        public const float UpperGalleryMouthSetback = 6.5f;
 
+        /// <summary>Half the clear width inside: two tracks `2.9 m` apart,
+        /// a `1.75 m` cabin on each, and better than `0.8 m` of air outside
+        /// it.</summary>
+        public const float UpperGalleryInteriorHalfWidth = 3.2f;
+
+        /// <summary>Roof clearance over the highest point of the rope
+        /// inside.</summary>
+        public const float UpperGalleryHeadroom = 1.4f;
+
+        /// <summary>Floor below the cabin's underside at the rope's lowest
+        /// point inside.</summary>
+        public const float UpperGalleryFloorDrop = 0.5f;
+
+        /// <summary>The back wall stands this far past the turn's far
+        /// edge.</summary>
+        public const float UpperGalleryBackClearance = 1.2f;
+
+        public const float UpperGalleryWallThickness = 0.35f;
+
+        /// <summary>
+        /// The concrete plinth under the floor. Deep on purpose: the gallery
+        /// stands on a rock whose drawn crest is a polygonal sine, so the
+        /// rock is lower under the walls than under the rope, and the plinth
+        /// has to reach down to it there with no daylight underneath.
+        /// </summary>
+        public const float UpperGalleryPlinthDepth = 2.4f;
+
+        /// <summary>
+        /// Where a scene closes with terrain rather than with a ridge - the
+        /// village - the hill has fully closed over the rope this far past
+        /// the back wall.
+        /// </summary>
+        public const float UpperGalleryHillClosureRamp = 4f;
+
+        /// <summary>The rock the mountain terminal stands its gallery on.
+        /// </summary>
+        public const string UpperPedestalStableId =
+            "far-snow-cableway-gallery-pedestal";
+
+        /// <summary>The rock behind the gallery, this thick along the
+        /// line.</summary>
         public const float UpperOccluderDepth = 10f;
 
         /// <summary>
-        /// Clear air between the cabin's leading face and the rock at the
-        /// moment the screen is fully out. Small on purpose: the ridge has to
-        /// FILL the frame when the cut lands, because a cabin that vanishes
-        /// in open air is a worse cut than no cut at all.
+        /// Clear air between the cabin's leading face and the gallery mouth
+        /// at the moment the screen is fully out. Small on purpose: the dark
+        /// mouth has to FILL the frame when the cut lands, because a cabin
+        /// that vanishes in open air is a worse cut than no cut at all.
         /// </summary>
         public const float UpperOccluderApproachClearance = 1f;
 
-        /// <summary>Where the ridge's near face crosses the track, in metres
-        /// along the line from the boarding station.</summary>
+        /// <summary>Where the rock behind the gallery begins, in metres
+        /// along the line from the boarding station: at the gallery's back
+        /// wall, never across the rope.</summary>
         public float UpperOccluderNearFaceDistance =>
-            LineLength - UpperOccluderSetback - UpperOccluderDepth * 0.5f;
+            UpperGalleryBackWallDistance;
 
         /// <summary>
         /// How far the cabin's roof slab oversails its body. The leading
@@ -361,21 +407,92 @@ namespace BarPromenade
 
         /// <summary>
         /// The last metre of line on which a cabin may still be on screen.
-        /// Past it the cabin's own roof is in the mountain.
+        /// Past it the cabin's own roof lip is through the gallery mouth.
         /// </summary>
         public float LastVisibleDistance =>
-            UpperOccluderNearFaceDistance -
+            UpperGalleryMouthDistance -
             CabinLeadingHalfLength -
             UpperOccluderApproachClearance;
 
         /// <summary>
-        /// How far the ridge's built crest has to stand over the cable where
-        /// the line crosses it. One number, two readers: the planner sizes
-        /// the ridge so this is true and the validator refuses a plan where
-        /// it is not, which is the only arrangement in which the rule cannot
-        /// come out true for seven seeds in eight and throw on the eighth.
+        /// How far the rock's built crest has to stand over the gallery ROOF
+        /// where the line's axis enters it. One number, two readers: the
+        /// planner sizes the ridge so this is true and the validator refuses
+        /// a plan where it is not, which is the only arrangement in which the
+        /// rule cannot come out true for seven seeds in eight and throw on
+        /// the eighth.
         /// </summary>
         public const float UpperOccluderCrestClearance = 2f;
+
+        /// <summary>Where the gallery mouth crosses the line, in metres from
+        /// the boarding station.</summary>
+        public float UpperGalleryMouthDistance =>
+            LineLength - UpperGalleryMouthSetback;
+
+        /// <summary>Where the back wall crosses the line's axis, past the
+        /// turn.</summary>
+        public float UpperGalleryBackWallDistance =>
+            LineLength + TurnRadius + UpperGalleryBackClearance;
+
+        public float UpperGalleryLength =>
+            UpperGalleryBackWallDistance - UpperGalleryMouthDistance;
+
+        public float UpperGalleryHillClosureDistance =>
+            UpperGalleryBackWallDistance + UpperGalleryHillClosureRamp;
+
+        public float UpperGalleryOuterHalfWidth =>
+            UpperGalleryInteriorHalfWidth + UpperGalleryWallThickness;
+
+        /// <summary>The rope's highest attachment inside the gallery, both
+        /// tracks, sag included.</summary>
+        public float UpperGalleryRopeTopY => SampleGalleryRope(true);
+
+        /// <summary>The rope's lowest attachment inside the gallery, both
+        /// tracks, sag included.</summary>
+        public float UpperGalleryRopeBottomY => SampleGalleryRope(false);
+
+        public float UpperGalleryFloorY =>
+            UpperGalleryRopeBottomY -
+            CabinAttachmentToBottom -
+            UpperGalleryFloorDrop;
+
+        public float UpperGalleryRoofY =>
+            UpperGalleryRopeTopY + UpperGalleryHeadroom;
+
+        /// <summary>
+        /// A point on the line's axis, the axis carried straight on past the
+        /// turn; only its XZ means anything past the end.
+        /// </summary>
+        public Vector3 LineAxisPoint(float distance)
+        {
+            return LowerCableCenter + LineForward * distance;
+        }
+
+        private float SampleGalleryRope(bool top)
+        {
+            float result = top
+                ? float.NegativeInfinity
+                : float.PositiveInfinity;
+            for (float distance = UpperGalleryMouthDistance;
+                 distance <= LineLength + 0.001f;
+                 distance += 0.5f)
+            {
+                float clamped = Mathf.Min(distance, LineLength);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    float y = MountainCablewayMotion.SampleTrackPosition(
+                        this,
+                        clamped,
+                        side).y;
+                    result = top
+                        ? Mathf.Max(result, y)
+                        : Mathf.Min(result, y);
+                }
+            }
+
+            float end = UpperCableCenter.y;
+            return top ? Mathf.Max(result, end) : Mathf.Min(result, end);
+        }
 
         /// <summary>
         /// A step into the cabin, not a climb. The cabin floor hangs `0.87 m`
