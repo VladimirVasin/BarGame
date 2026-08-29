@@ -9,11 +9,23 @@ namespace BarPromenade
         public const float VehicleTurningRadius = 7.5f;
         public const float CafeHeight = 4.4f;
         public const float CafeDoorWidth = 1.6f;
-        public const float CablewayLineLength = 58f;
+        /// <summary>
+        /// The visible line runs on past the scene's draw range - the
+        /// mountain road draws `120 m`, the village `140 m` - so that from
+        /// the platform and from the seat the rope simply dissolves into the
+        /// haze and the far turn is clipped before it is drawn. The ride's
+        /// cut lands at `RideCutDistance`, mid-span, with better than a far
+        /// plane of rope still ahead of it.
+        /// </summary>
+        public const float CablewayLineLength = 230f;
+
         public const float CablewayTrackSeparation = 2.9f;
         public const float CablewayCabinSpeed = 2.05f;
-        public const string CablewayOccluderStableId =
-            "far-snow-cableway-occluder";
+
+        /// <summary>Eight on a `470 m` loop: a descending cabin passes the
+        /// passenger about every half minute, which is what keeps a line
+        /// this long from reading as a rope to nowhere.</summary>
+        public const int CablewayCabinCount = 8;
 
         public static MountainRoadTerminalPlan Create(
             MountainRoadRoutePlan route,
@@ -130,25 +142,26 @@ namespace BarPromenade
                 15.86f,
                 4f,
                 9.60f);
-            // The last tower stood at `50`, and the ridge that swallows the
-            // upper turn has its near face at `51.2` - a pylon erected one
-            // metre from a cliff, which is not a thing anybody builds, and it
-            // left no room at all for the ride's own cut. The blackout has to
-            // finish before the cabin reaches the rock AND start after the
-            // last tower is passed; between `50` and `51.2` both cannot be
-            // true, which is why the cabin used to drive into the mountain in
-            // plain sight. At `44` the final span is `14 m` - the same order
-            // as the others - the tower stands `7 m` clear of the face, and
-            // the cut lands in the open with the snow already filling it.
-            float[] distances = { 0f, 18f, 37f, 44f, 58f };
-            float[] heights =
+            // The first four nodes are the climb out of the terminal as it
+            // has always been; past them the rope goes on up the mountainside
+            // at about the ground's own grade (`0.154` per metre along the
+            // line, measured), so every tower stands `14-19 m` tall and the
+            // cabin keeps `14 m` or more of air, until the turn at `230` -
+            // nearly two far planes out from the cut at `73`.
+            float[] distances =
             {
-                lower.y,
-                lower.y + 14.3f,
-                lower.y + 19.3f,
-                lower.y + 21.2f,
-                lower.y + 24.8f
+                0f, 18f, 37f, 44f, 62f, 84f, 110f, 138f, 168f, 200f, 230f
             };
+            float[] rises =
+            {
+                0f, 14.3f, 19.3f, 21.2f, 24.0f, 27.0f, 30.3f, 33.6f, 37.0f,
+                41.0f, 44.5f
+            };
+            var heights = new float[rises.Length];
+            for (int index = 0; index < rises.Length; index++)
+            {
+                heights[index] = lower.y + rises[index];
+            }
             var nodes = new List<MountainCablewayNodeDescriptor>(
                 distances.Length);
             for (int index = 0; index < distances.Length; index++)
@@ -180,12 +193,13 @@ namespace BarPromenade
                     ground));
             }
 
-            var cabins = new List<MountainCablewayCabinDescriptor>(4);
-            for (int index = 0; index < 4; index++)
+            var cabins = new List<MountainCablewayCabinDescriptor>(
+                CablewayCabinCount);
+            for (int index = 0; index < CablewayCabinCount; index++)
             {
                 cabins.Add(new MountainCablewayCabinDescriptor(
                     $"cableway-cabin-{index:00}",
-                    index / 4f));
+                    index / (float)CablewayCabinCount));
             }
 
             return new MountainRoadCablewayPlan(
@@ -198,8 +212,7 @@ namespace BarPromenade
                 CablewayCabinSpeed,
                 new Vector3(1.75f, 2.05f, 1.55f),
                 nodes,
-                cabins,
-                CablewayOccluderStableId);
+                cabins);
         }
 
         internal static Vector3 LocalToWorld(

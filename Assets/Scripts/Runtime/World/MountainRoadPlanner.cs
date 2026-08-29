@@ -1307,101 +1307,70 @@ namespace BarPromenade
                     seed + 2000 + index * 131));
             }
 
-            // The rock BEHIND the upper gallery. It used to be planted
-            // across the rope with the turn inside it, and from every
-            // viewpoint the line simply drove into a mountain; now it begins
-            // at the gallery's back wall - the plan's own distance, which the
-            // ride reads too - and its crest stands over the gallery's roof.
+            // Nothing stands across the line. The rope runs on past the
+            // draw range now - there is no rock at the top and no building,
+            // because there is no top to see - so a perimeter ridge whose
+            // drawn crest would reach into the cabin's path is simply not
+            // built: the rings part where the line goes through, which is
+            // what a pass looks like from a cabin.
             MountainRoadCablewayPlan cableway = terminal.Cableway;
-            Vector3 lowerCable = cableway.LowerCableCenter;
-            float occluderAlong = cableway.UpperOccluderNearFaceDistance +
-                                  MountainRoadCablewayPlan.UpperOccluderDepth *
-                                  0.5f;
-            Vector2 occluderCenter = new Vector2(
-                lowerCable.x + cableway.LineForward.x * occluderAlong,
-                lowerCable.z + cableway.LineForward.z * occluderAlong);
-            float occluderYaw = Mathf.Atan2(
-                -cableway.LineForward.x,
-                -cableway.LineForward.z) * Mathf.Rad2Deg;
-            Vector3 occluderSize = new Vector3(
-                30f,
-                33f,
-                MountainRoadCablewayPlan.UpperOccluderDepth);
-            float occluderBase = CalculateRidgeBaseY(
-                route,
-                plateau,
-                occluderCenter,
-                occluderSize,
-                occluderYaw);
-            // Sized against the crest that gets DRAWN, not against the lid of
-            // the box it is authored in. The two are far apart - a ridge is a
-            // polygonal sine and its middle sits about `14%` of the box below
-            // the lid - and the variation is a seeded eighth, so a ridge that
-            // clears the cable on seven seeds sits `0.34 m` under it on the
-            // eighth. Solving for the drawn crest costs `0.41 m` of height on
-            // that one seed and nothing at all on the others.
-            int occluderSeed = seed + 4099;
-            float crestFactor = MountainRoadRidgeGeometry.CrestFactor(
-                occluderSeed,
-                0.5f);
-            occluderSize.y = Mathf.Max(
-                occluderSize.y,
-                (cableway.UpperGalleryRoofY +
-                 MountainRoadCablewayPlan.UpperOccluderCrestClearance +
-                 0.25f -
-                 occluderBase) / crestFactor);
-            result.Add(new MountainRoadRidgeDescriptor(
-                cableway.UpperOccluderStableId,
-                MountainRoadRidgeLayer.FarSnow,
-                new Vector3(
-                    occluderCenter.x,
-                    occluderBase + occluderSize.y * 0.5f,
-                    occluderCenter.y),
-                occluderSize,
-                occluderYaw,
-                occluderSeed));
-
-            // And the rock the gallery stands on: a snow shoulder under the
-            // whole shed, its drawn crest solved to sit just under the floor
-            // slab at the line. The crest is a polygonal sine across the
-            // ridge, so it is lower under the walls than under the rope,
-            // which is what the plinth's depth is for.
-            float pedestalAlong =
-                (cableway.UpperGalleryMouthDistance +
-                 cableway.UpperGalleryBackWallDistance) * 0.5f;
-            Vector2 pedestalCenter = new Vector2(
-                lowerCable.x + cableway.LineForward.x * pedestalAlong,
-                lowerCable.z + cableway.LineForward.z * pedestalAlong);
-            Vector3 pedestalSize = new Vector3(
-                30f,
-                1f,
-                cableway.UpperGalleryLength + 2.4f);
-            float pedestalBase = CalculateRidgeBaseY(
-                route,
-                plateau,
-                pedestalCenter,
-                pedestalSize,
-                occluderYaw);
-            int pedestalSeed = seed + 5233;
-            float pedestalCrestFactor = MountainRoadRidgeGeometry.CrestFactor(
-                pedestalSeed,
-                0.5f);
-            pedestalSize.y = Mathf.Max(
-                1f,
-                (cableway.UpperGalleryFloorY - 0.4f - pedestalBase) /
-                pedestalCrestFactor);
-            result.Add(new MountainRoadRidgeDescriptor(
-                MountainRoadCablewayPlan.UpperPedestalStableId,
-                MountainRoadRidgeLayer.FarSnow,
-                new Vector3(
-                    pedestalCenter.x,
-                    pedestalBase + pedestalSize.y * 0.5f,
-                    pedestalCenter.y),
-                pedestalSize,
-                occluderYaw,
-                pedestalSeed));
+            for (int index = result.Count - 1; index >= 0; index--)
+            {
+                if (StandsAcrossTheLine(result[index], cableway))
+                {
+                    result.RemoveAt(index);
+                }
+            }
 
             return result;
+        }
+
+        /// <summary>Clear air a ridge's drawn crest must leave under the
+        /// cabin's underside wherever the ridge's footprint holds a track
+        /// point.</summary>
+        public const float RidgeCabinClearance = 3f;
+
+        /// <summary>
+        /// Whether a ridge's drawn crest reaches into the band a cabin sweeps
+        /// along either track. Against the crest that is BUILT, not the box
+        /// it is authored in, and sampled every metre of the line.
+        /// </summary>
+        public static bool StandsAcrossTheLine(
+            MountainRoadRidgeDescriptor ridge,
+            MountainRoadCablewayPlan cableway)
+        {
+            for (float distance = 0f;
+                 distance <= cableway.LineLength;
+                 distance += 1f)
+            {
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Vector3 attachment =
+                        MountainCablewayMotion.SampleTrackPosition(
+                            cableway,
+                            distance,
+                            side);
+                    if (!MountainRoadRidgeGeometry.TryGetCrossing(
+                            ridge,
+                            attachment,
+                            out float amount))
+                    {
+                        continue;
+                    }
+
+                    float crest = MountainRoadRidgeGeometry.CrestWorldY(
+                        ridge,
+                        amount);
+                    if (crest > attachment.y -
+                        cableway.CabinAttachmentToBottom -
+                        RidgeCabinClearance)
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
         }
 
         private static MountainRoadRidgeDescriptor CreateGroundedRidge(

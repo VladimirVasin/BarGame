@@ -550,8 +550,19 @@ namespace BarPromenade
             // one metre off the pad and stayed under the ground the terrain
             // can honestly cut. The total fall is unchanged at `24 m`; it is
             // spread the way a mountain line actually falls.
-            float[] distances = { 0f, 16f, 34f, 48f, 58f };
-            float[] drops = { 0f, -2f, -11f, -18.5f, -24f };
+            // And past the brink the rope goes on down the mountainside at
+            // about the slope's own fall, to a turn nearly two far planes
+            // beyond the cut: from the platform and from the seat the line
+            // dissolves into the haze and never shows an end.
+            float[] distances =
+            {
+                0f, 16f, 34f, 48f, 62f, 84f, 110f, 138f, 168f, 200f, 230f
+            };
+            float[] drops =
+            {
+                0f, -2f, -11f, -18.5f, -23.5f, -25.2f, -27.2f, -29.2f,
+                -31.4f, -33.6f, -35.7f
+            };
             var nodes = new List<MountainCablewayNodeDescriptor>(
                 distances.Length);
             for (int index = 0; index < distances.Length; index++)
@@ -587,12 +598,13 @@ namespace BarPromenade
                     ground));
             }
 
-            var cabins = new List<MountainCablewayCabinDescriptor>(4);
-            for (int index = 0; index < 4; index++)
+            int cabinCount = MountainRoadTerminalPlanner.CablewayCabinCount;
+            var cabins = new List<MountainCablewayCabinDescriptor>(cabinCount);
+            for (int index = 0; index < cabinCount; index++)
             {
                 cabins.Add(new MountainCablewayCabinDescriptor(
                     $"village-cableway-cabin-{index:00}",
-                    index / 4f));
+                    index / (float)cabinCount));
             }
 
             var cableway = new MountainRoadCablewayPlan(
@@ -605,8 +617,7 @@ namespace BarPromenade
                 MountainRoadTerminalPlanner.CablewayCabinSpeed,
                 new Vector3(1.75f, 2.05f, 1.55f),
                 nodes,
-                cabins,
-                "village-cableway-ridge-occluder");
+                cabins);
 
             return new AlpineVillageStationPlan(
                 padArea,
@@ -685,16 +696,12 @@ namespace BarPromenade
                     ref minX, ref maxX, ref minZ, ref maxZ);
             }
 
-            // Continue beyond the hidden turn. Otherwise the last sampled row
-            // is the turn itself and the player can see the world end through
-            // the single-sided crest as the cabin reaches the blackout.
-            float pastTurn = Mathf.Max(
-                AlpineVillageTerrainSampler.RidgeCrestDepth,
-                cableway.UpperGalleryHillClosureDistance -
-                cableway.LineLength +
-                AlpineVillageTerrainSampler.TerrainCell);
+            // Continue a little beyond the far turn, so the last towers
+            // stand on ground rather than on the mesh's last row. The turn
+            // itself is past the draw range and is never seen.
             Vector3 beyondTurn = cableway.UpperCableCenter +
-                                 cableway.LineForward * pastTurn;
+                                 cableway.LineForward *
+                                 AlpineVillageTerrainSampler.RidgeCrestDepth;
             Include(
                 beyondTurn.x,
                 beyondTurn.z,

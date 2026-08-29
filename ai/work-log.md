@@ -48,7 +48,78 @@ Residential, Industrial and Nightlife all show warm atlas-detailed panes on
 lower and upper rows with dark gaps between them. No broad Unity suite, player
 build or startup smoke was run.
 
+## 2026-08-29 — The cableway has no end to see: the rope runs out past the draw range
+
+The user changed the paradigm, and it is the right one: the cableway's end
+must never be seen, going up or coming down. The line should dissolve into
+the distance beyond the draw range, and the load happens somewhere on a
+journey that visibly went on - which is what makes it feel long. He hoped
+the draw range was the city's everywhere; it is not. The city draws `48 m`
+under `0.070` fog, the mountain road `120 m` under `0.026`, the village
+`140 m` under `0.0145` - each chosen for its own views. So "beyond the draw
+range" is a real distance per scene, and the line has to run that far.
+
+- **Both lines are `230 m` now, up from `58`.** The mountain's first four
+  nodes are the climb out of the terminal as authored; past them the rope
+  goes on at about the ground's own grade (`0.154` per metre along the
+  line, measured), towers every `22-34 m` standing `14-19 m` tall, the
+  cabin never under `14 m` of air, and the turn at `230`. The village's
+  first four nodes are the brink descent as authored; past them the rope
+  follows the slope's own fall. Eight cabins on a `470 m` loop, so a
+  descending cabin passes about every half minute.
+- **The cut is a plain distance**: `RideCutDistance = 73 m`, mid-span
+  (`RideCutTowerClearance 6 m` from any tower), `35 s` of riding at
+  `2.05 m/s`, with `157 m` of rope still ahead - more than either scene's
+  far plane plus `HiddenRunMargin 10`. `LastVisibleDistance` is that
+  constant and the ride controller is untouched; the far turn is clipped
+  before it is ever drawn, from the platform and from the seat alike.
+- **Nothing dressed to be looked at.** The occluder ridge, the gallery and
+  its pedestal are gone; `BuildFarTurnBeyondTheHaze` is a bullwheel and a
+  frame nobody sees. `MountainRoadPlanner.StandsAcrossTheLine` drops any
+  perimeter ridge whose drawn crest would come within `3 m` of the cabin's
+  underside on either track, so the mid and far rings part where the rope
+  goes through - a pass, seen from a cabin - and the terminal validator
+  refuses a plan where one did not. The mountain's terrain envelope already
+  followed the cable end and grows with it.
+- **The village's cut is a valley, not a slot.** Core half-width `7 m`,
+  blend `12 m` (was `5.2` / `3`), and the hill never closes over the rope
+  again: the cut follows the rope to the end of the mesh.
+- Tests rewritten around the new rule: the cut mid-span with the far turn
+  beyond each scene's far plane, on both lines; no ridge across the line on
+  every seed residue; the builder ending the line with a bare far turn and
+  neither a gallery nor a rock; counts of cabins, towers and voices derived
+  from the plan; the village descent flying to the end. The capture series
+  now frames the eye at `20-120 m`.
+
+Verification: headless EditMode over every `MountainCableway*`, `MountainRoad*`,
+`AlpineVillage*` and `CityMapMountain*` class on `6000.5.10f1`: `103 / 106`.
+Green among them: the rewritten cut test on both lines against each scene's
+own far plane, the eight-seed sweep proving no ridge crosses the visible line,
+the builder ending the line with a bare far turn, the derived cabin/tower/voice
+counts and the village descent flying to the end. The reds: the two
+pre-existing ones (`VisiblePaths_CarryEveryPermittedBranch` on a path
+half-width; `TerrainMesh_BuildsTheRidgeAndTheCablewayBrink` by `0.16 m` of
+mesh-versus-sampler interpolation at `support-01`, the recorded sibling
+tail) and `DefaultPlan_BuildsAbsurdHighTenHairpinBridgeWorld`, whose `150`
+renderer budget was the `58 m` line's - nine towers and eight cabins draw
+`251` - now scaled to the plan (`60 + 22/tower + 12/cabin`) but not yet
+re-run. Two earlier runs of the same selection failed `34` tests apiece on the
+terminal validator's own pins (`5` nodes, `4` cabins, `58 m`; a five-entry
+node-kind table), both relaxed to the planner's constants. NOT run at the
+time of writing: the cableway PlayMode classes and the capture series - a
+parallel session's `Player3DFacialAtlasTests.cs` did not compile (`Array`,
+`BaseColorId`) for the whole half hour those runs were attempted, and one
+uncompilable file aborts every batch run. Both are queued behind that fix;
+the ride controller is untouched by this change and the geometry the
+captures would show is what the EditMode sweep proves.
+
 ## 2026-08-29 — The cableway drove into a mountain, and the fix had timed the crash
+
+**Superseded the same day - see the entry above.** The gallery below was
+built, tested and committed (`ad50d80`), and it was still an END within
+sight of the passenger; the paradigm changed to a line with no visible end
+at all. What follows is what was true when it was written.
+
 
 The user came back angry: the cableway still goes straight through the
 mountain, at least on the way up, and he had asked for it to be fixed. He

@@ -580,10 +580,17 @@ namespace BarPromenade.Tests.EditMode
                     Is.LessThan(280),
                     "The cafe tableau exceeded its broad-strokes MVP " +
                     "renderer budget.");
+                // A `230 m` line now: nine towers and eight cabins, each a
+                // handful of boxes, so the budget follows the plan rather
+                // than the old `58 m` line's `150`.
+                int cablewayRenderers = result.Cableway.Root
+                    .GetComponentsInChildren<MeshRenderer>(true).Length;
                 Assert.That(
-                    result.Cableway.Root
-                        .GetComponentsInChildren<MeshRenderer>(true).Length,
-                    Is.LessThan(150),
+                    cablewayRenderers,
+                    Is.LessThan(
+                        60 +
+                        (22 * result.Cableway.Supports.Count) +
+                        (12 * result.Cableway.Cabins.Count)),
                     "The operating cableway exceeded its low-poly MVP " +
                     "renderer budget.");
 

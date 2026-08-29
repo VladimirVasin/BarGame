@@ -65,8 +65,13 @@ namespace BarPromenade.Tests.EditMode
                     MountainCablewayWorldBuilder.Build(
                         host.transform,
                         plan);
-                Assert.That(result.Cabins, Has.Count.EqualTo(4));
-                Assert.That(result.Supports, Has.Count.EqualTo(3));
+                Assert.That(
+                    result.Cabins,
+                    Has.Count.EqualTo(
+                        MountainRoadTerminalPlanner.CablewayCabinCount));
+                int supportCount = plan.Nodes.Count(
+                    node => node.Kind == MountainCablewayNodeKind.Support);
+                Assert.That(result.Supports, Has.Count.EqualTo(supportCount));
                 Assert.That(result.StationLight.shadows,
                     Is.EqualTo(LightShadows.None));
                 // Three: the lens over the pad, the flood on the outer
@@ -79,8 +84,10 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     result.Root.GetComponentsInChildren<Light>(true),
                     Has.Length.EqualTo(3));
+                // The motor, the lower bullwheel's clack and one clack per
+                // tower's rollers: every voice a visible machine's.
                 Assert.That(result.Controller.AudioSources,
-                    Has.Count.EqualTo(5));
+                    Has.Count.EqualTo(2 + supportCount));
                 Assert.That(
                     result.StationRoot.GetComponentsInChildren<Collider>(true)
                         .Length,

@@ -103,9 +103,16 @@ namespace BarPromenade
         /// feet and one terrain cell, so the triangles bracketing a foot are
         /// on the same ground rather than pulling it up the side wall.
         /// </summary>
-        internal const float CablewayCutCoreHalfWidth = 5.2f;
+        /// <summary>
+        /// The cut under the rope is a valley now, not a slot: the line runs
+        /// on for a far plane and more, and a `16 m` trench that deep reads
+        /// as a canyon from the seat. The core carries both tracks and their
+        /// cabins with air to spare; the blend brings the walls in at a slope
+        /// a mountainside actually has.
+        /// </summary>
+        internal const float CablewayCutCoreHalfWidth = 7f;
 
-        internal const float CablewayCutBlendWidth = 3f;
+        internal const float CablewayCutBlendWidth = 12f;
 
         internal const float CablewayCutOuterHalfWidth =
             CablewayCutCoreHalfWidth + CablewayCutBlendWidth;
@@ -290,7 +297,7 @@ namespace BarPromenade
             // `along` is measured from the STATION PAD'S CENTRE, because that
             // is what the cut's own entrance is measured from. Every distance
             // it gets compared against - node distances, the last support,
-            // `UpperOccluderNearFaceDistance` - is measured along the CABLE,
+            // the line's own length - is measured along the CABLE,
             // and the cable starts `1.9 m` forward of the pad centre. Left
             // unconverted the whole descent profile was read `1.9 m` early:
             // each pylon's shelf sat short of its own legs (its sampled
@@ -306,25 +313,19 @@ namespace BarPromenade
 
             float cutStart = cableway.StationArea.Size.y * 0.5f +
                              StationApron - TerrainCell * 0.5f;
-            // The hill closes BEHIND the gallery now, not across the rope in
-            // front of it. The rope runs into a shed standing on the cut
-            // bed and the ground rises through the shed's back wall, so what
-            // the passenger sees at the cut is a dark mouth with the
-            // mountain over it - and the bed under the gallery's plinth is
-            // the same bed every pylon's shelf keeps.
-            float closeStart = cableway.UpperGalleryBackWallDistance - 1f;
-            float closeEnd = cableway.UpperGalleryHillClosureDistance;
-            if (along > cutStart && alongCable < closeEnd &&
+            // The hill never closes over the rope any more. The line runs
+            // on down the mountainside past the scene's draw range and is
+            // clipped before it turns, so the cut simply follows the rope
+            // to the end of the mesh: the bed every pylon's shelf keeps,
+            // carried on until there is nothing left to draw.
+            float cutEnd = cableway.LineLength + RidgeCrestDepth;
+            if (along > cutStart && alongCable < cutEnd &&
                 across < CablewayCutOuterHalfWidth)
             {
                 float entranceWeight = SmoothRange(
                     cutStart,
                     cutStart + CablewayCutRampLength,
                     along);
-                float closingWeight = 1f - SmoothRange(
-                    closeStart,
-                    closeEnd,
-                    alongCable);
                 float lateralWeight = 1f - SmoothRange(
                     CablewayCutCoreHalfWidth,
                     CablewayCutOuterHalfWidth,
@@ -332,9 +333,7 @@ namespace BarPromenade
                 float cutGround = SampleCablewayGround(
                     cableway,
                     alongCable);
-                float cutWeight = entranceWeight *
-                                  closingWeight *
-                                  lateralWeight;
+                float cutWeight = entranceWeight * lateralWeight;
                 enclosedHeight = Mathf.Lerp(
                     enclosedHeight,
                     Mathf.Min(enclosedHeight, cutGround),

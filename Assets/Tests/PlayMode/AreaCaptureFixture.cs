@@ -303,9 +303,10 @@ namespace BarPromenade.Tests.PlayMode
 
         /// <summary>
         /// The cableway climb as the passenger sees it: up the line from
-        /// the platform, the top from beside the line, and the first-person
-        /// eye on the last metres before the cut. This is the series that
-        /// showed the old rock planted across the rope for what it was.
+        /// the platform, the line from beside the towers, and the
+        /// first-person eye along the ride up to and past the cut. This is
+        /// the series that showed the old rock planted across the rope for
+        /// what it was; now it has to show a rope with no end.
         /// </summary>
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
@@ -339,23 +340,23 @@ namespace BarPromenade.Tests.PlayMode
             shots.Add(Shot.At(
                 "c0-platform-up-the-line",
                 platformEye,
-                MountainCablewayMotion.SampleTrackPosition(cableway, 40f, 1),
+                MountainCablewayMotion.SampleTrackPosition(cableway, 70f, 1),
                 62f));
             Vector3 side = MountainCablewayMotion.SampleTrackPosition(cableway, 30f, 1) -
                            right * 16f + Vector3.down * 5f;
             shots.Add(Shot.At(
                 "c1-side-view-of-the-top",
                 side,
-                MountainCablewayMotion.SampleTrackPosition(cableway, 52f, 1),
+                MountainCablewayMotion.SampleTrackPosition(cableway, 90f, 1),
                 58f));
             Vector3 sideLow = MountainCablewayMotion.SampleTrackPosition(cableway, 44f, 1) +
                               right * 18f + Vector3.down * 8f;
             shots.Add(Shot.At(
                 "c2-right-side-of-the-top",
                 sideLow,
-                MountainCablewayMotion.SampleTrackPosition(cableway, 53f, 1),
+                MountainCablewayMotion.SampleTrackPosition(cableway, 110f, 1),
                 58f));
-            float[] eyes = { 30f, 40f, 46f, 49.4f, 50.4f, 51.3f, 53f };
+            float[] eyes = { 20f, 45f, 65f, 73f, 90f, 120f };
             for (int index = 0; index < eyes.Length; index++)
             {
                 float d = eyes[index];

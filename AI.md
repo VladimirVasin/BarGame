@@ -136,9 +136,11 @@ The terrain margin is `76 m`; ordinary mid/far ridges ring the outer perimeter
 of the route-wide envelope, ground their bases from the minimum terrain under
 each footprint and keep those footprints clear of the road and trees. An
 enterable five-sided glass cafe with its dedicated silent four-role cast
-occupies the left side; a continuously operating `58 m`
-cableway with three supports and four cabins climbs from the right side into an
-occluding snow ridge. Cafe and cableway heights are now based on the raised
+occupies the left side; a `230 m`
+cableway with nine supports and eight cabins climbs from the right side into the
+haze - its far turn stands beyond the scene's `120 m` draw range and is never
+seen, and the ride cuts to black mid-span at `73 m` on nothing at all. Cafe and
+cableway heights are now based on the raised
 terminal instead of old absolute world heights. Both are built inside the
 Mountain Road world, not as additional scenes, and add only sounds owned by
 visible appliances, machinery and roller crossings. Their landmarks come from

@@ -227,15 +227,42 @@ namespace BarPromenade.Tests.EditMode
             float inside = AlpineVillageTerrainSampler.SampleHeight(
                 plan,
                 new Vector2(plan.Lane.Start.x, plan.Lane.Start.z));
+            MountainRoadCablewayPlan cableway = plan.Station.Cableway;
+            Vector2 origin = new Vector2(
+                cableway.StationArea.Center.x,
+                cableway.StationArea.Center.z);
+            Vector2 lineForward = new Vector2(
+                cableway.LineForward.x,
+                cableway.LineForward.z).normalized;
+            Vector2 lineRight = new Vector2(
+                cableway.LineRight.x,
+                cableway.LineRight.z).normalized;
             for (int index = 0; index < outward.Length; index++)
             {
+                // The one honest opening: the cableway's valley leaves the
+                // bowl on its own side, and the rope inside it runs out of
+                // the draw range rather than into a wall. A sample standing
+                // in the valley is moved to the valley's shoulder, where the
+                // ridge has to be as real as on the other three sides.
+                Vector2 sample = outward[index];
+                Vector2 delta = sample - origin;
+                float across = Vector2.Dot(delta, lineRight);
+                if (Vector2.Dot(delta, lineForward) > 0f &&
+                    Mathf.Abs(across) <
+                    AlpineVillageTerrainSampler.CablewayCutOuterHalfWidth + 4f)
+                {
+                    sample += lineRight * (Mathf.Sign(across == 0f ? 1f : across) *
+                        (AlpineVillageTerrainSampler.CablewayCutOuterHalfWidth +
+                         10f - Mathf.Abs(across)));
+                }
+
                 float height = AlpineVillageTerrainSampler.SampleHeight(
                     plan,
-                    outward[index]);
+                    sample);
                 Assert.That(
                     height - inside,
                     Is.GreaterThan(8f),
-                    $"The village is open at {outward[index]}.");
+                    $"The village is open at {sample}.");
             }
 
             // And the wall is real geometry, not the mask doing the work: the
@@ -280,8 +307,14 @@ namespace BarPromenade.Tests.EditMode
             float lastVisible = cableway.LastVisibleDistance;
             Assert.That(
                 lastVisible,
-                Is.GreaterThan(cableway.LineLength * 0.5f),
-                "More than half the descent is cut away unseen.");
+                Is.GreaterThan(60f),
+                "The descent is over before it has been a ride.");
+            Assert.That(
+                cableway.HiddenRunMeters,
+                Is.GreaterThanOrEqualTo(
+                    RuntimeSceneSetup.AlpineVillageFarClipPlane +
+                    MountainRoadCablewayPlan.HiddenRunMargin),
+                "The far turn stands inside the village's draw range.");
 
             float worst = float.MaxValue;
             float worstAt = 0f;
@@ -337,34 +370,37 @@ namespace BarPromenade.Tests.EditMode
                 "Off the apron the cabin must genuinely fly; worst " +
                 $"{worstAway} m at d={worstAwayAt}.");
 
-            // And the line ends in a building, not in the hillside: the
-            // gallery's mouth stands in the open on the cut bed - it is what
-            // the cut lands on - and the mountain closes over the rope
-            // BEHIND it, through its back wall.
-            Vector3 mouthPoint = cableway.LineAxisPoint(
-                cableway.UpperGalleryMouthDistance);
-            float mouthGround = AlpineVillageTerrainSampler.SampleHeight(
-                plan,
-                new Vector2(mouthPoint.x, mouthPoint.z));
-            Assert.That(
-                mouthGround,
-                Is.LessThan(cableway.UpperGalleryRoofY - 3f),
-                "The hill has swallowed the gallery mouth.");
-            Assert.That(
-                mouthGround,
-                Is.GreaterThan(
-                    cableway.UpperGalleryFloorY -
-                    MountainRoadCablewayPlan.UpperGalleryPlinthDepth),
-                "The gallery plinth hangs in the air at the mouth.");
-            Vector3 closed = cableway.LineAxisPoint(
-                cableway.UpperGalleryHillClosureDistance);
-            Assert.That(
-                AlpineVillageTerrainSampler.SampleHeight(
-                    plan,
-                    new Vector2(closed.x, closed.z)),
-                Is.GreaterThan(cableway.UpperCableCenter.y + 2f),
-                "The mountain has not closed over the rope behind the " +
-                "gallery.");
+            // And the line never ends in anything: past the cut the cabin
+            // goes on flying over its own bed all the way to the turn, which
+            // stands beyond the draw range. The hill closing over the rope
+            // was the old cut's whole idea; a mountainside rising back over
+            // a rope the passenger has watched run into the haze would be a
+            // wall at the end of a road that claimed to have none.
+            for (float distance = lastVisible;
+                 distance <= cableway.LineLength;
+                 distance += 1f)
+            {
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Vector3 attachment =
+                        MountainCablewayMotion.SampleTrackPosition(
+                            cableway,
+                            distance,
+                            side);
+                    float ground = AlpineVillageTerrainSampler.SampleHeight(
+                        plan,
+                        new Vector2(attachment.x, attachment.z));
+                    // Half a metre: the long spans past the cut sag the
+                    // full `0.82 m` against a bed cut on the chord, and
+                    // nobody sees this stretch - it only has to be air.
+                    Assert.That(
+                        attachment.y - cableway.CabinAttachmentToBottom -
+                        ground,
+                        Is.GreaterThan(0.5f),
+                        "The mountain closes over the rope past the cut at " +
+                        $"d={distance}.");
+                }
+            }
         }
 
         [Test]
@@ -475,23 +511,19 @@ namespace BarPromenade.Tests.EditMode
                         $"The built mesh floats under {node.StableId}.");
                 }
 
-                Vector3 closedPoint = cableway.LineAxisPoint(
-                    cableway.UpperGalleryHillClosureDistance);
                 var farRay = new Ray(
-                    closedPoint + Vector3.up * 100f,
+                    cableway.UpperCableCenter + Vector3.up * 100f,
                     Vector3.down);
                 Assert.That(
                     collider.Raycast(farRay, out RaycastHit farHit, 200f),
                     Is.True,
-                    "There is no physical mountain behind the gallery.");
+                    "There is no physical ground under the far turn.");
                 Assert.That(
                     farHit.point.y,
-                    Is.GreaterThan(
-                        cableway.UpperCableCenter.y +
-                        MountainRoadCablewayPlan
-                            .UpperOccluderCrestClearance),
-                    "The built hill has not closed over the rope behind " +
-                    "the gallery.");
+                    Is.LessThan(
+                        cableway.UpperCableCenter.y -
+                        cableway.CabinAttachmentToBottom),
+                    "The built mesh rises into the cabin at the far turn.");
             }
             finally
             {

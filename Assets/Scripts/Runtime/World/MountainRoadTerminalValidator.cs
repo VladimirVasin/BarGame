@@ -135,9 +135,11 @@ namespace BarPromenade
             MountainRoadVehicleApronPlan apron)
         {
             if (string.IsNullOrWhiteSpace(cableway.StableId) ||
-                cableway.Nodes.Count != 5 ||
-                cableway.Cabins.Count != 4 ||
-                cableway.LineLength < 57.9f ||
+                cableway.Nodes.Count < 5 ||
+                cableway.Cabins.Count !=
+                MountainRoadTerminalPlanner.CablewayCabinCount ||
+                cableway.LineLength <
+                MountainRoadTerminalPlanner.CablewayLineLength - 0.1f ||
                 cableway.TrackSeparation < 2.89f ||
                 cableway.CabinSpeed <= 0f)
             {
@@ -195,20 +197,19 @@ namespace BarPromenade
             float previousDistance = -1f;
             float previousHeight = float.NegativeInfinity;
             var nodeIds = new HashSet<string>(StringComparer.Ordinal);
-            MountainCablewayNodeKind[] expectedKinds =
-            {
-                MountainCablewayNodeKind.LowerStation,
-                MountainCablewayNodeKind.Support,
-                MountainCablewayNodeKind.Support,
-                MountainCablewayNodeKind.Support,
-                MountainCablewayNodeKind.UpperTurn
-            };
             for (int index = 0; index < cableway.Nodes.Count; index++)
             {
                 MountainCablewayNodeDescriptor node = cableway.Nodes[index];
+                // The station, then towers - as many as the line needs to
+                // run out past the draw range - then the far turn.
+                MountainCablewayNodeKind expectedKind = index == 0
+                    ? MountainCablewayNodeKind.LowerStation
+                    : index == cableway.Nodes.Count - 1
+                        ? MountainCablewayNodeKind.UpperTurn
+                        : MountainCablewayNodeKind.Support;
                 if (string.IsNullOrWhiteSpace(node.StableId) ||
                     !nodeIds.Add(node.StableId) ||
-                    node.Kind != expectedKinds[index] ||
+                    node.Kind != expectedKind ||
                     node.Distance <= previousDistance ||
                     node.CableCenter.y < previousHeight - 0.01f)
                 {
@@ -302,147 +303,60 @@ namespace BarPromenade
                 }
             }
 
-            MountainRoadRidgeDescriptor occluder = FindRidge(
-                plan,
-                cableway.UpperOccluderStableId,
-                out bool foundOccluder);
-            if (!foundOccluder)
+            // Nothing stands across the visible line, on either track: the
+            // planner leaves the rings open where the rope goes through, and
+            // this is the reader that refuses a plan where it did not.
+            for (int index = 0; index < plan.Ridges.Count; index++)
             {
-                throw new InvalidOperationException(
-                    "The upper gallery needs the rock behind it.");
-            }
-
-            // The rock begins at the gallery's back wall - a quarter metre
-            // past it the line's axis is inside the rock, a quarter metre
-            // short of it is still the gallery - and its crest stands over
-            // the gallery ROOF. Against the crest that is BUILT, not the lid
-            // of the box it is authored in: a ridge is a polygonal sine and
-            // its middle sits about `14%` of the box below the lid.
-            Vector3 insideRock = cableway.LineAxisPoint(
-                cableway.UpperOccluderNearFaceDistance + 0.25f);
-            Vector3 stillGallery = cableway.LineAxisPoint(
-                cableway.UpperOccluderNearFaceDistance - 0.25f);
-            if (!MountainRoadRidgeGeometry.TryGetCrossing(
-                    occluder,
-                    insideRock,
-                    out float crossing) ||
-                MountainRoadRidgeGeometry.TryGetCrossing(
-                    occluder,
-                    stillGallery,
-                    out _))
-            {
-                throw new InvalidOperationException(
-                    "The rock behind the gallery must begin at its back wall.");
-            }
-
-            if (MountainRoadRidgeGeometry.CrestWorldY(occluder, crossing) <
-                cableway.UpperGalleryRoofY +
-                MountainRoadCablewayPlan.UpperOccluderCrestClearance)
-            {
-                throw new InvalidOperationException(
-                    "The rock behind the gallery must stand over its roof.");
-            }
-
-            // And the gallery stands on rock: under the floor at the line,
-            // and no daylight under the plinth at any of its four corners.
-            MountainRoadRidgeDescriptor pedestal = FindRidge(
-                plan,
-                MountainRoadCablewayPlan.UpperPedestalStableId,
-                out bool foundPedestal);
-            if (!foundPedestal)
-            {
-                throw new InvalidOperationException(
-                    "The upper gallery has no rock to stand on.");
-            }
-
-            float floorY = cableway.UpperGalleryFloorY;
-            float galleryMiddle =
-                (cableway.UpperGalleryMouthDistance +
-                 cableway.UpperGalleryBackWallDistance) * 0.5f;
-            if (!MountainRoadRidgeGeometry.TryGetCrossing(
-                    pedestal,
-                    cableway.LineAxisPoint(galleryMiddle),
-                    out float pedestalCrossing) ||
-                MountainRoadRidgeGeometry.CrestWorldY(
-                    pedestal,
-                    pedestalCrossing) > floorY - 0.1f)
-            {
-                throw new InvalidOperationException(
-                    "The pedestal rock breaks through the gallery floor.");
-            }
-
-            for (int corner = 0; corner < 4; corner++)
-            {
-                float along = (corner & 1) == 0
-                    ? cableway.UpperGalleryMouthDistance
-                    : cableway.UpperGalleryBackWallDistance;
-                float side = (corner & 2) == 0 ? -1f : 1f;
-                Vector3 cornerPoint = cableway.LineAxisPoint(along) +
-                                      cableway.LineRight *
-                                      (side *
-                                       cableway.UpperGalleryOuterHalfWidth);
-                if (!MountainRoadRidgeGeometry.TryGetCrossing(
-                        pedestal,
-                        cornerPoint,
-                        out float cornerCrossing) ||
-                    MountainRoadRidgeGeometry.CrestWorldY(
-                        pedestal,
-                        cornerCrossing) <
-                    floorY -
-                    MountainRoadCablewayPlan.UpperGalleryPlinthDepth)
+                if (MountainRoadPlanner.StandsAcrossTheLine(
+                        plan.Ridges[index],
+                        cableway))
                 {
                     throw new InvalidOperationException(
-                        "Daylight under the gallery plinth at corner " +
-                        $"{corner}.");
+                        $"{plan.Ridges[index].StableId} stands across the " +
+                        "cableway.");
                 }
             }
 
-            // And the ride has to be able to hide inside it: the blackout
-            // must complete before the cabin's nose reaches the near face,
-            // and it must still start after the last tower is passed. Between
-            // those two the cabin drove into the mountain in plain sight for
-            // four metres, and nothing in the suite noticed.
+            // The cut lands mid-span in the haze, and the rope runs on past
+            // the scene's draw range before it turns, so the far end is
+            // clipped before it is ever drawn.
+            float cut = cableway.LastVisibleDistance;
+            if (cut <= 0f || cut >= cableway.LineLength)
+            {
+                throw new InvalidOperationException(
+                    "The cut must land on the visible line.");
+            }
+
+            for (int index = 0; index < cableway.Nodes.Count; index++)
+            {
+                MountainCablewayNodeDescriptor node = cableway.Nodes[index];
+                if (node.Kind == MountainCablewayNodeKind.Support &&
+                    Mathf.Abs(node.Distance - cut) <
+                    MountainRoadCablewayPlan.RideCutTowerClearance)
+                {
+                    throw new InvalidOperationException(
+                        $"The cut lands on {node.StableId}.");
+                }
+            }
+
+            if (cableway.HiddenRunMeters <
+                RuntimeSceneSetup.MountainRoadFarClipPlane +
+                MountainRoadCablewayPlan.HiddenRunMargin)
+            {
+                throw new InvalidOperationException(
+                    "The far turn stands inside the draw range.");
+            }
+
             float fadeStart = cableway.LineLength -
                               AlpineCablewayRideController
                                   .EvaluateFadeLeadMeters(cableway);
-            float lastSupport = 0f;
-            for (int index = 0; index < cableway.Nodes.Count; index++)
-            {
-                if (cableway.Nodes[index].Kind ==
-                    MountainCablewayNodeKind.Support)
-                {
-                    lastSupport = Mathf.Max(
-                        lastSupport,
-                        cableway.Nodes[index].Distance);
-                }
-            }
-
-            if (fadeStart <= lastSupport)
+            if (fadeStart <= cableway.Nodes[1].Distance)
             {
                 throw new InvalidOperationException(
-                    "The cut must land after the last cable tower.");
+                    "The screen goes out before the cabin has cleared the " +
+                    "first tower.");
             }
-        }
-
-        private static MountainRoadRidgeDescriptor FindRidge(
-            MountainRoadPlan plan,
-            string stableId,
-            out bool found)
-        {
-            for (int index = 0; index < plan.Ridges.Count; index++)
-            {
-                if (string.Equals(
-                        plan.Ridges[index].StableId,
-                        stableId,
-                        StringComparison.Ordinal))
-                {
-                    found = true;
-                    return plan.Ridges[index];
-                }
-            }
-
-            found = false;
-            return default;
         }
 
         private static void ValidateLandmarkSeparation(

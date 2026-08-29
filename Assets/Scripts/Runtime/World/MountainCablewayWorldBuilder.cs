@@ -80,8 +80,6 @@ namespace BarPromenade
 
         private static readonly Color Concrete =
             new Color(0.23f, 0.245f, 0.225f, 1f);
-        private static readonly Color GalleryTimber =
-            new Color(0.165f, 0.155f, 0.14f, 1f);
         private static readonly Color DarkSteel =
             new Color(0.105f, 0.145f, 0.135f, 1f);
         private static readonly Color GreenSteel =
@@ -164,7 +162,7 @@ namespace BarPromenade
                 supports,
                 supportRollerAnchors,
                 semanticObjects);
-            Transform upperTurn = BuildUpperGallery(
+            Transform upperTurn = BuildFarTurnBeyondTheHaze(
                 root.transform,
                 plan);
             semanticObjects[plan.Nodes[plan.Nodes.Count - 1].StableId] =
@@ -1384,25 +1382,18 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The top of the visible line: a timber gallery on a concrete
-        /// plinth that the rope runs INTO, with the turn's bullwheel and its
-        /// frame inside.
-        ///
-        /// This was a snow ridge planted across the rope with the turn
-        /// buried in it, and the ride's cut was timed to land a metre short
-        /// of its face. Measured to the centimetre and still wrong: from the
-        /// platform, from beside the towers and from the seat, the line
-        /// simply drove into a mountain. A cableway ends in a building. So
-        /// the mouth is now the thing the screen goes out on, the rock stands
-        /// behind the back wall, and at the mountain terminal the whole shed
-        /// sits on a rock shoulder the planner raises for it. Presentation
-        /// only, like the towers: nothing up here is walked to.
+        /// The far turn, past the scene's draw range. A bullwheel and its
+        /// frame, and nothing more, because nobody ever sees it: the rope
+        /// dissolves into the haze long before, and that is the whole point
+        /// of a line this long. Twice this end was dressed to be looked at -
+        /// a snow ridge across the rope, then a gallery the rope ran into -
+        /// and both were a visible END on a journey meant to feel endless.
         /// </summary>
-        private static Transform BuildUpperGallery(
+        private static Transform BuildFarTurnBeyondTheHaze(
             Transform parent,
             MountainRoadCablewayPlan plan)
         {
-            Transform root = new GameObject("Upper Gallery Station").transform;
+            Transform root = new GameObject("Far Turn Beyond The Haze").transform;
             root.SetParent(parent, false);
             root.SetPositionAndRotation(
                 plan.UpperCableCenter,
@@ -1410,7 +1401,7 @@ namespace BarPromenade
             float diameter = plan.TrackSeparation * 1.08f;
             TextureSurface(
                 RuntimePrimitiveFactory.CreateCylinder(
-                    "Gallery Bullwheel",
+                    "Far Bullwheel",
                     root,
                     Vector3.zero,
                     new Vector3(diameter, 0.10f, diameter),
@@ -1421,7 +1412,7 @@ namespace BarPromenade
                 Cable);
             TextureSurface(
                 RuntimePrimitiveFactory.CreateBox(
-                    "Gallery Machinery Frame",
+                    "Far Machinery Frame",
                     root,
                     Vector3.down * 0.55f,
                     new Vector3(diameter + 0.7f, 1.15f, 0.24f),
@@ -1430,99 +1421,6 @@ namespace BarPromenade
                 MountainRoadSurfaceKind.PaintedMetal,
                 SurfaceProjection.BoxXY,
                 DarkSteel);
-
-            // Everything below is in the line's frame with the turn's
-            // centre at the origin: `z` runs along the rope, so the mouth
-            // is behind the origin and the back wall past it.
-            float endY = plan.UpperCableCenter.y;
-            float mouth = plan.UpperGalleryMouthDistance - plan.LineLength;
-            float back = plan.UpperGalleryBackWallDistance - plan.LineLength;
-            float length = back - mouth;
-            float middle = (mouth + back) * 0.5f;
-            float floor = plan.UpperGalleryFloorY - endY;
-            float roof = plan.UpperGalleryRoofY - endY;
-            float height = roof - floor;
-            float wall = MountainRoadCablewayPlan.UpperGalleryWallThickness;
-            float halfInside =
-                MountainRoadCablewayPlan.UpperGalleryInteriorHalfWidth;
-            float halfOutside = plan.UpperGalleryOuterHalfWidth;
-            float plinth = MountainRoadCablewayPlan.UpperGalleryPlinthDepth;
-
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Gallery Concrete Plinth",
-                    root,
-                    new Vector3(0f, floor - plinth * 0.5f, middle),
-                    new Vector3(halfOutside * 2f + 0.4f, plinth, length + 0.4f),
-                    Concrete,
-                    false),
-                MountainRoadSurfaceKind.Concrete,
-                Concrete);
-            for (int side = -1; side <= 1; side += 2)
-            {
-                string name = side < 0 ? "Left" : "Right";
-                TextureSurface(
-                    RuntimePrimitiveFactory.CreateBox(
-                        $"Gallery {name} Wall",
-                        root,
-                        new Vector3(
-                            side * (halfInside + wall * 0.5f),
-                            floor + height * 0.5f,
-                            middle),
-                        new Vector3(wall, height, length),
-                        GalleryTimber,
-                        false),
-                    MountainRoadSurfaceKind.Timber,
-                    SurfaceProjection.BoxZY,
-                    GalleryTimber);
-                TextureSurface(
-                    RuntimePrimitiveFactory.CreateBox(
-                        $"Gallery Mouth {name} Post",
-                        root,
-                        new Vector3(
-                            side * (halfInside + wall * 0.5f),
-                            floor + height * 0.5f,
-                            mouth + 0.2f),
-                        new Vector3(wall + 0.2f, height, 0.4f),
-                        Rust,
-                        false),
-                    MountainRoadSurfaceKind.RustedIron,
-                    SurfaceProjection.BoxZY,
-                    Rust);
-            }
-
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Gallery Back Wall",
-                    root,
-                    new Vector3(0f, floor + height * 0.5f, back + wall * 0.5f),
-                    new Vector3(halfOutside * 2f, height, wall),
-                    GalleryTimber,
-                    false),
-                MountainRoadSurfaceKind.Timber,
-                SurfaceProjection.BoxXY,
-                GalleryTimber);
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Gallery Corrugated Roof",
-                    root,
-                    new Vector3(0f, roof + 0.12f, middle + 0.3f),
-                    new Vector3(halfOutside * 2f + 0.7f, 0.24f, length + 1.0f),
-                    DarkSteel,
-                    false),
-                MountainRoadSurfaceKind.PaintedMetal,
-                DarkSteel);
-            TextureSurface(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Gallery Mouth Lintel",
-                    root,
-                    new Vector3(0f, roof - 0.3f, mouth + 0.2f),
-                    new Vector3(halfOutside * 2f + 0.5f, 0.6f, 0.4f),
-                    Rust,
-                    false),
-                MountainRoadSurfaceKind.RustedIron,
-                SurfaceProjection.BoxXY,
-                Rust);
             return root;
         }
 
