@@ -179,6 +179,13 @@ ended.
 For now the City tunnel still refuses passage on foot. The Ferryman's
 LastRouteCar crosses it as the story-owned transition and drives the same
 planned road to the terminal; the map remains the ordinary area transfer.
+The car has a voice of its own (`LastRouteCarAudio` over the pure
+`LastRouteCarEngineModel`): a petrol four with a three-speed box, so the climb
+is heard as the drop into second before each hairpin and the load of the grade
+after it; tyres on wet asphalt in the city and packed snow up here, the bridge
+deck and its joints, the tunnel's reverb, the starter on the island and the
+key-off on the apron, and the wind bed muffled behind the glass for as long as
+the hero is in the seat.
 
 Above the cableway, `AlpineVillage` is one gently crooked `82 m` uphill axis
 from the return station to the unique top house. Twelve houses form authored
@@ -223,8 +230,9 @@ production model. Ordinary building masses use a separate `36-52 m` height
 profile whose roofs fall below one-percent visibility in the fixed City fog;
 the bar, the supermarket and the player home retain their original low-rise
 heights. Every ordinary lot now instantiates one fixed-metre Blender prototype
-for its district and preserves authored pane state through the shared
-Off/Cold/Warm slot shader. The single Residential bar separately uses the
+for its district and preserves pane-local atlas detail plus deterministic
+row-balanced warm/dark state through the shared UV2 slot shader. The single
+Residential bar separately uses the
 complete fixed-metre `bar_exterior_v2`: a two-storey late-Victorian urban pub
 with old brick/render, pitched slate roof, unequal chimneys, a lower service
 wing, bottle-green/oxblood faceted shopfront, individual sash windows and the
@@ -536,8 +544,12 @@ distance, rendered as a transient shadowless directional flash
 (`CityLightningFlashLight`, disabled outside the `0.5`-minute flicker so the
 pooled light budget is untouched) and answered by a synthesized thunder
 one-shot whose delay (`0.6-3 s`), loudness and low-pass follow the strike
-distance. The balcony view shows the same rain and the same flashes and
-plays the same rain bed and thunder, all gated to the active Balcony shot; a
+distance. The balcony view shows the same rain - on its own anchor half a field
+extent past the facade (`RainAnchorDepth`, not the fog's `25.5 m`, which
+left every streak twelve metres out and fogged), so streaks fall past the
+lens and onto the deck, with the hero's building registered as a kill volume
+so none crosses the glazed bedroom - and the same flashes, and plays the
+same rain bed and thunder, all gated to the active Balcony shot; a
 frozen clock (pre-wake, pause) suppresses the flash instead of holding it.
 While the hero rides Route 01 the emitter switches to a ring around the bus
 so streaks never spawn inside the cabin. Weather deliberately leaves the

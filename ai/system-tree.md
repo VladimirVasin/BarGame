@@ -322,7 +322,7 @@ Assets/
         CityBuildingPrototypePlacement.cs fixed-metre front/roof/facade poses + Home half-space classification
         CityBuildingPrototypeWorldBuilder.cs ordinary-lot Blender composition + foundation/collider authority split
         CitySpecialBuildingWorldBuilder.cs supermarket/home shells + inset textured pub foundation/collision + Home projection
-        CityBuildingWindowSlotAppearance.cs UV2-addressed district window state binding
+        CityBuildingWindowSlotAppearance.cs UV2-addressed row-balanced warm/dark window binding
         HomeYardSitePlan.cs      shared roadless-gap, rider-ring, neighbour-light + leaning-utility geometry
         CityOpenAreaDecorationPlan.cs  deterministic inter-building bar-side yard/light descriptors
         CityOpenAreaWorldBuilder.cs    imported yard props/fixture shells + Unity collision, lens, halo and fixed Spot
@@ -387,7 +387,7 @@ Assets/
         CityWetSurfaceRegistry.cs    cross-scene rain film, slow drying + tint-preserving MPB response
         CityPuddlePlanner.cs         deterministic bounded road-patch plan
         CityPuddleWorldBuilder.cs    one collider-free top-only puddle mesh
-        CityWindowAppearance.cs      windowed-pane sheet, five shared lit materials on the night factor
+        CityWindowAppearance.cs      window sheet, shared warm lit materials + permanent fixture floor
         CityNightGlowRegistry.cs     registered electric glows (neon/signs/lamps) that die by day
         CityNightSiteLightRegistry.cs  authored site realtime lights scaled/disabled by the night factor
         CityFacadeGrid.cs            single source of the bay/floor pitch both walls and windows read
@@ -757,8 +757,8 @@ Assets/
       GameTimeDayNightRulesTests.cs         phase boundaries and smooth transitions
       GameWeatherRulesTests.cs              slot determinism, targets and boundary ramps
       CityWetSurfaceTests.cs                film timing/tint persistence + bounded grounded puddles
-      CityDistrictPresentationPlannerTests.cs profiles, transitions + window schedules
-      CityWindowAppearanceTests.cs          special families, stable district mix + night factor
+      CityDistrictPresentationPlannerTests.cs profiles, transitions + row-balanced window shares
+      CityWindowAppearanceTests.cs          warm families, stable per-row selection + fixture factor
       BarDistrictIdentityTests.cs           four identities and fallback contract
       BarSurfaceAppearanceTests.cs          worn sheets and district builder tints
       SupermarketInteriorAtmosphereTests.cs explicit baseline + local depth of field

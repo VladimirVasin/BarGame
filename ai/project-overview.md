@@ -445,11 +445,11 @@ The vertical slice contains:
   inflated body against both actual pole positions at a conservative `0.30 m`
   fixture radius. City colliders and the bounded Home reconstruction consume
   the same geometry plan. Ordinary facade panes also consume the first channel
-  of the pure `CityDistrictPresentationPlanner`: stable block variation drives
-  narrow irregular Old Town windows, warm occupied Residential clusters,
-  sparse Industrial task lights and a front-only active Nightlife ground floor
-  under dark upper and rear facades. Bar, Home and Supermarket panes retain
-  their authored families;
+  of the pure `CityDistrictPresentationPlanner`: each district keeps its own
+  lit ratio, while every authored facade row quantizes that ratio to a stable
+  warm/dark selection. At least one warm street-lamp-coloured pane reaches
+  every floor and side, and a multi-pane row always retains darkness. Bar,
+  Home and Supermarket panes retain their authored material families;
 - one player-following `CityFogField`, capped at 36 more visible slowly
   drifting particles, plus depth-tested soft halos around lamps, bar lights
   and active signals. The same field, unchanged, now also runs on the mountain
@@ -978,8 +978,12 @@ The vertical slice contains:
   metadata and `194` addressable window slots through one Resources provider.
   Every ordinary lot selects its district wrapper, keeps authored metre scale
   and aligns the wrapper's `+Z` front anchor to the generated door. A UV2-slot
-  shader preserves deterministic Off/Cold/Warm window families and their
-  shared night factor without making the FBX readable. Unity retains a small
+  shader preserves deterministic warm/dark row selection and its shared §20
+  fixture factor without making the FBX readable. Generator `1.1.0` also gives
+  each pane-local face a complete `0..1` UV0, so the shader samples a full
+  frame/curtain/blind atlas cell for both albedo and emission instead of a flat
+  card. Lit panes keep explicit emission at the two-thirds day floor; Unity
+  retains a small
   terrain foundation skirt and the former lot envelope as an invisible
   collider; navigation and sound still use `BuildingLot`. Roof and facade
   decoration anchors follow fixed prototype mounts. The bounded Home exterior

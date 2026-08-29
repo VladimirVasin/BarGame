@@ -1655,8 +1655,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   scale. Every prototype owns exactly six passive meshes — `Shell`, `Trim`,
   `Roof`, `Metal`, `WindowFrame` and `WindowGlass` — for `24` meshes and
   `3,662` triangles in total, with a hard `3,500`-triangle cap per prototype.
-  Generator `1.0.0` locks that catalog under build signature
-  `a38ab8521b0470e080ea074204b2a948dc9bdbcc14bfd06cecc95a2d7506c1ac`.
+  Generator `1.1.0` locks that catalog under build signature
+  `aef1de8fd8ba280da1c7f560e6e0b11ec3f78fb94bf05cf693ff936163c2ea2e`.
   Source `+Y` is the authored frontage and imports as Unity `+Z`; the origin
   is the footprint centre on the ground. The FBX carries no imported material,
   collider, light, camera or animation assets.
@@ -1674,12 +1674,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 
   Role renderers use shared materials and MPBs. The combined non-readable
   `WindowGlass` mesh decodes `(slotId + 0.5) / 256` from UV2 and indexes a
-  64-entry per-building state table produced by the existing district window
-  rules. It preserves per-pane Off/Cold/Warm choice, a four-step brightness
-  variant, the shared day/night factor and PS1 vertex snap. It deliberately
-  does not sample the old 2x2 curtain sheet: v1 glass UV0 is normalized over
-  the combined role rather than per pane, so claiming exact quadrants would
-  be false. Roof decorations use kind-specific fixed mounts derived from the
+  64-entry per-building state table produced by the district window rules.
+  Each facade row receives an exact deterministic lit share with at least one
+  warm pane and, where the row has more than one pane, at least one dark pane;
+  floor and side change the phase instead of the density. Every lit state uses
+  the street lamp's `(1, 0.72, 0.42)` colour, a four-step brightness variant,
+  the shared fixture factor and PS1 vertex snap. Generator `1.1.0` gives every
+  `WindowGlass` face its own projected `0..1` UV0 while preserving UV2, so the
+  shader selects one exact quadrant of the 2x2 curtain sheet and multiplies it
+  into both albedo and emission. Roof decorations use kind-specific fixed
+  mounts derived from the
   Blender generator's actual gables, decks and sawtooth planes; the Old Town
   clock base and Residential greenhouse deliberately bed into their roofs
   because v1 has no separate flat pads. Facade mounts and descriptor forward
@@ -2469,9 +2473,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the tallest masses without changing City visibility settings. Roof-anchored
   lot motifs and three rooftop district landmarks stay attached to the real
   roof and are intentionally swallowed with it; facade and street-level
-  district language stays readable. The four geometric pane rows remain the
-  lit near-field layer while the four-floor facade sheet repeats at its exact
-  `2.35 m` pitch above them. `CityWorldResult.Bounds` uses the larger of the
+  district language stays readable. The clipped Home fallback rebuilds
+  primitive window rows through the clipped lot's full authored height; full
+  City buildings use the Blender prototype's explicit all-height window slots.
+  `CityWorldResult.Bounds` uses
+  the larger of the
   ordinary and special height maxima rather than retaining the old `13 m`
   vertical cap.
 - **Accepted — Geometry-locked district facade albedos:** City building masses
@@ -2487,9 +2493,10 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   sixteen presentations per sheet without disturbing that alignment. Sheets are
   authored at `1024` rather than the project's `1254` so Unity's import to
   `512` is an exact 2:1 downsample; band and mullion edges are the whole point
-  of the texture and a 2.449:1 resample softens them. Baked floors continuing
-  above the topmost geometric window row is intended, not a bug: it fills the
-  blank cap tall lots used to show.
+  of the texture and a 2.449:1 resample softens them. Baked floor bands may
+  continue behind the topmost geometric row as backing facade detail, but they
+  are never the only visible window treatment: the clipped Home fallback now
+  builds row-balanced geometric panes through the lot's full authored height.
 - **Accepted — Linear-space facade compensation:** Facade albedos hold a mean
   linear luminance of `0.35` and the night facade tint is brightened by
   `1 / 0.62` before it reaches `_BaseColor`, which preserves the brightness the
@@ -2506,12 +2513,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   consumer:** `CityDistrictPresentationPlanner` owns stable per-block keys for
   frontage, mass, windows, light and wear plus a one-block transition motif
   restricted to authored neighbour pairs. The current world build consumes
-  only the window channel: irregular Old Town panes, occupied Residential
-  clusters, sparse Industrial task lights and a front-only active Nightlife
-  ground floor under dark upper/rear facades. Cluster phase and size vary by
-  block so there is no repeated two-pane domino rhythm. Special Bar, Home and
-  Supermarket window families return before district resolution. The remaining
-  channels are implemented inputs, not yet claims about built geometry.
+  only the window channel. The profile keeps a district lit ratio, but every
+  actual facade row quantizes that ratio to an exact count, never zero and
+  never the whole row when more than one pane exists. A stable row phase varies
+  the chosen bays by block, floor and side, which distributes light over the
+  full height without a repeated vertical stripe or the former Nightlife
+  ground-floor bias. Every selected pane is warm like a street lamp; special
+  Bar, Home and Supermarket families retain texture/material identity but not
+  a different hue. The remaining channels are implemented inputs, not yet
+  claims about built geometry.
 - **Accepted — PC PS1 world composite:** The active PC renderer runs one native
   Unity 6 RenderGraph feature at `AfterRenderingPostProcessing` for the final
   Game camera. It footprint-averages the world to `640x360` by default, blends
@@ -2595,7 +2605,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   halo is never taken away - while the raw `NightFactor` remains the SKY's
   and still reaches zero at noon. Consumers: street-lamp bulb emissives
   (`CityNightWorldResult`), the lit window families
-  (`CityWindowAppearance` - §20 names the inhabited window a fixture), the
+  (`CityWindowAppearance` - §20 names each selected lit window a fixture), the
+  ordinary Blender buildings' UV2-slot shader (it receives a separate
+  `_CityWindowFixtureFactor`, never the sky's raw zero), the
   glow registry (`DeadGlowFraction` now IS the day floor; the dead tube is
   repealed), the site-light registry (authored day intensities survive only
   above the floor; no registered light is ever disabled; halos stay
@@ -2610,6 +2622,27 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   would skip the refresh and hold the plafond dark until dusk.
   `AlwaysLitLawTests` pins the number, both registries and the mountain
   ratios; the re-anchored fixture tests pin each consumer.
+- **Accepted — Exterior windows use emission, not realtime Lights:** special
+  Bar/Home/Supermarket panes reuse the packaged `Ps1Lit` emission variant and
+  the same window sheet for albedo and emission; ordinary Blender prototypes
+  keep emission in `CityBuildingWindowSlots`. Both paths use the same `0.48`
+  emission strength and §20 fixture factor. Dark panes stay dark, every lit
+  pane is warm like the street lamps, and the City realtime-light budget
+  remains exactly `12`. The bar is the authored exception to sampling
+  the sheet: its glass has metre-scale planar UVs and separate sash geometry,
+  so its lit renderers override both maps with white instead of clamping to
+  the atlas's dark border; their shared material still owns colour and power.
+- **Accepted architecture exception — 2026-08-29, explicit user correction —
+  window light is sparse, warm and vertically distributed:** this supersedes
+  the cold Industrial window family and the Nightlife rule that concentrated
+  light on the front ground floor while leaving upper/rear rows dark. It does
+  not lift the art-bible ban on all-lit facades. Each declared row quantizes
+  the district ratio to at least one lit pane and, for rows wider than one, at
+  least one dark pane; a stable floor/side phase distributes those panes over
+  the whole building. Every selected pane remains on through the §20 fixture
+  floor and uses exactly `CityNightAtmosphere.StreetLampColor`; frames,
+  curtains, blinds, stable brightness variants and dark panes prevent a
+  uniform glowing grid. This City rule does not alter Alpine Village dimming.
 - **Accepted — Bounded local fog:** One seeded, player-following
   `CityFogField` adds slowly drifting world-space fog with at most 36 particles
   and a bounded `0.120` peak alpha. It reuses the shared atmosphere material

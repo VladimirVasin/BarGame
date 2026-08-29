@@ -6,6 +6,182 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-29 — Windows read as windows, with warm light on every floor
+
+The reported facade failure had three layers. Ordinary Blender buildings fed
+their window shader the sky's raw `NightFactor`, so every selected pane went
+black from 07:00 to 18:00. The old Nightlife schedule then concentrated its
+strongest share on the front ground floor and deliberately darkened upper and
+rear rows. Finally, `CityBuildingWindowSlots` never sampled
+`CityWindowAlbedo`; its solid emissive quads could only read as cards rather
+than framed glass.
+
+- The district ratio is now quantized independently for every authored
+  floor/side row. Each row gets at least one stable lit pane and, when it has
+  multiple panes, at least one dark pane. A block/floor/side phase changes the
+  chosen bays without changing row density, so upper floors and rear facades
+  cannot go wholly dark and the building does not become an all-lit grid.
+- Every selected pane uses exactly
+  `CityNightAtmosphere.StreetLampColor` (`1, 0.72, 0.42`) and the §20 fixture
+  factor, retaining two thirds of its night strength at noon. Districts still
+  differ in lit share and aperture geometry; cold Industrial rooms and the
+  lower-floor Nightlife bias are superseded by the accepted canon exception.
+- Generator `1.1.0` gives every `WindowGlass` face a complete projected
+  `0..1` UV0 while preserving the UV2 slot ID. The shader selects one complete
+  frame/curtain/blind atlas quadrant with a half-texel inset and multiplies it
+  into both albedo and emission, so a bright pane keeps the form of a window.
+- The authored bar uses the same warm emissive material for its storefront and
+  two upper groups while its middle upper group stays dark. Its metre-scale
+  planar UVs deliberately receive white albedo/emission maps because separate
+  sash geometry already supplies the window form. No realtime `Light` was
+  added and the City budget remains `12`.
+
+Fast verification: the focused `CityWindowAppearanceTests`,
+`CityDistrictPresentationPlannerTests`, `CityBuildingAssetTests` and
+`CityBuildingPrototypeRuntimeTests` selection passed `18/18` in `2.135 s`.
+The explicit GPU-backed `AreaCaptureFixture.CityWindowLighting` selection
+passed `1/1` in `6.670 s` at noon with raw night factor `0` and fixture factor
+`2/3`. Its five close street-level frames were inspected after correcting the
+capture camera to use the prototype's authored door/front anchor instead of a
+fog-hidden lot centre: the bar retains its dark middle sash, and Old Town,
+Residential, Industrial and Nightlife all show warm atlas-detailed panes on
+lower and upper rows with dark gaps between them. No broad Unity suite, player
+build or startup smoke was run.
+
+## 2026-08-29 — The Ferryman's car gets its voice, and the climb is heard
+
+The user asked for engine sound on the Ferryman's car and, more broadly,
+for the sounds of the climb up the mountain road to be worked through. The
+2026-08-25 entry had already said it plainly: the bus has `CityBusAudio`,
+the car had nothing, and a `620 m` climb played out with no engine under it.
+
+- **The engine is a model before it is a sound.** `LastRouteCarEngineModel`
+  is pure, like the drive and suspension models beside it: speed,
+  longitudinal acceleration and grade in, revs and load out, through a
+  three-speed box with hysteresis (`0.84` up / `0.36` down) and a `0.32 s`
+  clutch dip per change. That box is most of what the climb sounds like -
+  the drop into second before each hairpin and the grade held in it after -
+  and the `8%` grade arrives as LOAD rather than revs (`0.14` rolling on the
+  flat, about `0.5` on the climb, `0` on overrun), which is what opens the
+  exterior low-pass. Ignition is a phase ladder: `Starting` (`1.05 s` of
+  cranking under idle, a flare to `0.58`, a `0.65 s` settle) -> `Running` ->
+  `Stopping` (`0.8 s`) -> `Off`; `Start(alreadyRunning)` is the mountain
+  leg, where the car comes out of the tunnel with an engine that never
+  stopped and there is no starter to hear.
+- **Five voices, source-first, the bus's rule.** `LastRouteCarAudio` hangs
+  off the runtime root beside the driver, anchored along the root's own
+  axes from the registry's dimensions (never an imported node - the
+  headlights' trap): a petrol-four loop in the engine bay under the bonnet
+  he sits on (`42 Hz` fundamental, every fourth firing weak, a valve tick
+  over it), a 2D cabin loop that fades up over `0.35 s` while the hero is
+  in the seat, a tyre loop at the rear axle whose surface is `WetAsphalt`
+  in the city and `PackedSnow` on the mountain (`0.55` gain, `1500 Hz`
+  against `4200`), a bridge-deck thrum under the same axle with an
+  expansion-joint thump at either abutment (the abutments resolved onto
+  the car's OWN path by `FindNearestDistance` the first frame it has one,
+  and silent across a skip), and one cue voice for starter, key-off and
+  the door latches (a leaf armed past `0.15`, fired under `0.02`). Every
+  loop is authored at frequencies that divide the four seconds exactly, so
+  the tonal part is phase-continuous at the seam and only the noise is
+  crossfaded. The engine is a petrol four on purpose: the bus is a diesel,
+  and the two should never be confused across a street.
+- **The tunnel closes round it.** An `AudioReverbFilter` on the engine bay
+  and on the axle, faded by room level over `0.45 s` rather than switched,
+  driven by `MountainRoadRoot.IsInsideTunnel` - factored out of
+  `IsSheltered` so it is a function of a point and not of the player - on
+  the mountain, and by `CityTunnelShelterController.IsSheltered` in the
+  city.
+- **The wind drops behind the glass.**
+  `MountainRoadWindSoundPlayer.SetEnclosure` is a second, independent
+  factor on the bed (`0.42` volume, `0.45` cutoff), so the car can muffle
+  it without becoming a second writer of the wind: the wind driver keeps
+  writing strength every frame exactly as before.
+- **Ignition follows the journey by polling, the headlights' rule.** The
+  engine is wanted while the man is at the wheel and the car has not
+  arrived, or while the road is running. On the island it turns over the
+  moment he takes the wheel and idles while the hero walks round to his
+  own door; on the apron it is switched off once, and the block has died
+  before the Ferryman gets out. `LastRouteCarFactory.InstallMechanisms`
+  raises it with the springs, the doors and the driver; both roots bind
+  it (`MountainRoadRoot.BuildLastRoute` with the deck and the wind bed,
+  `CityGameRoot` with the city tunnel), and `BindWindBed` closes the loop
+  whichever of the car and the bed is raised second.
+
+Verification: headless on `6000.5.10f1`. EditMode `LastRouteCarAudioTests`
+`10 / 10` - the ignition ladder (crank under idle, flare over it, settle),
+the mountain leg starting already running, the box climbing first-second-
+third on a straight and dropping to second for a `3 m/s` hairpin with a
+measured rev dip on every change, load `0.14` flat / `~0.5` on `8%` / `0`
+on overrun at identical revs, key-off dying in `0.8 s`, the gain and
+surface laws, loop determinism/bounds/seam and cue tails, and the real
+factory-built car carrying exactly five sources on the runtime root with
+the engine bay forward of the perch and the tyres on the rear axle.
+PlayMode `LastRouteCarRidePlayModeTests` `7 / 7`, the six existing rides
+untouched plus `Ride_IsHeardFromTheEngineBayAndFallsSilentOnTheApron`:
+running from the tunnel with no starter, revs and a gear change on the way,
+tyres up, cabin blend at `1` with the hero seated, one key-off at the apron
+and every loop stopped after it. Proved red first: with `IsEngineWanted`
+forced false the new test fails at its first assert, "It came out of the
+tunnel running". Runtime, EditMode and PlayMode assemblies compile clean
+(a neighbouring session's window-light edit broke the runtime for a few
+minutes mid-way and was waited out, not touched). No player build and no
+audition through speakers: whether the petrol four READS against the bus's
+diesel, and whether `0.56` full-throttle is the right level under the wind
+bed, is the user's ear to judge.
+
+## 2026-08-29 — The balcony rain was twelve metres out and fogged
+
+The user reported, after the eternal-rain decree, that from the balcony the
+rain was STILL not visible. It was not an intensity problem and not a
+toggle: the renderer was enabled, the field was simulating, and the decree's
+`0.18` floor was applied. It was geometry. `HomeBalconyExteriorAtmosphere`
+built its rain field on the FOG anchor - `FogAnchorDepth 25.5 m` past the
+facade, at street level, which is right for fog sheets that must not fill
+the apartment - so the `26 m` rain box began `12 m` from the balcony lens
+and ended `38 m` out. Under the city's Exp2 haze (`0.070`) that is `49%`
+visibility at the near edge and `1%` at the far one, on streaks two
+centimetres wide at a tenth alpha; the street scene never had this problem
+because there the field FOLLOWS the hero and streaks pass the lens at arm's
+length.
+
+- The rain now stands on its own `RainAnchor`, `RainAnchorDepth =
+  FieldExtent / 2` past the facade (`13 m`), still at street level and the
+  balcony's own Z. The field is therefore born exactly ON the facade
+  plane: the balcony camera stands inside its footprint with the spawn
+  plane `4 m` overhead, and streaks fall past the lens and onto the deck
+  the way they fall around the hero in the street. Street level is kept
+  deliberately - born twelve metres over the STREET, a streak reaches the
+  pavement below rather than dying mid-air in the frame.
+- Wind can carry a live streak through the facade, and the bedroom behind
+  it is glazed (ajar door, window), so the hero's own building is now a
+  `CityRainField` local shelter - the same trigger-kill volume the
+  Nightlife arch uses - covering the building's whole column from street
+  to roof lip and `0.5 m` into the walls, hung off the atmosphere (the
+  exterior view is collider-free by test contract) as a trigger on the
+  Ignore Raycast layer. The sky above the roof stays rain.
+- The drift was city-axis wind applied unrotated in a scene whose street is
+  the city turned to face `+X`; it now goes through
+  `PlayerHomeBalconyGeometry.ToHomeLocalDirection` like every other
+  city-to-home vector.
+- `HomeBalconyPresentationPlayModeTests.HomeScene_RainFallsPastTheBalconyLens`
+  pins the contract as geometry rather than as a toggle: the spawn box's
+  near edge is the facade plane, the lens is inside the footprint under the
+  spawn plane, the drift is the turned wind, the shelter's bounds are the
+  building's, and over two pinned-clock seconds a streak passes within
+  `8 m` of the lens while none is found inside the building. The shared
+  `AssertExteriorAtmosphere` now asserts the rain anchor beside the fog
+  anchor.
+
+Verification: headless PlayMode `HomeBalconyPresentationPlayModeTests` on
+`6000.5.10f1`: `3 / 3` passed, the new test named in the results XML.
+Proved red first: with `RainAnchorDepth` temporarily set to the fog's
+`25.5 m`, the new test fails at its first geometric assert - "Streaks are
+born ON the facade plane", expected `5.13`, was `17.63` - which is exactly
+the twelve metres the user could not see through. Runtime and PlayMode test
+assemblies compile with no new warnings. No player build and no hand pass:
+whether the streaks READ against the PS1 composite from the fixed balcony
+shot is the open question, and the user's eye is the instrument.
+
 ## 2026-08-29 — The city decree: it never stops raining there
 
 The user decreed permanent rain - varying intensity, CITY SCENE ONLY. The
