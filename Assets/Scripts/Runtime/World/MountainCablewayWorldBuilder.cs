@@ -1479,7 +1479,11 @@ namespace BarPromenade
                     "Cabin Roof",
                     root,
                     new Vector3(0f, roofY, 0f),
-                    new Vector3(size.x * 1.06f, 0.18f, size.z * 1.08f),
+                    new Vector3(
+                        size.x * 1.06f,
+                        0.18f,
+                        size.z *
+                        MountainRoadCablewayPlan.CabinRoofOverhang),
                     body,
                     false),
                 MountainRoadSurfaceKind.PaintedMetal,

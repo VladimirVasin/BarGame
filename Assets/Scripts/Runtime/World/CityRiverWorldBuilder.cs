@@ -150,7 +150,8 @@ namespace BarPromenade
             CityWaterResources.SetNightFactor(
                 CityNightGlowRegistry.NightFactor);
             CityWaterResources.SetRainIntensity(
-                GameWeatherRules.EvaluateCurrent().RainIntensity);
+                CityEternalRainShaper.FloorIntensity(
+                    GameWeatherRules.EvaluateCurrent().RainIntensity));
 
             BuildRiverbed(root, layout.River);
             BuildWater(root, layout.River);

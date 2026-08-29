@@ -187,15 +187,9 @@ namespace BarPromenade
                         $"Village plot '{plot.StableId}' has no footprint.");
                 }
 
-                // Nothing stands in the street. Measured from the plot's own
-                // near face, not its centre.
-                var doorXZ = new Vector2(
-                    plot.DoorGroundPosition.x,
-                    plot.DoorGroundPosition.z);
-                plan.Lane.FindNearest(doorXZ, out float doorLateral);
-                AlpineVillageLaneSample sample =
-                    plan.Lane.Sample(plot.LaneDistance);
-                float clear = doorLateral - sample.Width * 0.5f;
+                // Nothing stands in the street. The nearest physical point is
+                // a rotated corner, not necessarily the door midpoint.
+                float clear = MeasureLaneClearance(plan.Lane, plot);
                 if (plot.Kind != AlpineVillagePlotKind.MothersHouse &&
                     clear < LaneKeepClear)
                 {
@@ -209,7 +203,7 @@ namespace BarPromenade
                      other++)
                 {
                     AlpineVillagePlotDescriptor second = plan.Plots[other];
-                    if (!plot.BoundsXZ.Overlaps(second.BoundsXZ))
+                    if (!FootprintsOverlap(plot, second))
                     {
                         continue;
                     }
@@ -219,6 +213,145 @@ namespace BarPromenade
                         $"'{second.StableId}' overlap.");
                 }
             }
+        }
+
+        internal static float MeasureLaneClearance(
+            AlpineVillageLanePlan lane,
+            AlpineVillagePlotDescriptor plot)
+        {
+            if (lane == null)
+            {
+                throw new ArgumentNullException(nameof(lane));
+            }
+
+            if (plot == null)
+            {
+                throw new ArgumentNullException(nameof(plot));
+            }
+
+            Vector2 center = ToXZ(plot.GroundCenter);
+            float nearestDistance = lane.FindNearest(
+                center,
+                out float centerLateral);
+            AlpineVillageLaneSample sample = lane.Sample(nearestDistance);
+            Vector2 fromLane = center - ToXZ(sample.Position);
+            Vector2 outward = fromLane.sqrMagnitude <= 0.000001f
+                ? ToXZ(sample.Right * Mathf.Sign(plot.Side)).normalized
+                : fromLane.normalized;
+            Vector2 forward = ToXZ(plot.Facing).normalized;
+            Vector2 right = new Vector2(forward.y, -forward.x);
+            float footprintRadius = ProjectionRadius(
+                outward,
+                plot,
+                forward,
+                right);
+            return centerLateral - sample.Width * 0.5f - footprintRadius;
+        }
+
+        /// <summary>
+        /// Exact overlap of the two rotated plot rectangles. An AABB was both
+        /// too strict at opposite yaw angles and too permissive along their
+        /// real corners, so seeded facade turns could either reject empty air
+        /// or let two authored houses occupy it together.
+        /// </summary>
+        internal static bool FootprintsOverlap(
+            AlpineVillagePlotDescriptor first,
+            AlpineVillagePlotDescriptor second)
+        {
+            if (first == null || second == null)
+            {
+                throw new ArgumentNullException(
+                    first == null ? nameof(first) : nameof(second));
+            }
+
+            Vector2 firstForward = ToXZ(first.Facing).normalized;
+            Vector2 secondForward = ToXZ(second.Facing).normalized;
+            Vector2 firstRight = new Vector2(
+                firstForward.y,
+                -firstForward.x);
+            Vector2 secondRight = new Vector2(
+                secondForward.y,
+                -secondForward.x);
+            Vector2 delta = ToXZ(second.GroundCenter) -
+                            ToXZ(first.GroundCenter);
+
+            return !HasSeparatingAxis(
+                       delta,
+                       firstForward,
+                       first,
+                       firstForward,
+                       firstRight,
+                       second,
+                       secondForward,
+                       secondRight) &&
+                   !HasSeparatingAxis(
+                       delta,
+                       firstRight,
+                       first,
+                       firstForward,
+                       firstRight,
+                       second,
+                       secondForward,
+                       secondRight) &&
+                   !HasSeparatingAxis(
+                       delta,
+                       secondForward,
+                       first,
+                       firstForward,
+                       firstRight,
+                       second,
+                       secondForward,
+                       secondRight) &&
+                   !HasSeparatingAxis(
+                       delta,
+                       secondRight,
+                       first,
+                       firstForward,
+                       firstRight,
+                       second,
+                       secondForward,
+                       secondRight);
+        }
+
+        private static bool HasSeparatingAxis(
+            Vector2 centerDelta,
+            Vector2 axis,
+            AlpineVillagePlotDescriptor first,
+            Vector2 firstForward,
+            Vector2 firstRight,
+            AlpineVillagePlotDescriptor second,
+            Vector2 secondForward,
+            Vector2 secondRight)
+        {
+            float firstRadius = ProjectionRadius(
+                axis,
+                first,
+                firstForward,
+                firstRight);
+            float secondRadius = ProjectionRadius(
+                axis,
+                second,
+                secondForward,
+                secondRight);
+            return Mathf.Abs(Vector2.Dot(centerDelta, axis)) >=
+                   firstRadius + secondRadius - 0.001f;
+        }
+
+        private static float ProjectionRadius(
+            Vector2 axis,
+            AlpineVillagePlotDescriptor plot,
+            Vector2 forward,
+            Vector2 right)
+        {
+            return Mathf.Abs(Vector2.Dot(axis, right)) *
+                       plot.FootprintSize.x * 0.5f +
+                   Mathf.Abs(Vector2.Dot(axis, forward)) *
+                       plot.FootprintSize.y * 0.5f;
+        }
+
+        private static Vector2 ToXZ(Vector3 value)
+        {
+            return new Vector2(value.x, value.z);
         }
 
         private static void ValidateStation(AlpineVillagePlan plan)

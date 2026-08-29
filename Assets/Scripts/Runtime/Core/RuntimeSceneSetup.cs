@@ -380,9 +380,10 @@ namespace BarPromenade
             RenderSettings.fogColor = fog;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
 
-            // It closes in a little as the place goes out. Not enough to be a
-            // weather event - «снежная буря» is forbidden - just enough that
-            // the top of the lane stops being visible from the bottom.
+            // It closes in a little as the place goes out. The permanent
+            // blizzard is an independent property of the place; this grade
+            // changes only the warm read and must not become a second
+            // whiteout that erases the top of the lane.
             RenderSettings.fogDensity = Mathf.Lerp(
                 AlpineVillageFogDensity,
                 AlpineVillageFogDensity * 1.55f,

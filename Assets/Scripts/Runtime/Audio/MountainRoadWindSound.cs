@@ -154,8 +154,20 @@ namespace BarPromenade
         /// </summary>
         public void SetStrength(float strength)
         {
-            float clamped = Mathf.Clamp01(
+            SetNormalizedStrength(
                 strength / MountainRoadWeatherRules.MaximumSwayAmplitude);
+        }
+
+        /// <summary>
+        /// Drives the same air bed from an already normalized exterior wind.
+        /// The Alpine Village uses this path because its weather sample is a
+        /// permanent gale and has no tree-sway headroom above one to divide
+        /// back out. Sharing the clip keeps both mountain exteriors sonically
+        /// coherent without sharing their strength rules.
+        /// </summary>
+        public void SetNormalizedStrength(float strength01)
+        {
+            float clamped = Mathf.Clamp01(strength01);
             if (clamped.Equals(appliedStrength))
             {
                 return;

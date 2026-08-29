@@ -39,6 +39,8 @@ namespace BarPromenade
             CityMountainBackdropWorldResult mountainBackdrop,
             CityWindDressingPlan windDressingPlan,
             GameObject windDressingRoot,
+            CityArchShelterPlan archShelterPlan,
+            CityArchShelterWorldResult archShelter,
             Bounds bounds)
         {
             Root = root;
@@ -96,6 +98,10 @@ namespace BarPromenade
                 ? windDressingRoot
                 : throw new ArgumentNullException(
                     nameof(windDressingRoot));
+            ArchShelterPlan = archShelterPlan ??
+                throw new ArgumentNullException(nameof(archShelterPlan));
+            ArchShelter = archShelter ??
+                throw new ArgumentNullException(nameof(archShelter));
             Bounds = bounds;
             barsById = new Dictionary<string, BarEntrance>(
                 StringComparer.Ordinal);
@@ -161,6 +167,9 @@ namespace BarPromenade
         public CityMountainBackdropWorldResult MountainBackdrop { get; }
         public CityWindDressingPlan WindDressingPlan { get; }
         public GameObject WindDressingRoot { get; }
+        public CityArchShelterPlan ArchShelterPlan { get; }
+        public CityArchShelterWorldResult ArchShelter { get; }
+        public GameObject ArchShelterRoot => ArchShelter.Root;
         public Bounds Bounds { get; }
 
         public bool TryGetBar(string barId, out BarEntrance entrance)

@@ -70,6 +70,110 @@ namespace BarPromenade.Tests.EditMode
                 first.Forest.Count(item =>
                     item.Layer == MountainRoadForestLayer.Far),
                 Is.EqualTo(186));
+            foreach (MountainRoadForestLayer layer in
+                     new[]
+                     {
+                         MountainRoadForestLayer.Physical,
+                         MountainRoadForestLayer.Mid,
+                         MountainRoadForestLayer.Far
+                     })
+            {
+                Assert.That(
+                    first.Forest
+                        .Where(item => item.Layer == layer)
+                        .Select(item => item.PaletteIndex)
+                        .Distinct(),
+                    Is.EquivalentTo(new[] { 0, 1, 2 }),
+                    $"{layer} forest lost its three silhouette variants.");
+            }
+
+            Assert.That(
+                first.Forest.All(tree =>
+                    !MountainRoadCompositionRules.IsReservedForestOpening(
+                        first.Route,
+                        first.Plateau,
+                        tree.Layer,
+                        new Vector2(tree.Position.x, tree.Position.z),
+                        tree.CrownRadius)),
+                Is.True,
+                "Near forest filled a hairpin, bridge or terminal reveal.");
+
+            for (int index = 0;
+                 index < first.Route.Hairpins.Count;
+                 index++)
+            {
+                MountainRoadHairpinDescriptor hairpin =
+                    first.Route.Hairpins[index];
+                MountainRoadMiscDescriptor rail = first.Misc.Single(item =>
+                    item.StableId == $"misc-guardrail-{index}");
+                MountainRoadRouteSample railSample = first.Route.Sample(
+                    hairpin.StartDistance + 4.2f);
+                Vector3 offset = rail.Position - railSample.Position;
+                Assert.That(
+                    Mathf.Sign(Vector3.Dot(offset, railSample.Right)),
+                    Is.EqualTo(-hairpin.TurnSide),
+                    $"Hairpin {index} guardrail stands on the inner bank.");
+
+                for (int across = -1; across <= 1; across += 2)
+                {
+                    for (int along = -1; along <= 1; along += 2)
+                    {
+                        Vector3 corner = rail.Position + rail.Rotation *
+                            new Vector3(
+                                across * rail.Size.x * 0.5f,
+                                0f,
+                                along * rail.Size.z * 0.5f);
+                        MountainRoadTerrainSampler.FindClosest(
+                            first.Route,
+                            new Vector2(corner.x, corner.z),
+                            out float distance,
+                            out _,
+                            out _,
+                            out float halfWidth);
+                        Assert.That(
+                            distance,
+                            Is.GreaterThanOrEqualTo(halfWidth + 0.05f),
+                            $"Hairpin {index} guardrail enters the road.");
+                    }
+                }
+            }
+
+            MountainRoadMiscDescriptor abandonedChair = first.Misc.Single(
+                item => item.StableId == "misc-abandoned-chair");
+            MountainRoadRouteSample chairShelf = first.Route.Sample(
+                MountainRoadCompositionRules.AbandonedChairDistance(
+                    first.Route));
+            Assert.That(
+                chairShelf.Section,
+                Is.EqualTo(MountainRoadRouteSection.UpperClimb));
+            Assert.That(
+                Vector3.Dot(
+                    abandonedChair.Position - chairShelf.Position,
+                    chairShelf.Right),
+                Is.LessThan(-3.5f),
+                "The abandoned chair fell back into the bridge gorge.");
+            foreach (MountainRoadMiscDescriptor natural in first.Misc.Where(
+                         item => MountainRoadCompositionRules
+                             .IsNaturalMiscKind(item.Kind)))
+            {
+                if (natural.Kind == MountainRoadMiscKind.DeadTree)
+                {
+                    Assert.That(
+                        MountainRoadCompositionRules.FootprintRadius(natural),
+                        Is.GreaterThanOrEqualTo(
+                            natural.Size.y *
+                            MountainRoadCompositionRules
+                                .DeadTreeFootprintRadiusPerHeight));
+                }
+
+                Assert.That(
+                    first.Misc
+                        .Where(item => item.StableId != natural.StableId)
+                        .All(item => MountainRoadCompositionRules
+                            .HaveMiscFootprintClearance(natural, item)),
+                    Is.True,
+                    $"{natural.StableId} overlaps roadside composition.");
+            }
             // Five on the road and four on the summit. The rule has
             // not changed - every one still has something you can walk
             // up to and look at - only the summit now has furniture of
@@ -209,6 +313,17 @@ namespace BarPromenade.Tests.EditMode
                 MountainRoadTerrainMeshFactory.Create(first);
             Mesh roadMesh = MountainRoadSurfaceMeshFactory.Create(first);
             Assert.That(roadMesh.vertexCount, Is.GreaterThan(2000));
+            Vector3 tunnelRight = Vector3.Cross(
+                Vector3.up,
+                first.Tunnel.OutwardAxis).normalized;
+            Assert.That(
+                Vector3.Dot(roadMesh.normals[2], -tunnelRight),
+                Is.GreaterThan(0.95f),
+                "The left road kerb is wound inward and will be culled.");
+            Assert.That(
+                Vector3.Dot(roadMesh.normals[3], tunnelRight),
+                Is.GreaterThan(0.95f),
+                "The right road kerb is wound inward and will be culled.");
             Assert.That(
                 roadMesh.vertices.Count(vertex =>
                     Vector3.Distance(vertex, entryLeft) < 0.001f),

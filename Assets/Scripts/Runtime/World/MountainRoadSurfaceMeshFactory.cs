@@ -280,17 +280,21 @@ namespace BarPromenade
                     rightTop[index - 1],
                     rightTop[index],
                     triangles);
+                // Kerbs face away from the carriageway. They used to be
+                // wound inward (+Right on the left, -Right on the right),
+                // so the opaque mountain shader culled both vertical road
+                // edges and the ribbon visually dissolved into the soil.
                 AddQuad(
-                    leftBottom[index - 1],
                     leftTop[index - 1],
-                    leftBottom[index],
+                    leftBottom[index - 1],
                     leftTop[index],
+                    leftBottom[index],
                     triangles);
                 AddQuad(
-                    rightTop[index - 1],
                     rightBottom[index - 1],
-                    rightTop[index],
+                    rightTop[index - 1],
                     rightBottom[index],
+                    rightTop[index],
                     triangles);
             }
 

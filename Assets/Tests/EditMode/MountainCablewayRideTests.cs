@@ -825,7 +825,8 @@ namespace BarPromenade.Tests.EditMode
         {
             MountainRoadCablewayPlan plan = MountainCableway();
             float fadeAt = plan.LineLength -
-                           AlpineCablewayRideController.FadeLeadMeters;
+                           AlpineCablewayRideController
+                               .EvaluateFadeLeadMeters(plan);
 
             float lastSupport = 0f;
             for (int index = 0; index < plan.Nodes.Count; index++)
@@ -850,6 +851,166 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 (plan.LineLength - fadeAt) / plan.LineLength,
                 Is.LessThan(0.25f));
+        }
+
+        /// <summary>
+        /// The screen must be FULLY OUT before the cabin touches the rock.
+        ///
+        /// The suite had a fade test already and it was green while the bug
+        /// was in front of it, because every assertion it made was a function
+        /// of along-line distances and the lead - never of the ridge. So the
+        /// cabin drove `3.9 m` into the mountain, in first person, with the
+        /// picture up, and nothing failed. This one measures the thing the
+        /// player actually sees: the near face of the ridge, the nose of his
+        /// own cabin, and how much dissolve is left when they meet.
+        /// </summary>
+        [Test]
+        [Category("MountainRoad")]
+        public void RideFade_IsCompleteBeforeTheCabinReachesTheRock()
+        {
+            MountainRoadPlan road = MountainRoadPlanner.Create(
+                GameSessionState.DefaultCitySeed);
+            MountainRoadCablewayPlan plan = road.Terminal.Cableway;
+
+            MountainRoadRidgeDescriptor occluder = road.Ridges.First(
+                ridge => ridge.StableId == plan.UpperOccluderStableId);
+
+            // The plan's idea of where the rock starts has to be the ridge's
+            // own, or the whole derivation is a second guess.
+            Vector3 nearFace = MountainCablewayMotion.SampleTrackPosition(
+                plan,
+                plan.UpperOccluderNearFaceDistance,
+                1);
+            Vector3 justInside = MountainCablewayMotion.SampleTrackPosition(
+                plan,
+                plan.UpperOccluderNearFaceDistance + 0.25f,
+                1);
+            Assert.That(
+                MountainRoadRidgeGeometry.TryGetCrossing(
+                    occluder,
+                    justInside,
+                    out float crossing),
+                Is.True,
+                "A quarter metre past the near face must be inside the rock.");
+            Assert.That(
+                MountainRoadRidgeGeometry.CrestWorldY(occluder, crossing),
+                Is.GreaterThan(justInside.y),
+                "The built crest must stand over the cable, not beside it.");
+            Assert.That(
+                MountainRoadRidgeGeometry.TryGetCrossing(
+                    occluder,
+                    MountainCablewayMotion.SampleTrackPosition(
+                        plan,
+                        plan.UpperOccluderNearFaceDistance - 0.25f,
+                        1),
+                    out _),
+                Is.False,
+                "A quarter metre short of it must still be open air.");
+            Assert.That(nearFace.y, Is.LessThan(justInside.y + 1f));
+
+            float fadeAt = plan.LineLength -
+                           AlpineCablewayRideController
+                               .EvaluateFadeLeadMeters(plan);
+            float blackAt = fadeAt +
+                            plan.CabinSpeed *
+                            AlpineCablewayRideController.FadeOutSeconds;
+            // The ROOF, not the body. The slab oversails the walls by `8%`
+            // of the cabin's length, and a check that measures the body
+            // reproduces the plan's own error and so cannot catch it.
+            float noseTouchesRock = plan.UpperOccluderNearFaceDistance -
+                                    plan.CabinLeadingHalfLength;
+            Assert.That(
+                plan.CabinLeadingHalfLength,
+                Is.GreaterThan(plan.CabinSize.z * 0.5f),
+                "The cabin's leading edge is its roof lip, not its wall.");
+
+            Assert.That(
+                blackAt,
+                Is.LessThanOrEqualTo(noseTouchesRock),
+                "The picture is still up when the cabin enters the mountain.");
+            Assert.That(
+                noseTouchesRock - blackAt,
+                Is.GreaterThanOrEqualTo(
+                    MountainRoadCablewayPlan
+                        .UpperOccluderApproachClearance - 0.001f),
+                "The cut has to land with clear air still in front of it.");
+
+            // Both tracks: the descending one carries cabins too, and a rule
+            // that only holds on the side the hero rides is half a rule.
+            // (see also the seed sweep below)
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 sample = MountainCablewayMotion.SampleTrackPosition(
+                    plan,
+                    blackAt,
+                    side);
+                Assert.That(
+                    MountainRoadRidgeGeometry.TryGetCrossing(
+                        occluder,
+                        sample,
+                        out _),
+                    Is.False,
+                    $"Track {side} is already in the rock at the cut.");
+            }
+        }
+
+        /// <summary>
+        /// The rock has to be tall enough on EVERY seed, not on the two we
+        /// happen to ship.
+        ///
+        /// A ridge's crest carries a seeded variation in eight steps, and the
+        /// occluder used to be sized against the lid of its bounding box -
+        /// which stands well above the crest that is drawn. On one residue in
+        /// eight the drawn snow sat a third of a metre UNDER the cable it is
+        /// there to hide, and both known seeds miss that residue, which is
+        /// exactly how it would have shipped. The eight seeds below walk all
+        /// eight.
+        /// </summary>
+        [Test]
+        [Category("MountainRoad")]
+        public void Occluder_CrestClearsTheCableOnEverySeedResidue()
+        {
+            for (int step = 0; step < 8; step++)
+            {
+                int seed = GameSessionState.DefaultCitySeed + step;
+                MountainRoadPlan road = MountainRoadPlanner.Create(seed);
+                MountainRoadCablewayPlan cableway = road.Terminal.Cableway;
+                MountainRoadRidgeDescriptor occluder = road.Ridges.First(
+                    ridge =>
+                        ridge.StableId == cableway.UpperOccluderStableId);
+
+                Assert.That(
+                    MountainRoadRidgeGeometry.TryGetCrossing(
+                        occluder,
+                        cableway.UpperCableCenter,
+                        out float crossing),
+                    Is.True,
+                    $"Seed {seed}: the cable end left its own occluder.");
+                Assert.That(
+                    MountainRoadRidgeGeometry.CrestWorldY(
+                        occluder,
+                        crossing),
+                    Is.GreaterThanOrEqualTo(
+                        cableway.UpperCableCenter.y +
+                        MountainRoadCablewayPlan
+                            .UpperOccluderCrestClearance),
+                    $"Seed {seed}: the drawn crest is under the cable.");
+
+                // And the cut still fits between the last tower and the rock
+                // at every one of them.
+                float fadeAt = cableway.LineLength -
+                               AlpineCablewayRideController
+                                   .EvaluateFadeLeadMeters(cableway);
+                float blackAt = fadeAt +
+                                cableway.CabinSpeed *
+                                AlpineCablewayRideController.FadeOutSeconds;
+                Assert.That(
+                    blackAt,
+                    Is.LessThanOrEqualTo(
+                        cableway.UpperOccluderNearFaceDistance -
+                        cableway.CabinLeadingHalfLength),
+                    $"Seed {seed}: the picture is up inside the rock.");
+            }
         }
     }
 }

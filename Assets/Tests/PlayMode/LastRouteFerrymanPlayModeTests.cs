@@ -1057,6 +1057,134 @@ namespace BarPromenade.Tests.PlayMode
             return harness;
         }
 
+        /// <summary>
+        /// He turns the wheel. Through a real corner, with the rim rolled
+        /// past thirty degrees by the car's own driver, both palms stay on
+        /// the grips to the bus driver's own tolerance - the mirror of
+        /// `DriverPresentation_TracksWheelPressesButtonAndLooksAtDoor`, and
+        /// the only real guard on the feature: nothing else in the LastRoute
+        /// suite measures steering at all, so a wheel wired backwards or
+        /// never engaging would ship green without this.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Driving_HisHandsRideTheTurningRim()
+        {
+            var root = new GameObject("Ferryman Steering Test");
+            try
+            {
+                Harness harness = BuildHarness(root.transform);
+                LastRouteFerrymanPresentation ferryman = harness.Ferryman;
+                var pedestrianRegistry = ferryman
+                    .GetComponentInChildren<CityPedestrianAssetRegistry>(
+                        true);
+
+                // Batch mode draws nothing, and a culled Animator writes no
+                // bone at all - the rig reads back in bind pose and every
+                // grip distance below passes vacuously.
+                pedestrianRegistry.Animator.cullingMode =
+                    AnimatorCullingMode.AlwaysAnimate;
+
+                Assert.That(ferryman.TryBeginBoarding(), Is.True);
+                for (int step = 0;
+                     step < BoardingSteps && !ferryman.IsDriving;
+                     step++)
+                {
+                    yield return null;
+                }
+
+                Assert.That(
+                    ferryman.IsDriving,
+                    Is.True,
+                    "He never made it behind the wheel.");
+
+                // The car's own driver, on a road with a corner in it.
+                // InstallMechanisms already raised and initialized him with
+                // the doors and the springs; the test only hands him a road.
+                var driver = harness.Car
+                    .GetComponent<LastRouteCarDriver>();
+                Assert.That(
+                    driver,
+                    Is.Not.Null,
+                    "The mechanisms install the driver with the springs.");
+                driver.Begin(
+                    BuildBentRoad(),
+                    LastRouteCarDriveProfile.City);
+
+                int contactSamples = 0;
+                float worstGrip = 0f;
+                float widestRim = 0f;
+                for (int step = 0; step < 1500 && driver.IsDriving; step++)
+                {
+                    yield return null;
+                    widestRim = Mathf.Max(
+                        widestRim,
+                        Mathf.Abs(driver.SteeringWheelDegrees));
+                    if (Mathf.Abs(driver.SteeringWheelDegrees) <= 30f ||
+                        ferryman.SteeringHandsWeight < 1f)
+                    {
+                        continue;
+                    }
+
+                    contactSamples++;
+                    worstGrip = Mathf.Max(
+                        worstGrip,
+                        Mathf.Max(
+                            ferryman.LeftGripDistance,
+                            ferryman.RightGripDistance));
+                }
+
+                Assert.That(
+                    widestRim,
+                    Is.GreaterThan(30f),
+                    "The corner never turned the rim; the test measured " +
+                    "nothing.");
+                Assert.That(
+                    contactSamples,
+                    Is.GreaterThan(30),
+                    "Too few frames with the rim turned and the hands " +
+                    "committed to prove contact.");
+                Assert.That(
+                    worstGrip,
+                    Is.LessThanOrEqualTo(
+                        LastRouteFerrymanPresentation.MaximumGripError),
+                    "His palms must ride the turned rim, not hover where " +
+                    "the clip drew them.");
+            }
+            finally
+            {
+                Object.Destroy(root);
+            }
+        }
+
+        /// <summary>A short lead, a quarter arc tight enough to hold the
+        /// steering clamp at full lock, and a run out.</summary>
+        private static LastRouteCarDrivePath BuildBentRoad()
+        {
+            var points = new System.Collections.Generic.List<Vector3>();
+            for (float distance = 0f; distance <= 8f; distance += 1f)
+            {
+                points.Add(new Vector3(0f, 0f, distance));
+            }
+
+            var center = new Vector3(6f, 0f, 8f);
+            const int divisions = 12;
+            for (int index = 1; index <= divisions; index++)
+            {
+                float angle = Mathf.PI * 0.5f * index / divisions;
+                points.Add(center + new Vector3(
+                    -Mathf.Cos(angle) * 6f,
+                    0f,
+                    Mathf.Sin(angle) * 6f));
+            }
+
+            for (float distance = 1f; distance <= 8f; distance += 1f)
+            {
+                points.Add(new Vector3(6f + distance, 0f, 14f));
+            }
+
+            return new LastRouteCarDrivePath(points);
+        }
+
         private static void CreateGround(Transform parent)
         {
             GameObject ground = GameObject.CreatePrimitive(

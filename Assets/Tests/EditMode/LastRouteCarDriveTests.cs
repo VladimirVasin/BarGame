@@ -689,5 +689,409 @@ namespace BarPromenade.Tests.EditMode
                 model.Advance(1f / 60f);
             }
         }
+
+        /// <summary>
+        /// The everywhere-else rule, end to end on a synthetic street: the
+        /// car eases off and STANDS behind a bus dwelling on its own lane
+        /// line, and pulls away when it leaves. Before this rule the car had
+        /// no code at all that knew the bus existed outside the one forecourt
+        /// give-way, and the player watched it drive straight through eight
+        /// metres of dwelling bus.
+        /// </summary>
+        [Test]
+        public void TrafficYield_StandsBehindADwellingBusAndFollowsItOut()
+        {
+            LastRouteCarDrivePath path = BuildStraight(120f);
+            var model = new LastRouteCarDriveModel(
+                path,
+                LastRouteCarDriveProfile.City);
+            var traffic = new LastRouteCarTrafficYieldModel();
+            Vector3 busCenter = new Vector3(0f, 0f, 60f);
+            const float BusHalfLength = 4.125f;
+
+            float Step(Vector3 busPosition, float busSpeed)
+            {
+                float conflict = LastRouteCarGiveWay.FindBusPathConflict(
+                    path,
+                    model.Distance,
+                    40f,
+                    busPosition,
+                    Vector3.forward,
+                    busSpeed,
+                    BusHalfLength);
+                float hold = traffic.Advance(
+                    1f / 60f,
+                    model.Distance,
+                    model.Speed,
+                    model.Profile.Braking,
+                    float.IsPositiveInfinity(conflict)
+                        ? float.PositiveInfinity
+                        : Mathf.Max(
+                            0f,
+                            conflict -
+                            LastRouteCarGiveWay.TrafficFollowGapMeters));
+                model.SetHold(hold);
+                model.Advance(1f / 60f);
+                return hold;
+            }
+
+            // Fourteen seconds - the far side of a lawful 10 s dwell, and
+            // still inside his own patience - at a bus that has not moved:
+            // he must be standing short of its tail, not through it. (Twenty
+            // seconds here and the wait cap fires and he drives through,
+            // which is its own test below.)
+            for (int frame = 0; frame < 840; frame++)
+            {
+                Step(busCenter, 0f);
+            }
+
+            Assert.That(
+                model.IsWaiting,
+                Is.True,
+                "The car must be standing behind the dwelling bus.");
+            Assert.That(
+                model.Distance + 2.415f,
+                Is.LessThan(busCenter.z - BusHalfLength),
+                "The car's nose is inside the bus.");
+            Assert.That(
+                traffic.IsYielding,
+                Is.True);
+
+            // The bus pulls away and leaves. The hold recedes with it and
+            // the car follows out and drives the street to its end.
+            float busZ = busCenter.z;
+            for (int frame = 0; frame < 3000 && !model.HasArrived; frame++)
+            {
+                busZ += 6f / 60f;
+                Step(
+                    busZ > 200f
+                        ? new Vector3(0f, 0f, 500f)
+                        : new Vector3(0f, 0f, busZ),
+                    6f);
+            }
+
+            Assert.That(
+                model.HasArrived,
+                Is.True,
+                "The road must be his again once the bus is gone.");
+        }
+
+        /// <summary>
+        /// A bus lawfully passing the other way runs its own lane, three
+        /// metres off his - the corridor threshold must never read it as
+        /// traffic to brake for, or every correct oncoming meeting stops
+        /// the ride.
+        /// </summary>
+        [Test]
+        public void TrafficYield_IgnoresABusPassingTheOtherWay()
+        {
+            LastRouteCarDrivePath path = BuildStraight(120f);
+            Assert.That(
+                LastRouteCarGiveWay.FindBusPathConflict(
+                    path,
+                    10f,
+                    60f,
+                    new Vector3(3f, 0f, 40f),
+                    Vector3.back,
+                    6f,
+                    4.125f),
+                Is.EqualTo(float.PositiveInfinity),
+                "The oncoming lane is not his problem.");
+
+            // And the same bus drifted onto his own line IS.
+            Assert.That(
+                LastRouteCarGiveWay.FindBusPathConflict(
+                    path,
+                    10f,
+                    60f,
+                    new Vector3(0f, 0f, 40f),
+                    Vector3.back,
+                    6f,
+                    4.125f),
+                Is.LessThan(40f));
+        }
+
+        /// <summary>
+        /// A bus sweeping a junction ahead holds the car SHORT of the
+        /// corridor; the same bus still short of the junction does not.
+        /// </summary>
+        [Test]
+        public void TrafficYield_HoldsShortOfAJunctionSweep()
+        {
+            LastRouteCarDrivePath path = BuildStraight(120f);
+
+            // Crossing the lane at z=50, nose plus a breath of prediction
+            // reaching over the line.
+            float conflict = LastRouteCarGiveWay.FindBusPathConflict(
+                path,
+                10f,
+                60f,
+                new Vector3(-10f, 0f, 50f),
+                Vector3.right,
+                6f,
+                4.125f);
+            Assert.That(conflict, Is.LessThan(50f));
+            Assert.That(conflict, Is.GreaterThan(40f));
+
+            // Far side of its own street, sweep well short of the lane.
+            Assert.That(
+                LastRouteCarGiveWay.FindBusPathConflict(
+                    path,
+                    10f,
+                    60f,
+                    new Vector3(-25f, 0f, 50f),
+                    Vector3.right,
+                    6f,
+                    4.125f),
+                Is.EqualTo(float.PositiveInfinity));
+        }
+
+        /// <summary>
+        /// The give-way's own rule, inherited whole: a conflict discovered
+        /// nearer than the car can stop is driven through, because braking
+        /// to a standstill INSIDE the junction parks the car in the one lane
+        /// the bus will never yield in - which is how two vehicles that each
+        /// behave reasonably lock a street.
+        /// </summary>
+        [Test]
+        public void TrafficYield_NeverParksInsideTheJunction()
+        {
+            var traffic = new LastRouteCarTrafficYieldModel();
+
+            // Two metres to the hold at city cruise, which needs almost
+            // thirteen to stop in.
+            Assert.That(
+                traffic.Advance(1f / 60f, 40f, 8.2f, 2.6f, 42f),
+                Is.EqualTo(float.PositiveInfinity));
+            Assert.That(traffic.IsYielding, Is.False);
+        }
+
+        /// <summary>
+        /// He never waits forever - this is the one ride out of the city -
+        /// and after giving up he does not brake straight back into the
+        /// thing he just decided to pass.
+        /// </summary>
+        [Test]
+        public void TrafficYield_GivesUpAfterTheLongestLawfulDwell()
+        {
+            var traffic = new LastRouteCarTrafficYieldModel();
+
+            // Stopped at the hold with the conflict never moving. The
+            // longest lawful bus stands 15 s; at 18 he goes.
+            float hold = 0f;
+            for (float waited = 0f; waited < 17.9f; waited += 0.1f)
+            {
+                hold = traffic.Advance(0.1f, 34f, 0f, 2.6f, 34f);
+            }
+
+            Assert.That(hold, Is.EqualTo(34f));
+            Assert.That(traffic.IsWaitedOut, Is.False);
+
+            hold = traffic.Advance(0.2f, 34f, 0f, 2.6f, 34f);
+            Assert.That(hold, Is.EqualTo(float.PositiveInfinity));
+            Assert.That(traffic.IsWaitedOut, Is.True);
+
+            // The same still-standing conflict must not re-arm, or the car
+            // stutters into the bus forever.
+            Assert.That(
+                traffic.Advance(0.1f, 36f, 4f, 2.6f, 40f),
+                Is.EqualTo(float.PositiveInfinity));
+
+            // A genuinely clear road restores his patience.
+            for (int step = 0; step < 5; step++)
+            {
+                traffic.Advance(
+                    0.1f,
+                    50f,
+                    8f,
+                    2.6f,
+                    float.PositiveInfinity);
+            }
+
+            Assert.That(traffic.IsWaitedOut, Is.False);
+            Assert.That(
+                traffic.Advance(0.1f, 50f, 8f, 2.6f, 80f),
+                Is.EqualTo(80f),
+                "A new conflict after a clear road is held for again.");
+        }
+
+        /// <summary>
+        /// Walkers: the jaywalker ahead in the lane holds the car; the
+        /// walker waiting at a stop on the pavement - `1.74 m` off the lane
+        /// line - never does, or the whole pavement reads as jaywalkers.
+        /// </summary>
+        [Test]
+        public void TrafficYield_HoldsForTheJaywalkerAndIgnoresThePavement()
+        {
+            LastRouteCarDrivePath path = BuildStraight(120f);
+
+            Assert.That(
+                LastRouteCarGiveWay.FindWalkerPathConflict(
+                    path,
+                    10f,
+                    60f,
+                    new Vector3(0.3f, 0f, 40f),
+                    Vector3.right,
+                    1.1f,
+                    0.35f),
+                Is.LessThan(40f),
+                "A walker in the road must hold the car.");
+
+            Assert.That(
+                LastRouteCarGiveWay.FindWalkerPathConflict(
+                    path,
+                    10f,
+                    60f,
+                    new Vector3(1.74f, 0f, 40f),
+                    Vector3.zero,
+                    0f,
+                    0.35f),
+                Is.EqualTo(float.PositiveInfinity),
+                "The pavement is not the road.");
+        }
+
+        /// <summary>
+        /// The wait graph between this car and Route 01 must stay acyclic,
+        /// and this is the arithmetic that keeps it so. The bus never brakes
+        /// for the car - only for walkers and for the HERO, whom it looks
+        /// for within `1.71 m` of its own lane line (half bus `1.19` + hero
+        /// radius `0.32` + padding `0.20`). The hero rides this car, so a
+        /// held car must park him OUTSIDE that corridor: nose at clearance
+        /// plus follow gap less the worst late-hold overshoot, hero at most
+        /// half a car behind the nose. If this inequality ever breaks, the
+        /// two vehicles can stand braked for each other at a junction with
+        /// neither crossing anything.
+        /// </summary>
+        [Test]
+        public void TrafficYield_HoldGeometryKeepsTheWaitGraphAcyclic()
+        {
+            const float BusHeroCorridor = 1.19f + 0.32f + 0.20f;
+            const float WorstLateHoldOvershoot = 2f;
+            const float HeroBehindNose = 4.83f * 0.5f;
+            Assert.That(
+                LastRouteCarGiveWay.BusClearanceMeters +
+                LastRouteCarGiveWay.TrafficFollowGapMeters -
+                WorstLateHoldOvershoot,
+                Is.GreaterThan(BusHeroCorridor + HeroBehindNose),
+                "A held car would park its hero inside the bus's own " +
+                "yield corridor, and the two would wait for each other.");
+        }
+
+        /// <summary>
+        /// The rim rolls with the front wheels, at the ratio, and - the
+        /// whole point of the assertion - the right way round UNDER THE
+        /// DRIVER'S HANDS. The bus's rim once rolled left on every right
+        /// turn because its column axis points at the windshield and a
+        /// positive rotation reads counterclockwise from the axis tail;
+        /// this car's raked column points back at the driver, so the same
+        /// negation copied over would have reproduced that bug in mirror.
+        /// The axis is measured off the drawn grips instead, and this pins
+        /// the result.
+        /// </summary>
+        [Test]
+        public void Steering_RollsTheRimWithTheFrontWheelsForTheDriver()
+        {
+            GameObject prefab = LastRouteCarAssetRegistry.LoadPrefab();
+            Assert.That(prefab, Is.Not.Null, "The car prefab is missing.");
+            var host = new GameObject("Car Steering Test");
+            try
+            {
+                GameObject car = Object.Instantiate(prefab, host.transform);
+                car.transform.SetPositionAndRotation(
+                    Vector3.zero,
+                    Quaternion.identity);
+                var registry =
+                    car.GetComponentInChildren<LastRouteCarAssetRegistry>(
+                        true);
+                Assert.That(registry.IsBound, Is.True);
+
+                var driver = car.AddComponent<LastRouteCarDriver>();
+                driver.Initialize(registry);
+                Transform pivot = registry.SteeringWheelPivot;
+                Quaternion rest = pivot.localRotation;
+                Transform frontWheel = registry.FrontLeftWheel;
+                Quaternion frontRest = frontWheel.localRotation;
+
+                driver.ApplySteeringPose(20f);
+                Assert.That(
+                    driver.SteeringWheelDegrees,
+                    Is.EqualTo(20f * LastRouteCarDriver.SteeringWheelRatio)
+                        .Within(0.001f));
+
+                // The front pair answers the same signal one-to-one: `20`
+                // degrees about the car's up. Measured as a DELTA in parent
+                // space rather than off the node's own `forward` - the
+                // imported wheel child is turned a half turn, its axes are
+                // not the car's, and this test's first draft proved the trap
+                // by reading zero yaw off a correctly steered wheel.
+                (frontWheel.localRotation * Quaternion.Inverse(frontRest))
+                    .ToAngleAxis(
+                        out float frontAngle,
+                        out Vector3 frontAxis);
+                Vector3 frontAxisWorld = frontWheel.parent != null
+                    ? frontWheel.parent.TransformDirection(frontAxis)
+                    : frontAxis;
+                if (frontAngle > 180f)
+                {
+                    frontAngle = 360f - frontAngle;
+                    frontAxisWorld = -frontAxisWorld;
+                }
+
+                Assert.That(
+                    frontAngle,
+                    Is.EqualTo(20f).Within(0.5f),
+                    "The front wheels must answer the steer one-to-one.");
+                Assert.That(
+                    Vector3.Dot(frontAxisWorld.normalized, car.transform.up),
+                    Is.GreaterThan(0.9f),
+                    "A positive steer must yaw the front wheels toward the " +
+                    "car's right, about its up.");
+
+                // The rim's own turn, read back as angle-and-axis. The
+                // delta quaternion lives in the pivot's PARENT space, so
+                // its axis does too.
+                (pivot.localRotation * Quaternion.Inverse(rest))
+                    .ToAngleAxis(out float rimAngle, out Vector3 rimAxis);
+                Vector3 rimAxisWorld = pivot.parent != null
+                    ? pivot.parent.TransformDirection(rimAxis)
+                    : rimAxis;
+                if (rimAngle > 180f)
+                {
+                    rimAngle = 360f - rimAngle;
+                    rimAxisWorld = -rimAxisWorld;
+                }
+
+                Assert.That(
+                    rimAngle,
+                    Is.EqualTo(60f).Within(0.5f),
+                    "The rim must roll at the ratio.");
+
+                // Clockwise for the man holding it: the positive-turn axis
+                // points AT the driver's seat, and a positive Unity
+                // rotation reads clockwise to the viewer at the axis tip.
+                Assert.That(
+                    Vector3.Dot(
+                        rimAxisWorld,
+                        registry.DriverSeatAnchor.position -
+                        pivot.position),
+                    Is.GreaterThan(0f),
+                    "A right steer must roll the rim clockwise under the " +
+                    "driver's hands - the bus shipped this backwards once.");
+
+                // The handbrake straightens the wheel: Halt is what runs on
+                // arrival, and the alighting clip that follows starts from
+                // hands drawn on an UNTURNED rim.
+                driver.Halt();
+                Assert.That(driver.SteeringWheelDegrees, Is.EqualTo(0f));
+                Assert.That(
+                    Quaternion.Angle(pivot.localRotation, rest),
+                    Is.LessThan(0.01f),
+                    "A parked car does not hold its last corner.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
     }
 }

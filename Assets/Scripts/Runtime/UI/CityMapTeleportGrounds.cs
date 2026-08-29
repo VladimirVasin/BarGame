@@ -156,7 +156,7 @@ namespace BarPromenade
         {
             float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
             var footprints = new List<Rect>(
-                layout.BuildingLots.Count + 1);
+                layout.BuildingLots.Count + 8);
             for (int index = 0; index < layout.BuildingLots.Count; index++)
             {
                 BuildingLot lot = layout.BuildingLots[index];
@@ -200,7 +200,54 @@ namespace BarPromenade
                 }
             }
 
+            CityArchShelterPlan archShelter =
+                CityArchShelterPlanner.Create(layout);
+            if (archShelter.IsEnabled)
+            {
+                for (int index = 0;
+                     index < archShelter.Props.Count;
+                     index++)
+                {
+                    CityArchShelterPropDescriptor prop =
+                        archShelter.Props[index];
+                    if (prop.BlocksMovement)
+                    {
+                        footprints.Add(Expand(
+                            ToXZRect(prop.Bounds),
+                            radius));
+                    }
+                }
+
+                // The authored residents are deliberately colliderless, but
+                // a map arrival still must not materialize inside one of
+                // their silhouettes. The sleeper is already protected by
+                // the bedding footprint; keeping this small stance reserve
+                // also covers both people warming themselves at the barrel.
+                for (int index = 0;
+                     index < archShelter.NpcAnchors.Count;
+                     index++)
+                {
+                    Vector3 position =
+                        archShelter.NpcAnchors[index].Position;
+                    var stance = Rect.MinMaxRect(
+                        position.x - 0.32f,
+                        position.z - 0.32f,
+                        position.x + 0.32f,
+                        position.z + 0.32f);
+                    footprints.Add(Expand(stance, radius));
+                }
+            }
+
             return footprints;
+        }
+
+        private static Rect ToXZRect(Bounds bounds)
+        {
+            return Rect.MinMaxRect(
+                bounds.min.x,
+                bounds.min.z,
+                bounds.max.x,
+                bounds.max.z);
         }
 
         private static Rect Expand(Rect bounds, float amount)

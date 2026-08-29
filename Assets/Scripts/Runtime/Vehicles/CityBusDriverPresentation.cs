@@ -46,7 +46,6 @@ namespace BarPromenade
         private const float PlayerFocusEnterSpeed = 3.5f;
         private const float PlayerFocusExitSpeed = 2f;
         private const float EyesClosedThreshold = 0.78f;
-        private const int IkIterations = 5;
 
         private readonly List<BonePose> baseBonePoses =
             new List<BonePose>(24);
@@ -57,8 +56,8 @@ namespace BarPromenade
         private Transform playerFocusRoot;
         private Transform playerFocusHead;
         private Renderer[] blinkRenderers = Array.Empty<Renderer>();
-        private HandAttachment leftHandAttachment;
-        private HandAttachment rightHandAttachment;
+        private SeatedArmHandAttachment leftHandAttachment;
+        private SeatedArmHandAttachment rightHandAttachment;
         private Quaternion leftFootRotationInDriver;
         private Quaternion rightFootRotationInDriver;
         private float breathingPhase;
@@ -121,10 +120,10 @@ namespace BarPromenade
             driverRoot.position += seatTarget - registry.Pelvis.position;
 
             CaptureBaseBonePoses();
-            leftHandAttachment = new HandAttachment(
+            leftHandAttachment = new SeatedArmHandAttachment(
                 registry.LeftHand,
                 registry.LeftGripSocket);
-            rightHandAttachment = new HandAttachment(
+            rightHandAttachment = new SeatedArmHandAttachment(
                 registry.RightHand,
                 registry.RightGripSocket);
             leftFootRotationInDriver = Quaternion.Inverse(
@@ -421,7 +420,7 @@ namespace BarPromenade
             Vector3 kneeHint,
             Quaternion footRotation)
         {
-            SolveTwoBone(
+            SeatedArmIk.SolveTwoBone(
                 thigh,
                 shin,
                 foot,
@@ -698,17 +697,17 @@ namespace BarPromenade
 
         private void ApplySteeringHands(float buttonBlend)
         {
-            TargetPose leftGrip = new TargetPose(
+            SeatedArmTargetPose leftGrip = new SeatedArmTargetPose(
                 busRegistry.LeftSteeringGrip.position,
                 busRegistry.LeftSteeringGrip.rotation);
-            TargetPose rightGrip = new TargetPose(
+            SeatedArmTargetPose rightGrip = new SeatedArmTargetPose(
                 busRegistry.RightSteeringGrip.position,
                 busRegistry.RightSteeringGrip.rotation);
-            TargetPose button = new TargetPose(
+            SeatedArmTargetPose button = new SeatedArmTargetPose(
                 busRegistry.DoorButtonPressAnchor.position,
                 busRegistry.DoorButtonPressAnchor.rotation);
             float arc = Mathf.Sin(buttonBlend * Mathf.PI) * ReachArcHeight;
-            TargetPose rightTarget = new TargetPose(
+            SeatedArmTargetPose rightTarget = new SeatedArmTargetPose(
                 Vector3.Lerp(rightGrip.Position, button.Position, buttonBlend) +
                 registry.transform.up * arc,
                 Quaternion.Slerp(
@@ -736,8 +735,8 @@ namespace BarPromenade
             Transform upperArm,
             Transform forearm,
             Transform hand,
-            HandAttachment attachment,
-            TargetPose socketTarget,
+            SeatedArmHandAttachment attachment,
+            SeatedArmTargetPose socketTarget,
             Vector3 elbowSide)
         {
             Quaternion handRotation =
@@ -751,7 +750,7 @@ namespace BarPromenade
                 elbowSide * 0.32f +
                 registry.transform.forward * 0.08f -
                 registry.transform.up * 0.08f;
-            SolveTwoBone(
+            SeatedArmIk.SolveTwoBone(
                 upperArm,
                 forearm,
                 hand,
@@ -773,84 +772,6 @@ namespace BarPromenade
                 busRegistry.DoorButtonPressAnchor.position);
         }
 
-        private static void SolveTwoBone(
-            Transform upper,
-            Transform lower,
-            Transform tip,
-            Vector3 targetPosition,
-            Quaternion targetRotation,
-            Vector3 hintPosition)
-        {
-            if (upper == null || lower == null || tip == null)
-            {
-                return;
-            }
-
-            for (int iteration = 0;
-                 iteration < IkIterations;
-                 iteration++)
-            {
-                RotateJointToward(lower, tip.position, targetPosition);
-                RotateJointToward(upper, tip.position, targetPosition);
-            }
-
-            ApplyBendHint(upper, lower, targetPosition, hintPosition);
-            for (int iteration = 0; iteration < 2; iteration++)
-            {
-                RotateJointToward(lower, tip.position, targetPosition);
-                RotateJointToward(upper, tip.position, targetPosition);
-            }
-
-            tip.rotation = targetRotation;
-        }
-
-        private static void RotateJointToward(
-            Transform joint,
-            Vector3 tipPosition,
-            Vector3 targetPosition)
-        {
-            Vector3 current = tipPosition - joint.position;
-            Vector3 target = targetPosition - joint.position;
-            if (current.sqrMagnitude < 0.000001f ||
-                target.sqrMagnitude < 0.000001f)
-            {
-                return;
-            }
-
-            joint.rotation = Quaternion.FromToRotation(current, target) *
-                joint.rotation;
-        }
-
-        private static void ApplyBendHint(
-            Transform upper,
-            Transform lower,
-            Vector3 targetPosition,
-            Vector3 hintPosition)
-        {
-            Vector3 axis = targetPosition - upper.position;
-            if (axis.sqrMagnitude < 0.000001f)
-            {
-                return;
-            }
-
-            axis.Normalize();
-            Vector3 current = Vector3.ProjectOnPlane(
-                lower.position - upper.position,
-                axis);
-            Vector3 desired = Vector3.ProjectOnPlane(
-                hintPosition - upper.position,
-                axis);
-            if (current.sqrMagnitude < 0.000001f ||
-                desired.sqrMagnitude < 0.000001f)
-            {
-                return;
-            }
-
-            float angle = Vector3.SignedAngle(current, desired, axis);
-            upper.rotation = Quaternion.AngleAxis(angle, axis) *
-                upper.rotation;
-        }
-
         private static float Sanitize01(float value)
         {
             return IsFinite(value) ? Mathf.Clamp01(value) : 0f;
@@ -859,32 +780,6 @@ namespace BarPromenade
         private static bool IsFinite(float value)
         {
             return !float.IsNaN(value) && !float.IsInfinity(value);
-        }
-
-        private readonly struct TargetPose
-        {
-            public TargetPose(Vector3 position, Quaternion rotation)
-            {
-                Position = position;
-                Rotation = rotation;
-            }
-
-            public Vector3 Position { get; }
-            public Quaternion Rotation { get; }
-        }
-
-        private readonly struct HandAttachment
-        {
-            public HandAttachment(Transform hand, Transform socket)
-            {
-                SocketPositionInHand = Quaternion.Inverse(hand.rotation) *
-                    (socket.position - hand.position);
-                SocketRotationInHand = Quaternion.Inverse(hand.rotation) *
-                    socket.rotation;
-            }
-
-            public Vector3 SocketPositionInHand { get; }
-            public Quaternion SocketRotationInHand { get; }
         }
 
         private readonly struct BonePose

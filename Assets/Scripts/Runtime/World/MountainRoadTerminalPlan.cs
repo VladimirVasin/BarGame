@@ -315,6 +315,69 @@ namespace BarPromenade
                                    Mathf.PI * TrackSeparation;
 
         /// <summary>
+        /// Where the far snow ridge that swallows the upper turn stands, in
+        /// the line's own frame.
+        ///
+        /// These two numbers used to be literals inside
+        /// `MountainRoadPlanner`, and the ride guessed its blackout
+        /// independently of them. That is the whole bug: the ridge is not
+        /// scenery that happens to be near the top, it is planted ON the
+        /// line, and the last `6.8 m` of the visible line - the upper turn
+        /// included - is inside solid rock BY DESIGN. A fade lead chosen
+        /// without them let the passenger ride `3.9 m` into the mountain with
+        /// his own eye, and a single-sided ridge has no back face, so what he
+        /// saw was the world straight through the rock.
+        /// </summary>
+        public const float UpperOccluderSetback = 1.8f;
+
+        public const float UpperOccluderDepth = 10f;
+
+        /// <summary>
+        /// Clear air between the cabin's leading face and the rock at the
+        /// moment the screen is fully out. Small on purpose: the ridge has to
+        /// FILL the frame when the cut lands, because a cabin that vanishes
+        /// in open air is a worse cut than no cut at all.
+        /// </summary>
+        public const float UpperOccluderApproachClearance = 1f;
+
+        /// <summary>Where the ridge's near face crosses the track, in metres
+        /// along the line from the boarding station.</summary>
+        public float UpperOccluderNearFaceDistance =>
+            LineLength - UpperOccluderSetback - UpperOccluderDepth * 0.5f;
+
+        /// <summary>
+        /// How far the cabin's roof slab oversails its body. The leading
+        /// thing on a cabin is not the wall the passenger sits behind, it is
+        /// this lip - `8%` of the body's length ahead of it - and measuring
+        /// the approach to the rock against the body instead quietly spends
+        /// `6 cm` of the clearance it claims to keep.
+        /// </summary>
+        public const float CabinRoofOverhang = 1.08f;
+
+        /// <summary>Half the drawn cabin, along the line: what actually
+        /// touches the rock first.</summary>
+        public float CabinLeadingHalfLength =>
+            CabinSize.z * CabinRoofOverhang * 0.5f;
+
+        /// <summary>
+        /// The last metre of line on which a cabin may still be on screen.
+        /// Past it the cabin's own roof is in the mountain.
+        /// </summary>
+        public float LastVisibleDistance =>
+            UpperOccluderNearFaceDistance -
+            CabinLeadingHalfLength -
+            UpperOccluderApproachClearance;
+
+        /// <summary>
+        /// How far the ridge's built crest has to stand over the cable where
+        /// the line crosses it. One number, two readers: the planner sizes
+        /// the ridge so this is true and the validator refuses a plan where
+        /// it is not, which is the only arrangement in which the rule cannot
+        /// come out true for seven seeds in eight and throw on the eighth.
+        /// </summary>
+        public const float UpperOccluderCrestClearance = 2f;
+
+        /// <summary>
         /// A step into the cabin, not a climb. The cabin floor hangs `0.87 m`
         /// over a bare station pad on the authored line, which is a height a
         /// person hauls themselves up rather than steps over - so both

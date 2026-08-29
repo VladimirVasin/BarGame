@@ -1,9 +1,9 @@
 {
-  "generator": "tools/build-mountain-road-misc-3d-model.py",
-  "generator_version": "1.0.0",
+  "generator": "tools/build-village-3d-model.py",
+  "generator_version": "2.1.1",
   "blender_version": "5.0.1",
-  "design_id": "village_wave1_v1",
-  "display_name": "Village Wave 1",
+  "design_id": "village_wave2_v2",
+  "display_name": "Village Wave 2.1.1",
   "source_axes": {
     "right": "+X",
     "forward": "+Y",
@@ -38,9 +38,9 @@
   "lights": false,
   "cameras": false,
   "animation_count": 0,
-  "mesh_count": 27,
-  "assembly_count": 11,
-  "triangle_count": 1844,
+  "mesh_count": 53,
+  "assembly_count": 19,
+  "triangle_count": 3624,
   "assemblies": [
     {
       "kind": "House",
@@ -50,7 +50,8 @@
         "GEO_VIL_House_Variant00_Walls",
         "GEO_VIL_House_Variant00_Roof",
         "GEO_VIL_House_Variant00_Plinth",
-        "GEO_VIL_House_Variant00_Chimney"
+        "GEO_VIL_House_Variant00_Chimney",
+        "GEO_VIL_House_Variant00_Snow"
       ],
       "bounds_min_source": [
         -0.5,
@@ -81,7 +82,8 @@
         "GEO_VIL_House_Variant01_Walls",
         "GEO_VIL_House_Variant01_Roof",
         "GEO_VIL_House_Variant01_Plinth",
-        "GEO_VIL_House_Variant01_Chimney"
+        "GEO_VIL_House_Variant01_Chimney",
+        "GEO_VIL_House_Variant01_Snow"
       ],
       "bounds_min_source": [
         -0.5,
@@ -112,7 +114,8 @@
         "GEO_VIL_House_Variant02_Walls",
         "GEO_VIL_House_Variant02_Roof",
         "GEO_VIL_House_Variant02_Plinth",
-        "GEO_VIL_House_Variant02_Chimney"
+        "GEO_VIL_House_Variant02_Chimney",
+        "GEO_VIL_House_Variant02_Snow"
       ],
       "bounds_min_source": [
         -0.5,
@@ -143,7 +146,8 @@
         "GEO_VIL_House_Variant03_Walls",
         "GEO_VIL_House_Variant03_Roof",
         "GEO_VIL_House_Variant03_Plinth",
-        "GEO_VIL_House_Variant03_Chimney"
+        "GEO_VIL_House_Variant03_Chimney",
+        "GEO_VIL_House_Variant03_Snow"
       ],
       "bounds_min_source": [
         -0.5,
@@ -173,7 +177,8 @@
       "part_meshes": [
         "GEO_VIL_Chapel_Walls",
         "GEO_VIL_Chapel_Roof",
-        "GEO_VIL_Chapel_Plinth"
+        "GEO_VIL_Chapel_Plinth",
+        "GEO_VIL_Chapel_Snow"
       ],
       "bounds_min_source": [
         -0.49,
@@ -365,6 +370,243 @@
         0.391086,
         0.462699
       ]
+    },
+    {
+      "kind": "TopHouse",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_TopHouse_Walls",
+        "GEO_VIL_TopHouse_Roof",
+        "GEO_VIL_TopHouse_Plinth",
+        "GEO_VIL_TopHouse_Chimney",
+        "GEO_VIL_TopHouse_Snow"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.475,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.49,
+        0.4895
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.475
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.4895,
+        0.49
+      ]
+    },
+    {
+      "kind": "FacadeDetail",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_FacadeDetail_Variant00_Shutters",
+        "GEO_VIL_FacadeDetail_Variant00_Repair",
+        "GEO_VIL_FacadeDetail_Variant00_Bracket"
+      ],
+      "bounds_min_source": [
+        -0.485,
+        -0.045,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4691,
+        0.21627,
+        0.371472
+      ],
+      "bounds_min_unity": [
+        -0.485,
+        -0.5,
+        -0.045
+      ],
+      "bounds_max_unity": [
+        0.4691,
+        0.371472,
+        0.21627
+      ]
+    },
+    {
+      "kind": "FacadeDetail",
+      "variant": 1,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_FacadeDetail_Variant01_Shutters",
+        "GEO_VIL_FacadeDetail_Variant01_Repair",
+        "GEO_VIL_FacadeDetail_Variant01_Bracket"
+      ],
+      "bounds_min_source": [
+        -0.4905,
+        -0.045,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.48518,
+        0.21627,
+        0.371472
+      ],
+      "bounds_min_unity": [
+        -0.4905,
+        -0.5,
+        -0.045
+      ],
+      "bounds_max_unity": [
+        0.48518,
+        0.371472,
+        0.21627
+      ]
+    },
+    {
+      "kind": "FacadeDetail",
+      "variant": 2,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_FacadeDetail_Variant02_Shutters",
+        "GEO_VIL_FacadeDetail_Variant02_Repair",
+        "GEO_VIL_FacadeDetail_Variant02_Bracket"
+      ],
+      "bounds_min_source": [
+        -0.485,
+        -0.045,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4943,
+        0.21627,
+        0.371472
+      ],
+      "bounds_min_unity": [
+        -0.485,
+        -0.5,
+        -0.045
+      ],
+      "bounds_max_unity": [
+        0.4943,
+        0.371472,
+        0.21627
+      ]
+    },
+    {
+      "kind": "GarlandPost",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_GarlandPost_Timber",
+        "GEO_VIL_GarlandPost_Bracket"
+      ],
+      "bounds_min_source": [
+        -0.09817,
+        -0.0825,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.092,
+        0.33156,
+        0.338496
+      ],
+      "bounds_min_unity": [
+        -0.09817,
+        -0.5,
+        -0.0825
+      ],
+      "bounds_max_unity": [
+        0.092,
+        0.338496,
+        0.33156
+      ]
+    },
+    {
+      "kind": "CableGate",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_CableGate_Timber",
+        "GEO_VIL_CableGate_Cable"
+      ],
+      "bounds_min_source": [
+        -0.488323,
+        -0.061827,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.488347,
+        0.064997,
+        0.279464
+      ],
+      "bounds_min_unity": [
+        -0.488323,
+        -0.5,
+        -0.061827
+      ],
+      "bounds_max_unity": [
+        0.488347,
+        0.279464,
+        0.064997
+      ]
+    },
+    {
+      "kind": "RailBridge",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_RailBridge_Rails",
+        "GEO_VIL_RailBridge_Sleepers"
+      ],
+      "bounds_min_source": [
+        -0.46,
+        -0.4825,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.46,
+        0.4825,
+        -0.248
+      ],
+      "bounds_min_unity": [
+        -0.46,
+        -0.5,
+        -0.4825
+      ],
+      "bounds_max_unity": [
+        0.46,
+        -0.248,
+        0.4825
+      ]
+    },
+    {
+      "kind": "SourceBowl",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_SourceBowl_Stone"
+      ],
+      "bounds_min_source": [
+        -0.48,
+        -0.48,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.48,
+        0.47,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.48,
+        -0.5,
+        -0.48
+      ],
+      "bounds_max_unity": [
+        0.48,
+        0.5,
+        0.47
+      ]
     }
   ],
   "parts": [
@@ -521,6 +763,44 @@
       ]
     },
     {
+      "mesh": "GEO_VIL_House_Variant00_Snow",
+      "kind": "House",
+      "variant": 0,
+      "part_role": "Snow",
+      "surface_kind": "WindSnow",
+      "tint_role": "RoofSnow",
+      "vertices": 24,
+      "triangles": 36,
+      "bounds_min_source": [
+        -0.4692,
+        -0.4278,
+        0.0138
+      ],
+      "bounds_max_source": [
+        0.4508,
+        0.4092,
+        0.4474
+      ],
+      "bounds_min_unity": [
+        -0.4692,
+        0.0138,
+        -0.4278
+      ],
+      "bounds_max_unity": [
+        0.4508,
+        0.4474,
+        0.4092
+      ],
+      "uv_min": [
+        0.0308,
+        0.3698
+      ],
+      "uv_max": [
+        0.9508,
+        0.9474
+      ]
+    },
+    {
       "mesh": "GEO_VIL_House_Variant01_Walls",
       "kind": "House",
       "variant": 1,
@@ -670,6 +950,44 @@
       "uv_max": [
         0.46575,
         1.0
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_House_Variant01_Snow",
+      "kind": "House",
+      "variant": 1,
+      "part_role": "Snow",
+      "surface_kind": "WindSnow",
+      "tint_role": "RoofSnow",
+      "vertices": 24,
+      "triangles": 36,
+      "bounds_min_source": [
+        -0.45,
+        -0.4324,
+        -0.022
+      ],
+      "bounds_max_source": [
+        0.47,
+        0.4136,
+        0.4338
+      ],
+      "bounds_min_unity": [
+        -0.45,
+        -0.022,
+        -0.4324
+      ],
+      "bounds_max_unity": [
+        0.47,
+        0.4338,
+        0.4136
+      ],
+      "uv_min": [
+        0.05,
+        0.3684
+      ],
+      "uv_max": [
+        0.97,
+        0.9338
       ]
     },
     {
@@ -825,6 +1143,44 @@
       ]
     },
     {
+      "mesh": "GEO_VIL_House_Variant02_Snow",
+      "kind": "House",
+      "variant": 2,
+      "part_role": "Snow",
+      "surface_kind": "WindSnow",
+      "tint_role": "RoofSnow",
+      "vertices": 24,
+      "triangles": 36,
+      "bounds_min_source": [
+        -0.4648,
+        -0.437,
+        0.0784
+      ],
+      "bounds_max_source": [
+        0.4552,
+        0.418,
+        0.455
+      ],
+      "bounds_min_unity": [
+        -0.4648,
+        0.0784,
+        -0.437
+      ],
+      "bounds_max_unity": [
+        0.4552,
+        0.455,
+        0.418
+      ],
+      "uv_min": [
+        0.0352,
+        0.063
+      ],
+      "uv_max": [
+        0.9552,
+        0.955
+      ]
+    },
+    {
       "mesh": "GEO_VIL_House_Variant03_Walls",
       "kind": "House",
       "variant": 3,
@@ -977,6 +1333,44 @@
       ]
     },
     {
+      "mesh": "GEO_VIL_House_Variant03_Snow",
+      "kind": "House",
+      "variant": 3,
+      "part_role": "Snow",
+      "surface_kind": "WindSnow",
+      "tint_role": "RoofSnow",
+      "vertices": 24,
+      "triangles": 36,
+      "bounds_min_source": [
+        -0.452,
+        -0.4416,
+        -0.0326
+      ],
+      "bounds_max_source": [
+        0.468,
+        0.4224,
+        0.4266
+      ],
+      "bounds_min_unity": [
+        -0.452,
+        -0.0326,
+        -0.4416
+      ],
+      "bounds_max_unity": [
+        0.468,
+        0.4266,
+        0.4224
+      ],
+      "uv_min": [
+        0.048,
+        0.3656
+      ],
+      "uv_max": [
+        0.968,
+        0.9266
+      ]
+    },
+    {
       "mesh": "GEO_VIL_Chapel_Walls",
       "kind": "Chapel",
       "variant": 0,
@@ -1088,6 +1482,44 @@
       "uv_max": [
         0.9775,
         0.912
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_Chapel_Snow",
+      "kind": "Chapel",
+      "variant": 0,
+      "part_role": "Snow",
+      "surface_kind": "WindSnow",
+      "tint_role": "RoofSnow",
+      "vertices": 24,
+      "triangles": 36,
+      "bounds_min_source": [
+        -0.4492,
+        -0.4186,
+        0.1372
+      ],
+      "bounds_max_source": [
+        0.4524,
+        0.4004,
+        0.3964
+      ],
+      "bounds_min_unity": [
+        -0.4492,
+        0.1372,
+        -0.4186
+      ],
+      "bounds_max_unity": [
+        0.4524,
+        0.3964,
+        0.4004
+      ],
+      "uv_min": [
+        0.0508,
+        0.0814
+      ],
+      "uv_max": [
+        0.9524,
+        0.9004
       ]
     },
     {
@@ -1393,7 +1825,805 @@
         0.975958,
         0.961892
       ]
+    },
+    {
+      "mesh": "GEO_VIL_TopHouse_Walls",
+      "kind": "TopHouse",
+      "variant": 0,
+      "part_role": "Walls",
+      "surface_kind": "Masonry",
+      "tint_role": "TopHouseWall",
+      "vertices": 10,
+      "triangles": 16,
+      "bounds_min_source": [
+        -0.46,
+        -0.42,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.472,
+        0.42,
+        0.368
+      ],
+      "bounds_min_unity": [
+        -0.46,
+        -0.5,
+        -0.42
+      ],
+      "bounds_max_unity": [
+        0.472,
+        0.368,
+        0.42
+      ],
+      "uv_min": [
+        0.04,
+        0.0
+      ],
+      "uv_max": [
+        0.972,
+        0.92
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_TopHouse_Roof",
+      "kind": "TopHouse",
+      "variant": 0,
+      "part_role": "Roof",
+      "surface_kind": "Timber",
+      "tint_role": "HouseRoof",
+      "vertices": 48,
+      "triangles": 80,
+      "bounds_min_source": [
+        -0.5,
+        -0.475,
+        -0.055
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.49,
+        0.42
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.055,
+        -0.475
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.42,
+        0.49
+      ],
+      "uv_min": [
+        0.0,
+        0.025
+      ],
+      "uv_max": [
+        1.0,
+        0.99
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_TopHouse_Plinth",
+      "kind": "TopHouse",
+      "variant": 0,
+      "part_role": "Plinth",
+      "surface_kind": "LayeredStone",
+      "tint_role": "HousePlinth",
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.486,
+        -0.467,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.486,
+        0.4825,
+        -0.3205
+      ],
+      "bounds_min_unity": [
+        -0.486,
+        -0.5,
+        -0.467
+      ],
+      "bounds_max_unity": [
+        0.486,
+        -0.3205,
+        0.4825
+      ],
+      "uv_min": [
+        0.014,
+        0.0
+      ],
+      "uv_max": [
+        0.986,
+        0.9675
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_TopHouse_Chimney",
+      "kind": "TopHouse",
+      "variant": 0,
+      "part_role": "Chimney",
+      "surface_kind": "Masonry",
+      "tint_role": "HouseChimney",
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        0.066,
+        -0.2554,
+        0.145
+      ],
+      "bounds_max_source": [
+        0.229,
+        -0.0974,
+        0.4895
+      ],
+      "bounds_min_unity": [
+        0.066,
+        0.145,
+        -0.2554
+      ],
+      "bounds_max_unity": [
+        0.229,
+        0.4895,
+        -0.0974
+      ],
+      "uv_min": [
+        0.2446,
+        0.252475
+      ],
+      "uv_max": [
+        0.729,
+        0.9895
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_TopHouse_Snow",
+      "kind": "TopHouse",
+      "variant": 0,
+      "part_role": "Snow",
+      "surface_kind": "WindSnow",
+      "tint_role": "RoofSnow",
+      "vertices": 24,
+      "triangles": 36,
+      "bounds_min_source": [
+        -0.46208,
+        -0.437,
+        0.0928
+      ],
+      "bounds_max_source": [
+        0.45792,
+        0.418,
+        0.4092
+      ],
+      "bounds_min_unity": [
+        -0.46208,
+        0.0928,
+        -0.437
+      ],
+      "bounds_max_unity": [
+        0.45792,
+        0.4092,
+        0.418
+      ],
+      "uv_min": [
+        0.03792,
+        0.063
+      ],
+      "uv_max": [
+        0.95792,
+        0.918
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_FacadeDetail_Variant00_Shutters",
+      "kind": "FacadeDetail",
+      "variant": 0,
+      "part_role": "Shutters",
+      "surface_kind": "Timber",
+      "tint_role": "ShutterA",
+      "vertices": 80,
+      "triangles": 136,
+      "bounds_min_source": [
+        -0.4675,
+        -0.045,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4691,
+        0.045,
+        0.315
+      ],
+      "bounds_min_unity": [
+        -0.4675,
+        -0.5,
+        -0.045
+      ],
+      "bounds_max_unity": [
+        0.4691,
+        0.315,
+        0.045
+      ],
+      "uv_min": [
+        0.0325,
+        0.0
+      ],
+      "uv_max": [
+        0.9691,
+        0.815
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_FacadeDetail_Variant00_Repair",
+      "kind": "FacadeDetail",
+      "variant": 0,
+      "part_role": "Repair",
+      "surface_kind": "Masonry",
+      "tint_role": "RepairWhitewash",
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min_source": [
+        -0.485,
+        0.04,
+        -0.46
+      ],
+      "bounds_max_source": [
+        -0.21,
+        0.064,
+        -0.1
+      ],
+      "bounds_min_unity": [
+        -0.485,
+        -0.46,
+        0.04
+      ],
+      "bounds_max_unity": [
+        -0.21,
+        -0.1,
+        0.064
+      ],
+      "uv_min": [
+        0.015,
+        0.04
+      ],
+      "uv_max": [
+        0.564,
+        0.564
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_FacadeDetail_Variant00_Bracket",
+      "kind": "FacadeDetail",
+      "variant": 0,
+      "part_role": "Bracket",
+      "surface_kind": "RustedIron",
+      "tint_role": "RepairIron",
+      "vertices": 28,
+      "triangles": 48,
+      "bounds_min_source": [
+        -0.196217,
+        -0.016938,
+        0.302981
+      ],
+      "bounds_max_source": [
+        -0.11529,
+        0.21627,
+        0.371472
+      ],
+      "bounds_min_unity": [
+        -0.196217,
+        0.302981,
+        -0.016938
+      ],
+      "bounds_max_unity": [
+        -0.11529,
+        0.371472,
+        0.21627
+      ],
+      "uv_min": [
+        0.303783,
+        0.483062
+      ],
+      "uv_max": [
+        0.71627,
+        0.871472
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_FacadeDetail_Variant01_Shutters",
+      "kind": "FacadeDetail",
+      "variant": 1,
+      "part_role": "Shutters",
+      "surface_kind": "Timber",
+      "tint_role": "ShutterB",
+      "vertices": 80,
+      "triangles": 136,
+      "bounds_min_source": [
+        -0.4905,
+        -0.045,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.48518,
+        0.045,
+        0.315
+      ],
+      "bounds_min_unity": [
+        -0.4905,
+        -0.5,
+        -0.045
+      ],
+      "bounds_max_unity": [
+        0.48518,
+        0.315,
+        0.045
+      ],
+      "uv_min": [
+        0.0095,
+        0.0
+      ],
+      "uv_max": [
+        0.98518,
+        0.815
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_FacadeDetail_Variant01_Repair",
+      "kind": "FacadeDetail",
+      "variant": 1,
+      "part_role": "Repair",
+      "surface_kind": "Masonry",
+      "tint_role": "RepairWhitewash",
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min_source": [
+        0.185,
+        0.04,
+        -0.46
+      ],
+      "bounds_max_source": [
+        0.46,
+        0.064,
+        -0.075
+      ],
+      "bounds_min_unity": [
+        0.185,
+        -0.46,
+        0.04
+      ],
+      "bounds_max_unity": [
+        0.46,
+        -0.075,
+        0.064
+      ],
+      "uv_min": [
+        0.54,
+        0.04
+      ],
+      "uv_max": [
+        0.96,
+        0.564
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_FacadeDetail_Variant01_Bracket",
+      "kind": "FacadeDetail",
+      "variant": 1,
+      "part_role": "Bracket",
+      "surface_kind": "RustedIron",
+      "tint_role": "RepairIron",
+      "vertices": 28,
+      "triangles": 48,
+      "bounds_min_source": [
+        -0.016217,
+        -0.016938,
+        0.302981
+      ],
+      "bounds_max_source": [
+        0.06471,
+        0.21627,
+        0.371472
+      ],
+      "bounds_min_unity": [
+        -0.016217,
+        0.302981,
+        -0.016938
+      ],
+      "bounds_max_unity": [
+        0.06471,
+        0.371472,
+        0.21627
+      ],
+      "uv_min": [
+        0.483446,
+        0.483062
+      ],
+      "uv_max": [
+        0.71627,
+        0.871472
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_FacadeDetail_Variant02_Shutters",
+      "kind": "FacadeDetail",
+      "variant": 2,
+      "part_role": "Shutters",
+      "surface_kind": "Timber",
+      "tint_role": "ShutterC",
+      "vertices": 80,
+      "triangles": 136,
+      "bounds_min_source": [
+        -0.4691,
+        -0.045,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.4943,
+        0.045,
+        0.315
+      ],
+      "bounds_min_unity": [
+        -0.4691,
+        -0.5,
+        -0.045
+      ],
+      "bounds_max_unity": [
+        0.4943,
+        0.315,
+        0.045
+      ],
+      "uv_min": [
+        0.0309,
+        0.0
+      ],
+      "uv_max": [
+        0.9943,
+        0.815
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_FacadeDetail_Variant02_Repair",
+      "kind": "FacadeDetail",
+      "variant": 2,
+      "part_role": "Repair",
+      "surface_kind": "Masonry",
+      "tint_role": "RepairWhitewash",
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min_source": [
+        -0.485,
+        0.04,
+        -0.46
+      ],
+      "bounds_max_source": [
+        -0.21,
+        0.064,
+        -0.05
+      ],
+      "bounds_min_unity": [
+        -0.485,
+        -0.46,
+        0.04
+      ],
+      "bounds_max_unity": [
+        -0.21,
+        -0.05,
+        0.064
+      ],
+      "uv_min": [
+        0.015,
+        0.04
+      ],
+      "uv_max": [
+        0.564,
+        0.564
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_FacadeDetail_Variant02_Bracket",
+      "kind": "FacadeDetail",
+      "variant": 2,
+      "part_role": "Bracket",
+      "surface_kind": "RustedIron",
+      "tint_role": "RepairIron",
+      "vertices": 28,
+      "triangles": 48,
+      "bounds_min_source": [
+        0.163783,
+        -0.016938,
+        0.302981
+      ],
+      "bounds_max_source": [
+        0.24471,
+        0.21627,
+        0.371472
+      ],
+      "bounds_min_unity": [
+        0.163783,
+        0.302981,
+        -0.016938
+      ],
+      "bounds_max_unity": [
+        0.24471,
+        0.371472,
+        0.21627
+      ],
+      "uv_min": [
+        0.483446,
+        0.483062
+      ],
+      "uv_max": [
+        0.74471,
+        0.871472
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_GarlandPost_Timber",
+      "kind": "GarlandPost",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "FenceTimber",
+      "vertices": 30,
+      "triangles": 52,
+      "bounds_min_source": [
+        -0.09817,
+        -0.0725,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.0825,
+        0.0725,
+        0.323914
+      ],
+      "bounds_min_unity": [
+        -0.09817,
+        -0.5,
+        -0.0725
+      ],
+      "bounds_max_unity": [
+        0.0825,
+        0.323914,
+        0.0725
+      ],
+      "uv_min": [
+        0.40183,
+        0.0
+      ],
+      "uv_max": [
+        0.5825,
+        0.823914
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_GarlandPost_Bracket",
+      "kind": "GarlandPost",
+      "variant": 0,
+      "part_role": "Bracket",
+      "surface_kind": "RustedIron",
+      "tint_role": "RepairIron",
+      "vertices": 44,
+      "triangles": 76,
+      "bounds_min_source": [
+        -0.086,
+        -0.0825,
+        -0.127462
+      ],
+      "bounds_max_source": [
+        0.092,
+        0.33156,
+        0.338496
+      ],
+      "bounds_min_unity": [
+        -0.086,
+        -0.127462,
+        -0.0825
+      ],
+      "bounds_max_unity": [
+        0.092,
+        0.338496,
+        0.33156
+      ],
+      "uv_min": [
+        0.414,
+        0.380413
+      ],
+      "uv_max": [
+        0.831251,
+        0.838496
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_CableGate_Timber",
+      "kind": "CableGate",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "FenceTimber",
+      "vertices": 28,
+      "triangles": 48,
+      "bounds_min_source": [
+        -0.488323,
+        -0.058571,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.488347,
+        0.064997,
+        0.279464
+      ],
+      "bounds_min_unity": [
+        -0.488323,
+        -0.5,
+        -0.058571
+      ],
+      "bounds_max_unity": [
+        0.488347,
+        0.279464,
+        0.064997
+      ],
+      "uv_min": [
+        0.011677,
+        0.0
+      ],
+      "uv_max": [
+        0.988347,
+        0.779464
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_CableGate_Cable",
+      "kind": "CableGate",
+      "variant": 0,
+      "part_role": "Cable",
+      "surface_kind": "RustedIron",
+      "tint_role": "MineCable",
+      "vertices": 84,
+      "triangles": 144,
+      "bounds_min_source": [
+        -0.439201,
+        -0.061827,
+        -0.027861
+      ],
+      "bounds_max_source": [
+        0.439154,
+        0.064971,
+        0.197863
+      ],
+      "bounds_min_unity": [
+        -0.439201,
+        -0.027861,
+        -0.061827
+      ],
+      "bounds_max_unity": [
+        0.439154,
+        0.197863,
+        0.064971
+      ],
+      "uv_min": [
+        0.060799,
+        0.438173
+      ],
+      "uv_max": [
+        0.939154,
+        0.697863
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_RailBridge_Rails",
+      "kind": "RailBridge",
+      "variant": 0,
+      "part_role": "Rails",
+      "surface_kind": "RustedIron",
+      "tint_role": "RailIron",
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -0.3775,
+        -0.4825,
+        -0.3925
+      ],
+      "bounds_max_source": [
+        0.3825,
+        0.4825,
+        -0.248
+      ],
+      "bounds_min_unity": [
+        -0.3775,
+        -0.3925,
+        -0.4825
+      ],
+      "bounds_max_unity": [
+        0.3825,
+        -0.248,
+        0.4825
+      ],
+      "uv_min": [
+        0.0175,
+        0.0175
+      ],
+      "uv_max": [
+        0.9825,
+        0.9825
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_RailBridge_Sleepers",
+      "kind": "RailBridge",
+      "variant": 0,
+      "part_role": "Sleepers",
+      "surface_kind": "Timber",
+      "tint_role": "RailSleeper",
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min_source": [
+        -0.46,
+        -0.4575,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.46,
+        0.4625,
+        -0.395
+      ],
+      "bounds_min_unity": [
+        -0.46,
+        -0.5,
+        -0.4575
+      ],
+      "bounds_max_unity": [
+        0.46,
+        -0.395,
+        0.4625
+      ],
+      "uv_min": [
+        0.04,
+        0.0
+      ],
+      "uv_max": [
+        0.9625,
+        0.9505
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_SourceBowl_Stone",
+      "kind": "SourceBowl",
+      "variant": 0,
+      "part_role": "Stone",
+      "surface_kind": "LayeredStone",
+      "tint_role": "SourceStone",
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min_source": [
+        -0.48,
+        -0.48,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.48,
+        0.47,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.48,
+        -0.5,
+        -0.48
+      ],
+      "bounds_max_unity": [
+        0.48,
+        0.5,
+        0.47
+      ],
+      "uv_min": [
+        0.02,
+        0.0
+      ],
+      "uv_max": [
+        0.98,
+        1.0
+      ]
     }
   ],
-  "build_signature": "e6181b4c50c4b5e7a040e09ab38855e2f98ef74ab41b3eda22b8777469ff0d26"
+  "build_signature": "24ca0fc6fb9c310d56183a03b147a3da2c3898c47a3fde5b92930eb3a865bb57"
 }

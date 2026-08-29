@@ -25,6 +25,12 @@ namespace BarPromenade
         /// </summary>
         public CityRainField Snow { get; private set; }
 
+        /// <summary>The city's drifting fog sheets, unchanged. The Exp2 haze
+        /// up here is thinner than the city's on purpose; the sheets are not,
+        /// because they are the air itself and the air is the same air.
+        /// </summary>
+        public CityFogField Fog { get; private set; }
+
         public MountainRoadWindSoundPlayer WindSound { get; private set; }
         public MountainRoadWindDriver Wind { get; private set; }
         public MountainRoadWeatherShaper WeatherShaper { get; private set; }
@@ -383,6 +389,20 @@ namespace BarPromenade
                     .RainIntensity,
                 CityPrecipitationKind.Snow);
 
+            // The city's fog, verbatim: same component, same shared
+            // atmosphere material, same 36-sheet cap. Distance haze alone
+            // fades the mountain out without ever putting anything IN the
+            // air between the hero and it, and that is what read as a fade
+            // rather than as weather. Built before the weather owner,
+            // which clears it under the tunnel and the terminal roof.
+            GameObject fogObject = new GameObject("Mountain Fog Field");
+            fogObject.transform.SetParent(transform, false);
+            Fog = fogObject.AddComponent<CityFogField>();
+            Fog.Initialize(
+                Player.GameObject.transform,
+                CityNightResources.AtmosphereMaterial,
+                Plan.Seed);
+
             // No rain bed up here: snow is silent, and what the climb sounds
             // like is the wind driving it sideways.
             GameObject windSoundObject = new GameObject("Mountain Wind Bed");
@@ -397,7 +417,8 @@ namespace BarPromenade
                 null,
                 camera.transform,
                 IsSheltered,
-                WeatherShaper);
+                WeatherShaper,
+                Fog);
 
             GameObject windObject = new GameObject("Mountain Wind Driver");
             windObject.transform.SetParent(transform, false);

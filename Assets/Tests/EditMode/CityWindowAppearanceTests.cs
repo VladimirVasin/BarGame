@@ -117,13 +117,22 @@ namespace BarPromenade.Tests.EditMode
                 cold.GetColor("_BaseColor"),
                 CityExteriorAppearance.ColdWindow);
 
+            // §20 names the inhabited window a fixture: at noon it keeps
+            // two thirds of its evening warmth rather than falling to
+            // unlit glazing.
             CityWindowAppearance.SetNightFactor(0f);
             AssertColor(
                 cold.GetColor("_BaseColor"),
-                CityWindowAppearance.DayGlass);
+                Color.Lerp(
+                    CityWindowAppearance.DayGlass,
+                    CityExteriorAppearance.ColdWindow,
+                    GameTimeDayNightRules.DayFixtureFloor));
             AssertColor(
                 warm.GetColor("_BaseColor"),
-                CityWindowAppearance.DayGlass);
+                Color.Lerp(
+                    CityWindowAppearance.DayGlass,
+                    CityExteriorAppearance.WarmWindow,
+                    GameTimeDayNightRules.DayFixtureFloor));
 
             CityWindowAppearance.SetNightFactor(0.5f);
             AssertColor(
@@ -131,7 +140,7 @@ namespace BarPromenade.Tests.EditMode
                 Color.Lerp(
                     CityWindowAppearance.DayGlass,
                     CityExteriorAppearance.ColdWindow,
-                    0.5f));
+                    GameTimeDayNightRules.FixtureFactor(0.5f)));
         }
 
         private static void AssertColor(Color actual, Color expected)

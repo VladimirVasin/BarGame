@@ -75,52 +75,56 @@ namespace BarPromenade.Tests.EditMode
                 CityLightHalo practicalHalo = practicalLight
                     .GetComponentInChildren<CityLightHalo>(true);
 
-                atmosphere.SetNightFactor(0f);
-
+                // The §20 law: at noon nothing electric switches off, it
+                // gives two thirds of its night strength. Captured at
+                // night first so the day assertion is a ratio against
+                // what each light actually burns at, not a re-derivation
+                // of every base intensity.
+                var nightIntensities = new Dictionary<Light, float>();
+                var nightEnabled = new Dictionary<Light, bool>();
                 foreach (Light light in
                          nightRoot.GetComponentsInChildren<Light>(true))
                 {
-                    if (light == practicalLight)
+                    nightIntensities[light] = light.intensity;
+                    nightEnabled[light] = light.enabled;
+                }
+
+                atmosphere.SetNightFactor(0f);
+
+                float floor = GameTimeDayNightRules.DayFixtureFloor;
+                foreach (Light light in
+                         nightRoot.GetComponentsInChildren<Light>(true))
+                {
+                    if (!nightEnabled[light])
                     {
-                        Assert.That(light.enabled, Is.True);
-                        Assert.That(
-                            light.intensity,
-                            Is.EqualTo(
-                                    150f *
-                                    CityNightAtmosphere
-                                        .TunnelPracticalDayFloor)
-                                .Within(0.001f));
                         continue;
                     }
 
-                    Assert.That(light.enabled, Is.False);
-                    Assert.That(light.intensity, Is.EqualTo(0f));
+                    Assert.That(
+                        light.enabled,
+                        Is.True,
+                        "The day must not switch a burning fixture off.");
+                    Assert.That(
+                        light.intensity,
+                        Is.EqualTo(nightIntensities[light] * floor)
+                            .Within(0.001f),
+                        "The day takes a third off a fixture, no more.");
                 }
 
                 Assert.That(
                     practicalHalo.IntensityFactor,
-                    Is.EqualTo(
-                            CityNightAtmosphere.TunnelPracticalDayFloor)
-                        .Within(0.001f));
+                    Is.EqualTo(floor).Within(0.001f));
                 Assert.That(practicalHalo.IsVisible, Is.True);
 
                 atmosphere.SetTunnelPracticalFlickerMultiplier(0.4f);
 
                 Assert.That(
                     practicalLight.intensity,
-                    Is.EqualTo(
-                            150f *
-                            CityNightAtmosphere
-                                .TunnelPracticalDayFloor *
-                            0.4f)
-                        .Within(0.001f));
+                    Is.EqualTo(150f * floor * 0.4f).Within(0.001f),
+                    "The fault stays the fixture's own, on top of the law.");
                 Assert.That(
                     practicalHalo.IntensityFactor,
-                    Is.EqualTo(
-                            CityNightAtmosphere
-                                .TunnelPracticalDayFloor *
-                            0.4f)
-                        .Within(0.001f));
+                    Is.EqualTo(floor * 0.4f).Within(0.001f));
                 atmosphere.SetTunnelPracticalFlickerMultiplier(1f);
 
                 atmosphere.SetNightFactor(1f);

@@ -45,9 +45,17 @@ namespace BarPromenade
 
         /// <summary>
         /// Pure enough to test: the curve from a night factor to the
-        /// additive strength, with a deliberately hard floor. Dusk should
-        /// not smear the city on at ten percent for an hour — the lamps
-        /// in a valley come up over a few minutes and then they are on.
+        /// additive strength.
+        ///
+        /// It used to gate on the night entirely - "a window at
+        /// ninety-six metres is a bloom, not a source" - and the §20 law
+        /// repealed that: the city in this matte is the very city whose
+        /// every fixture burns always, and from the brink it read DEAD
+        /// from before dawn's end to past dusk's start. The day now keeps
+        /// the law's two thirds; what the curve still owns is the come-up
+        /// - dusk does not smear the remaining third on at ten percent
+        /// for an hour, the lamps rise over a few minutes and then they
+        /// are on.
         /// </summary>
         public static float EvaluateIntensity(float nightFactor)
         {
@@ -55,7 +63,11 @@ namespace BarPromenade
                 0f,
                 1f,
                 Mathf.InverseLerp(0.18f, 0.62f, nightFactor));
-            return eased * NightIntensity;
+            return Mathf.Lerp(
+                       GameTimeDayNightRules.DayFixtureFloor,
+                       1f,
+                       eased) *
+                   NightIntensity;
         }
 
         public void Apply(float nightFactor)

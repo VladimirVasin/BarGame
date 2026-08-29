@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -53,11 +54,53 @@ namespace BarPromenade
 
         public const int HouseCount = 12;
         public const float FirstHouseDistance = 8f;
-        public const float LastHouseDistance = 74f;
+        public const float LastHouseDistance = 75f;
+
+        // Three authored frontage chapters, not a subdivision algorithm.
+        // The two nine-metre pauses frame the cemetery and chapel reveals;
+        // the last three houses make a close threshold before the head opens.
+        private static readonly float[] HouseDistanceBeats =
+        {
+            8f, 13.5f, 19f, 25f, 34f, 40f,
+            46f, 52f, 61f, 67f, 72f, 75f
+        };
+
+        // Two same-side pairs break the left/right metronome without putting
+        // same-side neighbours close enough to touch.
+        private static readonly int[] HouseSideBeats =
+        {
+            -1, 1, -1, 1, 1, -1,
+            1, -1, -1, 1, -1, 1
+        };
+
+        // The mesh variants already have crooked roofs; these yaw beats stop
+        // neighbouring whole buildings from returning to parallel facades.
+        private static readonly float[] HouseYawBeats =
+        {
+            -11f, 7f, -4f, 10f, -8f, 4f,
+            13f, -3f, 11f, -10f, 2f, -7f
+        };
+
+        // The two same-side reveal pairs and the last threshold house sit in
+        // a deliberate rear row. This is visible hill-village depth, not an
+        // emergency collision offset: keeping it authored prevents a greedy
+        // solver from pushing every later house behind the previous one.
+        private static readonly float[] HouseDepthBeats =
+        {
+            0f, 0f, 0f, 0f, 7.2f, 0f,
+            0f, 0f, 7.2f, 0f, 0f, 7.5f
+        };
 
         /// <summary>Gap between the lane edge and the nearest house wall.
         /// </summary>
         public const float HouseLaneClearance = 1.6f;
+
+        // A local trim around an authored row may approach the lane, but it
+        // keeps more than the validator's absolute physical minimum. At equal
+        // displacement the search tries away from the lane first.
+        private const float HouseSolveLaneClearance = 0.55f;
+        private const float HouseDepthSolveStep = 0.4f;
+        private const int HouseDepthSolveRings = 12;
 
         public const float MothersHouseSetback = 2f;
         public static readonly Vector2 MothersHouseFootprint =
@@ -73,6 +116,8 @@ namespace BarPromenade
         private const uint HouseDepthSalt = 0x5641_4C32u;
         private const uint HouseHeightSalt = 0x5641_4C33u;
         private const uint HouseJitterSalt = 0x5641_4C34u;
+        private const uint HouseYawSalt = 0x5641_4C35u;
+        private const uint HouseSetbackSalt = 0x5641_4C36u;
 
         public static AlpineVillagePlan Create(
             int seed = MountainRoadPlanner.DefaultSeed)
@@ -93,12 +138,18 @@ namespace BarPromenade
                 uphill,
                 right);
             Rect terrainBounds = CalculateTerrainBounds(lane, plots, station);
+            Rect terrainMeshBounds = CalculateTerrainMeshBounds(
+                terrainBounds,
+                station);
             List<AlpineVillageRidgeDescriptor> ridges =
                 CreateRidges(terrainBounds, uphill, right);
 
             AlpineVillageLaneSample foot = lane.Sample(2f);
             Vector3 spawnPosition = foot.Position;
-            Bounds worldBounds = CalculateWorldBounds(terrainBounds, lane);
+            Bounds worldBounds = CalculateWorldBounds(
+                terrainMeshBounds,
+                lane,
+                station);
 
             var plan = new AlpineVillagePlan(
                 seed,
@@ -111,6 +162,7 @@ namespace BarPromenade
                 plots,
                 ridges,
                 terrainBounds,
+                terrainMeshBounds,
                 worldBounds,
                 spawnPosition,
                 uphill);
@@ -214,28 +266,30 @@ namespace BarPromenade
             AlpineVillageLanePlan lane,
             ICollection<AlpineVillagePlotDescriptor> target)
         {
+            if (HouseDistanceBeats.Length != HouseCount ||
+                HouseSideBeats.Length != HouseCount ||
+                HouseYawBeats.Length != HouseCount ||
+                HouseDepthBeats.Length != HouseCount)
+            {
+                throw new InvalidOperationException(
+                    "The village house rhythm does not match HouseCount.");
+            }
+
             for (int index = 0; index < HouseCount; index++)
             {
-                float amount = HouseCount <= 1
-                    ? 0f
-                    : index / (float)(HouseCount - 1);
-                // Kept to a metre either way on purpose. Houses alternate
-                // sides, so same-side neighbours stand `12 m` apart; any more
-                // wander than this and the widest pair below can touch.
+                // A quarter-metre either way keeps seeds alive without moving
+                // the authored pauses or the side-landmark sight lines.
                 float jitter = (Unit(seed, index, HouseJitterSalt) - 0.5f) *
-                               2f;
+                               0.5f;
                 float distance = Mathf.Clamp(
-                    Mathf.Lerp(
-                        FirstHouseDistance,
-                        LastHouseDistance,
-                        amount) + jitter,
+                    HouseDistanceBeats[index] + jitter,
                     FirstHouseDistance,
                     LastHouseDistance);
-                int side = index % 2 == 0 ? -1 : 1;
+                int side = HouseSideBeats[index];
                 var footprint = new Vector2(
                     Mathf.Lerp(
                         6.2f,
-                        8.6f,
+                        8.3f,
                         Unit(seed, index, HouseWidthSalt)),
                     Mathf.Lerp(
                         5.5f,
@@ -248,28 +302,112 @@ namespace BarPromenade
 
                 AlpineVillageLaneSample sample = lane.Sample(distance);
                 Vector3 outward = sample.Right * side;
+                float setback = Mathf.Lerp(
+                    -0.35f,
+                    0.95f,
+                    Unit(seed, index, HouseSetbackSalt));
+                float yaw = HouseYawBeats[index] +
+                            (Unit(seed, index, HouseYawSalt) - 0.5f) * 3f;
+                Vector3 facing = Quaternion.AngleAxis(
+                    yaw,
+                    Vector3.up) * -outward;
+                Vector3 buildingRight = Vector3.Cross(
+                    Vector3.up,
+                    facing).normalized;
+                float outwardRadius =
+                    Mathf.Abs(Vector3.Dot(outward, buildingRight)) *
+                    footprint.x * 0.5f +
+                    Mathf.Abs(Vector3.Dot(outward, facing)) *
+                    footprint.y * 0.5f;
                 float standoff = sample.Width * 0.5f +
                                  HouseLaneClearance +
-                                 footprint.y * 0.5f;
-                Vector3 center = sample.Position + outward * standoff;
-                center.y = sample.Position.y;
-                Vector3 facing = -outward;
-                Vector3 doorGround = center +
-                                     facing * (footprint.y * 0.5f);
-                Vector3 dock = doorGround + facing * DoorDockStandoff;
-                dock.y = sample.Position.y;
-                target.Add(new AlpineVillagePlotDescriptor(
-                    $"village-house-{index:00}",
-                    AlpineVillagePlotKind.House,
-                    distance,
-                    side,
-                    center,
-                    facing,
-                    footprint,
-                    doorGround,
-                    dock,
-                    height));
+                                 outwardRadius +
+                                 setback +
+                                 HouseDepthBeats[index];
+                AlpineVillagePlotDescriptor accepted = null;
+
+                // Keep the authored front/rear rhythm and make only the
+                // smallest local correction needed by a wide or strongly
+                // yawed seed. Alternating around the beat avoids the old
+                // cascade where each later house had to move beyond an
+                // already deep neighbour.
+                for (int attempt = 0;
+                     attempt <= HouseDepthSolveRings * 2;
+                     attempt++)
+                {
+                    float depthOffset = GetHouseDepthSolveOffset(attempt);
+                    Vector3 center = sample.Position +
+                                     outward *
+                                     (standoff + depthOffset);
+                    center.y = sample.Position.y;
+                    Vector3 doorGround = center +
+                                         facing *
+                                         (footprint.y * 0.5f);
+                    Vector3 dock = doorGround +
+                                   facing * DoorDockStandoff;
+                    dock.y = sample.Position.y;
+                    var candidate = new AlpineVillagePlotDescriptor(
+                        $"village-house-{index:00}",
+                        AlpineVillagePlotKind.House,
+                        distance,
+                        side,
+                        center,
+                        facing,
+                        footprint,
+                        doorGround,
+                        dock,
+                        height);
+                    if (OverlapsExistingPlot(candidate, target) ||
+                        AlpineVillageValidator.MeasureLaneClearance(
+                            lane,
+                            candidate) <
+                        HouseSolveLaneClearance)
+                    {
+                        continue;
+                    }
+
+                    accepted = candidate;
+                    break;
+                }
+
+                if (accepted == null)
+                {
+                    throw new InvalidOperationException(
+                        $"House {index:00} cannot clear the authored " +
+                        "village rhythm.");
+                }
+
+                target.Add(accepted);
             }
+        }
+
+        private static float GetHouseDepthSolveOffset(int attempt)
+        {
+            if (attempt <= 0)
+            {
+                return 0f;
+            }
+
+            int ring = (attempt + 1) / 2;
+            float direction = attempt % 2 == 1 ? 1f : -1f;
+            return ring * HouseDepthSolveStep * direction;
+        }
+
+        private static bool OverlapsExistingPlot(
+            AlpineVillagePlotDescriptor candidate,
+            IEnumerable<AlpineVillagePlotDescriptor> existing)
+        {
+            foreach (AlpineVillagePlotDescriptor plot in existing)
+            {
+                if (AlpineVillageValidator.FootprintsOverlap(
+                        candidate,
+                        plot))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         /// <summary>
@@ -300,7 +438,7 @@ namespace BarPromenade
                 AlpineVillagePlotKind.Adit,
                 67f,
                 -1,
-                25f,
+                29f,
                 new Vector2(6f, 5f),
                 3.4f));
             target.Add(CreateSpur(
@@ -404,8 +542,16 @@ namespace BarPromenade
             Vector3 nearCable = padCenter +
                                 lineForward * 1.9f +
                                 Vector3.up * StationCableHeight;
+            // A LINE LEAVES A STATION NEARLY LEVEL AND STEEPENS. The drops
+            // used to be `{0, -13, -18.5, -22, -24}`, which is `39` degrees
+            // out of the first span and flattening downhill - backwards, and
+            // unbuildable: the cabin's floor hangs `3.13 m` under the rope,
+            // so at that grade its underside was below the boarding platform
+            // one metre off the pad and stayed under the ground the terrain
+            // can honestly cut. The total fall is unchanged at `24 m`; it is
+            // spread the way a mountain line actually falls.
             float[] distances = { 0f, 16f, 34f, 48f, 58f };
-            float[] drops = { 0f, -13f, -18.5f, -22f, -24f };
+            float[] drops = { 0f, -2f, -11f, -18.5f, -24f };
             var nodes = new List<MountainCablewayNodeDescriptor>(
                 distances.Length);
             for (int index = 0; index < distances.Length; index++)
@@ -417,14 +563,17 @@ namespace BarPromenade
                     : index == distances.Length - 1
                         ? MountainCablewayNodeKind.UpperTurn
                         : MountainCablewayNodeKind.Support;
-                var groundXZ = new Vector2(cable.x, cable.z);
+                // The line leaves the station over a real brink, not through
+                // the macro slope. Every visible support owns the same
+                // clearance that the terrain sampler cuts under it, so its
+                // legs meet the physical mesh and its rollers meet the rope.
+                float groundY = index == 0
+                    ? padCenter.y
+                    : cable.y - AlpineVillageTerrainSampler
+                        .CablewaySupportClearance;
                 var ground = new Vector3(
                     cable.x,
-                    AlpineVillageTerrainSampler.SampleMacroHeight(
-                        SlopeOrigin,
-                        uphill,
-                        Grade,
-                        groundXZ),
+                    groundY,
                     cable.z);
                 nodes.Add(new MountainCablewayNodeDescriptor(
                     index == 0
@@ -505,6 +654,54 @@ namespace BarPromenade
                 maxZ + TerrainMargin);
         }
 
+        /// <summary>
+        /// The inhabited bounds above are deliberately not the mesh bounds.
+        /// The ridge begins only after them, and needs enough ground to reach
+        /// its full height and continue behind the crest. The cableway also
+        /// leaves the inhabited rectangle: its complete local line belongs to
+        /// this scene even though its far turn is hidden in the mountain.
+        /// </summary>
+        private static Rect CalculateTerrainMeshBounds(
+            Rect terrainBounds,
+            AlpineVillageStationPlan station)
+        {
+            float outset = AlpineVillageTerrainSampler.RidgeMeshOutset;
+            float minX = terrainBounds.xMin - outset;
+            float maxX = terrainBounds.xMax + outset;
+            float minZ = terrainBounds.yMin - outset;
+            float maxZ = terrainBounds.yMax + outset;
+
+            MountainRoadCablewayPlan cableway = station.Cableway;
+            float cableHalfWidth =
+                AlpineVillageTerrainSampler.CablewayCutOuterHalfWidth +
+                AlpineVillageTerrainSampler.TerrainCell;
+            for (int index = 0; index < cableway.Nodes.Count; index++)
+            {
+                Vector3 node = cableway.Nodes[index].GroundPosition;
+                Vector3 across = cableway.LineRight * cableHalfWidth;
+                Include(node.x - across.x, node.z - across.z,
+                    ref minX, ref maxX, ref minZ, ref maxZ);
+                Include(node.x + across.x, node.z + across.z,
+                    ref minX, ref maxX, ref minZ, ref maxZ);
+            }
+
+            // Continue beyond the hidden turn. Otherwise the last sampled row
+            // is the turn itself and the player can see the world end through
+            // the single-sided crest as the cabin reaches the blackout.
+            Vector3 beyondTurn = cableway.UpperCableCenter +
+                                 cableway.LineForward *
+                                 AlpineVillageTerrainSampler.RidgeCrestDepth;
+            Include(
+                beyondTurn.x,
+                beyondTurn.z,
+                ref minX,
+                ref maxX,
+                ref minZ,
+                ref maxZ);
+
+            return Rect.MinMaxRect(minX, minZ, maxX, maxZ);
+        }
+
         private static void Include(
             float x,
             float z,
@@ -557,21 +754,31 @@ namespace BarPromenade
         }
 
         private static Bounds CalculateWorldBounds(
-            Rect terrainBounds,
-            AlpineVillageLanePlan lane)
+            Rect terrainMeshBounds,
+            AlpineVillageLanePlan lane,
+            AlpineVillageStationPlan station)
         {
             float floor = Mathf.Min(lane.Start.y, lane.End.y) - 12f;
+            for (int index = 0;
+                 index < station.Cableway.Nodes.Count;
+                 index++)
+            {
+                floor = Mathf.Min(
+                    floor,
+                    station.Cableway.Nodes[index].GroundPosition.y - 12f);
+            }
+
             float ceiling = Mathf.Max(lane.Start.y, lane.End.y) +
                             AlpineVillageTerrainSampler.RidgeMaximumRise +
                             18f;
             var center = new Vector3(
-                terrainBounds.center.x,
+                terrainMeshBounds.center.x,
                 (floor + ceiling) * 0.5f,
-                terrainBounds.center.y);
+                terrainMeshBounds.center.y);
             var size = new Vector3(
-                terrainBounds.width,
+                terrainMeshBounds.width,
                 ceiling - floor,
-                terrainBounds.height);
+                terrainMeshBounds.height);
             return new Bounds(center, size);
         }
 

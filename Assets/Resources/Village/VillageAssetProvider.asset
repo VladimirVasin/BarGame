@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09d576db562acf242a7812c51d119f67, type: 3}
   m_Name: VillageAssetProvider
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.VillageAssetProvider
-  designId: village_wave1_v1
-  buildSignature: e6181b4c50c4b5e7a040e09ab38855e2f98ef74ab41b3eda22b8777469ff0d26
+  designId: village_wave2_v2
+  buildSignature: 24ca0fc6fb9c310d56183a03b147a3da2c3898c47a3fde5b92930eb3a865bb57
   entries:
   - kind: 0
     variant: 0
@@ -32,6 +32,10 @@ MonoBehaviour:
     role: 3
     mesh: {fileID: -38219571086596350, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
   - kind: 0
+    variant: 0
+    role: 10
+    mesh: {fileID: -8489142249026293978, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
     variant: 1
     role: 0
     mesh: {fileID: -5768170750635533134, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
@@ -47,6 +51,10 @@ MonoBehaviour:
     variant: 1
     role: 3
     mesh: {fileID: -1920528163649930892, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 1
+    role: 10
+    mesh: {fileID: -1414390201386567431, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
   - kind: 0
     variant: 2
     role: 0
@@ -64,6 +72,10 @@ MonoBehaviour:
     role: 3
     mesh: {fileID: 2617092289427539767, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
   - kind: 0
+    variant: 2
+    role: 10
+    mesh: {fileID: 7782902961605949362, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
     variant: 3
     role: 0
     mesh: {fileID: -6944993557328703731, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
@@ -79,6 +91,10 @@ MonoBehaviour:
     variant: 3
     role: 3
     mesh: {fileID: -723268181779112580, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 0
+    variant: 3
+    role: 10
+    mesh: {fileID: 5644154683125370587, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
   - kind: 1
     variant: 0
     role: 0
@@ -91,6 +107,10 @@ MonoBehaviour:
     variant: 0
     role: 2
     mesh: {fileID: 3547287168798818872, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 1
+    variant: 0
+    role: 10
+    mesh: {fileID: -3851124834914007493, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
   - kind: 2
     variant: 0
     role: 4
@@ -123,3 +143,87 @@ MonoBehaviour:
     variant: 0
     role: 9
     mesh: {fileID: -5659715079317125569, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 6
+    variant: 0
+    role: 0
+    mesh: {fileID: 2690235532032903410, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 6
+    variant: 0
+    role: 1
+    mesh: {fileID: 5589645644431054838, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 6
+    variant: 0
+    role: 2
+    mesh: {fileID: -989697894770172871, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 6
+    variant: 0
+    role: 3
+    mesh: {fileID: -2947871058816414737, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 6
+    variant: 0
+    role: 10
+    mesh: {fileID: -487992759908849334, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 7
+    variant: 0
+    role: 11
+    mesh: {fileID: 7602165074358951226, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 7
+    variant: 0
+    role: 12
+    mesh: {fileID: 3694693425472303387, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 7
+    variant: 0
+    role: 13
+    mesh: {fileID: -2572916136511825157, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 7
+    variant: 1
+    role: 11
+    mesh: {fileID: -1477629794429070572, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 7
+    variant: 1
+    role: 12
+    mesh: {fileID: 7262710599875081524, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 7
+    variant: 1
+    role: 13
+    mesh: {fileID: 8573141579882615931, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 7
+    variant: 2
+    role: 11
+    mesh: {fileID: -4860036088938518290, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 7
+    variant: 2
+    role: 12
+    mesh: {fileID: -6776350023490523479, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 7
+    variant: 2
+    role: 13
+    mesh: {fileID: -2456472727714521232, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 8
+    variant: 0
+    role: 6
+    mesh: {fileID: -8621330193919739091, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 8
+    variant: 0
+    role: 13
+    mesh: {fileID: -4050610850476863309, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 9
+    variant: 0
+    role: 6
+    mesh: {fileID: -2459823185654878242, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 9
+    variant: 0
+    role: 14
+    mesh: {fileID: 2175838534254953959, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 10
+    variant: 0
+    role: 15
+    mesh: {fileID: 2102113913475378865, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 10
+    variant: 0
+    role: 16
+    mesh: {fileID: -8014064940485216041, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 11
+    variant: 0
+    role: 8
+    mesh: {fileID: 3959966458069028015, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}

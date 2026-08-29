@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -298,11 +299,30 @@ namespace BarPromenade.Tests.EditMode
                         Is.GreaterThan(0.99f));
                 }
 
+                // §20 splits the four: the headlights are EVENTS (excluded
+                // by the law, off at noon like any parked beam), while the
+                // cabin plafond is a fixture - the plafond that moves - and
+                // keeps its two thirds.
                 presentation.SetNightFactor(0f);
-                for (int index = 0; index < lights.Length; index++)
+                for (int index = 0;
+                     index < presentation.HeadlightLights.Count;
+                     index++)
                 {
-                    Assert.That(lights[index].enabled, Is.False);
-                    Assert.That(lights[index].intensity, Is.Zero);
+                    Light headlight = presentation.HeadlightLights[index];
+                    Assert.That(headlight.enabled, Is.False);
+                    Assert.That(headlight.intensity, Is.Zero);
+                }
+
+                for (int index = 0;
+                     index < presentation.CabinLights.Count;
+                     index++)
+                {
+                    Light cabin = presentation.CabinLights[index];
+                    Assert.That(
+                        cabin.enabled,
+                        Is.True,
+                        "The plafond burns by day.");
+                    Assert.That(cabin.intensity, Is.GreaterThan(0f));
                 }
 
                 presentation.SetNightFactor(0.5f);
@@ -314,13 +334,23 @@ namespace BarPromenade.Tests.EditMode
                     halfIntensities[index] = lights[index].intensity;
                 }
 
+                // Full night against half: the headlights double (they ride
+                // the raw factor - events, not fixtures), while the plafond
+                // rises from its half-night fixture factor to one.
                 presentation.SetNightFactor(1f);
+                float plafondRise =
+                    1f / GameTimeDayNightRules.FixtureFactor(0.5f);
                 for (int index = 0; index < lights.Length; index++)
                 {
-                    Assert.That(lights[index].enabled, Is.True);
+                    Light light = lights[index];
+                    bool isCabin =
+                        presentation.CabinLights.Contains(light);
+                    Assert.That(light.enabled, Is.True);
                     Assert.That(
-                        lights[index].intensity,
-                        Is.EqualTo(halfIntensities[index] * 2f)
+                        light.intensity,
+                        Is.EqualTo(
+                                halfIntensities[index] *
+                                (isCabin ? plafondRise : 2f))
                             .Within(0.0001f));
                 }
 

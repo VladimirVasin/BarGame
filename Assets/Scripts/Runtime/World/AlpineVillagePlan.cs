@@ -242,12 +242,30 @@ namespace BarPromenade
         /// </summary>
         public Vector3 DoorDockPosition { get; }
 
-        /// <summary>Ground footprint, axis-aligned, for coarse overlap.</summary>
-        public Rect BoundsXZ => new Rect(
-            GroundCenter.x - FootprintSize.x * 0.5f,
-            GroundCenter.z - FootprintSize.y * 0.5f,
-            FootprintSize.x,
-            FootprintSize.y);
+        /// <summary>
+        /// Axis-aligned envelope of the actual rotated ground footprint.
+        /// Precise overlap uses SAT in the validator; terrain bounds and map
+        /// envelopes use this conservative rectangle.
+        /// </summary>
+        public Rect BoundsXZ
+        {
+            get
+            {
+                var forward = new Vector2(Facing.x, Facing.z).normalized;
+                var right = new Vector2(forward.y, -forward.x);
+                float halfWidth = FootprintSize.x * 0.5f;
+                float halfDepth = FootprintSize.y * 0.5f;
+                float extentX = Mathf.Abs(right.x) * halfWidth +
+                                Mathf.Abs(forward.x) * halfDepth;
+                float extentZ = Mathf.Abs(right.y) * halfWidth +
+                                Mathf.Abs(forward.y) * halfDepth;
+                return new Rect(
+                    GroundCenter.x - extentX,
+                    GroundCenter.z - extentZ,
+                    extentX * 2f,
+                    extentZ * 2f);
+            }
+        }
     }
 
     /// <summary>
@@ -349,6 +367,7 @@ namespace BarPromenade
             IList<AlpineVillagePlotDescriptor> sourcePlots,
             IList<AlpineVillageRidgeDescriptor> sourceRidges,
             Rect terrainBounds,
+            Rect terrainMeshBounds,
             Bounds worldBounds,
             Vector3 spawnPosition,
             Vector3 spawnForward)
@@ -368,6 +387,7 @@ namespace BarPromenade
             ridges = new ReadOnlyCollection<AlpineVillageRidgeDescriptor>(
                 new List<AlpineVillageRidgeDescriptor>(sourceRidges));
             TerrainBounds = terrainBounds;
+            TerrainMeshBounds = terrainMeshBounds;
             WorldBounds = worldBounds;
             SpawnPosition = spawnPosition;
             SpawnForward = spawnForward.normalized;
@@ -399,7 +419,22 @@ namespace BarPromenade
 
         public IReadOnlyList<AlpineVillagePlotDescriptor> Plots => plots;
         public IReadOnlyList<AlpineVillageRidgeDescriptor> Ridges => ridges;
+
+        /// <summary>
+        /// The inhabited inner extent. Shelves, plots and the walkable mask
+        /// live inside it; the enclosing mountain starts outside it.
+        /// </summary>
         public Rect TerrainBounds { get; }
+
+        /// <summary>
+        /// The complete physical ground mesh, including the rise from the
+        /// inner extent to the enclosing crest and the cableway brink below
+        /// the station. Keeping this separate is essential: sampling only
+        /// <see cref="TerrainBounds"/> cuts the mesh off at the exact point
+        /// where <c>SampleRidgeRise</c> first becomes non-zero.
+        /// </summary>
+        public Rect TerrainMeshBounds { get; }
+
         public Bounds WorldBounds { get; }
 
         /// <summary>Where the hero stands when he has not arrived by cabin.

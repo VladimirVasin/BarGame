@@ -366,7 +366,8 @@ namespace BarPromenade
             Color color,
             bool collider = false,
             float? worldUvTileSize = null,
-            RuntimeWorldUvMode uvMode = RuntimeWorldUvMode.XZPlanar)
+            RuntimeWorldUvMode uvMode = RuntimeWorldUvMode.XZPlanar,
+            bool keepReadable = false)
         {
             if (boxes == null)
             {
@@ -408,7 +409,9 @@ namespace BarPromenade
                 null,
                 collider,
                 worldUvTileSize,
-                uvMode);
+                uvMode,
+                default,
+                keepReadable);
         }
 
         /// <summary>
@@ -586,7 +589,8 @@ namespace BarPromenade
             bool collider,
             float? worldUvTileSize,
             RuntimeWorldUvMode uvMode = RuntimeWorldUvMode.XZPlanar,
-            Vector3 worldUvOrigin = default)
+            Vector3 worldUvOrigin = default,
+            bool keepReadable = false)
         {
             if (transforms == null)
             {
@@ -655,7 +659,7 @@ namespace BarPromenade
                 surfaceCollider.sharedMesh = combinedMesh;
             }
 
-            combinedMesh.UploadMeshData(!collider);
+            combinedMesh.UploadMeshData(!collider && !keepReadable);
             return result;
         }
 

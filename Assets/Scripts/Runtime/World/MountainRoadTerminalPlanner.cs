@@ -130,13 +130,23 @@ namespace BarPromenade
                 15.86f,
                 4f,
                 9.60f);
-            float[] distances = { 0f, 18f, 37f, 50f, 58f };
+            // The last tower stood at `50`, and the ridge that swallows the
+            // upper turn has its near face at `51.2` - a pylon erected one
+            // metre from a cliff, which is not a thing anybody builds, and it
+            // left no room at all for the ride's own cut. The blackout has to
+            // finish before the cabin reaches the rock AND start after the
+            // last tower is passed; between `50` and `51.2` both cannot be
+            // true, which is why the cabin used to drive into the mountain in
+            // plain sight. At `44` the final span is `14 m` - the same order
+            // as the others - the tower stands `7 m` clear of the face, and
+            // the cut lands in the open with the snow already filling it.
+            float[] distances = { 0f, 18f, 37f, 44f, 58f };
             float[] heights =
             {
                 lower.y,
                 lower.y + 14.3f,
                 lower.y + 19.3f,
-                lower.y + 22.8f,
+                lower.y + 21.2f,
                 lower.y + 24.8f
             };
             var nodes = new List<MountainCablewayNodeDescriptor>(

@@ -25,6 +25,8 @@ namespace BarPromenade.Editor
         public const string ProviderPath =
             "Assets/Resources/Village/VillageAssetProvider.asset";
 
+        private const double SignedVolumeEpsilon = 0.0000001d;
+
         private static bool isBuilding;
 
         [MenuItem("Bar Promenade/Village/Bind Provider")]
@@ -236,6 +238,8 @@ namespace BarPromenade.Editor
                     $"catalog expects {expected.Count}.");
             }
 
+            ValidateImportedWinding(meshes);
+
             if (manifest.mesh_count != expected.Count ||
                 manifest.assembly_count !=
                 VillageAssetProvider.ExpectedAssemblyCount)
@@ -249,6 +253,88 @@ namespace BarPromenade.Editor
             }
         }
 
+        /// <summary>
+        /// Back-face culling reads triangle winding, not imported vertex
+        /// normals. A previous generator produced complete house solids whose
+        /// every triangle faced inward; Blender's two-sided preview showed the
+        /// walls while the shipped Lit material culled them in Unity.
+        ///
+        /// The variant-zero plinth is authored from the generator's known-good
+        /// closed box primitive. Its imported sign is used as the reference so
+        /// the check remains correct across Blender-to-Unity handedness and
+        /// axis conversion.
+        /// </summary>
+        private static void ValidateImportedWinding(
+            Dictionary<string, Mesh> meshes)
+        {
+            string referenceName =
+                VillageAssetProvider.GetExpectedMeshName(
+                    VillageAssetKind.House,
+                    0,
+                    VillageMeshRole.Plinth);
+            if (!meshes.TryGetValue(referenceName, out Mesh reference))
+            {
+                throw new InvalidOperationException(
+                    $"The village FBX has no winding reference " +
+                    $"'{referenceName}'.");
+            }
+
+            double referenceVolume = CalculateSignedVolume(reference);
+            if (!HasUsableSignedVolume(referenceVolume))
+            {
+                throw new InvalidOperationException(
+                    $"The village winding reference '{referenceName}' has " +
+                    $"invalid signed volume {referenceVolume:G9}.");
+            }
+
+            int expectedSign = Math.Sign(referenceVolume);
+            foreach (KeyValuePair<string, Mesh> pair in meshes)
+            {
+                double volume = CalculateSignedVolume(pair.Value);
+                if (!HasUsableSignedVolume(volume))
+                {
+                    throw new InvalidOperationException(
+                        $"Village mesh '{pair.Key}' has invalid signed " +
+                        $"volume {volume:G9}; it is open, degenerate or has " +
+                        "cancelling triangle winding.");
+                }
+
+                if (Math.Sign(volume) != expectedSign)
+                {
+                    throw new InvalidOperationException(
+                        $"Village mesh '{pair.Key}' has reversed triangle " +
+                        $"winding (signed volume {volume:G9}); expected the " +
+                        $"same sign as '{referenceName}' " +
+                        $"({referenceVolume:G9}).");
+                }
+            }
+        }
+
+        private static bool HasUsableSignedVolume(double volume)
+        {
+            return !double.IsNaN(volume) &&
+                   !double.IsInfinity(volume) &&
+                   Math.Abs(volume) > SignedVolumeEpsilon;
+        }
+
+        private static double CalculateSignedVolume(Mesh mesh)
+        {
+            Vector3[] vertices = mesh.vertices;
+            int[] triangles = mesh.triangles;
+            double sixTimesVolume = 0d;
+            for (int index = 0; index < triangles.Length; index += 3)
+            {
+                Vector3 first = vertices[triangles[index]];
+                Vector3 second = vertices[triangles[index + 1]];
+                Vector3 third = vertices[triangles[index + 2]];
+                sixTimesVolume += Vector3.Dot(
+                    first,
+                    Vector3.Cross(second, third));
+            }
+
+            return sixTimesVolume / 6d;
+        }
+
         private static VillageManifest LoadAndValidateManifest()
         {
             string json = File.ReadAllText(ManifestPath);
@@ -258,6 +344,17 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "The village manifest could not be parsed.");
+            }
+
+            if (!string.Equals(
+                    manifest.generator_version,
+                    VillageAssetProvider.GeneratorVersion,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"The village manifest generator is " +
+                    $"'{manifest.generator_version}', expected " +
+                    $"'{VillageAssetProvider.GeneratorVersion}'.");
             }
 
             if (!string.Equals(
@@ -372,6 +469,7 @@ namespace BarPromenade.Editor
         [Serializable]
         private sealed class VillageManifest
         {
+            public string generator_version = string.Empty;
             public string design_id = string.Empty;
             public string build_signature = string.Empty;
             public int assembly_count;

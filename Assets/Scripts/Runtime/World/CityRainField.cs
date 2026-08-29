@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -7,11 +8,12 @@ namespace BarPromenade
     public enum CityPrecipitationKind
     {
         Rain = 0,
-        Snow = 1
+        Snow = 1,
+        Blizzard = 2
     }
 
     /// <summary>
-    /// Everything that differs between the two things the sky drops.
+    /// Everything that differs between the precipitation profiles.
     ///
     /// The field around them is identical — same follow, same box, same
     /// sheltered donut, same continuous intensity, same shared atmosphere
@@ -146,10 +148,50 @@ namespace BarPromenade
                 0.25f,
                 0.45f);
 
+        /// <summary>
+        /// Alpine Village only: dense, fast, wind-stretched snow. This is a
+        /// separate profile rather than stronger shared Snow, so the mountain
+        /// road keeps its existing readable climb while the village can sheet
+        /// sideways without raising the weather budget of any other scene.
+        ///
+        /// The high particle count is paired with restrained alpha. Strength
+        /// must read from motion and overlapping depth, not by painting a
+        /// white rectangle over the one uphill axis the player has to follow.
+        /// </summary>
+        public static CityPrecipitationProfile Blizzard { get; } =
+            new CityPrecipitationProfile(
+                1600,
+                300f,
+                0.72f,
+                4.5f,
+                4.5f,
+                new Vector2(-4.1f, -2.7f),
+                new Vector2(0.028f, 0.050f),
+                new Vector2(0.046f, 0.080f),
+                new Color(0.89f, 0.92f, 0.96f, 1f),
+                new Vector2(0.30f, 0.54f),
+                true,
+                new Vector2(0.025f, 0.050f),
+                new Vector2(1.15f, 1.80f),
+                0.45f,
+                0f,
+                new Vector3(0.55f, 0.35f, 0.24f),
+                1.08f,
+                0.32f,
+                0.40f);
+
         public static CityPrecipitationProfile For(
             CityPrecipitationKind kind)
         {
-            return kind == CityPrecipitationKind.Snow ? Snow : Rain;
+            switch (kind)
+            {
+                case CityPrecipitationKind.Snow:
+                    return Snow;
+                case CityPrecipitationKind.Blizzard:
+                    return Blizzard;
+                default:
+                    return Rain;
+            }
         }
     }
 
@@ -159,9 +201,10 @@ namespace BarPromenade
     /// can fade between clear, light and heavy without pops.
     ///
     /// It carries whatever the sky is dropping: the city gets rain, the
-    /// mountain road gets the same schedule as snow. The name is the city's
-    /// because the city is the default and its contracts are written against
-    /// these constants; the kind is chosen at initialization.
+    /// mountain road gets the same schedule as snow, and Alpine Village gets
+    /// its denser wind-stretched blizzard. The name is the city's because the
+    /// city is the default and its contracts are written against these
+    /// constants; the kind is chosen at initialization.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CityRainField : MonoBehaviour
@@ -175,10 +218,11 @@ namespace BarPromenade
         /// Radius of the rain-free core used while the hero rides inside the
         /// bus, so streaks never spawn through the cabin roof. It hugs the
         /// body: the 8.25 x 2.38 m bus has a 4.3 m half-diagonal, and the
-        /// rest is margin for wind drift during the fall. The old 10 m core
-        /// pushed every streak past the fog's teeth and the ride read as
-        /// dry — the passenger judges the weather by what stands right
-        /// outside the glass.
+        /// rest is margin around the windows. Existing particles are culled
+        /// from the same cylinder, so wind cannot carry them back under the
+        /// roof. The old 10 m core pushed every streak past the fog's teeth
+        /// and the ride read as dry — the passenger judges the weather by
+        /// what stands right outside the glass.
         /// </summary>
         public const float ShelterHoleRadius = 6.5f;
 
@@ -207,9 +251,12 @@ namespace BarPromenade
         private Transform followTarget;
         private CityPrecipitationProfile profile =
             CityPrecipitationProfile.Rain;
+        private Collider[] localShelters = Array.Empty<Collider>();
+        private int appliedLocalShelterCount;
         private float appliedIntensity = -1f;
         private bool appliedSheltered;
         private Vector2 appliedWindDrift;
+        private ParticleSystem.Particle[] shelterParticles;
 
         public bool IsInitialized { get; private set; }
         public CityPrecipitationKind Kind { get; private set; }
@@ -221,13 +268,15 @@ namespace BarPromenade
             appliedIntensity < 0f ? 0f : appliedIntensity;
         public bool IsSheltered => appliedSheltered;
         public Vector2 AppliedWindDrift => appliedWindDrift;
+        public IReadOnlyList<Collider> LocalShelters => localShelters;
 
         public void Initialize(
             Transform target,
             Material rainMaterial,
             int seed,
             float initialIntensity = 0f,
-            CityPrecipitationKind kind = CityPrecipitationKind.Rain)
+            CityPrecipitationKind kind = CityPrecipitationKind.Rain,
+            bool initiallySheltered = false)
         {
             followTarget = target != null
                 ? target
@@ -244,7 +293,8 @@ namespace BarPromenade
             ConfigureParticleSystem(
                 rainMaterial,
                 seed,
-                Mathf.Clamp01(initialIntensity));
+                Mathf.Clamp01(initialIntensity),
+                initiallySheltered);
             IsInitialized = true;
         }
 
@@ -295,6 +345,41 @@ namespace BarPromenade
 
             appliedSheltered = sheltered;
             ApplyShape(sheltered);
+            CullShelterCoreParticles();
+        }
+
+        /// <summary>
+        /// Registers small, world-space rain shelters such as the closed
+        /// service bridge over the Nightlife passage. Particles die only
+        /// after entering one of these volumes; the emitter stays a full
+        /// field, so rain remains visible immediately outside the roof and
+        /// the bus/tunnel donut keeps its existing independent contract.
+        /// </summary>
+        public void SetLocalShelters(IReadOnlyList<Collider> shelters)
+        {
+            if (shelters == null || shelters.Count == 0)
+            {
+                localShelters = Array.Empty<Collider>();
+            }
+            else
+            {
+                var copy = new List<Collider>(shelters.Count);
+                for (int index = 0; index < shelters.Count; index++)
+                {
+                    Collider shelter = shelters[index];
+                    if (shelter != null && !copy.Contains(shelter))
+                    {
+                        copy.Add(shelter);
+                    }
+                }
+
+                localShelters = copy.ToArray();
+            }
+
+            if (particles != null)
+            {
+                ApplyLocalShelters();
+            }
         }
 
         private void LateUpdate()
@@ -307,6 +392,7 @@ namespace BarPromenade
             }
 
             PositionEmitter();
+            CullShelterCoreParticles();
         }
 
         private void EnsureParticleSystem()
@@ -342,7 +428,8 @@ namespace BarPromenade
         private void ConfigureParticleSystem(
             Material rainMaterial,
             int seed,
-            float initialIntensity)
+            float initialIntensity,
+            bool initiallySheltered)
         {
             particles.Stop(
                 true,
@@ -370,7 +457,8 @@ namespace BarPromenade
             emission.rateOverTime = 0f;
             emission.rateOverDistance = 0f;
 
-            ApplyShape(false);
+            ApplyShape(initiallySheltered);
+            appliedSheltered = initiallySheltered;
 
             ParticleSystem.VelocityOverLifetimeModule velocity =
                 particles.velocityOverLifetime;
@@ -394,6 +482,7 @@ namespace BarPromenade
             // climb - which is exactly the tunnel mouth the player arrives
             // through.
             particles.Simulate(profile.PrewarmSeconds, true, true, true);
+            CullShelterCoreParticles();
             particles.Play(true);
         }
 
@@ -459,6 +548,55 @@ namespace BarPromenade
             shape.scale = new Vector3(FieldExtent, 0.5f, FieldExtent);
         }
 
+        /// <summary>
+        /// A donut prevents new precipitation from being born over a roof,
+        /// but wind can carry already-live particles back through its hole.
+        /// Cull the same cylindrical core every sheltered frame so a bus,
+        /// tunnel or station canopy is actually dry while precipitation stays
+        /// visible immediately outside it.
+        /// </summary>
+        private void CullShelterCoreParticles()
+        {
+            if (!appliedSheltered ||
+                particles == null ||
+                followTarget == null ||
+                particles.particleCount == 0)
+            {
+                return;
+            }
+
+            int capacity = Mathf.Max(
+                particles.main.maxParticles,
+                particles.particleCount);
+            if (shelterParticles == null ||
+                shelterParticles.Length < capacity)
+            {
+                shelterParticles = new ParticleSystem.Particle[capacity];
+            }
+
+            int count = particles.GetParticles(shelterParticles);
+            int kept = 0;
+            Vector3 center = followTarget.position;
+            float radiusSquared = ShelterHoleRadius * ShelterHoleRadius;
+            for (int index = 0; index < count; index++)
+            {
+                ParticleSystem.Particle particle = shelterParticles[index];
+                float x = particle.position.x - center.x;
+                float z = particle.position.z - center.z;
+                if (x * x + z * z <= radiusSquared)
+                {
+                    continue;
+                }
+
+                shelterParticles[kept++] = particle;
+            }
+
+            if (kept != count)
+            {
+                particles.SetParticles(shelterParticles, kept);
+            }
+        }
+
         private void ApplyIntensity(float intensity)
         {
             ParticleSystem.EmissionModule emission = particles.emission;
@@ -503,8 +641,7 @@ namespace BarPromenade
             collision.enabled = false;
             ParticleSystem.LightsModule lights = particles.lights;
             lights.enabled = false;
-            ParticleSystem.TriggerModule trigger = particles.trigger;
-            trigger.enabled = false;
+            ApplyLocalShelters();
             ParticleSystem.TrailModule trails = particles.trails;
             trails.enabled = false;
             // The swirl a flake takes on the way down. Rain falls too fast
@@ -541,6 +678,30 @@ namespace BarPromenade
             ParticleSystem.TextureSheetAnimationModule textureSheet =
                 particles.textureSheetAnimation;
             textureSheet.enabled = false;
+        }
+
+        private void ApplyLocalShelters()
+        {
+            ParticleSystem.TriggerModule trigger = particles.trigger;
+            int slotCount = Mathf.Max(
+                appliedLocalShelterCount,
+                localShelters.Length);
+            for (int index = 0; index < slotCount; index++)
+            {
+                trigger.SetCollider(
+                    index,
+                    index < localShelters.Length
+                        ? localShelters[index]
+                        : null);
+            }
+
+            appliedLocalShelterCount = localShelters.Length;
+            trigger.enter = ParticleSystemOverlapAction.Kill;
+            trigger.inside = ParticleSystemOverlapAction.Kill;
+            trigger.exit = ParticleSystemOverlapAction.Ignore;
+            trigger.outside = ParticleSystemOverlapAction.Ignore;
+            trigger.radiusScale = 0.5f;
+            trigger.enabled = localShelters.Length > 0;
         }
 
         private void ConfigureRenderer(Material rainMaterial)

@@ -35,7 +35,12 @@ namespace BarPromenade
         /// </summary>
         private const float YardLampDayIntensity = 9.5f;
 
-        private const float YardLampNightBoost = 0.55f;
+        /// <summary>
+        /// Was `0.55`, which put the day at `64.5%` of the night - two
+        /// points under the §20 floor of two thirds. At `0.5` the day is
+        /// the floor exactly: `9.5 / 14.25 = 2/3`.
+        /// </summary>
+        private const float YardLampNightBoost = 0.5f;
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId =

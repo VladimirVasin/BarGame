@@ -664,6 +664,92 @@ namespace BarPromenade
                 Mathf.Abs(localOffset.z) - ridge.Size.z * 0.5f);
             return Mathf.Sqrt(outsideX * outsideX + outsideZ * outsideZ);
         }
+
+        /// <summary>
+        /// How many stations the built crest is drawn from. A ridge is a
+        /// sine, but a POLYGONAL one, and the difference is the whole reason
+        /// this lives here: at its middle the drawn crest sits about `14%`
+        /// below the box it is authored in, so a check against the box top
+        /// passes on rock that was never built.
+        /// </summary>
+        internal const int RidgeCrestStations = 6;
+
+        /// <summary>
+        /// The crest the scenery factory actually builds, at width fraction
+        /// <paramref name="amount"/>, in world Y.
+        ///
+        /// One shape, two readers - the mesh and the validator - and neither
+        /// may hold a number the other does not. The cableway's occluder was
+        /// validated against the top of its bounding box while the rock the
+        /// player sees is this line, and the two are metres apart.
+        /// </summary>
+        internal static float CrestWorldY(
+            MountainRoadRidgeDescriptor ridge,
+            float amount)
+        {
+            float scaled = Mathf.Clamp01(amount) * (RidgeCrestStations - 1);
+            int lower = Mathf.Clamp(
+                Mathf.FloorToInt(scaled),
+                0,
+                RidgeCrestStations - 2);
+            return ridge.Center.y + Mathf.Lerp(
+                StationCrest(ridge, lower),
+                StationCrest(ridge, lower + 1),
+                scaled - lower);
+        }
+
+        /// <summary>The width fraction at which a world point crosses the
+        /// ridge, and whether it is inside the ridge's own footprint at all.
+        /// </summary>
+        internal static bool TryGetCrossing(
+            MountainRoadRidgeDescriptor ridge,
+            Vector3 world,
+            out float amount)
+        {
+            Vector3 local = Quaternion.Euler(0f, -ridge.YawDegrees, 0f) *
+                            (world - ridge.Center);
+            amount = local.x / ridge.Size.x + 0.5f;
+            return Mathf.Abs(local.x) <= ridge.Size.x * 0.5f &&
+                   Mathf.Abs(local.z) <= ridge.Size.z * 0.5f;
+        }
+
+        internal static float StationCrest(
+            MountainRoadRidgeDescriptor ridge,
+            int station)
+        {
+            return ridge.Size.y *
+                   (StationFactor(ridge.Seed, station) - 0.5f);
+        }
+
+        /// <summary>
+        /// The crest as a FRACTION of the ridge's authored height, which is
+        /// what a planner needs before it has one: `crestWorldY = base +
+        /// Size.y * factor`. The variation is a seeded eighth, so a ridge
+        /// sized against its own bounding box clears the cable for seven
+        /// seeds and buries the rule on the eighth - solve for this instead
+        /// and the rock is tall enough by construction.
+        /// </summary>
+        internal static float CrestFactor(int ridgeSeed, float amount)
+        {
+            float scaled = Mathf.Clamp01(amount) * (RidgeCrestStations - 1);
+            int lower = Mathf.Clamp(
+                Mathf.FloorToInt(scaled),
+                0,
+                RidgeCrestStations - 2);
+            return Mathf.Lerp(
+                StationFactor(ridgeSeed, lower),
+                StationFactor(ridgeSeed, lower + 1),
+                scaled - lower);
+        }
+
+        private static float StationFactor(int ridgeSeed, int station)
+        {
+            float amount = station / (float)(RidgeCrestStations - 1);
+            float edge = Mathf.Sin(amount * Mathf.PI);
+            float variation = 0.84f +
+                              ((ridgeSeed + station * 37) & 7) * 0.025f;
+            return edge * variation;
+        }
     }
 
     public sealed class MountainRoadPlan

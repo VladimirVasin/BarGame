@@ -6,23 +6,23 @@ namespace BarPromenade
 {
     /// <summary>
     /// The few authored realtime lights that live on district sites
-    /// outside the pooled street/bar atmosphere — currently the drying
-    /// yard's pole floodlight. Builders register each light with its
-    /// full night intensity and optional fog halo, and the same
-    /// night-factor path that drives the lamp bulbs scales and disables
-    /// them, so nothing electric burns under the day sky. The authored
-    /// always-on bar-side yard spotlight deliberately stays outside
-    /// this registry, exactly as it stays outside the glow registry.
-    ///
-    /// A light registered with a non-zero day intensity is the one
-    /// exception: it never switches off, only dims toward that floor —
-    /// for bulbs nobody bothers to switch, like the one over the
-    /// cemetery lodge's door. Its fog halo still fades out by day.
+    /// outside the pooled street/bar atmosphere — the drying yard's
+    /// pole floodlight, the cemetery lamps, the pier and hut bulbs.
+    /// Builders register each light with its full night intensity and
+    /// optional fog halo, and the same night-factor path that drives
+    /// the lamp bulbs breathes them down to the §20 floor: every
+    /// fixture burns always, the day takes at most a third off it, and
+    /// the fog halo is never taken away. The authored always-on
+    /// bar-side yard spotlight deliberately stays outside this
+    /// registry, exactly as it stays outside the glow registry.
     /// </summary>
     internal static class CityNightSiteLightRegistry
     {
-        /// <summary>Below this factor a night-only light is fully
-        /// disabled instead of idling at a fraction of a lumen.</summary>
+        /// <summary>
+        /// Kept for the tests that read it; under the §20 law no
+        /// registered light is ever disabled, so nothing compares
+        /// against it any more.
+        /// </summary>
         public const float EnableThreshold = 0.02f;
 
         private static readonly List<Entry> entries = new List<Entry>();
@@ -87,18 +87,28 @@ namespace BarPromenade
 
         private static void Apply(in Entry entry)
         {
-            // The halo is fog, not filament: it follows the night
-            // factor even for a bulb that never goes out.
-            bool nightLit = nightFactor > EnableThreshold;
+            // The §20 floor overrides every authored day intensity from
+            // below: a fixture gives at least two thirds of its night
+            // strength at noon, whatever the builder asked for. The
+            // authored value survives only where it is MORE generous.
+            // Night-only registrations (day zero) are the same fixtures
+            // seen before the law - they no longer exist as a behaviour,
+            // only as a calling convention.
+            float lawFloor = entry.NightIntensity *
+                             GameTimeDayNightRules.DayFixtureFloor;
             entry.Light.intensity = Mathf.Lerp(
-                entry.DayIntensity,
+                Mathf.Max(entry.DayIntensity, lawFloor),
                 entry.NightIntensity,
                 nightFactor);
-            entry.Light.enabled = nightLit || entry.DayIntensity > 0f;
+            entry.Light.enabled = true;
             if (entry.Halo != null)
             {
-                entry.Halo.SetIntensityFactor(nightFactor);
-                entry.Halo.SetVisible(nightLit);
+                // "И туманный ореол вокруг него не снимается никогда."
+                // It was fog-follows-the-night-factor here, and the law
+                // repealed that: the fog is there at noon too.
+                entry.Halo.SetIntensityFactor(
+                    GameTimeDayNightRules.FixtureFactor(nightFactor));
+                entry.Halo.SetVisible(true);
             }
         }
 

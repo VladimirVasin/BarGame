@@ -17,6 +17,7 @@ namespace BarPromenade.Tests.EditMode
     {
         private const string ManifestPath =
             "Assets/Village/Models/Village3D.json";
+        private const double SignedVolumeEpsilon = 0.0000001d;
 
         private static AlpineVillagePlan CreatePlan()
         {
@@ -79,6 +80,11 @@ namespace BarPromenade.Tests.EditMode
                 "The village kit has never been generated.");
 
             string json = File.ReadAllText(ManifestPath);
+            Assert.That(
+                json,
+                Does.Contain(
+                    $"\"generator_version\": " +
+                    $"\"{VillageAssetProvider.GeneratorVersion}\""));
             Assert.That(json, Does.Contain(VillageAssetProvider.DesignId));
             Assert.That(
                 json,
@@ -141,6 +147,67 @@ namespace BarPromenade.Tests.EditMode
                 used.Count,
                 Is.GreaterThanOrEqualTo(3),
                 "A lane of identical houses is not a village.");
+        }
+
+        /// <summary>
+        /// The Blender contact sheet used to be two-sided, while the runtime
+        /// Lit material culls back faces. That let a complete but inside-out
+        /// building look correct in Blender and lose every wall and roof slab
+        /// in the game.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void BuildingShells_ShareTheBoxAuthoredPlinthWinding()
+        {
+            VillageAssetProvider provider =
+                VillageAssetProvider.LoadOrThrow();
+            Mesh reference = provider.GetPartOrThrow(
+                VillageAssetKind.House,
+                0,
+                VillageMeshRole.Plinth).Mesh;
+            double referenceVolume = CalculateSignedVolume(reference);
+            Assert.That(
+                System.Math.Abs(referenceVolume),
+                Is.GreaterThan(SignedVolumeEpsilon),
+                "The box-authored plinth is not a usable winding reference.");
+            int referenceSign = System.Math.Sign(referenceVolume);
+
+            VillageAssetKind[] buildings =
+            {
+                VillageAssetKind.House,
+                VillageAssetKind.Chapel,
+                VillageAssetKind.TopHouse
+            };
+            VillageMeshRole[] shellRoles =
+            {
+                VillageMeshRole.Walls,
+                VillageMeshRole.Roof
+            };
+            foreach (VillageAssetKind kind in buildings)
+            {
+                for (int variant = 0;
+                     variant < VillageAssetProvider.GetVariantCount(kind);
+                     variant++)
+                {
+                    foreach (VillageMeshRole role in shellRoles)
+                    {
+                        Mesh mesh = provider.GetPartOrThrow(
+                            kind,
+                            variant,
+                            role).Mesh;
+                        double volume = CalculateSignedVolume(mesh);
+                        Assert.That(
+                            System.Math.Abs(volume),
+                            Is.GreaterThan(SignedVolumeEpsilon),
+                            $"'{mesh.name}' has no reliable signed volume.");
+                        Assert.That(
+                            System.Math.Sign(volume),
+                            Is.EqualTo(referenceSign),
+                            $"'{mesh.name}' is inside-out relative to " +
+                            $"'{reference.name}'.");
+                    }
+                }
+            }
         }
 
         /// <summary>
@@ -261,6 +328,33 @@ namespace BarPromenade.Tests.EditMode
                         Is.EqualTo(LightShadows.None),
                         "A garland lamp must not cast shadow maps.");
                 }
+
+                AlpineVillageWorldBuilder.GetGarlandSpan(
+                    plan,
+                    AlpineVillageDressingPlanner.AudibleGarlandSpanIndex,
+                    out Vector3 left,
+                    out Vector3 right);
+                Vector3 expectedOwner =
+                    AlpineVillageWorldBuilder.SampleGarlandPoint(
+                        left,
+                        right,
+                        0.5f);
+                Transform owner = world.SemanticObjects[
+                    AlpineVillageDressingPlanner.GarlandOwnerStableId];
+                Assert.That(
+                    Vector3.Distance(owner.position, expectedOwner),
+                    Is.LessThan(0.001f),
+                    "The causal wire owner is a batching pivot, not the wire.");
+
+                Transform stationMechanism = world.SemanticObjects[
+                    AlpineVillageDressingPlanner
+                        .StationMechanismOwnerStableId];
+                Assert.That(
+                    Vector3.Distance(
+                        stationMechanism.position,
+                        plan.Station.Cableway.Nodes[0].CableCenter),
+                    Is.LessThan(0.001f),
+                    "Station sound is owned by the pad, not the bullwheel.");
             }
             finally
             {
@@ -309,6 +403,24 @@ namespace BarPromenade.Tests.EditMode
             {
                 Object.DestroyImmediate(host);
             }
+        }
+
+        private static double CalculateSignedVolume(Mesh mesh)
+        {
+            Vector3[] vertices = mesh.vertices;
+            int[] triangles = mesh.triangles;
+            double sixTimesVolume = 0d;
+            for (int index = 0; index < triangles.Length; index += 3)
+            {
+                Vector3 first = vertices[triangles[index]];
+                Vector3 second = vertices[triangles[index + 1]];
+                Vector3 third = vertices[triangles[index + 2]];
+                sixTimesVolume += Vector3.Dot(
+                    first,
+                    Vector3.Cross(second, third));
+            }
+
+            return sixTimesVolume / 6d;
         }
     }
 }

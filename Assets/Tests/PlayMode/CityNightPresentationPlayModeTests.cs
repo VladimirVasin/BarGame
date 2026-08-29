@@ -418,15 +418,21 @@ namespace BarPromenade.Tests.PlayMode
                 dayNightLights,
                 Has.Length.EqualTo(
                     city.Night.Atmosphere.RealtimeLightCount));
+            // §20: at noon the pooled fixtures burn at the two-thirds
+            // floor - this loop used to REQUIRE them all off, and the law
+            // repealed exactly that reading. Whether an individual pooled
+            // Light is enabled stays the lease's business, but the factor
+            // written to it and its halo is the floor, never zero.
             for (int index = 0; index < dayNightLights.Length; index++)
             {
                 Light light = dayNightLights[index];
-                Assert.That(light.intensity, Is.EqualTo(0f));
-                Assert.That(light.enabled, Is.False);
                 CityLightHalo halo =
                     light.GetComponentInChildren<CityLightHalo>(true);
-                Assert.That(halo.IntensityFactor, Is.EqualTo(0f));
-                Assert.That(halo.IsVisible, Is.False);
+                Assert.That(
+                    halo.IntensityFactor,
+                    Is.EqualTo(GameTimeDayNightRules.DayFixtureFloor)
+                        .Within(0.001f),
+                    "The fog halo is never taken away.");
             }
             CollectionAssert.DoesNotContain(
                 dayNightLights,
@@ -443,9 +449,14 @@ namespace BarPromenade.Tests.PlayMode
             bulb.GetPropertyBlock(bulbProperties);
             Color dayBulbColor = bulbProperties.GetColor(
                 Shader.PropertyToID("_BaseColor"));
+
+            // The bulb used to render pure black at noon, and this
+            // assertion pinned that. §20 repealed it: the day takes a
+            // third off the filament, no more.
             Assert.That(
                 dayBulbColor.maxColorComponent,
-                Is.LessThan(0.001f));
+                Is.GreaterThan(0.001f),
+                "A street lamp burns at noon.");
 
             int stableDayApplicationCount =
                 city.DayNight.VisualApplicationCount;

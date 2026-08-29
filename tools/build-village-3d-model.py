@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build the first authored village library for the area above the cableway.
+"""Build the authored village library for the area above the cableway.
 
 The library contains local-space archetypes, never world placements.  The
 runtime's ``AlpineVillagePlotDescriptor`` remains the owner of position,
@@ -53,9 +53,9 @@ except ImportError as error:  # pragma: no cover - Blender entry point.
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATOR_VERSION = "1.0.0"
-DESIGN_ID = "village_wave1_v1"
-DISPLAY_NAME = "Village Wave 1"
+GENERATOR_VERSION = "2.1.1"
+DESIGN_ID = "village_wave2_v2"
+DISPLAY_NAME = "Village Wave 2.1.1"
 
 DEFAULT_BLEND = (
     ROOT / "ArtSource" / "Village" / "Blender" / "Village3D.blend"
@@ -78,6 +78,7 @@ NORMALIZED_MIN = (-0.5, -0.5, -0.5)
 NORMALIZED_MAX = (0.5, 0.5, 0.5)
 BOUNDS_EPSILON = 1e-6
 UV_EPSILON = 1e-6
+SIGNED_VOLUME_EPSILON = 1e-9
 MAX_TRIANGLES = 16000
 
 Vec2 = tuple[float, float]
@@ -92,8 +93,10 @@ PREVIEW_COLORS = {
     "HouseWallC": (0.37, 0.215, 0.120, 1.0),
     "HouseWallD": (0.30, 0.170, 0.098, 1.0),
     "HouseRoof": (0.150, 0.115, 0.090, 1.0),
+    "RoofSnow": (0.690, 0.710, 0.690, 1.0),
     "HousePlinth": (0.235, 0.225, 0.200, 1.0),
     "HouseChimney": (0.265, 0.215, 0.185, 1.0),
+    "TopHouseWall": (0.425, 0.385, 0.315, 1.0),
     "ChapelWhitewash": (0.560, 0.525, 0.455, 1.0),
     "ChapelRoof": (0.135, 0.105, 0.082, 1.0),
     "CartIron": (0.215, 0.105, 0.048, 1.0),
@@ -102,6 +105,16 @@ PREVIEW_COLORS = {
     "AditRubble": (0.195, 0.190, 0.170, 1.0),
     "GraveStone": (0.290, 0.285, 0.258, 1.0),
     "Firewood": (0.205, 0.120, 0.062, 1.0),
+    "ShutterA": (0.225, 0.255, 0.205, 1.0),
+    "ShutterB": (0.285, 0.180, 0.125, 1.0),
+    "ShutterC": (0.185, 0.220, 0.235, 1.0),
+    "RepairWhitewash": (0.470, 0.435, 0.365, 1.0),
+    "RepairIron": (0.170, 0.095, 0.052, 1.0),
+    "FenceTimber": (0.205, 0.125, 0.072, 1.0),
+    "MineCable": (0.125, 0.070, 0.042, 1.0),
+    "RailIron": (0.155, 0.082, 0.044, 1.0),
+    "RailSleeper": (0.185, 0.115, 0.065, 1.0),
+    "SourceStone": (0.300, 0.295, 0.270, 1.0),
 }
 
 # Representative plot sizes in source axes (X, Y-forward, Z-up).  The source
@@ -114,6 +127,12 @@ PREVIEW_DESCRIPTOR_SIZES = {
     "AditFrame": (3.10, 0.90, 2.60),
     "GraveMarker": (0.42, 0.18, 0.80),
     "Firewood": (1.60, 0.95, 0.90),
+    "TopHouse": (11.0, 9.0, 7.0),
+    "FacadeDetail": (1.85, 0.18, 1.25),
+    "GarlandPost": (0.38, 0.38, 3.10),
+    "CableGate": (3.20, 0.42, 1.25),
+    "RailBridge": (1.35, 3.20, 0.32),
+    "SourceBowl": (1.15, 0.75, 0.55),
 }
 
 
@@ -295,13 +314,13 @@ def prism_y(profile_xz: Sequence[tuple[float, float]], y0: float,
     vertices = [(x, y0, z) for x, z in profile_xz]
     vertices.extend((x, y1, z) for x, z in profile_xz)
     faces: list[Face] = [
-        tuple(reversed(range(count))),
-        tuple(range(count, count * 2)),
+        tuple(range(count)),
+        tuple(reversed(range(count, count * 2))),
     ]
     for index in range(count):
         following = (index + 1) % count
         faces.append((
-            index, following, count + following, count + index,
+            index, count + index, count + following, following,
         ))
     return vertices, faces
 
@@ -543,6 +562,129 @@ def gable_profile(
     )
 
 
+def roof_surface_height(
+    x: float,
+    left_x: float,
+    left_z: float,
+    apex_x: float,
+    apex_z: float,
+    right_x: float,
+    right_z: float,
+) -> float:
+    """Height of one broken roof line, used by its lying snow skin."""
+    if x <= apex_x:
+        amount = (x - left_x) / (apex_x - left_x)
+        return left_z + (apex_z - left_z) * amount
+    amount = (x - apex_x) / (right_x - apex_x)
+    return apex_z + (right_z - apex_z) * amount
+
+
+def sloped_skin(
+    x0: float,
+    x1: float,
+    y0: float,
+    y1: float,
+    height_at,
+    thickness: float = 0.014,
+    far_left_inset: float = 0.0,
+    far_right_inset: float = 0.0,
+) -> Geometry:
+    """A thin, optionally ragged layer following rather than replacing roof."""
+    lift = 0.004
+    corners = (
+        (x0, y0, height_at(x0) + lift),
+        (x1, y0, height_at(x1) + lift),
+        (x1 - far_right_inset, y1,
+         height_at(x1 - far_right_inset) + lift),
+        (x0 + far_left_inset, y1,
+         height_at(x0 + far_left_inset) + lift),
+    )
+    vertices = list(corners)
+    vertices.extend(
+        (x, y, z + thickness) for x, y, z in corners)
+    faces = [
+        (3, 2, 1, 0),
+        (4, 5, 6, 7),
+        (0, 1, 5, 4),
+        (1, 2, 6, 5),
+        (2, 3, 7, 6),
+        (3, 0, 4, 7),
+    ]
+    return vertices, faces
+
+
+def broken_roof_snow(
+    left_x: float,
+    left_z: float,
+    apex_x: float,
+    apex_z: float,
+    right_x: float,
+    right_z: float,
+    depth: float,
+    pattern: int,
+) -> Geometry:
+    """Wind-broken roof cover: one lee patch and two incomplete remnants.
+
+    A continuous white cap would turn the village into a postcard.  These
+    deterministic strips leave timber exposed at the ridge, eaves and one
+    end of every roof, while still making settled snow legible at lane range.
+    """
+    def height_at(x: float) -> float:
+        return roof_surface_height(
+            x,
+            left_x,
+            left_z,
+            apex_x,
+            apex_z,
+            right_x,
+            right_z)
+
+    left_span = apex_x - left_x
+    right_span = right_x - apex_x
+    if pattern % 2 == 0:
+        primary = (
+            left_x + left_span * 0.08,
+            apex_x - left_span * 0.08,
+        )
+        remnant = (
+            apex_x + right_span * 0.52,
+            right_x - right_span * 0.08,
+        )
+    else:
+        primary = (
+            apex_x + right_span * 0.08,
+            right_x - right_span * 0.08,
+        )
+        remnant = (
+            left_x + left_span * 0.08,
+            apex_x - left_span * 0.54,
+        )
+
+    return merge(
+        sloped_skin(
+            primary[0], primary[1],
+            -depth * 0.92, depth * 0.20,
+            height_at,
+            far_left_inset=(primary[1] - primary[0]) * 0.07,
+            far_right_inset=(primary[1] - primary[0]) * 0.04),
+        sloped_skin(
+            primary[0] + (primary[1] - primary[0]) * 0.22,
+            primary[1] - (primary[1] - primary[0]) * 0.06,
+            depth * 0.34, depth * 0.88,
+            height_at,
+            0.011,
+            far_left_inset=(primary[1] - primary[0]) * 0.05,
+            far_right_inset=(primary[1] - primary[0]) * 0.11),
+        sloped_skin(
+            remnant[0], remnant[1],
+            -depth * 0.28, depth * 0.58,
+            height_at,
+            0.010,
+            far_left_inset=(remnant[1] - remnant[0]) * 0.16,
+            far_right_inset=(remnant[1] - remnant[0]) * 0.03),
+    )
+
+
 def build_village_house(variant: int) -> AssemblySpec:
     left_eave, right_eave, apex_x, lean, pitch = HOUSE_VARIANTS[variant]
     depth = 0.415 + variant * 0.005
@@ -579,6 +721,15 @@ def build_village_house(variant: int) -> AssemblySpec:
         (0.075, (depth + 0.05) * 2.0, thickness * 0.9),
         0.014)
     roof = merge(left_slab, right_slab, ridge)
+    snow = broken_roof_snow(
+        -0.5,
+        left_eave - 0.045 + thickness,
+        apex_x,
+        0.40 + thickness,
+        0.5,
+        right_eave - 0.045 + thickness,
+        depth + 0.05,
+        variant)
 
     # A stone base course.  Every wall in this village stands on one, because
     # timber on soil rots and these houses are old.
@@ -613,6 +764,9 @@ def build_village_house(variant: int) -> AssemblySpec:
             PartSpec("GEO_VIL_House_Variant%02d_Chimney" % variant,
                      "House", variant, "Chimney", "Masonry",
                      "HouseChimney", chimney),
+            PartSpec("GEO_VIL_House_Variant%02d_Snow" % variant,
+                     "House", variant, "Snow", "WindSnow",
+                     "RoofSnow", snow),
         ),
     )
 
@@ -654,6 +808,12 @@ def build_chapel() -> AssemblySpec:
         chamfered_box((0.020, 0.0, 0.34 + thickness * 0.5),
                       (0.07, (depth + 0.055) * 2.0, thickness * 0.9), 0.012),
     )
+    snow = broken_roof_snow(
+        -0.49, 0.070 + thickness,
+        0.020, 0.34 + thickness,
+        0.49, 0.050 + thickness,
+        depth + 0.055,
+        4)
 
     plinth = merge(
         chamfered_box((0.0, 0.0, -0.5 + 0.045),
@@ -673,6 +833,8 @@ def build_chapel() -> AssemblySpec:
                      "Timber", "ChapelRoof", roof),
             PartSpec("GEO_VIL_Chapel_Plinth", "Chapel", 0, "Plinth",
                      "LayeredStone", "HousePlinth", plinth),
+            PartSpec("GEO_VIL_Chapel_Snow", "Chapel", 0, "Snow",
+                     "WindSnow", "RoofSnow", snow),
         ),
     )
 
@@ -807,6 +969,378 @@ def build_firewood() -> AssemblySpec:
     )
 
 
+def build_top_house() -> AssemblySpec:
+    """The lane's one terminal mass: cared for, never new or prosperous.
+
+    Its profile is steadier than the cottages and its base is heavier, but
+    the off-centre ridge, patched chimney and broken snow keep it inside the
+    same old village rather than promoting it into a manor or postcard lodge.
+    """
+    left_eave = 0.072
+    right_eave = 0.048
+    apex_x = -0.026
+    lean = 0.012
+    depth = 0.420
+    apex_z = 0.368
+    thickness = 0.052
+
+    walls = prism_y(
+        gable_profile(
+            left_eave,
+            right_eave,
+            apex_x,
+            lean,
+            apex_z,
+            0.46),
+        -depth,
+        depth)
+
+    roof = merge(
+        prism_y(
+            (
+                (-0.5, left_eave - 0.040),
+                (apex_x, apex_z),
+                (apex_x, apex_z + thickness),
+                (-0.5, left_eave - 0.040 + thickness),
+            ),
+            -depth - 0.055,
+            depth + 0.055),
+        prism_y(
+            (
+                (apex_x, apex_z),
+                (0.5, right_eave - 0.040),
+                (0.5, right_eave - 0.040 + thickness),
+                (apex_x, apex_z + thickness),
+            ),
+            -depth - 0.055,
+            depth + 0.055),
+        chamfered_box(
+            (apex_x, 0.0, apex_z + thickness * 0.5),
+            (0.080, (depth + 0.055) * 2.0, thickness * 0.9),
+            0.012),
+        # A repaired door hood, functional and shallow.  It is deliberately
+        # not a balcony and does not create a second storey of ornament.
+        chamfered_box(
+            (0.0, depth + 0.020, -0.030),
+            (0.37, 0.100, 0.050),
+            0.010),
+    )
+
+    plinth = merge(
+        chamfered_box(
+            (0.0, 0.0, -0.5 + 0.045),
+            (0.972, depth * 2.0 + 0.075, 0.090),
+            0.018),
+        # Two unmatched repairs make the foundation maintained, not clean.
+        chamfered_box(
+            (-0.36, depth + 0.020, -0.398),
+            (0.18, 0.085, 0.155),
+            0.015),
+        chamfered_box(
+            (0.31, -depth - 0.012, -0.418),
+            (0.24, 0.070, 0.118),
+            0.012),
+    )
+
+    chimney_x = 0.145
+    chimney = merge(
+        chamfered_box(
+            (chimney_x, -depth * 0.42, 0.315),
+            (0.125, 0.125, 0.340),
+            0.014),
+        chamfered_box(
+            (chimney_x, -depth * 0.42, 0.472),
+            (0.158, 0.158, 0.035),
+            0.010),
+        # One old masonry collar, visibly a repair rather than decoration.
+        chamfered_box(
+            (chimney_x + 0.010, -depth * 0.42, 0.235),
+            (0.148, 0.140, 0.055),
+            0.010),
+    )
+
+    snow = broken_roof_snow(
+        -0.5,
+        left_eave - 0.040 + thickness,
+        apex_x,
+        apex_z + thickness,
+        0.5,
+        right_eave - 0.040 + thickness,
+        depth + 0.055,
+        5)
+
+    return AssemblySpec(
+        "TopHouse", 0, "normalized_to_descriptor",
+        (
+            PartSpec("GEO_VIL_TopHouse_Walls", "TopHouse", 0, "Walls",
+                     "Masonry", "TopHouseWall", walls),
+            PartSpec("GEO_VIL_TopHouse_Roof", "TopHouse", 0, "Roof",
+                     "Timber", "HouseRoof", roof),
+            PartSpec("GEO_VIL_TopHouse_Plinth", "TopHouse", 0, "Plinth",
+                     "LayeredStone", "HousePlinth", plinth),
+            PartSpec("GEO_VIL_TopHouse_Chimney", "TopHouse", 0,
+                     "Chimney", "Masonry", "HouseChimney", chimney),
+            PartSpec("GEO_VIL_TopHouse_Snow", "TopHouse", 0, "Snow",
+                     "WindSnow", "RoofSnow", snow),
+        ),
+    )
+
+
+FACADE_DETAIL_VARIANTS = (
+    # left lean, right lean, right lower edge, repair side
+    (0.020, -0.012, -0.50, -1.0),
+    (-0.025, 0.018, -0.31, 1.0),
+    (0.012, 0.030, -0.43, -1.0),
+)
+
+
+def shutter_panel(
+    centre_x: float,
+    width: float,
+    bottom: float,
+    top: float,
+    lean: float,
+) -> Geometry:
+    half = width * 0.5
+    shell = prism_y(
+        (
+            (centre_x - half, bottom),
+            (centre_x + half, bottom),
+            (centre_x + half + lean, top - 0.018),
+            (centre_x - half + lean, top),
+        ),
+        -0.038,
+        0.038)
+    bars = merge(
+        chamfered_box(
+            (centre_x + lean * 0.20, 0.0, bottom + (top - bottom) * 0.24),
+            (width + 0.028, 0.090, 0.052),
+            0.008),
+        chamfered_box(
+            (centre_x + lean * 0.76, 0.0, bottom + (top - bottom) * 0.74),
+            (width + 0.028, 0.090, 0.052),
+            0.008),
+    )
+    return merge(shell, bars)
+
+
+def build_facade_detail(variant: int) -> AssemblySpec:
+    """One real-metre facade dressing placed around a runtime-owned pane.
+
+    No pane or door is included.  The assembly supplies only old shutters,
+    one plain repair and a visible iron hook for a garland wire.  That keeps
+    every opening at its authored metre size and makes decoration causal.
+    """
+    left_lean, right_lean, right_bottom, repair_side = (
+        FACADE_DETAIL_VARIANTS[variant])
+    shutters = merge(
+        shutter_panel(-0.335, 0.245, -0.50, 0.315, left_lean),
+        shutter_panel(0.335, 0.245, right_bottom, 0.305, right_lean),
+    )
+
+    patch_x = repair_side * 0.335
+    repair = prism_y(
+        (
+            (patch_x - 0.135, -0.46),
+            (patch_x + 0.125, -0.445),
+            (patch_x + 0.105, -0.10 + variant * 0.025),
+            (patch_x - 0.150, -0.145),
+        ),
+        0.040,
+        0.064)
+
+    hook_x = -0.18 + variant * 0.18
+    bracket = merge(
+        tube_between(
+            (hook_x, -0.015, 0.335),
+            (hook_x, 0.165, 0.355),
+            0.018, 0.017, 7),
+        tube_between(
+            (hook_x, 0.155, 0.355),
+            (hook_x + 0.055, 0.205, 0.315),
+            0.017, 0.014, 7),
+    )
+
+    return AssemblySpec(
+        "FacadeDetail", variant, "normalized_to_descriptor",
+        (
+            PartSpec(
+                "GEO_VIL_FacadeDetail_Variant%02d_Shutters" % variant,
+                "FacadeDetail", variant, "Shutters", "Timber",
+                ("ShutterA", "ShutterB", "ShutterC")[variant],
+                shutters),
+            PartSpec(
+                "GEO_VIL_FacadeDetail_Variant%02d_Repair" % variant,
+                "FacadeDetail", variant, "Repair", "Masonry",
+                "RepairWhitewash", repair),
+            PartSpec(
+                "GEO_VIL_FacadeDetail_Variant%02d_Bracket" % variant,
+                "FacadeDetail", variant, "Bracket", "RustedIron",
+                "RepairIron", bracket),
+        ),
+    )
+
+
+def build_garland_post() -> AssemblySpec:
+    """A repaired timber post for spans that cannot reach a house eave."""
+    timber = merge(
+        tube_between(
+            (-0.035, 0.0, -0.43),
+            (0.030, 0.0, 0.385),
+            0.065, 0.050, 7),
+        chamfered_box(
+            (0.005, 0.0, -0.035),
+            (0.155, 0.145, 0.205),
+            0.014),
+    )
+    bracket = merge(
+        tube_between(
+            (0.028, -0.025, 0.355),
+            (0.028, 0.330, 0.385),
+            0.023, 0.019, 7),
+        tube_between(
+            (0.025, 0.075, 0.275),
+            (0.028, 0.270, 0.378),
+            0.019, 0.016, 7),
+        # Rusted splice bands explain why the old post is still standing.
+        chamfered_box(
+            (0.003, 0.0, -0.045),
+            (0.178, 0.165, 0.035),
+            0.008),
+    )
+    timber, bracket = ground_all(timber, bracket)
+    return AssemblySpec(
+        "GarlandPost", 0, "normalized_to_descriptor",
+        (
+            PartSpec("GEO_VIL_GarlandPost_Timber", "GarlandPost", 0,
+                     "Timber", "Timber", "FenceTimber", timber),
+            PartSpec("GEO_VIL_GarlandPost_Bracket", "GarlandPost", 0,
+                     "Bracket", "RustedIron", "RepairIron", bracket),
+        ),
+    )
+
+
+def build_cable_gate() -> AssemblySpec:
+    """Two yard posts tied shut with cable left from the closed mine."""
+    timber = merge(
+        tube_between(
+            (-0.425, 0.0, -0.43),
+            (-0.395, 0.008, 0.345),
+            0.065, 0.052, 7),
+        tube_between(
+            (0.425, 0.0, -0.43),
+            (0.405, -0.010, 0.315),
+            0.065, 0.052, 7),
+    )
+    cable_points = (
+        (-0.405, 0.018, 0.215),
+        (-0.210, -0.006, 0.105),
+        (0.020, 0.012, 0.055),
+        (0.235, -0.010, 0.115),
+        (0.405, 0.005, 0.205),
+    )
+    cable_segments = [
+        tube_between(first, second, 0.016, 0.016, 7)
+        for first, second in zip(cable_points, cable_points[1:])
+    ]
+    cable_segments.extend((
+        tube_between(
+            (-0.425, -0.025, 0.255),
+            (-0.390, 0.055, 0.170),
+            0.015, 0.014, 7),
+        tube_between(
+            (0.425, 0.025, 0.245),
+            (0.390, -0.052, 0.165),
+            0.015, 0.014, 7),
+    ))
+    timber, cable = ground_all(timber, merge(*cable_segments))
+    return AssemblySpec(
+        "CableGate", 0, "normalized_to_descriptor",
+        (
+            PartSpec("GEO_VIL_CableGate_Timber", "CableGate", 0,
+                     "Timber", "Timber", "FenceTimber", timber),
+            PartSpec("GEO_VIL_CableGate_Cable", "CableGate", 0,
+                     "Cable", "RustedIron", "MineCable", cable),
+        ),
+    )
+
+
+def build_rail_bridge() -> AssemblySpec:
+    """A short drainage crossing made from mine rail and rough sleepers."""
+    rails = merge(
+        chamfered_box(
+            (-0.305, 0.0, -0.245),
+            (0.078, 0.965, 0.105),
+            0.010),
+        chamfered_box(
+            (0.310, -0.012, -0.238),
+            (0.078, 0.940, 0.105),
+            0.010),
+        chamfered_box(
+            (-0.305, 0.0, -0.315),
+            (0.145, 0.965, 0.030),
+            0.008),
+        chamfered_box(
+            (0.310, -0.012, -0.308),
+            (0.145, 0.940, 0.030),
+            0.008),
+    )
+    sleepers = []
+    for index, y in enumerate((-0.405, -0.205, 0.005, 0.218, 0.410)):
+        sleepers.append(chamfered_box(
+            ((-0.018 if index == 3 else 0.0), y, -0.385),
+            ((0.88 if index == 3 else 0.92), 0.105, 0.105),
+            0.012))
+    rails, sleeper_set = ground_all(rails, merge(*sleepers))
+    return AssemblySpec(
+        "RailBridge", 0, "normalized_to_descriptor",
+        (
+            PartSpec("GEO_VIL_RailBridge_Rails", "RailBridge", 0,
+                     "Rails", "RustedIron", "RailIron", rails),
+            PartSpec("GEO_VIL_RailBridge_Sleepers", "RailBridge", 0,
+                     "Sleepers", "Timber", "RailSleeper", sleeper_set),
+        ),
+    )
+
+
+def build_source_bowl() -> AssemblySpec:
+    """An ordinary open stone catch basin beside the source chapel.
+
+    Four unmatched rim blocks sit on one heavy bed.  There is no inscription,
+    symbol, offering, candle, icon or authored water surface: it is municipal
+    village plumbing, and the runtime sound merely gains a visible owner.
+    """
+    stone = merge(
+        chamfered_box(
+            (-0.012, 0.0, -0.445),
+            (0.92, 0.78, 0.11),
+            0.018),
+        chamfered_box(
+            (0.0, -0.405, 0.015),
+            (0.96, 0.15, 0.87),
+            0.025),
+        chamfered_box(
+            (-0.010, 0.395, 0.0),
+            (0.93, 0.15, 0.82),
+            0.023),
+        chamfered_box(
+            (-0.405, -0.006, 0.020),
+            (0.15, 0.64, 0.84),
+            0.022),
+        chamfered_box(
+            (0.405, 0.004, 0.040),
+            (0.15, 0.63, 0.92),
+            0.022),
+    )
+    return AssemblySpec(
+        "SourceBowl", 0, "normalized_to_descriptor",
+        (
+            PartSpec("GEO_VIL_SourceBowl_Stone", "SourceBowl", 0,
+                     "Stone", "LayeredStone", "SourceStone", stone),
+        ),
+    )
+
+
 def make_assemblies() -> tuple[AssemblySpec, ...]:
     return (
         *(build_village_house(index) for index in range(4)),
@@ -815,6 +1349,12 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         build_adit_frame(),
         *(build_grave_marker(index) for index in range(3)),
         build_firewood(),
+        build_top_house(),
+        *(build_facade_detail(index) for index in range(3)),
+        build_garland_post(),
+        build_cable_gate(),
+        build_rail_bridge(),
+        build_source_bowl(),
     )
 
 
@@ -839,6 +1379,31 @@ def source_to_unity(vector: Sequence[float]) -> list[float]:
 
 def triangle_count(geometry: Geometry) -> int:
     return sum(len(face) - 2 for face in geometry[1])
+
+
+def is_closed_geometry(geometry: Geometry) -> bool:
+    """True when every undirected edge belongs to exactly two faces."""
+    _, faces = geometry
+    edge_uses: dict[tuple[int, int], int] = {}
+    for face in faces:
+        for index, first in enumerate(face):
+            second = face[(index + 1) % len(face)]
+            edge = (min(first, second), max(first, second))
+            edge_uses[edge] = edge_uses.get(edge, 0) + 1
+    return bool(edge_uses) and all(count == 2 for count in edge_uses.values())
+
+
+def signed_volume(geometry: Geometry) -> float:
+    """Oriented volume from the same deterministic fan triangulation as FBX."""
+    vertices, faces = geometry
+    volume = 0.0
+    for face in faces:
+        origin = vertices[face[0]]
+        for index in range(1, len(face) - 1):
+            volume += dot(
+                origin,
+                cross(vertices[face[index]], vertices[face[index + 1]]))
+    return volume / 6.0
 
 
 def face_normal(vertices: Sequence[Vec3], face: Face) -> Vec3:
@@ -899,6 +1464,13 @@ def validate_geometry(part: PartSpec, problems: list[str]) -> None:
         if length(face_normal(vertices, face)) < 0.5:
             problems.append(f"{part.mesh} has a degenerate face")
 
+    if is_closed_geometry(part.geometry):
+        volume = signed_volume(part.geometry)
+        if not math.isfinite(volume) or volume <= SIGNED_VOLUME_EPSILON:
+            problems.append(
+                f"{part.mesh} has non-positive signed volume {volume:.9f}; "
+                "its closed surface is wound inward")
+
     low, high = geometry_bounds(part.geometry)
     if any(low[axis] < NORMALIZED_MIN[axis] - BOUNDS_EPSILON or
            high[axis] > NORMALIZED_MAX[axis] + BOUNDS_EPSILON
@@ -926,15 +1498,31 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         "AditFrame": 1,
         "GraveMarker": 3,
         "Firewood": 1,
+        "TopHouse": 1,
+        "FacadeDetail": 3,
+        "GarlandPost": 1,
+        "CableGate": 1,
+        "RailBridge": 1,
+        "SourceBowl": 1,
     }
     expected_roles = {
-        **{("House", index): ("Walls", "Roof", "Plinth", "Chimney")
+        **{("House", index):
+           ("Walls", "Roof", "Plinth", "Chimney", "Snow")
            for index in range(4)},
-        ("Chapel", 0): ("Walls", "Roof", "Plinth"),
+        ("Chapel", 0): ("Walls", "Roof", "Plinth", "Snow"),
         ("MineCart", 0): ("Body", "Wheels"),
         ("AditFrame", 0): ("Timber", "Rubble"),
         **{("GraveMarker", index): ("Stone",) for index in range(3)},
         ("Firewood", 0): ("Wood",),
+        ("TopHouse", 0):
+            ("Walls", "Roof", "Plinth", "Chimney", "Snow"),
+        **{("FacadeDetail", index):
+           ("Shutters", "Repair", "Bracket")
+           for index in range(3)},
+        ("GarlandPost", 0): ("Timber", "Bracket"),
+        ("CableGate", 0): ("Timber", "Cable"),
+        ("RailBridge", 0): ("Rails", "Sleepers"),
+        ("SourceBowl", 0): ("Stone",),
     }
     names: set[str] = set()
     keys: set[tuple[str, int]] = set()
@@ -969,8 +1557,8 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
                         if item_kind == kind)
         if actual != list(range(count)):
             problems.append(f"{kind} variants are {actual}, expected 0..{count - 1}")
-    if len(names) != 27:
-        problems.append(f"mesh count is {len(names)}, expected 27")
+    if len(names) != 53:
+        problems.append(f"mesh count is {len(names)}, expected 53")
     total_triangles = sum(triangle_count(part.geometry)
                           for assembly in assemblies
                           for part in assembly.parts)
@@ -979,7 +1567,7 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
             f"triangle count {total_triangles} is outside 1..{MAX_TRIANGLES}")
     if problems:
         raise RuntimeError(
-            "Mountain Road misc art contract violated:\n  - " +
+            "Village art contract violated:\n  - " +
             "\n  - ".join(problems))
 
 
@@ -1035,8 +1623,8 @@ def reset_scene() -> tuple[bpy.types.Collection, bpy.types.Collection]:
     scene.collection.children.link(source)
     scene.collection.children.link(presentation)
     scene.render.engine = "BLENDER_EEVEE"
-    scene.render.resolution_x = 1200
-    scene.render.resolution_y = 760
+    scene.render.resolution_x = 1600
+    scene.render.resolution_y = 1000
     scene.render.resolution_percentage = 100
     scene.render.image_settings.file_format = "PNG"
     scene.render.film_transparent = False
@@ -1050,6 +1638,7 @@ def create_material(tint_role: str) -> bpy.types.Material:
     material = bpy.data.materials.new(f"PREVIEW_VIL_{tint_role}")
     color = PREVIEW_COLORS[tint_role]
     material.diffuse_color = color
+    material.use_backface_culling = True
     material.use_nodes = True
     node = material.node_tree.nodes.get("Principled BSDF")
     if node is not None:
@@ -1159,7 +1748,7 @@ def manifest_for(
             "uv_max": [stable(value) for value in uv_high],
         })
     return {
-        "generator": "tools/build-mountain-road-misc-3d-model.py",
+        "generator": "tools/build-village-3d-model.py",
         "generator_version": GENERATOR_VERSION,
         "blender_version": bpy.app.version_string,
         "design_id": DESIGN_ID,
@@ -1232,15 +1821,15 @@ def add_preview_stage(result: BuildResult) -> None:
     ground_material = bpy.data.materials.new("PREVIEW_VIL_Ground")
     ground_material.diffuse_color = (0.055, 0.061, 0.059, 1.0)
     ground_mesh = bpy.data.meshes.new("VIL_PreviewGround_Mesh")
-    ground_geometry = box((0.0, 0.0, -0.56), (13.0, 8.4, 0.10))
+    ground_geometry = box((0.0, 0.0, -0.56), (19.0, 10.2, 0.10))
     ground_mesh.from_pydata(ground_geometry[0], [], ground_geometry[1])
     ground = bpy.data.objects.new("VIL_PreviewGround", ground_mesh)
     collection.objects.link(ground)
     ground.data.materials.append(ground_material)
 
-    columns = 5
-    spacing_x = 2.25
-    spacing_y = 2.10
+    columns = 7
+    spacing_x = 2.35
+    spacing_y = 2.35
     for index, assembly in enumerate(result.assemblies):
         column = index % columns
         row = index // columns
@@ -1286,16 +1875,16 @@ def render_preview(path: Path, result: BuildResult) -> None:
     add_preview_stage(result)
     for obj in result.source.objects:
         obj.hide_render = True
-    camera_data = bpy.data.cameras.new("CAM_MountainRoadMiscPreview")
-    camera = bpy.data.objects.new("CAM_MountainRoadMiscPreview", camera_data)
+    camera_data = bpy.data.cameras.new("CAM_VillagePreview")
+    camera = bpy.data.objects.new("CAM_VillagePreview", camera_data)
     result.presentation.objects.link(camera)
-    camera.location = (8.8, -12.8, 8.2)
+    camera.location = (10.2, -14.2, 9.2)
     target = Vector((0.0, 0.0, 0.20))
     camera.rotation_euler = (
         target - camera.location
     ).to_track_quat("-Z", "Y").to_euler()
     camera_data.type = "ORTHO"
-    camera_data.ortho_scale = 11.8
+    camera_data.ortho_scale = 17.0
     bpy.context.scene.camera = camera
     bpy.context.scene.render.filepath = str(path)
     bpy.ops.render.render(write_still=True)

@@ -120,7 +120,7 @@ Assets/
       StairwellCatProvider.asset      serialized link to the passive 3D cat prefab
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
-      CityMiscAssetProvider.asset   205 passive City role-mesh bindings + manifest signature
+      CityMiscAssetProvider.asset   238 passive City role-mesh bindings / 42,878 triangles + manifest signature
       CityBuildingAssetProvider.asset  four district prototype-prefab bindings + signature
       Buildings/
         OldTownPrototype01.prefab      passive fixed-metre wrapper + semantic registry
@@ -184,7 +184,7 @@ Assets/
     Models/
       CityChessSet3D.fbx                six turned chessmen and a draught, board-scaled
       CityChessSet3D.json               deterministic heights/footprints manifest
-      CityMisc3D.fbx                   106 citywide misc assemblies / 205 role meshes
+      CityMisc3D.fbx                   115 citywide misc assemblies / 238 role meshes
       CityMisc3D.json                   roots, roles, bounds, compatibility + build signature
       CityBuildings3D.fbx               four fixed-metre district prototypes / 24 role meshes
       CityBuildings3D.json              envelopes, attachments, window slots + build signature
@@ -283,6 +283,7 @@ Assets/
         CityFringeYard{WorldBuilder,WorldResult}.cs imported utility/shed/gauge shells + Unity terrain, cables and practicals
         CityFringePracticalAnchor.cs runtime pose passed to the fixed night-light pool
         MountainRoadPlan.cs       typed 620 m route, ten hairpins, bridge, tunnel/plateau + dressing
+        MountainRoadCompositionRules.cs pure road reveals + five-chapter natural-debris rhythm
         MountainRoad{Planner,Validator}.cs route/bridge + ridge envelope/footprint invariants
         MountainRoadBridge{WorldBuilder,Validator}.cs deck/beams/piers/open rails + bounded physics
         MountainRoadTerminal{Plan,Planner,Validator}.cs vehicle/cafe/cableway terminal contract
@@ -292,10 +293,14 @@ Assets/
         MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs four-role silent cast
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
         MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
-        AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane at 7.8%, house at its head
-        AlpineVillage{WalkableArea,WorldBuilder,WeatherShaper}.cs capsule lane mask, kit dressing, capped snow
+        AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane, OBB-safe plots + full ridge/brink mesh
+        AlpineVillagePathPlan.cs visible path/traversal segments + shared dressing anchors
+        AlpineVillage{WalkableArea,WorldBuilder,WeatherShaper}.cs shared path mask, wave-2 kit, warmth targets + permanent blizzard
+        AlpineVillageStormField.cs       terrain-sampled ground spindrift + shared wind bed
+        AlpineVillageGarlandWind.cs      fixed-anchor wire deformation from shaped village wind
+        Audio/AlpineVillageSoundscape*.cs six deterministic causal spatial voices
         AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}.cs boarding, first-person ride, ridge fade
-        VillageAssetProvider.cs         11 assemblies / 27 passive village meshes, geometry only
+        VillageAssetProvider.cs         19 assemblies / 53 passive village meshes, closed outward-facing shells
         MountainRoadMiscAssetProvider.cs 19 passive Blender meshes + deterministic visual variants
         MountainRoadWalkableArea.cs route/plateau movement boundary
         MountainRoadWorldBuilder.cs separate mountain-only composition + 12 imported misc batches
@@ -304,6 +309,9 @@ Assets/
         CityExteriorStairWorldBuilder.cs visible steps + one hidden ramp collider per flight
         CityRoadGroundBoundaryPlan.cs endpoint-sampled safe-connector/protected-drop classification
         CityTerrainSafetyWorldBuilder.cs segmented physical guards along dangerous sampled drops
+        CityArchShelter{Plan,Placement,Planner,Validator}.cs fixed Nightlife gap, wall-attached terrace, steps, clear routes, props + rain volume
+        CityArchShelterWorldBuilder.cs imported closed bridge/tableau + plan-owned collision and rain trigger
+        CityArchShelterPresentation.cs layered flame, synced warm Point Light/sparks, breath + crackle
         CityVerticalTraversalPlan.cs deterministic seam/frontage audit + spawn-road reachability
         CitySurfacePlan.cs       typed ground/water cells (incl. Yard OpenGround), datum and open-area access
         CityStreetIntersectionSelector.cs  shared stable zebra/signal node selection
@@ -364,7 +372,7 @@ Assets/
         CityDecorationPlan.cs        immutable ordered seeded decoration data
         CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. bar-side yard pair
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
-        CityMiscAssetProvider.cs     72 kinds / 106 assemblies / 205 passive role meshes with roots and bounds
+        CityMiscAssetProvider.cs     80 kinds / 115 assemblies / 238 passive role meshes with roots and bounds
         CityBuildingAssetRegistry.cs fixed envelope, frontage, role, attachment + window-slot contract
         CityBuildingAssetProvider.cs four passive Resources prefab bindings used by City/Home builders
         CityDecorationWorldBuilder.cs  imported role batches, Unity collision proxies + utility dock read-back
@@ -394,7 +402,7 @@ Assets/
         CityNightWorldBuilder.cs imported street-lamp/signal shells + Unity bulbs, halos, controllers and Lights
         CityDayNightController.cs   session lighting + exterior night factor
         CityWeatherController.cs    per-frame weather sample -> rain, wet film, flash, thunder
-        CityRainField.cs            seeded player-following stretched rain streaks
+        CityRainField.cs            seeded player-following streaks + local roof kill triggers
         CityTunnelLightingController.cs five path fixtures, pooled faulty Spot + local sound
         CityTunnelShelterController.cs  portal hysteresis -> fog/backdrop state + shelter provider
         CityLightningFlashLight.cs  transient shadowless directional storm flash
@@ -570,7 +578,7 @@ Assets/
       Player/        motor, presentation contracts, chase/fixed cameras and contact shadow
         PlayerMotor.cs             grounded guided approach + no-progress cancellation
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
-        PlayerFactory.cs           shared prefab spawn in all seven gameplay roots
+        PlayerFactory.cs           shared prefab spawn in all eight gameplay roots
         PlayerAttention.cs         Silent Hill head: notice cone rules, target picker + magnets
         PlayerCameraFollow.cs      bounded yaw/pitch chase, fixed pose + shared mouse/stick/arrow orbit sampling
         PlayerContactShadow.cs     slope-aligned planted/fall-aware analytic ground patch
@@ -612,10 +620,11 @@ Assets/
         HomeTeethBrushingInteraction.cs  mirror close-up, CCD brushing arm, foam, day-gated relief
         Supermarket{Entrance,Exit}.cs  separate-scene round trip and return context
         SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
-      Scenes/        startup/loading plus seven gameplay roots, including ChurchInterior
+      Scenes/        startup/loading plus eight gameplay roots, including ChurchInterior and AlpineVillage
         MainMenuRoot.cs                 black build-index-0 new-run boundary
         AreaLoadingRoot.cs              black unscaled progress-bar area transfer
         MountainRoadRoot.cs             standalone mountain world/player/UI composition
+        AlpineVillageRoot.cs            standalone upper-village world/player/UI composition
         MountainRoadWeather{Rules,Shaper}.cs  the city's own weather slot re-read by altitude, as snow and harder wind
         MountainRoadWindDriver.cs       carries that wind to the crowns, the cloth and the sound bed
         MountainRoadAtmosphere.cs       cold fog, time grade and flickering tunnel lamp
@@ -679,7 +688,8 @@ Assets/
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
-      CityMiscAssetTests.cs       205-entry catalog/signature/provider + affected-builder smoke contract
+      CityMiscAssetTests.cs       238-entry catalog/signature/provider + affected-builder smoke contract
+      CityArchShelterTests.cs     fixed-gap geometry, lanes, datum, imported world, fire and rain contracts
       CityBuildingAssetTests.cs   4 prototypes / 24 meshes, importer, wrapper + provider contract
       CityBuildingPrototypeRuntimeTests.cs City/Home placement, collision, slot shader + half-space policy
       BarModelContractTests.cs    shared interior + complete bar_exterior_v2 manifest/runtime contract
@@ -718,7 +728,9 @@ Assets/
       MountainRoadCafeCastTests.cs       roles/gaps/passive assets/clip blend/world ownership
       MountainCablewayTests.cs            loop continuity, world ownership and causal audio
       MountainCablewayRideTests.cs        exact docking, boarding step, treads, return station
-      AlpineVillageTests.cs               lane grade, composition, bowl, weather, teleport ground
+      AlpineVillageTests.cs               lane grade, OBB seed sweep, built bowl/brink, weather + teleport ground
+      AlpineVillagePathTests.cs           visible-route coverage, full-agent corridor + frontage clusters
+      Audio/AlpineVillageSoundscapeTests.cs causal owners, synthesis, schedules + warmth grade
       VillageAssetTests.cs                kit catalog, plan-owned collision, garland light budget
       AreaTravelContractTests.cs         destination mapping and one-shot arrival state
       CityMapAreaPresentationTests.cs    tabs, player visibility + mountain schematic
@@ -824,8 +836,8 @@ tools/
   build-church-3d-model.py       deterministic Catholic exterior/interior Blender build + validator
   build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
-  build-village-3d-model.py      11 assemblies / 27 village meshes; no doors, no panes, no new sheet
-  build-city-misc-3d-model.py    72 kinds / 106 assemblies / 205 citywide role meshes
+  build-village-3d-model.py      v2.1.1, 19 assemblies / 53 outward-validated meshes; no doors/panes/new sheet
+  build-city-misc-3d-model.py    80 kinds / 115 assemblies / 238 citywide role meshes
   build-city-buildings-3d-model.py  four fixed-metre district prototypes / 24 role meshes
   city_building_parts.py         pure deterministic building geometry + attachment/window metadata
   build-bar-3d-model.py          shared interior + complete fixed-metre pub exterior/export validator
@@ -902,6 +914,10 @@ AlpineVillageRoot -> AlpineVillagePlanner -> validated village above the rope
                                            -> steeper than the hero's own slope limit
                                         -> return station: tension weight, no motor
                                         -> garlands: emissive bulbs, 5 real lamps
+                                        -> permanent blizzard: snow .88-1, wind .82-1
+                                           -> stretched upper flakes + terrain-low spindrift
+                                           -> one bearing/gust rhythm + continuous wind bed
+                                           -> canopy/cabin dry; uphill axis remains readable
                   -> pure City + mountain plans for the other two map tabs
 blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                           -> stable area IDs + categories/profiles
@@ -1107,7 +1123,7 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> simplified blue ink-outlined closed route
                             -> five default numbered localized hover stops + compact legend
                             -> below orange player route; no live bus marker
-seven gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
+eight gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
                                       -> 73 mesh bindings + 16 core parts
                                       -> 37 Generic in-place Actions
                                          -> Idle/Walk/face/status/fall

@@ -161,6 +161,11 @@ namespace BarPromenade
         private float blendElapsedSeconds;
         private int previousInput = WaitInput;
         private int currentInput = WaitInput;
+        private LastRouteFerrymanRigAnchors rigAnchors;
+        private SeatedArmHandAttachment leftHandAttachment;
+        private SeatedArmHandAttachment rightHandAttachment;
+        private bool hasSteeringArms;
+        private float steeringHandsWeight;
 
         public bool IsInitialized { get; private set; }
         public LastRouteFerrymanPhase Phase { get; private set; }
@@ -331,6 +336,7 @@ namespace BarPromenade
             graph.Evaluate(0f);
 
             SolvePerch(registry, anchors, stance);
+            CaptureSteeringArms(anchors, car);
 
             Phase = LastRouteFerrymanPhase.Waiting;
             transform.SetPositionAndRotation(perchPosition, perchRotation);
@@ -866,6 +872,162 @@ namespace BarPromenade
             blendElapsedSeconds += step;
             ApplyWeights();
             graph.Evaluate(step);
+
+            // After the graph, never before: the graph rewrites every bone
+            // on each Evaluate, so an arm posed earlier in this frame would
+            // be silently unposed by the very next line.
+            AdvanceSteeringHands(step);
+        }
+
+        public const float SteeringHandsEaseSeconds = 0.35f;
+
+        /// <summary>The bus driver's own contact tolerance, unchanged.
+        /// </summary>
+        public const float MaximumGripError = 0.02f;
+
+        /// <summary>Live distance from each palm's grip socket to the rim
+        /// grip it chases - the bus's contact diagnostics, mirrored, and
+        /// what a test asserts instead of a screenshot a bind-posed skinned
+        /// mesh would lie in.</summary>
+        public float LeftGripDistance { get; private set; }
+
+        public float RightGripDistance { get; private set; }
+
+        /// <summary>How much of the wheel his hands currently take, `0`
+        /// clip-authored to `1` riding the grips.</summary>
+        public float SteeringHandsWeight => steeringHandsWeight;
+
+        private void CaptureSteeringArms(
+            LastRouteFerrymanRigAnchors anchors,
+            LastRouteCarAssetRegistry car)
+        {
+            rigAnchors = anchors;
+            hasSteeringArms =
+                anchors.LeftUpperArm != null &&
+                anchors.LeftForearm != null &&
+                anchors.LeftHand != null &&
+                anchors.LeftGripSocket != null &&
+                anchors.RightUpperArm != null &&
+                anchors.RightForearm != null &&
+                anchors.RightHand != null &&
+                anchors.RightGripSocket != null &&
+                car.LeftSteeringGrip != null &&
+                car.RightSteeringGrip != null;
+            if (!hasSteeringArms)
+            {
+                // A prefab from before the arm bindings still perches,
+                // walks, boards and drives - his hands just stay where the
+                // clip drew them. Degraded rather than broken, like a plan
+                // that could not offer a walk.
+                return;
+            }
+
+            // Captured once, in the bind pose. The socket is a child bone
+            // of the hand, so its offset in hand space never changes; the
+            // capture is world-measured metres and a pure rotation, which
+            // is what makes it indifferent to the 100x scale the imported
+            // bone hierarchy carries.
+            leftHandAttachment = new SeatedArmHandAttachment(
+                anchors.LeftHand,
+                anchors.LeftGripSocket);
+            rightHandAttachment = new SeatedArmHandAttachment(
+                anchors.RightHand,
+                anchors.RightGripSocket);
+        }
+
+        /// <summary>
+        /// His hands close on the grips - which are children of the wheel
+        /// pivot the car's driver now rolls, so through this his hands turn
+        /// the wheel the front wheels are answering. The bus driver's
+        /// arrangement, on the bus driver's solver.
+        ///
+        /// The weight eases in as the drive settles and back out as it
+        /// ends. The drive clip already draws both hands ON the unturned
+        /// rim and the rim is straight at both seams - `Halt` sees to the
+        /// arrival, and a departure begins at rest - so the blend crosses
+        /// centimetres, not the cabin.
+        /// </summary>
+        private void AdvanceSteeringHands(float step)
+        {
+            bool wantsWheel =
+                hasSteeringArms &&
+                Phase == LastRouteFerrymanPhase.Driving &&
+                alighting == null &&
+                (boarding == null || boarding.IsDone);
+            steeringHandsWeight = Mathf.MoveTowards(
+                steeringHandsWeight,
+                wantsWheel ? 1f : 0f,
+                step / SteeringHandsEaseSeconds);
+            if (steeringHandsWeight <= 0f || !hasSteeringArms)
+            {
+                LeftGripDistance = 0f;
+                RightGripDistance = 0f;
+                return;
+            }
+
+            // His left side is -transform.right: the root faces the wheel,
+            // and each elbow is hinted out its own side and a little down,
+            // where an arm holding a rim actually hangs.
+            ApplySteeringArm(
+                rigAnchors.LeftUpperArm,
+                rigAnchors.LeftForearm,
+                rigAnchors.LeftHand,
+                rigAnchors.LeftGripSocket,
+                leftHandAttachment,
+                carRegistry.LeftSteeringGrip,
+                -transform.right);
+            ApplySteeringArm(
+                rigAnchors.RightUpperArm,
+                rigAnchors.RightForearm,
+                rigAnchors.RightHand,
+                rigAnchors.RightGripSocket,
+                rightHandAttachment,
+                carRegistry.RightSteeringGrip,
+                transform.right);
+            LeftGripDistance = Vector3.Distance(
+                rigAnchors.LeftGripSocket.position,
+                carRegistry.LeftSteeringGrip.position);
+            RightGripDistance = Vector3.Distance(
+                rigAnchors.RightGripSocket.position,
+                carRegistry.RightSteeringGrip.position);
+        }
+
+        private void ApplySteeringArm(
+            Transform upperArm,
+            Transform forearm,
+            Transform hand,
+            Transform socket,
+            in SeatedArmHandAttachment attachment,
+            Transform grip,
+            Vector3 elbowSide)
+        {
+            // At partial weight the hand is asked for a point BETWEEN where
+            // the clip drew its socket and the grip, so the ease is a short
+            // travel rather than a crossfade of two solved poses.
+            Vector3 targetPosition = Vector3.Lerp(
+                socket.position,
+                grip.position,
+                steeringHandsWeight);
+            Quaternion targetRotation = Quaternion.Slerp(
+                socket.rotation,
+                grip.rotation,
+                steeringHandsWeight);
+            Quaternion handRotation = targetRotation *
+                Quaternion.Inverse(attachment.SocketRotationInHand);
+            Vector3 handPosition = targetPosition -
+                handRotation * attachment.SocketPositionInHand;
+            Vector3 elbowHint =
+                upperArm.position +
+                elbowSide * 0.32f +
+                transform.forward * 0.08f -
+                transform.up * 0.08f;
+            SeatedArmIk.SolveTwoBone(
+                upperArm,
+                forearm,
+                hand,
+                handPosition,
+                handRotation,
+                elbowHint);
         }
 
         private void AdvanceAlighting(float step)

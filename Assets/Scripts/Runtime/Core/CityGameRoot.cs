@@ -56,6 +56,11 @@ namespace BarPromenade
         public YardWheelchairActor YardWheelchair { get; private set; }
         public IReadOnlyList<DryingYardBabushkaPresentation>
             DryingYardBabushkas { get; private set; }
+        public CityArchShelterPresentation ArchShelterPresentation
+        {
+            get;
+            private set;
+        }
         public IReadOnlyList<WeighbridgeAttendantPresentation>
             WeighbridgeAttendants { get; private set; }
         public CityWeighbridgeNeedleController WeighbridgeNeedle
@@ -578,6 +583,12 @@ namespace BarPromenade
             DryingYardBabushkas = DryingYardBabushkaFactory.Create(
                 transform,
                 DryingYardBabushkaPlan.Create(Layout));
+            if (World.ArchShelterPlan.IsEnabled)
+            {
+                ArchShelterPresentation = World.ArchShelter.Root
+                    .AddComponent<CityArchShelterPresentation>();
+                ArchShelterPresentation.Initialize(Layout.Seed);
+            }
             // The cold weighbridge's authored pair: the weigher reads
             // her instrument beside the mechanism while the worker
             // paces the deck axis, standing still at its centre as if
@@ -858,7 +869,10 @@ namespace BarPromenade
                 Player.GameObject.transform,
                 CityNightResources.AtmosphereMaterial,
                 Layout.Seed,
-                GameWeatherRules.EvaluateCurrent().RainIntensity);
+                CityEternalRainShaper.FloorIntensity(
+                    GameWeatherRules.EvaluateCurrent().RainIntensity));
+            Rain.SetLocalShelters(
+                World.ArchShelter.RainShelterColliders);
             if (World.MountainBoundaryPlan.HasTunnel)
             {
                 var tunnelShelterObject =
@@ -904,6 +918,11 @@ namespace BarPromenade
             Thunder =
                 thunderObject.AddComponent<CityThunderSoundPlayer>();
             Weather = gameObject.AddComponent<CityWeatherController>();
+
+            // The city's own shaper: it never stops raining here. The slot
+            // grid keeps deciding how hard - drizzle to storm - and the
+            // areas above keep their own weather; the decree is this
+            // scene's alone.
             Weather.Initialize(
                 Rain,
                 RainSound,
@@ -912,7 +931,8 @@ namespace BarPromenade
                 camera.transform,
                 () =>
                     (BusRide != null && BusRide.IsPassengerAboard) ||
-                    (TunnelShelter != null && TunnelShelter.IsSheltered));
+                    (TunnelShelter != null && TunnelShelter.IsSheltered),
+                new CityEternalRainShaper());
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(
@@ -1241,6 +1261,12 @@ namespace BarPromenade
                         CityDecorationAnchorKind.UrbanLandmark) +
                     world.DecorationPlan.GetCount(
                         CityDecorationAnchorKind.ParkLandmark)),
+                GameLog.Field(
+                    "arch_shelter_present",
+                    world.ArchShelterPlan.IsEnabled),
+                GameLog.Field(
+                    "arch_shelter_clear_lanes",
+                    world.ArchShelterPlan.ClearLanes.Count),
                 GameLog.Field(
                     "bounds_size_x",
                     world.Bounds.size.x),

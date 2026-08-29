@@ -23,15 +23,6 @@ namespace BarPromenade
     [DefaultExecutionOrder(325)]
     public sealed class AlpineCablewayRideController : MonoBehaviour
     {
-        /// <summary>
-        /// How far short of the far turn the screen starts going out. The
-        /// cabin has to be genuinely behind the snow ridge by the time it is
-        /// black - a cabin that vanishes in open air is a worse cut than no
-        /// cut at all - and a test pins this against the occluder's footprint
-        /// rather than trusting the number.
-        /// </summary>
-        public const float FadeLeadMeters = 5.5f;
-
         public const float FadeOutSeconds = 1.3f;
         public const float FadeInSeconds = 0.9f;
         public const float SkipFadeOutSeconds = 0.6f;
@@ -43,6 +34,7 @@ namespace BarPromenade
         private GameAreaId destinationArea;
         private Func<MountainRoadCablewayPlan> arrivalCablewayFactory;
         private float departureLineLength;
+        private float departureFadeLeadMeters;
 
         private LastRouteRideFadeView fade;
         private LastRouteRideSkipHintView skipHint;
@@ -81,6 +73,8 @@ namespace BarPromenade
                 cabinSeat,
                 cablewayLine);
             ride.departureLineLength = departureCableway.LineLength;
+            ride.departureFadeLeadMeters =
+                EvaluateFadeLeadMeters(departureCableway);
             ride.destinationArea = destination;
             return ride;
         }
@@ -108,6 +102,18 @@ namespace BarPromenade
             // The way back is armed from the start. He gets off, walks the
             // village, comes back and boards again - and that second boarding
             // is an ordinary departure from this terminal.
+            //
+            // Its line length and fade lead cannot be taken here: the plan for
+            // THIS station arrives through a factory that must not be called
+            // until the area transition has let go. They are set in
+            // `AwaitArrivalStart`, where it is already in hand.
+            //
+            // Until the village had ground under its rope this was left unset
+            // on purpose, and the `1 m` floor `FadeTriggerDistance` falls back
+            // to was the only thing hiding the descent: the line dived into
+            // the hillside a metre off the platform. The terrain now cuts a
+            // real brink under it and closes again over the far turn, so the
+            // ride can be flown.
             ride.destinationArea = returnArea;
             ride.awaitingArrivalStart = true;
             ride.fade.SetBlack();
@@ -204,6 +210,13 @@ namespace BarPromenade
                 yield break;
             }
 
+            // The ride back down is armed HERE, off this station's own plan,
+            // because this is the first moment that plan exists. Without it
+            // `FadeTriggerDistance` falls back to its `1 m` floor and the
+            // descent cuts to black almost as soon as it moves.
+            departureLineLength = cableway.LineLength;
+            departureFadeLeadMeters = EvaluateFadeLeadMeters(cableway);
+
             // Seat him before anything is shown. The line at this end is built
             // standing with a cabin on the point, so there is normally nothing
             // to call and nothing to wait for; the request stays as the way
@@ -265,13 +278,44 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// How much rope has to run before the cabin is behind the ridge. The
-        /// cabin boards at loop distance zero, so this is simply how far up
-        /// the visible line it has to get.
+        /// How far short of the far turn the screen starts going out.
+        ///
+        /// This was `5.5 m`, chosen by eye, and it was wrong by four metres.
+        /// The ridge that hides the upper turn is planted ON the line and its
+        /// near face crosses the track `6.8 m` before the end; the cabin's own
+        /// nose reaches that face `0.8 m` sooner still. At `5.5` the blackout
+        /// did not even BEGIN until `1.3 m` after the nose was in the rock and
+        /// was not complete for another `2.7 m`, so the passenger rode nearly
+        /// four metres inside the mountain with the picture up - and a
+        /// single-sided ridge has no back face, so from in there he was
+        /// looking at the world straight through the rock.
+        ///
+        /// So it is no longer a number. It is what the rock, the cabin, the
+        /// line's own speed and the length of the dissolve say it has to be.
+        /// </summary>
+        public static float EvaluateFadeLeadMeters(
+            MountainRoadCablewayPlan cableway)
+        {
+            if (cableway == null)
+            {
+                throw new ArgumentNullException(nameof(cableway));
+            }
+
+            return cableway.LineLength -
+                   cableway.LastVisibleDistance +
+                   cableway.CabinSpeed * FadeOutSeconds;
+        }
+
+        /// <summary>
+        /// How much rope has to run before the fade starts. The cabin boards
+        /// at loop distance zero, so this is simply how far up the visible
+        /// line it has to get.
         /// </summary>
         private float FadeTriggerDistance()
         {
-            return Mathf.Max(1f, departureLineLength - FadeLeadMeters);
+            return Mathf.Max(
+                1f,
+                departureLineLength - departureFadeLeadMeters);
         }
 
         private void BeginDeparture()

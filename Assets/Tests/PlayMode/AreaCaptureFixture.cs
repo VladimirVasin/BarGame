@@ -70,13 +70,15 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3 position,
                 Vector3 target,
                 float fieldOfView,
-                bool relativeToHero)
+                bool relativeToHero,
+                int delayFrames)
             {
                 Name = name;
                 Position = position;
                 Target = target;
                 FieldOfView = fieldOfView;
                 RelativeToHero = relativeToHero;
+                DelayFrames = Mathf.Max(0, delayFrames);
             }
 
             public string Name { get; }
@@ -84,16 +86,23 @@ namespace BarPromenade.Tests.PlayMode
             public Vector3 Target { get; }
             public float FieldOfView { get; }
             public bool RelativeToHero { get; }
+            public int DelayFrames { get; }
 
             /// <summary>A fixed place, for a room whose layout is known.</summary>
             public static Shot At(
                 string name,
                 Vector3 position,
                 Vector3 target,
-                float fieldOfView = 60f)
+                float fieldOfView = 60f,
+                int delayFrames = 0)
             {
                 return new Shot(
-                    name, position, target, fieldOfView, false);
+                    name,
+                    position,
+                    target,
+                    fieldOfView,
+                    false,
+                    delayFrames);
             }
 
             /// <summary>
@@ -103,10 +112,16 @@ namespace BarPromenade.Tests.PlayMode
                 string name,
                 Vector3 offset,
                 Vector3 lookOffset,
-                float fieldOfView = 60f)
+                float fieldOfView = 60f,
+                int delayFrames = 0)
             {
                 return new Shot(
-                    name, offset, lookOffset, fieldOfView, true);
+                    name,
+                    offset,
+                    lookOffset,
+                    fieldOfView,
+                    true,
+                    delayFrames);
             }
         }
 
@@ -190,6 +205,21 @@ namespace BarPromenade.Tests.PlayMode
 
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
+        public IEnumerator CityArchShelter()
+        {
+            CityGameRoot cityRoot = null;
+            yield return Capture(
+                SceneIds.City,
+                () =>
+                {
+                    cityRoot = Object.FindAnyObjectByType<CityGameRoot>();
+                    return cityRoot;
+                },
+                () => CityArchShelterShots(cityRoot));
+        }
+
+        [UnityTest]
+        [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator CitySpecialBuildings()
         {
             CityGameRoot cityRoot = null;
@@ -207,8 +237,47 @@ namespace BarPromenade.Tests.PlayMode
         [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator MountainRoad()
         {
+            // A direct scene load otherwise freezes at 05:59, one minute
+            // before the game's opening wake-up. That is a useful night
+            // stress case, but a bad single contact sheet for judging six
+            // hundred metres of silhouette and material hierarchy.
+            GameSessionState.TryStartGameTimeFromWake();
+            GameSessionState.AdvanceGameTime(90f);
+
+            MountainRoadRoot mountainRoot = null;
             yield return Capture(
-                SceneIds.MountainRoad, Root<MountainRoadRoot>(), HeroShots());
+                SceneIds.MountainRoad,
+                () =>
+                {
+                    mountainRoot = Object.FindAnyObjectByType<
+                        MountainRoadRoot>();
+                    return mountainRoot;
+                },
+                () => MountainRoadShots(mountainRoot));
+        }
+
+        [UnityTest]
+        [Explicit("Capture, not a test. Run one area at a time.")]
+        public IEnumerator AlpineVillage()
+        {
+            // Day two at 07:40 keeps the accepted morning light but lands the
+            // default seed in a fully developed crosswind slot. The village
+            // has a storm floor in every slot; this time is chosen only so the
+            // direction reads cleanly across the uphill camera.
+            GameSessionState.TryStartGameTimeFromWake();
+            Assert.That(GameSessionState.TrySetDebugGameDay(2), Is.True);
+            GameSessionState.AdvanceGameTime(100f);
+
+            AlpineVillageRoot villageRoot = null;
+            yield return Capture(
+                SceneIds.AlpineVillage,
+                () =>
+                {
+                    villageRoot = Object.FindAnyObjectByType<
+                        AlpineVillageRoot>();
+                    return villageRoot;
+                },
+                () => AlpineVillageShots(villageRoot));
         }
 
         [UnityTest]
@@ -303,6 +372,337 @@ namespace BarPromenade.Tests.PlayMode
                 FrameSpecialBuilding("01-supermarket", supermarket),
                 FrameSpecialBuilding("02-player-home", playerHome)
             };
+        }
+
+        private static Shot[] CityArchShelterShots(CityGameRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.World, Is.Not.Null);
+            CityArchShelterPlan plan = root.World.ArchShelterPlan;
+            Assert.That(plan, Is.Not.Null);
+            Assert.That(plan.IsEnabled, Is.True);
+
+            CityArchShelterPropDescriptor barrel = default;
+            bool foundBarrel = false;
+            for (int index = 0; index < plan.Props.Count; index++)
+            {
+                if (plan.Props[index].Kind !=
+                    CityArchShelterPropKind.BurnBarrel)
+                {
+                    continue;
+                }
+
+                barrel = plan.Props[index];
+                foundBarrel = true;
+                break;
+            }
+
+            Assert.That(foundBarrel, Is.True);
+            Rect passage = plan.Placement.PassageFootprint;
+            Rect facade = plan.Placement.CommonFacadeFootprint;
+            Rect platform = plan.Platform.Footprint;
+            Bounds structure = plan.Placement.StructureBounds;
+            Vector3 target = barrel.Position + Vector3.up * 0.92f;
+            float eyeY = barrel.Position.y + 1.68f;
+            return new[]
+            {
+                Shot.At(
+                    "00-south-approach",
+                    new Vector3(
+                        barrel.Position.x,
+                        eyeY,
+                        passage.yMin - 2.4f),
+                    target,
+                    58f),
+                Shot.At(
+                    "01-north-steps",
+                    new Vector3(
+                        barrel.Position.x - 0.8f,
+                        eyeY + 0.35f,
+                        passage.yMax + 2.4f),
+                    target,
+                    60f),
+                Shot.At(
+                    "02-tableau-close",
+                    target + new Vector3(-3.8f, 1.05f, -3.6f),
+                    target,
+                    52f),
+                Shot.At(
+                    "03-arch-wide",
+                    new Vector3(
+                        facade.center.x,
+                        structure.min.y + 8.4f,
+                        facade.yMin - 14f),
+                    new Vector3(
+                        facade.center.x,
+                        structure.min.y + 2.8f,
+                        facade.center.y),
+                    58f),
+                Shot.At(
+                    "04-wall-attachment",
+                    new Vector3(
+                        platform.xMin - 3.2f,
+                        plan.Platform.SurfaceY + 3.2f,
+                        platform.yMin - 4f),
+                    new Vector3(
+                        platform.xMax,
+                        plan.Platform.SurfaceY + 0.45f,
+                        platform.yMin + 1.25f),
+                    46f)
+            };
+        }
+
+        /// <summary>
+        /// The generic hero shots are deliberately useless here: the hero
+        /// spawns inside the tunnel, so one camera lands behind its black end
+        /// cap and another looks through the roof. These frames instead read
+        /// positions from the shipped plan and follow the passenger's whole
+        /// sequence: compression, turns, bridge exposure, snow, arrival and
+        /// the terminal's single measured opening.
+        /// </summary>
+        private static Shot[] MountainRoadShots(MountainRoadRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.Plan, Is.Not.Null);
+            MountainRoadPlan plan = root.Plan;
+            MountainRoadRoutePlan route = plan.Route;
+            MountainRoadBridgeDescriptor bridge = plan.Bridge;
+            MountainRoadPlateauDescriptor plateau = plan.Plateau;
+            MountainRoadBrinkDescriptor brink = plateau.Brink;
+            return new[]
+            {
+                FrameMountainRoad(
+                    "00-tunnel-threshold",
+                    route,
+                    3f,
+                    20f,
+                    3.4f,
+                    0f,
+                    1.58f,
+                    60f),
+                FrameMountainRoad(
+                    "01-first-hairpin",
+                    route,
+                    route.Hairpins[0].StartDistance - 8f,
+                    (route.Hairpins[0].StartDistance +
+                     route.Hairpins[0].EndDistance) * 0.5f,
+                    2.4f,
+                    0.35f,
+                    1.55f,
+                    62f),
+                FrameMountainRoad(
+                    "02-lower-road-reveal",
+                    route,
+                    route.Hairpins[1].StartDistance - 7f,
+                    (route.Hairpins[1].StartDistance +
+                     route.Hairpins[1].EndDistance) * 0.5f,
+                    2.4f,
+                    -0.45f,
+                    1.55f,
+                    64f),
+                FrameMountainRoad(
+                    "03-bridge-approach",
+                    route,
+                    bridge.StartDistance - 14f,
+                    bridge.EndDistance - 5f,
+                    2.2f,
+                    -0.35f,
+                    1.48f,
+                    62f),
+                FrameMountainRoad(
+                    "04-bridge-crossing",
+                    route,
+                    (bridge.StartDistance + bridge.EndDistance) * 0.5f,
+                    bridge.EndDistance + 8f,
+                    2.8f,
+                    0.25f,
+                    1.45f,
+                    64f),
+                FrameMountainRoad(
+                    "05-snow-hairpin",
+                    route,
+                    route.Hairpins[7].StartDistance - 10f,
+                    (route.Hairpins[7].StartDistance +
+                     route.Hairpins[7].EndDistance) * 0.5f,
+                    2.5f,
+                    0.35f,
+                    1.55f,
+                    64f),
+                FrameMountainRoad(
+                    "06-last-hairpin",
+                    route,
+                    route.Hairpins[9].StartDistance - 12f,
+                    (route.Hairpins[9].StartDistance +
+                     route.Hairpins[9].EndDistance) * 0.5f,
+                    2.5f,
+                    -0.35f,
+                    1.55f,
+                    62f),
+                Shot.At(
+                    "07-terminal-approach",
+                    route.Sample(plateau.EntryDistance - 18f).Position +
+                    Vector3.up * 1.55f,
+                    plateau.Center + plateau.Forward * 5f +
+                    Vector3.up * 1.25f,
+                    62f),
+                Shot.At(
+                    "08-terminal-yard",
+                    plateau.Center - plateau.Forward * 8f +
+                    plateau.Right * 14f + Vector3.up * 3.2f,
+                    plateau.Center + plateau.Forward * 6f +
+                    Vector3.up * 1.25f,
+                    64f),
+                Shot.At(
+                    "09-single-brink-opening",
+                    brink.Corridor.Apex - brink.Corridor.Axis * 7f +
+                    plateau.Right * 4f + Vector3.up * 1.72f,
+                    brink.Corridor.Apex + brink.Corridor.Axis * 32f +
+                    Vector3.down * 1.4f,
+                    58f)
+            };
+        }
+
+        /// <summary>
+        /// Frames the one uphill composition and then proves that both the
+        /// ordinary and terminal house shells survive the runtime material's
+        /// back-face culling. Every point comes from the shipped plan; no
+        /// camera depends on this seed keeping yesterday's world coordinates.
+        /// </summary>
+        private static Shot[] AlpineVillageShots(AlpineVillageRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.Plan, Is.Not.Null);
+            Assert.That(
+                root.Snow.Kind,
+                Is.EqualTo(CityPrecipitationKind.Blizzard));
+            Assert.That(root.BlowingSnow, Is.Not.Null);
+            Assert.That(root.BlowingSnow.IsInitialized, Is.True);
+            Assert.That(root.WindSound, Is.Not.Null);
+            Assert.That(
+                root.Weather.CurrentSample.RainIntensity,
+                Is.GreaterThanOrEqualTo(
+                    AlpineVillageWeatherRules.SnowFloor));
+            Assert.That(
+                root.Weather.CurrentWind.Strength01,
+                Is.GreaterThanOrEqualTo(
+                    AlpineVillageWeatherRules.WindFloor));
+            AlpineVillagePlan plan = root.Plan;
+            AlpineVillagePlotDescriptor lowerHouse = null;
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                AlpineVillagePlotDescriptor plot = plan.Plots[index];
+                if (plot.Kind != AlpineVillagePlotKind.House ||
+                    (lowerHouse != null &&
+                     plot.LaneDistance >= lowerHouse.LaneDistance))
+                {
+                    continue;
+                }
+
+                lowerHouse = plot;
+            }
+
+            Assert.That(
+                lowerHouse,
+                Is.Not.Null,
+                "The village has no ordinary house to photograph.");
+
+            AlpineVillageLaneSample foot = plan.Lane.Sample(2f);
+            AlpineVillageLaneSample reveal = plan.Lane.Sample(
+                Mathf.Min(plan.Lane.Length * 0.62f, 52f));
+            return new[]
+            {
+                Shot.At(
+                    "00-lower-uphill-axis",
+                    foot.Position - foot.Forward * 2.6f +
+                    foot.Right * 0.25f + Vector3.up * 1.72f,
+                    reveal.Position + Vector3.up * 2.2f,
+                    58f,
+                    36),
+                Shot.At(
+                    "00-lower-uphill-axis-gust-b",
+                    foot.Position - foot.Forward * 2.6f +
+                    foot.Right * 0.25f + Vector3.up * 1.72f,
+                    reveal.Position + Vector3.up * 2.2f,
+                    58f,
+                    30),
+                FrameVillageBuilding(
+                    "01-ordinary-house-front-side",
+                    lowerHouse,
+                    1f,
+                    4.3f,
+                    0.34f,
+                    50f),
+                FrameVillageBuildingSide(
+                    "02-ordinary-house-side-wall",
+                    lowerHouse,
+                    -1f),
+                FrameVillageBuilding(
+                    "03-top-house",
+                    plan.MothersHouse,
+                    -1f,
+                    6.4f,
+                    0.30f,
+                    54f)
+            };
+        }
+
+        private static Shot FrameVillageBuilding(
+            string name,
+            AlpineVillagePlotDescriptor plot,
+            float side,
+            float frontDistance,
+            float lateralFraction,
+            float fieldOfView)
+        {
+            Vector3 right = Vector3.Cross(
+                Vector3.up,
+                plot.Facing).normalized;
+            Vector3 position = plot.DoorGroundPosition +
+                plot.Facing * frontDistance +
+                right * (side * plot.FootprintSize.x * lateralFraction) +
+                Vector3.up * 1.72f;
+            Vector3 target = plot.GroundCenter +
+                Vector3.up * (plot.Height * 0.46f);
+            return Shot.At(name, position, target, fieldOfView);
+        }
+
+        private static Shot FrameVillageBuildingSide(
+            string name,
+            AlpineVillagePlotDescriptor plot,
+            float side)
+        {
+            Vector3 right = Vector3.Cross(
+                Vector3.up,
+                plot.Facing).normalized;
+            Vector3 position = plot.GroundCenter +
+                right * (side * (plot.FootprintSize.x * 0.5f + 4.2f)) +
+                plot.Facing * (plot.FootprintSize.y * 0.12f) +
+                Vector3.up * 1.78f;
+            Vector3 target = plot.GroundCenter +
+                Vector3.up * (plot.Height * 0.43f);
+            return Shot.At(name, position, target, 50f);
+        }
+
+        private static Shot FrameMountainRoad(
+            string name,
+            MountainRoadRoutePlan route,
+            float cameraDistance,
+            float targetDistance,
+            float cameraBack,
+            float lateral,
+            float height,
+            float fieldOfView)
+        {
+            MountainRoadRouteSample cameraSample = route.Sample(
+                Mathf.Clamp(cameraDistance, 0f, route.Length));
+            MountainRoadRouteSample targetSample = route.Sample(
+                Mathf.Clamp(targetDistance, 0f, route.Length));
+            Vector3 position = cameraSample.Position -
+                cameraSample.Forward * cameraBack +
+                cameraSample.Right * lateral +
+                Vector3.up * height;
+            Vector3 target = targetSample.Position + Vector3.up * 1.1f;
+            return Shot.At(name, position, target, fieldOfView);
         }
 
         private static Shot FrameSpecialEntrance(
@@ -484,9 +884,18 @@ namespace BarPromenade.Tests.PlayMode
                 camera.targetTexture = target;
                 foreach (Shot shot in shots)
                 {
-                    //  Positioned and rendered without yielding, so a
-                    //  camera-follow script cannot move it back in
-                    //  between.
+                    //  A weather proof may deliberately wait before a shot.
+                    //  The camera is positioned only AFTER that wait, so its
+                    //  follow script can run normally and still cannot pull
+                    //  the actual capture pose away between positioning and
+                    //  rendering.
+                    for (int frame = 0;
+                         frame < shot.DelayFrames;
+                         frame++)
+                    {
+                        yield return null;
+                    }
+
                     Vector3 from = shot.Position;
                     Vector3 to = shot.Target;
                     if (shot.RelativeToHero)

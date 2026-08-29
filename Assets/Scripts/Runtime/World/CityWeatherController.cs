@@ -8,11 +8,19 @@ namespace BarPromenade
     /// rain field, rain bed, lightning flash and thunder. Runs beside the
     /// day/night controller and deliberately leaves the exterior lighting
     /// contract untouched.
+    ///
+    /// It may also be handed the area's drifting fog sheets. The fog is not
+    /// weather - it is the same at every hour and in every slot - but it is
+    /// cleared by the same roof that gives the rain its dry core, and an area
+    /// should have exactly one owner of the question "is he under something".
+    /// The City keeps its own owner - the tunnel shelter controller, which
+    /// also hides the ridge shell - and passes no fog here.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CityWeatherController : MonoBehaviour
     {
         private CityRainField rain;
+        private CityFogField fog;
         private CityRainSoundPlayer sound;
         private CityLightningFlashLight lightning;
         private CityThunderSoundPlayer thunder;
@@ -43,7 +51,8 @@ namespace BarPromenade
             CityThunderSoundPlayer thunderPlayer,
             Transform listenerTransform,
             Func<bool> shelterProvider,
-            ICityWeatherShaper weatherShaper = null)
+            ICityWeatherShaper weatherShaper = null,
+            CityFogField fogField = null)
         {
             if (IsInitialized)
             {
@@ -63,6 +72,7 @@ namespace BarPromenade
                     nameof(listenerTransform));
             isSheltered = shelterProvider;
             shaper = weatherShaper;
+            fog = fogField;
             IsInitialized = true;
             ApplyCurrentWeather(true);
         }
@@ -76,14 +86,19 @@ namespace BarPromenade
 
             ApplyLightning();
             ApplyWind();
-            WeatherVisualSample nextSample =
+            WeatherVisualSample scheduleSample =
                 GameWeatherRules.EvaluateCurrent();
+            WeatherVisualSample nextSample = scheduleSample;
             if (shaper != null)
             {
                 nextSample = shaper.ShapePrecipitation(nextSample);
             }
 
-            ApplyWetSurfaces(nextSample, force);
+            // Area shapers own what falls through that area's air, not the
+            // persistent street-film simulation. Otherwise the village's
+            // permanent blizzard would report almost full rain to the shared
+            // wet-surface registry and carry it back into a clear City slot.
+            ApplyWetSurfaces(scheduleSample, force);
             bool kindChanged =
                 !hasAppliedSample ||
                 CurrentSample.Kind != nextSample.Kind;
@@ -215,8 +230,12 @@ namespace BarPromenade
 
         private void UpdateShelter()
         {
-            rain.SetSheltered(
-                isSheltered != null && isSheltered());
+            bool sheltered = isSheltered != null && isSheltered();
+            rain.SetSheltered(sheltered);
+            if (fog != null)
+            {
+                fog.SetSheltered(sheltered);
+            }
         }
 
         private void Update()

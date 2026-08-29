@@ -91,15 +91,19 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("MountainRoad")]
-        public void VistaLights_ComeUpWithTheNightAndNeverInTheDay()
+        public void VistaLights_KeepTheLawByDayAndComeUpWithTheNight()
         {
+            // §20: the city in the matte is the very city whose every
+            // fixture burns always - at noon it gives two thirds of its
+            // night strength, never nothing. This test used to REQUIRE the
+            // valley dark by day, and the law repealed it.
             Assert.That(
                 MountainRoadVistaLightsController.EvaluateIntensity(0f),
-                Is.EqualTo(0f));
-            Assert.That(
-                MountainRoadVistaLightsController.EvaluateIntensity(0.15f),
-                Is.EqualTo(0f),
-                "Daylight must leave the valley dark.");
+                Is.EqualTo(
+                        GameTimeDayNightRules.DayFixtureFloor *
+                        MountainRoadVistaLightsController.NightIntensity)
+                    .Within(0.0001f),
+                "The distant city must burn by day too.");
             Assert.That(
                 MountainRoadVistaLightsController.EvaluateIntensity(1f),
                 Is.EqualTo(

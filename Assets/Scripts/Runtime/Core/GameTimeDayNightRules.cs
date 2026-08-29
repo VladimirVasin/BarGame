@@ -68,6 +68,33 @@ namespace BarPromenade
         public const double DuskStartMinutes = 18d * 60d;
         public const double DuskEndMinutes = 19d * 60d;
 
+        /// <summary>
+        /// The story bible's §20 law, as one number: the city is overcast
+        /// and foggy at every hour, so every lighting FIXTURE burns always,
+        /// and the day takes at most a third off it - at noon a fixture
+        /// gives no less than two thirds of its night strength, and the fog
+        /// halo around it is never taken away. Excluded as events rather
+        /// than fixtures: vehicle headlights, lightning, a struck match,
+        /// the lighthouse beam. The village above has its own stronger rule
+        /// and no clock on its lights at all.
+        /// </summary>
+        public const float DayFixtureFloor = 2f / 3f;
+
+        /// <summary>
+        /// The multiplier a fixture's brightness rides, in place of the raw
+        /// night factor. The raw factor is the SKY's - it still takes the
+        /// sun, the ambient and everything else that genuinely belongs to
+        /// the hour to zero at noon; a fixture that multiplied by it went
+        /// black at midday, which §20 forbids.
+        /// </summary>
+        public static float FixtureFactor(float nightFactor)
+        {
+            return Mathf.Lerp(
+                DayFixtureFloor,
+                1f,
+                Mathf.Clamp01(nightFactor));
+        }
+
         private static readonly Color DaylightColor =
             new Color(1.00f, 0.93f, 0.78f);
         private static readonly Color DayAmbientColor =

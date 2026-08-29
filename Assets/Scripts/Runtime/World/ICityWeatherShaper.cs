@@ -4,8 +4,9 @@ namespace BarPromenade
     /// A place that reads the one deterministic weather schedule differently
     /// from the city that wrote it.
     ///
-    /// There is exactly one implementation and it is the mountain road, where
-    /// the same slot falls as snow and blows harder the higher you stand. It
+    /// Mountain Road and Alpine Village both implement it: the road turns the
+    /// slot into climbing snow, while the village keeps a permanent gale and
+    /// very heavy snowfall without changing the shared bearing or timing. It
     /// is an optional hook on <see cref="CityWeatherController"/> rather than
     /// a second component beside it, and the reason is ordering: the
     /// controller already writes <c>CityClothWindRegistry</c> and the

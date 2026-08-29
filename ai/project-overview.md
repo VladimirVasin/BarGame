@@ -102,9 +102,15 @@ The vertical slice contains:
   side owns an operating `58 m`
   cableway with four cabins, with every cable height rebased from the raised
   terminal rather than old absolute world heights. At the normal `2.6 m/s`
-  walk speed the route takes about `230.8 s`, or `3 min 51 s`; vehicle control
-  remains separate future work. Layered forest, grounded roadside misc, middle
-  ridges and far snowy peaks are distributed over the complete climb. The
+  walk speed the route takes about `238.5 s`, or `3 min 58 s`; the Ferryman's
+  Last Route car reads and drives the same route. Layered forest keeps its
+  physical/mid/far budgets but now uses three deterministic crown silhouettes.
+  It yields locally at three measured hairpins, the bridge and the terminal
+  approach; surrounding far trees and both ridge rings keep those openings on
+  the climbed road rather than turning them into extra vistas. Natural debris
+  gathers into five unequal chapters with deliberate pauses at the same
+  structural beats, and a bounded deterministic resolver preserves `0.35 m`
+  between conservative footprints and existing roadside furniture. The
   first deliberate misc migration replaces the visible runtime-box geometry
   of `FallenLog`, `Stump`, `DeadTree`, `GuardRail`, `SnowPole`,
   `ConvexMirror`, `UtilityCabinet` and `AbandonedChair`: `102` plan placements
@@ -123,17 +129,34 @@ The vertical slice contains:
   house at its head, which is the highest thing in the village and the only
   thing the composition points at. Twelve houses stand either side; the chapel
   over the source, the adit with its overgrown spoil and the burial ground sit
-  on side spurs, reached by branches of the capsule-chain walkable mask.
+  on side spurs. Every permitted capsule-chain branch now comes from the same
+  `AlpineVillagePathDescriptor` list as a visible compacted strip, including
+  each household threshold and the narrow turn to the chapel water outlet.
+  Authored distance/side/yaw beats form frontage clusters and pauses; exact OBB
+  validation, three `7.2-7.5 m` rear-row depth beats and a bounded symmetric
+  local correction keep every seeded rotated footprint out of its neighbours
+  and the lane without cascading the whole frontage away from the street.
   `AlpineVillageTerrainSampler` is the one height contract shared by planning,
   validation, the ground mesh and the map's teleport ground; its enclosing
   ridge climbs at `1.15` (`49°`), deliberately steeper than the hero's own
-  `45°` slope limit, so the bowl is closed by the mountain and not only by the
-  mask. Warm fog and warm key light are the zone's whole signature, and the
-  dimming grade §12 calls for is already a parameter of the per-minute
-  lighting apply rather than something written over it, held at `0`. Snow has
-  a ceiling as well as a floor because the storm is banned outright, and the
-  wind is damped where the exposed road amplified it. The cableway does not
-  carries in both directions. Pressing `E` on the platform brakes the line to
+  `45°` slope limit. `TerrainBounds` remains the inhabited bowl while the
+  larger `TerrainMeshBounds` builds the complete physical rise, hidden crest
+  and sampled cableway brink, so the bowl and upper turn are closed by the
+  mountain and not only by a mask. Warm fog and warm key light are the zone's
+  whole signature. The §12 dimming grade is held at `0`, but its per-minute
+  apply already drives isolated garland loss, seeded window darkness, dirtying
+  snow, five practicals and all six causal sounds together. The weather now
+  stays deliberately severe independently of that grade: a village-only
+  stretched `Blizzard` profile keeps snow in `.88–1`, the shaped shared wind
+  stays in `.82–1`, and a second terrain-sampled layer carries low spindrift
+  with a continuous wind bed on the same deterministic bearing and gust
+  rhythm. The nine batched garland spans read that shaped wind through bounded
+  vertex deformation: both anchors remain fixed while bulbs and the two real
+  lights follow each moving midpoint. The enclosing ridge closes sight and traversal rather than sheltering
+  the bowl; only the station canopy and moving cabin are locally dry. Density
+  and alpha are capped below whiteout so the warm uphill axis and top house
+  remain readable. The cableway carries in
+  both directions. Pressing `E` on the platform brakes the line to
   a stop with a cabin on the boarding point - a distance-driven profile, so
   it comes to rest ON the point rather than near it - seats the hero on the
   cabin bench in first person, lets the line go, and fades behind the snow
@@ -143,12 +166,19 @@ The vertical slice contains:
   reducer and shaft, tension carriage and weight stack above with no motor at
   all. Boarding is outboard of the outbound track, because the gap between the
   two tracks is filled by the bullwheel pedestal. The village wears a fourth
-  deterministic Blender kit - `11` assemblies / `27` meshes of crooked houses,
-  chapel, mine cart, adit frame, grave markers and firewood - which raises no
-  new surface family and ships no doors or window panes, because both scale
-  with the descriptor across plots from `4.2` to `7 m` and are drawn by the
-  world builder at real metres on the wall face the mesh's own bounds report.
-  Garlands are emissive geometry with five real lamps behind them;
+  deterministic Blender kit - `19` assemblies / `53` meshes - with roof snow,
+  a distinct top house, facade repairs/shutters, garland posts, cable gate,
+  rail bridge and a plain stone catch basin added to the original houses,
+  chapel, mine cart, adit frame, grave markers and firewood. Every house and
+  the chapel now render as a closed outward-facing Blender shell on all four
+  sides; roofs and facade dressing no longer survive around an invisible wall
+  volume. It raises no new
+  surface family and ships no doors or window panes, because both scale with
+  the descriptor across plots from `4.2` to `7 m` and are drawn by the world
+  builder at real metres on the wall face the mesh's own bounds report.
+  Garlands are emissive geometry; two cords and three windows own the five real
+  village lights. Six bounded spatial voices belong to the visible station,
+  one wire, the cable gate, water catch basin, firewood and a house wall;
 - a finite, seed-reproducible coastal city driven by one immutable blueprint:
   the default preserves all 144 former road-and-lot cells inside a `13 x 12`
   urban envelope, using the added central column for a north-south river and
@@ -261,7 +291,8 @@ The vertical slice contains:
   `Z=-182`; the cave water and space behind those stops never enter the
   navigation mask. Low waterside lanterns at `13 m` pitch keep their emissive
   lenses and fog halos lit around the clock; their pooled realtime spill and
-  the sparse upper promenade lamps remain night-driven;
+  the sparse upper promenade lamps ride the §20 fixture floor — always
+  burning, two thirds by day;
 - one immutable `CityElevationPlan` produced after 2D topology and before any
   lot, surface or access is materialized. The default coastal blueprint spans
   about `8.1 m` across its generated road nodes, peaks near `10.08 m`, gives
@@ -421,7 +452,10 @@ The vertical slice contains:
   their authored families;
 - one player-following `CityFogField`, capped at 36 more visible slowly
   drifting particles, plus depth-tested soft halos around lamps, bar lights
-  and active signals;
+  and active signals. The same field, unchanged, now also runs on the mountain
+  road and in the alpine village, where the area's own weather owner clears
+  and refills it under a roof instead of a second controller; only the Exp2
+  haze behind it stays per-area;
 - one deterministic radius-safe sidewalk/crosswalk navigation graph with
   spawn anchors on long pavement segments. At most two low-poly walkers are
   active near the player: one randomized runtime event activates one slot at a
@@ -709,6 +743,25 @@ The vertical slice contains:
   four ordinary benches per region from real non-bridge path runs; one
   descriptor keeps the oriented timber, collider and path-facing sit dock in
   agreement;
+- one fixed Nightlife survival pocket in the walkable ground gap between
+  presentation cells `[10;5]` and `[11;5]`. A closed, non-walkable service
+  bridge spans the two ordinary buildings as a full `11.602 m`-deep arch while
+  the ground remains traversable: a northern ten-step flight resolves the
+  native `1.562 m` terrain difference and meets one `7.30614 x 8.851 m`
+  supported service terrace. The slab runs from that stair seam into the east
+  facade support and south to the raw wall end, so it is not a detached central
+  plinth. It contains the visible `1.50 m` upper landing, barrel, standing and
+  seated warmers, bedding and sleeper; its masonry mass reaches the lower datum,
+  while sparse mundane clutter remains on the lower ground. One full-depth
+  west `2.2 m` route remains on that lower ground. The terrace is a stair-only
+  dead end: `1.09 m` north/south guards plus a west guard south of the stair
+  close every sampled `0.41-1.562 m` drop instead of pretending the east side
+  is a seamless second route. The only opening is the stair band. Five
+  independently moving emissive flame/ember parts, a transparent ground spill,
+  deterministic sparks and one synchronized strong warm realtime Point Light
+  give the barrel a causal moving pool, plus one bounded synthesized crackle;
+  a local particle trigger removes rain only under the roof and does not add
+  local fog;
 - one mandatory north-edge waterfront in the default blueprint, dressed as
   the seacoast precinct (`CitySeacoastPlanner`): its connected beach has a
   deterministic street approach and remains walkable to the water line,
@@ -798,15 +851,17 @@ The vertical slice contains:
   final XZ anchor, so their geometry, collision proxies and interaction
   docks share the actual pavement height rather than the lot datum;
 - one deterministic `city_misc_citywide_v4` mesh library supplies the passive
-  visuals for the broad City misc pass: `72` semantic kinds resolve to `106`
-  assemblies, `205` role meshes and `36,050` triangles. It covers the 24-family
+  visuals for the broad City misc pass: `80` semantic kinds resolve to `115`
+  assemblies, `238` role meshes and `42,878` triangles. It covers the 24-family
   decoration layer and park landmarks, street lamps and signal housings,
   Route 01 shelters/poles, the eastern yard, cemetery graves and vegetation,
     the church-yard surfaces and planting plus the modified cemetery
     north-fence posts and rails,
-  seacoast boats/barge/driftwood, fringe utility dressing and the static shells
-  of all four district points of interest, plus the live supermarket and
-  player-home shells. Its former bar shell remains in the catalog only for v4
+  seacoast boats/barge/driftwood, fringe utility dressing, the static shells
+  of all four district points of interest and the Nightlife arch-shelter kit,
+  including its full-height masonry platform support and worn slab,
+  plus the live supermarket and player-home shells. Its former bar shell
+  remains in the catalog only for v4
   compatibility and is not instantiated. These are role meshes rather than
   world prefabs:
   validated plans still own placement, terrain, collision,

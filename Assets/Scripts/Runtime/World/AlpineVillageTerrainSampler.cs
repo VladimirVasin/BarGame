@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 
 namespace BarPromenade
@@ -73,6 +74,56 @@ namespace BarPromenade
         internal const float RidgeRisePerMeter = 1.15f;
 
         internal const float RidgeMaximumRise = 34f;
+
+        /// <summary>
+        /// Ground carried past the full rise. The visible mesh must not end on
+        /// the crest itself: from inside the bowl that exposes both the back
+        /// of a single-sided mesh and the empty world beyond it.
+        /// </summary>
+        internal const float RidgeCrestDepth = 8f;
+
+        /// <summary>
+        /// Minimum distance the physical mesh continues past the inhabited
+        /// bounds: standoff, complete steep rise, then a hidden crest.
+        /// </summary>
+        internal const float RidgeMeshOutset =
+            RidgeStandoff +
+            RidgeMaximumRise / RidgeRisePerMeter +
+            RidgeCrestDepth;
+
+        /// <summary>
+        /// The shared height of a visible cable tower. The cableway builder
+        /// refuses to draw an A-frame shorter than this; using the same value
+        /// for its planned ground keeps the rollers on the rope.
+        /// </summary>
+        internal const float CablewaySupportClearance = 4.8f;
+
+        /// <summary>
+        /// Flat half-width of the descending cut. It includes both A-frame
+        /// feet and one terrain cell, so the triangles bracketing a foot are
+        /// on the same ground rather than pulling it up the side wall.
+        /// </summary>
+        internal const float CablewayCutCoreHalfWidth = 5.2f;
+
+        internal const float CablewayCutBlendWidth = 3f;
+
+        internal const float CablewayCutOuterHalfWidth =
+            CablewayCutCoreHalfWidth + CablewayCutBlendWidth;
+
+        /// <summary>
+        /// How quickly the ground gets out from under the rope once the
+        /// apron ends. It was `6 m` and the cabin outran it: the rope starts
+        /// falling at the pad's own edge while the cut was still a tenth of
+        /// the way in, so the underside was in the hillside for the first few
+        /// metres of every descent. The ramp has to be shorter than the cabin
+        /// takes to fall its own hang.
+        /// </summary>
+        private const float CablewayCutRampLength = 3.5f;
+        // One cell, and it must stay one cell: `closeStart` is measured from
+        // the last support plus this, so widening it eats the ramp the
+        // mountain closes over the rope on.
+        private const float CablewaySupportShelfHalfLength = TerrainCell;
+        private const float CablewaySupportShelfBlend = TerrainCell * 0.5f;
 
         internal static float SampleMacroHeight(
             Vector3 slopeOrigin,
@@ -186,7 +237,8 @@ namespace BarPromenade
                 height = Mathf.Lerp(height, plot.GroundCenter.y, weight);
             }
 
-            return height + SampleRidgeRise(plan, point);
+            float enclosedHeight = height + SampleRidgeRise(plan, point);
+            return SampleCablewayBrink(plan, point, enclosedHeight);
         }
 
         /// <summary>
@@ -206,6 +258,193 @@ namespace BarPromenade
             }
 
             return Mathf.Min(RidgeMaximumRise, outside * RidgeRisePerMeter);
+        }
+
+        /// <summary>
+        /// Cuts the one honest opening through the lower edge of the bowl.
+        /// The station apron remains level; immediately after it, the ground
+        /// falls under the descending rope, carries every visible support and
+        /// closes again before the hidden turn enters the mountain.
+        /// </summary>
+        internal static float SampleCablewayBrink(
+            AlpineVillagePlan plan,
+            Vector2 point,
+            float enclosedHeight)
+        {
+            MountainRoadCablewayPlan cableway = plan.Station.Cableway;
+            Vector2 origin = new Vector2(
+                cableway.StationArea.Center.x,
+                cableway.StationArea.Center.z);
+            Vector2 forward = new Vector2(
+                cableway.LineForward.x,
+                cableway.LineForward.z).normalized;
+            Vector2 right = new Vector2(
+                cableway.LineRight.x,
+                cableway.LineRight.z).normalized;
+            Vector2 delta = point - origin;
+            float along = Vector2.Dot(delta, forward);
+            float across = Mathf.Abs(Vector2.Dot(delta, right));
+
+            // TWO FRAMES MEET HERE AND THEY ARE `1.9 m` APART.
+            //
+            // `along` is measured from the STATION PAD'S CENTRE, because that
+            // is what the cut's own entrance is measured from. Every distance
+            // it gets compared against - node distances, the last support,
+            // `UpperOccluderNearFaceDistance` - is measured along the CABLE,
+            // and the cable starts `1.9 m` forward of the pad centre. Left
+            // unconverted the whole descent profile was read `1.9 m` early:
+            // each pylon's shelf sat short of its own legs (its sampled
+            // ground came out `0.58 m` under the height the planner authored)
+            // and, far worse, the ground closed back over the rope `1.9 m`
+            // before the ride's blackout is complete - so the last stretch of
+            // the visible descent happened inside the mountain, which is the
+            // very thing the mountain road's own cut was just repaired for.
+            float cableOrigin = Vector3.Dot(
+                cableway.LowerCableCenter - cableway.StationArea.Center,
+                cableway.LineForward);
+            float alongCable = along - cableOrigin;
+
+            float cutStart = cableway.StationArea.Size.y * 0.5f +
+                             StationApron - TerrainCell * 0.5f;
+            float lastSupport = 0f;
+            for (int index = 0; index < cableway.Nodes.Count; index++)
+            {
+                if (cableway.Nodes[index].Kind ==
+                    MountainCablewayNodeKind.Support)
+                {
+                    lastSupport = Mathf.Max(
+                        lastSupport,
+                        cableway.Nodes[index].Distance);
+                }
+            }
+
+            float closeStart = lastSupport +
+                               CablewaySupportShelfHalfLength;
+            float closeEnd = cableway.UpperOccluderNearFaceDistance;
+            if (along > cutStart && alongCable < closeEnd &&
+                across < CablewayCutOuterHalfWidth)
+            {
+                float entranceWeight = SmoothRange(
+                    cutStart,
+                    cutStart + CablewayCutRampLength,
+                    along);
+                float closingWeight = 1f - SmoothRange(
+                    closeStart,
+                    closeEnd,
+                    alongCable);
+                float lateralWeight = 1f - SmoothRange(
+                    CablewayCutCoreHalfWidth,
+                    CablewayCutOuterHalfWidth,
+                    across);
+                float cutGround = SampleCablewayGround(
+                    cableway,
+                    alongCable);
+                float cutWeight = entranceWeight *
+                                  closingWeight *
+                                  lateralWeight;
+                enclosedHeight = Mathf.Lerp(
+                    enclosedHeight,
+                    Mathf.Min(enclosedHeight, cutGround),
+                    cutWeight);
+            }
+
+            // Each pylon owns a two-metre shelf in the SAME sampled contract.
+            // That is not decorative flattening: a two-metre terrain grid can
+            // otherwise interpolate across a bend in the descent profile and
+            // leave the authored GroundPosition floating between vertices.
+            for (int index = 0; index < cableway.Nodes.Count; index++)
+            {
+                MountainCablewayNodeDescriptor node = cableway.Nodes[index];
+                if (node.Kind != MountainCablewayNodeKind.Support)
+                {
+                    continue;
+                }
+
+                float pastShelf = Mathf.Max(
+                    0f,
+                    Mathf.Abs(alongCable - node.Distance) -
+                    CablewaySupportShelfHalfLength);
+                if (pastShelf >= CablewaySupportShelfBlend ||
+                    across >= CablewayCutOuterHalfWidth)
+                {
+                    continue;
+                }
+
+                float lengthWeight = 1f - SmoothRange(
+                    0f,
+                    CablewaySupportShelfBlend,
+                    pastShelf);
+                float lateralWeight = 1f - SmoothRange(
+                    CablewayCutCoreHalfWidth,
+                    CablewayCutOuterHalfWidth,
+                    across);
+                enclosedHeight = Mathf.Lerp(
+                    enclosedHeight,
+                    Mathf.Min(enclosedHeight, node.GroundPosition.y),
+                    lengthWeight * lateralWeight);
+            }
+
+            return enclosedHeight;
+        }
+
+        private static float SampleCablewayGround(
+            MountainRoadCablewayPlan cableway,
+            float distance)
+        {
+            IReadOnlyList<MountainCablewayNodeDescriptor> nodes =
+                cableway.Nodes;
+            if (distance <= nodes[0].Distance)
+            {
+                return NodeCutGround(nodes[0]);
+            }
+
+            for (int index = 0; index < nodes.Count - 1; index++)
+            {
+                MountainCablewayNodeDescriptor first = nodes[index];
+                MountainCablewayNodeDescriptor second = nodes[index + 1];
+                if (distance > second.Distance)
+                {
+                    continue;
+                }
+
+                float span = Mathf.Max(
+                    0.0001f,
+                    second.Distance - first.Distance);
+                return Mathf.Lerp(
+                    NodeCutGround(first),
+                    NodeCutGround(second),
+                    (distance - first.Distance) / span);
+            }
+
+            return NodeCutGround(nodes[nodes.Count - 1]);
+        }
+
+        /// <summary>
+        /// The bed the cut descends on, at one node.
+        ///
+        /// It is the node's own planned ground EXCEPT at the station, where
+        /// that ground is the level pad the hero stands on - `0.8 m` above the
+        /// clearance every other node keeps under the rope. Interpolating the
+        /// cut out of the pad's height drags the whole first span up with it
+        /// and squeezed the cabin to `0.86 m` of air in the middle of it. The
+        /// pad itself is not at risk: the apron and the entrance ramp hold the
+        /// real ground level over it, and this is only the profile they ramp
+        /// TOWARDS.
+        /// </summary>
+        private static float NodeCutGround(
+            MountainCablewayNodeDescriptor node)
+        {
+            return Mathf.Min(
+                node.GroundPosition.y,
+                node.CableCenter.y - CablewaySupportClearance);
+        }
+
+        private static float SmoothRange(float start, float end, float value)
+        {
+            return Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.InverseLerp(start, end, value));
         }
 
         /// <summary>

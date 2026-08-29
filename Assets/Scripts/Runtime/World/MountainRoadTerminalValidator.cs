@@ -322,13 +322,60 @@ namespace BarPromenade
                     ToXZ(occluder.Center),
                     ToXZ(cableway.UpperCableCenter)) >
                 Mathf.Max(occluder.Size.x, occluder.Size.z) * 0.35f ||
-                occluder.Center.y + occluder.Size.y * 0.5f <
-                    cableway.UpperCableCenter.y + 2f ||
                 occluder.Center.y - occluder.Size.y * 0.5f >
                     cableway.UpperCableCenter.y)
             {
                 throw new InvalidOperationException(
                     "The upper cable turn needs a real mountain occluder.");
+            }
+
+            // Against the crest that is BUILT, not the top of the box it is
+            // authored in. A ridge is a polygonal sine: at its middle - which
+            // is exactly where the line crosses it, the occluder being
+            // centred on the line - the drawn rock stands about `14%` of the
+            // box's height below the box's lid. The old check read the lid
+            // and would have passed a ridge the cabin sails straight over.
+            if (!MountainRoadRidgeGeometry.TryGetCrossing(
+                    occluder,
+                    cableway.UpperCableCenter,
+                    out float crossing))
+            {
+                throw new InvalidOperationException(
+                    "The upper cable turn must cross its own occluder.");
+            }
+
+            if (MountainRoadRidgeGeometry.CrestWorldY(occluder, crossing) <
+                cableway.UpperCableCenter.y +
+                MountainRoadCablewayPlan.UpperOccluderCrestClearance)
+            {
+                throw new InvalidOperationException(
+                    "The occluder's built crest must stand over the cable.");
+            }
+
+            // And the ride has to be able to hide inside it: the blackout
+            // must complete before the cabin's nose reaches the near face,
+            // and it must still start after the last tower is passed. Between
+            // those two the cabin drove into the mountain in plain sight for
+            // four metres, and nothing in the suite noticed.
+            float fadeStart = cableway.LineLength -
+                              AlpineCablewayRideController
+                                  .EvaluateFadeLeadMeters(cableway);
+            float lastSupport = 0f;
+            for (int index = 0; index < cableway.Nodes.Count; index++)
+            {
+                if (cableway.Nodes[index].Kind ==
+                    MountainCablewayNodeKind.Support)
+                {
+                    lastSupport = Mathf.Max(
+                        lastSupport,
+                        cableway.Nodes[index].Distance);
+                }
+            }
+
+            if (fadeStart <= lastSupport)
+            {
+                throw new InvalidOperationException(
+                    "The cut must land after the last cable tower.");
             }
         }
 

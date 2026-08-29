@@ -290,22 +290,74 @@ namespace BarPromenade.Tests.EditMode
             Part(CityMiscKind.RoadsideCappedStandpipe, 0, "Street", CityMiscMeshRole.Street),
             Part(CityMiscKind.RoadsideCappedStandpipe, 0, "Masonry", CityMiscMeshRole.Masonry),
             Part(CityMiscKind.LotGroundDownpipeOutfall, 0, "Street", CityMiscMeshRole.Street),
-            Part(CityMiscKind.LotGroundDownpipeOutfall, 0, "Masonry", CityMiscMeshRole.Masonry)
+            Part(CityMiscKind.LotGroundDownpipeOutfall, 0, "Masonry", CityMiscMeshRole.Masonry),
+            Part(CityMiscKind.ChurchCourtyardSurface, 0, "Surface_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.ChurchCourtyardSurface, 1, "Surface_Street_Gravel", CityMiscMeshRole.Street, CityMiscSurfaceKind.Gravel),
+            Part(CityMiscKind.ChurchCourtyardSurface, 2, "Surface_Foliage_Lawn", CityMiscMeshRole.Foliage, CityMiscSurfaceKind.Lawn),
+            Part(CityMiscKind.ChurchCourtyardShrub, 0, CityMiscMeshRole.Foliage),
+            Part(CityMiscKind.ChurchCourtyardShrub, 1, CityMiscMeshRole.Foliage),
+            Part(CityMiscKind.ChurchCourtyardFlowerBed, 0, "Edging_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.ChurchCourtyardFlowerBed, 0, CityMiscMeshRole.Foliage),
+            Part(CityMiscKind.ChurchCourtyardFlowerBed, 0, "Flowers_Residential", CityMiscMeshRole.Residential),
+            Part(CityMiscKind.ChurchCourtyardFlowerBed, 1, "Edging_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.ChurchCourtyardFlowerBed, 1, CityMiscMeshRole.Foliage),
+            Part(CityMiscKind.ChurchCourtyardFlowerBed, 1, "Flowers_Residential", CityMiscMeshRole.Residential),
+            Part(CityMiscKind.CemeteryFencePost, 0, CityMiscMeshRole.Fixture),
+            Part(CityMiscKind.CemeteryFenceRail, 0, CityMiscMeshRole.Fixture),
+            Part(CityMiscKind.NightlifeArchBridgeShell, 0, "Shell_Masonry", CityMiscMeshRole.Masonry),
+            Part(CityMiscKind.NightlifeArchBridgeShell, 0, "StepsAndRetaining_Masonry", CityMiscMeshRole.Masonry),
+            Part(CityMiscKind.NightlifeArchBridgeShell, 0, "PlatformSupport_Masonry", CityMiscMeshRole.Masonry),
+            Part(CityMiscKind.NightlifeArchBridgeShell, 0, "PlatformSlab_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.NightlifeArchBridgeShell, 0, "Cladding_Industrial", CityMiscMeshRole.Industrial),
+            Part(CityMiscKind.NightlifeArchBridgeShell, 0, "Roof_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.NightlifeBurnBarrel, 0, "Barrel_Industrial", CityMiscMeshRole.Industrial),
+            Part(CityMiscKind.NightlifeBurnBarrel, 0, "Fuel_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.NightlifeShelterBedding, 0, "Mattress_Residential", CityMiscMeshRole.Residential),
+            Part(CityMiscKind.NightlifeShelterBedding, 0, "Blanket_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.NightlifeShelterBedding, 0, "Cardboard_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.NightlifeShelterBedding, 1, "Roll_Residential", CityMiscMeshRole.Residential),
+            Part(CityMiscKind.NightlifeShelterBedding, 1, "Tie_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.NightlifeShelterBedding, 1, "Cardboard_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.NightlifeShelterClutter, 0, "CrateAndCardboard_Timber", CityMiscMeshRole.Timber),
+            Part(CityMiscKind.NightlifeShelterClutter, 0, "Bags_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.NightlifeShelterClutter, 0, "Bottles_Residential", CityMiscMeshRole.Residential),
+            Part(CityMiscKind.NightlifeShelterClutter, 0, "Can_Industrial", CityMiscMeshRole.Industrial),
+            Part(CityMiscKind.NightlifeShelterFire, 0, "FlameCore_Neon", CityMiscMeshRole.Neon),
+            Part(CityMiscKind.NightlifeShelterFire, 0, "FlameOuter_Neon", CityMiscMeshRole.Neon),
+            Part(CityMiscKind.NightlifeShelterFire, 0, "FlameLeftTongue_Neon", CityMiscMeshRole.Neon),
+            Part(CityMiscKind.NightlifeShelterFire, 0, "FlameRightTongue_Neon", CityMiscMeshRole.Neon),
+            Part(CityMiscKind.NightlifeShelterFire, 0, "EmberBed_Neon", CityMiscMeshRole.Neon),
+            Part(CityMiscKind.NightlifeShelterFire, 0, "GroundSpill_BacklitSign", CityMiscMeshRole.BacklitSign),
+            Part(CityMiscKind.NightlifeShelterStandingPerson, 0, "Outerwear_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.NightlifeShelterStandingPerson, 0, "Layer_Residential", CityMiscMeshRole.Residential),
+            Part(CityMiscKind.NightlifeShelterStandingPerson, 0, "Skin_Masonry", CityMiscMeshRole.Masonry),
+            Part(CityMiscKind.NightlifeShelterSeatedPerson, 0, "Outerwear_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.NightlifeShelterSeatedPerson, 0, "Layer_Residential", CityMiscMeshRole.Residential),
+            Part(CityMiscKind.NightlifeShelterSeatedPerson, 0, "Skin_Masonry", CityMiscMeshRole.Masonry),
+            Part(CityMiscKind.NightlifeShelterSleepingPerson, 0, "Outerwear_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.NightlifeShelterSleepingPerson, 0, "BreathingUpper_Residential", CityMiscMeshRole.Residential),
+            Part(CityMiscKind.NightlifeShelterSleepingPerson, 0, "Skin_Masonry", CityMiscMeshRole.Masonry)
         };
 
         [Test]
-        public void Catalog_DeclaresExactNinetySevenAssemblyOneNinetyTwoMeshWave()
+        public void Catalog_DeclaresExactCurrentAssemblyAndMeshWave()
         {
             Assert.That(
                 CityMiscAssetProvider.DesignId,
                 Is.EqualTo("city_misc_citywide_v4"));
             Assert.That(
+                CityMiscAssetProvider.GeneratorVersion,
+                Is.EqualTo("4.6.0"));
+            Assert.That(
+                CityMiscAssetProvider.SupportedKindCount,
+                Is.EqualTo(80));
+            Assert.That(
                 CityMiscAssetProvider.ExpectedAssemblyCount,
-                Is.EqualTo(97));
+                Is.EqualTo(115));
             Assert.That(
                 CityMiscAssetProvider.ExpectedMeshCount,
-                Is.EqualTo(192));
-            Assert.That(ExpectedParts, Has.Length.EqualTo(192));
+                Is.EqualTo(238));
+            Assert.That(ExpectedParts, Has.Length.EqualTo(238));
 
             var actualNames = new List<string>();
             int assemblies = 0;
@@ -335,13 +387,13 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            Assert.That(assemblies, Is.EqualTo(97));
+            Assert.That(assemblies, Is.EqualTo(115));
             Assert.That(
                 actualNames,
                 Is.EqualTo(ExpectedParts.Select(part => part.MeshName)));
             Assert.That(
                 actualNames.Distinct(StringComparer.Ordinal).Count(),
-                Is.EqualTo(192));
+                Is.EqualTo(238));
             Assert.That(
                 actualNames.Take(33),
                 Is.EqualTo(ExpectedParts.Take(33).Select(part => part.MeshName)),
@@ -380,9 +432,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);
             Assert.That(manifest.animation_count, Is.Zero);
-            Assert.That(manifest.mesh_count, Is.EqualTo(192));
-            Assert.That(manifest.assembly_count, Is.EqualTo(97));
-            Assert.That(manifest.triangle_count, Is.GreaterThan(0));
+            Assert.That(manifest.mesh_count, Is.EqualTo(238));
+            Assert.That(manifest.assembly_count, Is.EqualTo(115));
+            Assert.That(manifest.triangle_count, Is.EqualTo(42878));
+            Assert.That(
+                manifest.build_signature,
+                Is.EqualTo(
+                    "87680a5d05066a52504900a19b0e4ec19955fbe180fc6cc8d60f6e5995e412ad"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
@@ -434,7 +490,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(imported.OfType<Material>(), Is.Empty);
             Assert.That(imported.OfType<AnimationClip>(), Is.Empty);
             Mesh[] meshes = imported.OfType<Mesh>().ToArray();
-            Assert.That(meshes, Has.Length.EqualTo(192));
+            Assert.That(meshes, Has.Length.EqualTo(238));
             Assert.That(meshes.All(mesh => mesh.isReadable), Is.True);
             Assert.That(meshes.All(mesh => mesh.vertexCount > 0), Is.True);
 
@@ -502,7 +558,7 @@ namespace BarPromenade.Tests.EditMode
                 actualNames.Add(part.Mesh.name);
             }
 
-            Assert.That(actualNames, Has.Count.EqualTo(192));
+            Assert.That(actualNames, Has.Count.EqualTo(238));
             UnityEngine.Object[] imported =
                 AssetDatabase.LoadAllAssetsAtPath(
                     ModelPath);
@@ -912,6 +968,7 @@ namespace BarPromenade.Tests.EditMode
         {
             public string design_id;
             public string generator_version;
+            public string build_signature;
             public MiscRootContract root_contract;
             public bool colliders;
             public bool lights;

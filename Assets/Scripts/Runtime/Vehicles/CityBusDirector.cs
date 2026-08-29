@@ -956,7 +956,10 @@ namespace BarPromenade
 
         private static float GetSessionRainIntensity()
         {
-            return GameWeatherRules.EvaluateCurrent().RainIntensity;
+            // Through the city's eternal-rain floor: the bus exists only in
+            // the city scene, and its wipers sweep the drizzle too.
+            return CityEternalRainShaper.FloorIntensity(
+                GameWeatherRules.EvaluateCurrent().RainIntensity);
         }
 
         private float GetRandomRange(float minimum, float maximum)

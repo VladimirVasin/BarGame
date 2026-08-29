@@ -9,52 +9,63 @@ namespace BarPromenade
     /// Same discipline as the mountain road: the schedule is never re-rolled,
     /// so the slot the city is in is the slot the village is in and a scene
     /// load cannot desynchronize the sky. This is a re-reading of that one
-    /// sample for a place that is higher still - and, unlike the road, a place
-    /// that is SHELTERED.
+    /// sample for a place that is higher still and permanently caught in hard
+    /// alpine weather.
     ///
-    /// The two differences from the road are both written into §12 rather than
-    /// invented here. The snow up here is pleasant, which means this shaper
-    /// carries a CEILING as well as a floor: «снежная буря» is in the banned
-    /// list, so no schedule slot may ever produce one. And the village sits in
-    /// a bowl behind its own ridge, so the wind is damped where the exposed
-    /// road amplified it.
+    /// The ridge still closes the view and the station canopy still gives one
+    /// local dry pocket, but the bowl no longer means calm air. The flow spills
+    /// over and channels through it: every schedule slot produces heavy snow
+    /// and a gale, while the original slot still supplies the last part of the
+    /// intensity and all of the shared bearing and gust timing.
     /// </summary>
     public static class AlpineVillageWeatherRules
     {
-        /// <summary>
-        /// It is always snowing a little. That is the character of the place,
-        /// not a weather event, and it is why the roofs and the lane always
-        /// have something on them.
-        /// </summary>
-        public const float SnowFloor = 0.34f;
+        public const CityPrecipitationKind PrecipitationKind =
+            CityPrecipitationKind.Blizzard;
 
         /// <summary>
-        /// The banned storm, expressed as a number. Nothing the schedule can
-        /// roll and nothing altitude can add is allowed past this.
+        /// Even a city Clear slot is a dense snowfall here. This deliberately
+        /// sits close to full strength: the separate blizzard particle profile
+        /// spends that range on density and sheeting rather than on a whiteout.
         /// </summary>
-        public const float SnowCeiling = 0.62f;
-
-        public const float SnowScheduleWeight = 0.3f;
+        public const float SnowFloor = 0.88f;
 
         /// <summary>
-        /// A little more snow at the head of the lane than at the station.
-        /// Small on purpose - the village climbs seven metres, not seven
-        /// hundred, and this is a texture rather than a gradient.
+        /// Full particle density is still the hard technical ceiling. The art
+        /// contract keeps the lane legible through alpha and field design,
+        /// rather than by weakening the weather sample.
         /// </summary>
-        public const float SnowAltitudeGain = 1.12f;
+        public const float SnowCeiling = 1f;
+
+        public const float SnowScheduleWeight = 0.12f;
 
         /// <summary>
-        /// How much of the city's wind survives the ridge. Below one, which is
-        /// the inversion: the mountain road multiplied by `1.7` because a cut
-        /// in a slope is exposed, and a bowl is the opposite.
+        /// A small extra push at the head of the lane. The floor already owns
+        /// the storm; this keeps the seven-metre climb perceptible without
+        /// turning it into a second weather system.
         /// </summary>
-        public const float WindShelter = 0.45f;
+        public const float SnowAltitudeGain = 1.06f;
 
-        /// <summary>Enough to move a garland wire and nothing more.</summary>
-        public const float WindFloor = 0.08f;
+        /// <summary>
+        /// A Clear slot's complete gust range is remapped into this first
+        /// slice of gale headroom. Without the remap, multiplying the city's
+        /// `0.15` Clear wind by a small coefficient changes the village by
+        /// only a few hundredths and its "gusts" are visually static.
+        /// </summary>
+        public const float WindGustHeadroom = 0.11f;
 
-        public const float WindCeiling = 0.4f;
-        public const float WindAltitudeGain = 1.25f;
+        /// <summary>
+        /// Wet and storm slots can spend the final slice above the strongest
+        /// Clear gust. This preserves schedule severity without allowing any
+        /// slot to fall out of the gale band.
+        /// </summary>
+        public const float WindWeatherHeadroom = 0.07f;
+
+        /// <summary>A gale in every slot, including Clear.</summary>
+        public const float WindFloor = 0.82f;
+
+        public const float WindCeiling = 1f;
+        public const float WindAltitudeGain = 1.08f;
 
         public static float EvaluateClimb01(
             float worldY,
@@ -109,8 +120,22 @@ namespace BarPromenade
             in WindSample baseWind,
             float climb01)
         {
-            float atFoot = Mathf.Clamp01(
-                Mathf.Max(WindFloor, baseWind.Strength01 * WindShelter));
+            float raw = Mathf.Clamp01(baseWind.Strength01);
+            float gust = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.Clamp01(
+                    raw / GameWeatherRules.ClearWindStrength));
+            float weather = Mathf.SmoothStep(
+                0f,
+                1f,
+                Mathf.InverseLerp(
+                    GameWeatherRules.ClearWindStrength,
+                    GameWeatherRules.ThunderstormWindStrength,
+                    raw));
+            float atFoot = WindFloor +
+                           gust * WindGustHeadroom +
+                           weather * WindWeatherHeadroom;
             float climbed = atFoot * Mathf.Lerp(
                 1f,
                 WindAltitudeGain,
@@ -151,9 +176,10 @@ namespace BarPromenade
         public float Climb01 { get; private set; }
 
         /// <summary>
-        /// What the garland wires and any cloth are driven with. Unlike the
-        /// road's, this is already clamped: nothing up here has headroom to
-        /// spend, because nothing up here is supposed to be thrown about.
+        /// What the wind bed, low blowing snow and any registered cloth read.
+        /// It is clamped because particle transport owns its extra speed in
+        /// the village-only blizzard profile rather than forging a second wind
+        /// sample that would disagree with cloth.
         /// </summary>
         public float SwayAmplitude { get; private set; }
 

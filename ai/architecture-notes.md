@@ -42,10 +42,27 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   rigidbody or animator; each is enforced by the asset setup's
   `ValidateOrThrow`, not by review. Collision and illumination stay authored
   from the layout plan, so a model can be re-cut without risking traversal.
+- **Accepted:** Alpine Village separates inhabited `TerrainBounds` from the
+  larger physical `TerrainMeshBounds`; only the latter may prove the enclosing
+  ridge and cable brink. Every permitted off-lane movement segment is an
+  `AlpineVillagePathDescriptor` consumed by both surface rendering and the
+  walkable mask. Its larger visible/traversal half-width is also a pure
+  collision envelope: every segment must clear every rotated plot OBB, with
+  the adit using an authored outer hook around the rear-row houses rather than
+  a shortcut through them; its turn is selected from the seeded expanded OBB
+  of house 08. Rotated plot collision is OBB/SAT, never an
+  unrotated AABB;
+  explicit rear-row depth beats own the frontage layers and the seeded solver
+  may only make a bounded symmetric correction around them.
+  Small causal props use `AlpineVillageDressingPlanner` for form-owned semantic
+  IDs and anchors; the world and soundscape are readers, so rendering never
+  depends on audio to decide where an object exists.
 - **Accepted:** Gameplay and transition presentation are composed at runtime
-  in ten explicit build scenes; `MountainRoad`, `AreaLoading` and
-  `ChurchInterior` are appended at build indices `7`, `8` and `9`.
-- **Accepted:** City, Mountain Road, Bar, Supermarket, Home, Stairwell and Church instantiate one
+  in eleven explicit build scenes; `MountainRoad`, `AreaLoading`,
+  `ChurchInterior` and `AlpineVillage` are appended at build indices `7`, `8`,
+  `9` and `10`.
+- **Accepted:** City, Mountain Road, Alpine Village, Bar, Supermarket, Home,
+  Stairwell and Church instantiate one
   `Resources/Player/Player3D` modular hero prefab through `PlayerFactory`.
   Its Generic rig, independent mesh parts, in-place Actions, prefab-derived
   first-person subsets, dedicated 3D portrait, real mesh shadows and analytic
@@ -116,6 +133,21 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   behind the ridge and no sign naming it: the player boards without being told
   where the cabin goes. `10f` is amended from «Единственная зона за пределами
   города» to name both, and a new `§10g` states the village's form.
+- **Accepted architecture exception — 2026-08-29, explicit user request —
+  Alpine Village always carries very heavy snow and very strong wind:** This
+  supersedes story-bible §6 level `0` «Ясно», the §12 / art-bible §10g ban on
+  «снежная буря», and the implementation's former sheltered `.34–.62` snow and
+  `.08–.40` wind bands. The village now holds a `.88` snowfall floor and `.82`
+  wind floor, both capped at `1`, while preserving the one deterministic city
+  slot, its bearing and short gust rhythm. A village-only `Blizzard` profile
+  drives dense diagonal flakes; a second terrain-sampled field carries low
+  spindrift and the same normalized wind drives a continuous synthesized bed.
+  The ridge remains the visual and physical closure but is not a wind shelter;
+  the station canopy is a local dry core and the moving cabin is dry. **What is
+  lifted is clear weather, not the village's meaning:** there is no lightning,
+  thunder, danger beat, supernatural sign or whiteout; warm lighting, the one
+  uphill axis, the top house and the independent warmth/dimming grade remain
+  readable and unchanged.
 - **Accepted architecture exception — 2026-08-27, explicit user request — one
   maintained Cemetery–Church connection:** The earlier art-bible rule that the
   two precincts have no direct connection is lifted only for one internal
@@ -1718,6 +1750,39 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   stays grounded over uneven terrain. Plan and validator both keep every ridge
   footprint clear of the road corridor, plateau and tree crowns; the dedicated
   cableway return occluder remains separately positioned by the terminal plan.
+- **Accepted — The cableway's blackout is derived from its own rock:** The
+  far snow ridge that swallows the upper turn is not scenery near the top, it
+  is planted ON the line: `UpperOccluderSetback 1.8 m` short of the cable end,
+  `UpperOccluderDepth 10 m` thick along it, so its near face crosses the track
+  `6.8 m` before the end and the last stretch of visible line — the turn
+  included — is inside solid geometry deliberately. Those two numbers are the
+  cableway plan's, and `MountainRoadPlanner` builds the ridge from them, so
+  the ride can read them: `AlpineCablewayRideController.EvaluateFadeLeadMeters`
+  returns `LineLength - LastVisibleDistance + CabinSpeed * FadeOutSeconds`
+  = `11.302 m` rather than a constant. It replaces an eyeballed `5.5 m` that
+  was short by four metres and let the passenger ride `3.9 m` into the mountain
+  in first person; a ridge is single-sided, so from inside it he was looking at
+  the world through the rock. The leading edge in that derivation is the
+  cabin's ROOF LIP and not its front wall: the slab is built at `CabinSize.z *
+  CabinRoofOverhang` and oversails the body by `6 cm` a side — `6 cm` quietly
+  spent out of a clearance that claims to be a metre. The last tower moved
+  `50 → 44` for the same reason:
+  standing `1.2 m` off the rock face it left no interval in which both
+  authored rules — the cut lands after the last tower, and before the rock —
+  could be true at once, which is exactly why the geometry lost that argument
+  silently. **One shape, three readers:** `MountainRoadRidgeGeometry` now owns
+  the polygonal crest that `MountainRoadSceneryMeshFactory` draws, and both
+  `MountainRoadPlanner` and `MountainRoadTerminalValidator` measure the cable
+  against THAT instead of the top of the ridge's bounding box, which stands
+  about `14%` of the box height — here `4 m` — above the rock that is actually
+  built. The planner had to move too, not just the validator: a validator alone
+  would have converted the hole into a crash, because the crest carries a
+  seeded variation in eight steps and on one residue in eight the drawn snow
+  stood `0.34 m` UNDER the cable it exists to hide. Both shipped seeds miss
+  that residue, which is precisely how it would have shipped. Sizing from
+  `CrestFactor` costs `0.41 m` of ridge on that one seed and nothing on the
+  other seven, and `Occluder_CrestClearsTheCableOnEverySeedResidue` walks all
+  eight.
 - **Accepted — A borrowed albedo shares its bytes but not its
   compensation:** the mountain road prints six sheets of its own (asphalt,
   forest floor, wind snow, layered stone, conifer needles, bark) and borrows
@@ -1867,7 +1932,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   read-only stacks plus atomic add,
   remove and world-source collection operations; `BeginNewGame` resets starter
   possessions and every collected source, while ordinary scene transitions do
-  neither. `InventoryController` is installed beside pause in all seven gameplay
+  neither. `InventoryController` is installed beside pause in all eight gameplay
   roots, opens on `I` or gamepad North only during free input, captures the
   existing fullscreen modal lock and exact time scale, and restores both on
   close or lifecycle cleanup. Its `640x360` IMGUI view keeps generated
@@ -1957,7 +2022,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   production runtime and UI representation of the main hero now derives from
   the generated modular 3D character. `PlayerFactory` preserves the
   authoritative `PlayerMotor`/`CharacterController` root and instantiates one
-  `Resources/Player/Player3D` prefab in all seven gameplay roots. Its Generic
+  `Resources/Player/Player3D` prefab in all eight gameplay roots. Its Generic
   Animator uses no root motion; the prefab contains a 31-bone armature with six
   non-deforming sockets, while `Player3DAssetRegistry` serializes 73 mesh
   bindings, 16 required anatomical parts, metrics and 37 in-place Actions.
@@ -2483,17 +2548,97 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Stairwell visual profiles remain unchanged.
   Presentation updates are change-driven: stable day/night samples perform no
   lighting work, ordinary dawn/dusk updates do not regenerate the environment
-  cubemap, and a zero-factor street-light pool does not scan lamp anchors.
+  cubemap. The street-light pool used to skip its anchor scan at a zero
+  night factor; the §20 always-lit law repealed that optimisation - the
+  pool leases and burns at the day floor too.
   Forced setup and Home Balcony entry/restore retain their complete refresh.
   This cycle does not own visibility: `0.070` luminous gray-green Exp2 fog,
   the matching terminal camera color, `48 m` far clip, `CityFogField` and
   dedicated `CityNoirVolumeProfile` stay unchanged at every hour. Custom fog
   stripping still retains the runtime Exp2 variant, and interiors keep their
   existing fog/range contracts.
+- **Accepted architecture exception — 2026-08-29, explicit user request —
+  the barrel fire under the [10;5]–[11;5] arch is one strong realtime local
+  light:** this supersedes the shelter draft's temporary “emissive only” rule
+  and the ordinary pooled-City-light assumption. The always-burning fire owns
+  exactly one warm shadowed Point `Light` (`95` base intensity, `7.0 m`
+  range), outside the night-fixture registry because it is causal at every
+  hour. Its deterministic multi-frequency flicker never falls below `72%`,
+  and the same factor drives the five-part flame, ground spill, fog halo and
+  sparse non-lighting sparks, so the walls, ground and people receive one
+  coherent moving source rather than unrelated decorative pulses. No second
+  realtime light, particle light or zone-wide fog/exposure override is added.
+- **Accepted architecture exception — 2026-08-29, explicit screenshot
+  correction — the [10;5]–[11;5] shelter tableau stands on one visible service
+  platform:** this supersedes the art-bible sentence that put the southern dry
+  zone directly on the native upper datum without a separate platform, and is
+  refined by the user's second screenshot correction that rejected a detached
+  central plinth. One `7.30614 x 8.851 m` slab begins at the highest stair seam,
+  keys directly into the inner face of the east facade support and reaches the
+  raw south end of the common wall. It carries the barrel, both warmers,
+  bedding and sleeper, and has a massive masonry support descending the full
+  `1.562 m` to the lower datum. The stair landing is a logical clear area inside
+  that same platform and shares its one physical collider; it is not a second
+  coplanar slab. The west longitudinal `2.2 m` route remains the one full-depth
+  ground passage. The east side is deliberately not claimed as a second route:
+  sampled continuous terrain sits about `0.41-0.51 m` below the flat service
+  slab at its open seams, above the player's `0.28 m` step offset. Full-width
+  `1.09 m` north and south guard rails therefore close those drop edges; a
+  third west guard closes the `7.251 m` segment south of the stair. The only
+  opening remains the exact `1.60 m` stair band on the west edge. The physical
+  east attachment begins at the slab's wall seam, so no collider gap remains
+  behind the visible masonry. Loose clutter stays on the lower ground.
+- **Accepted — The §20 always-lit law is implemented at the fixture
+  factor:** `GameTimeDayNightRules.DayFixtureFloor = 2/3` and
+  `FixtureFactor(nightFactor)` carry the story bible's law - every lighting
+  fixture burns always, the day takes at most a third off it, and the fog
+  halo is never taken away - while the raw `NightFactor` remains the SKY's
+  and still reaches zero at noon. Consumers: street-lamp bulb emissives
+  (`CityNightWorldResult`), the lit window families
+  (`CityWindowAppearance` - §20 names the inhabited window a fixture), the
+  glow registry (`DeadGlowFraction` now IS the day floor; the dead tube is
+  repealed), the site-light registry (authored day intensities survive only
+  above the floor; no registered light is ever disabled; halos stay
+  visible), the pooled street/bar/practical realtime lights
+  (`CityNightAtmosphere`, including the lease scan), the vista's distant
+  city windows, the bus cabin plafond (the plafond that moves; headlights
+  and tail lights stay excluded as events), and the summit practicals
+  (`YardLampNightBoost 0.55 → 0.5`, day exactly two thirds). The faulty
+  tunnel practical keeps its flicker ON TOP of the floor - a fault is
+  character, not a schedule. A pooled bus hard-offs its runtime lights and
+  clears its `hasAppliedNightFactor` gate, or a respawn at a constant noon
+  would skip the refresh and hold the plafond dark until dusk.
+  `AlwaysLitLawTests` pins the number, both registries and the mountain
+  ratios; the re-anchored fixture tests pin each consumer.
 - **Accepted — Bounded local fog:** One seeded, player-following
   `CityFogField` adds slowly drifting world-space fog with at most 36 particles
   and a bounded `0.120` peak alpha. It reuses the shared atmosphere material
-  and has no collision, trails or particle lights.
+  and has no collision, trails or particle lights. Every exterior area runs
+  the SAME field — City, Home balcony, Mountain Road and Alpine Village — with
+  its own seed and nothing else changed: no per-area tint, size, rate or
+  gradient, because a zone's own fog is exactly what the art bible forbids.
+  What stays per-area is the Exp2 haze BEHIND it, which the particle shader
+  already mixes into every sheet through `MixFog`. Outside the City the fog's
+  shelter rides `CityWeatherController` rather than a second controller: the
+  mountain road and the village have one shelter predicate each (tunnel plus
+  terminal, station canopy) and the weather owner is already polling it, so
+  the fog is cleared and refilled by the same call that gives the snow its dry
+  core. The City keeps `CityTunnelShelterController` and passes no fog to the
+  weather owner, because there the same event must also hide the ridge shell.
+- **Accepted — The city never dries (city-scene decree):**
+  `CityEternalRainShaper` is the city's own `ICityWeatherShaper` - the seam
+  the mountain and village already shape the shared schedule through. It
+  floors precipitation at `DrizzleIntensity 0.18` (visible rain, clearly
+  under LightRain's `0.45`; wind passes through untouched - drizzle in calm
+  air is a real state of the sky) and is attached to the city's weather
+  controller plus the four direct schedule readers: the city rain field's
+  init, the river's build-time water hook, the bus's wiper intensity and the
+  home balcony's exterior view (which shows the same sky and must agree).
+  The schedule itself is untouched - determinism, kinds, lightning and the
+  areas above keep their own weather, and a "Clear" slot at the mountain's
+  tunnel mouth stays genuinely dry. The shared wet film consequently never
+  reads drier than the drizzle in city scenes, and puddles never dissolve;
+  the drying machinery stays for the slopes between heavy and drizzle.
 - **Accepted — Deterministic slot weather, presentation-only:**
   `GameWeatherRules` is a pure function of the city seed and the absolute
   session minutes: `90`-game-minute slots hash into Clear (`55%`), LightRain

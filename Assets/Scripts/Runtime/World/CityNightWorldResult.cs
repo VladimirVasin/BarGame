@@ -77,10 +77,18 @@ namespace BarPromenade
             CityWindowAppearance.SetNightFactor(nightFactor);
             CityNightGlowRegistry.SetNightFactor(nightFactor);
             CityNightSiteLightRegistry.SetNightFactor(nightFactor);
+
+            // Through the fixture floor, not the raw factor: multiplied
+            // straight by the night factor every mast bulb in the city
+            // rendered pure black from seven to eighteen, and §20 is
+            // explicit that a street lamp is the first thing the law is
+            // about.
+            float bulbFactor =
+                GameTimeDayNightRules.FixtureFactor(nightFactor);
             Color displayedBulbColor = new Color(
-                streetLampBulbNightColor.r * nightFactor,
-                streetLampBulbNightColor.g * nightFactor,
-                streetLampBulbNightColor.b * nightFactor,
+                streetLampBulbNightColor.r * bulbFactor,
+                streetLampBulbNightColor.g * bulbFactor,
+                streetLampBulbNightColor.b * bulbFactor,
                 streetLampBulbNightColor.a);
             for (int index = 0;
                  index < StreetLampBulbRenderers.Count;

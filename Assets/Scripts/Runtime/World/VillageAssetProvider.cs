@@ -16,7 +16,13 @@ namespace BarPromenade
         MineCart = 2,
         AditFrame = 3,
         GraveMarker = 4,
-        Firewood = 5
+        Firewood = 5,
+        TopHouse = 6,
+        FacadeDetail = 7,
+        GarlandPost = 8,
+        CableGate = 9,
+        RailBridge = 10,
+        SourceBowl = 11
     }
 
     /// <summary>
@@ -35,7 +41,14 @@ namespace BarPromenade
         Timber = 6,
         Rubble = 7,
         Stone = 8,
-        Wood = 9
+        Wood = 9,
+        Snow = 10,
+        Shutters = 11,
+        Repair = 12,
+        Bracket = 13,
+        Cable = 14,
+        Rails = 15,
+        Sleepers = 16
     }
 
     /// <summary>
@@ -100,13 +113,14 @@ namespace BarPromenade
     public sealed class VillageAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "Village/VillageAssetProvider";
-        public const string GeneratorVersion = "1.0.0";
-        public const string DesignId = "village_wave1_v1";
-        public const int ExpectedAssemblyCount = 11;
-        public const int ExpectedMeshCount = 27;
+        public const string GeneratorVersion = "2.1.1";
+        public const string DesignId = "village_wave2_v2";
+        public const int ExpectedAssemblyCount = 19;
+        public const int ExpectedMeshCount = 53;
 
         public const int HouseVariantCount = 4;
         public const int GraveMarkerVariantCount = 3;
+        public const int FacadeDetailVariantCount = 3;
 
         [SerializeField] private string designId = DesignId;
         [SerializeField] private string buildSignature = string.Empty;
@@ -131,6 +145,41 @@ namespace BarPromenade
                     if (entries[index] == null || entries[index].Mesh == null)
                     {
                         return false;
+                    }
+                }
+
+                if (GetExpectedMeshTotal() != ExpectedMeshCount)
+                {
+                    return false;
+                }
+
+                // Count plus non-null is not a catalog: 53 duplicated or
+                // mis-keyed rows would otherwise pass and disappear one role
+                // at a time in the world builder. Requiring every expected
+                // tuple while the total is fixed proves exact uniqueness.
+                for (int kindIndex = 0;
+                     kindIndex < SupportedKindCount;
+                     kindIndex++)
+                {
+                    VillageAssetKind kind = GetSupportedKind(kindIndex);
+                    VillageMeshRole[] roles = GetRoles(kind);
+                    for (int variant = 0;
+                         variant < GetVariantCount(kind);
+                         variant++)
+                    {
+                        for (int roleIndex = 0;
+                             roleIndex < roles.Length;
+                             roleIndex++)
+                        {
+                            if (!TryGetPart(
+                                    kind,
+                                    variant,
+                                    roles[roleIndex],
+                                    out _))
+                            {
+                                return false;
+                            }
+                        }
                     }
                 }
 
@@ -179,7 +228,7 @@ namespace BarPromenade
         // the generator's `make_assemblies()` cannot drift apart in silence.
         // ----------------------------------------------------------------
 
-        public static int SupportedKindCount => 6;
+        public static int SupportedKindCount => 12;
 
         public static VillageAssetKind GetSupportedKind(int index)
         {
@@ -191,6 +240,12 @@ namespace BarPromenade
                 case 3: return VillageAssetKind.AditFrame;
                 case 4: return VillageAssetKind.GraveMarker;
                 case 5: return VillageAssetKind.Firewood;
+                case 6: return VillageAssetKind.TopHouse;
+                case 7: return VillageAssetKind.FacadeDetail;
+                case 8: return VillageAssetKind.GarlandPost;
+                case 9: return VillageAssetKind.CableGate;
+                case 10: return VillageAssetKind.RailBridge;
+                case 11: return VillageAssetKind.SourceBowl;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(index));
             }
@@ -204,6 +259,8 @@ namespace BarPromenade
                     return HouseVariantCount;
                 case VillageAssetKind.GraveMarker:
                     return GraveMarkerVariantCount;
+                case VillageAssetKind.FacadeDetail:
+                    return FacadeDetailVariantCount;
                 default:
                     return 1;
             }
@@ -219,14 +276,16 @@ namespace BarPromenade
                         VillageMeshRole.Walls,
                         VillageMeshRole.Roof,
                         VillageMeshRole.Plinth,
-                        VillageMeshRole.Chimney
+                        VillageMeshRole.Chimney,
+                        VillageMeshRole.Snow
                     };
                 case VillageAssetKind.Chapel:
                     return new[]
                     {
                         VillageMeshRole.Walls,
                         VillageMeshRole.Roof,
-                        VillageMeshRole.Plinth
+                        VillageMeshRole.Plinth,
+                        VillageMeshRole.Snow
                     };
                 case VillageAssetKind.MineCart:
                     return new[]
@@ -244,6 +303,42 @@ namespace BarPromenade
                     return new[] { VillageMeshRole.Stone };
                 case VillageAssetKind.Firewood:
                     return new[] { VillageMeshRole.Wood };
+                case VillageAssetKind.TopHouse:
+                    return new[]
+                    {
+                        VillageMeshRole.Walls,
+                        VillageMeshRole.Roof,
+                        VillageMeshRole.Plinth,
+                        VillageMeshRole.Chimney,
+                        VillageMeshRole.Snow
+                    };
+                case VillageAssetKind.FacadeDetail:
+                    return new[]
+                    {
+                        VillageMeshRole.Shutters,
+                        VillageMeshRole.Repair,
+                        VillageMeshRole.Bracket
+                    };
+                case VillageAssetKind.GarlandPost:
+                    return new[]
+                    {
+                        VillageMeshRole.Timber,
+                        VillageMeshRole.Bracket
+                    };
+                case VillageAssetKind.CableGate:
+                    return new[]
+                    {
+                        VillageMeshRole.Timber,
+                        VillageMeshRole.Cable
+                    };
+                case VillageAssetKind.RailBridge:
+                    return new[]
+                    {
+                        VillageMeshRole.Rails,
+                        VillageMeshRole.Sleepers
+                    };
+                case VillageAssetKind.SourceBowl:
+                    return new[] { VillageMeshRole.Stone };
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -256,23 +351,33 @@ namespace BarPromenade
             switch (role)
             {
                 case VillageMeshRole.Walls:
-                    return kind == VillageAssetKind.Chapel
+                    return kind == VillageAssetKind.Chapel ||
+                           kind == VillageAssetKind.TopHouse
                         ? MountainRoadSurfaceKind.Masonry
                         : MountainRoadSurfaceKind.Timber;
                 case VillageMeshRole.Roof:
                 case VillageMeshRole.Timber:
+                case VillageMeshRole.Shutters:
+                case VillageMeshRole.Sleepers:
                     return MountainRoadSurfaceKind.Timber;
                 case VillageMeshRole.Plinth:
                 case VillageMeshRole.Rubble:
                 case VillageMeshRole.Stone:
                     return MountainRoadSurfaceKind.LayeredStone;
                 case VillageMeshRole.Chimney:
+                case VillageMeshRole.Repair:
                     return MountainRoadSurfaceKind.Masonry;
                 case VillageMeshRole.Body:
                 case VillageMeshRole.Wheels:
                     return MountainRoadSurfaceKind.RustedIron;
                 case VillageMeshRole.Wood:
                     return MountainRoadSurfaceKind.BarkAndDeadwood;
+                case VillageMeshRole.Snow:
+                    return MountainRoadSurfaceKind.WindSnow;
+                case VillageMeshRole.Bracket:
+                case VillageMeshRole.Cable:
+                case VillageMeshRole.Rails:
+                    return MountainRoadSurfaceKind.RustedIron;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(role));
             }

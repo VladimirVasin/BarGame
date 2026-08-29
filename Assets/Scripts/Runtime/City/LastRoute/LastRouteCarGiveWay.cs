@@ -73,13 +73,61 @@ namespace BarPromenade
         /// swallowed, the drive model's own convention.</summary>
         public const float MaximumStepSeconds = 0.1f;
 
+        /// <summary>
+        /// How far short of the first conflict the car is asked to stand.
+        /// The conflict point itself already sits <see
+        /// cref="BusClearanceMeters"/> off the other body, so the standing
+        /// nose-to-tail gap is this plus that, less whatever a late hold
+        /// overspends at maximum braking.
+        ///
+        /// It is also half of what keeps the street deadlock-free, and the
+        /// arithmetic is pinned by a test. The bus never brakes for this car
+        /// - only for walkers and for the HERO, whom it looks for within
+        /// `1.71 m` of its own lane line. The hero is riding this car, so a
+        /// hold has to park him OUTSIDE that corridor or the two vehicles
+        /// stand braked for each other at a junction with nobody crossing
+        /// anything: `6 + 2.7` less two metres of worst overshoot leaves the
+        /// nose `6.7 m` clear of the bus's line, and the hero behind it
+        /// further still.
+        /// </summary>
+        public const float TrafficFollowGapMeters = 6f;
+
+        /// <summary>
+        /// How far down his own road the driver watches for traffic. The bus
+        /// director's own shape: never less than a town block, and always
+        /// past what the car needs to stop from its current speed.
+        /// </summary>
+        public const float MinimumTrafficHorizonMeters = 16f;
+
+        /// <summary>
+        /// The step the conflict probe walks the path at. The corridor
+        /// threshold is `2.7 m`; on the tightest rounded corner (`~3.2 m`
+        /// apex radius) a two-metre chord sags `0.16 m` under the arc, which
+        /// the threshold absorbs without noticing.
+        /// </summary>
+        public const float TrafficProbeStepMeters = 2f;
+
+        /// <summary>
+        /// The room a driver leaves a walker who is IN THE ROAD, on top of
+        /// the walker's own radius. Deliberately tighter than the crossing's
+        /// `1.35`: that one guards a turn that legitimately sweeps the
+        /// pavement, while this one guards the lane itself - and a walker
+        /// waiting at a bus stop stands `1.74 m` off the lane line, so
+        /// anything looser reads the whole pavement as jaywalkers. Half this
+        /// car with mirrors is `1.05`; the rest is the margin.
+        /// </summary>
+        public const float LanePedestrianClearanceMeters = 1.2f;
+
         private LastRouteCarDriver driver;
         private CityBusDirector buses;
         private CityPedestrianDirector pedestrians;
         private LastRouteCarGiveWayPoint crossing;
         private LastRouteCarGiveWayModel decision;
+        private LastRouteCarTrafficYieldModel traffic;
+        private LastRouteCarDrivePath road;
         private Vector3 approach = Vector3.forward;
         private bool finished;
+        private bool announcedWaitedOut;
 
         /// <summary>Raised once, when he pulls out. The reason is the drive
         /// model's own vocabulary: `clear`, `too_late` or `waited_out`.
@@ -90,6 +138,10 @@ namespace BarPromenade
         public bool IsCommitted => decision != null && decision.IsCommitted;
         public LastRouteCarGiveWayPoint Crossing => crossing;
         public LastRouteCarGiveWayModel Decision => decision;
+
+        /// <summary>The everywhere-else rule: easing off for a bus or a
+        /// walker on his own road, all the way down the leg.</summary>
+        public LastRouteCarTrafficYieldModel Traffic => traffic;
 
         /// <summary>
         /// Puts one on the car for the road it is about to drive, or returns
@@ -113,8 +165,10 @@ namespace BarPromenade
             giveWay.buses = busDirector;
             giveWay.pedestrians = pedestrianDirector;
             giveWay.crossing = path.GiveWay;
+            giveWay.road = path;
             giveWay.decision =
                 new LastRouteCarGiveWayModel(path.GiveWay.Distance);
+            giveWay.traffic = new LastRouteCarTrafficYieldModel();
 
             // Which way the car is pointing while it waits, taken once. It is
             // what tells a bus coming the other way from one going the same
@@ -141,7 +195,7 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (finished || driver == null || decision == null)
+            if (driver == null || decision == null)
             {
                 return;
             }
@@ -152,29 +206,125 @@ namespace BarPromenade
                 return;
             }
 
-            float hold = decision.Advance(
-                Mathf.Min(Time.deltaTime, MaximumStepSeconds),
+            float step = Mathf.Min(Time.deltaTime, MaximumStepSeconds);
+
+            // The crossing's one decision, until it is made; the traffic
+            // rule for the whole of the leg. The model has ONE hold slot and
+            // two writers calling SetHold are last-writer-wins, so this
+            // component is the single writer and the slot takes the nearer
+            // of the two answers.
+            float crossingHold = float.PositiveInfinity;
+            if (!finished)
+            {
+                crossingHold = decision.Advance(
+                    step,
+                    model.Distance,
+                    model.Speed,
+                    model.Profile.Braking,
+                    IsWayClear());
+            }
+
+            float trafficHold = traffic.Advance(
+                step,
                 model.Distance,
                 model.Speed,
                 model.Profile.Braking,
-                IsWayClear());
-            model.SetHold(hold);
-            if (!decision.IsCommitted)
+                FindNearestTrafficConflict(model.Distance, model.Speed));
+            if (traffic.IsWaitedOut && !announcedWaitedOut)
+            {
+                announcedWaitedOut = true;
+                GameLog.Info(
+                    "lastroute",
+                    "car_traffic_waited_out",
+                    GameLog.Field("waited", traffic.WaitedSeconds),
+                    GameLog.Field("distance", model.Distance));
+            }
+            else if (!traffic.IsWaitedOut)
+            {
+                announcedWaitedOut = false;
+            }
+
+            model.SetHold(Mathf.Min(crossingHold, trafficHold));
+            if (finished || !decision.IsCommitted)
             {
                 return;
             }
 
-            // The decision is made once. Past it the car is in the turn and
-            // the crossing is behind it, so there is nothing left to watch
-            // and nothing this could usefully do but get in the way.
+            // The crossing's decision is made once. Past it the car is in
+            // the turn and that segment is behind it; the traffic rule
+            // drives on.
             finished = true;
-            model.ReleaseHold();
             GameLog.Info(
                 "lastroute",
                 "car_gave_way",
                 GameLog.Field("reason", decision.CommitReason),
                 GameLog.Field("waited", decision.WaitedSeconds));
             Committed?.Invoke(decision.CommitReason);
+        }
+
+        /// <summary>
+        /// The nearest thing on his own road he should not drive into, as a
+        /// hold distance for the traffic model - or infinity when the road
+        /// ahead is his.
+        /// </summary>
+        private float FindNearestTrafficConflict(
+            float carDistance,
+            float carSpeed)
+        {
+            float braking = driver.Model.Profile.Braking;
+            float stopping = braking > 0.0001f
+                ? (carSpeed * carSpeed) / (2f * braking)
+                : 0f;
+            float horizon = Mathf.Max(
+                MinimumTrafficHorizonMeters,
+                stopping + carSpeed + 4f);
+
+            float conflict = float.PositiveInfinity;
+            CityBusActor bus = buses != null ? buses.Actor : null;
+            if (bus != null && bus.IsSpawned)
+            {
+                conflict = FindBusPathConflict(
+                    road,
+                    carDistance,
+                    horizon,
+                    bus.Position,
+                    bus.TravelDirection,
+                    bus.Speed,
+                    ResolveHalfLength(bus));
+            }
+
+            if (pedestrians != null)
+            {
+                IReadOnlyList<CityPedestrianActor> actors =
+                    pedestrians.Actors;
+                for (int index = 0; index < actors.Count; index++)
+                {
+                    CityPedestrianActor walker = actors[index];
+                    // Route-bound walkers wait on the pavement for a bus,
+                    // the crossing's own exclusion for the same reason.
+                    if (walker == null ||
+                        !walker.IsSpawned ||
+                        walker.IsRouteBound)
+                    {
+                        continue;
+                    }
+
+                    conflict = Mathf.Min(
+                        conflict,
+                        FindWalkerPathConflict(
+                            road,
+                            carDistance,
+                            horizon,
+                            walker.Position,
+                            walker.TravelDirection,
+                            walker.MovementSpeed,
+                            walker.AgentRadius));
+                }
+            }
+
+            return float.IsPositiveInfinity(conflict)
+                ? float.PositiveInfinity
+                : Mathf.Max(0f, conflict - TrafficFollowGapMeters);
         }
 
         private bool IsBusCrossing()
@@ -314,6 +464,153 @@ namespace BarPromenade
                                  (Mathf.Max(0f, speed) *
                                   PedestrianPredictionSeconds));
             return PointDistance(crossing, predicted) < limit;
+        }
+
+        /// <summary>
+        /// Where along his own road the bus first stands in the car's way,
+        /// or infinity. The bus is taken as the segment from its tail to a
+        /// nose swept a breath ahead - a driver reads a moving bus by where
+        /// it is about to be - and the road as chords walked at
+        /// <see cref="TrafficProbeStepMeters"/> from the car to the horizon.
+        ///
+        /// There is deliberately NO same-way exclusion here, unlike the
+        /// crossing's sweep: on his own road the same-way bus ahead is the
+        /// most probable collision partner - it dwells ten seconds in the
+        /// very lane line he drives, and he closes on it at two metres a
+        /// second. What keeps lawful oncoming traffic out is the corridor
+        /// itself: the opposite lane runs three metres off his, past the
+        /// `2.7 m` threshold.
+        ///
+        /// Pure and static so the geometry can be asserted without a city.
+        /// </summary>
+        public static float FindBusPathConflict(
+            LastRouteCarDrivePath path,
+            float carDistance,
+            float horizonMeters,
+            Vector3 busPosition,
+            Vector3 busTravel,
+            float busSpeed,
+            float busHalfLength)
+        {
+            if (path == null)
+            {
+                return float.PositiveInfinity;
+            }
+
+            Vector3 travel = Flatten(busTravel);
+            Vector3 tail;
+            Vector3 nose;
+            if (travel.sqrMagnitude < 0.000001f)
+            {
+                tail = busPosition;
+                nose = busPosition;
+            }
+            else
+            {
+                travel = travel.normalized;
+                tail = busPosition -
+                       (travel * Mathf.Max(0f, busHalfLength));
+                nose = busPosition +
+                       (travel *
+                        (Mathf.Max(0f, busHalfLength) +
+                         (Mathf.Max(0f, busSpeed) *
+                          PedestrianPredictionSeconds)));
+            }
+
+            float end = Mathf.Min(
+                path.Length,
+                carDistance + Mathf.Max(0f, horizonMeters));
+
+            // The probe grid is anchored to the ROAD, never to the car. A
+            // grid walked from the car's own distance creeps forward with
+            // it, the conflict and the hold creep too, and the car chases
+            // its own quantisation toward the bus at half a metre a second
+            // instead of stopping - the test that pinned this watched it
+            // crawl the whole follow gap.
+            for (float along = GridStart(carDistance);
+                 along < end;
+                 along += TrafficProbeStepMeters)
+            {
+                float next = Mathf.Min(end, along + TrafficProbeStepMeters);
+                path.Sample(along, out Vector3 from, out _);
+                path.Sample(next, out Vector3 to, out _);
+                if (SegmentDistance(from, to, tail, nose) <
+                    BusClearanceMeters)
+                {
+                    return along;
+                }
+            }
+
+            return float.PositiveInfinity;
+        }
+
+        /// <summary>The first road-anchored grid line at or behind the car.
+        /// </summary>
+        private static float GridStart(float carDistance)
+        {
+            return Mathf.Floor(
+                       Mathf.Max(0f, carDistance) /
+                       TrafficProbeStepMeters) *
+                   TrafficProbeStepMeters;
+        }
+
+        /// <summary>
+        /// Where along his own road a walker first stands in the car's way,
+        /// or infinity. The walker counts where he is and where his own pace
+        /// puts him a second and a bit on - the crossing's rule - against a
+        /// corridor of <see cref="LanePedestrianClearanceMeters"/> plus his
+        /// radius either side of the lane line. Pure and static, like the
+        /// bus probe.
+        /// </summary>
+        public static float FindWalkerPathConflict(
+            LastRouteCarDrivePath path,
+            float carDistance,
+            float horizonMeters,
+            Vector3 position,
+            Vector3 travelDirection,
+            float speed,
+            float radius)
+        {
+            if (path == null)
+            {
+                return float.PositiveInfinity;
+            }
+
+            float limit = LanePedestrianClearanceMeters +
+                          Mathf.Max(0f, radius);
+            Vector3 now = Flatten(position);
+            Vector3 travel = Flatten(travelDirection);
+            Vector3 predicted = travel.sqrMagnitude > 0.000001f
+                ? now + (travel.normalized *
+                         (Mathf.Max(0f, speed) *
+                          PedestrianPredictionSeconds))
+                : now;
+
+            float end = Mathf.Min(
+                path.Length,
+                carDistance + Mathf.Max(0f, horizonMeters));
+
+            // Road-anchored grid, the bus probe's own lesson.
+            for (float along = GridStart(carDistance);
+                 along < end;
+                 along += TrafficProbeStepMeters)
+            {
+                float next = Mathf.Min(end, along + TrafficProbeStepMeters);
+                path.Sample(along, out Vector3 from, out _);
+                path.Sample(next, out Vector3 to, out _);
+                Vector3 a = Flatten(from);
+                Vector3 b = Flatten(to);
+                if (Vector3.Distance(now, ClosestOnSegment(a, b, now)) <
+                    limit ||
+                    Vector3.Distance(
+                        predicted,
+                        ClosestOnSegment(a, b, predicted)) < limit)
+                {
+                    return along;
+                }
+            }
+
+            return float.PositiveInfinity;
         }
 
         /// <summary>

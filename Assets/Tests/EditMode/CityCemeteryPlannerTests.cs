@@ -463,29 +463,35 @@ namespace BarPromenade.Tests.EditMode
 
                 try
                 {
+                    // §20: every fixture burns always, and the day takes
+                    // at most a third off it. The alley lamps used to die
+                    // at dawn and the porch bulb dropped to a 23% day
+                    // filament; both readings are repealed - the registry
+                    // now enforces the two-thirds floor for everything it
+                    // holds.
+                    var nightStrength =
+                        new System.Collections.Generic
+                            .Dictionary<Light, float>();
+                    foreach (Light light in lights)
+                    {
+                        nightStrength[light] = light.intensity;
+                    }
+
                     CityNightSiteLightRegistry.SetNightFactor(0f);
                     foreach (Light light in lights)
                     {
-                        // The lodge's porch bulb is the one fixture
-                        // nobody switches off: it drops to its day
-                        // filament instead of dying with the rest.
-                        bool isPorchBulb =
-                            light.name == "Porch Lamp Light";
                         Assert.That(
                             light.enabled,
-                            Is.EqualTo(isPorchBulb),
-                            isPorchBulb
-                                ? "The porch bulb burns around the clock."
-                                : "Cemetery alley lamps die by day.");
-                        if (isPorchBulb)
-                        {
-                            Assert.That(
-                                light.intensity,
-                                Is.EqualTo(
-                                    CityCemeteryWorldBuilder
-                                        .PorchDayIntensity)
-                                    .Within(0.01f));
-                        }
+                            Is.True,
+                            "No cemetery fixture dies by day any more.");
+                        Assert.That(
+                            light.intensity,
+                            Is.GreaterThanOrEqualTo(
+                                nightStrength[light] *
+                                GameTimeDayNightRules.DayFixtureFloor -
+                                0.01f),
+                            "The day takes a third off a fixture, " +
+                            "no more.");
                     }
                 }
                 finally

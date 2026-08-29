@@ -758,6 +758,12 @@ namespace BarPromenade
                     out float radius);
                 if (roadDistance <
                         halfWidth + radius + ForestRoadClearance ||
+                    MountainRoadCompositionRules.IsReservedForestOpening(
+                        route,
+                        plateau,
+                        layer,
+                        point,
+                        radius) ||
                     IntersectsRidgeFootprint(point, radius, ridges) ||
                     !HasSpacing(accepted, point, spacing))
                 {
@@ -858,82 +864,91 @@ namespace BarPromenade
             MountainRoadPlateauDescriptor plateau)
         {
             var result = new List<MountainRoadMiscDescriptor>(180);
+            AddAuthoredRoadsideObjects(result, tunnel, route, plateau);
+
+            // Pack the tallest/widest imported silhouettes first. Their
+            // visible branches scale by height, so leaving them until after
+            // a hundred small props can exhaust every bounded candidate.
+            const int deadTreeCount = 16;
+            for (int index = 0; index < deadTreeCount; index++)
+            {
+                const uint placementSalt = 0x44454144u;
+                result.Add(MountainRoadCompositionRules.PlaceNaturalMisc(
+                    $"misc-dead-tree-{index:00}",
+                    MountainRoadMiscKind.DeadTree,
+                    route,
+                    plateau,
+                    result,
+                    seed,
+                    index,
+                    placementSalt,
+                    7.1f,
+                    9.2f,
+                    new Vector3(0.72f, 8.2f + index * 0.45f, 0.72f),
+                    true));
+            }
+
             const int boulderCount = 54;
             for (int index = 0; index < boulderCount; index++)
             {
-                float distance = 3f + Unit(seed, index, 0x424F554Cu) *
-                                 (route.Length - 18f);
-                float side = (index & 1) == 0 ? -1f : 1f;
-                float lateral = 4.2f + Unit(seed, index, 0x4C415445u) * 4f;
+                const uint placementSalt = 0x424F554Cu;
                 Vector3 size = new Vector3(
                     1.2f + Unit(seed, index, 0x42585A21u) * 1.8f,
                     0.8f + Unit(seed, index, 0x42592121u) * 1.3f,
                     1.2f + Unit(seed, index, 0x42585A22u) * 1.8f);
-                result.Add(PlaceMisc(
+                result.Add(MountainRoadCompositionRules.PlaceNaturalMisc(
                     $"misc-boulder-{index:00}",
                     MountainRoadMiscKind.Boulder,
                     route,
                     plateau,
-                    distance,
-                    side,
-                    lateral,
+                    result,
+                    seed,
+                    index,
+                    placementSalt,
+                    4.2f,
+                    8.2f,
                     size,
-                    true,
-                    Unit(seed, index, 0x42594157u) * 360f));
+                    true));
             }
 
             const int logCount = 24;
             for (int index = 0; index < logCount; index++)
             {
-                result.Add(PlaceMisc(
+                const uint placementSalt = 0x4C4F4721u;
+                result.Add(MountainRoadCompositionRules.PlaceNaturalMisc(
                     $"misc-fallen-log-{index:00}",
                     MountainRoadMiscKind.FallenLog,
                     route,
                     plateau,
-                    7f + index *
-                    ((route.Length - 37f) / (logCount - 1f)),
-                    (index & 1) == 0 ? -1f : 1f,
-                    6.2f + (index % 3) * 0.8f,
+                    result,
+                    seed,
+                    index,
+                    placementSalt,
+                    5.9f,
+                    8.7f,
                     new Vector3(0.68f, 0.68f, 4.6f + (index % 2) * 0.9f),
-                    true,
-                    index * 37f + 18f));
+                    true));
             }
 
             const int stumpCount = 28;
             for (int index = 0; index < stumpCount; index++)
             {
-                result.Add(PlaceMisc(
+                const uint placementSalt = 0x5354554Du;
+                result.Add(MountainRoadCompositionRules.PlaceNaturalMisc(
                     $"misc-stump-{index:00}",
                     MountainRoadMiscKind.Stump,
                     route,
                     plateau,
-                    4f + index *
-                    ((route.Length - 28f) / (stumpCount - 1f)),
-                    (index & 1) == 0 ? 1f : -1f,
-                    5.4f + (index % 4) * 0.7f,
+                    result,
+                    seed,
+                    index,
+                    placementSalt,
+                    5.1f,
+                    8f,
                     new Vector3(0.88f, 1.05f, 0.88f),
-                    true,
-                    index * 29f));
+                    true));
             }
 
-            const int deadTreeCount = 16;
-            for (int index = 0; index < deadTreeCount; index++)
-            {
-                result.Add(PlaceMisc(
-                    $"misc-dead-tree-{index:00}",
-                    MountainRoadMiscKind.DeadTree,
-                    route,
-                    plateau,
-                    21f + index *
-                    ((route.Length - 55f) / (deadTreeCount - 1f)),
-                    (index & 1) == 0 ? -1f : 1f,
-                    7.8f,
-                    new Vector3(0.72f, 8.2f + index * 0.45f, 0.72f),
-                    true,
-                    index * 51f));
-            }
-
-            AddAuthoredRoadsideObjects(result, tunnel, route, plateau);
             return result;
         }
 
@@ -1000,7 +1015,7 @@ namespace BarPromenade
                 MountainRoadMiscKind.AbandonedChair,
                 route,
                 plateau,
-                route.Length * 0.42f,
+                MountainRoadCompositionRules.AbandonedChairDistance(route),
                 -1f,
                 4.1f,
                 new Vector3(0.82f, 1.1f, 0.82f),
@@ -1009,13 +1024,15 @@ namespace BarPromenade
 
             for (int index = 0; index < route.Hairpins.Count; index++)
             {
+                MountainRoadHairpinDescriptor hairpin =
+                    route.Hairpins[index];
                 result.Add(PlaceMisc(
                     $"misc-guardrail-{index}",
                     MountainRoadMiscKind.GuardRail,
                     route,
                     plateau,
-                    route.Hairpins[index].StartDistance + 4.2f,
-                    -1f,
+                    hairpin.StartDistance + 4.2f,
+                    -hairpin.TurnSide,
                     4.2f,
                     new Vector3(0.22f, 1.05f, 6.4f),
                     true,
@@ -1053,7 +1070,7 @@ namespace BarPromenade
             }
         }
 
-        private static MountainRoadMiscDescriptor PlaceMisc(
+        internal static MountainRoadMiscDescriptor PlaceMisc(
             string stableId,
             MountainRoadMiscKind kind,
             MountainRoadRoutePlan route,
@@ -1290,24 +1307,48 @@ namespace BarPromenade
                     seed + 2000 + index * 131));
             }
 
+            // The ridge that swallows the upper turn. Its setback and its
+            // depth are the cableway plan's own constants, not literals here,
+            // because the RIDE reads them too: the screen has to be fully out
+            // before the cabin reaches this near face, and for a long time it
+            // was not, because these numbers and the fade's were chosen apart.
             MountainRoadCablewayPlan cableway = terminal.Cableway;
             Vector3 cableEnd = cableway.UpperCableCenter;
             Vector2 occluderCenter = new Vector2(
-                cableEnd.x - cableway.LineForward.x * 1.8f,
-                cableEnd.z - cableway.LineForward.z * 1.8f);
+                cableEnd.x - cableway.LineForward.x *
+                MountainRoadCablewayPlan.UpperOccluderSetback,
+                cableEnd.z - cableway.LineForward.z *
+                MountainRoadCablewayPlan.UpperOccluderSetback);
             float occluderYaw = Mathf.Atan2(
                 -cableway.LineForward.x,
                 -cableway.LineForward.z) * Mathf.Rad2Deg;
-            Vector3 occluderSize = new Vector3(30f, 33f, 10f);
+            Vector3 occluderSize = new Vector3(
+                30f,
+                33f,
+                MountainRoadCablewayPlan.UpperOccluderDepth);
             float occluderBase = CalculateRidgeBaseY(
                 route,
                 plateau,
                 occluderCenter,
                 occluderSize,
                 occluderYaw);
+            // Sized against the crest that gets DRAWN, not against the lid of
+            // the box it is authored in. The two are far apart - a ridge is a
+            // polygonal sine and its middle sits about `14%` of the box below
+            // the lid - and the variation is a seeded eighth, so a ridge that
+            // clears the cable on seven seeds sits `0.34 m` under it on the
+            // eighth. Solving for the drawn crest costs `0.41 m` of height on
+            // that one seed and nothing at all on the others.
+            int occluderSeed = seed + 4099;
+            float crestFactor = MountainRoadRidgeGeometry.CrestFactor(
+                occluderSeed,
+                0.5f);
             occluderSize.y = Mathf.Max(
                 occluderSize.y,
-                cableEnd.y + 2f - occluderBase);
+                (cableEnd.y +
+                 MountainRoadCablewayPlan.UpperOccluderCrestClearance +
+                 0.25f -
+                 occluderBase) / crestFactor);
             result.Add(new MountainRoadRidgeDescriptor(
                 cableway.UpperOccluderStableId,
                 MountainRoadRidgeLayer.FarSnow,
@@ -1317,7 +1358,7 @@ namespace BarPromenade
                     occluderCenter.y),
                 occluderSize,
                 occluderYaw,
-                seed + 4099));
+                occluderSeed));
 
             return result;
         }

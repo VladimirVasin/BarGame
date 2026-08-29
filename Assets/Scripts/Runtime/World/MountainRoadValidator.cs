@@ -582,6 +582,9 @@ namespace BarPromenade
             int physical = 0;
             int mid = 0;
             int far = 0;
+            int physicalPalettes = 0;
+            int midPalettes = 0;
+            int farPalettes = 0;
             var ids = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < plan.Forest.Count; index++)
             {
@@ -595,7 +598,8 @@ namespace BarPromenade
 
                 RequireFinite(tree.Position, tree.StableId);
                 if (tree.Height < 6.9f || tree.Height > 20.6f ||
-                    tree.CrownRadius < 1.25f || tree.CrownRadius > 3.85f)
+                    tree.CrownRadius < 1.25f || tree.CrownRadius > 3.85f ||
+                    tree.PaletteIndex < 0 || tree.PaletteIndex > 2)
                 {
                     throw new InvalidOperationException(
                         $"{tree.StableId} has an invalid low-poly envelope.");
@@ -636,10 +640,22 @@ namespace BarPromenade
                         $"{tree.StableId} enters the road clearance.");
                 }
 
+                if (MountainRoadCompositionRules.IsReservedForestOpening(
+                        plan.Route,
+                        plan.Plateau,
+                        tree.Layer,
+                        point,
+                        tree.CrownRadius))
+                {
+                    throw new InvalidOperationException(
+                        $"{tree.StableId} fills an authored road reveal.");
+                }
+
                 switch (tree.Layer)
                 {
                     case MountainRoadForestLayer.Physical:
                         physical++;
+                        physicalPalettes |= 1 << tree.PaletteIndex;
                         if (!tree.BlocksMovement)
                         {
                             throw new InvalidOperationException(
@@ -648,6 +664,7 @@ namespace BarPromenade
                         break;
                     case MountainRoadForestLayer.Mid:
                         mid++;
+                        midPalettes |= 1 << tree.PaletteIndex;
                         if (tree.BlocksMovement)
                         {
                             throw new InvalidOperationException(
@@ -656,6 +673,7 @@ namespace BarPromenade
                         break;
                     case MountainRoadForestLayer.Far:
                         far++;
+                        farPalettes |= 1 << tree.PaletteIndex;
                         if (tree.BlocksMovement)
                         {
                             throw new InvalidOperationException(
@@ -673,6 +691,14 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "Forest layer budgets drifted outside the authored range.");
+            }
+
+            if (physicalPalettes != 0b111 ||
+                midPalettes != 0b111 ||
+                farPalettes != 0b111)
+            {
+                throw new InvalidOperationException(
+                    "Every forest depth needs all three crown variants.");
             }
         }
 
@@ -717,6 +743,8 @@ namespace BarPromenade
                         $"{semanticObjects[index]}.");
                 }
             }
+            ValidateRoadsideComposition(plan, byId);
+            ValidateNaturalMiscClearance(plan);
 
             var soundIds = new HashSet<string>(StringComparer.Ordinal);
             for (int index = 0; index < plan.SoundAnchors.Count; index++)
@@ -748,6 +776,144 @@ namespace BarPromenade
                 throw new InvalidOperationException(
                     "The authored area exposes exactly nine causal " +
                     "sound anchors: five on the road, four on the summit.");
+            }
+        }
+
+        private static void ValidateRoadsideComposition(
+            MountainRoadPlan plan,
+            IReadOnlyDictionary<string, MountainRoadMiscDescriptor> byId)
+        {
+            for (int index = 0;
+                 index < plan.Route.Hairpins.Count;
+                 index++)
+            {
+                string stableId = $"misc-guardrail-{index}";
+                if (!byId.TryGetValue(
+                        stableId,
+                        out MountainRoadMiscDescriptor rail))
+                {
+                    throw new InvalidOperationException(
+                        $"Hairpin {index} is missing its outer guardrail.");
+                }
+
+                MountainRoadHairpinDescriptor hairpin =
+                    plan.Route.Hairpins[index];
+                MountainRoadRouteSample sample = plan.Route.Sample(
+                    hairpin.StartDistance + 4.2f);
+                float side = Mathf.Sign(Vector3.Dot(
+                    rail.Position - sample.Position,
+                    sample.Right));
+                if (side != -hairpin.TurnSide)
+                {
+                    throw new InvalidOperationException(
+                        $"{stableId} stands on the inner hairpin bank.");
+                }
+
+                for (int across = -1; across <= 1; across += 2)
+                {
+                    for (int along = -1; along <= 1; along += 2)
+                    {
+                        Vector3 corner = rail.Position + rail.Rotation *
+                            new Vector3(
+                                across * rail.Size.x * 0.5f,
+                                0f,
+                                along * rail.Size.z * 0.5f);
+                        MountainRoadTerrainSampler.FindClosest(
+                            plan.Route,
+                            ToXZ(corner),
+                            out float distance,
+                            out _,
+                            out _,
+                            out float halfWidth);
+                        if (distance + PositionTolerance <
+                            halfWidth + 0.05f)
+                        {
+                            throw new InvalidOperationException(
+                                $"{stableId} enters the road corridor.");
+                        }
+                    }
+                }
+            }
+
+            if (!byId.TryGetValue(
+                    "misc-abandoned-chair",
+                    out MountainRoadMiscDescriptor chair))
+            {
+                throw new InvalidOperationException(
+                    "The upper road lost its abandoned chair.");
+            }
+
+            MountainRoadBridgeDescriptor bridge = plan.Bridge;
+            Vector3 delta = chair.Position - bridge.Start;
+            float bridgeAlong = Vector3.Dot(delta, bridge.Forward);
+            float bridgeLateral = Mathf.Abs(
+                Vector3.Dot(delta, bridge.Right));
+            if (bridgeAlong > 0f && bridgeAlong < bridge.Length &&
+                bridgeLateral < bridge.GorgeHalfWidth)
+            {
+                throw new InvalidOperationException(
+                    "The abandoned chair fell into the bridge gorge.");
+            }
+
+            float expectedChairY = MountainRoadTerrainSampler.SampleHeight(
+                plan.Route,
+                plan.Plateau,
+                ToXZ(chair.Position)) + chair.Size.y * 0.5f;
+            RequireApproximately(
+                chair.Position.y,
+                expectedChairY,
+                "Abandoned chair grounding");
+
+            for (int index = 0; index < plan.Misc.Count; index++)
+            {
+                MountainRoadMiscDescriptor other = plan.Misc[index];
+                if (other.StableId == chair.StableId)
+                {
+                    continue;
+                }
+
+                if (!MountainRoadCompositionRules
+                        .HaveMiscFootprintClearance(chair, other))
+                {
+                    throw new InvalidOperationException(
+                        $"The abandoned chair overlaps {other.StableId}.");
+                }
+            }
+        }
+
+        private static void ValidateNaturalMiscClearance(
+            MountainRoadPlan plan)
+        {
+            for (int firstIndex = 0;
+                 firstIndex < plan.Misc.Count;
+                 firstIndex++)
+            {
+                MountainRoadMiscDescriptor first = plan.Misc[firstIndex];
+                if (!MountainRoadCompositionRules.IsNaturalMiscKind(
+                        first.Kind))
+                {
+                    continue;
+                }
+
+                for (int secondIndex = 0;
+                     secondIndex < plan.Misc.Count;
+                     secondIndex++)
+                {
+                    if (firstIndex == secondIndex)
+                    {
+                        continue;
+                    }
+
+                    MountainRoadMiscDescriptor second =
+                        plan.Misc[secondIndex];
+                    if (!MountainRoadCompositionRules
+                            .HaveMiscFootprintClearance(first, second))
+                    {
+                        throw new InvalidOperationException(
+                            $"{first.StableId} overlaps " +
+                            $"{second.StableId}.");
+                    }
+                }
             }
         }
 

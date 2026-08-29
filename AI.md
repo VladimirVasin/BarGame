@@ -111,17 +111,18 @@ north or east boundary. The sparse
 footprint can be non-rectangular, and the same data-first area contract supports
 reordered urban areas.
 
-The build now has ten explicit scenes. `MountainRoad` is appended at index
+The build now has eleven explicit scenes. `MountainRoad` is appended at index
 `7` as the sixth gameplay root, `AreaLoading` at index `8` as a black,
-progress-bar-only transfer boundary, and `ChurchInterior` at index `9` as the
-seventh gameplay root. The City and mountain worlds are each
+progress-bar-only transfer boundary, `ChurchInterior` at index `9` as the
+seventh gameplay root, and `AlpineVillage` at index `10` as the eighth. City,
+Mountain Road and Alpine Village are each
 runtime-composed after a Single-mode load and are never resident or rendered
-together. The ordinary map has switchable City/Mountain Road tabs; confirming
+together. The ordinary map has switchable City/Mountain Road/Village tabs; confirming
 the other area unloads the source into `AreaLoading` and then loads the chosen
 destination. `MountainRoad` generates a pure City layout only for the City tab,
 never City GameObjects. Its hero starts `6 m` inside a `9 m` exit tunnel and
-follows a `600 m` continuous car-scale ascent (about `230.8 s`, or `3 min
-51 s`, at the normal `2.6 m/s`). The ribbon rises `26.1 m` at no more than an
+follows a `620 m` continuous car-scale ascent (about `238.5 s`, or `3 min
+58 s`, at the normal `2.6 m/s`). The ribbon rises `26.1 m` at no more than an
 `8%` grade: ordinary stretches are `4.8 m` wide and ten `7.5 m`-radius
 hairpins widen to `6.4 m`; the final `5 m` are level. Midway, the route must
 cross one `50 m`-long high mountain bridge with a `5.8 m` structural deck around
@@ -142,12 +143,17 @@ terminal instead of old absolute world heights. Both are built inside the
 Mountain Road world, not as additional scenes, and add only sounds owned by
 visible appliances, machinery and roller crossings. Their landmarks come from
 the same terminal plan used by the map, which now shows all ten hairpins and
-the bridge. Layered forest, grounded melancholy roadside objects, mid ridges
-and far snowy mountains are distributed over the full route. Eight of the
+the bridge. Layered forest uses three deterministic crown silhouettes and
+yields at three measured bends, the bridge and the terminal approach, while
+the surrounding far stand and both ridge rings keep every road reveal from
+becoming a second vista. Natural debris gathers into five unequal roadside
+chapters with deliberate gaps around those structural beats and a shared
+conservative footprint clearance against all existing roadside furniture.
+Eight of the
 twelve roadside-misc kinds — `102` of `159` placements — now render from a
 deterministic `19`-mesh Blender library combined into `12` runtime batches;
-their plan-owned transforms, semantic roots and collision proxies did not
-move. Boulders, the culvert, utility cable and tunnel lamp remain the explicit
+their semantic roots, placement and collision proxies remain plan-owned.
+Boulders, the culvert, utility cable and tunnel lamp remain the explicit
 later migration wave. Nine causal sound
 anchors remain, five on the road including the loose bridge rail and four on
 the summit, and one tunnel lamp visibly flickers.
@@ -170,12 +176,42 @@ it. One mercury practical burns over the freight dock; the brink stays dark.
 The hero can sit on the bench or on the cafe's one free stool, and the Ferryman
 answers up here at last: a repertoire and never an offer, because the road has
 ended.
-For now the City tunnel still refuses passage; only the map invokes this area
-transfer. LastRouteCar still has no Mountain Road driving controller.
+For now the City tunnel still refuses passage on foot. The Ferryman's
+LastRouteCar crosses it as the story-owned transition and drives the same
+planned road to the terminal; the map remains the ordinary area transfer.
+
+Above the cableway, `AlpineVillage` is one gently crooked `82 m` uphill axis
+from the return station to the unique top house. Twelve houses form authored
+clusters and pauses rather than an alternating subdivision; their rotated
+footprints use exact OBB validation, three authored rear-row depth beats and a
+bounded symmetric local correction around those beats.
+The chapel, closed adit and ordinary burial ground remain side finds, and every
+permitted threshold/spur consumes one visible compacted-path descriptor in both
+rendering and traversal. `TerrainMeshBounds` extends the inhabited bowl into a
+fully physical `49°` enclosing rise, hidden crest and sampled cableway brink.
+The deterministic passive village kit now carries `19` assemblies / `53`
+role meshes: correctly outward-wound closed wall shells and roof solids, roof
+snow, a distinct top house, facade repairs and shutters,
+garland posts, cable gate, rail bridge and a plain catch basin join the original
+houses, chapel, mine cart, adit, grave markers and firewood without adding a
+surface family. Two garland cords and three windows own the five real village
+lights. Six bounded synthesized spatial voices stay on visible causes. A
+village-only blizzard profile keeps snowfall at `.88–1` and wind at `.82–1`,
+adds terrain-sampled ground spindrift and drives one continuous synthesized
+wind bed from the same deterministic bearing and gust rhythm. All nine
+garland spans read that shaped wind too: their batched render meshes deform
+with both anchors fixed, while bulbs and the two real lights follow each free
+midpoint. The station
+canopy and moving cabin stay locally dry, while the uphill axis and top house
+remain legible instead of disappearing into a whiteout. The one warmth grade
+is held at `0` until the prologue exists, but already enters the per-minute
+apply and jointly removes isolated garlands, darkens seeded windows, dirties
+snow, weakens the five practicals and quiets those six local voices without
+changing the storm.
 
 The runtime places one visually
 distinct player home beside a bar street and one deterministic street-front
-supermarket, instantiates the same modular low-poly 3D hero in all seven gameplay
+supermarket, instantiates the same modular low-poly 3D hero in all eight gameplay
 roots, loads separate bar, supermarket, stairwell, home and church interiors, and
 restores the same seed and matching exterior return point. The hero keeps
 independent body meshes on one Generic rig, uses continuous in-place 3D clips
@@ -201,11 +237,13 @@ CityMisc bar shell and generic window bands in City and in a fully visible Home
 reconstruction; a Home half-space crossing alone keeps the clipped legacy
 silhouette.
 The broad passive City misc layer now resolves through one deterministic
-`city_misc_citywide_v4` Blender library: `64` semantic kinds, `94` assemblies,
-`186` role meshes and `33,454` triangles cover ordinary decoration and park
+`city_misc_citywide_v4` Blender library: `80` semantic kinds, `115` assemblies,
+`238` role meshes and `42,878` triangles cover ordinary decoration and park
 landmarks, night fixtures, Route 01 stops, the eastern yard, cemetery,
 seacoast, fringe service belt, the static shells of all four district points of
-interest and the live supermarket/player-home shells. Its former bar shell
+interest, the fixed Nightlife arch shelter with its full-height supported
+service terrace joined to the east wall and south facade end, and the live
+supermarket/player-home shells. Its former bar shell
 remains catalogued only for v4 compatibility and is not instantiated. Unity
 plans still own placement, terrain, collision, dynamics, interactions, lights,
 halos, cloth and NPCs; tilted cemetery monuments deliberately remain on their

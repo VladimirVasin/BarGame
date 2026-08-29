@@ -3372,6 +3372,42 @@ namespace BarPromenade.Editor
                             "the bonnet; without it he cannot leave it.");
                     }
 
+                    // And his arms, for the wheel. The shared registry
+                    // serializes no arm bones and nothing is found by name
+                    // at runtime, so the bindings are made here, where name
+                    // lookup is the contract. The grip sockets are the
+                    // skeleton's own SOCKET_Grip bones - the same palms the
+                    // bus driver's hand IK closes on the bus's rim.
+                    var arms = new LastRouteFerrymanArmBindings(
+                        RequireTransform(
+                            transformsByName,
+                            "upper_arm.L",
+                            "Ferryman prefab"),
+                        RequireTransform(
+                            transformsByName,
+                            "forearm.L",
+                            "Ferryman prefab"),
+                        leftHand,
+                        RequireTransform(
+                            transformsByName,
+                            "SOCKET_Grip.L",
+                            "Ferryman prefab"),
+                        RequireTransform(
+                            transformsByName,
+                            "upper_arm.R",
+                            "Ferryman prefab"),
+                        RequireTransform(
+                            transformsByName,
+                            "forearm.R",
+                            "Ferryman prefab"),
+                        RequireTransform(
+                            transformsByName,
+                            RightHandBoneName,
+                            "Ferryman prefab"),
+                        RequireTransform(
+                            transformsByName,
+                            "SOCKET_Grip.R",
+                            "Ferryman prefab"));
                     prefabRoot
                         .AddComponent<LastRouteFerrymanRigAnchors>()
                         .Configure(
@@ -3381,7 +3417,8 @@ namespace BarPromenade.Editor
                             hemRenderer,
                             BindPoseLateralSize(hemRenderer),
                             perchClip.seated_drop_m,
-                            dismountClip);
+                            dismountClip,
+                            arms);
                 }
 
                 if (descriptor.IsWheelchair)
@@ -3736,6 +3773,30 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "The coat hem anchor must ride the pelvis bone.");
+            }
+
+            // His arms, for the wheel. Each socket must ride its own hand
+            // bone: a socket bound to the wrong side still resolves at
+            // runtime and then crosses his arms over the rim.
+            if (anchors.LeftUpperArm == null ||
+                anchors.LeftForearm == null ||
+                anchors.LeftHand == null ||
+                anchors.LeftGripSocket == null ||
+                anchors.RightUpperArm == null ||
+                anchors.RightForearm == null ||
+                anchors.RightHand == null ||
+                anchors.RightGripSocket == null)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' must bind both arms " +
+                    "and both grip sockets for the wheel.");
+            }
+
+            if (anchors.LeftGripSocket.parent != anchors.LeftHand ||
+                anchors.RightGripSocket.parent != anchors.RightHand)
+            {
+                throw new InvalidOperationException(
+                    "Each grip socket must ride its own hand bone.");
             }
 
             // The skirt is cut to this. A zero would produce a cloth

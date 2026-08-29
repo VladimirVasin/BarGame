@@ -19,10 +19,25 @@ namespace BarPromenade
         public PlayerRuntime Player { get; private set; }
         public PlayerCameraFollow CameraFollow { get; private set; }
         public RetroAudioService Audio { get; private set; }
+        public AlpineVillageSoundscape Soundscape { get; private set; }
 
-        /// <summary>The precipitation field, which up here is always a little
-        /// snow and never a storm.</summary>
+        /// <summary>The dense, wind-stretched snowfall through the full
+        /// camera volume.</summary>
         public CityRainField Snow { get; private set; }
+
+        /// <summary>Terrain-hugging spindrift that makes each gale readable
+        /// against the lane instead of only against the sky.</summary>
+        public AlpineVillageStormField BlowingSnow { get; private set; }
+
+        /// <summary>The shared mountain-air bed, driven from the village's
+        /// already-normalized gale rather than the road's tree sway.</summary>
+        public MountainRoadWindSoundPlayer WindSound { get; private set; }
+
+        /// <summary>The city's drifting fog sheets, unchanged. The village
+        /// argues with the city in COLOUR - its Exp2 haze is the one warm one
+        /// in the game - and not in whether the air has anything in it.
+        /// </summary>
+        public CityFogField Fog { get; private set; }
 
         public AlpineVillageWeatherShaper WeatherShaper { get; private set; }
         public CityWeatherController Weather { get; private set; }
@@ -66,6 +81,9 @@ namespace BarPromenade
         public float WarmthGrade { get; private set; }
 
         private Camera areaCamera;
+        private int appliedAtmosphereDay = int.MinValue;
+        private int appliedAtmosphereMinute = int.MinValue;
+        private MaterialPropertyBlock warmthProperties;
 
         private void Awake()
         {
@@ -180,6 +198,7 @@ namespace BarPromenade
             BuildAtmosphere();
             BuildCableway();
             BuildCommonUi(ui);
+            ApplyCurrentAtmosphere(true);
             IsInitialized = true;
 
             timer.Stop();
@@ -203,7 +222,22 @@ namespace BarPromenade
         public void SetWarmthGrade(float grade)
         {
             WarmthGrade = Mathf.Clamp01(grade);
+            Soundscape?.SetWarmthGrade(WarmthGrade);
+            ApplyCurrentAtmosphere(true);
+        }
+
+        private void ApplyCurrentAtmosphere(bool force = false)
+        {
             if (areaCamera == null)
+            {
+                return;
+            }
+
+            int day = GameSessionState.GameDayIndex;
+            int minute = GameSessionState.GameMinuteOfDay;
+            if (!force &&
+                day == appliedAtmosphereDay &&
+                minute == appliedAtmosphereMinute)
             {
                 return;
             }
@@ -214,7 +248,212 @@ namespace BarPromenade
             RuntimeSceneSetup.ApplyAlpineVillageLighting(
                 GameTimeDayNightRules.Evaluate(
                     GameSessionState.GameTimeOfDayMinutes),
-                WarmthGrade);
+                WarmthGrade,
+                force);
+            ApplyVillageWarmthPresentation();
+            appliedAtmosphereDay = day;
+            appliedAtmosphereMinute = minute;
+        }
+
+        /// <summary>
+        /// The prologue will drive one value, and this one pass turns it into
+        /// the four quiet losses the bibles name: fewer cords, darker rooms,
+        /// dirtier snow and weaker practicals. At the current playable
+        /// baseline the value remains zero, so every window is still warm.
+        /// </summary>
+        private void ApplyVillageWarmthPresentation()
+        {
+            if (World == null || World.Root == null)
+            {
+                return;
+            }
+
+            if (warmthProperties == null)
+            {
+                warmthProperties = new MaterialPropertyBlock();
+            }
+
+            Renderer[] renderers = World.Root.GetComponentsInChildren<
+                Renderer>(true);
+            for (int index = 0; index < renderers.Length; index++)
+            {
+                Renderer renderer = renderers[index];
+                if (renderer.name == "Lit Window")
+                {
+                    float power = EvaluateWindowWarmth(renderer);
+                    ApplyWarmthColor(
+                        renderer,
+                        ScaleRgb(
+                            AlpineVillageWorldBuilder.WarmWindowTint,
+                            power));
+                    continue;
+                }
+
+                if (renderer.name.StartsWith("Garland Bulbs "))
+                {
+                    int span = ParseTrailingNumber(renderer.name);
+                    float power = EvaluateGarlandWarmth(span);
+                    ApplyWarmthColor(
+                        renderer,
+                        ScaleRgb(
+                            AlpineVillageWorldBuilder.GarlandBulbTint,
+                            power));
+                    continue;
+                }
+
+                if (renderer.name.EndsWith(" Snow"))
+                {
+                    Color dirtySnow = new Color(
+                        0.43f,
+                        0.405f,
+                        0.355f,
+                        1f);
+                    ApplyWarmthColor(
+                        renderer,
+                        Color.Lerp(
+                            AlpineVillageWorldBuilder.CleanSnowTint,
+                            dirtySnow,
+                            WarmthGrade * 0.68f));
+                }
+            }
+
+            Renderer terrain = World.TerrainRoot.GetComponent<Renderer>();
+            if (terrain != null)
+            {
+                ApplyWarmthColor(
+                    terrain,
+                    Color.Lerp(
+                        Color.white,
+                        new Color(0.72f, 0.68f, 0.60f, 1f),
+                        WarmthGrade * 0.55f));
+            }
+
+            Light[] lights = World.Root.GetComponentsInChildren<Light>(true);
+            for (int index = 0; index < lights.Length; index++)
+            {
+                Light light = lights[index];
+                float baseIntensity;
+                float power;
+                if (light.name.StartsWith("Garland Lamp "))
+                {
+                    baseIntensity =
+                        AlpineVillageWorldBuilder.GarlandLampIntensity;
+                    power = EvaluateGarlandWarmth(
+                        ParseTrailingNumber(light.name));
+                }
+                else if (light.name == "Summit Window Snow Pool")
+                {
+                    baseIntensity = AlpineVillageWorldBuilder
+                        .SummitWindowSnowPoolIntensity;
+                    power = Mathf.Lerp(1f, 0.18f, WarmthGrade);
+                }
+                else if (light.name == "Window Snow Pool")
+                {
+                    baseIntensity = AlpineVillageWorldBuilder
+                        .WindowSnowPoolIntensity;
+                    power = Mathf.Lerp(1f, 0.06f, WarmthGrade);
+                }
+                else
+                {
+                    continue;
+                }
+
+                light.intensity = baseIntensity * power;
+                light.enabled = power > 0.025f;
+            }
+        }
+
+        private float EvaluateWindowWarmth(Renderer renderer)
+        {
+            Transform owner = renderer.transform.parent;
+            string key = owner.name + "/" +
+                         renderer.transform.GetSiblingIndex();
+            float unit = CitySoundStableHash.ToUnitFloat(
+                CitySoundStableHash.SourceEvent(Plan.Seed, key, 0u));
+            bool summit = owner.name ==
+                          "Village Plot - village-mothers-house";
+            float cutoff = summit
+                ? Mathf.Lerp(0.62f, 1.10f, unit)
+                : Mathf.Lerp(0.18f, 0.90f, unit);
+            return Mathf.Lerp(
+                0.04f,
+                1f,
+                EvaluateRemainingWarmth(WarmthGrade, cutoff, 0.10f));
+        }
+
+        private float EvaluateGarlandWarmth(int span)
+        {
+            // Authored out of spatial order so the village loses isolated
+            // cords, not a visible wipe travelling up the street.
+            float cutoff;
+            switch (span)
+            {
+                case 0: cutoff = 0.22f; break;
+                case 1: cutoff = 0.68f; break;
+                case 2: cutoff = 0.36f; break;
+                case 3: cutoff = 0.84f; break;
+                case 4: cutoff = 0.48f; break;
+                case 5: cutoff = 0.14f; break;
+                case 6: cutoff = 0.74f; break;
+                case 7: cutoff = 0.56f; break;
+                default: cutoff = 0.92f; break;
+            }
+
+            return EvaluateRemainingWarmth(
+                WarmthGrade,
+                cutoff,
+                0.075f);
+        }
+
+        private static float EvaluateRemainingWarmth(
+            float grade,
+            float cutoff,
+            float feather)
+        {
+            float fade = Mathf.InverseLerp(
+                cutoff - feather,
+                cutoff + feather,
+                Mathf.Clamp01(grade));
+            return 1f - Mathf.SmoothStep(0f, 1f, fade);
+        }
+
+        private void ApplyWarmthColor(Renderer renderer, Color color)
+        {
+            warmthProperties.Clear();
+            renderer.GetPropertyBlock(warmthProperties);
+            warmthProperties.SetColor("_BaseColor", color);
+            warmthProperties.SetColor("_Color", color);
+            renderer.SetPropertyBlock(warmthProperties);
+        }
+
+        private static Color ScaleRgb(Color color, float power)
+        {
+            return new Color(
+                color.r * power,
+                color.g * power,
+                color.b * power,
+                color.a);
+        }
+
+        private static int ParseTrailingNumber(string value)
+        {
+            if (value.Length >= 2 &&
+                int.TryParse(
+                    value.Substring(value.Length - 2),
+                    out int parsed))
+            {
+                return parsed;
+            }
+
+            return 0;
+        }
+
+        private void Update()
+        {
+            if (IsInitialized)
+            {
+                ApplyCurrentAtmosphere();
+            }
         }
 
         /// <summary>
@@ -240,9 +479,16 @@ namespace BarPromenade
 
         private void BuildAtmosphere()
         {
-            // The city's schedule, read as snow with a ceiling on it. Nothing
-            // here re-rolls the weather: the slot the city is in is the slot
-            // this is, received colder, gentler and out of the wind.
+            Soundscape = AlpineVillageSoundscape.Create(
+                transform,
+                AlpineVillageSoundscapePlanner.Create(Plan),
+                World.SemanticObjects,
+                WarmthGrade);
+
+            // The city's schedule, read through a permanent alpine storm.
+            // Nothing here re-rolls the weather: the slot and bearing stay
+            // shared, while high local floors guarantee dense snow and gale
+            // transport in every one of those slots.
             WeatherShaper = new AlpineVillageWeatherShaper(
                 Player.GameObject.transform,
                 Plan.Lane.Start.y,
@@ -258,7 +504,21 @@ namespace BarPromenade
                 WeatherShaper
                     .ShapePrecipitation(GameWeatherRules.EvaluateCurrent())
                     .RainIntensity,
-                CityPrecipitationKind.Snow);
+                AlpineVillageWeatherRules.PrecipitationKind,
+                IsSheltered());
+
+            // The city's fog, verbatim - same component, same shared
+            // atmosphere material, same 36-sheet cap. The village's own warm
+            // haze keeps doing the distance; these do the metre in front of
+            // the hero, which is what a bulb hanging over a lane needs in
+            // order to have anything to glow into.
+            var fogObject = new GameObject("Village Fog Field");
+            fogObject.transform.SetParent(transform, false);
+            Fog = fogObject.AddComponent<CityFogField>();
+            Fog.Initialize(
+                Player.GameObject.transform,
+                CityNightResources.AtmosphereMaterial,
+                Plan.Seed);
 
             Weather = gameObject.AddComponent<CityWeatherController>();
             Weather.Initialize(
@@ -268,7 +528,36 @@ namespace BarPromenade
                 null,
                 areaCamera.transform,
                 IsSheltered,
-                WeatherShaper);
+                WeatherShaper,
+                Fog);
+
+            // The garland meshes were built before the player and weather.
+            // Bind them now to the one shaped wind sample already driving
+            // snow and cloth; the builder cannot invent a second wind owner.
+            AlpineVillageGarlandWind[] garlands =
+                World.Root.GetComponentsInChildren<
+                    AlpineVillageGarlandWind>(true);
+            for (int index = 0; index < garlands.Length; index++)
+            {
+                garlands[index].BindWeather(Weather);
+            }
+
+            // A second, low layer is what makes wind legible against snow and
+            // stone. It samples the real village terrain for every strip, so
+            // the uphill half cannot float while the downhill half clips.
+            var stormObject = new GameObject("Village Blowing Snow");
+            stormObject.transform.SetParent(transform, false);
+            WindSound = stormObject
+                .AddComponent<MountainRoadWindSoundPlayer>();
+            BlowingSnow = stormObject.AddComponent<AlpineVillageStormField>();
+            BlowingSnow.Initialize(
+                Player.GameObject.transform,
+                Plan,
+                Weather,
+                CityNightResources.AtmosphereMaterial,
+                Plan.Seed,
+                IsSheltered,
+                WindSound);
         }
 
         private void BuildCommonUi(GameObject ui)
@@ -352,6 +641,14 @@ namespace BarPromenade
         /// </summary>
         private bool IsSheltered()
         {
+            // The cabin is a closed local interior even while its root crosses
+            // open village air. Treat the whole ride as shelter so neither
+            // snowfall layer is born through its roof before the blackout.
+            if (GameSessionState.IsRidingAVehicle)
+            {
+                return true;
+            }
+
             if (Player.GameObject == null || Plan == null)
             {
                 return false;

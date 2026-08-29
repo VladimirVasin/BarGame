@@ -6,6 +6,730 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-29 — The city decree: it never stops raining there
+
+The user decreed permanent rain - varying intensity, CITY SCENE ONLY. The
+first instinct (raise `ClearIntensity` in `GameWeatherRules`) was mapped and
+rejected: the schedule is shared, and a global floor leaks uphill through the
+shapers - the mountain's one genuinely dry moment (a tunnel-mouth arrival in
+a Clear slot, snow exactly `0` at climb `0`) would silently vanish, and two
+schedule tests plus a mountain weather test pin exactly that dryness.
+
+So the decree lives where the house already puts area weather: an
+`ICityWeatherShaper`. The mountain snows through one, the village flurries
+through one, and the city now rains through `CityEternalRainShaper`:
+precipitation floored at `DrizzleIntensity 0.18` (visible rain, clearly under
+LightRain's `0.45`, over the wipers' `0.02`), wind passed through untouched -
+drizzle in near-calm air is a real state of the sky - and the Kind carried
+through by the shapers' shared doctrine: it names the slot the whole world is
+in, and `Clear` over a wet street means what it means on the summit, where
+`Clear` snows. Wired at the controller plus the four direct schedule readers
+(city rain-field init, river build-time water hook, bus wiper intensity, and
+all three reads of the home balcony - the balcony looks at the CITY, and the
+two views of one sky must agree).
+
+Consequences accepted and written into canon: the shared wet film never reads
+drier than the drizzle in city scenes, puddles never dissolve (the drying
+machinery stays for the slope between heavy and drizzle), the rain bed is a
+permanent part of the city's sound, and the bus wipes forever. Lightning
+stays storm-slot-gated - events, not fixtures. Flagged, not changed: three
+tableaux now play under eternal drizzle (the drying-yard babushkas with their
+carpets, the courtyard laundry lines, the park chess players) - no NPC reads
+weather anywhere, this was already true in every rain slot, and re-staging
+them is a canon decision for another day.
+
+Verified: `65/65` EditMode across `CityEternalRain` (new: the floor, the
+untouched wind, and end-to-end through the controller - the street film can
+never read drier than the drizzle), `GameWeatherRules`,
+`CityWeatherControllerFogShelter`, `MountainRoadRideWeather`,
+`CityWetSurface` and `CityBusRuntime` - zero existing weather tests
+re-anchored, because the schedule itself is untouched. Not run: PlayMode.
+
+## 2026-08-29 — Alpine Village now lives inside a permanent hard gale
+
+The player explicitly asked for very strong snow and very strong wind in the
+Alpine Village. That contradicted the shipped canon rather than merely an old
+tune: story level `0` said «Ясно и тепло», both village bibles banned a
+snowstorm, and the implementation deliberately limited snow to `.34–.62` while
+damping wind to `.08–.40`. The explicit request is now recorded in the §6
+registry and architecture notes. What changed is the weather, not the place's
+meaning: warm light, the single uphill axis, the top house and the independent
+warmth grade remain; lightning, thunder, danger framing and whiteout remain
+absent.
+
+`AlpineVillageWeatherShaper` now holds snowfall at `.88–1` and wind at `.82–1`
+while preserving the shared schedule's bearing and short gust rhythm. A
+village-only `Blizzard` precipitation profile supplies dense, restrained-alpha
+stretched flakes without changing Mountain Road snow. The new deterministic
+`AlpineVillageStormField` adds fast low spindrift at the terrain sampler's real
+height, compensates vertical transport for the slope and drives the shared
+synthesized wind bed from that same gale. The station canopy rejects and culls
+ground strips in its dry core, the main layer switches to its shelter shape,
+and both layers stay out of the moving cabin. Ground-field prewarm now carries
+fractional emission instead of rounding sheltered startup upward. Finally, the
+main precipitation field also culls its already-live dry cylinder every
+sheltered frame, so wind cannot carry old flakes back through a roof.
+`CityWeatherController` feeds persistent street wetness from the unshaped city
+slot, so the village's permanent `.88+` visual snow cannot return to a clear
+City as almost-full rain wetness.
+
+The final environment audit found that snow and sound carried the gale but the
+nine baked garland spans did not. `AlpineVillageGarlandWind` now deforms each
+unique cord and bulb mesh with zero travel at both attachments and a bounded
+`0.33 m` maximum in the free middle. It reads
+`CityWeatherController.CurrentWind` after village shaping rather than creating
+a second wind writer; the semantic midpoint and each of the two real lights
+follow the same offset. Garland colliders and Blender geometry are untouched.
+
+Fast verification: the focused `AlpineVillageStorm` EditMode category passed
+`5/5` in `0.241 s` (`Logs/AlpineVillageStormFinal8.xml`), covering both weather
+bands, coherent spindrift and fixed-anchor garland motion, readable generated-
+mesh ownership, the live-particle dry core and the shared wetness regression.
+The explicit Alpine Village PlayMode capture passed
+`1/1` in `4.85 s`
+(`Logs/AlpineVillageStormCapture.xml`). Its two delayed lower-axis frames plus
+the ordinary-house and top-house views were inspected: dense diagonal flakes
+and terrain-low crosswind strips change visibly between A/B, while the road,
+closed house masses and warm destination remain readable. No broad Unity suite,
+player build or startup smoke was run.
+
+## 2026-08-29 — The §20 law reached the fixtures: everything burns at noon
+
+The player asked whether every lamp now burns around the clock. It did not:
+commit 0e389a8 wrote the law into the story bible and said plainly that the
+fixture-side implementation was deferred - "it crosses four lighting systems
+and eight art-bible entries". A full audit confirmed the gap fixture by
+fixture: at `NightFactor = 0` (exactly, for the whole 07:00-18:00 plateau)
+the street-lamp bulbs rendered pure black, the pooled realtime lights and bar
+lights switched off, every glow-registry emissive fell to the 10% "dead tube",
+lit windows fell to unlit glazing, the cemetery alley lamps and both POI
+floodlights disabled outright, the vista's distant city windows disabled
+their renderer - and even the fixtures that did burn floored at 22-35% of
+night strength against a mandated two thirds.
+
+**One number, one function.** `GameTimeDayNightRules.DayFixtureFloor = 2/3`
+and `FixtureFactor(nightFactor) = Lerp(floor, 1, nf)`. The raw `NightFactor`
+stays the SKY's - the sun, ambient and reflections still go all the way down
+at noon; only what a FIXTURE multiplies by changed. Consumers converted:
+bulbs, windows, glow registry (the dead-tube constant now IS the law's
+floor), site registry (the floor overrides authored day intensities from
+below - the ferryman lamp's 33%, the porch's 23%, the cave's 22% all rise to
+two thirds; nothing registered is ever disabled; halos never hide), the
+pooled atmosphere including its lease scan (the "zero-factor pool does not
+scan lamp anchors" optimisation was fair while lamps died at dawn, and died
+with them), the vista's city windows (the very city the law is about read
+DEAD from the brink at any factor under 0.18), the bus cabin plafond (the
+plafond that moves; headlights stay events), and the summit yard lamp
+(boost `0.55 → 0.5`, day/night exactly `2/3`).
+
+**Two real bugs surfaced by the change's own tests.** The bus presentation's
+`SetNightFactor` equality gate survived the pool: a husk parks with lights
+hard-off and factor zero, a respawn at constant noon hands it the same zero,
+and the refresh never ran - the plafond stayed dark until the next dusk edge.
+`hasAppliedNightFactor` (the city registry's own idiom) clears in
+`ResetForPool`. And the law test caught a raw `CityLightHalo` lying about
+visibility when never initialized - test-side, initialize it properly.
+
+Canon: the eight art-bible entries that still ordered lamps dark by day are
+rewritten (drying-yard and island floodlights, island prose, upper promenade
+lamps, cemetery lamps + its Нельзя + its Проверка, the §2.3 cycle line), and
+the lodge bulb's "the one lamp that never goes out" uniqueness claim became
+"the first of all of them". Architecture notes carry the accepted entry.
+
+Verified: `73/73` EditMode across `AlwaysLitLaw`, `CityNightAtmosphere`,
+`CityNightGlowRegistry`, `CityWindowAppearance`, `CityCemeteryPlanner`,
+`CityPointOfInterestSurfaceAppearance`, `CityBusRuntime`, `MountainRoadVista`
+and `MountainRoadSummitLighting` - five of those suites re-anchored from
+pinning darkness to pinning the floor, each with a comment naming the law.
+The PlayMode noon assertions (bulb black, halos zero) were re-anchored in
+`CityNightPresentationPlayModeTests` but not run - a full city PlayMode boot
+is minutes for two inverted asserts; flagged for the next PlayMode pass. Out
+of scope by canon: interiors (their own controllers), the village (its own
+stronger rule, already compliant - `NightFactor` does not occur in its
+builder), and the excluded events.
+
+## 2026-08-29 — The Alpine Village houses got their walls back
+
+The player reported that every village building still had no walls and asked
+for the houses to be assembled in Blender. The missing mass was not a plot or
+provider omission: all four ordinary-house variants, the top house and the
+chapel already carried a `Walls` role, and `AlpineVillageWorldBuilder` created
+its renderer. The shared `prism_y` authoring primitive wound every cap and side
+inward. Blender's two-sided preview hid it; Unity's ordinary back-face culling
+correctly removed the complete shell. The same primitive also inverted the
+prismatic portions of roofs, grave markers, shutters and repairs.
+
+`build-village-3d-model.py` v2.1.1 now emits outward caps and sides. Every
+closed `PartSpec` must have finite positive signed volume, and preview materials
+enable back-face culling, so neither the deterministic validator nor the
+contact sheet can conceal this class of defect again. The compatible
+`village_wave2_v2` catalog was rebuilt without changing its semantic shape:
+`19` assemblies, `53` meshes, `3,624` triangles, signature
+`24ca0fc6fb9c310d56183a03b147a3da2c3898c47a3fde5b92930eb3a865bb57`.
+All `53` regenerated FBX meshes return positive signed volume after a clean
+Blender re-import.
+
+Unity adds the other half of the guard at its real import boundary:
+`VillageAssetSetup` compares every imported mesh's signed-volume direction to
+the known-good box-authored house plinth before binding, and a focused
+`VillageAssetTests` regression pins the House/Chapel/TopHouse wall and roof
+roles. The provider was rebound to the new signature. Four plan-derived
+PlayMode frames now cover the lower uphill axis, an ordinary front/three-quarter
+view, its uninterrupted side wall and the top house. They show closed masses,
+grounded plinths, complete roofs and doors/windows resting on visible walls.
+Doors and panes remain real-metre runtime attachments and collision remains
+plan-owned; no material family, story content or interaction changed.
+
+Fast verification: Blender direct validation passed `19 / 53 / 3,624` with
+repeated signatures; Unity provider bind printed
+`VILLAGE UNITY ASSET BUILD OK`; explicit PlayMode
+`AreaCaptureFixture.AlpineVillage` passed `1/1` in `3.864 s`, and all four
+frames were inspected. No broad Unity suite, player build or startup smoke was
+run.
+
+## 2026-08-29 — The car stops driving through the bus, and the street cannot deadlock
+
+The player watched the Ferryman's car drive STRAIGHT THROUGH a city bus, and
+asked for the car to ease off for a bus or a walker ahead - with the explicit
+worry that the car and the bus must never end up braked for each other at a
+junction, soft-locked.
+
+**The mechanism, verified.** The car's only yield was the one authored
+give-way at the forecourt turn; a road may declare at most one give-way point
+and the component goes inert after one commit. Outside that turn nothing ever
+calls `SetHold`, and the obstacle collider is off for the whole drive - the
+only thing that can stop a driving car is the hold. Meanwhile Route 01's one
+bus dwells `10 s` IN the car's lane - both planners lay their lane `1.5 m`
+right of the same crowns, so shared streets have `0.00 m` of lateral
+separation - and the car closes on it at `8.2 − 6.0 = 2.2 m/s`. The bus's own
+obstacle scan checks the hero and walkers only; the car does not exist for it.
+
+**The fix extends the machinery the car already had, with one writer.**
+`LastRouteCarTrafficYieldModel` is the give-way model's sibling - pure,
+hand-stepped, the same three rules inherited whole: a driver who cannot stop
+does not try (a conflict nearer than braking distance is driven through,
+because stopping INSIDE the junction parks the car in the one lane the bus
+will never yield in); he wants to see it clear for `0.4 s`, not a frame (the
+bus is sensed off its instantaneous heading, which flickers through turns);
+and he never waits forever - `18 s` at a standstill (past the longest lawful
+`10+5 s` dwell), then he goes, logs `car_traffic_waited_out`, and may not
+re-arm on the same still-standing conflict, or he stutters into it forever.
+The sensing is two pure statics on `LastRouteCarGiveWay`
+(`FindBusPathConflict`, `FindWalkerPathConflict`): the road walked as `2 m`
+chords out to a stopping-distance horizon, the bus as tail-to-predicted-nose
+segment against the `2.7 m` corridor (opposite lanes run at `3.0 m` - lawful
+oncoming traffic never triggers; deliberately NO same-way exclusion, because
+on his own road the same-way bus ahead IS the collision partner), walkers at
+`1.2 m` plus their radius (tighter than the crossing's `1.35`: a bus-stop
+walker stands `1.74 m` off the lane line, and looser reads the whole pavement
+as jaywalkers). The give-way component is the single hold writer: crossing
+decision and traffic rule are both advanced each frame and the model's one
+slot takes the min - two writers calling `SetHold` are last-writer-wins.
+
+**Deadlock is impossible by construction, and the arithmetic is pinned.** The
+bus was deliberately NOT taught to see the car - that symmetric rule is
+exactly what makes two vehicles stand braked for each other. The wait graph is
+acyclic: car yields to bus and walkers; bus yields to walkers and the HERO.
+The hero rides the car, so the one cycle candidate is a held car parking its
+hero inside the bus's own `1.71 m` yield corridor -
+`TrafficYield_HoldGeometryKeepsTheWaitGraphAcyclic` pins
+`2.7 + 6 − 2 (worst overshoot) > 1.71 + 2.415 (hero behind nose)`. And if the
+unforeseen happens anyway, the `18 s` cap is the last unlock: the one ride out
+of the city cannot soft-lock, the give-way's own decree.
+
+**The test found a real bug before the player did.** The first probe walked
+its grid FROM THE CAR, so the grid - and the conflict, and the hold - crept
+forward with the car, and the car chased its own quantisation toward the bus
+at half a metre a second instead of stopping.
+`TrafficYield_StandsBehindADwellingBusAndFollowsItOut` watched it crawl the
+whole follow gap. The grid is now anchored to the road
+(`floor(distance / step) * step`).
+
+Verified: `61/61` EditMode (`LastRouteCarDrive` + `LastRouteRide` +
+`LastRouteCarPlacement`) - seven new tests: stands behind a dwelling bus and
+follows it out, ignores the lawful oncoming lane, holds short of a junction
+sweep, never parks inside the junction, gives up past the longest lawful
+dwell without re-arming, holds for the jaywalker and ignores the pavement,
+and the acyclicity arithmetic. Two aborted Unity runs on the way were the
+parallel session's half-written test file and a transient project lock - both
+waited out, not touched. Not run: PlayMode (the wiring reuses the give-way's
+attach path, which was already live); the mountain leg costs nothing - no
+directors are attached there.
+
+## 2026-08-29 — The Ferryman turns his wheel, on the bus driver's own mechanism
+
+The user asked for the Ferryman to steer while driving, by analogy with the bus
+driver. Everything the analogy needs already existed and was idle: the car's
+driver computes the exact signal the bus uses (heading error to a tangent
+`4.5 m` ahead, clamped `±33°`, smoothed at `7/s`) and already yaws the front
+wheels with it; the car model ships a rigged rim (`INT_SteeringWheel` under
+`PIVOT_SteeringWheel`) with grip anchors ON the rim as children of the pivot —
+the asset setup even validates that parentage "or a later turn of the wheel
+strands the driver's hands in mid-air" — and the ferryman's drive clip is an
+authored two-hands-on-the-rim pose. Nothing rotated the pivot and nothing read
+the grips.
+
+Four moves:
+
+- **The rim rolls in `LastRouteCarDriver.ApplyWheels`** — same component, same
+  frame, same smoothed `steeringDegrees` as the front wheels, so the two can
+  never disagree mid-corner. Ratio `3.0` (NOT the bus's `3.55`: `33 × 3.55 =
+  117°` against a `100°` cap would pin the rim at the cap through every corner;
+  `33 × 3.0 = 99°` restores the bus's own rail-to-rail-at-full-lock pairing).
+  `Halt()` straightens the wheel — `Update` stops on arrival, and the alighting
+  clip starts from hands drawn on an unturned rim. The axis is MEASURED, not
+  bound: the normal of the plane the two grips lie on, pointed at the driver's
+  seat — and the bus's negation is deliberately NOT copied, because the bus's
+  column points at the windshield while this raked column points back at the
+  driver; the same negation here would have reproduced the bus's old
+  rolled-left-on-a-right-turn bug in mirror.
+- **The arm bones crossed the prefab build.** The shared pedestrian registry
+  serializes no arm bones and nothing is found by name at runtime, so
+  `LastRouteFerrymanRigAnchors` (the fifth-clip precedent — "the component
+  that is already his alone") now carries `upper_arm/forearm/hand/SOCKET_Grip
+  .L/.R`, bound by name in `CityPedestrianAssetSetup`'s ferryman branch and
+  validated socket-rides-its-own-hand. Prefab rebuilt headless.
+- **The solver became shared.** The bus's two-bone CCD (`SolveTwoBone`, bend
+  hint, hard wrist write) moved verbatim from private statics in
+  `CityBusDriverPresentation` to `SeatedArmIk`, with the attachment/target
+  structs; both cabs now read one mechanism. One real tuning: the post-hint
+  recovery was two iterations, and at the car's full lock — grips carried
+  `99°` from where the drive pose drew the hands — that left a palm hovering
+  `2.2 cm` off a `2 cm` contract. Four converges it; on the bus's smaller
+  angles the extra passes land on the same pose (re-verified, 29/29).
+- **The hands close per frame in the ferryman's `LateUpdate`,** strictly AFTER
+  `graph.Evaluate` (the graph rewrites every bone each evaluate), targets
+  lerped from the clip's own socket pose to the live grips by a `0.35 s`
+  eased weight that engages only in the Driving phase — so the boarding and
+  alighting seams, both authored against the drive base pose, stay untouched,
+  and the parked-seat `0.02 m` assertions never see a moved pelvis. Both drive
+  legs steer for free: city and mountain run the same driver + presentation.
+
+**Nothing existing pinned any of this** — the LastRoute suite had zero steering
+assertions, so a wheel wired backwards would have shipped green. Two mirrors of
+the bus's own precedent tests now do: EditMode
+`Steering_RollsTheRimWithTheFrontWheelsForTheDriver` (ratio, rest-restore on
+`Halt`, and the SIGN — the axis of the measured rim delta must point at the
+driver's seat, clockwise under his hands on a right steer) and PlayMode
+`Driving_HisHandsRideTheTurningRim` (a bent road saturates the clamp; on 30+
+frames with the rim past `30°` both palms stay within the bus's `0.02 m` grip
+error, under `AlwaysAnimate` — batch mode otherwise reads back a bind pose and
+proves nothing). My own first draft of the EditMode test fell into the
+documented imported-node-basis trap — read zero yaw off a correctly steered
+wheel by measuring the node's `forward` — and was rewritten as a parent-space
+delta, which is now noted in the test itself.
+
+Verified: EditMode 93/93 (LastRouteCarDrive/Placement/Ferryman*/Ride +
+CityBusAssetImport on the shared solver), PlayMode 10/10
+(LastRouteFerrymanPlayModeTests), bus re-verified after the solver tuning
+29/29. Not run: broader suites; the give-way pre-turn (wheels turning while
+held at a stop line, look-ahead reaching into the corner) is existing front
+wheel behavior the rim now mirrors — deliberate, visible from the passenger
+seat, and worth a look in-game.
+
+## 2026-08-29 — The Nightlife gap became a full-depth inhabited arch
+
+The City art/story bibles were read before implementation. The fixed walkable
+gap between presentation cells `[10;5]` and `[11;5]` remains an ordinary
+pre-epidemic survival pocket: no quest, dialogue, reaction, collectible,
+spectacle of poverty or story-state change was added. The user's explicit
+request for strong causal illumination is recorded as one bounded architecture
+exception to the draft's temporary emissive-only rule.
+
+`CityArchShelterPlanner` now derives the structure from the two actual building
+bounds. The closed, non-walkable service bridge and its rain volume cover the
+whole `11.602 m` common side-facade depth while the inset passage keeps one
+continuous `2.2 m` lower-ground route. The local southern tableau stays
+separate from the
+northern ten-step flight. The first capture exposed that the stair landing,
+barrel, people and bedding were merely placed at the numeric `1.562 m` upper
+datum: the landing was too short and the rest had no rendered or physical
+support. The first correction derived one `4.00 x 6.10 m` platform from the
+last tread seam, but the next gameplay screenshot showed that it still read as
+an arbitrary central plinth: it stopped `3.30614 m` short of the east wall
+and `2.751 m` short of the south facade end. The final
+`7.30614 x 8.851 m` service terrace begins at the same last-tread seam, keys
+into the east support's exact inner face and reaches the raw south wall end.
+Its worn surface contains the clear `1.50 m` landing, barrel, both warmers,
+bedding and sleeper, while one massive masonry support and one collider reach
+the lower datum. A terrain audit rejected the tempting claim that the east
+side remained a second route: sampled ground at the terrace ends is
+`0.41-0.51 m` lower than the slab, above the player's `0.28 m` step offset.
+Full-width `1.09 m` physical north/south guards plus a west guard over the
+`7.251 m` segment south of the stair therefore make this a stair-only service
+pocket; the exact `1.60 m` stair band is its only opening and the west `2.2 m`
+route alone remains continuous on lower ground. The east facade collider was
+expanded to the visual wall's inner face, closing a final `0.206 m` physical
+seam. Loose clutter stays below. Plan validation re-derives the wall seams,
+three guards and these footprints from the layout, proves all five staged
+subjects are supported, and makes the renderer, colliders, overhead obstacle
+and rain trigger agree with the authored mass.
+
+The first strict materialization check then exposed a second coordinate bug:
+the facade-centred structure root is `0.48614 m` east of the terrain's shared
+boundary, so locally correct platform meshes still materialized east of their
+plan and collider. The generator now names that offset explicitly and applies
+it once to the complete ten-step/landing/platform/rail group. The authored
+flight was also brought from eight visual treads to the plan's ten `0.322 m`
+treads. A final renderer-bounds audit found the imported mattress and sleeper
+overhanging the east edge; their shared root moved `0.25 m` inward and the
+seated warmer `0.05 m` inward. The world regression now proves the actual
+imported bedding and all three rendered residents, not only their abstract
+anchors, remain over the slab. Synthetic reversed-datum layouts are rejected:
+the one production default layout and one authored shell are east-rising.
+
+CityMisc v4.6.0 rebuilt the arch shell, supported platform and fire as imported passive
+geometry. The citywide catalog remains `80` semantic kinds / `115` assemblies
+but grows to `238` role meshes and `42,878` triangles, signature
+`87680a5d05066a52504900a19b0e4ec19955fbe180fc6cc8d60f6e5995e412ad`.
+The barrel has four independently deforming flame shapes, an ember bed, an
+irregular transparent spill and deterministic sparse sparks. One always-on
+warm shadowed Point Light (`95` base intensity, `7.0 m` range) follows the
+same bounded multi-frequency flicker, so the walls, ground, bedding and three
+figures receive a moving causal pool. The flame parts cast no shadows; no
+particle light, smoke, local weather or exposure override was introduced.
+Capture feedback reduced the first over-bright pass without touching global
+exposure: the ordinary flicker now stays near `0.82-1.16`, the halo/spill are
+subordinate, and the unlit ends of the shelter remain dark.
+The existing deterministic crackle, two warmer shifts and sleeper breathing
+remain local presentation details.
+
+Fast verification: Blender validate-only passed the final `115 / 238 / 42,878`
+catalog and Unity rebound all provider entries. Focused EditMode
+`CityArchShelter` passed `8/8` in `0.825 s`. Explicit PlayMode capture
+`AreaCaptureFixture.CityArchShelter` passed `1/1` in `6.560 s`; all five final
+frames were inspected for the full exterior mass, continuous ten-step entry,
+wall attachment, visible full-height support under every staged resident and
+prop, the open lower-ground route, and the balanced warm light. Neither final
+log contains the obsolete
+URP-incompatible `Light.shadowResolution` warning; shadow tiering now uses only
+`UniversalAdditionalLightData`. No broad Unity suite, player build or startup
+smoke was run.
+
+## 2026-08-29 — Mountain Road became a staged ascent instead of an even corridor
+
+The art and story bibles were re-read before implementation. The pass stays
+inside their existing Mountain Road contract: the terminal is still a working
+transfer yard, the brink remains its single measured view opening, and no
+tourism, second route, accident, stop, new light, sound or in-fiction line was
+added.
+
+`MountainRoadCompositionRules` now owns the climb's negative space. All forest
+budgets remain intact, but three selected hairpin centres yield locally across
+the physical, middle and far crown layers; near/middle trees also stand back
+from the bridge and final approach while the surrounding far stand and ridges
+keep the horizon closed. The renderer now consumes the three palette indices
+the planner already supplied as three low-poly crown silhouettes instead of
+drawing all `420` trees alike. Boulders, logs, stumps and dead trees retain
+their counts and stable IDs but gather into five unequal roadside chapters
+with deliberate pauses at the structural beats. Their bounded deterministic
+resolver rejects every candidate whose oriented footprint comes within
+`0.35 m` of accepted natural debris or authored roadside furniture. Dead-tree
+footprints are kind-aware: their imported mesh and branch colliders scale by
+height, so the shared planner/validator envelope is `0.19 x height`, and those
+largest silhouettes pack first. Later random candidates can no longer form
+interpenetrating piles.
+
+The same pass fixed three concrete composition defects. Hairpin guardrails now
+follow each bend's outside rather than always choosing the same world side;
+the abandoned chair moved out of the bridge/gorge fold onto a late upper shelf;
+and both road kerb strips were rewound toward the verge so the opaque material
+no longer culls their visible faces. Planner validation holds the forest
+openings, all three crown variants, rail side/clearance and chair grounding.
+The capture fixture now follows ten plan-derived beats from tunnel threshold to
+the one terminal brink instead of placing generic cameras behind the tunnel
+cap and inside terrain.
+
+Fast verification: explicit PlayMode capture
+`AreaCaptureFixture.MountainRoad` passed `1/1` in `9.86 s`; all ten resulting
+frames were inspected, including both bridge views, the lower and snow
+hairpins, terminal approach/yard and the single brink opening. The focused
+EditMode contract `DefaultPlan_BuildsAbsurdHighTenHairpinBridgeWorld` then
+passed `1/1` in `13.87 s`, including crown envelopes, misc clearances, rails
+and kerb normals. No broad Unity suite or player build was run.
+
+## 2026-08-29 — Alpine Village became one authored climb instead of a dressed strip
+
+The art/story bibles were read before implementation and the work stayed inside
+their existing village registry: no mother, dinner, chapel interior, cult,
+tourist image, panorama, storm or new in-fiction line was added. The target was
+the missing form underneath the already-approved place.
+
+`TerrainBounds` now means the inhabited inner bowl and `TerrainMeshBounds` the
+full physical ground. The latter samples the enclosing `49°` rise, hidden crest
+and a cableway brink/cut with grounded support shelves, so the planned ridge is
+actually rendered and colliding instead of beginning just outside the old mesh.
+The walkable mask and a new visible path plan consume the same station exit,
+household thresholds, landmark dog-legs and chapel-water approach. House frontage
+uses authored distance/side/yaw beats rather than alternating equal cells. Rotated
+footprints have conservative world bounds, exact SAT overlap validation and a
+deterministic depth solve around three authored `7.2 / 7.2 / 7.5 m` rear-row
+beats; the symmetric local correction prevents the old greedy cascade from
+pushing each later house beyond an already deep neighbour. Lane clearance
+measures the rotated physical extent instead of the door midpoint and keeps a
+separate `0.55 m` solver floor above the hard traversal guard.
+The path plan now carries its plot owner and validates the larger of its visible
+and walkable widths as an exact segment capsule against every rotated footprint.
+That integration check exposed a direct adit dog-leg through house 08, a rare
+cemetery contact and a chapel-source turn through its own wall. The adit now
+uses an authored outer hook beyond the rear row and selects its shortest clear
+turn from house 08's seeded expanded OBB; the cemetery takes the clear direct
+worn line and the water turn keeps its whole envelope behind the chapel.
+
+Village Blender wave 2.1 expanded the passive kit from `11 / 27` to `19 / 53`
+assemblies/role meshes (`3,624` triangles): roof snow, a distinct top house,
+three facade-detail variants, garland post, cable gate, rail bridge and plain
+stone catch basin. The regenerated Blend/contact sheet/FBX/manifest share
+signature `1521bc7417c4e5cca639170798cf24f0f423b3e1378c6ac14cfcde670afa06d3`;
+Unity bound all 53 meshes into the Resources provider. The builder now groups
+houses, connects irregular garland beats to eaves or visible brackets, uses only
+two cord lights plus three snow-pool spots, scatters ordinary grave markers in
+loose bands, and gives the gate/basin/bridge plan-owned collision matching their
+visible heights. Mine cable, rail and firewood remain everyday reuse, not an
+industrial tableau.
+Runtime construction now loads that provider once and fails before building if
+any of the exact 53 kind/variant/role tuples is absent; individual assemblies no
+longer fall back to primitives. The editor binder also rejects a manifest whose
+generator version differs from the runtime catalog.
+
+Six bounded synthesized spatial voices were added with no imported recording or
+text: return-station metal, one authored wire, dog behind the visible cable gate,
+water at the catch basin, firewood in the mine cart and a very quiet wordless hum
+behind a house wall. Shared dressing anchors keep form independent of audio while
+audio reads exact visible owners: the station voice sits on the return bullwheel
+and the wire voice on its span midpoint rather than on a batching pivot.
+`WarmthGrade` remains `0`, but its existing
+per-minute apply now drives isolated garland loss, deterministic window darkness,
+roof/ground snow dirt, all five village practicals and the six sound gains/cutoffs
+together, satisfying the one-parameter §10g contract before any prologue drives it.
+
+Fast verification: Blender validate/full generation and contact-sheet inspection
+passed in the art task. The first Unity bind exposed one missing `using System`
+after licensing recovered from its stale-client `505`; the concrete rerun compiled
+scripts, imported FBX/manifest, rebound the provider and logged
+`VILLAGE UNITY ASSET BUILD OK`, return code `0`. A final focused
+`dotnet build BarPromenade.Runtime.csproj` passed with zero errors and 37 existing
+Unity-serialized-field warnings. After the integration fixes, a direct focused
+Roslyn compile of the complete runtime response plus `AlpineVillageTests`,
+`VillageAssetTests`, `AlpineVillagePathTests` and
+`AlpineVillageSoundscapeTests` passed, as did the complete editor response that
+contains `VillageAssetSetup`. An independent mirror sweep of the exact
+hash/lane/SAT formulas covered all `200,001` seeds from `-100000` through
+`100000`: no solver exhaustion, plot/spur overlap or lane-clearance failure;
+the largest local correction was `1.2 m`. A second exact sweep over the same
+`200,001` seeds resolved the full path plan with zero route or final-envelope
+failures. Every adit route used the intended single OBB corner; the tightest
+foreign-plot margin was still `0.080416 m` (seed `3677`, adit versus house 08).
+`git diff --check` passed. Full
+EditMode/PlayMode suites and a player build were intentionally not run in fast
+mode.
+
+## 2026-08-29 — The way back down, and two frames that were 1.9 metres apart
+
+The ascent was repaired yesterday; this is the descent. A parallel session had
+already cut the brink the village needed - a corridor that falls under the rope,
+carries every pylon and closes again before the hidden turn - so what was left
+was to make it actually hold, and it did not.
+
+**The test that was missing.** The mountain road has
+`CablewayCabinBody_ClearsSampledTerrainOnBothTracks`; the village had nothing of
+the kind, which is how a line authored as a mirror of the mountain's climb shipped
+diving into its own hillside. `CablewayDescent_FliesWhileVisibleAndEndsInsideTheMountain`
+is the village's version and it is deliberately two-sided: the cabin must be in the
+air everywhere the player can still see it, AND the mountain must have closed over
+the rope by the metre the cut lands on. Clearance alone would pass a line that ends
+in open air; closure alone would pass a line buried the whole way. It failed on
+first run by `28 m`, and then earned its keep three more times.
+
+Four causes, each of which breaks the ride on its own:
+
+- **Two frames, `1.9 m` apart.** `SampleCablewayBrink` measures `along` from the
+  station PAD's centre, but every distance it compares against - node distances,
+  the last support, `UpperOccluderNearFaceDistance` - is measured along the CABLE,
+  which starts `1.9 m` further forward. So the whole descent profile was read
+  early: each pylon's shelf sat short of its own legs, and the ground closed back
+  over the rope `1.9 m` before the blackout completes - the same "riding inside the
+  mountain" the road had just been fixed for. One conversion, `alongCable`, fixes
+  both; it is also the exact cause of the sibling session's own red test, which
+  wanted `82.330` at a support and got `81.750` - the `0.58 m` the profile had
+  drifted.
+- **`39` degrees out of a station.** The drops were `{0, -13, -18.5, -22, -24}`:
+  steepest in the first span and flattening downhill, which is backwards, and at
+  that grade the cabin's underside - it hangs `3.13 m` under the rope - was below
+  the boarding platform one metre off the pad. No terrain cut can rescue that
+  without cutting the pad the hero stands on. Now `{0, -2, -11, -18.5, -24}`: the
+  same `24 m` of fall, spread the way a mountain line actually falls, gentle out of
+  the terrace and steepening down the face.
+- **The cut descended out of the pad's height.** The station node's planned ground
+  is the level pad, `0.8 m` above the clearance every other node keeps under the
+  rope, and interpolating the cut bed out of it dragged the whole first span up:
+  `0.86 m` of air under the cabin in the middle of it. `NodeCutGround` clamps that
+  one node to the same rule as the others. The pad is not at risk - the apron and
+  the entrance ramp hold the real ground level over it; this is only the profile
+  they ramp towards.
+- **The entrance ramp was slower than the fall.** `6 m` of ramp while the rope
+  starts dropping at the pad's own edge left the underside in the hillside for the
+  first few metres. `3.5 m` now.
+
+**And the way back is armed.** `CreateForArrival` set neither `departureLineLength`
+nor `departureFadeLeadMeters`, so `FadeTriggerDistance` fell to its `1 m` floor and
+the descent cut to black almost as soon as it moved. Yesterday that was deliberately
+left alone with a comment saying so, because it was the only thing hiding all of the
+above. The ground is honest now, so both are set in `AwaitArrivalStart`, where this
+station's own plan first exists. The descent flies the same derived rule the ascent
+does: black at `LastVisibleDistance`, with the mountain already closed in front.
+
+Verified: `53` of `54` across `AlpineVillage`, `MountainCablewayRide`,
+`MountainCableway`, `MountainRoadTerminal`, `MountainRoadTerminalSite`,
+`MountainRoad`, `MountainRoadBrink` and `CityWeatherControllerFogShelter`. The one
+red is the sibling session's `TerrainMesh_BuildsTheRidgeAndTheCablewayBrink`,
+which now misses by `0.18 m` of mesh-versus-sampler interpolation at a pylon
+rather than the `0.58 m` of real profile drift it started at; widening the pylon
+shelf to close it eats the ramp the mountain closes on, so it is theirs to finish
+and was left alone. Not run: PlayMode. The walkable mask, the spawn and the
+station's own shelf are untouched by any of this - the cut begins a terrain cell
+beyond the apron, exactly as it did before.
+
+## 2026-08-28 — The cabin drove into the mountain, and the fade test watched it happen
+
+The player reported the cabin passing THROUGH rock at the end of the cableway
+ride, right before the load, and guessed the line needed raising. It did not.
+The rock is `far-snow-cableway-occluder`, and it is planted ON the line on
+purpose: `1.8 m` short of the cable end, `10 m` thick along it, so its near
+face crosses the track at `d = 51.2` and the last `6.8 m` of visible line — the
+whole upper turn — is inside solid geometry by design. The far-turn root is
+literally called "Upper Return Hidden Behind Snow Ridge". Raising the cable
+would have flown the cabin over a crest into open sky, which is the one cut the
+ride's own comment forbids and the postcard §10f bans.
+
+What was wrong was WHEN the screen goes out. `FadeLeadMeters = 5.5` was chosen
+by eye, apart from the rock's numbers. Measured in the engine: the cabin's nose
+enters the rock at `d = 50.5` and the passenger's eye at `51.3`, while the
+blackout did not START until `52.5` and was not complete until `55.165`. So
+`3.9 m` — nearly two seconds — of first-person ride happened inside the
+mountain, and because a ridge is single-sided it has no back face, so from in
+there he was looking at the world straight through the rock.
+
+Three things had to change together:
+
+- **The number stopped being a number.** `UpperOccluderSetback` and
+  `UpperOccluderDepth` moved onto `MountainRoadCablewayPlan`, the planner
+  builds the ridge from them, and `EvaluateFadeLeadMeters` derives the lead
+  from `LastVisibleDistance` — the near face, less the cabin's own leading
+  edge, less a metre of air. It comes out at `11.302`, black at `d = 49.363`
+  with exactly `1 m` still clear. The leading edge is the ROOF LIP, not the
+  front wall: the slab is built at `CabinSize.z * 1.08` and oversails the body
+  by `6 cm` a side, so measuring the body spends `6 cm` of a clearance that
+  claims to be a metre. `CabinRoofOverhang` is now the plan's and the world
+  builder consumes it.
+- **The last tower moved `50 → 44`.** At `50` it stood `1.2 m` off a cliff -
+  nobody erects a pylon there - and it left no interval at all in which both
+  authored rules could hold: the cut lands after the last tower, AND before the
+  rock. That contradiction is exactly why the geometry lost the argument in
+  silence. At `44` the final span is `14 m`, the same order as the others.
+- **One shape, three readers.** `MountainRoadRidgeGeometry` now owns the
+  polygonal crest that the scenery factory draws, and the planner and the
+  terminal validator both measure the cable against it. The old check read the
+  top of the ridge's bounding BOX, which stands `4 m` above the rock that is
+  actually built - a ridge whose crest missed the cable entirely would have
+  passed. Fixing only the validator would have turned that hole into a crash:
+  the crest carries a seeded variation in eight steps, and on the residue
+  `(seed + 4099) & 7 == 1` the drawn snow stands `0.34 m` UNDER the cable. Both
+  shipped seeds miss it. The planner now sizes from `CrestFactor` - `0.41 m`
+  taller on that one seed, unchanged on the other seven - and a seed sweep
+  walks all eight.
+
+This last one is not mine. I had shipped the validator arm alone, and a
+verification pass swept the eight residues, reproduced the probe's own crest
+dump to three decimals, and found the seed that throws. The same pass caught
+the roof lip. Both were real and both are in.
+
+**The suite had a fade test and it was green the whole time.**
+`RideFade_HappensInTheFinalSpanBehindTheRidge` asserts only along-line
+distances and the lead: no Y term, no reference to `plan.Ridges`. It would stay
+green under any raise of the cable and it stayed green while the cabin drove
+into a wall in front of it. `RideFade_IsCompleteBeforeTheCabinReachesTheRock`
+now measures the thing the player sees - the near face, the nose of his own
+cabin, and how much dissolve is left when they meet - on both tracks.
+
+Verified by two instruments. A throwaway EditMode probe walked both lines and
+reported the crossing against a replica of the built crest (roof lip at
+`50.363`, eye at `51.3`; black at `55.165` before the fix and `49.363` after).
+Then `52` tests across `MountainCablewayRide`, `MountainCableway`,
+`MountainRoadTerminal`, `MountainRoadTerminalSite`, `MountainRoad`,
+`MountainRoadBrink`, `MountainRoadSummitLighting` and `AlpineVillage` passed,
+with all three fade/crest tests present by name in the results XML. The probe
+was deleted; its coverage lives in the tests. No PlayMode run: nothing here
+touches navigation, the walkable mask or a scene asset.
+
+**Superseded the same day — the descent was fixed too; see the entry above.**
+What follows is what was true when this entry was written.
+
+**Found and NOT fixed - the descent is broken the other way.** The village end
+of the same line is authored as a mirror of this one, with hard-coded drops
+`{0, -13, -18.5, -22, -24}` that were never checked against the village's own
+ground. The village terrain patch reaches `33.6 m` along the line
+(`TerrainBounds` minZ `167.95`, measured), and over that stretch the ground
+falls about `3 m` while the cable falls `20`: the cabin is inside the village
+hillside from roughly `d = 1` to `d = 33.6`, up to `16 m` deep, and then leaves
+the patch and descends over nothing. Its named occluder,
+`village-cableway-ridge-occluder`, is a string that no builder ever reads, so
+that ride ends in open air; the village's own three ridge descriptors are read
+by no builder either. The honest fix is a brink under the station - the ground
+has to fall away, the way `MountainRoadTerrainSampler.ApplyBrinkFall` already
+cuts one at the summit - and that reshapes authored village terrain, which is
+bible-governed. Raised with the user rather than done unasked.
+
+**And nobody has seen it, because of a second bug that is currently load-bearing.**
+`CreateForArrival` sets neither `departureLineLength` nor the new
+`departureFadeLeadMeters`, so the return leg's `FadeTriggerDistance` falls to
+its `1 m` floor and the descent cuts to black almost as soon as it moves. That
+reads exactly like an oversight to fix, and fixing it alone would turn a
+one-metre cut into half a minute of riding through the inside of a mountain. It
+now carries a comment saying so. The two must be repaired in that order: the
+village's ground and its ridge first, the arming second.
+
+## 2026-08-28 — The city's fog goes up the mountain, and the weather owner clears it
+
+Both areas above the city had the Exp2 haze and nothing in the air. Distance
+fog alone fades a slope out; it never puts anything BETWEEN the hero and the
+slope, which is why the mountain read as a fade and the village as a warm
+gradient. The city has had the answer since the first night pass, and it is one
+component: `CityFogField`, 36 world-space sheets following the player.
+
+It is now built in `MountainRoadRoot.BuildAtmosphere` and
+`AlpineVillageRoot.BuildAtmosphere` **verbatim** - same component, same shared
+atmosphere material, same cap, same gradient, seeded off each area's plan seed.
+No per-area tint was added and none is wanted: the art bible bans a zone's own
+fog, and the particle shader already mixes the area's own Exp2 haze into every
+sheet through `MixFog`, so the same white sheet comes out cold on the road and
+warm in the village for free. The three hazes behind them are untouched:
+`0.070` grey-green city, `0.026` mountain, `0.0145` warm village.
+
+The shelter is the part with a decision in it. In the City the fog's shelter
+belongs to `CityTunnelShelterController`, because entering the portal must also
+hide the ridge shell - one event, two effects. Neither mountain area has that
+controller or needs it, and both already own exactly one predicate for "is he
+under something" (tunnel plus terminal; the station canopy) which
+`CityWeatherController` is already polling every frame for the snow. So the
+weather owner takes an optional `CityFogField` as its last argument and clears
+and refills it in `UpdateShelter` alongside the rain. The City passes nothing
+there and is byte-for-byte unchanged in behaviour.
+
+Ordering matters and is easy to get wrong silently: the fog is built BEFORE
+`Weather.Initialize`, because `Initialize` forces a weather apply and
+`CityFogField.SetSheltered` returns early on a field that is not initialized
+yet - a fog built after the controller would simply never clear.
+
+Verified with one focused EditMode run,
+`CityWeatherControllerFogShelterTests` (`2/2` passed, both names present in the
+results XML): a sheltered predicate clears rain and fog together and stepping
+back outside refills and replays the field, and a null fog leaves the rain's
+shelter working. The Unity run compiled the whole tree, so both roots build. No
+PlayMode suite, no player build and no capture: nothing here changes geometry,
+navigation or a scene asset, and the appearance question is one the player
+answers by standing on the mountain.
+
 ## 2026-08-28 — Four walls between the cabin and the village, and my test could not see any of them
 
 The player reported he could not leave the upper station. I fixed the walkable

@@ -24,7 +24,8 @@ namespace BarPromenade
         public const float LaneShoulder = 0.9f;
 
         /// <summary>Half-width of a branch out to a spur.</summary>
-        public const float SpurHalfWidth = 1.1f;
+        public const float SpurHalfWidth =
+            AlpineVillagePathPlanner.BranchWalkableHalfWidth;
 
         /// <summary>Depth of the level apron kept in front of a threshold.
         /// </summary>
@@ -40,6 +41,7 @@ namespace BarPromenade
             AlpineVillageValidator.ValidateOrThrow(plan);
             BuildLane();
             BuildStation();
+            BuildPaths();
             BuildPlots();
         }
 
@@ -196,31 +198,33 @@ namespace BarPromenade
                 ToXZ(station.BoardingDockPosition),
                 1.6f));
 
-            // And a second way out, from the FOOT OF THE STEPS to the lane.
-            //
-            // The corridor above leaves the pad from its centre, so where it
-            // crosses the pad's village edge it admits a window barely half a
-            // metre wide once the capsule is inset for a body - on a nine
-            // metre edge, with the flattened shelf visibly running on past it.
-            // A hero coming down the flight is four metres to one side of
-            // that window and meets a wall he cannot see while standing on
-            // concrete. This is the lane the steps actually deliver him into.
-            capsules.Add(new Capsule(
-                ToXZ(
-                    pad.Center +
-                    station.Cableway.LineRight *
-                    station.Cableway.BoardingPlatformCenterOffset +
-                    station.Cableway.LineForward *
-                    station.Cableway.BoardingFenceForward),
-                ToXZ(plan.Lane.Start),
-                1.6f));
+            // The route from the foot of the steps to the lane is part of the
+            // visible path plan below. It used to be a second, invisible
+            // capsule authored independently of the ground that depicts it.
         }
 
         /// <summary>
-        /// Every plot gets an apron in front of its door and a branch back to
-        /// the lane. The branch is what makes the chapel, the adit and the
-        /// burial ground reachable at all - they stand more than twenty metres
-        /// off the street.
+        /// Every permitted branch is also a visible compacted track. Both
+        /// systems consume these exact endpoints and widths, so navigation
+        /// cannot silently grow a shortcut across untouched snow.
+        /// </summary>
+        private void BuildPaths()
+        {
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
+            for (int index = 0; index < paths.Count; index++)
+            {
+                AlpineVillagePathDescriptor path = paths[index];
+                capsules.Add(new Capsule(
+                    ToXZ(path.Start),
+                    ToXZ(path.End),
+                    path.WalkableHalfWidth));
+            }
+        }
+
+        /// <summary>
+        /// Every plot gets an apron in front of its door. Its route back to
+        /// the lane belongs to <see cref="BuildPaths"/>.
         /// </summary>
         private void BuildPlots()
         {
@@ -239,12 +243,6 @@ namespace BarPromenade
                         Mathf.Max(2.4f, plot.FootprintSize.x * 0.5f),
                         DoorApronDepth * 0.5f)));
 
-                AlpineVillageLaneSample sample =
-                    plan.Lane.Sample(plot.LaneDistance);
-                capsules.Add(new Capsule(
-                    ToXZ(sample.Position),
-                    ToXZ(plot.DoorDockPosition),
-                    SpurHalfWidth));
             }
         }
 

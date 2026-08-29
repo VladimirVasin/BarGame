@@ -59,6 +59,9 @@ namespace BarPromenade
                 nightPlan = CityNightFixturePlanner.CreatePlan(layout);
             }
 
+            CityArchShelterPlan archShelterPlan =
+                CityArchShelterPlanner.Create(layout);
+
             Transform world = new GameObject("Generated City").transform;
             world.SetParent(parent, false);
             Material emissiveMaterial = CityNightResources.EmissiveMaterial;
@@ -105,7 +108,10 @@ namespace BarPromenade
                 out CityCemeteryGroundExcavation cemeteryExcavation);
             CityTerrainSafetyWorldBuilder.Build(
                 world,
-                layout);
+                layout,
+                archShelterPlan.IsEnabled
+                    ? archShelterPlan.Placement.RailSuppressionFootprint
+                    : (Rect?)null);
             GameObject mountainBoundaryRoot =
                 CityMountainBoundaryWorldBuilder.Build(
                     world,
@@ -195,6 +201,15 @@ namespace BarPromenade
                     ref supermarket);
             }
 
+            // This precinct measures and joins the two already placed
+            // Nightlife facades, so it is built after the building pass but
+            // before loose street dressing can obscure its clear lanes.
+            CityArchShelterWorldResult archShelter =
+                CityArchShelterWorldBuilder.Build(
+                    world,
+                    layout,
+                    archShelterPlan);
+
             GameObject decorationRoot =
                 CityDecorationWorldBuilder.Build(
                     world,
@@ -264,6 +279,8 @@ namespace BarPromenade
                 mountainBackdrop,
                 windDressingPlan,
                 windDressingRoot,
+                archShelterPlan,
+                archShelter,
                 bounds);
         }
 

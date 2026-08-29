@@ -42,6 +42,7 @@ namespace BarPromenade
         private const float CabinLightSpotAngle = 110f;
         private const float CabinLightInnerSpotAngle = 68f;
         private const float VisibleLightFactorThreshold = 0.0001f;
+        private bool hasAppliedNightFactor;
         private const string SuspensionVisualName = "Suspension Visual";
 
         private static readonly int EmissionColorId =
@@ -321,12 +322,21 @@ namespace BarPromenade
             float next = IsFinite(factor)
                 ? Mathf.Clamp01(factor)
                 : 0f;
-            if (Mathf.Approximately(next, NightFactor))
+
+            // The change gate must not survive the pool. A husk parks with
+            // its runtime lights hard-off and NightFactor zero; respawned
+            // at a constant noon the director hands it the same zero, an
+            // equality early-out would skip the refresh, and the plafond -
+            // which §20 keeps burning by day - would stay dark until the
+            // next dusk edge.
+            if (hasAppliedNightFactor &&
+                Mathf.Approximately(next, NightFactor))
             {
                 return;
             }
 
             NightFactor = next;
+            hasAppliedNightFactor = true;
             RefreshLights();
         }
 
@@ -445,6 +455,14 @@ namespace BarPromenade
                 driverPresentation.ResetForPool();
             }
             RefreshLights();
+
+            // A pooled bus is not a bus at noon, it is a bus that does not
+            // exist - the §20 fixture floor keeps the PLAFOND of a running
+            // one burning by day, and must not keep the husk's realtime
+            // lights armed in the pool.
+            SetRuntimeLightFactor(headlightLights, 0f, 0f);
+            SetRuntimeLightFactor(cabinLights, 0f, 0f);
+            hasAppliedNightFactor = false;
         }
 
         private void OnDisable()
@@ -1119,22 +1137,33 @@ namespace BarPromenade
                 TailLightEmission * Mathf.Max(
                     NightFactor * 0.55f,
                     brakeFactor));
+            // The cabin plafond is a FIXTURE - the §20 law's own list
+            // runs "street lamp, door lamp, station plafond, garland,
+            // inhabited window", and a bus plafond is the plafond that
+            // moves. It rides the fixture floor. The headlights and tail
+            // lights stay on their own logic: canon excludes them as
+            // events, not fixtures.
+            float cabinFactor =
+                GameTimeDayNightRules.FixtureFactor(NightFactor);
             SetEmission(
                 registry.CabinLights,
-                CabinLightEmission * NightFactor);
+                CabinLightEmission * cabinFactor);
             SetRuntimeLightFactor(
                 headlightLights,
-                HeadlightBaseIntensity);
+                HeadlightBaseIntensity,
+                NightFactor);
             SetRuntimeLightFactor(
                 cabinLights,
-                CabinLightBaseIntensity);
+                CabinLightBaseIntensity,
+                cabinFactor);
         }
 
-        private void SetRuntimeLightFactor(
+        private static void SetRuntimeLightFactor(
             IReadOnlyList<Light> lights,
-            float baseIntensity)
+            float baseIntensity,
+            float factor)
         {
-            bool visible = NightFactor > VisibleLightFactorThreshold;
+            bool visible = factor > VisibleLightFactorThreshold;
             for (int index = 0; index < lights.Count; index++)
             {
                 Light target = lights[index];
@@ -1143,7 +1172,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                target.intensity = baseIntensity * NightFactor;
+                target.intensity = baseIntensity * factor;
                 target.enabled = visible;
             }
         }

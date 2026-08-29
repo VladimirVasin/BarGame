@@ -1243,4 +1243,202 @@ MonoBehaviour:
     role: 9
     surface: 0
     mesh: {fileID: 4681943332884206897, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: 64a77e3a537b3815d8cfa9a2d308995737c77c3ea17cbde79717d09dec7caf30
+  - kind: 72
+    variant: 0
+    component: Shell_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -3261097812835018928, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 72
+    variant: 0
+    component: StepsAndRetaining_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 2893321551802241092, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 72
+    variant: 0
+    component: PlatformSupport_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -528474450849622183, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 72
+    variant: 0
+    component: PlatformSlab_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -2525240157595140522, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 72
+    variant: 0
+    component: Cladding_Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: -8146650017027815572, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 72
+    variant: 0
+    component: Roof_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -7408179487343608071, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 73
+    variant: 0
+    component: Barrel_Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: -8291656150953251350, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 73
+    variant: 0
+    component: Fuel_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: 6130207603421165011, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 74
+    variant: 0
+    component: Mattress_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -4341171280685076428, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 74
+    variant: 0
+    component: Blanket_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -330031109944765735, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 74
+    variant: 0
+    component: Cardboard_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: -1009635336623764941, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 74
+    variant: 1
+    component: Roll_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -4481891390175959485, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 74
+    variant: 1
+    component: Tie_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -5867899384790134587, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 74
+    variant: 1
+    component: Cardboard_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: 8603802396957500829, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 75
+    variant: 0
+    component: CrateAndCardboard_Timber
+    role: 6
+    surface: 0
+    mesh: {fileID: 27933395280462782, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 75
+    variant: 0
+    component: Bags_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 7719890701090072399, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 75
+    variant: 0
+    component: Bottles_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -5668535428119368736, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 75
+    variant: 0
+    component: Can_Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 6255223359841259029, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 76
+    variant: 0
+    component: FlameCore_Neon
+    role: 3
+    surface: 0
+    mesh: {fileID: 4455599418106175137, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 76
+    variant: 0
+    component: FlameOuter_Neon
+    role: 3
+    surface: 0
+    mesh: {fileID: -7481674714882338777, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 76
+    variant: 0
+    component: FlameLeftTongue_Neon
+    role: 3
+    surface: 0
+    mesh: {fileID: 5846944898773899102, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 76
+    variant: 0
+    component: FlameRightTongue_Neon
+    role: 3
+    surface: 0
+    mesh: {fileID: 9039170467711819656, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 76
+    variant: 0
+    component: EmberBed_Neon
+    role: 3
+    surface: 0
+    mesh: {fileID: 1264946946129246905, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 76
+    variant: 0
+    component: GroundSpill_BacklitSign
+    role: 8
+    surface: 0
+    mesh: {fileID: 3481825562567613418, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 77
+    variant: 0
+    component: Outerwear_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 6897807937996734358, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 77
+    variant: 0
+    component: Layer_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -5957622662990130716, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 77
+    variant: 0
+    component: Skin_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 8156966739115231083, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 78
+    variant: 0
+    component: Outerwear_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -1991043080483799393, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 78
+    variant: 0
+    component: Layer_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: 5501038904145054343, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 78
+    variant: 0
+    component: Skin_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: -1633480535774320496, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 79
+    variant: 0
+    component: Outerwear_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 934970642288182342, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 79
+    variant: 0
+    component: BreathingUpper_Residential
+    role: 7
+    surface: 0
+    mesh: {fileID: -536036608629021177, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 79
+    variant: 0
+    component: Skin_Masonry
+    role: 2
+    surface: 0
+    mesh: {fileID: 1412449985112404889, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  buildSignature: 87680a5d05066a52504900a19b0e4ec19955fbe180fc6cc8d60f6e5995e412ad

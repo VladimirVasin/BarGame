@@ -93,6 +93,12 @@ namespace BarPromenade
             new Color(0.170f, 0.105f, 0.062f, 1f);
         private static readonly Color FirewoodColor =
             new Color(0.245f, 0.150f, 0.082f, 1f);
+        private static readonly Color FadedGreenColor =
+            new Color(0.225f, 0.300f, 0.255f, 1f);
+        private static readonly Color FadedBlueColor =
+            new Color(0.235f, 0.285f, 0.315f, 1f);
+        private static readonly Color FadedRedColor =
+            new Color(0.345f, 0.205f, 0.170f, 1f);
 
         /// <summary>A door is a door at every house on the lane, whatever
         /// the house is. That is why the kit ships none.</summary>
@@ -100,12 +106,48 @@ namespace BarPromenade
 
         public const float DoorWidth = 0.92f;
 
-        public const float GarlandSpacing = 8.5f;
-        public const float GarlandFirstDistance = 7f;
         public const float GarlandHeight = 4.6f;
         public const float GarlandAnchorReach = 1.8f;
         public const float GarlandSag = 0.85f;
         public const int GarlandSegments = 14;
+        public const float GarlandPostHeight = 3.1f;
+        public const float GarlandPostWireAnchorHeight = 2.58f;
+        public const float GarlandLampIntensity = 52f;
+        public const float WindowSnowPoolIntensity = 34f;
+        public const float SummitWindowSnowPoolIntensity = 44f;
+
+        private const float GarlandHouseReach = 6.5f;
+        internal const float GarlandHouseAnchorSlack = 1f;
+        private static readonly float[] GarlandDistanceBeats =
+        {
+            8.5f, 16.5f, 27.5f, 37f, 46.5f,
+            55f, 63.5f, 71.5f, 76f
+        };
+
+        internal static int GarlandSpanCount => GarlandDistanceBeats.Length;
+
+        // Loose bands, not a parade-ground grid. The gaps keep the burial
+        // ground ordinary and old without selecting one marker for attention.
+        private static readonly Vector2[] CemeteryMarkerPattern =
+        {
+            new Vector2(-0.36f, -0.32f),
+            new Vector2(-0.18f, -0.27f),
+            new Vector2(0.03f, -0.35f),
+            new Vector2(0.22f, -0.28f),
+            new Vector2(0.38f, -0.34f),
+            new Vector2(-0.31f, -0.10f),
+            new Vector2(-0.08f, -0.06f),
+            new Vector2(0.15f, -0.14f),
+            new Vector2(0.34f, -0.05f),
+            new Vector2(-0.38f, 0.11f),
+            new Vector2(-0.19f, 0.16f),
+            new Vector2(0.07f, 0.07f),
+            new Vector2(0.29f, 0.18f),
+            new Vector2(-0.29f, 0.34f),
+            new Vector2(-0.05f, 0.28f),
+            new Vector2(0.19f, 0.35f),
+            new Vector2(0.38f, 0.27f)
+        };
 
         private static readonly Color GarlandWireColor =
             new Color(0.085f, 0.075f, 0.062f, 1f);
@@ -118,6 +160,10 @@ namespace BarPromenade
         /// </summary>
         private static readonly Color WindowGlowColor =
             new Color(1f, 0.735f, 0.395f, 1f);
+
+        internal static Color CleanSnowTint => SnowColor;
+        internal static Color GarlandBulbTint => GarlandBulbColor;
+        internal static Color WarmWindowTint => WindowGlowColor;
 
         public static AlpineVillageWorldResult Build(
             Transform parent,
@@ -134,6 +180,7 @@ namespace BarPromenade
             }
 
             plan.ValidateOrThrow();
+            VillageAssetProvider kit = VillageAssetProvider.LoadOrThrow();
 
             var root = new GameObject("Alpine Village");
             root.transform.SetParent(parent, false);
@@ -142,6 +189,7 @@ namespace BarPromenade
 
             GameObject terrainRoot = BuildTerrain(root.transform, plan);
             GameObject laneSurface = BuildLane(root.transform, plan);
+            BuildPathSurfaces(root.transform, plan);
 
             // The station is the cableway builder's, not this one's. Both
             // terminals are the same building and the second must not be a
@@ -157,9 +205,18 @@ namespace BarPromenade
             {
                 semanticObjects[entry.Key] = entry.Value;
             }
+            semanticObjects[
+                AlpineVillageDressingPlanner
+                    .StationMechanismOwnerStableId] =
+                cableway.Bullwheel;
 
-            BuildPlots(root.transform, plan, semanticObjects);
-            BuildGarlands(root.transform, plan);
+            BuildPlots(root.transform, plan, kit, semanticObjects);
+            BuildVillageDressing(
+                root.transform,
+                plan,
+                kit,
+                semanticObjects);
+            BuildGarlands(root.transform, plan, kit, semanticObjects);
 
             var walkableArea = new AlpineVillageWalkableArea(plan);
             return new AlpineVillageWorldResult(
@@ -181,13 +238,20 @@ namespace BarPromenade
             Transform parent,
             AlpineVillagePlan plan)
         {
-            Rect bounds = plan.TerrainBounds;
+            // TerrainBounds is the inhabited inner bowl. Sampling only that
+            // rectangle means SampleRidgeRise is zero at every built vertex:
+            // the planned mountains exist only as descriptors and the ground
+            // simply ends. TerrainMeshBounds carries the complete physical
+            // rise, the hidden crest and the cableway brink.
+            Rect bounds = plan.TerrainMeshBounds;
             int columns = Mathf.Max(
                 1,
                 Mathf.CeilToInt(bounds.width / TerrainCellSize));
             int rows = Mathf.Max(
                 1,
                 Mathf.CeilToInt(bounds.height / TerrainCellSize));
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
 
             var vertices = new Vector3[(columns + 1) * (rows + 1)];
             var uvs = new Vector2[vertices.Length];
@@ -215,6 +279,18 @@ namespace BarPromenade
                         1.6f,
                         5.5f,
                         lateral);
+                    for (int pathIndex = 0;
+                         pathIndex < paths.Count;
+                         pathIndex++)
+                    {
+                        AlpineVillagePathDescriptor path = paths[pathIndex];
+                        float pathBare = 1f - Mathf.SmoothStep(
+                            path.SurfaceHalfWidth + 0.15f,
+                            path.SurfaceHalfWidth + 1.35f,
+                            path.DistanceToCenterline(point));
+                        bare = Mathf.Max(bare, pathBare);
+                    }
+
                     colors[index] = Color.Lerp(SnowColor, SoilColor, bare);
                 }
             }
@@ -263,6 +339,86 @@ namespace BarPromenade
                 SnowColor);
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
             return host;
+        }
+
+        /// <summary>
+        /// The visible half of every traversal branch. The physical terrain
+        /// remains the collider; these lifted ribbons are only compacted soil
+        /// and snow, sampled from the same ground under each metre.
+        /// </summary>
+        private static void BuildPathSurfaces(
+            Transform parent,
+            AlpineVillagePlan plan)
+        {
+            var root = new GameObject("Visible Village Paths");
+            root.transform.SetParent(parent, false);
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
+            for (int index = 0; index < paths.Count; index++)
+            {
+                BuildPathSurface(root.transform, plan, paths[index]);
+            }
+        }
+
+        private static void BuildPathSurface(
+            Transform parent,
+            AlpineVillagePlan plan,
+            AlpineVillagePathDescriptor path)
+        {
+            int steps = Mathf.Max(1, Mathf.CeilToInt(path.LengthXZ));
+            var vertices = new Vector3[(steps + 1) * 2];
+            var uvs = new Vector2[vertices.Length];
+            Vector3 direction = path.End - path.Start;
+            direction.y = 0f;
+            direction.Normalize();
+            Vector3 right = Vector3.Cross(Vector3.up, direction).normalized;
+            for (int step = 0; step <= steps; step++)
+            {
+                float amount = step / (float)steps;
+                Vector3 center = Vector3.Lerp(path.Start, path.End, amount);
+                center.y = AlpineVillageTerrainSampler.SampleHeight(
+                    plan,
+                    new Vector2(center.x, center.z)) + 0.025f;
+                Vector3 across = right * path.SurfaceHalfWidth;
+                int vertex = step * 2;
+                vertices[vertex] = center - across;
+                vertices[vertex + 1] = center + across;
+                float travelled = path.LengthXZ * amount * 0.42f;
+                uvs[vertex] = new Vector2(0f, travelled);
+                uvs[vertex + 1] = new Vector2(1f, travelled);
+            }
+
+            var triangles = new int[steps * 6];
+            int cursor = 0;
+            for (int step = 0; step < steps; step++)
+            {
+                int origin = step * 2;
+                triangles[cursor++] = origin;
+                triangles[cursor++] = origin + 2;
+                triangles[cursor++] = origin + 1;
+                triangles[cursor++] = origin + 1;
+                triangles[cursor++] = origin + 2;
+                triangles[cursor++] = origin + 3;
+            }
+
+            var mesh = new Mesh { name = path.StableId + " Surface" };
+            mesh.SetVertices(vertices);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            var host = new GameObject("Visible Path - " + path.StableId);
+            host.transform.SetParent(parent, false);
+            host.AddComponent<MeshFilter>().sharedMesh = mesh;
+            MeshRenderer renderer = host.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = true;
+            MountainRoadSurfaceAppearance.Apply(
+                renderer,
+                MountainRoadSurfaceKind.ForestFloor,
+                LaneColor);
         }
 
         /// <summary>
@@ -336,15 +492,9 @@ namespace BarPromenade
         private static void BuildPlots(
             Transform parent,
             AlpineVillagePlan plan,
+            VillageAssetProvider kit,
             IDictionary<string, Transform> semanticObjects)
         {
-            VillageAssetProvider kit = VillageAssetProvider.Load();
-            if (kit == null || !kit.HasCompleteMeshes)
-            {
-                GameLog.Warning("alpine_village", "village_kit_missing");
-                kit = null;
-            }
-
             for (int index = 0; index < plan.Plots.Count; index++)
             {
                 AlpineVillagePlotDescriptor plot = plan.Plots[index];
@@ -357,7 +507,11 @@ namespace BarPromenade
                 switch (plot.Kind)
                 {
                     case AlpineVillagePlotKind.Adit:
-                        BuildAdit(root.transform, plot, kit);
+                        BuildAdit(
+                            root.transform,
+                            plot,
+                            kit,
+                            semanticObjects);
                         break;
                     case AlpineVillagePlotKind.Cemetery:
                         BuildCemetery(root.transform, plot, kit);
@@ -390,14 +544,10 @@ namespace BarPromenade
             for (int index = 0; index < roles.Length; index++)
             {
                 VillageMeshRole role = roles[index];
-                if (!kit.TryGetPart(
-                        kind,
-                        variant,
-                        role,
-                        out VillageMeshPart part))
-                {
-                    continue;
-                }
+                VillageMeshPart part = kit.GetPartOrThrow(
+                    kind,
+                    variant,
+                    role);
 
                 var host = new GameObject($"{kind} {role}");
                 host.transform.SetParent(parent, false);
@@ -421,16 +571,34 @@ namespace BarPromenade
             }
         }
 
-        private static Color HouseTint(VillageMeshRole role)
+        private static Color HouseTint(
+            AlpineVillagePlotDescriptor plot,
+            VillageMeshRole role)
         {
             switch (role)
             {
                 case VillageMeshRole.Roof:
                     return RoofColor;
+                case VillageMeshRole.Snow:
+                    return SnowColor;
                 case VillageMeshRole.Plinth:
                     return StoneColor;
                 case VillageMeshRole.Chimney:
                     return ChimneyColor;
+                case VillageMeshRole.Walls:
+                    if (plot.Kind == AlpineVillagePlotKind.MothersHouse)
+                    {
+                        return WhitewashColor;
+                    }
+
+                    // Old whitewash and exposed hewn timber share a street.
+                    // Variant selection is stable, and light remains the
+                    // source of warmth - neither family is clean or new.
+                    return VillageAssetProvider.SelectVariant(
+                            VillageAssetKind.FacadeDetail,
+                            plot.StableId) == 1
+                        ? TimberColor
+                        : new Color(0.585f, 0.555f, 0.500f, 1f);
                 default:
                     return TimberColor;
             }
@@ -442,10 +610,38 @@ namespace BarPromenade
             {
                 case VillageMeshRole.Roof:
                     return RoofColor;
+                case VillageMeshRole.Snow:
+                    return SnowColor;
                 case VillageMeshRole.Plinth:
                     return StoneColor;
                 default:
                     return WhitewashColor;
+            }
+        }
+
+        private static Color FacadeDetailTint(
+            AlpineVillagePlotDescriptor plot,
+            VillageMeshRole role)
+        {
+            switch (role)
+            {
+                case VillageMeshRole.Repair:
+                    return plot.Kind == AlpineVillagePlotKind.MothersHouse
+                        ? new Color(0.625f, 0.595f, 0.540f, 1f)
+                        : StoneColor;
+                case VillageMeshRole.Bracket:
+                    return RustColor;
+                case VillageMeshRole.Shutters:
+                    int variant = VillageAssetProvider.SelectVariant(
+                        VillageAssetKind.FacadeDetail,
+                        plot.StableId);
+                    return variant == 0
+                        ? FadedGreenColor
+                        : variant == 1
+                            ? FadedRedColor
+                            : FadedBlueColor;
+                default:
+                    return TimberColor;
             }
         }
 
@@ -480,7 +676,9 @@ namespace BarPromenade
             {
                 VillageAssetKind kind = chapel
                     ? VillageAssetKind.Chapel
-                    : VillageAssetKind.House;
+                    : tallest
+                        ? VillageAssetKind.TopHouse
+                        : VillageAssetKind.House;
                 int variant =
                     VillageAssetProvider.SelectVariant(kind, plot.StableId);
                 PlaceKitAssembly(
@@ -491,7 +689,7 @@ namespace BarPromenade
                     plot.FootprintSize,
                     plot.Height,
                     chapel ? (Func<VillageMeshRole, Color>)ChapelTint
-                        : HouseTint);
+                        : role => HouseTint(plot, role));
                 if (kit.TryGetPart(
                         kind,
                         variant,
@@ -546,7 +744,53 @@ namespace BarPromenade
                 return;
             }
 
+            BuildFacadeDetail(parent, plot, kit, face);
             BuildLitWindows(parent, plot, tallest, face);
+            if (tallest ||
+                plot.StableId == "village-house-01" ||
+                plot.StableId == "village-house-07")
+            {
+                BuildWindowSnowPool(parent, tallest, face.y);
+            }
+        }
+
+        /// <summary>
+        /// One close-read repair per house: old shutters, a patch of later
+        /// whitewash and the iron bracket that has kept them up. It is an
+        /// authored Blender assembly at real human scale, never stretched to
+        /// fill the building descriptor.
+        /// </summary>
+        private static void BuildFacadeDetail(
+            Transform parent,
+            AlpineVillagePlotDescriptor plot,
+            VillageAssetProvider kit,
+            Vector2 wallFace)
+        {
+            if (kit == null)
+            {
+                return;
+            }
+
+            int variant = VillageAssetProvider.SelectVariant(
+                VillageAssetKind.FacadeDetail,
+                plot.StableId);
+            float across = plot.Kind == AlpineVillagePlotKind.MothersHouse
+                ? 0f
+                : (variant % 2 == 0 ? -1f : 1f) * wallFace.x * 0.38f;
+            var anchor = new GameObject("Weathered Facade Detail");
+            anchor.transform.SetParent(parent, false);
+            anchor.transform.localPosition = new Vector3(
+                across,
+                0.72f,
+                wallFace.y + 0.09f);
+            PlaceKitAssembly(
+                anchor.transform,
+                kit,
+                VillageAssetKind.FacadeDetail,
+                variant,
+                new Vector2(1.85f, 0.18f),
+                1.25f,
+                role => FacadeDetailTint(plot, role));
         }
 
         /// <summary>
@@ -653,6 +897,196 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Three windows in the whole village earn a real light. They point
+        /// into the snow immediately in front of the wall, never into the air;
+        /// every other pane remains emissive geometry on the same shared
+        /// material.
+        /// </summary>
+        private static void BuildWindowSnowPool(
+            Transform parent,
+            bool summit,
+            float wallFace)
+        {
+            var lightObject = new GameObject(
+                summit ? "Summit Window Snow Pool" : "Window Snow Pool");
+            lightObject.transform.SetParent(parent, false);
+            lightObject.transform.localPosition = new Vector3(
+                0f,
+                1.55f,
+                wallFace + 0.22f);
+            lightObject.transform.localRotation = Quaternion.LookRotation(
+                new Vector3(0f, -0.62f, 1f).normalized,
+                Vector3.up);
+            Light light = lightObject.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = new Color(1f, 0.75f, 0.46f);
+            light.intensity = summit
+                ? SummitWindowSnowPoolIntensity
+                : WindowSnowPoolIntensity;
+            light.range = summit ? 8.5f : 7.2f;
+            light.spotAngle = summit ? 76f : 70f;
+            light.innerSpotAngle = light.spotAngle * 0.42f;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.bounceIntensity = 0.08f;
+        }
+
+        /// <summary>
+        /// The three close-read traces that make the old mine part of daily
+        /// life: cable as a yard gate, rail as a ditch bridge, and the ordinary
+        /// stone catch basin below the chapel pipe.
+        /// </summary>
+        private static void BuildVillageDressing(
+            Transform parent,
+            AlpineVillagePlan plan,
+            VillageAssetProvider kit,
+            IDictionary<string, Transform> semanticObjects)
+        {
+            AlpineVillagePlotDescriptor chapel = FindPlot(
+                plan,
+                AlpineVillagePlotKind.Chapel);
+            Vector3 bowlGround = AlpineVillagePathPlanner
+                .GetChapelSourceBowlPosition(plan, chapel);
+            var bowl = new GameObject("Chapel Overflow Catch Basin");
+            bowl.transform.SetParent(parent, false);
+            bowl.transform.SetPositionAndRotation(
+                bowlGround,
+                Quaternion.LookRotation(chapel.Facing, Vector3.up));
+            PlaceKitAssembly(
+                bowl.transform,
+                kit,
+                VillageAssetKind.SourceBowl,
+                0,
+                new Vector2(1.15f, 0.75f),
+                0.55f,
+                _ => StoneColor);
+            BoxCollider bowlCollider = bowl.AddComponent<BoxCollider>();
+            bowlCollider.center = new Vector3(0f, 0.24f, 0f);
+            bowlCollider.size = new Vector3(1.02f, 0.48f, 0.62f);
+            semanticObjects[
+                AlpineVillageDressingPlanner.SourceBowlOwnerStableId] =
+                bowl.transform;
+
+            AlpineVillagePlotDescriptor dogHouse = FindClosestHouse(
+                plan,
+                plan.Lane.Length *
+                AlpineVillageDressingPlanner.DogHouseLaneFraction,
+                1);
+            Vector3 gateGround = AlpineVillageDressingPlanner
+                .GetCableGatePosition(plan, dogHouse);
+            var gate = new GameObject("Mine Cable Yard Gate");
+            gate.transform.SetParent(parent, false);
+            gate.transform.SetPositionAndRotation(
+                gateGround,
+                Quaternion.LookRotation(dogHouse.Facing, Vector3.up));
+            PlaceKitAssembly(
+                gate.transform,
+                kit,
+                VillageAssetKind.CableGate,
+                0,
+                new Vector2(3.2f, 0.42f),
+                1.25f,
+                role => role == VillageMeshRole.Cable
+                    ? RustColor
+                    : TimberColor);
+            BoxCollider gateCollider = gate.AddComponent<BoxCollider>();
+            gateCollider.center = new Vector3(0f, 0.62f, 0f);
+            gateCollider.size = new Vector3(3.06f, 1.20f, 0.18f);
+            semanticObjects[
+                AlpineVillageDressingPlanner.CableGateOwnerStableId] =
+                gate.transform;
+
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
+            for (int index = 0; index < paths.Count; index++)
+            {
+                AlpineVillagePathDescriptor path = paths[index];
+                if (path.StableId != "village-adit-path-b")
+                {
+                    continue;
+                }
+
+                Vector3 bridgeGround = Vector3.Lerp(
+                    path.Start,
+                    path.End,
+                    0.58f);
+                bridgeGround.y = AlpineVillageTerrainSampler.SampleHeight(
+                    plan,
+                    new Vector2(bridgeGround.x, bridgeGround.z));
+                Vector3 bridgeForward = path.End - path.Start;
+                bridgeForward.y = 0f;
+                bridgeForward.Normalize();
+                var bridge = new GameObject("Mine Rail Ditch Bridge");
+                bridge.transform.SetParent(parent, false);
+                bridge.transform.SetPositionAndRotation(
+                    bridgeGround,
+                    Quaternion.LookRotation(bridgeForward, Vector3.up));
+                PlaceKitAssembly(
+                    bridge.transform,
+                    kit,
+                    VillageAssetKind.RailBridge,
+                    0,
+                    new Vector2(1.35f, 3.2f),
+                    0.16f,
+                    role => role == VillageMeshRole.Rails
+                        ? RustColor
+                        : TimberColor);
+                BoxCollider collider = bridge.AddComponent<BoxCollider>();
+                collider.center = new Vector3(0f, 0.02f, 0f);
+                collider.size = new Vector3(1.22f, 0.04f, 3.0f);
+                semanticObjects["village-rail-ditch-bridge"] =
+                    bridge.transform;
+                break;
+            }
+        }
+
+        private static AlpineVillagePlotDescriptor FindPlot(
+            AlpineVillagePlan plan,
+            AlpineVillagePlotKind kind)
+        {
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                if (plan.Plots[index].Kind == kind)
+                {
+                    return plan.Plots[index];
+                }
+            }
+
+            throw new InvalidOperationException(
+                $"The village is missing its '{kind}' plot.");
+        }
+
+        private static AlpineVillagePlotDescriptor FindClosestHouse(
+            AlpineVillagePlan plan,
+            float laneDistance,
+            int side)
+        {
+            AlpineVillagePlotDescriptor closest = null;
+            float best = float.PositiveInfinity;
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                AlpineVillagePlotDescriptor plot = plan.Plots[index];
+                if (plot.Kind != AlpineVillagePlotKind.House ||
+                    plot.Side != side)
+                {
+                    continue;
+                }
+
+                float distance = Mathf.Abs(plot.LaneDistance - laneDistance);
+                if (distance >= best)
+                {
+                    continue;
+                }
+
+                closest = plot;
+                best = distance;
+            }
+
+            return closest ?? throw new InvalidOperationException(
+                $"The village needs a house on side {side}.");
+        }
+
+        /// <summary>
         /// A hole in the slope behind the houses, the timber holding it open,
         /// and the cart that used to come out of it - standing in the yard
         /// with firewood in it, which is the only way this village keeps
@@ -661,7 +1095,8 @@ namespace BarPromenade
         private static void BuildAdit(
             Transform parent,
             AlpineVillagePlotDescriptor plot,
-            VillageAssetProvider kit)
+            VillageAssetProvider kit,
+            IDictionary<string, Transform> semanticObjects)
         {
             if (kit != null)
             {
@@ -703,6 +1138,9 @@ namespace BarPromenade
                     new Vector2(0.62f, 0.86f),
                     0.42f,
                     _ => FirewoodColor);
+                semanticObjects[
+                    AlpineVillageDressingPlanner.FirewoodOwnerStableId] =
+                    stack.transform;
             }
 
             // The mouth itself: an absence, and the darkest thing in the
@@ -759,54 +1197,45 @@ namespace BarPromenade
                 MountainRoadSurfaceKind.ForestFloor,
                 SoilColor);
 
-            for (int row = 0; row < 4; row++)
+            for (int index = 0; index < CemeteryMarkerPattern.Length; index++)
             {
-                for (int column = 0; column < 5; column++)
+                Vector2 authored = CemeteryMarkerPattern[index];
+                var position = new Vector3(
+                    authored.x * plot.FootprintSize.x,
+                    0.12f,
+                    authored.y * plot.FootprintSize.y);
+                float markerHeight = 0.68f +
+                    (index * 7 % 5) * 0.045f;
+                if (kit == null)
                 {
-                    var position = new Vector3(
-                        Mathf.Lerp(
-                            -plot.FootprintSize.x * 0.36f,
-                            plot.FootprintSize.x * 0.36f,
-                            column / 4f),
-                        0.12f,
-                        Mathf.Lerp(
-                            -plot.FootprintSize.y * 0.32f,
-                            plot.FootprintSize.y * 0.32f,
-                            row / 3f));
-                    if (kit == null)
-                    {
-                        Texture(
-                            RuntimePrimitiveFactory.CreateBox(
-                                "Grave Marker",
-                                parent,
-                                position + Vector3.up * 0.36f,
-                                new Vector3(0.36f, 0.72f, 0.12f),
-                                StoneColor,
-                                false),
-                            MountainRoadSurfaceKind.LayeredStone,
-                            StoneColor);
-                        continue;
-                    }
-
-                    var marker = new GameObject($"Grave {row}-{column}");
-                    marker.transform.SetParent(parent, false);
-                    marker.transform.localPosition = position;
-
-                    // Every row leans a little differently. A cemetery of
-                    // parallel stones is a car park.
-                    marker.transform.localRotation = Quaternion.Euler(
-                        0f,
-                        (row * 5 + column) % 7 * 4.5f - 13.5f,
-                        0f);
-                    PlaceKitAssembly(
-                        marker.transform,
-                        kit,
-                        VillageAssetKind.GraveMarker,
-                        (row * 5 + column) % 3,
-                        new Vector2(0.42f, 0.18f),
-                        0.8f,
-                        _ => StoneColor);
+                    Texture(
+                        RuntimePrimitiveFactory.CreateBox(
+                            "Grave Marker",
+                            parent,
+                            position + Vector3.up * (markerHeight * 0.5f),
+                            new Vector3(0.36f, markerHeight, 0.12f),
+                            StoneColor,
+                            false),
+                        MountainRoadSurfaceKind.LayeredStone,
+                        StoneColor);
+                    continue;
                 }
+
+                var marker = new GameObject($"Grave {index:00}");
+                marker.transform.SetParent(parent, false);
+                marker.transform.localPosition = position;
+                marker.transform.localRotation = Quaternion.Euler(
+                    0f,
+                    (index * 11 % 13) * 2.7f - 16.2f,
+                    (index * 5 % 7) * 0.75f - 2.25f);
+                PlaceKitAssembly(
+                    marker.transform,
+                    kit,
+                    VillageAssetKind.GraveMarker,
+                    index % 3,
+                    new Vector2(0.42f, 0.18f),
+                    markerHeight,
+                    _ => StoneColor);
             }
         }
 
@@ -817,54 +1246,218 @@ namespace BarPromenade
         /// implementation would fall over: a bulb is not a light. Eighty-odd
         /// real point lights would blow URP's additional-light budget on its
         /// own, so the bulbs are EMISSIVE GEOMETRY in one combined mesh per
-        /// span, and only every other span carries an actual lamp. Six
-        /// realtime lights light the whole village.
+        /// span. Two authored spans carry an actual lamp; together with three
+        /// window spots that keeps the whole village to five realtime lights.
         /// </summary>
         private static void BuildGarlands(
             Transform parent,
-            AlpineVillagePlan plan)
+            AlpineVillagePlan plan,
+            VillageAssetProvider kit,
+            IDictionary<string, Transform> semanticObjects)
         {
             var root = new GameObject("Village Garlands");
             root.transform.SetParent(parent, false);
 
-            int spans = Mathf.Max(
-                1,
-                Mathf.FloorToInt(
-                    (plan.Lane.Length - GarlandFirstDistance * 2f) /
-                    GarlandSpacing));
-            for (int span = 0; span <= spans; span++)
+            for (int span = 0; span < GarlandDistanceBeats.Length; span++)
             {
-                float distance = GarlandFirstDistance + span * GarlandSpacing;
-                if (distance > plan.Lane.Length - GarlandFirstDistance)
+                float distance = GarlandDistanceBeats[span];
+                if (distance >= plan.Lane.Length - 4f)
                 {
                     break;
                 }
 
+                GetGarlandSpan(
+                    plan,
+                    span,
+                    out Vector3 left,
+                    out Vector3 right,
+                    out bool leftPost,
+                    out bool rightPost);
                 AlpineVillageLaneSample sample = plan.Lane.Sample(distance);
-                float reach = sample.Width * 0.5f + GarlandAnchorReach;
-                Vector3 left = sample.Position -
-                               sample.Right * reach +
-                               Vector3.up * GarlandHeight;
-                Vector3 right = sample.Position +
-                                sample.Right * reach +
-                                Vector3.up * GarlandHeight;
-                BuildGarlandSpan(root.transform, left, right, span);
+                if (leftPost)
+                {
+                    BuildGarlandPost(
+                        root.transform,
+                        kit,
+                        left - Vector3.up * GarlandPostWireAnchorHeight,
+                        sample.Forward,
+                        span,
+                        "L");
+                }
+
+                if (rightPost)
+                {
+                    BuildGarlandPost(
+                        root.transform,
+                        kit,
+                        right - Vector3.up * GarlandPostWireAnchorHeight,
+                        sample.Forward,
+                        span,
+                        "R");
+                }
+
+                string stableId = $"village-garland-wire-{span:00}";
+                BuildGarlandSpan(
+                    root.transform,
+                    left,
+                    right,
+                    span,
+                    span == 1 || span == 6,
+                    stableId,
+                    semanticObjects);
             }
+        }
+
+        /// <summary>
+        /// The sound plan reads the exact same cord as the renderer. No hum
+        /// may hover where a regularly spaced wire used to be.
+        /// </summary>
+        internal static void GetGarlandSpan(
+            AlpineVillagePlan plan,
+            int span,
+            out Vector3 left,
+            out Vector3 right)
+        {
+            GetGarlandSpan(
+                plan,
+                span,
+                out left,
+                out right,
+                out _,
+                out _);
+        }
+
+        private static void GetGarlandSpan(
+            AlpineVillagePlan plan,
+            int span,
+            out Vector3 left,
+            out Vector3 right,
+            out bool leftPost,
+            out bool rightPost)
+        {
+            if (plan == null)
+            {
+                throw new ArgumentNullException(nameof(plan));
+            }
+
+            if (span < 0 || span >= GarlandDistanceBeats.Length)
+            {
+                throw new ArgumentOutOfRangeException(nameof(span));
+            }
+
+            AlpineVillageLaneSample sample = plan.Lane.Sample(
+                GarlandDistanceBeats[span]);
+            left = ResolveGarlandAnchor(plan, sample, -1, out leftPost);
+            right = ResolveGarlandAnchor(plan, sample, 1, out rightPost);
+        }
+
+        private static Vector3 ResolveGarlandAnchor(
+            AlpineVillagePlan plan,
+            AlpineVillageLaneSample sample,
+            int side,
+            out bool usesPost)
+        {
+            AlpineVillagePlotDescriptor nearest = null;
+            float nearestDistance = float.PositiveInfinity;
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                AlpineVillagePlotDescriptor plot = plan.Plots[index];
+                if (plot.Kind != AlpineVillagePlotKind.House ||
+                    plot.Side != side)
+                {
+                    continue;
+                }
+
+                float distance = Mathf.Abs(
+                    plot.LaneDistance - sample.Distance);
+                if (distance >= nearestDistance)
+                {
+                    continue;
+                }
+
+                nearest = plot;
+                nearestDistance = distance;
+            }
+
+            if (nearest != null && nearestDistance <= GarlandHouseReach)
+            {
+                float height = Mathf.Clamp(
+                    nearest.Height * 0.72f,
+                    GarlandPostHeight,
+                    GarlandHeight);
+                Vector3 houseAnchor =
+                    nearest.GroundCenter +
+                    nearest.Facing * (nearest.FootprintSize.y * 0.47f) +
+                    Vector3.up * height;
+                float lateralReach = Mathf.Abs(Vector3.Dot(
+                    houseAnchor - sample.Position,
+                    sample.Right));
+                float maximumHouseReach =
+                    sample.Width * 0.5f +
+                    GarlandAnchorReach +
+                    GarlandHouseAnchorSlack;
+                if (lateralReach <= maximumHouseReach)
+                {
+                    usesPost = false;
+                    return houseAnchor;
+                }
+            }
+
+            usesPost = true;
+            float reach = sample.Width * 0.5f + GarlandAnchorReach;
+            Vector3 ground = sample.Position + sample.Right * (side * reach);
+            ground.y = AlpineVillageTerrainSampler.SampleHeight(
+                plan,
+                new Vector2(ground.x, ground.z));
+            return ground + Vector3.up * GarlandPostWireAnchorHeight;
+        }
+
+        private static void BuildGarlandPost(
+            Transform parent,
+            VillageAssetProvider kit,
+            Vector3 ground,
+            Vector3 forward,
+            int span,
+            string side)
+        {
+            if (kit == null)
+            {
+                return;
+            }
+
+            var post = new GameObject($"Garland Post {span:00} {side}");
+            post.transform.SetParent(parent, false);
+            post.transform.SetPositionAndRotation(
+                ground,
+                Quaternion.LookRotation(forward, Vector3.up));
+            PlaceKitAssembly(
+                post.transform,
+                kit,
+                VillageAssetKind.GarlandPost,
+                0,
+                new Vector2(0.38f, 0.38f),
+                GarlandPostHeight,
+                role => role == VillageMeshRole.Bracket
+                    ? RustColor
+                    : TimberColor);
         }
 
         private static void BuildGarlandSpan(
             Transform parent,
             Vector3 left,
             Vector3 right,
-            int span)
+            int span,
+            bool realLamp,
+            string stableId,
+            IDictionary<string, Transform> semanticObjects)
         {
             var wire = new List<RuntimeOrientedBox>(GarlandSegments);
             var bulbs = new List<RuntimeOrientedBox>(GarlandSegments);
-            Vector3 previous = SampleGarland(left, right, 0f);
+            Vector3 previous = SampleGarlandPoint(left, right, 0f);
             for (int step = 1; step <= GarlandSegments; step++)
             {
                 float amount = step / (float)GarlandSegments;
-                Vector3 current = SampleGarland(left, right, amount);
+                Vector3 current = SampleGarlandPoint(left, right, amount);
                 Vector3 delta = current - previous;
                 float length = delta.magnitude;
                 if (length > 0.0001f)
@@ -898,9 +1491,24 @@ namespace BarPromenade
                     GarlandWireColor,
                     false,
                     1f,
-                    RuntimeWorldUvMode.BoxProjected);
+                    RuntimeWorldUvMode.BoxProjected,
+                    true);
             MeshRenderer cordRenderer = cord.GetComponent<MeshRenderer>();
             cordRenderer.shadowCastingMode = ShadowCastingMode.Off;
+
+            // Combined-box vertices are already baked into the garland
+            // parent's local space, so the mesh object's transform stays at
+            // the parent origin. Register a real midpoint transform instead;
+            // semantic consumers must never mistake a batching pivot for the
+            // physical wire that explains their sound.
+            var semanticAnchor = new GameObject(
+                $"Garland Semantic Anchor {span:00}");
+            semanticAnchor.transform.SetParent(parent, false);
+            semanticAnchor.transform.position = SampleGarlandPoint(
+                left,
+                right,
+                0.5f);
+            semanticObjects[stableId] = semanticAnchor.transform;
 
             GameObject lamps = RuntimePrimitiveFactory
                 .CreateCombinedOrientedBoxes(
@@ -910,7 +1518,8 @@ namespace BarPromenade
                     GarlandBulbColor,
                     false,
                     1f,
-                    RuntimeWorldUvMode.BoxProjected);
+                    RuntimeWorldUvMode.BoxProjected,
+                    true);
             MeshRenderer bulbRenderer = lamps.GetComponent<MeshRenderer>();
 
             // The combined factory has no material overload, so the emissive
@@ -919,27 +1528,44 @@ namespace BarPromenade
             bulbRenderer.sharedMaterial = CityNightResources.EmissiveMaterial;
             bulbRenderer.shadowCastingMode = ShadowCastingMode.Off;
 
-            if (span % 2 != 0)
+            Transform lampTransform = null;
+            if (realLamp)
             {
-                return;
+                // Two authored cords carry real lamps. Intensity is set by
+                // THROW, not by taste: this hangs about four metres over the
+                // lane and is asked for a warm pool a few metres across,
+                // which puts it below the City's door bulbs at `64-110` over
+                // `7-8 m`.
+                var lightObject = new GameObject(
+                    $"Garland Lamp {span:00}");
+                lightObject.transform.SetParent(parent, false);
+                lightObject.transform.position =
+                    SampleGarlandPoint(left, right, 0.5f) +
+                    Vector3.down * 0.2f;
+                lampTransform = lightObject.transform;
+                Light lamp = lightObject.AddComponent<Light>();
+                lamp.type = LightType.Point;
+                lamp.color = new Color(1f, 0.79f, 0.52f);
+                lamp.intensity = GarlandLampIntensity;
+                lamp.range = 11f;
+                lamp.shadows = LightShadows.None;
+                lamp.renderMode = LightRenderMode.ForcePixel;
+                lamp.bounceIntensity = 0.1f;
             }
 
-            // One real lamp every other span. Intensity is set by THROW, not
-            // by taste: this hangs about four metres over the lane and is
-            // asked for a warm pool a few metres across, which puts it below
-            // the City's door bulbs at `64-110` over `7-8 m`.
-            var lightObject = new GameObject($"Garland Lamp {span:00}");
-            lightObject.transform.SetParent(parent, false);
-            lightObject.transform.position =
-                SampleGarland(left, right, 0.5f) + Vector3.down * 0.2f;
-            Light lamp = lightObject.AddComponent<Light>();
-            lamp.type = LightType.Point;
-            lamp.color = new Color(1f, 0.79f, 0.52f);
-            lamp.intensity = 52f;
-            lamp.range = 11f;
-            lamp.shadows = LightShadows.None;
-            lamp.renderMode = LightRenderMode.ForcePixel;
-            lamp.bounceIntensity = 0.1f;
+            // Both combined meshes keep the batching pivot at the garland
+            // root. A bounded vertex deformation is what lets the free middle
+            // show the gale while both physical anchors remain attached.
+            AlpineVillageGarlandWind motion =
+                cord.AddComponent<AlpineVillageGarlandWind>();
+            motion.Configure(
+                cord.GetComponent<MeshFilter>(),
+                lamps.GetComponent<MeshFilter>(),
+                semanticAnchor.transform,
+                lampTransform,
+                left,
+                right,
+                span * 1.6180339f);
         }
 
         /// <summary>
@@ -947,7 +1573,7 @@ namespace BarPromenade
         /// catenary: at this span the two are a couple of centimetres apart
         /// and one of them is free.
         /// </summary>
-        private static Vector3 SampleGarland(
+        internal static Vector3 SampleGarlandPoint(
             Vector3 left,
             Vector3 right,
             float amount)

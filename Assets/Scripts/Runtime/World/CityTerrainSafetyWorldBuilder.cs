@@ -15,7 +15,8 @@ namespace BarPromenade
 
         internal static GameObject Build(
             Transform parent,
-            CityLayout layout)
+            CityLayout layout,
+            Rect? railSuppressionFootprint = null)
         {
             if (parent == null)
             {
@@ -51,7 +52,8 @@ namespace BarPromenade
 
                 AddRoadBoundaryRailSegments(
                     span,
-                    rails);
+                    rails,
+                    railSuppressionFootprint);
             }
 
             foreach (KeyValuePair<Vector2Int, CitySurfaceDescriptor> pair
@@ -63,14 +65,16 @@ namespace BarPromenade
                     pair.Key + Vector2Int.right,
                     Vector2Int.right,
                     byCell,
-                    rails);
+                    rails,
+                    railSuppressionFootprint);
                 AddBoundaryIfRequired(
                     layout,
                     pair.Value,
                     pair.Key + Vector2Int.up,
                     Vector2Int.up,
                     byCell,
-                    rails);
+                    rails,
+                    railSuppressionFootprint);
             }
 
             if (rails.Count == 0)
@@ -91,7 +95,8 @@ namespace BarPromenade
 
         private static void AddRoadBoundaryRailSegments(
             CityRoadGroundBoundarySpan span,
-            ICollection<Bounds> destination)
+            ICollection<Bounds> destination,
+            Rect? railSuppressionFootprint)
         {
             int segmentCount = Mathf.Max(
                 1,
@@ -158,7 +163,11 @@ namespace BarPromenade
                         RailThickness,
                         height,
                         second - first);
-                destination.Add(new Bounds(center, size));
+                AddWithSuppression(
+                    new Bounds(center, size),
+                    span.IsHorizontal,
+                    destination,
+                    railSuppressionFootprint);
             }
         }
 
@@ -189,7 +198,8 @@ namespace BarPromenade
             Vector2Int neighbourCell,
             Vector2Int direction,
             IReadOnlyDictionary<Vector2Int, CitySurfaceDescriptor> byCell,
-            ICollection<Bounds> destination)
+            ICollection<Bounds> destination,
+            Rect? railSuppressionFootprint)
         {
             if (!byCell.TryGetValue(
                     neighbourCell,
@@ -224,7 +234,8 @@ namespace BarPromenade
                      second.WorldBounds.xMin) * 0.5f,
                     zMin,
                     zMax,
-                    destination);
+                    destination,
+                    railSuppressionFootprint);
                 return;
             }
 
@@ -248,7 +259,8 @@ namespace BarPromenade
                  second.WorldBounds.yMin) * 0.5f,
                 xMin,
                 xMax,
-                destination);
+                destination,
+                railSuppressionFootprint);
         }
 
         private static void AddGroundBoundaryRailSegments(
@@ -259,7 +271,8 @@ namespace BarPromenade
             float fixedCoordinate,
             float minimumCoordinate,
             float maximumCoordinate,
-            ICollection<Bounds> destination)
+            ICollection<Bounds> destination,
+            Rect? railSuppressionFootprint)
         {
             if (CityRoadGroundBoundaryPlanner.IsGroundBoundarySafe(
                     layout,
@@ -371,8 +384,87 @@ namespace BarPromenade
                         RailThickness,
                         height,
                         segmentMaximum - segmentMinimum);
-                destination.Add(new Bounds(center, size));
+                AddWithSuppression(
+                    new Bounds(center, size),
+                    isHorizontal,
+                    destination,
+                    railSuppressionFootprint);
             }
+        }
+
+        private static void AddWithSuppression(
+            Bounds bounds,
+            bool isHorizontal,
+            ICollection<Bounds> destination,
+            Rect? railSuppressionFootprint)
+        {
+            if (!railSuppressionFootprint.HasValue)
+            {
+                destination.Add(bounds);
+                return;
+            }
+
+            var footprint = Rect.MinMaxRect(
+                bounds.min.x,
+                bounds.min.z,
+                bounds.max.x,
+                bounds.max.z);
+            Rect suppression = railSuppressionFootprint.Value;
+            if (!footprint.Overlaps(suppression, true))
+            {
+                destination.Add(bounds);
+                return;
+            }
+
+            float minimum = isHorizontal ? bounds.min.x : bounds.min.z;
+            float maximum = isHorizontal ? bounds.max.x : bounds.max.z;
+            float cutMinimum = Mathf.Max(
+                minimum,
+                isHorizontal ? suppression.xMin : suppression.yMin);
+            float cutMaximum = Mathf.Min(
+                maximum,
+                isHorizontal ? suppression.xMax : suppression.yMax);
+            AddRailSlice(
+                bounds,
+                isHorizontal,
+                minimum,
+                cutMinimum,
+                destination);
+            AddRailSlice(
+                bounds,
+                isHorizontal,
+                cutMaximum,
+                maximum,
+                destination);
+        }
+
+        private static void AddRailSlice(
+            Bounds source,
+            bool isHorizontal,
+            float minimum,
+            float maximum,
+            ICollection<Bounds> destination)
+        {
+            const float minimumLength = 0.02f;
+            if (maximum - minimum <= minimumLength)
+            {
+                return;
+            }
+
+            Vector3 center = source.center;
+            Vector3 size = source.size;
+            if (isHorizontal)
+            {
+                center.x = (minimum + maximum) * 0.5f;
+                size.x = maximum - minimum;
+            }
+            else
+            {
+                center.z = (minimum + maximum) * 0.5f;
+                size.z = maximum - minimum;
+            }
+
+            destination.Add(new Bounds(center, size));
         }
 
         private static float SampleHigherTop(

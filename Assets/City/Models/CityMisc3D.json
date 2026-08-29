@@ -1,9 +1,9 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.3.3",
+  "generator_version": "4.6.0",
   "blender_version": "5.0.1",
   "design_id": "city_misc_citywide_v4",
-  "display_name": "City Misc Citywide Catalog + Church Courtyard Kit",
+  "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter Kit",
   "source_axes": {
     "right": "+X",
     "forward": "+Y",
@@ -57,9 +57,9 @@
   "materials": false,
   "preview_materials_in_presentation_only": true,
   "animation_count": 0,
-  "mesh_count": 205,
-  "assembly_count": 106,
-  "triangle_count": 36050,
+  "mesh_count": 238,
+  "assembly_count": 115,
+  "triangle_count": 42878,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -4761,6 +4761,436 @@
         0.5,
         0.12,
         0.08
+      ]
+    },
+    {
+      "kind": "NightlifeArchBridgeShell",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "face_gap": 14.472,
+        "authored_span": 14.6,
+        "overlap_depth": 11.602,
+        "passage_depth": 10.902,
+        "terrace_rise": 1.562,
+        "stair_count": 10.0,
+        "stair_tread_run": 0.322,
+        "stair_clear_depth": 1.6,
+        "shared_boundary_local_x": -0.48614,
+        "stair_shared_min_x": -3.1,
+        "stair_shared_max_x": 0.12,
+        "stair_authored_min_x": -3.58614,
+        "stair_authored_max_x": -0.36614,
+        "stair_min_forward": 1.45,
+        "stair_max_forward": 3.05,
+        "landing_shared_min_x": 0.12,
+        "landing_shared_max_x": 1.62,
+        "landing_authored_min_x": -0.36614,
+        "landing_authored_max_x": 1.13386,
+        "landing_top": 1.562,
+        "platform_shared_min_x": 0.12,
+        "platform_shared_max_x": 7.42614,
+        "platform_authored_min_x": -0.36614,
+        "platform_authored_max_x": 6.94,
+        "east_attachment_inner_x": 6.94,
+        "south_wall_end_forward": -5.801,
+        "platform_min_forward": -5.801,
+        "platform_max_forward": 3.05,
+        "platform_bottom": 0.0,
+        "platform_top": 1.562,
+        "platform_slab_thickness": 0.18,
+        "guard_height": 1.09,
+        "guard_thickness": 0.12,
+        "guard_bottom": 1.562,
+        "guard_top": 2.652,
+        "guard_top_tube_center": 2.592,
+        "guard_mid_tube_center": 2.107,
+        "guard_post_count": 6.0,
+        "guard_horizontal_count": 2.0,
+        "guard_tube_sides": 8.0,
+        "north_guard_shared_min_x": 0.12,
+        "north_guard_shared_max_x": 7.42614,
+        "north_guard_authored_min_x": -0.36614,
+        "north_guard_authored_max_x": 6.94,
+        "north_guard_contact_forward": 3.05,
+        "north_guard_center_forward": 3.11,
+        "north_guard_outer_forward": 3.17,
+        "south_guard_shared_min_x": 0.12,
+        "south_guard_shared_max_x": 7.42614,
+        "south_guard_authored_min_x": -0.36614,
+        "south_guard_authored_max_x": 6.94,
+        "south_guard_contact_forward": -5.801,
+        "south_guard_center_forward": -5.861,
+        "south_guard_outer_forward": -5.921,
+        "west_guard_shared_contact_x": 0.12,
+        "west_guard_authored_contact_x": -0.36614,
+        "west_guard_shared_center_x": 0.06,
+        "west_guard_authored_center_x": -0.42614,
+        "west_guard_shared_outer_x": 0.0,
+        "west_guard_authored_outer_x": -0.48614,
+        "west_guard_min_forward": -5.801,
+        "west_guard_max_forward": 1.45,
+        "shelter_min_forward": -3.05,
+        "shelter_max_forward": -0.05
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Structural collision proxies",
+        "Stair walkable ramp",
+        "Rail suppression footprint"
+      ],
+      "root_derivation": "NightlifeArchShelterPlan.Center+LowDatum+LowToHigh",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_NightlifeArchBridgeShell_Variant01_Shell_Masonry",
+        "GEO_CMM_NightlifeArchBridgeShell_Variant01_StepsAndRetaining_Masonry",
+        "GEO_CMM_NightlifeArchBridgeShell_Variant01_PlatformSupport_Masonry",
+        "GEO_CMM_NightlifeArchBridgeShell_Variant01_PlatformSlab_Street",
+        "GEO_CMM_NightlifeArchBridgeShell_Variant01_Cladding_Industrial",
+        "GEO_CMM_NightlifeArchBridgeShell_Variant01_Roof_Street"
+      ],
+      "bounds_min_source": [
+        -7.42,
+        -5.921,
+        0.0
+      ],
+      "bounds_max_source": [
+        7.42,
+        5.846,
+        6.62
+      ],
+      "bounds_min_unity": [
+        -7.42,
+        0.0,
+        -5.921
+      ],
+      "bounds_max_unity": [
+        7.42,
+        6.62,
+        5.846
+      ]
+    },
+    {
+      "kind": "NightlifeBurnBarrel",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Fire light",
+        "Smoke particles",
+        "Crackle audio",
+        "Collision proxy"
+      ],
+      "root_derivation": "NightlifeArchShelterPlan.BarrelGround",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_NightlifeBurnBarrel_Variant01_Barrel_Industrial",
+        "GEO_CMM_NightlifeBurnBarrel_Variant01_Fuel_Timber"
+      ],
+      "bounds_min_source": [
+        -0.37,
+        -0.37,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.37,
+        0.37,
+        0.962917
+      ],
+      "bounds_min_unity": [
+        -0.37,
+        0.0,
+        -0.37
+      ],
+      "bounds_max_unity": [
+        0.37,
+        0.962917,
+        0.37
+      ]
+    },
+    {
+      "kind": "NightlifeShelterBedding",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "NightlifeArchShelterPlan.BeddingGround+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_NightlifeShelterBedding_Variant01_Mattress_Residential",
+        "GEO_CMM_NightlifeShelterBedding_Variant01_Blanket_Street",
+        "GEO_CMM_NightlifeShelterBedding_Variant01_Cardboard_Timber"
+      ],
+      "bounds_min_source": [
+        -1.019731,
+        -0.465504,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.059731,
+        0.485504,
+        0.48556
+      ],
+      "bounds_min_unity": [
+        -1.019731,
+        0.0,
+        -0.465504
+      ],
+      "bounds_max_unity": [
+        1.059731,
+        0.48556,
+        0.485504
+      ]
+    },
+    {
+      "kind": "NightlifeShelterBedding",
+      "variant": 1,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "NightlifeArchShelterPlan.BeddingGround+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_NightlifeShelterBedding_Variant02_Roll_Residential",
+        "GEO_CMM_NightlifeShelterBedding_Variant02_Tie_Street",
+        "GEO_CMM_NightlifeShelterBedding_Variant02_Cardboard_Timber"
+      ],
+      "bounds_min_source": [
+        -0.778332,
+        -0.408355,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.878332,
+        0.448355,
+        0.58
+      ],
+      "bounds_min_unity": [
+        -0.778332,
+        0.0,
+        -0.408355
+      ],
+      "bounds_max_unity": [
+        0.878332,
+        0.58,
+        0.448355
+      ]
+    },
+    {
+      "kind": "NightlifeShelterClutter",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [],
+      "root_derivation": "NightlifeArchShelterPlan.ClutterGround+Rotation",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_NightlifeShelterClutter_Variant01_CrateAndCardboard_Timber",
+        "GEO_CMM_NightlifeShelterClutter_Variant01_Bags_Street",
+        "GEO_CMM_NightlifeShelterClutter_Variant01_Bottles_Residential",
+        "GEO_CMM_NightlifeShelterClutter_Variant01_Can_Industrial"
+      ],
+      "bounds_min_source": [
+        -0.869232,
+        -0.635,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.902802,
+        0.31936,
+        0.769021
+      ],
+      "bounds_min_unity": [
+        -0.869232,
+        0.0,
+        -0.635
+      ],
+      "bounds_max_unity": [
+        0.902802,
+        0.769021,
+        0.31936
+      ]
+    },
+    {
+      "kind": "NightlifeShelterFire",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Realtime light",
+        "Halo",
+        "Smoke particles",
+        "Fire animation"
+      ],
+      "root_derivation": "NightlifeArchShelterPlan.BarrelGround",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_NightlifeShelterFire_Variant01_FlameCore_Neon",
+        "GEO_CMM_NightlifeShelterFire_Variant01_FlameOuter_Neon",
+        "GEO_CMM_NightlifeShelterFire_Variant01_FlameLeftTongue_Neon",
+        "GEO_CMM_NightlifeShelterFire_Variant01_FlameRightTongue_Neon",
+        "GEO_CMM_NightlifeShelterFire_Variant01_EmberBed_Neon",
+        "GEO_CMM_NightlifeShelterFire_Variant01_GroundSpill_BacklitSign"
+      ],
+      "bounds_min_source": [
+        -2.05,
+        -1.4,
+        0.0
+      ],
+      "bounds_max_source": [
+        2.05,
+        1.4,
+        1.49
+      ],
+      "bounds_min_unity": [
+        -2.05,
+        0.0,
+        -1.4
+      ],
+      "bounds_max_unity": [
+        2.05,
+        1.49,
+        1.4
+      ]
+    },
+    {
+      "kind": "NightlifeShelterStandingPerson",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Palette property blocks",
+        "Presentation motion",
+        "Collider"
+      ],
+      "root_derivation": "NightlifeArchShelterPlan.PersonGround+Facing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_NightlifeShelterStandingPerson_Variant01_Outerwear_Street",
+        "GEO_CMM_NightlifeShelterStandingPerson_Variant01_Layer_Residential",
+        "GEO_CMM_NightlifeShelterStandingPerson_Variant01_Skin_Masonry"
+      ],
+      "bounds_min_source": [
+        -0.314308,
+        -0.249254,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.31777,
+        0.594824,
+        1.76
+      ],
+      "bounds_min_unity": [
+        -0.314308,
+        0.0,
+        -0.249254
+      ],
+      "bounds_max_unity": [
+        0.31777,
+        1.76,
+        0.594824
+      ]
+    },
+    {
+      "kind": "NightlifeShelterSeatedPerson",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Palette property blocks",
+        "Presentation motion",
+        "Collider"
+      ],
+      "root_derivation": "NightlifeArchShelterPlan.PersonGround+Facing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_NightlifeShelterSeatedPerson_Variant01_Outerwear_Street",
+        "GEO_CMM_NightlifeShelterSeatedPerson_Variant01_Layer_Residential",
+        "GEO_CMM_NightlifeShelterSeatedPerson_Variant01_Skin_Masonry"
+      ],
+      "bounds_min_source": [
+        -0.384549,
+        -0.203424,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.381184,
+        0.655496,
+        1.57
+      ],
+      "bounds_min_unity": [
+        -0.384549,
+        0.0,
+        -0.203424
+      ],
+      "bounds_max_unity": [
+        0.381184,
+        1.57,
+        0.655496
+      ]
+    },
+    {
+      "kind": "NightlifeShelterSleepingPerson",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {},
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "Palette property blocks",
+        "Presentation motion",
+        "Collider"
+      ],
+      "root_derivation": "NightlifeArchShelterPlan.PersonGround+Facing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_NightlifeShelterSleepingPerson_Variant01_Outerwear_Street",
+        "GEO_CMM_NightlifeShelterSleepingPerson_Variant01_BreathingUpper_Residential",
+        "GEO_CMM_NightlifeShelterSleepingPerson_Variant01_Skin_Masonry"
+      ],
+      "bounds_min_source": [
+        -0.737235,
+        -0.23,
+        5e-06
+      ],
+      "bounds_max_source": [
+        1.141522,
+        0.290747,
+        0.523378
+      ],
+      "bounds_min_unity": [
+        -0.737235,
+        5e-06,
+        -0.23
+      ],
+      "bounds_max_unity": [
+        1.141522,
+        0.523378,
+        0.290747
       ]
     }
   ],
@@ -12964,7 +13394,1327 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeArchBridgeShell_Variant01_Shell_Masonry",
+      "kind": "NightlifeArchBridgeShell",
+      "variant": 0,
+      "part_role": "Masonry",
+      "surface_kind": "Masonry",
+      "tint_role": "Masonry",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 304,
+      "triangles": 532,
+      "bounds_min_source": [
+        -7.42,
+        -5.801,
+        0.0
+      ],
+      "bounds_max_source": [
+        7.42,
+        5.801,
+        6.28
+      ],
+      "bounds_min_unity": [
+        -7.42,
+        0.0,
+        -5.801
+      ],
+      "bounds_max_unity": [
+        7.42,
+        6.28,
+        5.801
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeArchBridgeShell_Variant01_StepsAndRetaining_Masonry",
+      "kind": "NightlifeArchBridgeShell",
+      "variant": 0,
+      "part_role": "Masonry",
+      "surface_kind": "Masonry",
+      "tint_role": "Masonry",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 480,
+      "triangles": 840,
+      "bounds_min_source": [
+        -3.58614,
+        1.44,
+        0.0
+      ],
+      "bounds_max_source": [
+        -0.36614,
+        3.06,
+        1.562
+      ],
+      "bounds_min_unity": [
+        -3.58614,
+        0.0,
+        1.44
+      ],
+      "bounds_max_unity": [
+        -0.36614,
+        1.562,
+        3.06
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeArchBridgeShell_Variant01_PlatformSupport_Masonry",
+      "kind": "NightlifeArchBridgeShell",
+      "variant": 0,
+      "part_role": "Masonry",
+      "surface_kind": "Masonry",
+      "tint_role": "Masonry",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.36614,
+        -5.801,
+        0.0
+      ],
+      "bounds_max_source": [
+        6.94,
+        3.05,
+        1.382
+      ],
+      "bounds_min_unity": [
+        -0.36614,
+        0.0,
+        -5.801
+      ],
+      "bounds_max_unity": [
+        6.94,
+        1.382,
+        3.05
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeArchBridgeShell_Variant01_PlatformSlab_Street",
+      "kind": "NightlifeArchBridgeShell",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.36614,
+        -5.801,
+        1.382
+      ],
+      "bounds_max_source": [
+        6.94,
+        3.05,
+        1.562
+      ],
+      "bounds_min_unity": [
+        -0.36614,
+        1.382,
+        -5.801
+      ],
+      "bounds_max_unity": [
+        6.94,
+        1.562,
+        3.05
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeArchBridgeShell_Variant01_Cladding_Industrial",
+      "kind": "NightlifeArchBridgeShell",
+      "variant": 0,
+      "part_role": "Industrial",
+      "surface_kind": "IndustrialMetal",
+      "tint_role": "Industrial",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 860,
+      "triangles": 1496,
+      "bounds_min_source": [
+        -6.68,
+        -5.921,
+        0.1562
+      ],
+      "bounds_max_source": [
+        6.94,
+        5.801,
+        5.93
+      ],
+      "bounds_min_unity": [
+        -6.68,
+        0.1562,
+        -5.921
+      ],
+      "bounds_max_unity": [
+        6.94,
+        5.93,
+        5.801
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeArchBridgeShell_Variant01_Roof_Street",
+      "kind": "NightlifeArchBridgeShell",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -7.42,
+        -5.846,
+        6.28
+      ],
+      "bounds_max_source": [
+        7.42,
+        5.846,
+        6.62
+      ],
+      "bounds_min_unity": [
+        -7.42,
+        6.28,
+        -5.846
+      ],
+      "bounds_max_unity": [
+        7.42,
+        6.62,
+        5.846
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeBurnBarrel_Variant01_Barrel_Industrial",
+      "kind": "NightlifeBurnBarrel",
+      "variant": 0,
+      "part_role": "Industrial",
+      "surface_kind": "IndustrialMetal",
+      "tint_role": "Industrial",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 248,
+      "triangles": 484,
+      "bounds_min_source": [
+        -0.37,
+        -0.37,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.37,
+        0.37,
+        0.84
+      ],
+      "bounds_min_unity": [
+        -0.37,
+        0.0,
+        -0.37
+      ],
+      "bounds_max_unity": [
+        0.37,
+        0.84,
+        0.37
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeBurnBarrel_Variant01_Fuel_Timber",
+      "kind": "NightlifeBurnBarrel",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 42,
+      "triangles": 72,
+      "bounds_min_source": [
+        -0.265953,
+        -0.254005,
+        0.767083
+      ],
+      "bounds_max_source": [
+        0.274996,
+        0.243463,
+        0.962917
+      ],
+      "bounds_min_unity": [
+        -0.265953,
+        0.767083,
+        -0.254005
+      ],
+      "bounds_max_unity": [
+        0.274996,
+        0.962917,
+        0.243463
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterBedding_Variant01_Mattress_Residential",
+      "kind": "NightlifeShelterBedding",
+      "variant": 0,
+      "part_role": "Residential",
+      "surface_kind": "ResidentialGlass",
+      "tint_role": "Residential",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -0.94809,
+        -0.418165,
+        0.03
+      ],
+      "bounds_max_source": [
+        0.94809,
+        0.418165,
+        0.2725
+      ],
+      "bounds_min_unity": [
+        -0.94809,
+        0.03,
+        -0.418165
+      ],
+      "bounds_max_unity": [
+        0.94809,
+        0.2725,
+        0.418165
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterBedding_Variant01_Blanket_Street",
+      "kind": "NightlifeShelterBedding",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -0.085326,
+        -0.396952,
+        0.198398
+      ],
+      "bounds_max_source": [
+        0.925326,
+        0.396952,
+        0.48556
+      ],
+      "bounds_min_unity": [
+        -0.085326,
+        0.198398,
+        -0.396952
+      ],
+      "bounds_max_unity": [
+        0.925326,
+        0.48556,
+        0.396952
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterBedding_Variant01_Cardboard_Timber",
+      "kind": "NightlifeShelterBedding",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -1.019731,
+        -0.465504,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.059731,
+        0.485504,
+        0.03
+      ],
+      "bounds_min_unity": [
+        -1.019731,
+        0.0,
+        -0.465504
+      ],
+      "bounds_max_unity": [
+        1.059731,
+        0.03,
+        0.485504
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterBedding_Variant02_Roll_Residential",
+      "kind": "NightlifeShelterBedding",
+      "variant": 1,
+      "part_role": "Residential",
+      "surface_kind": "ResidentialGlass",
+      "tint_role": "Residential",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 60,
+      "triangles": 108,
+      "bounds_min_source": [
+        -0.62,
+        -0.27,
+        0.053215
+      ],
+      "bounds_max_source": [
+        0.62,
+        0.27,
+        0.566785
+      ],
+      "bounds_min_unity": [
+        -0.62,
+        0.053215,
+        -0.27
+      ],
+      "bounds_max_unity": [
+        0.62,
+        0.566785,
+        0.27
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterBedding_Variant02_Tie_Street",
+      "kind": "NightlifeShelterBedding",
+      "variant": 1,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min_source": [
+        -0.2875,
+        -0.27,
+        0.04
+      ],
+      "bounds_max_source": [
+        0.3075,
+        0.27,
+        0.58
+      ],
+      "bounds_min_unity": [
+        -0.2875,
+        0.04,
+        -0.27
+      ],
+      "bounds_max_unity": [
+        0.3075,
+        0.58,
+        0.27
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterBedding_Variant02_Cardboard_Timber",
+      "kind": "NightlifeShelterBedding",
+      "variant": 1,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min_source": [
+        -0.778332,
+        -0.408355,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.878332,
+        0.448355,
+        0.03
+      ],
+      "bounds_min_unity": [
+        -0.778332,
+        0.0,
+        -0.408355
+      ],
+      "bounds_max_unity": [
+        0.878332,
+        0.03,
+        0.448355
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterClutter_Variant01_CrateAndCardboard_Timber",
+      "kind": "NightlifeShelterClutter",
+      "variant": 0,
+      "part_role": "Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 160,
+      "triangles": 280,
+      "bounds_min_source": [
+        -0.3775,
+        -0.29,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.902802,
+        0.29,
+        0.769021
+      ],
+      "bounds_min_unity": [
+        -0.3775,
+        0.0,
+        -0.29
+      ],
+      "bounds_max_unity": [
+        0.902802,
+        0.769021,
+        0.29
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterClutter_Variant01_Bags_Street",
+      "kind": "NightlifeShelterClutter",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 45,
+      "triangles": 82,
+      "bounds_min_source": [
+        -0.869232,
+        -0.629998,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.495179,
+        0.31936,
+        0.52
+      ],
+      "bounds_min_unity": [
+        -0.869232,
+        0.0,
+        -0.629998
+      ],
+      "bounds_max_unity": [
+        0.495179,
+        0.52,
+        0.31936
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterClutter_Variant01_Bottles_Residential",
+      "kind": "NightlifeShelterClutter",
+      "variant": 0,
+      "part_role": "Residential",
+      "surface_kind": "ResidentialGlass",
+      "tint_role": "Residential",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -0.395,
+        -0.635,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.075,
+        -0.445,
+        0.37
+      ],
+      "bounds_min_unity": [
+        -0.395,
+        0.0,
+        -0.635
+      ],
+      "bounds_max_unity": [
+        0.075,
+        0.37,
+        -0.445
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterClutter_Variant01_Can_Industrial",
+      "kind": "NightlifeShelterClutter",
+      "variant": 0,
+      "part_role": "Industrial",
+      "surface_kind": "IndustrialMetal",
+      "tint_role": "Industrial",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 60,
+      "triangles": 116,
+      "bounds_min_source": [
+        0.395,
+        -0.52084,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.565,
+        -0.35916,
+        0.194
+      ],
+      "bounds_min_unity": [
+        0.395,
+        0.0,
+        -0.52084
+      ],
+      "bounds_max_unity": [
+        0.565,
+        0.194,
+        -0.35916
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterFire_Variant01_FlameCore_Neon",
+      "kind": "NightlifeShelterFire",
+      "variant": 0,
+      "part_role": "Neon",
+      "surface_kind": "Neon",
+      "tint_role": "Neon",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 24,
+      "triangles": 44,
+      "bounds_min_source": [
+        -0.143148,
+        -0.123403,
+        0.79
+      ],
+      "bounds_max_source": [
+        0.143148,
+        0.123403,
+        1.31
+      ],
+      "bounds_min_unity": [
+        -0.143148,
+        0.79,
+        -0.123403
+      ],
+      "bounds_max_unity": [
+        0.143148,
+        1.31,
+        0.123403
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterFire_Variant01_FlameOuter_Neon",
+      "kind": "NightlifeShelterFire",
+      "variant": 0,
+      "part_role": "Neon",
+      "surface_kind": "Neon",
+      "tint_role": "Neon",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 69,
+      "triangles": 126,
+      "bounds_min_source": [
+        -0.293553,
+        -0.206949,
+        0.77
+      ],
+      "bounds_max_source": [
+        0.289571,
+        0.214403,
+        1.16
+      ],
+      "bounds_min_unity": [
+        -0.293553,
+        0.77,
+        -0.206949
+      ],
+      "bounds_max_unity": [
+        0.289571,
+        1.16,
+        0.214403
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterFire_Variant01_FlameLeftTongue_Neon",
+      "kind": "NightlifeShelterFire",
+      "variant": 0,
+      "part_role": "Neon",
+      "surface_kind": "Neon",
+      "tint_role": "Neon",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 21,
+      "triangles": 38,
+      "bounds_min_source": [
+        -0.222719,
+        -0.05999,
+        0.81
+      ],
+      "bounds_max_source": [
+        -0.01801,
+        0.102148,
+        1.49
+      ],
+      "bounds_min_unity": [
+        -0.222719,
+        0.81,
+        -0.05999
+      ],
+      "bounds_max_unity": [
+        -0.01801,
+        1.49,
+        0.102148
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterFire_Variant01_FlameRightTongue_Neon",
+      "kind": "NightlifeShelterFire",
+      "variant": 0,
+      "part_role": "Neon",
+      "surface_kind": "Neon",
+      "tint_role": "Neon",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 21,
+      "triangles": 38,
+      "bounds_min_source": [
+        0.020199,
+        -0.123769,
+        0.8
+      ],
+      "bounds_max_source": [
+        0.241365,
+        0.051415,
+        1.39
+      ],
+      "bounds_min_unity": [
+        0.020199,
+        0.8,
+        -0.123769
+      ],
+      "bounds_max_unity": [
+        0.241365,
+        1.39,
+        0.051415
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterFire_Variant01_EmberBed_Neon",
+      "kind": "NightlifeShelterFire",
+      "variant": 0,
+      "part_role": "Neon",
+      "surface_kind": "Neon",
+      "tint_role": "Neon",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 175,
+      "triangles": 330,
+      "bounds_min_source": [
+        -0.233125,
+        -0.189764,
+        0.82
+      ],
+      "bounds_max_source": [
+        0.253139,
+        0.157229,
+        0.905
+      ],
+      "bounds_min_unity": [
+        -0.233125,
+        0.82,
+        -0.189764
+      ],
+      "bounds_max_unity": [
+        0.253139,
+        0.905,
+        0.157229
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterFire_Variant01_GroundSpill_BacklitSign",
+      "kind": "NightlifeShelterFire",
+      "variant": 0,
+      "part_role": "BacklitSign",
+      "surface_kind": "BacklitSign",
+      "tint_role": "BacklitSign",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 40,
+      "triangles": 76,
+      "bounds_min_source": [
+        -2.05,
+        -1.4,
+        0.0
+      ],
+      "bounds_max_source": [
+        2.05,
+        1.4,
+        0.018
+      ],
+      "bounds_min_unity": [
+        -2.05,
+        0.0,
+        -1.4
+      ],
+      "bounds_max_unity": [
+        2.05,
+        0.018,
+        1.4
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterStandingPerson_Variant01_Outerwear_Street",
+      "kind": "NightlifeShelterStandingPerson",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 144,
+      "triangles": 252,
+      "bounds_min_source": [
+        -0.314308,
+        -0.249254,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.31777,
+        0.557761,
+        1.483216
+      ],
+      "bounds_min_unity": [
+        -0.314308,
+        0.0,
+        -0.249254
+      ],
+      "bounds_max_unity": [
+        0.31777,
+        1.483216,
+        0.557761
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterStandingPerson_Variant01_Layer_Residential",
+      "kind": "NightlifeShelterStandingPerson",
+      "variant": 0,
+      "part_role": "Residential",
+      "surface_kind": "ResidentialGlass",
+      "tint_role": "Residential",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 52,
+      "triangles": 92,
+      "bounds_min_source": [
+        -0.183629,
+        0.032431,
+        1.226376
+      ],
+      "bounds_max_source": [
+        0.18,
+        0.357873,
+        1.76
+      ],
+      "bounds_min_unity": [
+        -0.183629,
+        1.226376,
+        0.032431
+      ],
+      "bounds_max_unity": [
+        0.18,
+        1.76,
+        0.357873
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterStandingPerson_Variant01_Skin_Masonry",
+      "kind": "NightlifeShelterStandingPerson",
+      "variant": 0,
+      "part_role": "Masonry",
+      "surface_kind": "Masonry",
+      "tint_role": "Masonry",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 125,
+      "triangles": 238,
+      "bounds_min_source": [
+        -0.127169,
+        0.085887,
+        0.945
+      ],
+      "bounds_max_source": [
+        0.128728,
+        0.594824,
+        1.74
+      ],
+      "bounds_min_unity": [
+        -0.127169,
+        0.945,
+        0.085887
+      ],
+      "bounds_max_unity": [
+        0.128728,
+        1.74,
+        0.594824
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterSeatedPerson_Variant01_Outerwear_Street",
+      "kind": "NightlifeShelterSeatedPerson",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 176,
+      "triangles": 308,
+      "bounds_min_source": [
+        -0.384549,
+        -0.203424,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.381184,
+        0.655496,
+        1.325837
+      ],
+      "bounds_min_unity": [
+        -0.384549,
+        0.0,
+        -0.203424
+      ],
+      "bounds_max_unity": [
+        0.381184,
+        1.325837,
+        0.655496
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterSeatedPerson_Variant01_Layer_Residential",
+      "kind": "NightlifeShelterSeatedPerson",
+      "variant": 0,
+      "part_role": "Residential",
+      "surface_kind": "ResidentialGlass",
+      "tint_role": "Residential",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 52,
+      "triangles": 92,
+      "bounds_min_source": [
+        -0.169145,
+        -0.027569,
+        1.036774
+      ],
+      "bounds_max_source": [
+        0.187777,
+        0.307873,
+        1.57
+      ],
+      "bounds_min_unity": [
+        -0.169145,
+        1.036774,
+        -0.027569
+      ],
+      "bounds_max_unity": [
+        0.187777,
+        1.57,
+        0.307873
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterSeatedPerson_Variant01_Skin_Masonry",
+      "kind": "NightlifeShelterSeatedPerson",
+      "variant": 0,
+      "part_role": "Masonry",
+      "surface_kind": "Masonry",
+      "tint_role": "Masonry",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 125,
+      "triangles": 238,
+      "bounds_min_source": [
+        -0.127921,
+        0.037052,
+        0.785
+      ],
+      "bounds_max_source": [
+        0.128126,
+        0.604824,
+        1.56
+      ],
+      "bounds_min_unity": [
+        -0.127921,
+        0.785,
+        0.037052
+      ],
+      "bounds_max_unity": [
+        0.128126,
+        1.56,
+        0.604824
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterSleepingPerson_Variant01_Outerwear_Street",
+      "kind": "NightlifeShelterSleepingPerson",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min_source": [
+        0.13074,
+        -0.19,
+        5e-06
+      ],
+      "bounds_max_source": [
+        1.141522,
+        0.17,
+        0.417682
+      ],
+      "bounds_min_unity": [
+        0.13074,
+        5e-06,
+        -0.19
+      ],
+      "bounds_max_unity": [
+        1.141522,
+        0.417682,
+        0.17
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterSleepingPerson_Variant01_BreathingUpper_Residential",
+      "kind": "NightlifeShelterSleepingPerson",
+      "variant": 0,
+      "part_role": "Residential",
+      "surface_kind": "ResidentialGlass",
+      "tint_role": "Residential",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.527281,
+        -0.23,
+        0.122112
+      ],
+      "bounds_max_source": [
+        0.484927,
+        0.267281,
+        0.523378
+      ],
+      "bounds_min_unity": [
+        -0.527281,
+        0.122112,
+        -0.23
+      ],
+      "bounds_max_unity": [
+        0.484927,
+        0.523378,
+        0.267281
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_NightlifeShelterSleepingPerson_Variant01_Skin_Masonry",
+      "kind": "NightlifeShelterSleepingPerson",
+      "variant": 0,
+      "part_role": "Masonry",
+      "surface_kind": "Masonry",
+      "tint_role": "Masonry",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 85,
+      "triangles": 162,
+      "bounds_min_source": [
+        -0.737235,
+        -0.093736,
+        0.08
+      ],
+      "bounds_max_source": [
+        -0.436567,
+        0.290747,
+        0.46
+      ],
+      "bounds_min_unity": [
+        -0.737235,
+        0.08,
+        -0.093736
+      ],
+      "bounds_max_unity": [
+        -0.436567,
+        0.46,
+        0.290747
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
     }
   ],
-  "build_signature": "64a77e3a537b3815d8cfa9a2d308995737c77c3ea17cbde79717d09dec7caf30"
+  "build_signature": "87680a5d05066a52504900a19b0e4ec19955fbe180fc6cc8d60f6e5995e412ad"
 }

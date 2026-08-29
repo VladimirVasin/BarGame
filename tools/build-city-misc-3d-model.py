@@ -48,9 +48,11 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit  # noqa: E402
 
 
-GENERATOR_VERSION = "4.3.3"
+GENERATOR_VERSION = "4.6.0"
 DESIGN_ID = "city_misc_citywide_v4"
-DISPLAY_NAME = "City Misc Citywide Catalog + Church Courtyard Kit"
+DISPLAY_NAME = (
+    "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter Kit"
+)
 V2_GENERATOR_VERSION = "2.0.0"
 V2_DESIGN_ID = "city_misc_all_decor_v2"
 V2_COMPATIBILITY_SIGNATURE = (
@@ -351,6 +353,19 @@ def annulus_z(
     return vertices, faces
 
 
+def outward_annulus_z(
+    center: Vec3,
+    outer_radius: float,
+    inner_radius: float,
+    height: float,
+    sides: int = 16,
+) -> Geometry:
+    """Z annulus with outward winding for standalone passive components."""
+    vertices, faces = annulus_z(
+        center, outer_radius, inner_radius, height, sides)
+    return vertices, [tuple(reversed(face)) for face in faces]
+
+
 def prism_y(
     profile_xz: Sequence[tuple[float, float]],
     y0: float,
@@ -626,6 +641,47 @@ def local_faceted_mass(
         (y_mid, x, forward, radius_x, radius_forward, phase + 0.08),
         (y1, x, forward, radius_x * top_scale,
          radius_forward * top_scale, phase + 0.15),
+    ), sides)
+
+
+def local_ellipsoid(
+    x: float,
+    height: float,
+    forward: float,
+    radius_x: float,
+    radius_height: float,
+    radius_forward: float,
+    sides: int = 8,
+    phase: float = 0.0,
+) -> Geometry:
+    """Closed low-poly ellipsoid with small, non-degenerate pole rings."""
+    pole_scale = 0.10
+    return ring_solid_z((
+        (height - radius_height,
+         x, forward,
+         radius_x * pole_scale,
+         radius_forward * pole_scale,
+         phase),
+        (height - radius_height * 0.45,
+         x, forward,
+         radius_x * 0.86,
+         radius_forward * 0.86,
+         phase + 0.04),
+        (height,
+         x, forward,
+         radius_x,
+         radius_forward,
+         phase + 0.08),
+        (height + radius_height * 0.45,
+         x, forward,
+         radius_x * 0.86,
+         radius_forward * 0.86,
+         phase + 0.12),
+        (height + radius_height,
+         x, forward,
+         radius_x * pole_scale,
+         radius_forward * pole_scale,
+         phase + 0.16),
     ), sides)
 
 
@@ -3668,6 +3724,819 @@ def build_cemetery_fence_rail() -> AssemblySpec:
     )
 
 
+def build_nightlife_arch_bridge_shell() -> AssemblySpec:
+    """Measured closed bridge over the default [10,5]-[11,5] gap."""
+    kind, variant = "NightlifeArchBridgeShell", 0
+    span = 14.60
+    common_facade_depth = 11.602
+    gallery_forward = 0.0
+    terrace_rise = 1.562
+    # The structure root is the passage footprint centre, while the terrace
+    # seam and every plan descriptor are derived from SharedBoundaryX. In the
+    # default city those anchors differ by 0.48614 m. Keep both frames named:
+    # shared-relative values state the pure-plan contract; authored values are
+    # the exact mesh-local coordinates that reproduce it under the structure
+    # root without shifting the facade-centred arch shell.
+    shared_boundary_local_x = -0.48614
+    stair_shared_min_x = -3.10
+    stair_shared_max_x = 0.12
+    landing_shared_min_x = 0.12
+    landing_shared_max_x = 1.62
+    platform_shared_min_x = 0.12
+    east_attachment_inner_x = 6.94
+    platform_shared_max_x = (
+        east_attachment_inner_x - shared_boundary_local_x)
+    platform_min_x = (
+        shared_boundary_local_x + platform_shared_min_x)
+    platform_max_x = east_attachment_inner_x
+    # The supported terrace reaches the raw south end of the common facade.
+    # This turns the tableau support into an attached architectural ledge
+    # instead of a free-standing plinth in the middle of the passage.
+    south_wall_end_forward = -common_facade_depth * 0.5
+    platform_min_forward = south_wall_end_forward
+    platform_max_forward = 3.05
+    platform_slab_thickness = 0.18
+
+    masonry: list[Geometry] = [
+        # The arch piers are mostly embedded in the two facade envelopes, so
+        # the western full-depth lower-ground passage remains unobstructed.
+        local_box(
+            -7.18, 2.20, gallery_forward,
+            0.48, 4.40, common_facade_depth, 0.06),
+        local_box(
+            7.18, 2.20, gallery_forward,
+            0.48, 4.40, common_facade_depth, 0.06),
+        # The closed, non-walkable gallery and its paired arch openings run
+        # across the raw common depth of both side facades. Passage insets are
+        # walkable clearance, not a reason to shorten the architectural mass.
+        local_box(
+            0.0, 5.32, gallery_forward,
+            span, 1.92, common_facade_depth, 0.08),
+    ]
+    spring_height = 2.32
+    arch_radius_x = 6.50
+    arch_radius_height = 2.06
+    segment_count = 16
+    for index in range(segment_count):
+        angle_a = math.pi - index / segment_count * math.pi
+        angle_b = math.pi - (index + 1) / segment_count * math.pi
+        x_a = math.cos(angle_a) * arch_radius_x
+        x_b = math.cos(angle_b) * arch_radius_x
+        height_a = spring_height + math.sin(angle_a) * arch_radius_height
+        height_b = spring_height + math.sin(angle_b) * arch_radius_height
+        delta_x = x_b - x_a
+        delta_height = height_b - height_a
+        segment_length = math.hypot(delta_x, delta_height)
+        tangent_angle = math.degrees(
+            math.atan2(delta_height, delta_x))
+        masonry.append(local_box(
+            (x_a + x_b) * 0.5,
+            (height_a + height_b) * 0.5,
+            gallery_forward,
+            segment_length + 0.10,
+            0.58,
+            common_facade_depth - 0.16,
+            0.045,
+            roll_forward_degrees=-tangent_angle,
+        ))
+
+    steps: list[Geometry] = []
+    stair_count = 10
+    # The stair rises from the west low datum to the planned shared-boundary
+    # seam. It occupies a distinct north band and cannot intersect the barrel
+    # tableau in the south band or the barrel on the upper platform.
+    run_start = shared_boundary_local_x + stair_shared_min_x
+    tread_run = (
+        stair_shared_max_x - stair_shared_min_x) / stair_count
+    tread_depth = 1.60
+    stair_forward = 2.25
+    stair_min_forward = stair_forward - tread_depth * 0.5
+    stair_max_forward = stair_forward + tread_depth * 0.5
+    riser_height = terrace_rise / stair_count
+    for index in range(stair_count):
+        top = (index + 1) * riser_height
+        x = run_start + (index + 0.5) * tread_run
+        steps.append(local_box(
+            x, top * 0.5, stair_forward,
+            tread_run, top, tread_depth, 0.018))
+        # Two stepped retaining cheeks keep the centre crossing legible while
+        # leaving the western full-depth north-south passage clear.
+        for side in (-1, 1):
+            steps.append(local_box(
+                x, top * 0.5, stair_forward + side * 0.72,
+                tread_run, top, 0.18, 0.018))
+
+    # The upper landing is no longer a detached, short slab. It is the north
+    # end of one visible service platform that carries the fire tableau. The
+    # platform begins exactly at the planned last-step seam, reaches the east
+    # wall and leaves only the full-depth western lower passage unobstructed.
+    landing_min_x = (
+        shared_boundary_local_x + landing_shared_min_x)
+    landing_max_x = (
+        shared_boundary_local_x + landing_shared_max_x)
+
+    platform_center_x = (platform_min_x + platform_max_x) * 0.5
+    platform_center_forward = (
+        platform_min_forward + platform_max_forward) * 0.5
+    platform_width = platform_max_x - platform_min_x
+    platform_depth = platform_max_forward - platform_min_forward
+    platform_support_height = terrace_rise - platform_slab_thickness
+    platform_support = [
+        # A continuous masonry plinth closes the complete underside down to
+        # the lower datum. From the south approach, neither people nor bedding
+        # can read as suspended above an invisible terrain step.
+        local_box(
+            platform_center_x,
+            platform_support_height * 0.5,
+            platform_center_forward,
+            platform_width,
+            platform_support_height,
+            platform_depth,
+            0.045),
+    ]
+    platform_slab = [
+        # The dark cap owns the actual visible floor plane. Its top is the
+        # exact native upper datum used by barrel, warmers and bedding.
+        local_box(
+            platform_center_x,
+            terrace_rise - platform_slab_thickness * 0.5,
+            platform_center_forward,
+            platform_width,
+            platform_slab_thickness,
+            platform_depth,
+            0.035),
+    ]
+
+    # Both exposed long edges need one continuous industrial guard. The stair
+    # enters through the west edge of the terrace, so neither long-edge guard
+    # needs a landing gap. Keep each 0.12 m tube wholly outside the slab: its
+    # inner face touches the exact plan edge while its centreline and outer
+    # face sit over the drop. This preserves the complete walkable top and
+    # gives Unity's matching obstacle boxes an unambiguous authored envelope.
+    guard_radius = 0.06
+    guard_thickness = guard_radius * 2.0
+    guard_height = 1.09
+    guard_bottom = terrace_rise
+    guard_top = guard_bottom + guard_height
+    guard_top_tube_center = guard_top - guard_radius
+    guard_mid_tube_center = guard_bottom + guard_height * 0.5
+    north_guard_contact_forward = platform_max_forward
+    north_guard_center_forward = (
+        north_guard_contact_forward + guard_radius)
+    south_guard_contact_forward = platform_min_forward
+    south_guard_center_forward = (
+        south_guard_contact_forward - guard_radius)
+    west_guard_contact_x = platform_min_x
+    west_guard_center_x = west_guard_contact_x - guard_radius
+    west_guard_min_forward = platform_min_forward
+    west_guard_max_forward = stair_min_forward
+    guard_post_count = 6
+    guard_horizontal_count = 2
+
+    cladding: list[Geometry] = []
+    for side in (-1, 1):
+        for bay in range(7):
+            cladding.append(local_box(
+                -5.82 + bay * 1.94,
+                5.34,
+                side * (common_facade_depth * 0.5 - 0.0375),
+                1.72,
+                1.18,
+                0.075,
+                0.018,
+            ))
+    # Handrails rise with the short stair; the authored geometry is visible,
+    # while collision remains a Unity plan concern.
+    for side in (-1, 1):
+        rail_forward = stair_forward + side * 0.68
+        rail_start_x = run_start + tread_run * 0.5
+        rail_top_x = platform_min_x
+        cladding.append(local_tube(
+            (rail_start_x, 0.90, rail_forward),
+            (rail_top_x, terrace_rise + 0.90, rail_forward),
+            0.045,
+            sides=7,
+        ))
+        for index in (0, 2, 4, 6, 8, 9):
+            top = (index + 1) * riser_height
+            x = run_start + (index + 0.5) * tread_run
+            cladding.append(local_tube(
+                (x, top, rail_forward),
+                (x, top + 0.88, rail_forward),
+                0.035,
+                sides=7,
+            ))
+        rail_return_end = shared_boundary_local_x + 0.82
+        cladding.extend((
+            local_tube(
+                (rail_top_x, terrace_rise + 0.90, rail_forward),
+                (rail_return_end, terrace_rise + 0.90, rail_forward),
+                0.045,
+                sides=7,
+            ),
+            local_tube(
+                (rail_return_end, terrace_rise, rail_forward),
+                (rail_return_end, terrace_rise + 0.90, rail_forward),
+                0.035,
+                sides=7,
+            ),
+        ))
+
+    guard_post_min_x = platform_min_x + guard_radius
+    guard_post_max_x = platform_max_x - guard_radius
+    guard_post_step = (
+        guard_post_max_x - guard_post_min_x) / (guard_post_count - 1)
+    for guard_forward in (
+            north_guard_center_forward, south_guard_center_forward):
+        # A paired top/mid pipe reads as an old service-terrace guard rather
+        # than a solid new parapet, while six widely spaced uprights keep the
+        # long run visually supported without turning it into a picket fence.
+        cladding.extend((
+            local_tube(
+                (platform_min_x, guard_top_tube_center, guard_forward),
+                (platform_max_x, guard_top_tube_center, guard_forward),
+                guard_radius,
+                sides=8,
+            ),
+            local_tube(
+                (platform_min_x, guard_mid_tube_center, guard_forward),
+                (platform_max_x, guard_mid_tube_center, guard_forward),
+                guard_radius,
+                sides=8,
+            ),
+        ))
+        for index in range(guard_post_count):
+            post_x = guard_post_min_x + index * guard_post_step
+            cladding.append(local_tube(
+                (post_x, guard_bottom, guard_forward),
+                (post_x, guard_top_tube_center, guard_forward),
+                guard_radius,
+                sides=8,
+            ))
+
+    west_guard_post_min_forward = west_guard_min_forward + guard_radius
+    west_guard_post_max_forward = west_guard_max_forward - guard_radius
+    west_guard_post_step = (
+        west_guard_post_max_forward - west_guard_post_min_forward) / (
+            guard_post_count - 1)
+    cladding.extend((
+        local_tube(
+            (west_guard_center_x,
+             guard_top_tube_center,
+             west_guard_min_forward),
+            (west_guard_center_x,
+             guard_top_tube_center,
+             west_guard_max_forward),
+            guard_radius,
+            sides=8,
+        ),
+        local_tube(
+            (west_guard_center_x,
+             guard_mid_tube_center,
+             west_guard_min_forward),
+            (west_guard_center_x,
+             guard_mid_tube_center,
+             west_guard_max_forward),
+            guard_radius,
+            sides=8,
+        ),
+    ))
+    for index in range(guard_post_count):
+        post_forward = (
+            west_guard_post_min_forward + index * west_guard_post_step)
+        cladding.append(local_tube(
+            (west_guard_center_x, guard_bottom, post_forward),
+            (west_guard_center_x, guard_top_tube_center, post_forward),
+            guard_radius,
+            sides=8,
+        ))
+
+    roof = [
+        local_box(
+            0.0, 6.40, gallery_forward,
+            span + 0.24, 0.24, common_facade_depth, 0.055),
+        local_box(
+            0.0, 6.57, -common_facade_depth * 0.5 + 0.035,
+            span + 0.08, 0.10, 0.16, 0.025),
+        local_box(
+            0.0, 6.57, common_facade_depth * 0.5 - 0.035,
+            span + 0.08, 0.10, 0.16, 0.025),
+    ]
+    return AssemblySpec(
+        kind,
+        variant,
+        (
+            make_named_part(
+                kind, variant, "Shell_Masonry", "Masonry", *masonry),
+            make_named_part(
+                kind, variant, "StepsAndRetaining_Masonry",
+                "Masonry", *steps),
+            make_named_part(
+                kind, variant, "PlatformSupport_Masonry",
+                "Masonry", *platform_support),
+            make_named_part(
+                kind, variant, "PlatformSlab_Street",
+                "Street", *platform_slab),
+            make_named_part(
+                kind, variant, "Cladding_Industrial",
+                "Industrial", *cladding),
+            make_named_part(
+                kind, variant, "Roof_Street", "Street", *roof),
+        ),
+        canonical_reference=(
+            ("face_gap", 14.472),
+            ("authored_span", span),
+            ("overlap_depth", common_facade_depth),
+            ("passage_depth", common_facade_depth - 0.70),
+            ("terrace_rise", terrace_rise),
+            ("stair_count", float(stair_count)),
+            ("stair_tread_run", tread_run),
+            ("stair_clear_depth", tread_depth),
+            ("shared_boundary_local_x", shared_boundary_local_x),
+            ("stair_shared_min_x", stair_shared_min_x),
+            ("stair_shared_max_x", stair_shared_max_x),
+            ("stair_authored_min_x",
+             shared_boundary_local_x + stair_shared_min_x),
+            ("stair_authored_max_x",
+             shared_boundary_local_x + stair_shared_max_x),
+            ("stair_min_forward", stair_min_forward),
+            ("stair_max_forward", stair_max_forward),
+            ("landing_shared_min_x", landing_shared_min_x),
+            ("landing_shared_max_x", landing_shared_max_x),
+            ("landing_authored_min_x", landing_min_x),
+            ("landing_authored_max_x", landing_max_x),
+            ("landing_top", terrace_rise),
+            ("platform_shared_min_x", platform_shared_min_x),
+            ("platform_shared_max_x", platform_shared_max_x),
+            ("platform_authored_min_x", platform_min_x),
+            ("platform_authored_max_x", platform_max_x),
+            ("east_attachment_inner_x", east_attachment_inner_x),
+            ("south_wall_end_forward", south_wall_end_forward),
+            ("platform_min_forward", platform_min_forward),
+            ("platform_max_forward", platform_max_forward),
+            ("platform_bottom", 0.0),
+            ("platform_top", terrace_rise),
+            ("platform_slab_thickness", platform_slab_thickness),
+            ("guard_height", guard_height),
+            ("guard_thickness", guard_thickness),
+            ("guard_bottom", guard_bottom),
+            ("guard_top", guard_top),
+            ("guard_top_tube_center", guard_top_tube_center),
+            ("guard_mid_tube_center", guard_mid_tube_center),
+            ("guard_post_count", float(guard_post_count)),
+            ("guard_horizontal_count", float(guard_horizontal_count)),
+            ("guard_tube_sides", 8.0),
+            ("north_guard_shared_min_x", platform_shared_min_x),
+            ("north_guard_shared_max_x", platform_shared_max_x),
+            ("north_guard_authored_min_x", platform_min_x),
+            ("north_guard_authored_max_x", platform_max_x),
+            ("north_guard_contact_forward",
+             north_guard_contact_forward),
+            ("north_guard_center_forward",
+             north_guard_center_forward),
+            ("north_guard_outer_forward",
+             north_guard_center_forward + guard_radius),
+            ("south_guard_shared_min_x", platform_shared_min_x),
+            ("south_guard_shared_max_x", platform_shared_max_x),
+            ("south_guard_authored_min_x", platform_min_x),
+            ("south_guard_authored_max_x", platform_max_x),
+            ("south_guard_contact_forward",
+             south_guard_contact_forward),
+            ("south_guard_center_forward",
+             south_guard_center_forward),
+            ("south_guard_outer_forward",
+             south_guard_center_forward - guard_radius),
+            ("west_guard_shared_contact_x", platform_shared_min_x),
+            ("west_guard_authored_contact_x", west_guard_contact_x),
+            ("west_guard_shared_center_x",
+             west_guard_center_x - shared_boundary_local_x),
+            ("west_guard_authored_center_x", west_guard_center_x),
+            ("west_guard_shared_outer_x",
+             west_guard_center_x - guard_radius -
+             shared_boundary_local_x),
+            ("west_guard_authored_outer_x",
+             west_guard_center_x - guard_radius),
+            ("west_guard_min_forward", west_guard_min_forward),
+            ("west_guard_max_forward", west_guard_max_forward),
+            ("shelter_min_forward", -3.05),
+            ("shelter_max_forward", -0.05),
+        ),
+        unity_owned_parts=(
+            "Structural collision proxies",
+            "Stair walkable ramp",
+            "Rail suppression footprint",
+        ),
+        root_derivation=(
+            "NightlifeArchShelterPlan.Center+LowDatum+LowToHigh"),
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+def build_nightlife_burn_barrel() -> AssemblySpec:
+    kind, variant = "NightlifeBurnBarrel", 0
+    industrial: list[Geometry] = [
+        outward_annulus_z(
+            (0.0, 0.0, 0.45), 0.34, 0.285, 0.78, sides=12),
+        outward_annulus_z(
+            (0.0, 0.0, 0.13), 0.37, 0.335, 0.07, sides=12),
+        outward_annulus_z(
+            (0.0, 0.0, 0.43), 0.37, 0.335, 0.065, sides=12),
+        outward_annulus_z(
+            (0.0, 0.0, 0.77), 0.37, 0.335, 0.07, sides=12),
+        ring_solid_z((
+            (0.055, 0.0, 0.0, 0.285, 0.285, 0.0),
+            (0.095, 0.0, 0.0, 0.285, 0.285, 0.0),
+        ), 12),
+    ]
+    for x in (-0.24, 0.24):
+        industrial.append(local_box(
+            x, 0.035, 0.0, 0.12, 0.07, 0.24, 0.018))
+    timber = [
+        local_tube((-0.24, 0.82, -0.12), (0.25, 0.91, 0.13),
+                   0.055, sides=7),
+        local_tube((-0.22, 0.89, 0.15), (0.24, 0.84, -0.15),
+                   0.050, sides=7),
+        local_tube((-0.04, 0.81, -0.24), (0.07, 0.92, 0.23),
+                   0.045, sides=7),
+    ]
+    return AssemblySpec(
+        kind,
+        variant,
+        (
+            make_named_part(
+                kind, variant, "Barrel_Industrial",
+                "Industrial", *industrial),
+            make_named_part(
+                kind, variant, "Fuel_Timber", "Timber", *timber),
+        ),
+        unity_owned_parts=(
+            "Fire light", "Smoke particles", "Crackle audio",
+            "Collision proxy"),
+        root_derivation="NightlifeArchShelterPlan.BarrelGround",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+def build_nightlife_shelter_bedding(variant: int) -> AssemblySpec:
+    kind = "NightlifeShelterBedding"
+    if variant == 0:
+        residential = [
+            local_box(0.0, 0.14, 0.0, 1.86, 0.22, 0.74, 0.075,
+                      yaw_up_degrees=-3.0),
+            local_box(-0.52, 0.255, 0.0, 0.055, 0.035, 0.70, 0.008,
+                      yaw_up_degrees=-3.0),
+            local_box(0.02, 0.255, 0.0, 0.055, 0.035, 0.70, 0.008,
+                      yaw_up_degrees=-3.0),
+            local_box(0.55, 0.255, 0.0, 0.055, 0.035, 0.70, 0.008,
+                      yaw_up_degrees=-3.0),
+        ]
+        street = [
+            local_box(0.42, 0.315, 0.0, 0.98, 0.17, 0.76, 0.055,
+                      roll_forward_degrees=4.0,
+                      yaw_up_degrees=-2.0),
+            local_box(0.78, 0.41, -0.03, 0.28, 0.12, 0.68, 0.035,
+                      roll_forward_degrees=8.0),
+        ]
+        timber = [
+            local_box(0.02, 0.015, 0.01, 2.05, 0.03, 0.88, 0.004,
+                      yaw_up_degrees=2.0),
+        ]
+        components = (
+            ("Mattress_Residential", "Residential", residential),
+            ("Blanket_Street", "Street", street),
+            ("Cardboard_Timber", "Timber", timber),
+        )
+    else:
+        residential = [
+            local_tube((-0.58, 0.31, 0.0), (0.58, 0.31, 0.0),
+                       0.245, sides=10),
+            local_tube((-0.62, 0.31, 0.0), (-0.54, 0.31, 0.0),
+                       0.27, sides=10),
+            local_tube((0.54, 0.31, 0.0), (0.62, 0.31, 0.0),
+                       0.27, sides=10),
+        ]
+        street = [
+            local_box(-0.25, 0.31, 0.0, 0.075, 0.54, 0.54, 0.014),
+            local_box(0.27, 0.31, 0.0, 0.075, 0.54, 0.54, 0.014),
+        ]
+        timber = [
+            local_box(0.05, 0.015, 0.02, 1.60, 0.03, 0.72, 0.004,
+                      yaw_up_degrees=-5.0),
+        ]
+        components = (
+            ("Roll_Residential", "Residential", residential),
+            ("Tie_Street", "Street", street),
+            ("Cardboard_Timber", "Timber", timber),
+        )
+    return AssemblySpec(
+        kind,
+        variant,
+        tuple(make_named_part(
+            kind, variant, suffix, role, *geometry)
+            for suffix, role, geometry in components),
+        root_derivation="NightlifeArchShelterPlan.BeddingGround+Rotation",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+def build_nightlife_shelter_clutter() -> AssemblySpec:
+    kind, variant = "NightlifeShelterClutter", 0
+    timber: list[Geometry] = []
+    for x in (-0.34, 0.34):
+        timber.append(local_box(
+            x, 0.30, 0.0, 0.075, 0.60, 0.58, 0.012))
+    for forward in (-0.25, 0.25):
+        timber.extend((
+            local_box(0.0, 0.10, forward, 0.74, 0.10, 0.075, 0.012),
+            local_box(0.0, 0.30, forward, 0.74, 0.10, 0.075, 0.012),
+            local_box(0.0, 0.50, forward, 0.74, 0.10, 0.075, 0.012),
+        ))
+    timber.extend((
+        local_box(0.0, 0.045, 0.0, 0.74, 0.09, 0.58, 0.012),
+        local_box(0.62, 0.39, 0.04, 0.48, 0.70, 0.035, 0.008,
+                  roll_forward_degrees=-8.0,
+                  yaw_up_degrees=12.0),
+    ))
+    bags = [
+        local_faceted_mass(-0.63, 0.0, 0.25, 0.52, 0.12,
+                            0.24, 0.20, top_scale=0.28, sides=8),
+        local_faceted_mass(0.30, 0.0, 0.19, 0.41, -0.46,
+                            0.20, 0.17, top_scale=0.22, sides=7,
+                            phase=0.14),
+    ]
+    bottles: list[Geometry] = []
+    for index, (x, forward) in enumerate(((-0.34, -0.50), (0.02, -0.58))):
+        bottles.extend((
+            local_vertical_solid(
+                x, 0.0, 0.23 + index * 0.025, forward,
+                0.055, 0.055, top_scale=0.72, sides=8),
+            local_vertical_solid(
+                x, 0.22 + index * 0.025, 0.34 + index * 0.03,
+                forward, 0.030, 0.030, top_scale=0.86, sides=8),
+        ))
+    can = [
+        ring_solid_z((
+            (0.0, 0.48, -0.44, 0.085, 0.085, 0.0),
+            (0.18, 0.48, -0.44, 0.085, 0.085, 0.0),
+        ), 10),
+        outward_annulus_z(
+            (0.48, -0.44, 0.185), 0.084, 0.050, 0.018, sides=10),
+    ]
+    return AssemblySpec(
+        kind,
+        variant,
+        (
+            make_named_part(
+                kind, variant, "CrateAndCardboard_Timber",
+                "Timber", *timber),
+            make_named_part(
+                kind, variant, "Bags_Street", "Street", *bags),
+            make_named_part(
+                kind, variant, "Bottles_Residential",
+                "Residential", *bottles),
+            make_named_part(
+                kind, variant, "Can_Industrial", "Industrial", *can),
+        ),
+        root_derivation="NightlifeArchShelterPlan.ClutterGround+Rotation",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+def build_nightlife_shelter_fire() -> AssemblySpec:
+    kind, variant = "NightlifeShelterFire", 0
+    core = [
+        local_faceted_mass(
+            0.0, 0.79, 1.03, 1.31, 0.0,
+            0.145, 0.125, top_scale=0.08, sides=8, phase=0.08),
+    ]
+    outer = [
+        local_faceted_mass(
+            0.0, 0.77, 0.96, 1.16, 0.0,
+            0.255, 0.215, top_scale=0.20, sides=9, phase=0.02),
+        local_faceted_mass(
+            -0.18, 0.78, 0.92, 1.08, 0.03,
+            0.115, 0.105, top_scale=0.16, sides=7, phase=0.21),
+        local_faceted_mass(
+            0.18, 0.78, 0.93, 1.10, -0.03,
+            0.12, 0.105, top_scale=0.16, sides=7, phase=0.34),
+    ]
+    left_tongue = [
+        local_faceted_mass(
+            -0.12, 0.81, 1.07, 1.49, 0.025,
+            0.105, 0.085, top_scale=0.05, sides=7, phase=0.16),
+    ]
+    right_tongue = [
+        local_faceted_mass(
+            0.135, 0.80, 1.03, 1.39, -0.035,
+            0.115, 0.090, top_scale=0.055, sides=7, phase=0.31),
+    ]
+    ember_bed = [
+        local_ellipsoid(
+            x, height, forward,
+            0.035, 0.025, 0.030,
+            sides=7, phase=phase)
+        for x, height, forward, phase in (
+            (-0.20, 0.855, -0.10, 0.04),
+            (-0.08, 0.875, 0.13, 0.16),
+            (0.05, 0.850, -0.16, 0.27),
+            (0.16, 0.880, 0.08, 0.38),
+            (0.22, 0.845, -0.05, 0.49),
+        )
+    ]
+    spill = [ring_solid_z((
+        (0.0, 0.0, 0.0, 2.05, 1.40, 0.0),
+        (0.018, 0.0, 0.0, 2.05, 1.40, 0.0),
+    ), 20)]
+    return AssemblySpec(
+        kind,
+        variant,
+        (
+            make_named_part(
+                kind, variant, "FlameCore_Neon", "Neon", *core),
+            make_named_part(
+                kind, variant, "FlameOuter_Neon", "Neon", *outer),
+            make_named_part(
+                kind, variant, "FlameLeftTongue_Neon",
+                "Neon", *left_tongue),
+            make_named_part(
+                kind, variant, "FlameRightTongue_Neon",
+                "Neon", *right_tongue),
+            make_named_part(
+                kind, variant, "EmberBed_Neon", "Neon", *ember_bed),
+            make_named_part(
+                kind, variant, "GroundSpill_BacklitSign",
+                "BacklitSign", *spill),
+        ),
+        unity_owned_parts=(
+            "Realtime light", "Halo", "Smoke particles", "Fire animation"),
+        root_derivation="NightlifeArchShelterPlan.BarrelGround",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+def build_nightlife_shelter_standing_person() -> AssemblySpec:
+    kind, variant = "NightlifeShelterStandingPerson", 0
+    outerwear = [
+        local_box(-0.16, 0.055, -0.03, 0.28, 0.11, 0.42, 0.035,
+                  yaw_up_degrees=-4.0),
+        local_box(0.16, 0.055, 0.01, 0.28, 0.11, 0.42, 0.035,
+                  yaw_up_degrees=5.0),
+        local_tube((-0.15, 0.11, -0.02), (-0.13, 0.82, 0.01),
+                   0.085, sides=8, end_radius=0.105),
+        local_tube((0.15, 0.11, 0.02), (0.13, 0.82, 0.02),
+                   0.085, sides=8, end_radius=0.105),
+        local_box(0.0, 1.13, 0.10, 0.54, 0.68, 0.34, 0.085,
+                  pitch_x_degrees=11.0),
+        local_tube((-0.22, 1.38, 0.14), (-0.20, 1.12, 0.34),
+                   0.072, sides=8),
+        local_tube((-0.20, 1.12, 0.34), (-0.07, 1.03, 0.52),
+                   0.060, sides=8),
+        local_tube((0.22, 1.38, 0.14), (0.20, 1.12, 0.34),
+                   0.072, sides=8),
+        local_tube((0.20, 1.12, 0.34), (0.07, 1.03, 0.52),
+                   0.060, sides=8),
+    ]
+    layer = [
+        local_vertical_solid(
+            0.0, 1.38, 1.48, 0.19,
+            0.18, 0.16, top_scale=0.86, sides=9),
+        local_vertical_solid(
+            0.0, 1.62, 1.76, 0.22,
+            0.15, 0.14, top_scale=0.74, sides=9),
+        local_box(-0.11, 1.40, 0.27, 0.12, 0.34, 0.055, 0.012,
+                  roll_forward_degrees=5.0),
+    ]
+    skin = [
+        local_ellipsoid(0.0, 1.58, 0.20, 0.13, 0.16, 0.12,
+                        sides=9, phase=0.06),
+        local_ellipsoid(-0.055, 1.02, 0.54, 0.067, 0.075, 0.055,
+                        sides=8),
+        local_ellipsoid(0.055, 1.02, 0.54, 0.067, 0.075, 0.055,
+                        sides=8, phase=0.12),
+    ]
+    return shelter_person_assembly(kind, outerwear, layer, skin)
+
+
+def build_nightlife_shelter_seated_person() -> AssemblySpec:
+    kind, variant = "NightlifeShelterSeatedPerson", 0
+    outerwear = [
+        local_box(-0.22, 0.055, 0.43, 0.28, 0.11, 0.42, 0.035,
+                  yaw_up_degrees=-7.0),
+        local_box(0.22, 0.055, 0.43, 0.28, 0.11, 0.42, 0.035,
+                  yaw_up_degrees=6.0),
+        local_tube((-0.21, 0.11, 0.40), (-0.20, 0.54, 0.26),
+                   0.085, sides=8, end_radius=0.105),
+        local_tube((0.21, 0.11, 0.40), (0.20, 0.54, 0.26),
+                   0.085, sides=8, end_radius=0.105),
+        local_tube((-0.20, 0.54, 0.26), (-0.14, 0.68, -0.05),
+                   0.105, sides=8),
+        local_tube((0.20, 0.54, 0.26), (0.14, 0.68, -0.05),
+                   0.105, sides=8),
+        local_box(0.0, 0.98, 0.03, 0.56, 0.66, 0.36, 0.085,
+                  pitch_x_degrees=13.0),
+        local_tube((-0.23, 1.22, 0.10), (-0.20, 0.96, 0.31),
+                   0.072, sides=8),
+        local_tube((-0.20, 0.96, 0.31), (-0.07, 0.87, 0.53),
+                   0.060, sides=8),
+        local_tube((0.23, 1.22, 0.10), (0.20, 0.96, 0.31),
+                   0.072, sides=8),
+        local_tube((0.20, 0.96, 0.31), (0.07, 0.87, 0.53),
+                   0.060, sides=8),
+    ]
+    layer = [
+        local_vertical_solid(
+            0.0, 1.20, 1.31, 0.13,
+            0.18, 0.16, top_scale=0.86, sides=9),
+        local_vertical_solid(
+            0.0, 1.44, 1.57, 0.17,
+            0.15, 0.14, top_scale=0.72, sides=9),
+        local_box(0.12, 1.20, 0.23, 0.11, 0.32, 0.055, 0.012,
+                  roll_forward_degrees=-5.0),
+    ]
+    skin = [
+        local_ellipsoid(0.0, 1.40, 0.15, 0.13, 0.16, 0.12,
+                        sides=9, phase=0.09),
+        local_ellipsoid(-0.055, 0.86, 0.55, 0.067, 0.075, 0.055,
+                        sides=8),
+        local_ellipsoid(0.055, 0.86, 0.55, 0.067, 0.075, 0.055,
+                        sides=8, phase=0.12),
+    ]
+    return shelter_person_assembly(kind, outerwear, layer, skin)
+
+
+def build_nightlife_shelter_sleeping_person() -> AssemblySpec:
+    kind, variant = "NightlifeShelterSleepingPerson", 0
+    outerwear = [
+        local_tube((0.15, 0.28, 0.0), (0.54, 0.25, 0.06),
+                   0.12, sides=8, end_radius=0.10),
+        local_tube((0.54, 0.25, 0.06), (0.88, 0.17, 0.03),
+                   0.09, sides=8, end_radius=0.075),
+        local_tube((0.18, 0.30, -0.06), (0.58, 0.22, -0.09),
+                   0.12, sides=8, end_radius=0.10),
+        local_tube((0.58, 0.22, -0.09), (0.91, 0.14, -0.05),
+                   0.09, sides=8, end_radius=0.075),
+        local_box(0.98, 0.0638, 0.05, 0.30, 0.11, 0.24, 0.035,
+                  roll_forward_degrees=-4.0),
+        local_box(0.99, 0.0638, -0.07, 0.30, 0.11, 0.24, 0.035,
+                  roll_forward_degrees=3.0),
+    ]
+    breathing_upper = [
+        local_box(-0.12, 0.31, 0.0, 0.78, 0.31, 0.44, 0.09,
+                  roll_forward_degrees=-4.0),
+        local_box(0.16, 0.39, 0.01, 0.64, 0.20, 0.48, 0.065,
+                  roll_forward_degrees=-7.0),
+        local_tube((-0.30, 0.31, 0.04), (-0.48, 0.18, 0.22),
+                   0.065, sides=8),
+    ]
+    skin = [
+        local_ellipsoid(-0.60, 0.31, 0.02, 0.14, 0.15, 0.12,
+                        sides=9, phase=0.07),
+        local_ellipsoid(-0.50, 0.15, 0.24, 0.065, 0.070, 0.052,
+                        sides=8, phase=0.14),
+    ]
+    return shelter_person_assembly(
+        kind,
+        outerwear,
+        breathing_upper,
+        skin,
+        middle_component="BreathingUpper_Residential",
+    )
+
+
+def shelter_person_assembly(
+    kind: str,
+    outerwear: Sequence[Geometry],
+    middle: Sequence[Geometry],
+    skin: Sequence[Geometry],
+    middle_component: str = "Layer_Residential",
+) -> AssemblySpec:
+    variant = 0
+    return AssemblySpec(
+        kind,
+        variant,
+        (
+            make_named_part(
+                kind, variant, "Outerwear_Street",
+                "Street", *outerwear),
+            make_named_part(
+                kind, variant, middle_component,
+                "Residential", *middle),
+            make_named_part(
+                kind, variant, "Skin_Masonry", "Masonry", *skin),
+        ),
+        unity_owned_parts=(
+            "Palette property blocks", "Presentation motion", "Collider"),
+        root_derivation="NightlifeArchShelterPlan.PersonGround+Facing",
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
 def make_assemblies() -> tuple[AssemblySpec, ...]:
     return (
         # Wave 1 compatibility block. Keep these first 15 assemblies and their
@@ -3751,6 +4620,17 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         *(build_church_courtyard_flower_bed(index) for index in range(2)),
         build_cemetery_fence_post(),
         build_cemetery_fence_rail(),
+        # Citywide v4.6: one measured Nightlife arch shelter. The bridge,
+        # props, fire presentation and posed people stay separate so runtime
+        # plans can own placement, collision, light and restrained motion.
+        build_nightlife_arch_bridge_shell(),
+        build_nightlife_burn_barrel(),
+        *(build_nightlife_shelter_bedding(index) for index in range(2)),
+        build_nightlife_shelter_clutter(),
+        build_nightlife_shelter_fire(),
+        build_nightlife_shelter_standing_person(),
+        build_nightlife_shelter_seated_person(),
+        build_nightlife_shelter_sleeping_person(),
     )
 
 
@@ -3910,6 +4790,14 @@ EXPECTED_VARIANTS = {
     "ChurchCourtyardFlowerBed": 2,
     "CemeteryFencePost": 1,
     "CemeteryFenceRail": 1,
+    "NightlifeArchBridgeShell": 1,
+    "NightlifeBurnBarrel": 1,
+    "NightlifeShelterBedding": 2,
+    "NightlifeShelterClutter": 1,
+    "NightlifeShelterFire": 1,
+    "NightlifeShelterStandingPerson": 1,
+    "NightlifeShelterSeatedPerson": 1,
+    "NightlifeShelterSleepingPerson": 1,
 }
 
 EXPECTED_ROLES = {
@@ -4027,6 +4915,22 @@ EXPECTED_ROLES = {
        for index in range(2)},
     ("CemeteryFencePost", 0): ("Fixture",),
     ("CemeteryFenceRail", 0): ("Fixture",),
+    ("NightlifeArchBridgeShell", 0): (
+        "Masonry", "Masonry", "Masonry",
+        "Street", "Industrial", "Street"),
+    ("NightlifeBurnBarrel", 0): ("Industrial", "Timber"),
+    **{("NightlifeShelterBedding", index): (
+        "Residential", "Street", "Timber") for index in range(2)},
+    ("NightlifeShelterClutter", 0): (
+        "Timber", "Street", "Residential", "Industrial"),
+    ("NightlifeShelterFire", 0): (
+        "Neon", "Neon", "Neon", "Neon", "Neon", "BacklitSign"),
+    ("NightlifeShelterStandingPerson", 0): (
+        "Street", "Residential", "Masonry"),
+    ("NightlifeShelterSeatedPerson", 0): (
+        "Street", "Residential", "Masonry"),
+    ("NightlifeShelterSleepingPerson", 0): (
+        "Street", "Residential", "Masonry"),
 }
 
 
@@ -4066,6 +4970,29 @@ EXPECTED_MESH_SUFFIXES = {
     **{("ChurchCourtyardFlowerBed", index): (
         "Edging_Masonry_Stone", "Foliage", "Flowers_Residential")
        for index in range(2)},
+    ("NightlifeArchBridgeShell", 0): (
+        "Shell_Masonry", "StepsAndRetaining_Masonry",
+        "PlatformSupport_Masonry", "PlatformSlab_Street",
+        "Cladding_Industrial", "Roof_Street"),
+    ("NightlifeBurnBarrel", 0): (
+        "Barrel_Industrial", "Fuel_Timber"),
+    ("NightlifeShelterBedding", 0): (
+        "Mattress_Residential", "Blanket_Street", "Cardboard_Timber"),
+    ("NightlifeShelterBedding", 1): (
+        "Roll_Residential", "Tie_Street", "Cardboard_Timber"),
+    ("NightlifeShelterClutter", 0): (
+        "CrateAndCardboard_Timber", "Bags_Street",
+        "Bottles_Residential", "Can_Industrial"),
+    ("NightlifeShelterFire", 0): (
+        "FlameCore_Neon", "FlameOuter_Neon",
+        "FlameLeftTongue_Neon", "FlameRightTongue_Neon",
+        "EmberBed_Neon", "GroundSpill_BacklitSign"),
+    ("NightlifeShelterStandingPerson", 0): (
+        "Outerwear_Street", "Layer_Residential", "Skin_Masonry"),
+    ("NightlifeShelterSeatedPerson", 0): (
+        "Outerwear_Street", "Layer_Residential", "Skin_Masonry"),
+    ("NightlifeShelterSleepingPerson", 0): (
+        "Outerwear_Street", "BreathingUpper_Residential", "Skin_Masonry"),
 }
 
 
@@ -4139,6 +5066,278 @@ def validate_mirror_bounds(
                 abs(first_high[axis] - second_high[axis]) > 1e-5:
             problems.append(
                 f"{kind} mirror variants drift on source axis {axis}")
+
+
+def validate_nightlife_arch_alignment(
+    assemblies: Sequence[AssemblySpec],
+    problems: list[str],
+) -> None:
+    matches = [
+        assembly for assembly in assemblies
+        if assembly.kind == "NightlifeArchBridgeShell" and
+        assembly.variant == 0
+    ]
+    if len(matches) != 1:
+        problems.append(
+            "NightlifeArchBridgeShell requires one alignment contract")
+        return
+
+    assembly = matches[0]
+    references = dict(assembly.canonical_reference)
+    required = {
+        "shared_boundary_local_x": -0.48614,
+        "stair_count": 10.0,
+        "stair_tread_run": 0.322,
+        "stair_shared_min_x": -3.10,
+        "stair_shared_max_x": 0.12,
+        "landing_shared_min_x": 0.12,
+        "landing_shared_max_x": 1.62,
+        "platform_shared_min_x": 0.12,
+        "platform_shared_max_x": 7.42614,
+        "east_attachment_inner_x": 6.94,
+        "south_wall_end_forward": -5.801,
+        "platform_min_forward": -5.801,
+        "platform_max_forward": 3.05,
+        "platform_bottom": 0.0,
+        "platform_top": 1.562,
+        "platform_slab_thickness": 0.18,
+        "guard_height": 1.09,
+        "guard_thickness": 0.12,
+        "guard_bottom": 1.562,
+        "guard_top": 2.652,
+        "guard_top_tube_center": 2.592,
+        "guard_mid_tube_center": 2.107,
+        "guard_post_count": 6.0,
+        "guard_horizontal_count": 2.0,
+        "guard_tube_sides": 8.0,
+        "north_guard_shared_min_x": 0.12,
+        "north_guard_shared_max_x": 7.42614,
+        "north_guard_authored_min_x": -0.36614,
+        "north_guard_authored_max_x": 6.94,
+        "north_guard_contact_forward": 3.05,
+        "north_guard_center_forward": 3.11,
+        "north_guard_outer_forward": 3.17,
+        "south_guard_shared_min_x": 0.12,
+        "south_guard_shared_max_x": 7.42614,
+        "south_guard_authored_min_x": -0.36614,
+        "south_guard_authored_max_x": 6.94,
+        "south_guard_contact_forward": -5.801,
+        "south_guard_center_forward": -5.861,
+        "south_guard_outer_forward": -5.921,
+        "west_guard_shared_contact_x": 0.12,
+        "west_guard_authored_contact_x": -0.36614,
+        "west_guard_shared_center_x": 0.06,
+        "west_guard_authored_center_x": -0.42614,
+        "west_guard_shared_outer_x": 0.0,
+        "west_guard_authored_outer_x": -0.48614,
+        "west_guard_min_forward": -5.801,
+        "west_guard_max_forward": 1.45,
+    }
+    for name, expected in required.items():
+        actual = references.get(name)
+        if actual is None or abs(actual - expected) > BOUNDS_EPSILON:
+            problems.append(
+                f"Nightlife arch reference {name} is {actual}, "
+                f"expected {expected}")
+
+    offset = references.get("shared_boundary_local_x", 0.0)
+    frame_pairs = (
+        ("stair_shared_min_x", "stair_authored_min_x"),
+        ("stair_shared_max_x", "stair_authored_max_x"),
+        ("landing_shared_min_x", "landing_authored_min_x"),
+        ("landing_shared_max_x", "landing_authored_max_x"),
+        ("platform_shared_min_x", "platform_authored_min_x"),
+        ("platform_shared_max_x", "platform_authored_max_x"),
+        ("north_guard_shared_min_x", "north_guard_authored_min_x"),
+        ("north_guard_shared_max_x", "north_guard_authored_max_x"),
+        ("south_guard_shared_min_x", "south_guard_authored_min_x"),
+        ("south_guard_shared_max_x", "south_guard_authored_max_x"),
+        ("west_guard_shared_contact_x", "west_guard_authored_contact_x"),
+        ("west_guard_shared_center_x", "west_guard_authored_center_x"),
+        ("west_guard_shared_outer_x", "west_guard_authored_outer_x"),
+    )
+    for shared_name, authored_name in frame_pairs:
+        shared = references.get(shared_name)
+        authored = references.get(authored_name)
+        if shared is None or authored is None or abs(
+                authored - (shared + offset)) > BOUNDS_EPSILON:
+            problems.append(
+                f"Nightlife arch frames drift at {authored_name}")
+
+    if abs(references.get("platform_authored_max_x", 0.0) -
+           references.get("east_attachment_inner_x", 1.0)) > \
+            BOUNDS_EPSILON:
+        problems.append(
+            "Nightlife arch platform does not meet the east attachment")
+    if abs(references.get("platform_min_forward", 0.0) -
+           references.get("south_wall_end_forward", 1.0)) > \
+            BOUNDS_EPSILON:
+        problems.append(
+            "Nightlife arch platform does not reach the south wall end")
+
+    parts = {part.mesh: part for part in assembly.parts}
+    support_name = mesh_id(
+        assembly.kind, assembly.variant, "PlatformSupport_Masonry")
+    slab_name = mesh_id(
+        assembly.kind, assembly.variant, "PlatformSlab_Street")
+    steps_name = mesh_id(
+        assembly.kind, assembly.variant, "StepsAndRetaining_Masonry")
+    cladding_name = mesh_id(
+        assembly.kind, assembly.variant, "Cladding_Industrial")
+    if any(name not in parts for name in (
+            support_name, slab_name, steps_name, cladding_name)):
+        problems.append("Nightlife arch platform meshes are missing")
+        return
+
+    expected_min_x = references["platform_authored_min_x"]
+    expected_max_x = references["platform_authored_max_x"]
+    expected_min_forward = references["platform_min_forward"]
+    expected_max_forward = references["platform_max_forward"]
+    expected_bottom = references["platform_bottom"]
+    expected_top = references["platform_top"]
+    expected_split = expected_top - references["platform_slab_thickness"]
+    expected_bounds = {
+        support_name: (
+            (expected_min_x, expected_min_forward, expected_bottom),
+            (expected_max_x, expected_max_forward, expected_split),
+        ),
+        slab_name: (
+            (expected_min_x, expected_min_forward, expected_split),
+            (expected_max_x, expected_max_forward, expected_top),
+        ),
+    }
+    for name, (expected_low, expected_high) in expected_bounds.items():
+        actual_low, actual_high = geometry_bounds(parts[name].geometry)
+        for axis in range(3):
+            if abs(actual_low[axis] - expected_low[axis]) > \
+                    BOUNDS_EPSILON or abs(
+                        actual_high[axis] - expected_high[axis]) > \
+                    BOUNDS_EPSILON:
+                problems.append(
+                    f"{name} authored bounds drift on source axis {axis}")
+
+    steps_low, steps_high = geometry_bounds(parts[steps_name].geometry)
+    expected_steps_min_x = references["stair_authored_min_x"]
+    if abs(steps_low[0] - expected_steps_min_x) > BOUNDS_EPSILON:
+        problems.append(
+            "Nightlife arch first tread drifts from the stair footprint")
+    if abs(steps_high[0] - expected_min_x) > BOUNDS_EPSILON:
+        problems.append(
+            "Nightlife arch last tread does not meet the platform seam")
+
+    # The rails intentionally remain part of Cladding_Industrial. Isolate the
+    # two disjoint authored envelopes so validation still proves their exact
+    # visual/physical bounds and complete sparse-pipe topology without adding
+    # new role meshes to the provider contract.
+    guard_bottom = references["guard_bottom"]
+    guard_top = references["guard_top"]
+    guard_radius = references["guard_thickness"] * 0.5
+    guard_bounds = {
+        "north": (
+            (
+                references["north_guard_authored_min_x"],
+                references["north_guard_contact_forward"],
+                guard_bottom,
+            ),
+            (
+                references["north_guard_authored_max_x"],
+                references["north_guard_outer_forward"],
+                guard_top,
+            ),
+        ),
+        "south": (
+            (
+                references["south_guard_authored_min_x"],
+                references["south_guard_outer_forward"],
+                guard_bottom,
+            ),
+            (
+                references["south_guard_authored_max_x"],
+                references["south_guard_contact_forward"],
+                guard_top,
+            ),
+        ),
+        "west": (
+            (
+                references["west_guard_authored_outer_x"],
+                references["west_guard_min_forward"],
+                guard_bottom,
+            ),
+            (
+                references["west_guard_authored_contact_x"],
+                references["west_guard_max_forward"],
+                guard_top,
+            ),
+        ),
+    }
+    cladding_vertices, cladding_faces = parts[cladding_name].geometry
+    tube_count = int(
+        references["guard_post_count"] +
+        references["guard_horizontal_count"])
+    tube_sides = int(references["guard_tube_sides"])
+    expected_vertex_count = tube_count * tube_sides * 2
+    expected_triangle_count = tube_count * (tube_sides * 4 - 4)
+    for edge, (expected_low, expected_high) in guard_bounds.items():
+        def inside(vertex: Vec3) -> bool:
+            return all(
+                expected_low[axis] - BOUNDS_EPSILON <= vertex[axis] <=
+                expected_high[axis] + BOUNDS_EPSILON
+                for axis in range(3)
+            )
+
+        vertex_indices = {
+            index for index, vertex in enumerate(cladding_vertices)
+            if inside(vertex)
+        }
+        # Adjacent guards deliberately share their contact corner, so the
+        # inclusive envelope may also see a few coincident corner vertices.
+        # Complete face topology below remains edge-specific.
+        if len(vertex_indices) < expected_vertex_count:
+            problems.append(
+                f"Nightlife arch {edge} guard has "
+                f"{len(vertex_indices)} vertices, expected at least "
+                f"{expected_vertex_count}")
+            continue
+        actual_low, actual_high = geometry_bounds(([
+            cladding_vertices[index] for index in vertex_indices
+        ], []))
+        for axis in range(3):
+            if abs(actual_low[axis] - expected_low[axis]) > \
+                    BOUNDS_EPSILON or abs(
+                        actual_high[axis] - expected_high[axis]) > \
+                    BOUNDS_EPSILON:
+                problems.append(
+                    f"Nightlife arch {edge} guard bounds drift on "
+                    f"source axis {axis}")
+        actual_triangle_count = sum(
+            len(face) - 2 for face in cladding_faces
+            if all(index in vertex_indices for index in face)
+        )
+        if actual_triangle_count != expected_triangle_count:
+            problems.append(
+                f"Nightlife arch {edge} guard has "
+                f"{actual_triangle_count} triangles, expected "
+                f"{expected_triangle_count}")
+
+    if abs(references["north_guard_center_forward"] - (
+            references["north_guard_contact_forward"] +
+            guard_radius)) > BOUNDS_EPSILON:
+        problems.append(
+            "Nightlife arch north guard is not outside the slab edge")
+    if abs(references["south_guard_center_forward"] - (
+            references["south_guard_contact_forward"] -
+            guard_radius)) > BOUNDS_EPSILON:
+        problems.append(
+            "Nightlife arch south guard is not outside the slab edge")
+    if abs(references["west_guard_authored_center_x"] - (
+            references["west_guard_authored_contact_x"] -
+            guard_radius)) > BOUNDS_EPSILON:
+        problems.append(
+            "Nightlife arch west guard is not outside the slab edge")
+    if abs(references["west_guard_max_forward"] -
+           references["stair_min_forward"]) > BOUNDS_EPSILON:
+        problems.append(
+            "Nightlife arch west guard does not stop at the stair opening")
 
 
 def wave1_compatibility_payload(
@@ -4300,11 +5499,11 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         if actual != list(range(count)):
             problems.append(
                 f"{kind} variants are {actual}, expected 0..{count - 1}")
-    if len(assemblies) != 106:
+    if len(assemblies) != 115:
         problems.append(
-            f"assembly count is {len(assemblies)}, expected 106")
-    if len(names) != 205:
-        problems.append(f"mesh count is {len(names)}, expected 205")
+            f"assembly count is {len(assemblies)}, expected 115")
+    if len(names) != 238:
+        problems.append(f"mesh count is {len(names)}, expected 238")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)
@@ -4316,6 +5515,7 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         "FringeFloodGaugeShell",
     ):
         validate_mirror_bounds(assemblies, kind, problems)
+    validate_nightlife_arch_alignment(assemblies, problems)
     wave1_signature = wave1_compatibility_signature(assemblies)
     if wave1_signature != WAVE1_COMPATIBILITY_SIGNATURE:
         problems.append(

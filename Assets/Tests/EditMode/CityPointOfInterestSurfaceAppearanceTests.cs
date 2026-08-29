@@ -594,15 +594,28 @@ namespace BarPromenade.Tests.EditMode
                     CityNightSiteLightRegistry.SetNightFactor(0.5f);
                     Assert.That(
                         light.intensity,
-                        Is.EqualTo(nightIntensity * 0.5f)
+                        Is.EqualTo(
+                                Mathf.Lerp(
+                                    nightIntensity *
+                                    GameTimeDayNightRules.DayFixtureFloor,
+                                    nightIntensity,
+                                    0.5f))
                             .Within(0.001f));
                     Assert.That(light.enabled, Is.True);
 
+                    // §20 repealed "nothing electric burns under the
+                    // day sky": the fixture keeps two thirds at noon.
                     CityNightSiteLightRegistry.SetNightFactor(0f);
                     Assert.That(
                         light.enabled,
-                        Is.False,
-                        "Nothing electric burns under the day sky.");
+                        Is.True,
+                        "Every fixture burns under the day sky too.");
+                    Assert.That(
+                        light.intensity,
+                        Is.EqualTo(
+                                nightIntensity *
+                                GameTimeDayNightRules.DayFixtureFloor)
+                            .Within(0.001f));
                 }
                 finally
                 {
@@ -694,15 +707,28 @@ namespace BarPromenade.Tests.EditMode
                     CityNightSiteLightRegistry.SetNightFactor(0.5f);
                     Assert.That(
                         light.intensity,
-                        Is.EqualTo(nightIntensity * 0.5f)
+                        Is.EqualTo(
+                                Mathf.Lerp(
+                                    nightIntensity *
+                                    GameTimeDayNightRules.DayFixtureFloor,
+                                    nightIntensity,
+                                    0.5f))
                             .Within(0.001f));
                     Assert.That(light.enabled, Is.True);
 
+                    // §20 repealed "nothing electric burns under the
+                    // day sky": the fixture keeps two thirds at noon.
                     CityNightSiteLightRegistry.SetNightFactor(0f);
                     Assert.That(
                         light.enabled,
-                        Is.False,
-                        "Nothing electric burns under the day sky.");
+                        Is.True,
+                        "Every fixture burns under the day sky too.");
+                    Assert.That(
+                        light.intensity,
+                        Is.EqualTo(
+                                nightIntensity *
+                                GameTimeDayNightRules.DayFixtureFloor)
+                            .Within(0.001f));
                 }
                 finally
                 {

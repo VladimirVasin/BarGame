@@ -9,17 +9,24 @@ namespace BarPromenade
     /// nightlife neon and backlit-sign decoration batches, the
     /// supermarket sign, the home porch light, the site lamps. Builders
     /// register each renderer with its lit colour, and the same
-    /// night-factor path that drives the lamp bulbs lerps them between
-    /// a dead fixture and full glow — nothing electric burns under the
-    /// day sky. Working instruments (traffic signals, the weighbridge
-    /// indicator) and the authored always-on yard spotlight stay
-    /// outside the registry on purpose.
+    /// night-factor path that drives the lamp bulbs breathes them
+    /// between the §20 day floor and full glow. Nothing electric ever
+    /// reads dead: the city is overcast and foggy at noon too, and the
+    /// law says the day takes a third off a fixture, no more. Working
+    /// instruments (traffic signals, the weighbridge indicator) and the
+    /// authored always-on yard spotlight stay outside the registry on
+    /// purpose.
     /// </summary>
     internal static class CityNightGlowRegistry
     {
-        // A dead tube or unlit lightbox keeps a tenth of its colour:
-        // enough hue to read what it is, no glow.
-        public const float DeadGlowFraction = 0.10f;
+        /// <summary>
+        /// What a glow keeps under the day sky. This was `0.10` - "a
+        /// dead tube... enough hue to read what it is, no glow" - and
+        /// the §20 law repealed the dead tube outright: every fixture
+        /// gives at least two thirds of its night strength at noon.
+        /// </summary>
+        public const float DeadGlowFraction =
+            GameTimeDayNightRules.DayFixtureFloor;
 
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
@@ -65,7 +72,8 @@ namespace BarPromenade
             }
 
             halos.Add(halo);
-            halo.SetIntensityFactor(nightFactor);
+            halo.SetIntensityFactor(
+                GameTimeDayNightRules.FixtureFactor(nightFactor));
         }
 
         public static void SetNightFactor(float factor)
@@ -89,6 +97,10 @@ namespace BarPromenade
                 Apply(entries[index]);
             }
 
+            // "И туманный ореол вокруг него не снимается никогда" - the
+            // halo rides the same fixture floor as the glow it belongs to.
+            float haloFactor =
+                GameTimeDayNightRules.FixtureFactor(nightFactor);
             for (int index = halos.Count - 1; index >= 0; index--)
             {
                 if (halos[index] == null)
@@ -97,7 +109,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                halos[index].SetIntensityFactor(nightFactor);
+                halos[index].SetIntensityFactor(haloFactor);
             }
         }
 

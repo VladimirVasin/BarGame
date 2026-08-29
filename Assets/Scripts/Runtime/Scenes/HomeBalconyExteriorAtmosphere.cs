@@ -110,7 +110,8 @@ namespace BarPromenade
                 lightingFocus);
             BuildCityPostProcessVolume();
             CityWetSurfaceRegistry.InitializeOrResume(
-                GameWeatherRules.EvaluateCurrent().RainIntensity,
+                CityEternalRainShaper.FloorIntensity(
+                    GameWeatherRules.EvaluateCurrent().RainIntensity),
                 ResolveAbsoluteGameMinutes());
             IsInitialized = true;
             RefreshVisibility(true);
@@ -178,8 +179,13 @@ namespace BarPromenade
             }
 
             RefreshVisibility(false);
+
+            // The balcony looks at the CITY, and in the city it never stops
+            // raining: the same floor the city scene itself applies, or the
+            // two views of one sky would disagree.
             WeatherVisualSample weather =
-                GameWeatherRules.EvaluateCurrent();
+                new CityEternalRainShaper().ShapePrecipitation(
+                    GameWeatherRules.EvaluateCurrent());
             RainField.SetIntensity(weather.RainIntensity);
             CityWetSurfaceRegistry.Advance(
                 weather.RainIntensity,
@@ -274,7 +280,8 @@ namespace BarPromenade
                 FogAnchor,
                 CityNightResources.AtmosphereMaterial,
                 citySeed,
-                GameWeatherRules.EvaluateCurrent().RainIntensity);
+                CityEternalRainShaper.FloorIntensity(
+                    GameWeatherRules.EvaluateCurrent().RainIntensity));
 
             GameObject rainSoundObject = new GameObject(
                 "Home Exterior Rain Sound");

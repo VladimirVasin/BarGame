@@ -37,6 +37,14 @@ namespace BarPromenade
         [SerializeField] private Vector2 coatHemSize;
         [SerializeField] private float perchPelvisDrop;
         [SerializeField] private AnimationClip dismountClip;
+        [SerializeField] private Transform leftUpperArm;
+        [SerializeField] private Transform leftForearm;
+        [SerializeField] private Transform leftHand;
+        [SerializeField] private Transform leftGripSocket;
+        [SerializeField] private Transform rightUpperArm;
+        [SerializeField] private Transform rightForearm;
+        [SerializeField] private Transform rightHand;
+        [SerializeField] private Transform rightGripSocket;
 
         public CityPedestrianAssetRegistry PedestrianRegistry =>
             pedestrianRegistry;
@@ -96,6 +104,24 @@ namespace BarPromenade
         /// </summary>
         public AnimationClip DismountClip => dismountClip;
 
+        /// <summary>
+        /// His arms, for the wheel. The shared pedestrian registry serializes
+        /// no arm bones - nothing is found by name at runtime, and no other
+        /// pedestrian needs an arm reached - so, like the fifth clip, the
+        /// bindings ride the component that is already his alone. The grip
+        /// sockets are the skeleton's own SOCKET_Grip bones in each palm,
+        /// the same contract the bus driver's hands close on.
+        /// </summary>
+        public Transform LeftUpperArm => leftUpperArm;
+
+        public Transform LeftForearm => leftForearm;
+        public Transform LeftHand => leftHand;
+        public Transform LeftGripSocket => leftGripSocket;
+        public Transform RightUpperArm => rightUpperArm;
+        public Transform RightForearm => rightForearm;
+        public Transform RightHand => rightHand;
+        public Transform RightGripSocket => rightGripSocket;
+
         public void Configure(
             CityPedestrianAssetRegistry configuredPedestrianRegistry,
             Transform configuredCoinRestAnchor,
@@ -103,7 +129,8 @@ namespace BarPromenade
             Renderer configuredCoatHemRenderer,
             Vector2 configuredCoatHemSize,
             float configuredPerchPelvisDrop,
-            AnimationClip configuredDismountClip)
+            AnimationClip configuredDismountClip,
+            LastRouteFerrymanArmBindings configuredArms)
         {
             pedestrianRegistry = configuredPedestrianRegistry;
             coinRestAnchor = configuredCoinRestAnchor;
@@ -112,6 +139,50 @@ namespace BarPromenade
             coatHemSize = configuredCoatHemSize;
             perchPelvisDrop = configuredPerchPelvisDrop;
             dismountClip = configuredDismountClip;
+            leftUpperArm = configuredArms.LeftUpperArm;
+            leftForearm = configuredArms.LeftForearm;
+            leftHand = configuredArms.LeftHand;
+            leftGripSocket = configuredArms.LeftGripSocket;
+            rightUpperArm = configuredArms.RightUpperArm;
+            rightForearm = configuredArms.RightForearm;
+            rightHand = configuredArms.RightHand;
+            rightGripSocket = configuredArms.RightGripSocket;
         }
+    }
+
+    /// <summary>
+    /// The eight arm bindings, bundled so the prefab build hands them over
+    /// as one argument instead of stretching a signature to fifteen.
+    /// </summary>
+    public readonly struct LastRouteFerrymanArmBindings
+    {
+        public LastRouteFerrymanArmBindings(
+            Transform leftUpperArm,
+            Transform leftForearm,
+            Transform leftHand,
+            Transform leftGripSocket,
+            Transform rightUpperArm,
+            Transform rightForearm,
+            Transform rightHand,
+            Transform rightGripSocket)
+        {
+            LeftUpperArm = leftUpperArm;
+            LeftForearm = leftForearm;
+            LeftHand = leftHand;
+            LeftGripSocket = leftGripSocket;
+            RightUpperArm = rightUpperArm;
+            RightForearm = rightForearm;
+            RightHand = rightHand;
+            RightGripSocket = rightGripSocket;
+        }
+
+        public Transform LeftUpperArm { get; }
+        public Transform LeftForearm { get; }
+        public Transform LeftHand { get; }
+        public Transform LeftGripSocket { get; }
+        public Transform RightUpperArm { get; }
+        public Transform RightForearm { get; }
+        public Transform RightHand { get; }
+        public Transform RightGripSocket { get; }
     }
 }

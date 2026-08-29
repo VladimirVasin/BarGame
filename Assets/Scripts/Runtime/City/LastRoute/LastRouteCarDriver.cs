@@ -34,6 +34,20 @@ namespace BarPromenade
 
         public const float SteeringResponsePerSecond = 7f;
 
+        /// <summary>
+        /// Column degrees per front-wheel degree. The bus runs `3.55` against
+        /// a `28` degree wheel clamp - `99.4`, just inside its rim cap - and
+        /// copying that number here would demand `117` degrees of rim from a
+        /// `33` degree clamp and pin the rim at the cap through every corner.
+        /// `3.0` restores the bus's own pairing: rail-to-rail exactly at full
+        /// lock, `33 x 3.0 = 99`.
+        /// </summary>
+        public const float SteeringWheelRatio = 3.0f;
+
+        /// <summary>The bus's rim cap, unchanged: the largest turn a seated
+        /// pair of hands can ride without regripping.</summary>
+        public const float MaximumSteeringWheelDegrees = 100f;
+
         /// <summary>A hitch longer than this is stepped rather than swallowed,
         /// the suspension's own convention.</summary>
         public const float MaximumStepSeconds = 0.1f;
@@ -47,6 +61,9 @@ namespace BarPromenade
         private Transform[] wheels;
         private Quaternion[] wheelRest;
         private bool[] wheelSteers;
+        private Quaternion steeringWheelRest;
+        private Vector3 steeringWheelAxisLocal;
+        private bool hasSteeringWheel;
         private bool announcedArrival;
 
         /// <summary>Raised once, on the frame the car comes to rest at the end
@@ -74,6 +91,15 @@ namespace BarPromenade
         /// <summary>Metres covered so far, for logs and tests.</summary>
         public float Distance => model?.Distance ?? 0f;
         public float Speed => model?.Speed ?? 0f;
+
+        /// <summary>
+        /// The rim's current roll. The man at the wheel reads it nowhere -
+        /// his hands chase the grips, which are children of the pivot - but
+        /// a test needs the number to pin the ratio and, above all, the SIGN:
+        /// the bus's rim once rolled left under the driver's hands on every
+        /// right turn.
+        /// </summary>
+        public float SteeringWheelDegrees { get; private set; }
 
         public void Initialize(LastRouteCarAssetRegistry carRegistry)
         {
@@ -155,10 +181,34 @@ namespace BarPromenade
         {
             IsDriving = false;
             suspension?.ClearDriveLoad();
+
+            // The handbrake also straightens the wheel. `Update` stops
+            // running from here, so whatever angle the last metre of road
+            // left in `steeringDegrees` would otherwise be held forever -
+            // and the alighting clip that follows an arrival starts from the
+            // drive pose's authored hands, which hold an UNTURNED rim.
+            ApplySteeringPose(0f);
             if (obstacle != null)
             {
                 obstacle.enabled = true;
             }
+        }
+
+        /// <summary>
+        /// Writes the steering pose - front pair and rim - for one given
+        /// wheel angle, without touching roll or the smoothing state's
+        /// history. The drive itself goes through <see cref="ApplyWheels"/>;
+        /// this is the seam <see cref="Halt"/> straightens through and a
+        /// test measures the rim's ratio and sign through.
+        /// </summary>
+        public void ApplySteeringPose(float wheelDegrees)
+        {
+            steeringDegrees = Mathf.Clamp(
+                wheelDegrees,
+                -MaximumSteeringDegrees,
+                MaximumSteeringDegrees);
+            ApplyWheelPoses();
+            ApplySteeringWheel();
         }
 
         private void Update()
@@ -241,6 +291,17 @@ namespace BarPromenade
                 ResolveSteeringTarget(),
                 Mathf.Clamp01(step * SteeringResponsePerSecond));
 
+            ApplyWheelPoses();
+            ApplySteeringWheel();
+        }
+
+        private void ApplyWheelPoses()
+        {
+            if (wheels == null)
+            {
+                return;
+            }
+
             for (int index = 0; index < wheels.Length; index++)
             {
                 Transform wheel = wheels[index];
@@ -264,6 +325,39 @@ namespace BarPromenade
 
                 wheel.localRotation = local;
             }
+        }
+
+        /// <summary>
+        /// Rolls the rim with the front wheels, from its captured rest,
+        /// about the measured rim normal - the man at the wheel now visibly
+        /// steers, and the grips his hands chase are children of this pivot.
+        ///
+        /// The axis is NOT the bus's binding with the bus's negation. The
+        /// bus's column axis points at the windshield, so it negates to get
+        /// a right turn rolling the rim clockwise under the driver's hands;
+        /// this car's raked column points back AT the driver, the opposite
+        /// viewing side, and the same negation would reproduce the exact
+        /// rolled-left-on-a-right-turn bug the bus's comment records. So no
+        /// node basis and no copied sign: the axis is measured off the two
+        /// drawn grips and pointed at the driver's seat, where a positive
+        /// angle reads clockwise to the man watching from the axis tip.
+        /// </summary>
+        private void ApplySteeringWheel()
+        {
+            if (!hasSteeringWheel)
+            {
+                return;
+            }
+
+            SteeringWheelDegrees = Mathf.Clamp(
+                steeringDegrees * SteeringWheelRatio,
+                -MaximumSteeringWheelDegrees,
+                MaximumSteeringWheelDegrees);
+            registry.SteeringWheelPivot.localRotation =
+                steeringWheelRest *
+                Quaternion.AngleAxis(
+                    SteeringWheelDegrees,
+                    steeringWheelAxisLocal);
         }
 
         /// <summary>
@@ -315,6 +409,52 @@ namespace BarPromenade
                     ? wheels[index].localRotation
                     : Quaternion.identity;
             }
+
+            CaptureSteeringWheelRest();
+        }
+
+        /// <summary>
+        /// The rim's rest pose, and its spin axis measured off the drawn
+        /// geometry: the normal of the plane the two grips lie on, pointed
+        /// at the driver's seat. No imported node basis is trusted anywhere
+        /// in this - the road wheels' own comment records what an imported
+        /// child's axes did the last time one was.
+        /// </summary>
+        private void CaptureSteeringWheelRest()
+        {
+            hasSteeringWheel = false;
+            Transform pivot = registry.SteeringWheelPivot;
+            Transform leftGrip = registry.LeftSteeringGrip;
+            Transform rightGrip = registry.RightSteeringGrip;
+            Transform seat = registry.DriverSeatAnchor;
+            if (pivot == null ||
+                leftGrip == null ||
+                rightGrip == null ||
+                seat == null)
+            {
+                return;
+            }
+
+            Vector3 axisWorld = Vector3.Cross(
+                leftGrip.position - pivot.position,
+                rightGrip.position - pivot.position);
+            if (axisWorld.sqrMagnitude < 0.000001f)
+            {
+                return;
+            }
+
+            if (Vector3.Dot(
+                    axisWorld,
+                    seat.position - pivot.position) < 0f)
+            {
+                axisWorld = -axisWorld;
+            }
+
+            steeringWheelRest = pivot.localRotation;
+            steeringWheelAxisLocal = pivot
+                .InverseTransformDirection(axisWorld.normalized)
+                .normalized;
+            hasSteeringWheel = true;
         }
     }
 }

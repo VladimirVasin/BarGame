@@ -37,6 +37,14 @@ namespace BarPromenade
                     0f,
                     tree.YawDegrees,
                     0f);
+                DescribeCrownVariant(
+                    tree.PaletteIndex,
+                    out float lowerBase,
+                    out float lowerRadius,
+                    out float lowerHeight,
+                    out float upperBase,
+                    out float upperRadius,
+                    out float upperHeight);
 
                 // One phase per tree, taken from where it stands, so a
                 // stand of crowns does not repeat the same needle patch at
@@ -48,11 +56,12 @@ namespace BarPromenade
                               tree.Position.z +
                               tree.Position.y * 1.37f;
                 AppendCone(
-                    tree.Position + Vector3.up * (tree.Height * 0.18f),
+                    tree.Position + Vector3.up *
+                    (tree.Height * lowerBase),
                     tree.Position.y,
                     rotation,
-                    tree.CrownRadius,
-                    tree.Height * 0.56f,
+                    tree.CrownRadius * lowerRadius,
+                    tree.Height * lowerHeight,
                     7,
                     phase,
                     tile,
@@ -60,11 +69,12 @@ namespace BarPromenade
                     uvs,
                     triangles);
                 AppendCone(
-                    tree.Position + Vector3.up * (tree.Height * 0.43f),
+                    tree.Position + Vector3.up *
+                    (tree.Height * upperBase),
                     tree.Position.y,
                     rotation,
-                    tree.CrownRadius * 0.73f,
-                    tree.Height * 0.57f,
+                    tree.CrownRadius * upperRadius,
+                    tree.Height * upperHeight,
                     7,
                     phase,
                     tile,
@@ -84,6 +94,53 @@ namespace BarPromenade
             bounds.Expand(WindCullingHeadroom * 2f);
             mesh.bounds = bounds;
             return mesh;
+        }
+
+        /// <summary>
+        /// The planner has always assigned three deterministic forest
+        /// variants, but the renderer discarded that value and drew all 420
+        /// crowns as the same two triangles in silhouette. The variants stay
+        /// one species, one mesh batch and one material; only the overlap and
+        /// taper of the two low-poly skirts changes.
+        /// </summary>
+        private static void DescribeCrownVariant(
+            int paletteIndex,
+            out float lowerBase,
+            out float lowerRadius,
+            out float lowerHeight,
+            out float upperBase,
+            out float upperRadius,
+            out float upperHeight)
+        {
+            switch (Mathf.Abs(paletteIndex) % 3)
+            {
+                case 1:
+                    lowerBase = 0.15f;
+                    // CrownRadius is the validated outer envelope. Shape
+                    // variants may taper inside it, never grow past it.
+                    lowerRadius = 1f;
+                    lowerHeight = 0.62f;
+                    upperBase = 0.47f;
+                    upperRadius = 0.68f;
+                    upperHeight = 0.53f;
+                    return;
+                case 2:
+                    lowerBase = 0.22f;
+                    lowerRadius = 0.92f;
+                    lowerHeight = 0.50f;
+                    upperBase = 0.38f;
+                    upperRadius = 0.79f;
+                    upperHeight = 0.62f;
+                    return;
+                default:
+                    lowerBase = 0.18f;
+                    lowerRadius = 1f;
+                    lowerHeight = 0.56f;
+                    upperBase = 0.43f;
+                    upperRadius = 0.73f;
+                    upperHeight = 0.57f;
+                    return;
+            }
         }
 
         internal static Mesh CreateBoulders(
@@ -241,7 +298,12 @@ namespace BarPromenade
             ICollection<Vector3> vertices,
             IList<int> triangles)
         {
-            const int stations = 6;
+            // The crest is `MountainRoadRidgeGeometry`'s, not this file's.
+            // It used to be written out here and the cableway's validator
+            // measured the bounding box instead, so a ridge could pass a
+            // check about rock that was never built.
+            const int stations =
+                MountainRoadRidgeGeometry.RidgeCrestStations;
             Quaternion rotation = Quaternion.Euler(0f, ridge.YawDegrees, 0f);
             int firstIndex = vertices.Count;
             for (int depth = 0; depth < 2; depth++)
@@ -251,11 +313,9 @@ namespace BarPromenade
                 {
                     float t = station / (float)(stations - 1);
                     float x = Mathf.Lerp(-0.5f, 0.5f, t) * ridge.Size.x;
-                    float edge = Mathf.Sin(t * Mathf.PI);
-                    float variation = 0.84f +
-                        ((ridge.Seed + station * 37) & 7) * 0.025f;
-                    float peakY = -ridge.Size.y * 0.5f +
-                                  ridge.Size.y * edge * variation;
+                    float peakY = MountainRoadRidgeGeometry.StationCrest(
+                        ridge,
+                        station);
                     vertices.Add(ridge.Center + rotation * new Vector3(
                         x,
                         -ridge.Size.y * 0.5f,

@@ -8,7 +8,6 @@ namespace BarPromenade
     public sealed class CityNightAtmosphere : MonoBehaviour
     {
         public const int MaximumRealtimeLights = 12;
-        public const float TunnelPracticalDayFloor = 0.22f;
         public const float MinimumTunnelFlickerMultiplier = 0.05f;
 
         private const float ReassignmentInterval = 0.35f;
@@ -206,12 +205,20 @@ namespace BarPromenade
             nightFactor = clampedFactor;
             hasAppliedNightFactor = true;
             bool visible = nightFactor > VisibleFactorThreshold;
+
+            // Every realtime fixture below rides the §20 floor rather than
+            // the raw factor: the law says a fixture gives at least two
+            // thirds of its night strength at noon and its fog halo is
+            // never taken away. The raw factor keeps driving what really
+            // belongs to the hour - the refresh cadence, the pool scan.
+            float fixtureFactor =
+                GameTimeDayNightRules.FixtureFactor(nightFactor);
             for (int index = 0; index < barLights.Length; index++)
             {
                 barLights[index].intensity =
-                    BarLightIntensity * nightFactor;
-                barLights[index].enabled = visible;
-                barLightHalos[index].SetIntensityFactor(nightFactor);
+                    BarLightIntensity * fixtureFactor;
+                barLights[index].enabled = true;
+                barLightHalos[index].SetIntensityFactor(fixtureFactor);
             }
 
             for (int index = 0; index < streetLightPool.Length; index++)
@@ -295,7 +302,14 @@ namespace BarPromenade
                 selectedAnchorDistances[index] = float.PositiveInfinity;
             }
 
-            bool nightVisible = nightFactor > VisibleFactorThreshold;
+            // The pool leases by the FIXTURE factor, not the sky's. The
+            // old gate skipped the anchor scan at a zero night factor -
+            // a fair optimisation while lamps died at dawn, and repealed
+            // with them: under §20 the nearest lamps spill realtime light
+            // at noon exactly as they do at midnight, two thirds as hard.
+            bool nightVisible =
+                GameTimeDayNightRules.FixtureFactor(nightFactor) >
+                VisibleFactorThreshold;
             activePracticalIndex = FindNearestPractical(
                 playerPosition,
                 nightVisible);
@@ -571,7 +585,7 @@ namespace BarPromenade
         {
             if (!IsActivePracticalPoolIndex(poolIndex))
             {
-                return nightFactor;
+                return GameTimeDayNightRules.FixtureFactor(nightFactor);
             }
 
             return GetPracticalIntensityFactor(
@@ -581,15 +595,17 @@ namespace BarPromenade
         private float GetPracticalIntensityFactor(
             CityFringeYardKind kind)
         {
+            // The §20 floor for every yard practical. The faulty tunnel
+            // fixture used to carry its own private day floor of 0.22; the
+            // law's two-thirds subsumes it, and what stays the fixture's
+            // own is the FLICKER - a fault is character, not a schedule.
+            float poweredFactor =
+                GameTimeDayNightRules.FixtureFactor(nightFactor);
             if (kind != CityFringeYardKind.SouthTunnelForecourt)
             {
-                return nightFactor;
+                return poweredFactor;
             }
 
-            float poweredFactor = Mathf.Lerp(
-                TunnelPracticalDayFloor,
-                1f,
-                nightFactor);
             return poweredFactor * tunnelPracticalFlickerMultiplier;
         }
 

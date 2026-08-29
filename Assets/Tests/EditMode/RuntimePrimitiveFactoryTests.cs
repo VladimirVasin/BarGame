@@ -136,6 +136,65 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        [Category("AlpineVillageStorm")]
+        public void DynamicOrientedBatchCanRemainReadableWithoutACollider()
+        {
+            RuntimeOrientedBox[] boxes =
+            {
+                new RuntimeOrientedBox(
+                    Vector3.zero,
+                    Quaternion.identity,
+                    new Vector3(2f, 0.03f, 0.03f))
+            };
+            GameObject combined =
+                RuntimePrimitiveFactory.CreateCombinedOrientedBoxes(
+                    "Readable Garland Batch",
+                    null,
+                    boxes,
+                    Color.black,
+                    false,
+                    1f,
+                    RuntimeWorldUvMode.BoxProjected,
+                    true);
+
+            try
+            {
+                Mesh mesh =
+                    combined.GetComponent<MeshFilter>().sharedMesh;
+                Assert.That(mesh.isReadable, Is.True);
+                Assert.That(mesh.vertices, Is.Not.Empty);
+                Assert.That(combined.GetComponent<Collider>(), Is.Null);
+                Assert.That(
+                    combined.GetComponent<RuntimeGeneratedMeshOwner>(),
+                    Is.Not.Null,
+                    "The unique readable mesh still needs scene ownership.");
+
+                var semantic = new GameObject("Garland Midpoint");
+                semantic.transform.SetParent(combined.transform, false);
+                AlpineVillageGarlandWind motion =
+                    combined.AddComponent<AlpineVillageGarlandWind>();
+                MeshFilter filter = combined.GetComponent<MeshFilter>();
+                motion.Configure(
+                    filter,
+                    filter,
+                    semantic.transform,
+                    null,
+                    Vector3.left,
+                    Vector3.right,
+                    0f);
+                Assert.That(motion.IsConfigured, Is.True);
+                Assert.That(
+                    filter.sharedMesh,
+                    Is.SameAs(mesh),
+                    "The deformer must not create an unowned mesh clone.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(combined);
+            }
+        }
+
+        [Test]
         public void CombinedBoxesCanShareTheirMeshWithAStaticCollider()
         {
             Bounds[] boxes =

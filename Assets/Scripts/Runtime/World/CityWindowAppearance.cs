@@ -238,10 +238,16 @@ namespace BarPromenade
             Material material,
             CityWindowFamily family)
         {
+            // Through the §20 fixture floor: an inhabited window is named
+            // a fixture by the law itself, and lerped by the raw factor
+            // every lit pane in the city fell to unlit glazing from seven
+            // to eighteen. At noon a lit window now keeps two thirds of
+            // its evening warmth - the overcast never lets the day put
+            // it out.
             Color color = Color.Lerp(
                 DayGlass,
                 ResolveLitColor(family),
-                nightFactor);
+                GameTimeDayNightRules.FixtureFactor(nightFactor));
             material.SetColor(BaseColorId, color);
             material.SetColor(ColorId, color);
         }

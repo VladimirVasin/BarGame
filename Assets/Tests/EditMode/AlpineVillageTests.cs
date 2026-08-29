@@ -249,14 +249,361 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// Snow with a ceiling. §12 bans the storm outright, so no schedule
-        /// slot and no altitude may produce one - and the altitude multiplier
-        /// has to land AFTER the clamp, or the worst weather arrives no
-        /// heavier than it left.
+        /// Regression for the enclosure that used to exist only in the pure
+        /// sampler. The mesh stopped at TerrainBounds, exactly before the
+        /// first non-zero ridge sample, while the descending cable supports
+        /// were grounded on the untouched macro slope above their rope.
+        /// </summary>
+        /// <summary>
+        /// The descent, measured: wherever the player can still see the
+        /// cabin, the cabin is in the air - and by the time he cannot, the
+        /// mountain has closed over the rope.
+        ///
+        /// The village had no such rule and the mountain road's equivalent
+        /// (`CablewayCabinBody_ClearsSampledTerrainOnBothTracks`) only ever
+        /// looked at the road. So the village line, authored as a mirror of
+        /// the mountain's climb and never checked against the village's own
+        /// ground, dived into the hillside a metre off the platform and sat
+        /// up to `16 m` inside it - and every test stayed green, because the
+        /// only thing anybody could see was a return leg that cut to black
+        /// after one metre.
+        ///
+        /// Both halves matter. Clearance alone would pass a line that ends in
+        /// open air; closure alone would pass a line buried the whole way.
         /// </summary>
         [Test]
         [Category("AlpineVillage")]
-        public void Weather_AlwaysSnowsALittleAndNeverStorms()
+        public void CablewayDescent_FliesWhileVisibleAndEndsInsideTheMountain()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            MountainRoadCablewayPlan cableway = plan.Station.Cableway;
+            float lastVisible = cableway.LastVisibleDistance;
+            Assert.That(
+                lastVisible,
+                Is.GreaterThan(cableway.LineLength * 0.5f),
+                "More than half the descent is cut away unseen.");
+
+            float worst = float.MaxValue;
+            float worstAt = 0f;
+            float worstAway = float.MaxValue;
+            float worstAwayAt = 0f;
+            for (float distance = 0f;
+                 distance <= lastVisible;
+                 distance += 0.25f)
+            {
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Vector3 attachment =
+                        MountainCablewayMotion.SampleTrackPosition(
+                            cableway,
+                            distance,
+                            side);
+                    float ground = AlpineVillageTerrainSampler.SampleHeight(
+                        plan,
+                        new Vector2(attachment.x, attachment.z));
+                    float clearance = attachment.y -
+                                      cableway.CabinAttachmentToBottom -
+                                      ground;
+                    if (clearance < worst)
+                    {
+                        worst = clearance;
+                        worstAt = distance;
+                    }
+
+                    // Over the pad the cabin all but rests on the boarding
+                    // strip - that is the whole point of the step - and the
+                    // cut needs its ramp, so the flying rule is measured once
+                    // the apron and its ramp are both behind him.
+                    if (distance >= 10f && clearance < worstAway)
+                    {
+                        worstAway = clearance;
+                        worstAwayAt = distance;
+                    }
+                }
+            }
+
+            Assert.That(
+                worst,
+                Is.GreaterThan(0.15f),
+                $"The cabin is in the village ground at d={worstAt}.");
+
+            // The supports are given `4.8 m` of ground under a rope the cabin
+            // hangs `3.13 m` below, so the flat answer would be `1.67`. The
+            // rope sags up to `0.61 m` inside a span while the cut follows the
+            // chord, and that difference is what this number is.
+            Assert.That(
+                worstAway,
+                Is.GreaterThan(0.9f),
+                "Off the apron the cabin must genuinely fly; worst " +
+                $"{worstAway} m at d={worstAwayAt}.");
+
+            // And the mountain closes. At the metre the cut lands on, the
+            // ground has to stand over the rope - otherwise the screen goes
+            // out on open air, which is a worse cut than no cut at all.
+            Vector3 nearFace = MountainCablewayMotion.SampleTrackPosition(
+                cableway,
+                cableway.UpperOccluderNearFaceDistance,
+                1);
+            float closedGround = AlpineVillageTerrainSampler.SampleHeight(
+                plan,
+                new Vector2(nearFace.x, nearFace.z));
+            Assert.That(
+                closedGround,
+                Is.GreaterThan(nearFace.y + 2f),
+                "The mountain has not closed over the rope where the cut " +
+                "lands.");
+
+            // The far turn is buried, like the mountain terminal's.
+            Vector3 farTurn = cableway.UpperCableCenter;
+            Assert.That(
+                AlpineVillageTerrainSampler.SampleHeight(
+                    plan,
+                    new Vector2(farTurn.x, farTurn.z)),
+                Is.GreaterThan(farTurn.y + 2f),
+                "The hidden turn is standing in the open.");
+        }
+
+        [Test]
+        [Category("AlpineVillage")]
+        public void TerrainMesh_BuildsTheRidgeAndTheCablewayBrink()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            float fullRiseDistance =
+                AlpineVillageTerrainSampler.RidgeStandoff +
+                AlpineVillageTerrainSampler.RidgeMaximumRise /
+                AlpineVillageTerrainSampler.RidgeRisePerMeter +
+                AlpineVillageTerrainSampler.TerrainCell;
+            Rect inner = plan.TerrainBounds;
+            Vector2 center = inner.center;
+            Vector2[] ridgeSamples =
+            {
+                new Vector2(inner.xMax + fullRiseDistance, center.y),
+                new Vector2(inner.xMin - fullRiseDistance, center.y),
+                new Vector2(center.x, inner.yMax + fullRiseDistance),
+                new Vector2(center.x, inner.yMin - fullRiseDistance)
+            };
+
+            for (int index = 0; index < ridgeSamples.Length; index++)
+            {
+                Assert.That(
+                    plan.TerrainMeshBounds.Contains(ridgeSamples[index]),
+                    Is.True,
+                    $"The physical mesh ends before ridge {index} crests.");
+                Assert.That(
+                    AlpineVillageTerrainSampler.SampleRidgeRise(
+                        plan,
+                        ridgeSamples[index]),
+                    Is.EqualTo(AlpineVillageTerrainSampler.RidgeMaximumRise)
+                        .Within(0.001f));
+            }
+
+            MountainRoadCablewayPlan cableway = plan.Station.Cableway;
+            Vector2 farTurn = new Vector2(
+                cableway.UpperCableCenter.x,
+                cableway.UpperCableCenter.z);
+            Assert.That(
+                plan.TerrainMeshBounds.Contains(farTurn),
+                Is.True,
+                "The hidden cable turn still lies beyond the ground mesh.");
+
+            var host = new GameObject("Alpine Terrain Mesh Test");
+            try
+            {
+                AlpineVillageWorldResult world =
+                    AlpineVillageWorldBuilder.Build(host.transform, plan);
+                MeshFilter filter =
+                    world.TerrainRoot.GetComponent<MeshFilter>();
+                MeshCollider collider =
+                    world.TerrainRoot.GetComponent<MeshCollider>();
+                Assert.That(filter, Is.Not.Null);
+                Assert.That(collider, Is.Not.Null);
+
+                Bounds built = filter.sharedMesh.bounds;
+                Assert.That(
+                    built.min.x,
+                    Is.EqualTo(plan.TerrainMeshBounds.xMin).Within(0.01f));
+                Assert.That(
+                    built.max.x,
+                    Is.EqualTo(plan.TerrainMeshBounds.xMax).Within(0.01f));
+                Assert.That(
+                    built.min.z,
+                    Is.EqualTo(plan.TerrainMeshBounds.yMin).Within(0.01f));
+                Assert.That(
+                    built.max.z,
+                    Is.EqualTo(plan.TerrainMeshBounds.yMax).Within(0.01f));
+
+                for (int index = 0; index < cableway.Nodes.Count; index++)
+                {
+                    MountainCablewayNodeDescriptor node =
+                        cableway.Nodes[index];
+                    if (node.Kind != MountainCablewayNodeKind.Support)
+                    {
+                        continue;
+                    }
+
+                    var point = new Vector2(
+                        node.GroundPosition.x,
+                        node.GroundPosition.z);
+                    float sampled = AlpineVillageTerrainSampler.SampleHeight(
+                        plan,
+                        point);
+                    Assert.That(
+                        sampled,
+                        Is.EqualTo(node.GroundPosition.y).Within(0.001f),
+                        $"{node.StableId} does not own sampler-ground.");
+                    Assert.That(
+                        node.CableCenter.y - sampled,
+                        Is.EqualTo(
+                                AlpineVillageTerrainSampler
+                                    .CablewaySupportClearance)
+                            .Within(0.001f));
+
+                    var ray = new Ray(
+                        node.GroundPosition + Vector3.up * 80f,
+                        Vector3.down);
+                    Assert.That(
+                        collider.Raycast(ray, out RaycastHit hit, 160f),
+                        Is.True,
+                        $"No physical ground under {node.StableId}.");
+                    Assert.That(
+                        hit.point.y,
+                        Is.EqualTo(node.GroundPosition.y).Within(0.03f),
+                        $"The built mesh floats under {node.StableId}.");
+                }
+
+                var farRay = new Ray(
+                    cableway.UpperCableCenter + Vector3.up * 100f,
+                    Vector3.down);
+                Assert.That(
+                    collider.Raycast(farRay, out RaycastHit farHit, 200f),
+                    Is.True,
+                    "There is no physical mountain at the hidden turn.");
+                Assert.That(
+                    farHit.point.y,
+                    Is.GreaterThan(
+                        cableway.UpperCableCenter.y +
+                        MountainRoadCablewayPlan
+                            .UpperOccluderCrestClearance),
+                    "The far turn is not swallowed by the built ridge.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        [Category("AlpineVillage")]
+        public void SeededHouseRhythm_NeverOverlapsRotatedFootprints()
+        {
+            for (int seed = -128; seed <= 128; seed++)
+            {
+                AssertSeededHouseRhythm(seed);
+            }
+
+            // These came from the independent 200,001-seed mirror sweep and
+            // exercise the old greedy-depth cascade, its furthest local trim,
+            // and the former house/adit collision.
+            foreach (int seed in new[]
+                     {
+                         -96746, -87107, -58640, -29563,
+                         57657, 89380
+                     })
+            {
+                AssertSeededHouseRhythm(seed);
+            }
+        }
+
+        private static void AssertSeededHouseRhythm(int seed)
+        {
+            AlpineVillagePlan plan = AlpineVillagePlanner.Create(seed);
+            for (int first = 0; first < plan.Plots.Count; first++)
+            {
+                AlpineVillagePlotDescriptor plot = plan.Plots[first];
+                if (plot.Kind != AlpineVillagePlotKind.MothersHouse)
+                {
+                    Assert.That(
+                        AlpineVillageValidator.MeasureLaneClearance(
+                            plan.Lane,
+                            plot),
+                        Is.GreaterThanOrEqualTo(
+                            AlpineVillageValidator.LaneKeepClear - 0.001f),
+                        $"seed {seed}: {plot.StableId} enters lane");
+                }
+
+                for (int second = first + 1;
+                     second < plan.Plots.Count;
+                     second++)
+                {
+                    Assert.That(
+                        AlpineVillageValidator.FootprintsOverlap(
+                            plan.Plots[first],
+                            plan.Plots[second]),
+                        Is.False,
+                        $"seed {seed}: {plan.Plots[first].StableId} / " +
+                        plan.Plots[second].StableId);
+                }
+            }
+        }
+
+        [Test]
+        [Category("AlpineVillage")]
+        public void GarlandAnchors_StayOnTheStreetFrontage()
+        {
+            foreach (int seed in new[]
+                     {
+                         GameSessionState.DefaultCitySeed,
+                         -96746,
+                         -87107,
+                         57657
+                     })
+            {
+                AlpineVillagePlan plan = AlpineVillagePlanner.Create(seed);
+                for (int span = 0;
+                     span < AlpineVillageWorldBuilder.GarlandSpanCount;
+                     span++)
+                {
+                    AlpineVillageWorldBuilder.GetGarlandSpan(
+                        plan,
+                        span,
+                        out Vector3 left,
+                        out Vector3 right);
+                    AssertGarlandAnchorReach(plan, seed, span, left, "left");
+                    AssertGarlandAnchorReach(plan, seed, span, right, "right");
+                }
+            }
+        }
+
+        private static void AssertGarlandAnchorReach(
+            AlpineVillagePlan plan,
+            int seed,
+            int span,
+            Vector3 anchor,
+            string side)
+        {
+            float laneDistance = plan.Lane.FindNearest(
+                new Vector2(anchor.x, anchor.z),
+                out float lateralReach);
+            AlpineVillageLaneSample sample = plan.Lane.Sample(laneDistance);
+            float maximumReach =
+                sample.Width * 0.5f +
+                AlpineVillageWorldBuilder.GarlandAnchorReach +
+                AlpineVillageWorldBuilder.GarlandHouseAnchorSlack;
+            Assert.That(
+                lateralReach,
+                Is.LessThanOrEqualTo(maximumReach + 0.001f),
+                $"seed {seed}: garland {span} {side} reaches into a rear yard");
+        }
+
+        /// <summary>
+        /// The user-requested storm is a property of the place, not a lucky
+        /// schedule roll: even Clear must begin in the heavy band, while the
+        /// shared slot and the short climb can still make it worse.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        [Category("AlpineVillageStorm")]
+        public void Weather_AlwaysCarriesVeryHeavySnow()
         {
             for (int slot = 0; slot <= 10; slot++)
             {
@@ -287,25 +634,55 @@ namespace BarPromenade.Tests.EditMode
                 AlpineVillageWeatherRules.EvaluateSnowIntensity(1f, 1f),
                 Is.EqualTo(AlpineVillageWeatherRules.SnowCeiling)
                     .Within(0.0001f));
+
+            Assert.That(
+                AlpineVillageWeatherRules.EvaluateSnowIntensity(0f, 0f),
+                Is.EqualTo(AlpineVillageWeatherRules.SnowFloor)
+                    .Within(0.0001f));
+            Assert.That(
+                AlpineVillageWeatherRules.SnowFloor,
+                Is.GreaterThanOrEqualTo(0.85f),
+                "A Clear city slot has fallen below heavy village snow.");
+
+            CityPrecipitationProfile roadSnow =
+                CityPrecipitationProfile.For(
+                    CityPrecipitationKind.Snow);
+            CityPrecipitationProfile blizzard =
+                CityPrecipitationProfile.For(
+                    CityPrecipitationKind.Blizzard);
+            Assert.That(
+                AlpineVillageWeatherRules.PrecipitationKind,
+                Is.EqualTo(CityPrecipitationKind.Blizzard));
+            Assert.That(blizzard.Stretched, Is.True);
+            Assert.That(
+                blizzard.MaximumParticles,
+                Is.GreaterThan(roadSnow.MaximumParticles * 2));
+            Assert.That(
+                blizzard.MaximumEmissionRate,
+                Is.GreaterThan(roadSnow.MaximumEmissionRate * 3f));
+            Assert.That(
+                blizzard.MaximumEmissionRate * blizzard.LifetimeSeconds,
+                Is.LessThan(blizzard.MaximumParticles),
+                "The blizzard cap clips the authored full-strength density.");
+            Assert.That(
+                blizzard.DriftScaleRange.y,
+                Is.GreaterThan(roadSnow.DriftScaleRange.y));
         }
 
         /// <summary>
-        /// The village is sheltered where the road was exposed: the same city
-        /// wind arrives weaker here than it does on the climb below.
+        /// The enclosing ridge closes the view, not the air. Every base sample
+        /// becomes a gale, keeps its bearing, and drives a second terrain-low
+        /// layer fast enough to read as wind in a still frame.
         /// </summary>
         [Test]
         [Category("AlpineVillage")]
-        public void Weather_TakesTheWindOutOfTheCitysWeather()
+        [Category("AlpineVillageStorm")]
+        public void Weather_AlwaysCarriesAVeryStrongCoherentWind()
         {
             var gale = new WindSample(120f, 1f);
             float village = AlpineVillageWeatherRules.EvaluateStrength(
                 gale,
                 1f);
-            float road = MountainRoadWeatherRules.EvaluateSwayAmplitude(
-                gale,
-                1f);
-
-            Assert.That(village, Is.LessThan(road));
             Assert.That(
                 village,
                 Is.LessThanOrEqualTo(
@@ -317,12 +694,153 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThanOrEqualTo(
                     AlpineVillageWeatherRules.WindFloor - 0.0001f));
 
+            for (int slot = 0; slot <= 10; slot++)
+            {
+                var wind = new WindSample(120f, slot / 10f);
+                for (int step = 0; step <= 4; step++)
+                {
+                    float strength =
+                        AlpineVillageWeatherRules.EvaluateStrength(
+                            wind,
+                            step / 4f);
+                    Assert.That(
+                        strength,
+                        Is.InRange(
+                            AlpineVillageWeatherRules.WindFloor,
+                            AlpineVillageWeatherRules.WindCeiling),
+                        $"wind {slot / 10f:0.0} at climb {step / 4f:0.00}");
+                }
+            }
+
             // The bearing is shared with the city so cloth, snow and crowns
             // all agree; only the strength is a village decision.
+            WindSample shaped =
+                AlpineVillageWeatherRules.EvaluateWind(gale, 0.5f);
             Assert.That(
-                AlpineVillageWeatherRules.EvaluateWind(gale, 0.5f)
-                    .DirectionDegrees,
+                shaped.DirectionDegrees,
                 Is.EqualTo(gale.DirectionDegrees).Within(0.0001f));
+            Assert.That(
+                AlpineVillageWeatherRules.WindFloor,
+                Is.GreaterThanOrEqualTo(0.8f));
+            float clearGustFloor =
+                AlpineVillageWeatherRules.EvaluateStrength(
+                    new WindSample(120f, 0f),
+                    0f);
+            float clearGustCrest =
+                AlpineVillageWeatherRules.EvaluateStrength(
+                    new WindSample(
+                        120f,
+                        GameWeatherRules.ClearWindStrength),
+                    0f);
+            Assert.That(
+                clearGustCrest - clearGustFloor,
+                Is.GreaterThanOrEqualTo(0.075f),
+                "The permanent gale flattened the schedule's visible gusts.");
+
+            WindSample minimum = AlpineVillageWeatherRules.EvaluateWind(
+                new WindSample(120f, 0f),
+                0f);
+            Vector3 transport =
+                AlpineVillageStormFieldRules.EvaluateTransport(minimum);
+            Assert.That(transport.magnitude, Is.GreaterThan(6f));
+            Assert.That(
+                Vector3.Angle(
+                    transport,
+                    minimum.HorizontalDirection),
+                Is.LessThan(0.01f));
+
+            float exposed =
+                AlpineVillageStormFieldRules.EvaluateEmissionRate(
+                    minimum.Strength01,
+                    false,
+                    false);
+            float sheltered =
+                AlpineVillageStormFieldRules.EvaluateEmissionRate(
+                    minimum.Strength01,
+                    true,
+                    false);
+            Assert.That(
+                exposed,
+                Is.EqualTo(
+                        AlpineVillageStormFieldRules.MinimumEmissionRate)
+                    .Within(0.0001f));
+            float gustCrestEmission =
+                AlpineVillageStormFieldRules.EvaluateEmissionRate(
+                    clearGustCrest,
+                    false,
+                    false);
+            Assert.That(
+                gustCrestEmission - exposed,
+                Is.GreaterThan(100f),
+                "The low snow sheet does not visibly pulse with Clear gusts.");
+            Assert.That(
+                sheltered,
+                Is.EqualTo(
+                        exposed *
+                        AlpineVillageStormFieldRules.ShelterEmissionFactor)
+                    .Within(0.0001f));
+            Assert.That(
+                AlpineVillageStormFieldRules.EvaluateEmissionRate(
+                    minimum.Strength01,
+                    false,
+                    true),
+                Is.Zero,
+                "Ground spindrift follows the riding hero into open air.");
+
+            // The same shaped wind must also read on the built place. The
+            // electrical cord stays fixed at both attachments and gives only
+            // its free middle enough travel to show a gale.
+            const float sampleTime = 1.75f;
+            const float samplePhase = 0.63f;
+            Vector3 leftAnchor =
+                AlpineVillageGarlandWindRules.EvaluateOffset(
+                    minimum,
+                    0f,
+                    sampleTime,
+                    samplePhase);
+            Vector3 rightAnchor =
+                AlpineVillageGarlandWindRules.EvaluateOffset(
+                    minimum,
+                    1f,
+                    sampleTime,
+                    samplePhase);
+            Vector3 minimumMidpoint =
+                AlpineVillageGarlandWindRules.EvaluateOffset(
+                    minimum,
+                    0.5f,
+                    sampleTime,
+                    samplePhase);
+            WindSample maximum = AlpineVillageWeatherRules.EvaluateWind(
+                new WindSample(120f, 1f),
+                1f);
+            Vector3 maximumMidpoint =
+                AlpineVillageGarlandWindRules.EvaluateOffset(
+                    maximum,
+                    0.5f,
+                    sampleTime,
+                    samplePhase);
+            Assert.That(leftAnchor, Is.EqualTo(Vector3.zero));
+            Assert.That(rightAnchor, Is.EqualTo(Vector3.zero));
+            Assert.That(
+                Vector3.Dot(
+                    minimumMidpoint,
+                    minimum.HorizontalDirection),
+                Is.GreaterThan(0.08f));
+            Assert.That(
+                maximumMidpoint.magnitude,
+                Is.GreaterThan(minimumMidpoint.magnitude));
+            Assert.That(
+                maximumMidpoint.magnitude,
+                Is.LessThanOrEqualTo(
+                    AlpineVillageGarlandWindRules.MaximumDisplacement +
+                    0.0001f));
+            Assert.That(
+                AlpineVillageGarlandWindRules.EvaluateOffset(
+                    minimum,
+                    0.5f,
+                    sampleTime,
+                    samplePhase),
+                Is.EqualTo(minimumMidpoint));
         }
 
         [Test]
