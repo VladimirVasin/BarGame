@@ -65,7 +65,7 @@ namespace BarPromenade.Editor
         public const string ParkCheckersPlayerManifestPath =
             "Assets/Pedestrians/Staged/Models/ParkCheckersPlayer3D.json";
         public const string PlayerModelPath =
-            "Assets/Player3D/Models/PlayerCharacter3D.fbx";
+            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         public const string AnimationPath =
             "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx";
         public const string AnimationManifestPath =
@@ -1046,7 +1046,7 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "City pedestrian build requires every production/staged " +
                     "model FBX/manifest pair, the custom locomotion " +
-                    "FBX/manifest, production Player model and shared " +
+                    "FBX/manifest, production Hero/NPC V2 model and shared " +
                     "Player3DLit material.");
             }
 
@@ -1059,8 +1059,8 @@ namespace BarPromenade.Editor
                 }
 
                 // Import the Avatar dependency first so a clean Library and
-                // later Player-rig changes rebuild every source against
-                // the canonical external Generic Avatar.
+                // later Hero/NPC V2 rig changes rebuild every source against
+                // the canonical production Generic Avatar.
                 AssetDatabase.ImportAsset(
                     PlayerModelPath,
                     ImportAssetOptions.ForceUpdate |
@@ -1167,8 +1167,8 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "The staged Pipeback Roller build requires its model, " +
-                    "manifest, locomotion library, production Player model " +
-                    "and shared Player3DLit material.");
+                    "manifest, locomotion library, production Hero/NPC V2 " +
+                    "model and shared Player3DLit material.");
             }
 
             PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
@@ -1237,7 +1237,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "The staged Yard Babushka build requires its model, " +
-                    "manifest, locomotion library, production Player " +
+                    "manifest, locomotion library, production Hero/NPC V2 " +
                     "model and shared Player3DLit material.");
             }
 
@@ -1309,7 +1309,7 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "The staged Weigh Attendant build requires its " +
                     "model, manifest, locomotion library, production " +
-                    "Player model and shared Player3DLit material.");
+                    "Hero/NPC V2 model and shared Player3DLit material.");
             }
 
             PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
@@ -1380,7 +1380,7 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "The staged Cemetery Mourner build requires its " +
                     "model, manifest, locomotion library, production " +
-                    "Player model and shared Player3DLit material.");
+                    "Hero/NPC V2 model and shared Player3DLit material.");
             }
 
             PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
@@ -1451,7 +1451,7 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "The staged Cemetery Watchman build requires its " +
                     "model, manifest, locomotion library, production " +
-                    "Player model and shared Player3DLit material.");
+                    "Hero/NPC V2 model and shared Player3DLit material.");
             }
 
             PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
@@ -1522,7 +1522,7 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "The staged Lake Fisherman build requires its " +
                     "model, manifest, locomotion library, production " +
-                    "Player model and shared Player3DLit material.");
+                    "Hero/NPC V2 model and shared Player3DLit material.");
             }
 
             PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
@@ -1592,7 +1592,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "The staged Ferryman build requires its model, " +
-                    "manifest, locomotion library, production Player " +
+                    "manifest, locomotion library, production Hero/NPC V2 " +
                     "model and shared Player3DLit material.");
             }
 
@@ -1664,7 +1664,7 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "The staged Park Chess Player build requires its " +
                     "model, manifest, locomotion library, production " +
-                    "Player model and shared Player3DLit material.");
+                    "Hero/NPC V2 model and shared Player3DLit material.");
             }
 
             PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
@@ -1781,7 +1781,7 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "The staged Park Checkers Player build requires its " +
                     "model, manifest, locomotion library, production " +
-                    "Player model and shared Player3DLit material.");
+                    "Hero/NPC V2 model and shared Player3DLit material.");
             }
 
             PedestrianDescriptor descriptor = Descriptors.Single(candidate =>
@@ -2868,7 +2868,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Locomotion FBX must import animation as Generic and " +
-                    "copy the production Player Avatar.");
+                    "copy the production Hero/NPC V2 Avatar.");
             }
 
             AnimationClip[] importedClips = AssetDatabase
@@ -2926,7 +2926,8 @@ namespace BarPromenade.Editor
             if (model == null || playerModel == null)
             {
                 throw new InvalidOperationException(
-                    "Pedestrian or Player source model failed to import.");
+                    "Pedestrian or Hero/NPC V2 source model failed to " +
+                    "import.");
             }
 
             Dictionary<string, Transform> pedestrianTransforms =
@@ -2959,7 +2960,8 @@ namespace BarPromenade.Editor
                         StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException(
-                        $"Bone '{source.name}' lost the exact Player parent " +
+                        $"Bone '{source.name}' lost the exact Hero/NPC V2 " +
+                        "parent " +
                         $"'{expectedParent}'.");
                 }
 
@@ -2975,7 +2977,7 @@ namespace BarPromenade.Editor
                 {
                     throw new InvalidOperationException(
                         $"Bone '{source.name}' rest transform differs from " +
-                        "PlayerCharacter3D.");
+                        "PlayerCharacter3DV2.");
                 }
             }
 
@@ -3031,8 +3033,8 @@ namespace BarPromenade.Editor
                 modelImporter.sourceAvatar != playerAvatar)
             {
                 throw new InvalidOperationException(
-                    "Pedestrian FBX must copy the valid production Player " +
-                    "Generic Avatar.");
+                    "Pedestrian FBX must copy the valid production " +
+                    "Hero/NPC V2 Generic Avatar.");
             }
         }
 
@@ -3185,7 +3187,7 @@ namespace BarPromenade.Editor
                     "head",
                     "pedestrian prefab");
                 // Seating aligns this one bone to the cushion. Every design
-                // shares the hero's 0.70 m rest pelvis, which is why one seat
+                // shares the hero's 0.835 m V2 rest pelvis, so one seat
                 // rule serves four different proportions.
                 Transform pelvis = RequireTransform(
                     transformsByName,

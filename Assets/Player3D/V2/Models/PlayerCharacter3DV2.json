@@ -1,0 +1,1212 @@
+{
+  "generator": "tools/build-player-3d-model-v2.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
+  "runtime_integrated": true,
+  "height_m": 1.75,
+  "pose": "apose",
+  "seed": 17301,
+  "forward_axis": "-Y",
+  "anatomical_left_axis": "+X",
+  "object_count": 36,
+  "mesh_count": 34,
+  "triangle_count": 1984,
+  "action_count": 37,
+  "socket_count": 6,
+  "bounds_min": [
+    -0.778674,
+    -0.212,
+    0.0
+  ],
+  "bounds_max": [
+    0.780036,
+    0.124,
+    1.75
+  ],
+  "sprite_parts": [
+    "Body",
+    "LeftUpperArm",
+    "LeftLowerArm",
+    "RightUpperArm",
+    "RightLowerArm",
+    "LeftUpperLeg",
+    "LeftLowerLeg",
+    "RightUpperLeg",
+    "RightLowerLeg"
+  ],
+  "bones": [
+    "root",
+    "pelvis",
+    "spine",
+    "chest",
+    "neck",
+    "head",
+    "face.eye.L",
+    "face.eye.R",
+    "face.brow.L",
+    "face.brow.R",
+    "face.mouth",
+    "SOCKET_Mouth",
+    "clavicle.L",
+    "upper_arm.L",
+    "forearm.L",
+    "hand.L",
+    "SOCKET_Grip.L",
+    "SOCKET_Vessel.L",
+    "clavicle.R",
+    "upper_arm.R",
+    "forearm.R",
+    "hand.R",
+    "SOCKET_Grip.R",
+    "SOCKET_Cigarette.R",
+    "SOCKET_Bottle.R",
+    "thigh.L",
+    "shin.L",
+    "foot.L",
+    "thigh.R",
+    "shin.R",
+    "foot.R"
+  ],
+  "sockets": [
+    "SOCKET_Grip.L",
+    "SOCKET_Grip.R",
+    "SOCKET_Cigarette.R",
+    "SOCKET_Bottle.R",
+    "SOCKET_Vessel.L",
+    "SOCKET_Mouth"
+  ],
+  "bed_contract": {
+    "supine_pelvis_offset_m": 0.1377,
+    "supine_head_offset_m": 0.0656,
+    "seated_pelvis_lift_m": 0.0239,
+    "mattress_above_floor_m": 0.56,
+    "enter_seat_arrival": 0.28,
+    "enter_seat_departure": 0.44,
+    "exit_seat_arrival": 0.5,
+    "exit_seat_departure": 0.88
+  },
+  "actions": [
+    {
+      "name": "BedEnter",
+      "category": "bed",
+      "duration_seconds": 3.75,
+      "loop": false,
+      "source_frame_count": 45,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 90.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "Neutral"
+        },
+        {
+          "normalized_time": 0.55,
+          "expression": "HalfBlink"
+        },
+        {
+          "normalized_time": 0.72,
+          "expression": "ClosedBlink"
+        }
+      ]
+    },
+    {
+      "name": "BedExit",
+      "category": "bed",
+      "duration_seconds": 6.0,
+      "loop": false,
+      "source_frame_count": 72,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 144.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "ClosedBlink"
+        },
+        {
+          "normalized_time": 0.18,
+          "expression": "HalfBlink"
+        },
+        {
+          "normalized_time": 0.38,
+          "expression": "Neutral"
+        }
+      ]
+    },
+    {
+      "name": "BedSleepLoop",
+      "category": "bed",
+      "duration_seconds": 4.0,
+      "loop": true,
+      "source_frame_count": 16,
+      "source_fps": 4,
+      "frame_start": 0.0,
+      "frame_end": 96.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "ClosedBlink"
+        }
+      ]
+    },
+    {
+      "name": "BusAlightExit",
+      "category": "bus_ride",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false
+    },
+    {
+      "name": "BusBoardEnter",
+      "category": "bus_ride",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false
+    },
+    {
+      "name": "BusRideLoop",
+      "category": "bus_ride",
+      "duration_seconds": 2.0,
+      "loop": true,
+      "source_frame_count": 16,
+      "source_fps": 8,
+      "frame_start": 0.0,
+      "frame_end": 48.0,
+      "root_motion": false
+    },
+    {
+      "name": "CarAlightExit",
+      "category": "car_ride",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false
+    },
+    {
+      "name": "CarBoardEnter",
+      "category": "car_ride",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false
+    },
+    {
+      "name": "CatFeedEnter",
+      "category": "cat_feeding",
+      "duration_seconds": 2.0,
+      "loop": false,
+      "source_frame_count": 24,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 48.0,
+      "root_motion": false
+    },
+    {
+      "name": "CatFeedExit",
+      "category": "cat_feeding",
+      "duration_seconds": 2.0,
+      "loop": false,
+      "source_frame_count": 24,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 48.0,
+      "root_motion": false
+    },
+    {
+      "name": "CatFeedLoop",
+      "category": "cat_feeding",
+      "duration_seconds": 2.6666666666666665,
+      "loop": true,
+      "source_frame_count": 16,
+      "source_fps": 6,
+      "frame_start": 0.0,
+      "frame_end": 64.0,
+      "root_motion": false
+    },
+    {
+      "name": "ChessSeatEnter",
+      "category": "chess_seat",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false
+    },
+    {
+      "name": "ChessSeatExit",
+      "category": "chess_seat",
+      "duration_seconds": 3.0,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 72.0,
+      "root_motion": false
+    },
+    {
+      "name": "ChessSeatPlayLoop",
+      "category": "chess_seat",
+      "duration_seconds": 4.0,
+      "loop": true,
+      "source_frame_count": 32,
+      "source_fps": 8,
+      "frame_start": 0.0,
+      "frame_end": 96.0,
+      "root_motion": false
+    },
+    {
+      "name": "DoorUseEnter",
+      "category": "door_use",
+      "duration_seconds": 0.5,
+      "loop": false,
+      "source_frame_count": 6,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 12.0,
+      "root_motion": false
+    },
+    {
+      "name": "DoorUseExit",
+      "category": "door_use",
+      "duration_seconds": 0.5,
+      "loop": false,
+      "source_frame_count": 6,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 12.0,
+      "root_motion": false
+    },
+    {
+      "name": "DoorUseLoop",
+      "category": "door_use",
+      "duration_seconds": 0.25,
+      "loop": true,
+      "source_frame_count": 2,
+      "source_fps": 8,
+      "frame_start": 0.0,
+      "frame_end": 6.0,
+      "root_motion": false
+    },
+    {
+      "name": "DownLeft",
+      "category": "fall",
+      "duration_seconds": 1.2,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 30,
+      "frame_start": 0.0,
+      "frame_end": 29.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "Tense"
+        }
+      ]
+    },
+    {
+      "name": "DownRight",
+      "category": "fall",
+      "duration_seconds": 1.2,
+      "loop": false,
+      "source_frame_count": 36,
+      "source_fps": 30,
+      "frame_start": 0.0,
+      "frame_end": 29.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "Tense"
+        }
+      ]
+    },
+    {
+      "name": "Face_ClosedBlink",
+      "category": "facial",
+      "duration_seconds": 0.041666666666666664,
+      "loop": false,
+      "source_frame_count": 1,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 1.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "ClosedBlink"
+        }
+      ]
+    },
+    {
+      "name": "Face_HalfBlink",
+      "category": "facial",
+      "duration_seconds": 0.041666666666666664,
+      "loop": false,
+      "source_frame_count": 1,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 1.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "HalfBlink"
+        }
+      ]
+    },
+    {
+      "name": "Face_Neutral",
+      "category": "facial",
+      "duration_seconds": 0.041666666666666664,
+      "loop": false,
+      "source_frame_count": 1,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 1.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "Neutral"
+        }
+      ]
+    },
+    {
+      "name": "Face_Tense",
+      "category": "facial",
+      "duration_seconds": 0.041666666666666664,
+      "loop": false,
+      "source_frame_count": 1,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 1.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "Tense"
+        }
+      ]
+    },
+    {
+      "name": "Face_Watchful",
+      "category": "facial",
+      "duration_seconds": 0.041666666666666664,
+      "loop": false,
+      "source_frame_count": 1,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 1.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "Watchful"
+        }
+      ]
+    },
+    {
+      "name": "FallLeft",
+      "category": "fall",
+      "duration_seconds": 0.45,
+      "loop": false,
+      "source_frame_count": 14,
+      "source_fps": 31.111,
+      "frame_start": 0.0,
+      "frame_end": 11.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "Tense"
+        }
+      ]
+    },
+    {
+      "name": "FallRight",
+      "category": "fall",
+      "duration_seconds": 0.45,
+      "loop": false,
+      "source_frame_count": 14,
+      "source_fps": 31.111,
+      "frame_start": 0.0,
+      "frame_end": 11.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "Tense"
+        }
+      ]
+    },
+    {
+      "name": "Idle",
+      "category": "locomotion",
+      "duration_seconds": 4.0,
+      "loop": true,
+      "source_frame_count": 96,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 96.0,
+      "root_motion": false
+    },
+    {
+      "name": "Relaxed",
+      "category": "locomotion",
+      "duration_seconds": 0.041666666666666664,
+      "loop": false,
+      "source_frame_count": 1,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 1.0,
+      "root_motion": false
+    },
+    {
+      "name": "RiseLeft",
+      "category": "fall",
+      "duration_seconds": 1.6666666666666667,
+      "loop": false,
+      "source_frame_count": 50,
+      "source_fps": 30,
+      "frame_start": 0.0,
+      "frame_end": 40.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "Tense"
+        },
+        {
+          "normalized_time": 0.72,
+          "expression": "Watchful"
+        },
+        {
+          "normalized_time": 1.0,
+          "expression": "Neutral"
+        }
+      ]
+    },
+    {
+      "name": "RiseRight",
+      "category": "fall",
+      "duration_seconds": 1.6666666666666667,
+      "loop": false,
+      "source_frame_count": 50,
+      "source_fps": 30,
+      "frame_start": 0.0,
+      "frame_end": 40.0,
+      "root_motion": false,
+      "face_keys": [
+        {
+          "normalized_time": 0.0,
+          "expression": "Tense"
+        },
+        {
+          "normalized_time": 0.72,
+          "expression": "Watchful"
+        },
+        {
+          "normalized_time": 1.0,
+          "expression": "Neutral"
+        }
+      ]
+    },
+    {
+      "name": "SmokeEnter",
+      "category": "smoking",
+      "duration_seconds": 4.0,
+      "loop": false,
+      "source_frame_count": 48,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 96.0,
+      "root_motion": false
+    },
+    {
+      "name": "SmokeExit",
+      "category": "smoking",
+      "duration_seconds": 2.0,
+      "loop": false,
+      "source_frame_count": 24,
+      "source_fps": 12,
+      "frame_start": 0.0,
+      "frame_end": 48.0,
+      "root_motion": false
+    },
+    {
+      "name": "SmokeLoop",
+      "category": "smoking",
+      "duration_seconds": 4.0,
+      "loop": true,
+      "source_frame_count": 24,
+      "source_fps": 6,
+      "frame_start": 0.0,
+      "frame_end": 96.0,
+      "root_motion": false
+    },
+    {
+      "name": "TurnLeft",
+      "category": "locomotion",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "source_frame_count": 24,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 24.0,
+      "root_motion": false
+    },
+    {
+      "name": "TurnRight",
+      "category": "locomotion",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "source_frame_count": 24,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 24.0,
+      "root_motion": false
+    },
+    {
+      "name": "Walk",
+      "category": "locomotion",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "source_frame_count": 24,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 24.0,
+      "root_motion": false
+    },
+    {
+      "name": "WalkBack",
+      "category": "locomotion",
+      "duration_seconds": 1.0,
+      "loop": true,
+      "source_frame_count": 24,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 24.0,
+      "root_motion": false
+    }
+  ],
+  "parts": [
+    {
+      "name": "CLO_Bandage.L",
+      "role": "signature_detail",
+      "bone": "forearm.L",
+      "sprite_part": "LeftLowerArm",
+      "side": "Left",
+      "material": "MAT_BandageAtlas",
+      "vertices": 30,
+      "triangles": 56
+    },
+    {
+      "name": "CLO_JacketBody",
+      "role": "clothing",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_JacketAtlas",
+      "vertices": 96,
+      "triangles": 188
+    },
+    {
+      "name": "CLO_JacketForearm.R",
+      "role": "clothing",
+      "bone": "forearm.R",
+      "sprite_part": "RightLowerArm",
+      "side": "Right",
+      "material": "MAT_JacketAtlas",
+      "vertices": 30,
+      "triangles": 56
+    },
+    {
+      "name": "CLO_JacketSleeve.L",
+      "role": "clothing",
+      "bone": "upper_arm.L",
+      "sprite_part": "LeftUpperArm",
+      "side": "Left",
+      "material": "MAT_JacketAtlas",
+      "vertices": 50,
+      "triangles": 96
+    },
+    {
+      "name": "CLO_JacketSleeve.R",
+      "role": "clothing",
+      "bone": "upper_arm.R",
+      "sprite_part": "RightUpperArm",
+      "side": "Right",
+      "material": "MAT_JacketAtlas",
+      "vertices": 50,
+      "triangles": 96
+    },
+    {
+      "name": "GEO_Ear.L",
+      "role": "body_detail",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Left",
+      "material": "MAT_SkinShadow",
+      "vertices": 14,
+      "triangles": 24
+    },
+    {
+      "name": "GEO_Ear.R",
+      "role": "body_detail",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Right",
+      "material": "MAT_SkinShadow",
+      "vertices": 14,
+      "triangles": 24
+    },
+    {
+      "name": "GEO_FaceSurface",
+      "role": "facial_atlas",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_FaceAtlas",
+      "vertices": 49,
+      "triangles": 72
+    },
+    {
+      "name": "GEO_Foot.L",
+      "role": "body_part",
+      "bone": "foot.L",
+      "sprite_part": "LeftLowerLeg",
+      "side": "Left",
+      "material": "MAT_JeansAtlas",
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Foot.R",
+      "role": "body_part",
+      "bone": "foot.R",
+      "sprite_part": "RightLowerLeg",
+      "side": "Right",
+      "material": "MAT_JeansAtlas",
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Forearm.L",
+      "role": "body_part",
+      "bone": "forearm.L",
+      "sprite_part": "LeftLowerArm",
+      "side": "Left",
+      "material": "MAT_Skin",
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "GEO_Forearm.R",
+      "role": "body_part",
+      "bone": "forearm.R",
+      "sprite_part": "RightLowerArm",
+      "side": "Right",
+      "material": "MAT_Skin",
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "GEO_HairBack",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Hair",
+      "vertices": 32,
+      "triangles": 60
+    },
+    {
+      "name": "GEO_HairCap",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Hair",
+      "vertices": 62,
+      "triangles": 120
+    },
+    {
+      "name": "GEO_HairTemple.L",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Left",
+      "material": "MAT_Hair",
+      "vertices": 18,
+      "triangles": 32
+    },
+    {
+      "name": "GEO_HairTemple.R",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Right",
+      "material": "MAT_Hair",
+      "vertices": 18,
+      "triangles": 32
+    },
+    {
+      "name": "GEO_HairTuft.01",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Hair",
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "GEO_HairTuft.02",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_HairHighlight",
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "GEO_HairTuft.03",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Hair",
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "GEO_HairTuft.04",
+      "role": "hair",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Hair",
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "GEO_Hand.L",
+      "role": "body_part",
+      "bone": "hand.L",
+      "sprite_part": "LeftLowerArm",
+      "side": "Left",
+      "material": "MAT_Skin",
+      "vertices": 26,
+      "triangles": 48
+    },
+    {
+      "name": "GEO_Hand.R",
+      "role": "body_part",
+      "bone": "hand.R",
+      "sprite_part": "RightLowerArm",
+      "side": "Right",
+      "material": "MAT_Skin",
+      "vertices": 26,
+      "triangles": 48
+    },
+    {
+      "name": "GEO_Head",
+      "role": "body_part",
+      "bone": "head",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Skin",
+      "vertices": 98,
+      "triangles": 192
+    },
+    {
+      "name": "GEO_Neck",
+      "role": "body_part",
+      "bone": "neck",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_SkinShadow",
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "GEO_Pelvis",
+      "role": "body_part",
+      "bone": "pelvis",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_JeansAtlas",
+      "vertices": 52,
+      "triangles": 100
+    },
+    {
+      "name": "GEO_Shin.L",
+      "role": "body_part",
+      "bone": "shin.L",
+      "sprite_part": "LeftLowerLeg",
+      "side": "Left",
+      "material": "MAT_JeansAtlas",
+      "vertices": 40,
+      "triangles": 76
+    },
+    {
+      "name": "GEO_Shin.R",
+      "role": "body_part",
+      "bone": "shin.R",
+      "sprite_part": "RightLowerLeg",
+      "side": "Right",
+      "material": "MAT_JeansAtlas",
+      "vertices": 40,
+      "triangles": 76
+    },
+    {
+      "name": "GEO_Thigh.L",
+      "role": "body_part",
+      "bone": "thigh.L",
+      "sprite_part": "LeftUpperLeg",
+      "side": "Left",
+      "material": "MAT_JeansAtlas",
+      "vertices": 32,
+      "triangles": 60
+    },
+    {
+      "name": "GEO_Thigh.R",
+      "role": "body_part",
+      "bone": "thigh.R",
+      "sprite_part": "RightUpperLeg",
+      "side": "Right",
+      "material": "MAT_JeansAtlas",
+      "vertices": 32,
+      "triangles": 60
+    },
+    {
+      "name": "GEO_Thumb.L",
+      "role": "body_detail",
+      "bone": "hand.L",
+      "sprite_part": "LeftLowerArm",
+      "side": "Left",
+      "material": "MAT_SkinShadow",
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "GEO_Thumb.R",
+      "role": "body_detail",
+      "bone": "hand.R",
+      "sprite_part": "RightLowerArm",
+      "side": "Right",
+      "material": "MAT_SkinShadow",
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "GEO_Torso",
+      "role": "body_part",
+      "bone": "chest",
+      "sprite_part": "Body",
+      "side": "Center",
+      "material": "MAT_Shirt",
+      "vertices": 62,
+      "triangles": 120
+    },
+    {
+      "name": "GEO_UpperArm.L",
+      "role": "body_part",
+      "bone": "upper_arm.L",
+      "sprite_part": "LeftUpperArm",
+      "side": "Left",
+      "material": "MAT_SkinShadow",
+      "vertices": 16,
+      "triangles": 28
+    },
+    {
+      "name": "GEO_UpperArm.R",
+      "role": "body_part",
+      "bone": "upper_arm.R",
+      "sprite_part": "RightUpperArm",
+      "side": "Right",
+      "material": "MAT_SkinShadow",
+      "vertices": 16,
+      "triangles": 28
+    }
+  ],
+  "design_version": "HeroV2",
+  "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
+  "content_signature_sha256": "43f800a209bd447f133a4c569de10cf5be4b2373636e3664663c75a3f47a7106",
+  "parallel_to": "HeroV1",
+  "material_palette": {
+    "MAT_FaceAtlas": "FFFFFF",
+    "MAT_JacketAtlas": "FFFFFF",
+    "MAT_JeansAtlas": "FFFFFF",
+    "MAT_BandageAtlas": "FFFFFF"
+  },
+  "face_material_contract": {
+    "material": "MAT_FaceAtlas",
+    "base_color_hex": "FFFFFF",
+    "atlas_color": "full_color_rgba",
+    "multiply_contract": "_BaseMap multiplied by white _BaseColor",
+    "srgb": true,
+    "wrap_mode": "Clamp",
+    "mipmaps": false,
+    "compression": "Uncompressed"
+  },
+  "face_atlas": {
+    "texture_asset": "Assets/Player3D/V2/Textures/PlayerFaceAtlas.png",
+    "renderer": "GEO_FaceSurface",
+    "columns": 4,
+    "rows": 4,
+    "cell_size_px": 64,
+    "uv_origin": "bottom_left",
+    "filter_mode": "Point",
+    "sha256": "bf1106d69180097035fddec0b54a71b1161b175f2b2cb7a892c024be99a18b30",
+    "cells": [
+      {
+        "expression": "Neutral",
+        "column": 0,
+        "row": 3
+      },
+      {
+        "expression": "HalfBlink",
+        "column": 1,
+        "row": 3
+      },
+      {
+        "expression": "ClosedBlink",
+        "column": 2,
+        "row": 3
+      },
+      {
+        "expression": "Watchful",
+        "column": 0,
+        "row": 2
+      },
+      {
+        "expression": "Tense",
+        "column": 1,
+        "row": 2
+      }
+    ]
+  },
+  "texture_bindings": [
+    {
+      "texture_asset": "Assets/Player3D/V2/Textures/PlayerClothingAtlas.png",
+      "width_px": 256,
+      "height_px": 256,
+      "materials": [
+        "MAT_JacketAtlas",
+        "MAT_JeansAtlas",
+        "MAT_BandageAtlas"
+      ],
+      "shader_property": "_BaseMap",
+      "color_space": "sRGB",
+      "filter_mode": "Point",
+      "wrap_mode": "Clamp",
+      "mipmaps": false,
+      "compression": "Uncompressed",
+      "uv_channel": 0,
+      "uv_origin": "bottom_left",
+      "uv_safe_inset_px": 1,
+      "material_tint_hex": "FFFFFF",
+      "sha256": "63adad4281c00b00010d48506660b9a8e42cc1637a0ad0dbbdb351df17eb11e3",
+      "regions": [
+        {
+          "name": "JacketBody",
+          "renderer": "CLO_JacketBody",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 128
+        },
+        {
+          "name": "JacketSleeveLeft",
+          "renderer": "CLO_JacketSleeve.L",
+          "x_px": 128,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JacketSleeveRight",
+          "renderer": "CLO_JacketSleeve.R",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "BandageLeft",
+          "renderer": "CLO_Bandage.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JeansPelvis",
+          "renderer": "GEO_Pelvis",
+          "x_px": 192,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JeansThighLeft",
+          "renderer": "GEO_Thigh.L",
+          "x_px": 0,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JeansThighRight",
+          "renderer": "GEO_Thigh.R",
+          "x_px": 64,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JeansShinLeft",
+          "renderer": "GEO_Shin.L",
+          "x_px": 128,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JeansShinRight",
+          "renderer": "GEO_Shin.R",
+          "x_px": 192,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "BootLeft",
+          "renderer": "GEO_Foot.L",
+          "x_px": 0,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "BootRight",
+          "renderer": "GEO_Foot.R",
+          "x_px": 64,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "JacketForearmRight",
+          "renderer": "CLO_JacketForearm.R",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        }
+      ]
+    }
+  ],
+  "body_contract": {
+    "canonical_height_m": 1.75,
+    "head_crown_to_chin_m": 0.2335,
+    "heads_tall": 7.4946,
+    "silhouette": "lean weary adult",
+    "bandage_side": "Left",
+    "shoulder_patch_side": "Right",
+    "jacket": "faded dark olive-drab field jacket; original ochre patch; no copied insignia",
+    "face_baseline": "weary flat neutral; no guilt, tears, or theatrical sadness"
+  },
+  "geometry_simplification": {
+    "painted_not_modeled": [
+      "lapels",
+      "collar",
+      "placket",
+      "four pocket panels and flaps",
+      "right shoulder patch",
+      "jacket cuffs",
+      "jeans seams and cuffs",
+      "bandage wraps",
+      "boot shaft panels",
+      "laces",
+      "eyelets",
+      "toe cap",
+      "sole edge"
+    ],
+    "forbidden_detail_mesh_prefixes": [
+      "ACC_BandageWrap"
+    ],
+    "bandage_meshes": [
+      "CLO_Bandage.L"
+    ],
+    "foot_meshes": [
+      "GEO_Foot.L",
+      "GEO_Foot.R"
+    ]
+  },
+  "design_metrics": {
+    "height_m": 1.75,
+    "head_height_m": 0.2335,
+    "head_width_m": 0.176,
+    "heads_tall": 7.4946,
+    "shoulder_width_m": 0.41814,
+    "shoulder_joint_span_m": 0.41814,
+    "visible_neck_height_m": 0.045429,
+    "bare_visible_neck_m": 0.045429,
+    "neck_base_width_m": 0.148,
+    "neck_top_width_m": 0.127,
+    "shoulder_span_head_width_ratio": 2.375795,
+    "shoulder_to_wrist_m": 0.585625,
+    "shoulder_to_wrist_ratio": 0.334643,
+    "hand_bone_length_m": 0.096979,
+    "pelvis_height_m": 0.835,
+    "pelvis_joint_span_m": 0.184532,
+    "torso_length_m": 0.543,
+    "torso_waist_half_width_m": 0.166,
+    "torso_chest_half_width_m": 0.187,
+    "jacket_hem_half_width_m": 0.168,
+    "jacket_waist_half_width_m": 0.169,
+    "jacket_chest_half_width_m": 0.19,
+    "jacket_yoke_half_width_m": 0.195,
+    "relaxed_left_wrist_z_m": 0.844539,
+    "relaxed_right_wrist_z_m": 0.837188,
+    "relaxed_left_fingertip_z_m": 0.750185,
+    "relaxed_right_fingertip_z_m": 0.741906,
+    "left_foot_length_m": 0.263,
+    "left_foot_width_m": 0.13,
+    "left_upper_thigh_width_m": 0.16448,
+    "left_knee_width_m": 0.107163,
+    "left_calf_width_m": 0.133031,
+    "left_ankle_width_m": 0.081296,
+    "right_foot_length_m": 0.267,
+    "right_foot_width_m": 0.13,
+    "right_upper_thigh_width_m": 0.164464,
+    "right_knee_width_m": 0.107155,
+    "right_calf_width_m": 0.133021,
+    "right_ankle_width_m": 0.08129
+  }
+}

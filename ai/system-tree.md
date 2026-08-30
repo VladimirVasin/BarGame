@@ -82,8 +82,10 @@ Assets/
         smoking_theme.*  optional Home balcony-vignette loop supplied by user
         README.txt
     Player/
-      Player3D.prefab                   one production modular hero prefab
-      Player3DPortrait.png              transparent inventory portrait from 3D model
+      Player3D.prefab                   retained Hero V1 fallback prefab
+      Player3DPortrait.png              retained V1 fallback portrait
+      Player3DV2.prefab                 production adult-proportion modular hero
+      Player3DV2Portrait.png            live inventory portrait from production V2
     Pedestrians/
       CityPedestrian3D.prefab           pooled Lampshade Walker presentation
       ChairCarrierPedestrian3D.prefab   pooled Chair Carrier presentation
@@ -120,7 +122,7 @@ Assets/
       StairwellCatProvider.asset      serialized link to the passive 3D cat prefab
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
-      CityMiscAssetProvider.asset   238 passive City role-mesh bindings / 42,878 triangles + manifest signature
+      CityMiscAssetProvider.asset   238 passive City role-mesh bindings / 42,750 triangles + v4.7.0 signature
       CityBuildingAssetProvider.asset  four district prototype-prefab bindings + signature
       Buildings/
         OldTownPrototype01.prefab      passive fixed-metre wrapper + semantic registry
@@ -130,7 +132,10 @@ Assets/
     Bar/
       BarFacade3D.prefab            complete fixed-metre bar_exterior_v2 + door/sign anchors
       BarInterior3D.prefab          passive shared 22 x 16 x 4.8 m room model
+      BarBartenderProvider.asset    dedicated six-armed NPC prefab link
       Textures/                     four interior albedos + exterior brick/plaster sheets
+    Supermarket/
+      SupermarketCashierProvider.asset  dedicated Watcher Cashier prefab link
     MountainRoad/
       MountainRoadCafeCastProvider.asset  four isolated staged cafe prefab links
     Church/
@@ -141,26 +146,32 @@ Assets/
       en.json
   Player3D/
     Models/
-      PlayerCharacter3D.fbx             production Generic model
-      PlayerCharacter3D.json            deterministic parts/bones/actions manifest
+      PlayerCharacter3D.fbx             retained V1 fallback Generic model
+      PlayerCharacter3D.json            retained V1 parts/bones/actions manifest
     Animations/
-      PlayerCharacter3DAnimations.fbx   37 in-place Actions; Rise, bus, car-door, chess-seat + door-use sets
+      PlayerCharacter3DAnimations.fbx   retained V1 37-action fallback set
     Materials/
       Player3DLit.mat                   shared URP/Lit hero material
+    V2/
+      Models/PlayerCharacter3DV2.{fbx,json}  production 34-part model + deterministic metrics
+      Animations/PlayerCharacter3DV2Animations.fbx  production 37-action V2 rig
+      Textures/PlayerFaceAtlas.png       4x4 five-expression point-filtered atlas
+      Textures/PlayerClothingAtlas.png   full-colour open-jacket/trouser/boot atlas
+      Materials/Player3DV2Clothing.mat  shared white-tint atlas material
   Pedestrians/
     Models/
-      CityPedestrian3D.fbx              compatible Generic street-walker model
+      CityPedestrian3D.fbx              NpcHumanV2 street-walker model
       CityPedestrian3D.json             deterministic geometry/rig manifest
-      ChairCarrierPedestrian3D.fbx      compatible Generic chair-bearer model
+      ChairCarrierPedestrian3D.fbx      NpcHumanV2 chair-bearer model
       ChairCarrierPedestrian3D.json     deterministic geometry/rig manifest
-      KettleHatPedestrian3D.fbx         compatible Generic stout kettle-hat model
+      KettleHatPedestrian3D.fbx         NpcHumanV2 stout kettle-hat model
       KettleHatPedestrian3D.json        deterministic geometry/rig manifest
-      LongArmPedestrian3D.fbx           compatible Generic narrow long-arm model
+      LongArmPedestrian3D.fbx           NpcHumanV2 narrow long-arm model
       LongArmPedestrian3D.json          deterministic geometry/rig manifest
-      HelmetLampPedestrian3D.fbx        compatible Generic hopping miner model
+      HelmetLampPedestrian3D.fbx        NpcHumanV2 hopping miner model
       HelmetLampPedestrian3D.json       deterministic geometry/rig manifest
     Animations/
-      CityPedestrianLocomotion.fbx      fourteen production loops + two staged Pipeback loops
+      CityPedestrianLocomotion.fbx      shared 37-clip NpcHumanV2 locomotion/action library
       CityPedestrianLocomotion.json     gait/contact/clearance/apex + staged wheel-contact manifest
       MountainRoadCafeCast.{fbx,json}   isolated eight-clip silent cafe cast library
     Staged/
@@ -168,6 +179,8 @@ Assets/
         PipebackRoller3D.fbx            passive 31-bone wheelchair NPC model
         PipebackRoller3D.json           staged geometry/rig/passive-anchor manifest
         MountainCafe*3D.{fbx,json}      four distinct passive cafe role models/manifests
+        {YardBabushka,WeighbridgeAttendant,Cemetery*,LakeFisherman,Park*,LastRouteFerryman}3D.{fbx,json}
+                                          eight further NpcHumanV2 staged roles/manifests
       Prefabs/
         PipebackRoller3D.prefab         passive asset outside Resources and the runtime pool
         MountainCafe*3D.prefab          four cafe roles outside Resources/pedestrian pool
@@ -194,6 +207,13 @@ Assets/
       BarFacade3D.json                  bar_exterior_v2 bounds, parts, door/sign anchors + signature
       BarInterior3D.fbx                 156-part shared interior
       Bar3D.json                        interior layout/parts/groups + build signature
+    Bartender/
+      Models/BarBartender3D.{fbx,json}  1.75 m six-armed NpcHumanV2 model / v2.0.0 manifest
+      Prefabs/BarBartender.prefab       provider-bound passive runtime bartender
+  Supermarket/
+    Cashier/
+      Models/SupermarketCashier3D.{fbx,json}  NpcHumanV2 Watcher / v2.0.0 manifest
+      Prefabs/SupermarketCashier.prefab       provider-bound passive runtime cashier
   Church/
     Models/                             split Catholic exterior/interior FBX + shared manifest
     Textures/                           nine deterministic plaster/stone/wood/glass/art sheets
@@ -539,7 +559,11 @@ Assets/
         LastRouteCarSuspension{,Model}.cs  the body on springs, kicked by dismounts and seatings
         LastRouteCarSeatPlan.cs    the hero's dock, doorway waypoint and seated hip, all off drawn anchors
         LastRouteCarSeatViewPlan.cs  the seated eye, its look limits and the level-horizon rule
-        LastRouteCarSeatInteraction.cs  the offer, the clip-driven passenger leaf and first-person camera ownership
+        LastRouteCarSeatInteraction.cs  the offer, the clip-driven passenger leaf and first-person camera ownership; from the seat, the one interactable also answers for whatever on the dash he is looking at
+        LastRouteCarDashboard.cs   the dash driven: the glovebox lid on its hinge, the radio's two knobs and sliding needle, the lit dial and the speedometer needle, all on the runtime root's axes
+        LastRouteCarDashboard{State,Target,Gaze}.cs  what he left changed (on the session, because the tunnel raises a new car), what he can look at, and the ray-against-drawn-bounds pick that decides which
+        LastRouteCarRadioModel.cs  the tuning knob's eight detents and the speedometer's sweep - pure; what the radio plays is undecided and not here
+        LastRouteCarGloveboxTimeline.cs  a lid that drops and is caught, and is pushed shut - two curves and their inverses
         LastRouteFerryman{Plan,Factory,Provider}.cs  the one authored man, read off the car that was actually placed
         LastRouteFerrymanPresentation.cs  five postures on one manual graph, and the metres the clips do not carry
         LastRouteFerrymanBoarding{Plan,Timeline}.cs  the drop, the walk round the nose and the door-open-sit-shut clock
@@ -589,8 +613,9 @@ Assets/
         PlayerFallAnimationTimeline.cs  14/36/50 authored phase mapping, 100 total
       Player3D/
         Player3DAssetRegistry.cs        serialized meshes, parts, bones, sockets, Actions
-        Player3DResources.cs            safe Resources prefab instantiation
+        Player3DResources.cs            V2-default / explicit-V1 fallback instantiation
         Player3DCharacterPresentation.cs clips + physics handoff + full-body Rise sampling
+        Player3DFaceAtlasPresenter.cs    merge-safe MPB face-cell texture selection
         Player3DRagdollController.cs     bounded 13-body failed-balance physics + pose recovery
         Player3DFirstPersonSubset.cs     prefab-derived camera-local arm filtering
         Player3DHeadVisibility.cs        the whole head off by bone rule, for a camera inside it
@@ -644,8 +669,9 @@ Assets/
         StairwellInteriorAtmosphere.cs flickering practicals, grade and dust
         SupermarketInteriorRoot.cs    layout/world/player/shop/UI composition
         SupermarketInteriorAtmosphere.cs  six shadowless practicals + flickering row
-        BarInteriorRoot.cs            bar layout/world/patrons/drink-shop composition
-        BarPatronWorldBuilder.cs      pooled 3D guests on NPC anchors, seated via seat contract
+      BarInteriorRoot.cs            bar layout/world/patrons/drink-shop composition
+      BarPatronWorldBuilder.cs      pooled 3D guests on NPC anchors, seated via seat contract
+      Bar/Bartender/                provider, registry, world builder, presentation + service choreography
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
       Supermarket/Cashier/  the Watcher Cashier: provider-bound passive prefab
         SupermarketCashierProvider.cs      one addressable ref to the off-Resources prefab
@@ -682,8 +708,9 @@ Assets/
       Bar/BarAssetSetup.cs       shared interior/exterior importer, prefab and manifest validation
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       MountainRoadCafeCastAssetSetup.cs  isolated model/clip import, validation + provider setup
-      Player3D/       deterministic model/animation/portrait import + prefab setup
-      City/NPC/       production/staged pedestrian Generic import, validation + prefab setup
+      NpcHumanV2AssetSetup.cs       one batch rebuild/validation entry point for all 21+3 humanoid NPC assets
+      Player3D/       production V2 atlas/import/prefab pipeline + retained V1 setup
+      City/NPC/       production/staged NpcHumanV2 import, Hero V2 Avatar copy + prefab setup
       City/Traffic/   bus/driver FBX import, shared materials + Resources prefab setup
   Tests/
     Infrastructure/  shared run callback: mute listener output, then restore it
@@ -704,7 +731,9 @@ Assets/
       InventoryConsumableCatalogTests.cs current food/alcohol value table
       InventoryTargetInteraction{Model,Controller}Tests.cs  safe defaults, commit and cleanup
       InventoryPresentationTests.cs       icons, dedicated 3D portrait and item models
-      Player3D/Player3DAssetImportTests.cs  model/Actions/parts/sockets/prefab contract
+      Player3D/Player3DAssetImportTests.cs  retained V1 model/Actions/prefab contract
+      Player3D/Player3DV2AssetPipelineTests.cs  production selection/prefab/atlas/rig/topology contract
+      Player3DFacialAtlasTests.cs       face-cell selection + V1 fallback/bootstrap
       PlayerDoorActionPlanTests.cs explicit grounded dock/facing + independent poses
       CityStreetSurfacePlannerTests.cs  corridor split, zebra selection + dash exclusion
       CityTerrainSurfaceWorldBuilderTests.cs sampled mesh/collider/UV terrain contract
@@ -802,10 +831,13 @@ ArtSource/
     Blender/                    production/staged model sources, previews and animation contact sheets
   Player/
     PlayerDirectionalTurntable.png  retired 2D design source / visual lineage
-    Blender/                    production .blend, transparent preview and authoring notes
+    Blender/                    retained V1 .blend, preview and authoring notes
     BedSleep/                    retired player-sprite source history
     BalconySmoking/              retired player-sprite source history
     CatFeeding/                  retired player-sprite source history
+  PlayerV2/
+    Blender/                    generated production V2 .blend source
+    Preview/                    production full/front/three-quarter/lower-body/expression PNGs
   Stairwell/
     Cat/Blender/                 generated 3D cat .blend + back-quarter and face previews
   City/
@@ -825,7 +857,8 @@ tools/
   build-city-bus-driver-3d-model.py  driver model/rig/export validator
   build-city-pedestrian-3d-model.py  compatible rig/model/export validator
   build-city-chess-set-3d-model.py   turned chessmen/draught meshes + height-ladder validator
-  build-player-3d-model.py          model/Actions/portrait + full-body Rise validators
+  build-player-3d-model.py          retained V1 generator + shared action/bed validators
+  build-player-3d-model-v2.py       production V2 anatomy/atlas/rig/export wrapper
   build-player-puppet-atlas.py      retired 2D player source tooling
   extract-player-bed-sleep-frames.py      retired player-sprite source tooling
   build-player-bed-sleep-atlas.py         retired player-sprite source tooling
@@ -1123,15 +1156,17 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> simplified blue ink-outlined closed route
                             -> five default numbered localized hover stops + compact legend
                             -> below orange player route; no live bus marker
-eight gameplay roots -> PlayerFactory -> Resources/Player/Player3D.prefab
-                                      -> 73 mesh bindings + 16 core parts
+eight gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
+                                      -> 34 mesh bindings + 16 core parts
                                       -> 37 Generic in-place Actions
-                                         -> Idle/Walk/face/status/fall
+                                         -> Idle/Walk/atlas-face/status/fall
                                          -> 50-frame full-body Rise via all fours
                                          -> DoorUseEnter/DoorUseLoop/DoorUseExit
                                          -> BusBoardEnter/BusRideLoop/BusAlightExit
                                          -> ChessSeatEnter/ChessSeatPlayLoop/ChessSeatExit
                                       -> real URP mesh shadows
+explicit fallback -> Player3DVariant.ProductionV1
+                  -> Resources/Player/Player3D.prefab + V1 portrait
 player -> PlayerContactShadow -> planted/fall-aware analytic patch
 player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact action
                          -> Route 01 front/rear door / fixed passenger seat

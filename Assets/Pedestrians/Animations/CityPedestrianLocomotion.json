@@ -1,8 +1,10 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.2.0",
+  "generator_version": "4.0.0",
   "blender_version": "5.0.1",
-  "skeleton_source": "PlayerCharacter3D exact A-pose v2.5.0",
+  "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
+  "anatomy_standard": "NpcHumanV2",
+  "rest_pelvis_height_m": 0.835,
   "bone_count": 31,
   "fps": 24,
   "root_motion": false,
@@ -70,9 +72,9 @@
         0.0
       ],
       "seated": true,
-      "seated_headroom_m": 1.029737,
-      "seated_drop_m": 0.355893,
-      "seated_contact_m": 0.06126,
+      "seated_headroom_m": 0.906993,
+      "seated_drop_m": 0.375742,
+      "seated_contact_m": 0.075577,
       "seated_floor_drop_limit_m": 0.41
     },
     {
@@ -136,9 +138,9 @@
         0.0
       ],
       "seated": true,
-      "seated_headroom_m": 1.055113,
-      "seated_drop_m": 0.365917,
-      "seated_contact_m": 0.067418,
+      "seated_headroom_m": 0.918459,
+      "seated_drop_m": 0.37958,
+      "seated_contact_m": 0.081311,
       "seated_floor_drop_limit_m": 0.41
     },
     {
@@ -202,9 +204,9 @@
         0.0
       ],
       "seated": true,
-      "seated_headroom_m": 1.050193,
-      "seated_drop_m": 0.373993,
-      "seated_contact_m": 0.141043,
+      "seated_headroom_m": 0.913886,
+      "seated_drop_m": 0.388341,
+      "seated_contact_m": 0.128115,
       "seated_floor_drop_limit_m": 0.41
     },
     {
@@ -227,7 +229,7 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
-      "hand_min_clearance_m": 0.106983
+      "hand_min_clearance_m": 0.096824
     },
     {
       "name": "LongArmWalk",
@@ -249,7 +251,7 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
-      "hand_min_clearance_m": 0.106255
+      "hand_min_clearance_m": 0.089466
     },
     {
       "name": "LongArmSit",
@@ -270,9 +272,9 @@
         0.0
       ],
       "seated": true,
-      "seated_headroom_m": 1.050078,
-      "seated_drop_m": 0.354512,
-      "seated_contact_m": 0.06912,
+      "seated_headroom_m": 0.915455,
+      "seated_drop_m": 0.374798,
+      "seated_contact_m": 0.063611,
       "seated_floor_drop_limit_m": 0.41
     },
     {
@@ -294,8 +296,8 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.009745,
-      "apex_lift_m": 0.009745
+      "ground_max_contact_gap_m": 0.011503,
+      "apex_lift_m": 0.011503
     },
     {
       "name": "HelmetLampHop",
@@ -316,8 +318,8 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.240901,
-      "apex_lift_m": 0.240901
+      "ground_max_contact_gap_m": 0.236358,
+      "apex_lift_m": 0.236358
     },
     {
       "name": "PipebackIdle",
@@ -339,9 +341,9 @@
       ],
       "wheel_ground_min_m": 0.0,
       "wheel_ground_max_contact_gap_m": 0.0,
-      "footrest_min_clearance_m": 0.268367,
-      "rim_hand_max_distance_m": 0.057017,
-      "seat_contact_max_gap_m": 0.008039
+      "footrest_min_clearance_m": 0.142284,
+      "rim_hand_max_distance_m": 0.080388,
+      "seat_contact_max_gap_m": 0.003853
     },
     {
       "name": "PipebackRoll",
@@ -363,9 +365,9 @@
       ],
       "wheel_ground_min_m": 0.0,
       "wheel_ground_max_contact_gap_m": 0.0,
-      "footrest_min_clearance_m": 0.268367,
-      "rim_hand_max_distance_m": 0.085905,
-      "seat_contact_max_gap_m": 0.022731
+      "footrest_min_clearance_m": 0.142284,
+      "rim_hand_max_distance_m": 0.079949,
+      "seat_contact_max_gap_m": 0.017715
     },
     {
       "name": "BabushkaSmoke",
@@ -597,14 +599,14 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.509661,
-      "perch_seat_height_max_m": 0.510643,
-      "perch_pelvis_lift_m": -0.024335,
+      "perch_seat_height_min_m": 0.506004,
+      "perch_seat_height_max_m": 0.507747,
+      "perch_pelvis_lift_m": -0.021778,
       "perch_contact_parts": [
         "GEO_BootSole.L",
         "GEO_BootSole.R"
       ],
-      "seated_drop_m": 0.486308
+      "seated_drop_m": 0.485969
     },
     {
       "name": "FerrymanTrudge",
@@ -684,9 +686,9 @@
         0.0
       ],
       "seated": true,
-      "seated_headroom_m": 1.028771,
-      "seated_drop_m": 0.219741,
-      "seated_contact_m": 0.046327,
+      "seated_headroom_m": 0.943046,
+      "seated_drop_m": 0.21962,
+      "seated_contact_m": 0.045095,
       "seated_floor_drop_limit_m": 0.22
     },
     {
@@ -709,13 +711,13 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.538794,
-      "perch_seat_height_max_m": 0.539602,
-      "perch_pelvis_lift_m": 0.065095,
+      "perch_seat_height_min_m": 0.537254,
+      "perch_seat_height_max_m": 0.542873,
+      "perch_pelvis_lift_m": 0.063573,
       "perch_contact_parts": [
         "GEO_BootSole.L"
       ],
-      "seated_drop_m": 0.604698
+      "seated_drop_m": 0.606446
     },
     {
       "name": "ChessTrudge",
@@ -758,13 +760,13 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.535384,
-      "perch_seat_height_max_m": 0.539153,
-      "perch_pelvis_lift_m": 0.063843,
+      "perch_seat_height_min_m": 0.537254,
+      "perch_seat_height_max_m": 0.537254,
+      "perch_pelvis_lift_m": 0.061172,
       "perch_contact_parts": [
         "GEO_BootSole.L"
       ],
-      "seated_drop_m": 0.602997
+      "seated_drop_m": 0.598426
     },
     {
       "name": "CheckersMull",
@@ -786,13 +788,13 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.538794,
-      "perch_seat_height_max_m": 0.539602,
-      "perch_pelvis_lift_m": 0.065095,
+      "perch_seat_height_min_m": 0.537254,
+      "perch_seat_height_max_m": 0.542873,
+      "perch_pelvis_lift_m": 0.063573,
       "perch_contact_parts": [
         "GEO_BootSole.L"
       ],
-      "seated_drop_m": 0.604698
+      "seated_drop_m": 0.606446
     },
     {
       "name": "CheckersTrudge",
@@ -835,14 +837,14 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.535384,
-      "perch_seat_height_max_m": 0.539153,
-      "perch_pelvis_lift_m": 0.063843,
+      "perch_seat_height_min_m": 0.537254,
+      "perch_seat_height_max_m": 0.537254,
+      "perch_pelvis_lift_m": 0.061172,
       "perch_contact_parts": [
         "GEO_BootSole.L"
       ],
-      "seated_drop_m": 0.602997
+      "seated_drop_m": 0.598426
     }
   ],
-  "build_signature": "54877d04fbdd4156615599c293e2f5f1bbe6c5b73da4b983fa75ac771272bd24"
+  "build_signature": "85999c2978207b69a8cb9477d92d9da3e6a9e18546b2852e26ff95ad69c451bf"
 }

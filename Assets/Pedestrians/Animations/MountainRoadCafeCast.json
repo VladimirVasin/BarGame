@@ -1,8 +1,10 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "3.2.0",
+  "generator_version": "4.0.0",
   "blender_version": "5.0.1",
-  "skeleton_source": "PlayerCharacter3D exact A-pose v2.5.0",
+  "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
+  "anatomy_standard": "NpcHumanV2",
+  "rest_pelvis_height_m": 0.835,
   "bone_count": 31,
   "fps": 24,
   "root_motion": false,
@@ -29,13 +31,13 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.473026,
-      "perch_seat_height_max_m": 0.473026,
-      "perch_pelvis_lift_m": 0.022173,
+      "perch_seat_height_min_m": 0.457802,
+      "perch_seat_height_max_m": 0.457802,
+      "perch_pelvis_lift_m": 0.023051,
       "perch_contact_parts": [
         "GEO_Sole.R"
       ],
-      "seated_drop_m": 0.495199
+      "seated_drop_m": 0.480853
     },
     {
       "name": "CafeLoneBeat",
@@ -57,13 +59,13 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.473026,
-      "perch_seat_height_max_m": 0.473026,
-      "perch_pelvis_lift_m": 0.022173,
+      "perch_seat_height_min_m": 0.457802,
+      "perch_seat_height_max_m": 0.457802,
+      "perch_pelvis_lift_m": 0.023051,
       "perch_contact_parts": [
         "GEO_Sole.R"
       ],
-      "seated_drop_m": 0.495199
+      "seated_drop_m": 0.480853
     },
     {
       "name": "CafeManIdle",
@@ -85,13 +87,13 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.462947,
-      "perch_seat_height_max_m": 0.462948,
-      "perch_pelvis_lift_m": 0.022406,
+      "perch_seat_height_min_m": 0.458887,
+      "perch_seat_height_max_m": 0.458887,
+      "perch_pelvis_lift_m": 0.023301,
       "perch_contact_parts": [
         "GEO_Sole.R"
       ],
-      "seated_drop_m": 0.485353
+      "seated_drop_m": 0.482188
     },
     {
       "name": "CafeManBeat",
@@ -113,13 +115,13 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.462947,
-      "perch_seat_height_max_m": 0.462948,
-      "perch_pelvis_lift_m": 0.022406,
+      "perch_seat_height_min_m": 0.458887,
+      "perch_seat_height_max_m": 0.458887,
+      "perch_pelvis_lift_m": 0.023301,
       "perch_contact_parts": [
         "GEO_Sole.R"
       ],
-      "seated_drop_m": 0.485353
+      "seated_drop_m": 0.482188
     },
     {
       "name": "CafeWomanIdle",
@@ -141,13 +143,13 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.464774,
-      "perch_seat_height_max_m": 0.464774,
-      "perch_pelvis_lift_m": 0.022785,
+      "perch_seat_height_min_m": 0.454873,
+      "perch_seat_height_max_m": 0.454873,
+      "perch_pelvis_lift_m": 0.023721,
       "perch_contact_parts": [
         "GEO_Sole.R"
       ],
-      "seated_drop_m": 0.487559
+      "seated_drop_m": 0.478593
     },
     {
       "name": "CafeWomanBeat",
@@ -169,13 +171,13 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.464774,
-      "perch_seat_height_max_m": 0.464774,
-      "perch_pelvis_lift_m": 0.022785,
+      "perch_seat_height_min_m": 0.454873,
+      "perch_seat_height_max_m": 0.454873,
+      "perch_pelvis_lift_m": 0.023721,
       "perch_contact_parts": [
         "GEO_Sole.R"
       ],
-      "seated_drop_m": 0.487559
+      "seated_drop_m": 0.478593
     },
     {
       "name": "CafeAttendantIdle",
@@ -220,5 +222,5 @@
       "ground_max_contact_gap_m": 0.0
     }
   ],
-  "build_signature": "d0b3b8172ebd435ab174fcee513561404b58d6bdb6569b0749f78f9a9e9e7976"
+  "build_signature": "6dcf59a67576c03fbbb2ff242642e23a37b1b692c04722fd67ea3b5716bdf48b"
 }

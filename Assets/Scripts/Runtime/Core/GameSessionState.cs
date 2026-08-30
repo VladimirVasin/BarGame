@@ -204,6 +204,25 @@ namespace BarPromenade
             IsRidingTheCableway = riding;
         }
 
+        /// <summary>
+        /// What the passenger has done to the Ferryman's dash: the radio,
+        /// where its tuning knob stands, and the glovebox lid. On the
+        /// session rather than the car because the ride crosses an area
+        /// boundary and the mountain raises a NEW car from the ride stage -
+        /// a radio switched on at the island has to still be on when the
+        /// lights come back.
+        /// </summary>
+        public static LastRouteCarDashboardState CarDashboard
+        {
+            get;
+            private set;
+        } = LastRouteCarDashboardState.Default;
+
+        public static void SetCarDashboard(LastRouteCarDashboardState state)
+        {
+            CarDashboard = state;
+        }
+
         /// <summary>Either vehicle, for the gates that do not care which.
         /// </summary>
         public static bool IsRidingAVehicle =>
@@ -337,6 +356,7 @@ namespace BarPromenade
             CashBalance = DefaultCash;
             graveWork.Reset();
             FerrymanRide = LastRouteFerrymanRideStage.NotTaken;
+            CarDashboard = LastRouteCarDashboardState.Default;
             gameTime.Reset();
             BalanceCheckDelayRemaining = 0f;
             BalanceCheckSequence = 0;

@@ -391,12 +391,12 @@ MonoBehaviour:
   sitClip: {fileID: 0}
   actionClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.000000059604645, y: 0.875, z: 0.100550056}
-    m_Extent: {x: 0.76750004, y: 0.875, z: 0.28344992}
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.0933058}
+    m_Extent: {x: 0.775211, y: 0.8749999, z: 0.29469413}
   sourceTriangleCount: 1084
-  sourceGeneratorVersion: 3.2.0
+  sourceGeneratorVersion: 4.0.0
   designId: helmet_lamp_hopper_v1
-  buildSignature: 6469220c1c183164944194b00c441185d6ecf3786825b3f595ece037738541f7
+  buildSignature: 0729b43bacaf644cd6c1c59e532460ca29b664ee22ed781d46fc62e440634d11
   paletteVariant: 0
   headLamp: {fileID: 2885974950837579249}
   preservesAirborneMotion: 1
@@ -732,7 +732,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 317079289418896107}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 1
   m_UpdateMode: 0

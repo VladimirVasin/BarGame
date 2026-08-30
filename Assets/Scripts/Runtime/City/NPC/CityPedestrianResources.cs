@@ -291,7 +291,7 @@ namespace BarPromenade
         /// the lowest seated silhouette of the four riders.
         /// </summary>
         private static readonly CityPedestrianSeatedRide LampshadeSeatedRide =
-            new CityPedestrianSeatedRide(0.051f, 0.20f, 1.03f);
+            new CityPedestrianSeatedRide(0.066f, 0.20f, 0.907f);
 
         /// <summary>
         /// An upright spine under the inverted cafe chair it never puts down.
@@ -300,7 +300,7 @@ namespace BarPromenade
         /// </summary>
         private static readonly CityPedestrianSeatedRide
             ChairCarrierSeatedRide =
-                new CityPedestrianSeatedRide(0.057f, 0.22f, 1.06f);
+                new CityPedestrianSeatedRide(0.071f, 0.22f, 0.918f);
 
         /// <summary>
         /// Short legs that do not reach the cabin floor, and an oversized
@@ -308,14 +308,14 @@ namespace BarPromenade
         /// little further forward on the cushion than the others.
         /// </summary>
         private static readonly CityPedestrianSeatedRide KettleHatSeatedRide =
-            new CityPedestrianSeatedRide(0.131f, 0.18f, 1.05f);
+            new CityPedestrianSeatedRide(0.118f, 0.18f, 0.914f);
 
         /// <summary>
         /// A narrow still torso; the forearms that reach the pavement standing
         /// are folded onto the knees seated rather than through the floor.
         /// </summary>
         private static readonly CityPedestrianSeatedRide LongArmSeatedRide =
-            new CityPedestrianSeatedRide(0.059f, 0.24f, 1.05f);
+            new CityPedestrianSeatedRide(0.054f, 0.24f, 0.915f);
 
         private static readonly CityPedestrianArchetype[] OrderedArchetypes =
         {

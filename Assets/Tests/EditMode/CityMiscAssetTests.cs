@@ -347,7 +347,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo("city_misc_citywide_v4"));
             Assert.That(
                 CityMiscAssetProvider.GeneratorVersion,
-                Is.EqualTo("4.6.0"));
+                Is.EqualTo("4.7.0"));
             Assert.That(
                 CityMiscAssetProvider.SupportedKindCount,
                 Is.EqualTo(80));
@@ -434,11 +434,11 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.animation_count, Is.Zero);
             Assert.That(manifest.mesh_count, Is.EqualTo(238));
             Assert.That(manifest.assembly_count, Is.EqualTo(115));
-            Assert.That(manifest.triangle_count, Is.EqualTo(42878));
+            Assert.That(manifest.triangle_count, Is.EqualTo(42750));
             Assert.That(
                 manifest.build_signature,
                 Is.EqualTo(
-                    "87680a5d05066a52504900a19b0e4ec19955fbe180fc6cc8d60f6e5995e412ad"));
+                    "a27649807279987d20efc5372e347df48a1c4c63bb97929ed7d9b2b2879b13f7"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
@@ -464,6 +464,57 @@ namespace BarPromenade.Tests.EditMode
                 manifest.root_contract
                     .legacy_recipe_x_to_unity_local_x,
                 Is.EqualTo(-1f));
+            Assert.That(manifest.static_humanoid_contract, Is.Not.Null);
+            Assert.That(
+                manifest.static_humanoid_contract.standard,
+                Is.EqualTo("static_humanoid_anatomy_v2"));
+            Assert.That(
+                manifest.static_humanoid_contract.standard_version,
+                Is.EqualTo(2f));
+            Assert.That(manifest.static_humanoid_contract.rigged, Is.False);
+            Assert.That(
+                manifest.static_humanoid_contract.resident_kinds,
+                Is.EqualTo(new[]
+                {
+                    "NightlifeShelterStandingPerson",
+                    "NightlifeShelterSeatedPerson",
+                    "NightlifeShelterSleepingPerson"
+                }));
+            Assert.That(
+                manifest.static_humanoid_contract
+                    .standing_equivalent_height_m,
+                Is.EqualTo(1.75f));
+            Assert.That(
+                manifest.static_humanoid_contract.head_width_m,
+                Is.EqualTo(0.22f));
+            Assert.That(
+                manifest.static_humanoid_contract.head_height_m,
+                Is.EqualTo(0.24f));
+            Assert.That(
+                manifest.static_humanoid_contract.heads_tall,
+                Is.EqualTo(7.291667f).Within(0.00001f));
+            Assert.That(
+                manifest.static_humanoid_contract.shoulder_joint_span_m,
+                Is.EqualTo(0.52f));
+            Assert.That(
+                manifest.static_humanoid_contract
+                    .shoulder_joint_span_head_widths,
+                Is.InRange(2.3f, 2.5f));
+            Assert.That(
+                manifest.static_humanoid_contract.polygon_growth_allowed,
+                Is.False);
+            Assert.That(
+                manifest.static_humanoid_contract.legacy_triangle_caps
+                    .NightlifeShelterStandingPerson,
+                Is.EqualTo(582));
+            Assert.That(
+                manifest.static_humanoid_contract.legacy_triangle_caps
+                    .NightlifeShelterSeatedPerson,
+                Is.EqualTo(638));
+            Assert.That(
+                manifest.static_humanoid_contract.legacy_triangle_caps
+                    .NightlifeShelterSleepingPerson,
+                Is.EqualTo(414));
 
             ModelImporter importer =
                 AssetImporter.GetAtPath(ModelPath) as ModelImporter;
@@ -970,6 +1021,7 @@ namespace BarPromenade.Tests.EditMode
             public string generator_version;
             public string build_signature;
             public MiscRootContract root_contract;
+            public StaticHumanoidContract static_humanoid_contract;
             public bool colliders;
             public bool lights;
             public bool cameras;
@@ -979,6 +1031,31 @@ namespace BarPromenade.Tests.EditMode
             public int triangle_count;
             public string wave1_compatibility_signature;
             public string v2_compatibility_signature;
+        }
+
+        [Serializable]
+        private sealed class StaticHumanoidContract
+        {
+            public string standard;
+            public float standard_version;
+            public bool rigged;
+            public string[] resident_kinds;
+            public float standing_equivalent_height_m;
+            public float head_width_m;
+            public float head_height_m;
+            public float heads_tall;
+            public float shoulder_joint_span_m;
+            public float shoulder_joint_span_head_widths;
+            public bool polygon_growth_allowed;
+            public ShelterLegacyTriangleCaps legacy_triangle_caps;
+        }
+
+        [Serializable]
+        private sealed class ShelterLegacyTriangleCaps
+        {
+            public int NightlifeShelterStandingPerson;
+            public int NightlifeShelterSeatedPerson;
+            public int NightlifeShelterSleepingPerson;
         }
 
         [Serializable]

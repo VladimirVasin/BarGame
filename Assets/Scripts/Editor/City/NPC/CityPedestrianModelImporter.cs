@@ -32,9 +32,9 @@ namespace BarPromenade.Editor
             }
             else
             {
-                // A clean Library can import this FBX before the Player FBX.
-                // The queued asset build imports the Player first and then
-                // reimports this model onto the canonical external Avatar.
+                // A clean Library can import this FBX before the Hero V2 FBX.
+                // The queued asset build imports Hero V2 first and then
+                // reimports this model onto the canonical Generic Avatar.
                 importer.avatarSetup =
                     ModelImporterAvatarSetup.CreateFromThisModel;
                 importer.sourceAvatar = null;
@@ -151,8 +151,9 @@ namespace BarPromenade.Editor
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            if (CityPedestrianAssetSetup.IsBuilding ||
-                Player3DAssetSetup.IsBuilding)
+            if (NpcHumanV2AssetSetup.IsAnyPipelineBuilding ||
+                Player3DAssetSetup.IsBuilding ||
+                Player3DV2AssetSetup.IsBuilding)
             {
                 return;
             }

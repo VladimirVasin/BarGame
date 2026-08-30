@@ -14,6 +14,12 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityBusNpcPassengerController : MonoBehaviour
     {
+        // Ambient walkers share the NpcHumanV2/Hero V2 adult rest pelvis.
+        // The transfer target therefore aligns the same 0.835 m landmark to
+        // the cushion anchor before the per-design compressed-seat lift is
+        // applied by CityPedestrianPresentation.
+        internal const float PassengerPelvisHeight = 0.835f;
+
         /// <summary>
         /// A walker already this close to a stop along the pavement can be
         /// asked to use it, which is how the hero sees somebody walk up and
@@ -928,7 +934,7 @@ namespace BarPromenade
             return CityBusRidePlan.TryCreate(
                 actor,
                 transferArea,
-                new Vector3(0f, PlayerCharacterDimensions.PelvisHeight, 0f),
+                new Vector3(0f, PassengerPelvisHeight, 0f),
                 waiter.Walker.AgentRadius,
                 door,
                 streetSurfacePlan,

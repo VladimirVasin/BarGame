@@ -17,7 +17,7 @@ namespace BarPromenade.Editor
         public const string ManifestPath =
             "Assets/Vehicles/Drivers/Models/CityBusDriver3D.json";
         public const string PlayerModelPath =
-            "Assets/Player3D/Models/PlayerCharacter3D.fbx";
+            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         public const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
         public const string PrefabPath =
@@ -119,7 +119,8 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "City bus driver build requires its FBX/manifest, the " +
-                    "production Player model and shared Player3DLit material.");
+                    "production Hero/NPC V2 model and shared Player3DLit " +
+                    "material.");
             }
 
             isBuilding = true;
@@ -199,8 +200,8 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "City bus driver Animator must be controller-free, use " +
-                    "the Player Generic Avatar, always update and disable " +
-                    "root motion.");
+                    "the Hero/NPC V2 Generic Avatar, always update and " +
+                    "disable root motion.");
             }
 
             ValidateRegistryBindings(registry);
@@ -541,7 +542,7 @@ namespace BarPromenade.Editor
             if (model == null || playerModel == null)
             {
                 throw new InvalidOperationException(
-                    "Driver or Player source model failed to import.");
+                    "Driver or Hero/NPC V2 source model failed to import.");
             }
 
             Dictionary<string, Transform> driverTransforms =
@@ -574,7 +575,8 @@ namespace BarPromenade.Editor
                         StringComparison.Ordinal))
                 {
                     throw new InvalidOperationException(
-                        $"Bone '{source.name}' lost the exact Player parent " +
+                        $"Bone '{source.name}' lost the exact Hero/NPC V2 " +
+                        "parent " +
                         $"'{expectedParent}'.");
                 }
 
@@ -590,7 +592,7 @@ namespace BarPromenade.Editor
                 {
                     throw new InvalidOperationException(
                         $"Bone '{source.name}' rest transform differs from " +
-                        "PlayerCharacter3D.");
+                        "PlayerCharacter3DV2.");
                 }
             }
 
@@ -645,7 +647,7 @@ namespace BarPromenade.Editor
                 importer.sourceAvatar != playerAvatar)
             {
                 throw new InvalidOperationException(
-                    "Driver FBX must copy the valid production Player " +
+                    "Driver FBX must copy the valid production Hero/NPC V2 " +
                     "Generic Avatar.");
             }
         }

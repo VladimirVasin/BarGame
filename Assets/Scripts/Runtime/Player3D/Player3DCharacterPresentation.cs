@@ -71,6 +71,8 @@ namespace BarPromenade
 
         private readonly PlayerFacialAnimationState facialState =
             new PlayerFacialAnimationState();
+        private readonly Player3DFaceAtlasPresenter faceAtlasPresenter =
+            new Player3DFaceAtlasPresenter();
 
         private Player3DAssetRegistry registry;
         private Transform actorFacingTransform;
@@ -90,6 +92,7 @@ namespace BarPromenade
         private Player3DAnimationBinding turnRightBinding;
         private Player3DAnimationBinding activeClipBinding;
         private ClipOwner activeClipOwner;
+        private float activeClipNormalizedTime;
         private Vector3 clipModelLocalPosition;
         private Quaternion clipModelLocalRotation;
         private Vector3 clipModelLocalScale;
@@ -138,6 +141,7 @@ namespace BarPromenade
         private FootGroundingProbe footGroundingProbe;
         private float groundedFootHeightOffset;
         private bool groundedFootHeightOffsetCaptured;
+        private PlayerFacialExpression visibleFacialExpression;
 
         public Player3DAssetRegistry Registry => registry;
         public IReadOnlyList<Renderer> Renderers =>
@@ -179,7 +183,8 @@ namespace BarPromenade
         public float FallDirection => fallDirection;
         public bool RagdollPoseActive => ragdollPoseActive;
         public PlayerFacialExpression CurrentFacialExpression =>
-            facialState.CurrentExpression;
+            visibleFacialExpression;
+        public bool UsesFacialAtlas => faceAtlasPresenter.IsConfigured;
         public string ActiveClipName =>
             activeClipBinding != null
                 ? activeClipBinding.ClipName
@@ -197,6 +202,7 @@ namespace BarPromenade
 
             DestroyGraph();
             registry = assetRegistry;
+            faceAtlasPresenter.Configure(registry.FaceAtlas);
             actorFacingTransform = facingTransform != null
                 ? facingTransform
                 : transform;
@@ -230,6 +236,7 @@ namespace BarPromenade
             SetMotion(PlayerMotionSample.Stationary);
             ApplyLocomotionWeights(immediate: true);
             EvaluateGraph(0f);
+            ApplyFacialExpression(PlayerFacialExpression.Neutral);
             footGroundingProbe = FootGroundingProbe.Create(registry);
             CaptureGroundedFootHeightOffset();
         }
@@ -308,6 +315,8 @@ namespace BarPromenade
                 idlePlayable.SetTime(0d);
                 EvaluateGraph(0f);
             }
+
+            ApplyFacialExpression(PlayerFacialExpression.Neutral);
         }
 
         public void SetIntoxication(float intensity)
@@ -429,9 +438,11 @@ namespace BarPromenade
             }
 
             float progress = Mathf.Clamp01(normalizedTime);
+            activeClipNormalizedTime = progress;
             double sampleTime = activeClipBinding.Clip.length * progress;
             activeClipPlayable.SetTime(sampleTime);
             EvaluateGraph(0f);
+            ApplyAuthoredClipFacialPose();
         }
 
         public void AlignActiveClipAnchor(Vector3 worldPelvisTarget)
@@ -486,7 +497,10 @@ namespace BarPromenade
             {
                 activeClipBinding = null;
                 activeClipOwner = ClipOwner.None;
+                activeClipNormalizedTime = 0f;
                 ResetClipSpatialOffset();
+                facialState.Reset();
+                ApplyFacialExpression(PlayerFacialExpression.Neutral);
                 return;
             }
 
@@ -499,11 +513,14 @@ namespace BarPromenade
             activeClipPlayable = default;
             activeClipBinding = null;
             activeClipOwner = ClipOwner.None;
+            activeClipNormalizedTime = 0f;
             layerMixer.SetInputWeight(0, 1f);
             layerMixer.SetInputWeight(1, 0f);
             ApplyLocomotionWeights(immediate: true);
             EvaluateGraph(0f);
             ResetClipSpatialOffset();
+            facialState.Reset();
+            ApplyFacialExpression(PlayerFacialExpression.Neutral);
         }
 
         private void Update()
@@ -575,7 +592,7 @@ namespace BarPromenade
             if (!ragdollPoseActive)
             {
                 ApplyProceduralStatusPose();
-                ApplyFacialExpression(facialState.CurrentExpression);
+                ReapplyFacialPose();
                 ApplyAttentionPose(0f);
             }
         }
@@ -619,11 +636,12 @@ namespace BarPromenade
                 EvaluateGraph(0f);
             }
 
-            RestoreFacialBones();
+            ResetFacialPresentation();
         }
 
         private void OnDestroy()
         {
+            faceAtlasPresenter.Reset();
             DestroyGraph();
         }
 
@@ -657,6 +675,8 @@ namespace BarPromenade
             layerMixer.SetInputWeight(1, 1f);
             activeClipBinding = binding;
             activeClipOwner = owner;
+            activeClipNormalizedTime = 0f;
+            facialState.Reset();
             SampleActiveClip(0f);
             return true;
         }
@@ -1191,8 +1211,13 @@ namespace BarPromenade
 
         private void ApplyFacialPose()
         {
+            if (IsClipActive)
+            {
+                ApplyAuthoredClipFacialPose();
+                return;
+            }
+
             bool allowIdleExpressions =
-                !IsClipActive &&
                 !interactionHandoffLocked &&
                 locomotionBlend < MotionThreshold &&
                 intoxicationAmount < 0.35f &&
@@ -1205,9 +1230,73 @@ namespace BarPromenade
             ApplyFacialExpression(expression);
         }
 
+        private void ReapplyFacialPose()
+        {
+            if (IsClipActive)
+            {
+                ApplyAuthoredClipFacialPose();
+                return;
+            }
+
+            ApplyFacialExpression(facialState.CurrentExpression);
+        }
+
+        private void ApplyAuthoredClipFacialPose()
+        {
+            // Legacy clips already own their keyed face bones. Atlas faces
+            // use the same authored priority through optional clip keys.
+            if (!UsesFacialAtlas)
+            {
+                visibleFacialExpression = ReadLegacyFacialExpression();
+                return;
+            }
+
+            PlayerFacialExpression expression =
+                PlayerFacialExpression.Neutral;
+            activeClipBinding?.TryGetFacialExpression(
+                activeClipNormalizedTime,
+                out expression);
+            visibleFacialExpression = expression;
+            ApplyFacialExpression(expression);
+        }
+
+        private PlayerFacialExpression ReadLegacyFacialExpression()
+        {
+            float eyeScale = Mathf.Min(
+                leftEye.ScaleYFactor,
+                rightEye.ScaleYFactor);
+            if (eyeScale <= 0.16f)
+            {
+                return PlayerFacialExpression.ClosedBlink;
+            }
+
+            bool tense =
+                leftBrow.RotationDeltaDegrees >= 7f ||
+                rightBrow.RotationDeltaDegrees >= 7f ||
+                mouth.ScaleXFactor <= 0.92f;
+            if (tense)
+            {
+                return PlayerFacialExpression.Tense;
+            }
+
+            if (eyeScale >= 1.09f)
+            {
+                return PlayerFacialExpression.Watchful;
+            }
+
+            return eyeScale < 0.90f
+                ? PlayerFacialExpression.HalfBlink
+                : PlayerFacialExpression.Neutral;
+        }
+
         private void ApplyFacialExpression(
             PlayerFacialExpression expression)
         {
+            visibleFacialExpression = expression;
+            if (faceAtlasPresenter.Apply(expression))
+            {
+                return;
+            }
 
             RestoreFacialBones();
 
@@ -1234,6 +1323,15 @@ namespace BarPromenade
                     rightBrow.RotateZ(-12f);
                     mouth.ScaleX(0.82f);
                     break;
+            }
+        }
+
+        private void ResetFacialPresentation()
+        {
+            visibleFacialExpression = PlayerFacialExpression.Neutral;
+            if (!faceAtlasPresenter.Apply(visibleFacialExpression))
+            {
+                RestoreFacialBones();
             }
         }
 
@@ -1563,6 +1661,21 @@ namespace BarPromenade
                 bone.localRotation = localRotation;
                 bone.localScale = localScale;
             }
+
+            public float ScaleXFactor =>
+                bone != null && Mathf.Abs(localScale.x) > 0.0001f
+                    ? bone.localScale.x / localScale.x
+                    : 1f;
+
+            public float ScaleYFactor =>
+                bone != null && Mathf.Abs(localScale.y) > 0.0001f
+                    ? bone.localScale.y / localScale.y
+                    : 1f;
+
+            public float RotationDeltaDegrees =>
+                bone != null
+                    ? Quaternion.Angle(localRotation, bone.localRotation)
+                    : 0f;
 
             public void ScaleX(float factor)
             {

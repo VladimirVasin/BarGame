@@ -114,6 +114,51 @@ STEERING_GRIP_TOP = math.sqrt(
 )
 STEERING_GRIP_AXIS_OFFSET = 0.018
 
+# The dashboard, and the two things on it the passenger can touch. The
+# slab's rear face is the plane every control sits on. The glovebox is a
+# HOLE in that slab - aperture by omission, the doorway's rule - with a lid
+# hinged along the aperture's bottom edge that drops towards the sitter;
+# the radio is a chrome frame round a dial with a knob either side of it.
+# Everything else drawn in `_build_dashboard` is furniture the hero looks at
+# and never uses. All of it is measured off the passenger's own eye, source
+# (-0.44, -0.52, 1.30), because that is the only place any of it is seen
+# from: the glovebox lid sits 41 degrees below that eye, the radio 33
+# degrees below and 47 degrees towards the driver.
+DASH_SLAB_Y = -1.05
+DASH_SLAB_DEPTH = 0.24
+DASH_REAR_Y = -0.93       # the face; DASH_SLAB_Y + DASH_SLAB_DEPTH / 2
+DASH_BOTTOM_Z = 0.84
+DASH_TOP_Z = 1.04
+DASH_HALF_WIDTH = 0.73
+# The glovebox aperture, on the passenger side (-X). The lid's height is
+# capped so that, hinged at the aperture's bottom edge and dropped fully
+# open, it stays a hand's breadth above a seated passenger's knees.
+GLOVEBOX_X = (-0.62, -0.30)
+GLOVEBOX_Z = (0.88, 1.00)
+GLOVEBOX_HINGE = (
+    (GLOVEBOX_X[0] + GLOVEBOX_X[1]) * 0.5,
+    DASH_REAR_Y,
+    GLOVEBOX_Z[0],
+)
+GLOVEBOX_LID_HEIGHT = 0.125
+GLOVEBOX_LID_LAP = 0.01
+GLOVEBOX_LID_OPEN_DEGREES = 78.0
+# The radio, dead centre. The dial is a strip the needle slides along from
+# the passenger's end towards the driver's; the power knob is on the
+# driver's side - the passenger's LEFT hand - and the tuning knob on the
+# passenger's, the way a radio is laid out.
+RADIO_CENTER = (0.0, DASH_REAR_Y, 0.91)
+RADIO_DIAL_WIDTH = 0.14
+RADIO_DIAL_Z = 0.93
+RADIO_NEEDLE_TRAVEL_M = 0.12
+RADIO_KNOB_X = 0.09
+RADIO_KNOB_Z = 0.893
+# The binnacle. The speedometer sits inboard so the passenger sees it past
+# the rim; its needle is the one moving thing on the dash the hero cannot
+# touch. The fuel gauge is outboard and its needle is drawn at "empty".
+SPEEDO_CENTER = (0.385, -0.995, 1.02)
+FUEL_GAUGE_X = 0.495
+
 DOOR_HINGE_Y = -1.17    # the A-pillar base; the door opens forward of it
 DOOR_HINGE_Z = 0.73
 DOOR_LEAF_LENGTH = 1.51
@@ -244,6 +289,7 @@ UV_TILE_METERS = {
     "Chrome": 0.9,
     "Interior": 1.0,
     "Dashboard": 0.8,
+    "RadioDial": 0.3,
     "Seat": 0.6,
     "Metal": 0.9,
     "Rubber": 0.5,
@@ -265,6 +311,10 @@ MATERIALS: dict[str, tuple[tuple[float, float, float, float], float, float, floa
     "Interior": ((0.085, 0.085, 0.080, 1.0), 0.0, 0.80, 0.0),
     "Seat": ((0.135, 0.115, 0.085, 1.0), 0.0, 0.86, 0.0),
     "Dashboard": ((0.062, 0.060, 0.055, 1.0), 0.0, 0.74, 0.0),
+    # The radio's dial. Warm amber and emissive in the preview; in Unity the
+    # material keeps its emission keyword and the runtime writes the colour
+    # black until the radio is switched on.
+    "RadioDial": ((0.93, 0.62, 0.22, 1.0), 0.0, 0.55, 1.2),
     "Headlight": ((0.98, 0.94, 0.78, 1.0), 0.02, 0.18, 9.0),
     "TailLight": ((0.55, 0.020, 0.012, 1.0), 0.0, 0.30, 2.4),
     "Plate": ((0.60, 0.60, 0.55, 1.0), 0.05, 0.62, 0.0),
@@ -299,6 +349,14 @@ class BuildResult:
     shell_boxes: tuple[
         tuple[tuple[float, float, float], tuple[float, float, float]], ...
     ] = ()
+    # The dashboard slab's boxes as authored, for the same reason: the
+    # glovebox aperture is a hole that only exists as an omission.
+    dash_boxes: tuple[
+        tuple[tuple[float, float, float], tuple[float, float, float]], ...
+    ] = ()
+    # Everything `_build_dashboard` drew, so the validator can prove none
+    # of it stands inside a sitter or across the windscreen.
+    dashboard_parts: tuple[Part, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -659,6 +717,10 @@ class LastRouteCarBuilder:
         self.shell_boxes: tuple[
             tuple[tuple[float, float, float], tuple[float, float, float]], ...
         ] = ()
+        self.dash_boxes: tuple[
+            tuple[tuple[float, float, float], tuple[float, float, float]], ...
+        ] = ()
+        self.dashboard_parts: list[Part] = []
         self.root = create_empty(ROOT_NAME, self.collection, None, display_size=0.30)
         self.body = create_empty(BODY_NAME, self.collection, self.root, display_size=0.26)
         self.body["bp_role"] = "body_root"
@@ -741,6 +803,7 @@ class LastRouteCarBuilder:
         self._build_wheels()
         self._build_lights_and_trim()
         self._build_interior()
+        self._build_dashboard()
         self._build_anchors()
         self.root["bp_generator"] = "tools/build-last-route-car-3d-model.py"
         self.root["bp_generator_version"] = GENERATOR_VERSION
@@ -755,6 +818,8 @@ class LastRouteCarBuilder:
             tuple(sorted(self.pivots, key=lambda pivot: pivot.obj.name)),
             tuple(self.collection.objects),
             self.shell_boxes,
+            self.dash_boxes,
+            tuple(self.dashboard_parts),
         )
 
     # ------------------------------------------------------------------
@@ -1333,16 +1398,9 @@ class LastRouteCarBuilder:
             "rear_bench",
             "Seat",
         )
-        self.add_boxes(
-            "GEO_Dashboard",
-            (
-                ((0.0, -1.05, 0.94), (1.46, 0.24, 0.20)),
-                ((0.44, -1.06, 1.02), (0.34, 0.10, 0.12)),
-            ),
-            "dashboard",
-            "Dashboard",
-        )
-
+        # The dashboard itself is `_build_dashboard`'s: it is composed
+        # around a glovebox aperture and carries the radio, so it is no
+        # longer two boxes drawn in passing here.
         column = MeshAccumulator()
         column.add_cylinder_between(
             (0.44, -1.02, 0.80),
@@ -1359,6 +1417,312 @@ class LastRouteCarBuilder:
             "interior_mirror",
             "Trim",
         )
+
+    def _dash_boxes(
+        self,
+        name: str,
+        boxes: Iterable[tuple[Sequence[float], Sequence[float]]],
+        role: str,
+        material_slot: str,
+        parent: bpy.types.Object | None = None,
+    ) -> Part:
+        part = self.add_boxes(name, boxes, role, material_slot, parent)
+        self.dashboard_parts.append(part)
+        return part
+
+    def _dash_accumulator(
+        self,
+        name: str,
+        accumulator: MeshAccumulator,
+        role: str,
+        material_slot: str,
+        parent: bpy.types.Object | None = None,
+    ) -> Part:
+        part = self.add_accumulator(name, accumulator, role, material_slot, parent)
+        self.dashboard_parts.append(part)
+        return part
+
+    def _build_dashboard(self) -> None:
+        """The dash, and the two things on it the passenger can touch.
+
+        The slab is composed AROUND the glovebox aperture rather than drawn
+        solid and cut afterwards, exactly as the flank is composed around
+        the doorways: a hole in a merged mesh cannot be asked about, so the
+        validator checks the boxes as authored. The lid hangs on its own
+        pivot at the aperture's bottom edge, the radio's two knobs and its
+        needle on theirs, the speedometer needle on its own - "he turns the
+        knob" is a rotation at runtime, never a re-author, the doors' rule.
+
+        Nothing here stands inside either sitter's legs or torso, and
+        nothing crosses the windscreen between the dash top and the header;
+        both are proved by `validate_result` over `dashboard_parts`, not
+        assumed. The compartment behind the lid is EMPTY on purpose.
+        """
+        aperture_x = (GLOVEBOX_X[0] + GLOVEBOX_X[1]) * 0.5
+        aperture_z = (GLOVEBOX_Z[0] + GLOVEBOX_Z[1]) * 0.5
+        aperture_width = GLOVEBOX_X[1] - GLOVEBOX_X[0]
+        aperture_height = GLOVEBOX_Z[1] - GLOVEBOX_Z[0]
+        slab_mid_z = (DASH_BOTTOM_Z + DASH_TOP_Z) * 0.5
+        slab_height = DASH_TOP_Z - DASH_BOTTOM_Z
+        dash_boxes = (
+            # The slab from the aperture's driver-side edge to the far end.
+            (((GLOVEBOX_X[1] + DASH_HALF_WIDTH) * 0.5, DASH_SLAB_Y, slab_mid_z),
+             (DASH_HALF_WIDTH - GLOVEBOX_X[1], DASH_SLAB_DEPTH, slab_height)),
+            # The stub outboard of the aperture.
+            (((GLOVEBOX_X[0] - DASH_HALF_WIDTH) * 0.5, DASH_SLAB_Y, slab_mid_z),
+             (GLOVEBOX_X[0] + DASH_HALF_WIDTH, DASH_SLAB_DEPTH, slab_height)),
+            # Above and below the aperture.
+            ((aperture_x, DASH_SLAB_Y, (GLOVEBOX_Z[1] + DASH_TOP_Z) * 0.5),
+             (aperture_width, DASH_SLAB_DEPTH, DASH_TOP_Z - GLOVEBOX_Z[1])),
+            ((aperture_x, DASH_SLAB_Y, (DASH_BOTTOM_Z + GLOVEBOX_Z[0]) * 0.5),
+             (aperture_width, DASH_SLAB_DEPTH, GLOVEBOX_Z[0] - DASH_BOTTOM_Z)),
+            # The binnacle cowl over the driver.
+            ((0.44, -1.06, 1.02), (0.34, 0.10, 0.12)),
+        )
+        self.dash_boxes = dash_boxes
+        self._dash_boxes("GEO_Dashboard", dash_boxes, "dashboard", "Dashboard")
+
+        # The box the lid opens onto: back wall, two sides and a floor,
+        # lining the aperture so an open lid shows trim rather than the
+        # engine bay. Empty inside.
+        wall = 0.02
+        self._dash_boxes(
+            "GEO_GloveboxCompartment",
+            (
+                ((aperture_x, DASH_SLAB_Y - DASH_SLAB_DEPTH * 0.5 + 0.015, aperture_z),
+                 (aperture_width, 0.03, aperture_height)),
+                ((GLOVEBOX_X[0] + wall * 0.5, DASH_SLAB_Y, aperture_z),
+                 (wall, DASH_SLAB_DEPTH, aperture_height)),
+                ((GLOVEBOX_X[1] - wall * 0.5, DASH_SLAB_Y, aperture_z),
+                 (wall, DASH_SLAB_DEPTH, aperture_height)),
+                ((aperture_x, DASH_SLAB_Y, GLOVEBOX_Z[0] + wall * 0.5),
+                 (aperture_width, DASH_SLAB_DEPTH, wall)),
+            ),
+            "glovebox_compartment",
+            "Interior",
+        )
+
+        # The lid, authored in its hinge's space: the hinge is the origin,
+        # the leaf stands up from it flush with the face and laps the
+        # aperture by a centimetre each side, and the catch rides it.
+        lid = self.add_pivot(
+            "PIVOT_GloveboxLid",
+            "glovebox_lid",
+            self.body,
+            GLOVEBOX_HINGE,
+            runtime_axis_local="+X",
+        )
+        self._dash_boxes(
+            "GEO_GloveboxLid",
+            (((0.0, 0.01, GLOVEBOX_LID_HEIGHT * 0.5),
+              (aperture_width + GLOVEBOX_LID_LAP * 2.0, 0.02, GLOVEBOX_LID_HEIGHT)),),
+            "glovebox_lid",
+            "Dashboard",
+            parent=lid,
+        )
+        self._dash_boxes(
+            "GEO_GloveboxCatch",
+            (((0.0, 0.026, GLOVEBOX_LID_HEIGHT - 0.017), (0.04, 0.012, 0.016)),),
+            "glovebox_catch",
+            "Chrome",
+            parent=lid,
+        )
+
+        # The radio: a chrome frame proud of the face, the dial inside it
+        # and a knob either side. The dial is its own mesh on its own
+        # material slot because it is the one thing in the cabin that
+        # lights up - when the radio is switched on, and only then.
+        radio_x, radio_y, radio_z = RADIO_CENTER
+        frame_y = radio_y + 0.01
+        self._dash_boxes(
+            "GEO_RadioBezel",
+            (
+                ((radio_x, frame_y, radio_z + 0.04), (0.24, 0.02, 0.01)),
+                ((radio_x, frame_y, radio_z - 0.04), (0.24, 0.02, 0.01)),
+                ((radio_x + 0.115, frame_y, radio_z), (0.01, 0.02, 0.09)),
+                ((radio_x - 0.115, frame_y, radio_z), (0.01, 0.02, 0.09)),
+            ),
+            "radio_bezel",
+            "Chrome",
+        )
+        self._dash_boxes(
+            "GEO_RadioDial",
+            (((radio_x, radio_y + 0.005, RADIO_DIAL_Z),
+              (RADIO_DIAL_WIDTH, 0.012, 0.03)),),
+            "radio_dial",
+            "RadioDial",
+        )
+        for name, role, sign in (
+            ("Power", "radio_power_knob", 1.0),
+            ("Tuning", "radio_tuning_knob", -1.0),
+        ):
+            knob_pivot = self.add_pivot(
+                f"PIVOT_Radio{name}Knob",
+                role,
+                self.body,
+                (sign * RADIO_KNOB_X, radio_y, RADIO_KNOB_Z),
+                runtime_axis_local="+Y",
+            )
+            knob = MeshAccumulator()
+            # The knob stands out of the face towards the sitter, which is
+            # source +Y, and carries a pointer nub at twelve o'clock so a
+            # turn reads as a turn.
+            knob.add_cylinder_between((0.0, 0.0, 0.0), (0.0, 0.028, 0.0), 0.014, segments=8)
+            knob.add_box((0.0, 0.024, 0.009), (0.004, 0.010, 0.010))
+            self._dash_accumulator(
+                f"GEO_Radio{name}Knob", knob, "radio_knob", "Trim", parent=knob_pivot
+            )
+        needle_pivot = self.add_pivot(
+            "PIVOT_RadioNeedle",
+            "radio_needle",
+            self.body,
+            (radio_x - RADIO_NEEDLE_TRAVEL_M * 0.5, radio_y, RADIO_DIAL_Z),
+            runtime_axis_local="+X",
+            travel_m=RADIO_NEEDLE_TRAVEL_M,
+        )
+        self._dash_boxes(
+            "GEO_RadioNeedle",
+            (((0.0, 0.015, 0.0), (0.003, 0.006, 0.026)),),
+            "radio_needle",
+            "Chrome",
+            parent=needle_pivot,
+        )
+
+        # The binnacle: two dials recessed in the cowl's rear face, chrome
+        # rings round them, and the fuel needle drawn at "empty".
+        cowl_face_y = -1.01
+        bezels = MeshAccumulator()
+        faces = MeshAccumulator()
+        for gauge_x in (SPEEDO_CENTER[0], FUEL_GAUGE_X):
+            bezels.add_cylinder_between(
+                (gauge_x, cowl_face_y - 0.002, SPEEDO_CENTER[2]),
+                (gauge_x, cowl_face_y + 0.015, SPEEDO_CENTER[2]),
+                0.038,
+                segments=10,
+            )
+            faces.add_cylinder_between(
+                (gauge_x, cowl_face_y, SPEEDO_CENTER[2]),
+                (gauge_x, cowl_face_y + 0.012, SPEEDO_CENTER[2]),
+                0.032,
+                segments=10,
+            )
+        bezels.add_cylinder_between(
+            (FUEL_GAUGE_X, cowl_face_y + 0.017, SPEEDO_CENTER[2]),
+            (FUEL_GAUGE_X - 0.020, cowl_face_y + 0.017, SPEEDO_CENTER[2] - 0.018),
+            0.002,
+            segments=4,
+        )
+        self._dash_accumulator("GEO_InstrumentBezels", bezels, "instrument_bezels", "Chrome")
+        self._dash_accumulator("GEO_InstrumentFaces", faces, "instrument_faces", "Plate")
+        speedo = self.add_pivot(
+            "PIVOT_SpeedoNeedle",
+            "speedo_needle",
+            self.body,
+            SPEEDO_CENTER,
+            runtime_axis_local="+Y",
+        )
+        needle = MeshAccumulator()
+        # At rest on the zero mark, which is seven o'clock as the driver
+        # sees it: his left is source +X.
+        needle.add_cylinder_between(
+            (0.0, 0.002, 0.0), (0.020, 0.002, -0.018), 0.002, segments=4
+        )
+        self._dash_accumulator(
+            "GEO_SpeedoNeedle", needle, "speedo_needle", "Chrome", parent=speedo
+        )
+
+        # Furniture. Two slatted vents above the radio, an ashtray lid
+        # beside it, and a lip along the dash top where the screen meets it.
+        vents = []
+        for side in (1.0, -1.0):
+            vents.append(((side * 0.075, radio_y + 0.005, 0.995), (0.11, 0.014, 0.05)))
+            for step in (-1, 0, 1):
+                vents.append(
+                    ((side * 0.075, radio_y + 0.012, 0.995 + step * 0.014),
+                     (0.10, 0.006, 0.006))
+                )
+        self._dash_boxes("GEO_DashVents", tuple(vents), "dash_vents", "Trim")
+        self._dash_boxes(
+            "GEO_Ashtray",
+            (
+                ((-0.205, radio_y + 0.008, 0.905), (0.10, 0.016, 0.05)),
+                ((-0.205, radio_y + 0.019, 0.925), (0.03, 0.006, 0.008)),
+            ),
+            "ashtray",
+            "Trim",
+        )
+        self._dash_boxes(
+            "GEO_DashLip",
+            (((0.0, -1.14, DASH_TOP_Z + 0.015), (1.40, 0.04, 0.03)),),
+            "dash_lip",
+            "Dashboard",
+        )
+
+        # The tunnel between the seats with the gear lever and the
+        # handbrake on it. Narrower than the gap between the cushions.
+        self._dash_boxes(
+            "GEO_TransmissionTunnel",
+            (((0.0, -0.455, 0.36), (0.30, 1.49, 0.12)),),
+            "transmission_tunnel",
+            "Interior",
+        )
+        levers = MeshAccumulator()
+        levers.add_cylinder_between((0.0, -0.72, 0.42), (0.0, -0.66, 0.66), 0.006, segments=6)
+        levers.add_cylinder_between((0.05, -0.42, 0.44), (0.05, -0.66, 0.50), 0.006, segments=4)
+        self._dash_accumulator("GEO_GearLever", levers, "gear_lever", "Metal")
+        self._dash_boxes(
+            "GEO_LeverKnobs",
+            (
+                ((0.0, -0.66, 0.67), (0.04, 0.04, 0.035)),
+                ((0.05, -0.63, 0.50), (0.024, 0.09, 0.024)),
+            ),
+            "lever_knobs",
+            "Trim",
+        )
+
+        # Pedals in the driver's footwell, on stems back to the scuttle -
+        # the Ferryman has driven with his feet forward onto these since
+        # the day his archetype was measured, and only now are they drawn.
+        pedal_stems = MeshAccumulator()
+        pedal_plates = []
+        for pedal_x, plate_z, plate_height in ((0.30, 0.40, 0.07), (0.42, 0.40, 0.07), (0.53, 0.42, 0.09)):
+            pedal_plates.append(((pedal_x, -1.15, plate_z), (0.06, 0.012, plate_height)))
+            pedal_stems.add_cylinder_between(
+                (pedal_x, -1.15, plate_z + 0.03), (pedal_x, -1.205, 0.55), 0.008, segments=4
+            )
+        self._dash_boxes("GEO_PedalPlates", tuple(pedal_plates), "pedal_plates", "Rubber")
+        self._dash_accumulator("GEO_PedalStems", pedal_stems, "pedal_stems", "Metal")
+
+        # On the column: an indicator stalk off to the driver's left, and
+        # the ignition barrel with its key low on the right.
+        stalk = MeshAccumulator()
+        stalk.add_cylinder_between(
+            (0.445, -0.965, 0.848), (0.62, -0.945, 0.862), 0.006, segments=4
+        )
+        self._dash_accumulator("GEO_ColumnStalk", stalk, "column_stalk", "Metal")
+        ignition = MeshAccumulator()
+        ignition.add_cylinder_between(
+            (0.435, -0.975, 0.84), (0.395, -0.972, 0.838), 0.012, segments=6
+        )
+        ignition.add_box((0.378, -0.972, 0.828), (0.010, 0.004, 0.030))
+        self._dash_accumulator("GEO_IgnitionKey", ignition, "ignition_key", "Chrome")
+
+        # Overhead: two visors folded up under the header, and the stalk
+        # that actually holds the mirror to the glass.
+        self._dash_boxes(
+            "GEO_SunVisors",
+            tuple(
+                ((side * SEAT_HALF_SPAN_X, -0.85, 1.471), (0.30, 0.12, 0.012))
+                for side in (1.0, -1.0)
+            ),
+            "sun_visor",
+            "Interior",
+        )
+        mirror_stalk = MeshAccumulator()
+        mirror_stalk.add_cylinder_between(
+            (0.0, -0.895, 1.465), (0.0, -0.955, 1.42), 0.007, segments=4
+        )
+        self._dash_accumulator("GEO_MirrorStalk", mirror_stalk, "mirror_stalk", "Trim")
 
     def _build_anchors(self) -> None:
         """Every transform the runtime will ever need, authored here.
@@ -1648,6 +2012,14 @@ REQUIRED_MESH_ROLES = (
     "interior_shell",
     "driver_seat", "passenger_seat", "rear_bench", "dashboard",
     "steering_column", "steering_wheel", "interior_mirror",
+    # The dashboard proper: the two things the passenger can touch ...
+    "glovebox_compartment", "glovebox_lid", "glovebox_catch",
+    "radio_bezel", "radio_dial", "radio_knob", "radio_needle",
+    # ... and the furniture he only looks at.
+    "instrument_bezels", "instrument_faces", "speedo_needle",
+    "dash_vents", "ashtray", "dash_lip", "transmission_tunnel",
+    "gear_lever", "lever_knobs", "pedal_plates", "pedal_stems",
+    "column_stalk", "ignition_key", "sun_visor", "mirror_stalk",
 )
 
 REQUIRED_PIVOT_ROLES = (
@@ -1658,6 +2030,8 @@ REQUIRED_PIVOT_ROLES = (
     "driver_seat_anchor", "passenger_seat_anchor",
     "driver_door_entry", "passenger_door_entry",
     "perch_soles", "perch_seat",
+    "glovebox_lid", "radio_power_knob", "radio_tuning_knob",
+    "radio_needle", "speedo_needle",
 )
 
 # The damage the design is FOR. Asserting the counts is what stops a later
@@ -1665,6 +2039,148 @@ REQUIRED_PIVOT_ROLES = (
 DAMAGE_FEATURES = (
     "dents", "rust", "cracked_glass", "mismatched_door", "missing_hubcap",
 )
+
+
+def _spans(
+    center: Sequence[float], size: Sequence[float]
+) -> tuple[tuple[float, float], tuple[float, float], tuple[float, float]]:
+    return tuple(
+        (center[axis] - size[axis] * 0.5, center[axis] + size[axis] * 0.5)
+        for axis in range(3)
+    )
+
+
+def _overlaps(
+    spans: Sequence[tuple[float, float]],
+    limits: Sequence[tuple[float, float]],
+) -> bool:
+    return all(
+        min(span[1], limit[1]) - max(span[0], limit[0]) > 1e-4
+        for span, limit in zip(spans, limits)
+    )
+
+
+def _validate_dashboard(
+    result: BuildResult,
+    require_pivot,
+    errors: list[str],
+) -> None:
+    """The dash: its two mechanisms, and that it stays out of everyone.
+
+    Three promises the runtime and the seat's camera rely on. The glovebox
+    aperture is a HOLE in the slab, or the lid opens onto bodywork; nothing
+    drawn here stands inside either sitter, or a knee goes through a lever;
+    and nothing crosses the windscreen between the dash top and the header,
+    or the passenger's whole reason for being in the seat is blocked.
+    """
+    roles = [part.role for part in result.parts]
+    if roles.count("radio_knob") != 2:
+        errors.append("The radio has exactly two knobs")
+    dials = [part for part in result.parts if part.role == "radio_dial"]
+    if len(dials) != 1 or dials[0].material_slot != "RadioDial":
+        errors.append("The radio has one dial, on its own lit slot")
+
+    lid = require_pivot(
+        "PIVOT_GloveboxLid", "glovebox_lid", result.body, GLOVEBOX_HINGE,
+        runtime_axis_local="+X",
+    )
+    power = require_pivot(
+        "PIVOT_RadioPowerKnob", "radio_power_knob", result.body,
+        (RADIO_KNOB_X, RADIO_CENTER[1], RADIO_KNOB_Z), runtime_axis_local="+Y",
+    )
+    tuning = require_pivot(
+        "PIVOT_RadioTuningKnob", "radio_tuning_knob", result.body,
+        (-RADIO_KNOB_X, RADIO_CENTER[1], RADIO_KNOB_Z), runtime_axis_local="+Y",
+    )
+    needle = require_pivot(
+        "PIVOT_RadioNeedle", "radio_needle", result.body,
+        (RADIO_CENTER[0] - RADIO_NEEDLE_TRAVEL_M * 0.5, RADIO_CENTER[1], RADIO_DIAL_Z),
+        runtime_axis_local="+X",
+    )
+    speedo = require_pivot(
+        "PIVOT_SpeedoNeedle", "speedo_needle", result.body, SPEEDO_CENTER,
+        runtime_axis_local="+Y",
+    )
+    if needle is not None:
+        if abs(needle.travel_m - RADIO_NEEDLE_TRAVEL_M) > 1e-6:
+            errors.append("The radio needle's travel drifted from its dial")
+        if RADIO_NEEDLE_TRAVEL_M > RADIO_DIAL_WIDTH - 0.02:
+            errors.append("The radio needle would run off the end of its dial")
+
+    # Ownership: each pivot carries exactly the thing that moves with it.
+    for pivot, expected in (
+        (lid, ["glovebox_catch", "glovebox_lid"]),
+        (power, ["radio_knob"]),
+        (tuning, ["radio_knob"]),
+        (needle, ["radio_needle"]),
+        (speedo, ["speedo_needle"]),
+    ):
+        if pivot is None:
+            continue
+        child_roles = sorted(
+            part.role for part in result.parts if part.obj.parent is pivot.obj
+        )
+        if child_roles != expected:
+            errors.append(
+                f"{pivot.obj.name} owns {child_roles}, expected {expected}"
+            )
+
+    # The aperture has to be a hole in the slab, checked on the boxes as
+    # authored - the doorway's rule.
+    aperture = (
+        GLOVEBOX_X,
+        (DASH_SLAB_Y - DASH_SLAB_DEPTH * 0.5, DASH_REAR_Y),
+        GLOVEBOX_Z,
+    )
+    for center, size in result.dash_boxes:
+        if _overlaps(_spans(center, size), aperture):
+            errors.append(f"Dashboard box at {center} bricks up the glovebox")
+
+    # And the lid has to be the size the knee-clearance promise was made
+    # for: hinged at the aperture's bottom edge, no taller than the cap.
+    lid_parts = [part for part in result.parts if part.role == "glovebox_lid"]
+    if lid_parts:
+        lid_min, lid_max = mesh_world_bounds(part.obj for part in lid_parts)
+        if lid_min.z < GLOVEBOX_HINGE[2] - 0.005:
+            errors.append("The glovebox lid hangs below its own hinge")
+        if lid_max.z - lid_min.z > GLOVEBOX_LID_HEIGHT + 1e-4:
+            errors.append(
+                "The glovebox lid is taller than the knee clearance allows"
+            )
+
+    # Nothing on the dash inside either sitter. Legs reach forward from the
+    # pelvis row to just short of the scuttle; the torso stands over the
+    # cushion up to the roof. The tunnel is narrower than the gap between
+    # the cushions and so needs no exemption.
+    for side in (1.0, -1.0):
+        seat_x = (
+            min(side * SEAT_HALF_SPAN_X - SEAT_CUSHION_WIDTH * 0.5,
+                side * SEAT_HALF_SPAN_X + SEAT_CUSHION_WIDTH * 0.5),
+            max(side * SEAT_HALF_SPAN_X - SEAT_CUSHION_WIDTH * 0.5,
+                side * SEAT_HALF_SPAN_X + SEAT_CUSHION_WIDTH * 0.5),
+        )
+        legs = (seat_x, (-0.95, SEAT_Y + 0.25), (FLOOR_Z + 0.03, 0.80))
+        torso = (
+            seat_x,
+            (SEAT_Y - 0.20, SEAT_Y + 0.25),
+            (FLOOR_Z + 0.03, ROOF_UNDERSIDE_Z - 0.02),
+        )
+        for part in result.dashboard_parts:
+            part_min, part_max = mesh_world_bounds([part.obj])
+            spans = tuple(zip(part_min, part_max))
+            sitter = "driver" if side > 0 else "passenger"
+            if _overlaps(spans, legs):
+                errors.append(f"{part.obj.name} stands in the {sitter}'s legs")
+            if _overlaps(spans, torso):
+                errors.append(f"{part.obj.name} stands in the {sitter}'s body")
+
+    # Nothing across the windscreen: anything ahead of the seat row is
+    # either dashboard-height or up under the header with the mirror.
+    for part in result.dashboard_parts:
+        part_min, part_max = mesh_world_bounds([part.obj])
+        ahead = min(part_max.y, SEAT_Y) - max(part_min.y, CABIN_FRONT_Y) > 1e-4
+        if ahead and part_max.z > 1.10 and part_min.z < 1.41:
+            errors.append(f"{part.obj.name} crosses the windscreen")
 
 
 def validate_result(result: BuildResult) -> ValidationReport:
@@ -1938,6 +2454,8 @@ def validate_result(result: BuildResult) -> ValidationReport:
                     "only the leaf itself and its damage may swing"
                 )
 
+    _validate_dashboard(result, require_pivot, errors)
+
     bounds_min, bounds_max = mesh_world_bounds(part.obj for part in result.parts)
     size = bounds_max - bounds_min
     if abs(bounds_min.z) > 0.005 or abs(bounds_max.z - HEIGHT) > 0.015:
@@ -2012,6 +2530,12 @@ def write_manifest(path: Path, result: BuildResult, report: ValidationReport) ->
         # declares the same number back. The cross-manifest test is what
         # keeps the two from drifting apart.
         "cabin_floor_drop_m": stable_float(SEAT_PELVIS_Z - FLOOR_Z),
+        # The dash, for the editor's own binding checks. The runtime reads
+        # only the needle pivot's travel and measures the rest off the
+        # drawn parts, the doors' rule.
+        "dashboard_top_z": DASH_TOP_Z,
+        "glovebox_lid_open_degrees": GLOVEBOX_LID_OPEN_DEGREES,
+        "radio_dial_width_m": RADIO_DIAL_WIDTH,
         "build_signature": report.build_signature,
         "parts": [
             {

@@ -121,6 +121,12 @@ namespace BarPromenade
             root.gameObject
                 .AddComponent<LastRouteCarDoors>()
                 .Initialize(registry);
+            // The dash: the glovebox lid, the radio's knobs and needle, the
+            // speedometer. After the springs for the doors' reason, before
+            // the engine so the needle reads this frame's speed.
+            root.gameObject
+                .AddComponent<LastRouteCarDashboard>()
+                .Initialize(registry);
             // And the engine. Raised whether or not anybody will ever ask it
             // to drive - the same rule as the two above, because a car with
             // half its mechanisms is worse than one with none - and idle
@@ -297,9 +303,11 @@ namespace BarPromenade
             trigger.isTrigger = true;
             trigger.size = seatPlan.TriggerSize;
 
-            seatObject
-                .AddComponent<LastRouteCarSeatInteraction>()
-                .Initialize(player, controller, seatPlan, registry, camera);
+            var seat = seatObject.AddComponent<LastRouteCarSeatInteraction>();
+            seat.Initialize(player, controller, seatPlan, registry, camera);
+            // The dash is what the seat offers once he is in it and looking
+            // at it; raised in InstallMechanisms, so it is already there.
+            seat.AttachDashboard(root.GetComponent<LastRouteCarDashboard>());
         }
 
         /// <summary>

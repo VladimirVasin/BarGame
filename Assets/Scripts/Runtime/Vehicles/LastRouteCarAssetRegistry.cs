@@ -21,7 +21,10 @@ namespace BarPromenade
         Dashboard,
         Headlight,
         TailLight,
-        Plate
+        Plate,
+        // Appended LAST on purpose: the bindings serialize this enum as an
+        // int, and a member slipped in above would repaint the prefab.
+        RadioDial
     }
 
     [Serializable]
@@ -129,6 +132,13 @@ namespace BarPromenade
         [SerializeField] private Transform passengerDoorEntryAnchor;
         [SerializeField] private Transform perchSolesAnchor;
         [SerializeField] private Transform perchSeatAnchor;
+        [SerializeField] private Transform gloveboxLidPivot;
+        [SerializeField] private Transform radioPowerKnobPivot;
+        [SerializeField] private Transform radioTuningKnobPivot;
+        [SerializeField] private Transform radioNeedlePivot;
+        [SerializeField] private Transform speedoNeedlePivot;
+        [SerializeField] private float radioNeedleTravel;
+        [SerializeField] private Renderer radioDialRenderer;
         [SerializeField] private Renderer[] renderers = Array.Empty<Renderer>();
         [SerializeField] private LastRouteCarRendererBinding[] bindings =
             Array.Empty<LastRouteCarRendererBinding>();
@@ -173,6 +183,29 @@ namespace BarPromenade
         /// </summary>
         public Transform PerchSeatAnchor => perchSeatAnchor;
 
+        /// <summary>
+        /// The dash's own movers, each authored on its own pivot so the
+        /// runtime turns or swings it rather than re-authoring it. The lid
+        /// hinges at the aperture's bottom edge; the two knobs and the
+        /// speedometer needle turn about the car's fore-aft; the radio
+        /// needle SLIDES along the dial by <see cref="RadioNeedleTravel"/>.
+        /// </summary>
+        public Transform GloveboxLidPivot => gloveboxLidPivot;
+
+        public Transform RadioPowerKnobPivot => radioPowerKnobPivot;
+        public Transform RadioTuningKnobPivot => radioTuningKnobPivot;
+        public Transform RadioNeedlePivot => radioNeedlePivot;
+        public Transform SpeedoNeedlePivot => speedoNeedlePivot;
+
+        /// <summary>How far the radio needle slides from one end of its
+        /// dial to the other, in metres, off the manifest.</summary>
+        public float RadioNeedleTravel => radioNeedleTravel;
+
+        /// <summary>The one thing in the cabin that lights: the radio's
+        /// dial, bound by role at the asset build so the runtime never
+        /// searches for it.</summary>
+        public Renderer RadioDialRenderer => radioDialRenderer;
+
         public IReadOnlyList<Renderer> Renderers => renderers;
         public IReadOnlyList<LastRouteCarRendererBinding> Bindings => bindings;
         public Bounds LocalBounds => localBounds;
@@ -202,6 +235,13 @@ namespace BarPromenade
             passengerDoorEntryAnchor != null &&
             perchSolesAnchor != null &&
             perchSeatAnchor != null &&
+            gloveboxLidPivot != null &&
+            radioPowerKnobPivot != null &&
+            radioTuningKnobPivot != null &&
+            radioNeedlePivot != null &&
+            speedoNeedlePivot != null &&
+            radioNeedleTravel > 0f &&
+            radioDialRenderer != null &&
             renderers.Length > 0;
 
         public static GameObject LoadPrefab()
@@ -266,6 +306,29 @@ namespace BarPromenade
             buildSignature = configuredBuildSignature ?? string.Empty;
             perchSeatHeight = configuredPerchSeatHeight;
             perchDrop = configuredPerchDrop;
+        }
+
+        /// <summary>
+        /// The dash's bindings, kept off <see cref="Configure"/> rather than
+        /// grown onto its twenty-seven positional arguments. Bound once by
+        /// the editor asset build, the same as everything above.
+        /// </summary>
+        public void ConfigureDashboard(
+            Transform configuredGloveboxLidPivot,
+            Transform configuredRadioPowerKnobPivot,
+            Transform configuredRadioTuningKnobPivot,
+            Transform configuredRadioNeedlePivot,
+            Transform configuredSpeedoNeedlePivot,
+            float configuredRadioNeedleTravel,
+            Renderer configuredRadioDialRenderer)
+        {
+            gloveboxLidPivot = configuredGloveboxLidPivot;
+            radioPowerKnobPivot = configuredRadioPowerKnobPivot;
+            radioTuningKnobPivot = configuredRadioTuningKnobPivot;
+            radioNeedlePivot = configuredRadioNeedlePivot;
+            speedoNeedlePivot = configuredSpeedoNeedlePivot;
+            radioNeedleTravel = configuredRadioNeedleTravel;
+            radioDialRenderer = configuredRadioDialRenderer;
         }
     }
 }

@@ -11,18 +11,18 @@ namespace BarPromenade
     {
         public const float StandingHeight = 1.75f;
 
-        // Matches the production A-pose pelvis bone head relative to the
-        // grounded model root in tools/build-player-3d-model.py.
-        public const float PelvisHeight = 0.70f;
+        // Matches the production Hero V2 A-pose pelvis bone head relative to
+        // the grounded model root in tools/build-player-3d-model-v2.py.
+        public const float PelvisHeight = 0.835f;
 
         // Contextual clips are pinned to the world by their pelvis bone and
         // nothing grounds the rig while one plays, so how far the hero's
         // weight hangs below that bone has to be a known quantity rather than
         // a guessed clearance. tools/build-player-3d-model.py measures all
         // three against the real posed meshes on every rebuild and publishes
-        // them as `bed_contract` in the model manifest; Player3DAssetImportTests
-        // fails if these copies drift from it. Take a new number from the
-        // generator's report — never tune one here.
+        // them as `bed_contract` in both model manifests; the focused player
+        // asset tests fail if these copies drift. Take a new number from the
+        // production generator's report — never tune one here.
         public const float SupinePelvisSupportOffset = 0.1377f;
         public const float SupineHeadSupportOffset = 0.0656f;
         public const float SeatedPelvisSupportOffset = 0.0239f;

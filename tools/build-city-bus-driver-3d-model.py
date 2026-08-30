@@ -6,9 +6,9 @@ Run this with Blender, not CPython:
     blender --background --factory-startup --python \
         tools/build-city-bus-driver-3d-model.py
 
-The driver is an animation-free model on the exact 31-bone production Player
-Generic A-pose skeleton. Runtime presentation can therefore seat and pose the
-torso, limbs, grip sockets, head and eye bones procedurally without an Animator
+The driver is an animation-free model on the NpcHumanV2-compatible 31-bone
+A-pose skeleton. Runtime presentation can therefore seat and pose the torso,
+limbs, grip sockets, head and eye bones procedurally without an Animator
 controller or duplicated clips.
 
 Blender source space is metres, Z-up, forward -Y and anatomical left +X.
@@ -17,6 +17,7 @@ Blender source space is metres, Z-up, forward -Y and anatomical left +X.
 from __future__ import annotations
 
 import argparse
+import hashlib
 import importlib.util
 import json
 import os
@@ -32,7 +33,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "2.0.0"
 DESIGN_ID = "long_eyes_driver_v1"
 DISPLAY_NAME = "Long-Eyed Route Driver"
 SEED = 241103
@@ -40,6 +41,7 @@ CANONICAL_HEIGHT = 1.75
 MIN_TRIANGLES = 900
 MAX_TRIANGLES = 1800
 SHARED_MATERIAL_ASSET = "Assets/Player3D/Materials/Player3DLit.mat"
+SIGNATURE_ANATOMY = ("long_horizontal_eyes",)
 
 
 def load_character_build_base():
@@ -59,6 +61,7 @@ def load_character_build_base():
 
 
 base = load_character_build_base()
+base.NPC_PROFILE_KEY = "city_bus_driver"
 
 PALETTE = {
     # `coat` is the helper material's neutral source preview color. Runtime
@@ -81,8 +84,9 @@ PALETTE = {
     "button": (0.525, 0.415, 0.220, 1.0),
 }
 
-# The helper owns the canonical skeleton and deterministic geometry/export
-# implementation. Override only source identity, budget and palette.
+# The helper owns the NpcHumanV2-compatible skeleton and deterministic
+# geometry/export implementation. Override only source identity, budget and
+# palette.
 base.GENERATOR_VERSION = GENERATOR_VERSION
 base.DESIGN_ID = DESIGN_ID
 base.SEED = SEED
@@ -131,6 +135,9 @@ def parse_args() -> argparse.Namespace:
 
 
 class DriverBuilder(base.PedestrianBuilder):
+    def __init__(self):
+        super().__init__(spec=None)
+
     def build(self):
         self.reset_scene()
         scene_root = bpy.context.scene.collection
@@ -671,14 +678,65 @@ class DriverBuilder(base.PedestrianBuilder):
         scene["bp_seed"] = SEED
         scene["bp_has_own_animations"] = False
         scene["bp_runtime_material"] = SHARED_MATERIAL_ASSET
+        scene["bp_anatomy_standard"] = base.NPC_ANATOMY_STANDARD
+        scene["bp_rest_pelvis_height_m"] = base.NPC_PELVIS_HEIGHT
+        scene["bp_signature_anatomy"] = json.dumps(
+            list(SIGNATURE_ANATOMY), separators=(",", ":")
+        )
         scene["bp_head_design"] = "ordinary low-poly human head"
         scene["bp_eye_design"] = "two long horizontal eyes with separate pupils"
 
 
 def validate_driver_result(result):
-    report = base.validate_result(result)
+    """Standalone NpcHumanV2 contract check for the bespoke driver."""
+
+    bpy.context.view_layer.update()
+    errors: list[str] = []
+
+    bones = list(result.rig.data.bones)
+    if [bone.name for bone in bones] != [
+        spec.name for spec in base.SKELETON
+    ]:
+        errors.append("Bone order/names diverge from NpcHumanV2")
+    for bone_spec in base.SKELETON:
+        bone = result.rig.data.bones.get(bone_spec.name)
+        if bone is None:
+            continue
+        actual_parent = (
+            bone.parent.name if bone.parent is not None else None
+        )
+        if actual_parent != bone_spec.parent:
+            errors.append(
+                f"{bone_spec.name} parent is {actual_parent!r}, "
+                f"expected {bone_spec.parent!r}"
+            )
+        if (bone.head_local - base.v(bone_spec.head)).length > 0.000001:
+            errors.append(
+                f"{bone_spec.name} head diverges from NpcHumanV2 A-pose"
+            )
+        if (bone.tail_local - base.v(bone_spec.tail)).length > 0.000001:
+            errors.append(
+                f"{bone_spec.name} tail diverges from NpcHumanV2 A-pose"
+            )
+        if bone.use_deform != bone_spec.deform:
+            errors.append(
+                f"{bone_spec.name} deform flag diverges from NpcHumanV2"
+            )
+
+    if bpy.data.actions:
+        errors.append("Driver model must contain no authored Actions")
+    if (
+        result.rig.animation_data is not None
+        and result.rig.animation_data.action is not None
+    ):
+        errors.append("Driver rig has an active animation")
+    if result.pivots:
+        errors.append(
+            f"Driver must contain no mechanism pivots, got "
+            f"{tuple(result.pivots)!r}"
+        )
+
     parts = {part.obj.name: part for part in result.parts}
-    errors = []
     required = {
         "GEO_Head",
         "FACE_EyeWhite.L",
@@ -697,21 +755,178 @@ def validate_driver_result(result):
     for name in parts:
         if any(fragment in name.lower() for fragment in forbidden):
             errors.append(f"{name} replaces or conceals the human head")
+
     for side in ("L", "R"):
         eye = parts.get(f"FACE_EyeWhite.{side}")
         pupil = parts.get(f"FACE_Pupil.{side}")
         if eye is not None:
-            coordinates = [eye.obj.matrix_world @ vertex.co for vertex in eye.obj.data.vertices]
-            width = max(point.x for point in coordinates) - min(point.x for point in coordinates)
-            height = max(point.z for point in coordinates) - min(point.z for point in coordinates)
+            coordinates = [
+                eye.obj.matrix_world @ vertex.co
+                for vertex in eye.obj.data.vertices
+            ]
+            width = max(point.x for point in coordinates) - min(
+                point.x for point in coordinates
+            )
+            height = max(point.z for point in coordinates) - min(
+                point.z for point in coordinates
+            )
             if width < height * 1.9:
                 errors.append(f"{side} eye is not visibly long and horizontal")
         if pupil is not None and pupil.bone != f"face.eye.{side}":
             errors.append(f"{side} pupil must be rigid to face.eye.{side}")
+
+    mesh_count = len(result.parts)
+    triangle_count = 0
+    world_vertices: list[Vector] = []
+    signature_parts = []
+    seen_meshes: set[int] = set()
+    for part in sorted(result.parts, key=lambda item: item.obj.name):
+        obj = part.obj
+        mesh = obj.data
+        if mesh.as_pointer() in seen_meshes:
+            errors.append(f"{obj.name} reuses another part's mesh")
+        seen_meshes.add(mesh.as_pointer())
+        if (
+            len(mesh.materials) != 1
+            or mesh.materials[0] != result.material
+        ):
+            errors.append(
+                f"{obj.name} does not use the one shared material"
+            )
+        if (
+            len(obj.vertex_groups) != 1
+            or obj.vertex_groups[0].name != part.bone
+        ):
+            errors.append(
+                f"{obj.name} must have one rigid group for {part.bone}"
+            )
+
+        rigid_weight_error = False
+        part_vertices = []
+        for vertex in mesh.vertices:
+            world_vertex = obj.matrix_world @ vertex.co
+            world_vertices.append(world_vertex)
+            part_vertices.append(
+                [
+                    base.stable_float(component)
+                    for component in world_vertex
+                ]
+            )
+            weights = [
+                group
+                for group in vertex.groups
+                if group.weight > 0.000001
+            ]
+            if (
+                len(weights) != 1
+                or abs(weights[0].weight - 1.0) > 0.000001
+            ):
+                rigid_weight_error = True
+        if rigid_weight_error:
+            errors.append(f"{obj.name} is not rigidly weighted")
+
+        triangles = base.triangulated_count(mesh)
+        triangle_count += triangles
+        signature_parts.append(
+            {
+                "name": obj.name,
+                "bone": part.bone,
+                "role": part.role,
+                "palette_name": part.palette_name,
+                "color": [
+                    base.stable_float(component)
+                    for component in part.color
+                ],
+                "vertices": part_vertices,
+                "triangles": triangles,
+            }
+        )
+
+    if not MIN_TRIANGLES <= triangle_count <= MAX_TRIANGLES:
+        errors.append(
+            f"Triangle budget is {triangle_count}; expected "
+            f"{MIN_TRIANGLES}-{MAX_TRIANGLES}"
+        )
+    if mesh_count < 24 or mesh_count > 52:
+        errors.append(
+            f"Mesh count is {mesh_count}; expected 24-52 parts"
+        )
+
+    if not world_vertices:
+        errors.append("Driver contains no mesh vertices")
+        bounds_min = Vector((0, 0, 0))
+        bounds_max = Vector((0, 0, 0))
+    else:
+        bounds_min = Vector(
+            tuple(
+                min(vertex[axis] for vertex in world_vertices)
+                for axis in range(3)
+            )
+        )
+        bounds_max = Vector(
+            tuple(
+                max(vertex[axis] for vertex in world_vertices)
+                for axis in range(3)
+            )
+        )
+        if abs(bounds_min.z) > 0.00001:
+            errors.append(
+                f"Footwear must ground at z=0, got {bounds_min.z:.6f}"
+            )
+        if abs(bounds_max.z - CANONICAL_HEIGHT) > 0.00001:
+            errors.append(
+                f"Silhouette must preserve {CANONICAL_HEIGHT} m height, "
+                f"got {bounds_max.z:.6f}"
+            )
+        if bounds_max.x - bounds_min.x > 1.65:
+            errors.append("A-pose width exceeds the NpcHumanV2 envelope")
+
+    if result.material.get("bp_emissive", True):
+        errors.append("Shared source material must be non-emissive")
+    if any(
+        obj.type in {"LIGHT", "CAMERA"}
+        for obj in result.export_collection.objects
+    ):
+        errors.append("Export collection contains a light or camera")
+
     if errors:
         formatted = "\n".join(f"  - {error}" for error in errors)
         raise RuntimeError(f"City bus driver validation failed:\n{formatted}")
-    return report
+
+    signature_payload = {
+        "generator_version": GENERATOR_VERSION,
+        "design_id": DESIGN_ID,
+        "seed": SEED,
+        "anatomy_standard": base.NPC_ANATOMY_STANDARD,
+        "rest_pelvis_height_m": base.NPC_PELVIS_HEIGHT,
+        "signature_anatomy": list(SIGNATURE_ANATOMY),
+        "skeleton": [
+            {
+                "name": spec.name,
+                "head": list(spec.head),
+                "tail": list(spec.tail),
+                "parent": spec.parent,
+                "connected": spec.connected,
+                "deform": spec.deform,
+            }
+            for spec in base.SKELETON
+        ],
+        "parts": signature_parts,
+        "pivots": [],
+    }
+    signature = hashlib.sha256(
+        json.dumps(
+            signature_payload, sort_keys=True, separators=(",", ":")
+        ).encode("utf-8")
+    ).hexdigest()
+
+    return base.ValidationReport(
+        mesh_count,
+        triangle_count,
+        tuple(base.stable_float(component) for component in bounds_min),
+        tuple(base.stable_float(component) for component in bounds_max),
+        signature,
+    )
 
 
 def render_preview(path: Path, result) -> None:
@@ -772,6 +987,11 @@ def write_manifest(path: Path, result, report) -> None:
         "display_name": DISPLAY_NAME,
         "seed": SEED,
         "height_m": CANONICAL_HEIGHT,
+        "anatomy_standard": base.NPC_ANATOMY_STANDARD,
+        "rest_pelvis_height_m": base.stable_float(
+            base.NPC_PELVIS_HEIGHT
+        ),
+        "signature_anatomy": list(SIGNATURE_ANATOMY),
         "pose": "apose",
         "forward_axis": "-Y",
         "anatomical_left_axis": "+X",
@@ -834,7 +1054,10 @@ def main() -> None:
     print("CITY BUS DRIVER 3D BUILD OK")
     print(f"  Blender: {bpy.app.version_string}")
     print(f"  Design: {DESIGN_ID}")
-    print(f"  Skeleton bones: {len(base.SKELETON)} (exact Player Generic hierarchy)")
+    print(
+        f"  Skeleton bones: {len(base.SKELETON)} "
+        "(NpcHumanV2-compatible 31-bone hierarchy)"
+    )
     print(f"  Meshes: {report.mesh_count}")
     print(f"  Triangles: {report.triangle_count}/{MAX_TRIANGLES}")
     print("  Own animations: 0")

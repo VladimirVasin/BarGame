@@ -407,12 +407,12 @@ MonoBehaviour:
   rightShin: {fileID: 4237763466356760500}
   rightFoot: {fileID: 3866326308840634582}
   localBounds:
-    m_Center: {x: -0.000000059604645, y: 0.875, z: 0.06499997}
-    m_Extent: {x: 0.7700001, y: 0.875, z: 0.1695}
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.051059976}
+    m_Extent: {x: 0.7795869, y: 0.8749999, z: 0.16513124}
   sourceTriangleCount: 1496
-  sourceGeneratorVersion: 1.0.0
+  sourceGeneratorVersion: 2.0.0
   designId: long_eyes_driver_v1
-  buildSignature: 0c100ec76736c926136305e6af6ed2e672df0896f52b701ad1d561d70a7b0236
+  buildSignature: 0a89fde1cc08b90920e5f578bf3e91aa098a98c35f2c7d89d56b0569803a68ca
 --- !u!1001 &4004045093963583386
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -839,7 +839,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4274004134381056715}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 0
   m_UpdateMode: 0

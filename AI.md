@@ -228,7 +228,10 @@ for locomotion and contextual actions, including a grounded lean/right-hand
 press before every ordinary location-door transition, hands failed balance falls from a
 directional clip into a bounded runtime ragdoll and back into an authored rise,
 and derives first-person arms and the inventory portrait from the same
-production model. Ordinary building masses use a separate `36-52 m` height
+production model. That live model is `Resources/Player/Player3DV2`: the
+adult-proportion, atlas-faced Hero V2 in the canonical olive field jacket.
+The former `Player3D` Hero V1 remains packaged only as an explicit technical
+fallback and is never selected by ordinary gameplay. Ordinary building masses use a separate `36-52 m` height
 profile whose roofs fall below one-percent visibility in the fixed City fog;
 the bar, the supermarket and the player home retain their original low-rise
 heights. Every ordinary lot now instantiates one fixed-metre Blender prototype
@@ -246,9 +249,10 @@ and side faces. It replaces the former
 CityMisc bar shell and generic window bands in City and in a fully visible Home
 reconstruction; a Home half-space crossing alone keeps the clipped legacy
 silhouette.
-The broad passive City misc layer now resolves through one deterministic
-`city_misc_citywide_v4` Blender library: `80` semantic kinds, `115` assemblies,
-`238` role meshes and `42,878` triangles cover ordinary decoration and park
+The broad passive City misc layer now resolves through the deterministic
+`city_misc_citywide_v4` Blender library at generator version `4.7.0`: `80`
+semantic kinds, `115` assemblies, `238` role meshes and `42,750` triangles
+cover ordinary decoration and park
 landmarks, night fixtures, Route 01 stops, the eastern yard, cemetery,
 seacoast, fringe service belt, the static shells of all four district points of
 interest, the fixed Nightlife arch shelter with its full-height supported
@@ -256,8 +260,10 @@ service terrace joined to the east wall and south facade end, and the live
 supermarket/player-home shells. Its former bar shell
 remains catalogued only for v4 compatibility and is not instantiated. Unity
 plans still own placement, terrain, collision, dynamics, interactions, lights,
-halos, cloth and NPCs; tilted cemetery monuments deliberately remain on their
-legacy geometry. Road v2 gives
+halos, cloth and NPCs. Its standing, seated and sleeping Nightlife shelter
+residents are the three non-rigged humanoid exceptions: their baked meshes use
+the equivalent `static_humanoid_anatomy_v2` adult-proportion standard. Tilted
+cemetery monuments deliberately remain on their legacy geometry. Road v2 gives
 ordinary City streets an `8 m` footprint
 with a `6 m` carriageway and two raised `1 m` sidewalks. At selected eligible
 perpendicular two-way corners and three- or four-way nodes, Road v2.1 moves the
@@ -303,6 +309,28 @@ returns. They spawn at randomly
   walker per event, uses much longer random delays throughout and retains
   authored simulation pace; walkers already active at dusk are not culled
   early.
+  The production humanoid-NPC asset set contains `21` rigged designs: the five
+  pooled walkers, `13` staged residents and the dedicated bartender, Watcher
+  Cashier and bus driver. Every one uses `NpcHumanV2`: the exact Hero V2
+  31-bone A-pose hierarchy and Avatar copied from
+  `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a shared
+  `0.835 m` rest pelvis. Pedestrian and staged manifests are generator version
+  `4.0.0`, the three special manifests are `2.0.0`, and the
+  `CityPedestrianLocomotion` bank now contains `37` clips; the four Mountain
+  Road cafe roles retain their separate `8`-clip bank. Their FBXs were
+  reimported and the production prefabs/provider assets rebuilt, so runtime uses
+  these models rather than retaining the former bodies behind new plans.
+  The special models measure `50` meshes/`1,436` triangles for the
+  full-body `1.75 m` bartender, `44`/`1,588` for the cashier and
+  `48`/`1,496` for the driver. The bartender's prefab is loaded through
+  `BarBartenderProvider` at the authored counter anchor; procedural idle and
+  ordinary one-bottle touch/carry/steady service are live, while
+  multi-ingredient cocktail ordering and the six-arm bottle chord remain
+  deferred. The common adult substrate changes large anatomical proportions,
+  not identity: the Long-Arm remains mouthless with ground-reaching forearms
+  and heavy hands, the kettle and hopper silhouettes remain, the bartender
+  keeps six arms, the cashier keeps the undersized head and `18 m` stretch
+  neck, and the driver keeps the long horizontal eyes.
   The presentation pool repeats the stable ordered
   catalog: a Lampshade Walker, a Chair Carrier, a Kettle Hat Walker, a
   Long-Arm Walker and a Helmet Lamp Hopper. The first four also declare a
@@ -310,9 +338,8 @@ returns. They spawn at randomly
   none and stays on the pavement. Each ordinary design owns three
   City instances and the lamp-bearing hopper exactly one, which is what still
   caps the worn lights in the world at one. The pool exceeds the active
-  population, so a repeat encounter shows a different mix. All five
-  copy the hero's compatible
-  Generic Avatar but use their own looping in-place locomotion: the Lampshade
+  population, so a repeat encounter shows a different mix. All five pooled
+  designs use their own looping in-place locomotion: the Lampshade
   stays hunched through idle and walks in short uneven steps, the upright Chair
   Carrier uses a precise high-knee gait beneath an inverted cafe chair, the
   stout short-legged Kettle Hat Walker waddles in fast small steps while its
@@ -383,8 +410,9 @@ pendant lamps on the aisle centreline — stem, collar and a glowing bulb at
 `2.56-2.66 m` — whose bulbs the two runtime cabin Spots originate from at
 night; the ceiling strips also protrude below the interior ceiling panel
 instead of being buried inside its thickness. Its separate passive
-`CityBusDriver3D` uses the shared `Player3DLit` material and exact 31-bone rig,
-with a normal low-poly head and long horizontal eyes. Procedural seated IK keeps
+`CityBusDriver3D` uses the shared `Player3DLit` material and the
+`NpcHumanV2` rig/Avatar copied from Hero V2, with a normal low-poly head and
+the canonical long horizontal eyes. Procedural seated IK keeps
 both hands on the rotating wheel grips; the deterministic door timeline moves
 only the right hand to a real dashboard button with `12 mm` travel, keeps the
 left hand planted, and keeps the head turned toward the front door while it is
@@ -486,14 +514,16 @@ own graph node. A rider is exempt from the `88 m` pedestrian recycle rule, from
 distant simulation acceleration and from the bus's own pedestrian yielding;
 recycling keys on the hero alone, so a bus `92 m` away behind fog pools with its
 ambient passengers instead of stranding the single actor slot for a lap.
-Seating is one rule for every design: all five copy the hero's exact 31-bone rig
-at a `0.70 m` rest pelvis, so the runtime aligns that bone to the cushion rather
+The shared seating rule applies to the four rider-capable pooled designs. Like
+every `NpcHumanV2` rig, they use Hero V2's exact 31-bone Avatar at a
+`0.835 m` rest pelvis, so the runtime aligns that bone to the cushion rather
 than pinning the lowest sole, which on a seat would drag the model down until
 its boots touched the cabin floor. What varies is declared per archetype -- an
 authored seated posture, a pelvis lift and back offset, and a headroom band the
 deterministic generator proves against the real deformed meshes. The `2.05 m`
-cabin and `0.41 m` cushion leave `1.64 m`; the four riders measure `1.03-1.06 m`
-above the seated pelvis and hang `0.35-0.38 m` below it.
+cabin and `0.41 m` cushion leave `1.64 m`; the four rebuilt riders measure
+approximately `0.907-0.918 m` above the seated pelvis and hang
+`0.375-0.388 m` below it.
 Fare/payment, destination selection, passenger persistence and
 live bus tracking are deferred. The City map still draws Route 01 as a blue
 ink-outlined line beneath the orange player itinerary, plus five numbered

@@ -527,12 +527,12 @@ MonoBehaviour:
   sitClip: {fileID: 0}
   actionClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.000000059604645, y: 0.87499994, z: 0.10249993}
-    m_Extent: {x: 0.82500005, y: 0.875, z: 0.5075}
+    m_Center: {x: -0.0010001659, y: 0.8749998, z: 0.10249999}
+    m_Extent: {x: 0.8385954, y: 0.8749999, z: 0.50750005}
   sourceTriangleCount: 2388
-  sourceGeneratorVersion: 3.2.0
+  sourceGeneratorVersion: 4.0.0
   designId: pipeback_roller_v1
-  buildSignature: 1cf84c621ebafc7c4883cfbca32cf8a32463ad87e9479a675ca6bf7b6eb770ba
+  buildSignature: a2dfdeb4e276ea41fba2b20d5e471478bbc6a33a466d5ad802d52270b5dcb695
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -1147,7 +1147,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9166822556936014651}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 1
   m_UpdateMode: 0

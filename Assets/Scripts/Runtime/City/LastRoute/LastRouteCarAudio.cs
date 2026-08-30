@@ -25,7 +25,13 @@ namespace BarPromenade
         Starter = 0,
         Shutdown = 1,
         DeckJoint = 2,
-        DoorLatch = 3
+        DoorLatch = 3,
+        // The dash. Mechanical clicks only: the radio itself is silent for
+        // now, by decision, and whatever it is later given to play is a
+        // voice of its own rather than a cue here.
+        RadioSwitch = 4,
+        KnobDetent = 5,
+        GloveboxLatch = 6
     }
 
     /// <summary>
@@ -215,6 +221,9 @@ namespace BarPromenade
         public const float ShutdownClipSeconds = 0.85f;
         public const float DeckJointClipSeconds = 0.26f;
         public const float DoorLatchClipSeconds = 0.2f;
+        public const float RadioSwitchClipSeconds = 0.12f;
+        public const float KnobDetentClipSeconds = 0.06f;
+        public const float GloveboxLatchClipSeconds = 0.18f;
 
         private const float QuantizationSteps = 127f;
         private const float ClipLimit = 0.78f;
@@ -293,6 +302,15 @@ namespace BarPromenade
                 case LastRouteCarCueKind.DoorLatch:
                     seconds = DoorLatchClipSeconds;
                     break;
+                case LastRouteCarCueKind.RadioSwitch:
+                    seconds = RadioSwitchClipSeconds;
+                    break;
+                case LastRouteCarCueKind.KnobDetent:
+                    seconds = KnobDetentClipSeconds;
+                    break;
+                case LastRouteCarCueKind.GloveboxLatch:
+                    seconds = GloveboxLatchClipSeconds;
+                    break;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(kind),
@@ -325,6 +343,15 @@ namespace BarPromenade
                         break;
                     case LastRouteCarCueKind.DeckJoint:
                         sample = DeckJointCue(time, white);
+                        break;
+                    case LastRouteCarCueKind.RadioSwitch:
+                        sample = RadioSwitchCue(time, white);
+                        break;
+                    case LastRouteCarCueKind.KnobDetent:
+                        sample = KnobDetentCue(time);
+                        break;
+                    case LastRouteCarCueKind.GloveboxLatch:
+                        sample = GloveboxLatchCue(time, white);
                         break;
                     default:
                         sample = DoorLatchCue(time, white);
@@ -505,6 +532,39 @@ namespace BarPromenade
             return click + thud + (white * Mathf.Exp(-time * 60f) * 0.08f);
         }
 
+        /// <summary>A rotary switch going over its stop: one bright click
+        /// and a small dull knock through the dash.</summary>
+        private static float RadioSwitchCue(float time, float white)
+        {
+            float click = Mathf.Sin(time * Mathf.PI * 2f * 1900f) *
+                          Mathf.Exp(-time * 140f) *
+                          0.26f;
+            float knock = Mathf.Sin(time * Mathf.PI * 2f * 120f) *
+                          Mathf.Exp(-time * 40f) *
+                          0.22f;
+            return click + knock + (white * Mathf.Exp(-time * 90f) * 0.05f);
+        }
+
+        /// <summary>A tuning knob dropping into its next detent: a tick and
+        /// nothing else.</summary>
+        private static float KnobDetentCue(float time)
+        {
+            return Mathf.Sin(time * Mathf.PI * 2f * 2400f) *
+                   Mathf.Exp(-time * 260f) *
+                   0.22f;
+        }
+
+        /// <summary>The glovebox catch: the door latch's recipe at a fraction
+        /// of the weight, with the hollow of an empty box under it.</summary>
+        private static float GloveboxLatchCue(float time, float white)
+        {
+            float latch = DoorLatchCue(time, white) * 0.6f;
+            float hollow = Mathf.Sin(time * Mathf.PI * 2f * 220f) *
+                           Mathf.Exp(-time * 22f) *
+                           0.12f;
+            return latch + hollow;
+        }
+
         private static AudioClip CreateClip(string clipName, float[] samples)
         {
             AudioClip clip = AudioClip.Create(
@@ -599,7 +659,7 @@ namespace BarPromenade
         public const float DeckSkipTolerance = 20f;
 
         private static readonly AudioClip[] LoopClips = new AudioClip[4];
-        private static readonly AudioClip[] CueClips = new AudioClip[4];
+        private static readonly AudioClip[] CueClips = new AudioClip[7];
 
         private readonly List<AudioSource> ownedSources =
             new List<AudioSource>();
@@ -609,6 +669,7 @@ namespace BarPromenade
         private LastRouteCarAssetRegistry registry;
         private LastRouteCarDriver driver;
         private LastRouteCarDoors doors;
+        private LastRouteCarDashboard dashboard;
         private LastRouteCarSeatInteraction seat;
         private LastRouteFerrymanPresentation ferryman;
         private LastRouteRideController ride;
@@ -661,6 +722,9 @@ namespace BarPromenade
         public int ShutdownCueCount { get; private set; }
         public int DeckJointCueCount { get; private set; }
         public int DoorLatchCueCount { get; private set; }
+        public int RadioSwitchCueCount { get; private set; }
+        public int KnobDetentCueCount { get; private set; }
+        public int GloveboxLatchCueCount { get; private set; }
 
         /// <summary>
         /// Hangs the five voices off the car. Anchors are placed along the
@@ -683,6 +747,14 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(carRegistry));
             driver = GetComponent<LastRouteCarDriver>();
             doors = GetComponent<LastRouteCarDoors>();
+            // The dash clicks through the same cue source the latches use;
+            // it is raised before this voice, so it is there to listen to.
+            dashboard = GetComponent<LastRouteCarDashboard>();
+            if (dashboard != null)
+            {
+                dashboard.Operated += HandleDashboardOperated;
+            }
+
             LastRouteCarDimensions dimensions = registry.Dimensions;
 
             Transform engineAnchor = CreateAnchor(
@@ -1045,6 +1117,33 @@ namespace BarPromenade
                 LastRouteCarAudioMix.EvaluateTyreCutoff(surface) *
                 Mathf.Lerp(1f, 0.6f, cabinBlend);
             SyncLoop(tyreSource, tyres > 0.001f);
+        }
+
+        private void HandleDashboardOperated(LastRouteCarDashboardTarget target)
+        {
+            switch (target)
+            {
+                case LastRouteCarDashboardTarget.RadioPower:
+                    PlayCue(LastRouteCarCueKind.RadioSwitch);
+                    RadioSwitchCueCount++;
+                    break;
+                case LastRouteCarDashboardTarget.RadioTuning:
+                    PlayCue(LastRouteCarCueKind.KnobDetent);
+                    KnobDetentCueCount++;
+                    break;
+                case LastRouteCarDashboardTarget.Glovebox:
+                    PlayCue(LastRouteCarCueKind.GloveboxLatch);
+                    GloveboxLatchCueCount++;
+                    break;
+            }
+        }
+
+        private void OnDestroy()
+        {
+            if (dashboard != null)
+            {
+                dashboard.Operated -= HandleDashboardOperated;
+            }
         }
 
         private void PlayCue(LastRouteCarCueKind kind)

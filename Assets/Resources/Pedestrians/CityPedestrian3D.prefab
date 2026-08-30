@@ -400,12 +400,12 @@ MonoBehaviour:
   sitClip: {fileID: 6987862216275600786, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   actionClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.005899787, y: 0.875, z: 0.0049999803}
-    m_Extent: {x: 0.7671483, y: 0.875, z: 0.24750002}
+    m_Center: {x: -0.00971365, y: 0.8749999, z: -0.01744759}
+    m_Extent: {x: 0.7774967, y: 0.8749999, z: 0.2504035}
   sourceTriangleCount: 1160
-  sourceGeneratorVersion: 3.2.0
+  sourceGeneratorVersion: 4.0.0
   designId: lampshade_walker_v1
-  buildSignature: 35e3c4fd0f9d8531325c88f97ec5d08d840061bb6f07d02830a2cde0c32a9292
+  buildSignature: 026d7c01b6cf9466f0cfc68d1f338b71ef41338b18380cec914c42a8409faea1
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -740,7 +740,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4425035349208332873}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 1
   m_UpdateMode: 0

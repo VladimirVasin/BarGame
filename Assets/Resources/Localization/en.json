@@ -181,6 +181,26 @@
       "value": "E — Sit in the car"
     },
     {
+      "key": "interaction.radio_on",
+      "value": "E — Turn the radio on"
+    },
+    {
+      "key": "interaction.radio_off",
+      "value": "E — Turn the radio off"
+    },
+    {
+      "key": "interaction.radio_tune",
+      "value": "E — Turn the tuning knob"
+    },
+    {
+      "key": "interaction.open_glovebox",
+      "value": "E — Open the glovebox"
+    },
+    {
+      "key": "interaction.close_glovebox",
+      "value": "E — Close the glovebox"
+    },
+    {
       "key": "interaction.play_chess",
       "value": "E — play chess"
     },

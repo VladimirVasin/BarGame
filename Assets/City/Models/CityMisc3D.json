@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.6.0",
+  "generator_version": "4.7.0",
   "blender_version": "5.0.1",
   "design_id": "city_misc_citywide_v4",
   "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter Kit",
@@ -38,6 +38,28 @@
       }
     }
   },
+  "static_humanoid_contract": {
+    "standard": "static_humanoid_anatomy_v2",
+    "standard_version": 2.0,
+    "rigged": false,
+    "resident_kinds": [
+      "NightlifeShelterStandingPerson",
+      "NightlifeShelterSeatedPerson",
+      "NightlifeShelterSleepingPerson"
+    ],
+    "standing_equivalent_height_m": 1.75,
+    "head_width_m": 0.22,
+    "head_height_m": 0.24,
+    "heads_tall": 7.291667,
+    "shoulder_joint_span_m": 0.52,
+    "shoulder_joint_span_head_widths": 2.363636,
+    "polygon_growth_allowed": false,
+    "legacy_triangle_caps": {
+      "NightlifeShelterStandingPerson": 582,
+      "NightlifeShelterSeatedPerson": 638,
+      "NightlifeShelterSleepingPerson": 414
+    }
+  },
   "part_placement_contract": {
     "recipe_local_rigid": {
       "geometry_space": "assembly_recipe_local",
@@ -59,7 +81,7 @@
   "animation_count": 0,
   "mesh_count": 238,
   "assembly_count": 115,
-  "triangle_count": 42878,
+  "triangle_count": 42750,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -5075,7 +5097,15 @@
       "variant": 0,
       "scale_mode": "fixed_meters",
       "placement_contract": "ground_forward_frame",
-      "canonical_reference": {},
+      "canonical_reference": {
+        "anatomy_standard_version": 2.0,
+        "standing_equivalent_height_m": 1.75,
+        "head_width_m": 0.22,
+        "head_height_m": 0.24,
+        "shoulder_joint_span_m": 0.52,
+        "shoulder_joint_span_head_widths": 2.363636,
+        "legacy_triangle_cap": 582.0
+      },
       "scale_parameters": [],
       "unity_owned_parts": [
         "Palette property blocks",
@@ -5091,24 +5121,24 @@
         "GEO_CMM_NightlifeShelterStandingPerson_Variant01_Skin_Masonry"
       ],
       "bounds_min_source": [
-        -0.314308,
-        -0.249254,
+        -0.334421,
+        -0.190913,
         0.0
       ],
       "bounds_max_source": [
-        0.31777,
-        0.594824,
-        1.76
+        0.334421,
+        0.580509,
+        1.75
       ],
       "bounds_min_unity": [
-        -0.314308,
+        -0.334421,
         0.0,
-        -0.249254
+        -0.190913
       ],
       "bounds_max_unity": [
-        0.31777,
-        1.76,
-        0.594824
+        0.334421,
+        1.75,
+        0.580509
       ]
     },
     {
@@ -5116,7 +5146,15 @@
       "variant": 0,
       "scale_mode": "fixed_meters",
       "placement_contract": "ground_forward_frame",
-      "canonical_reference": {},
+      "canonical_reference": {
+        "anatomy_standard_version": 2.0,
+        "standing_equivalent_height_m": 1.75,
+        "head_width_m": 0.22,
+        "head_height_m": 0.24,
+        "shoulder_joint_span_m": 0.52,
+        "shoulder_joint_span_head_widths": 2.363636,
+        "legacy_triangle_cap": 638.0
+      },
       "scale_parameters": [],
       "unity_owned_parts": [
         "Palette property blocks",
@@ -5132,24 +5170,24 @@
         "GEO_CMM_NightlifeShelterSeatedPerson_Variant01_Skin_Masonry"
       ],
       "bounds_min_source": [
-        -0.384549,
-        -0.203424,
+        -0.33417,
+        -0.191289,
         0.0
       ],
       "bounds_max_source": [
-        0.381184,
-        0.655496,
+        0.33417,
+        0.590509,
         1.57
       ],
       "bounds_min_unity": [
-        -0.384549,
+        -0.33417,
         0.0,
-        -0.203424
+        -0.191289
       ],
       "bounds_max_unity": [
-        0.381184,
+        0.33417,
         1.57,
-        0.655496
+        0.590509
       ]
     },
     {
@@ -5157,7 +5195,15 @@
       "variant": 0,
       "scale_mode": "fixed_meters",
       "placement_contract": "ground_forward_frame",
-      "canonical_reference": {},
+      "canonical_reference": {
+        "anatomy_standard_version": 2.0,
+        "standing_equivalent_height_m": 1.75,
+        "head_width_m": 0.22,
+        "head_height_m": 0.24,
+        "shoulder_joint_span_m": 0.52,
+        "shoulder_joint_span_head_widths": 2.363636,
+        "legacy_triangle_cap": 414.0
+      },
       "scale_parameters": [],
       "unity_owned_parts": [
         "Palette property blocks",
@@ -5173,24 +5219,24 @@
         "GEO_CMM_NightlifeShelterSleepingPerson_Variant01_Skin_Masonry"
       ],
       "bounds_min_source": [
-        -0.737235,
-        -0.23,
-        5e-06
+        -0.72,
+        -0.259061,
+        0.0
       ],
       "bounds_max_source": [
-        1.141522,
-        0.290747,
-        0.523378
+        1.051341,
+        0.292884,
+        0.480329
       ],
       "bounds_min_unity": [
-        -0.737235,
-        5e-06,
-        -0.23
+        -0.72,
+        0.0,
+        -0.259061
       ],
       "bounds_max_unity": [
-        1.141522,
-        0.523378,
-        0.290747
+        1.051341,
+        0.480329,
+        0.292884
       ]
     }
   ],
@@ -14364,27 +14410,27 @@
       "tint_role": "Street",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 144,
-      "triangles": 252,
+      "vertices": 170,
+      "triangles": 304,
       "bounds_min_source": [
-        -0.314308,
-        -0.249254,
+        -0.334421,
+        -0.190913,
         0.0
       ],
       "bounds_max_source": [
-        0.31777,
-        0.557761,
-        1.483216
+        0.334421,
+        0.544673,
+        1.47
       ],
       "bounds_min_unity": [
-        -0.314308,
+        -0.334421,
         0.0,
-        -0.249254
+        -0.190913
       ],
       "bounds_max_unity": [
-        0.31777,
-        1.483216,
-        0.557761
+        0.334421,
+        1.47,
+        0.544673
       ],
       "uv_min": [
         0.0,
@@ -14404,27 +14450,27 @@
       "tint_role": "Residential",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 52,
-      "triangles": 92,
+      "vertices": 42,
+      "triangles": 72,
       "bounds_min_source": [
-        -0.183629,
-        0.032431,
-        1.226376
+        -0.170249,
+        0.012417,
+        1.286573
       ],
       "bounds_max_source": [
-        0.18,
-        0.357873,
-        1.76
+        0.14,
+        0.295,
+        1.75
       ],
       "bounds_min_unity": [
-        -0.183629,
-        1.226376,
-        0.032431
+        -0.170249,
+        1.286573,
+        0.012417
       ],
       "bounds_max_unity": [
-        0.18,
-        1.76,
-        0.357873
+        0.14,
+        1.75,
+        0.295
       ],
       "uv_min": [
         0.0,
@@ -14444,27 +14490,27 @@
       "tint_role": "Masonry",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 125,
-      "triangles": 238,
+      "vertices": 107,
+      "triangles": 198,
       "bounds_min_source": [
-        -0.127169,
-        0.085887,
-        0.945
+        -0.104824,
+        0.074018,
+        0.925
       ],
       "bounds_max_source": [
-        0.128728,
-        0.594824,
-        1.74
+        0.108924,
+        0.580509,
+        1.75
       ],
       "bounds_min_unity": [
-        -0.127169,
-        0.945,
-        0.085887
+        -0.104824,
+        0.925,
+        0.074018
       ],
       "bounds_max_unity": [
-        0.128728,
-        1.74,
-        0.594824
+        0.108924,
+        1.75,
+        0.580509
       ],
       "uv_min": [
         0.0,
@@ -14484,27 +14530,27 @@
       "tint_role": "Street",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 176,
-      "triangles": 308,
+      "vertices": 170,
+      "triangles": 296,
       "bounds_min_source": [
-        -0.384549,
-        -0.203424,
+        -0.33417,
+        -0.191289,
         0.0
       ],
       "bounds_max_source": [
-        0.381184,
-        0.655496,
-        1.325837
+        0.33417,
+        0.58985,
+        1.32
       ],
       "bounds_min_unity": [
-        -0.384549,
+        -0.33417,
         0.0,
-        -0.203424
+        -0.191289
       ],
       "bounds_max_unity": [
-        0.381184,
-        1.325837,
-        0.655496
+        0.33417,
+        1.32,
+        0.58985
       ],
       "uv_min": [
         0.0,
@@ -14524,27 +14570,27 @@
       "tint_role": "Residential",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 52,
-      "triangles": 92,
+      "vertices": 42,
+      "triangles": 72,
       "bounds_min_source": [
-        -0.169145,
-        -0.027569,
-        1.036774
+        -0.14,
+        0.002417,
+        1.141554
       ],
       "bounds_max_source": [
-        0.187777,
-        0.307873,
+        0.169814,
+        0.255,
         1.57
       ],
       "bounds_min_unity": [
-        -0.169145,
-        1.036774,
-        -0.027569
+        -0.14,
+        1.141554,
+        0.002417
       ],
       "bounds_max_unity": [
-        0.187777,
+        0.169814,
         1.57,
-        0.307873
+        0.255
       ],
       "uv_min": [
         0.0,
@@ -14564,27 +14610,27 @@
       "tint_role": "Masonry",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 125,
-      "triangles": 238,
+      "vertices": 107,
+      "triangles": 198,
       "bounds_min_source": [
-        -0.127921,
-        0.037052,
-        0.785
+        -0.105753,
+        0.054152,
+        0.795
       ],
       "bounds_max_source": [
-        0.128126,
-        0.604824,
-        1.56
+        0.108414,
+        0.590509,
+        1.57
       ],
       "bounds_min_unity": [
-        -0.127921,
-        0.785,
-        0.037052
+        -0.105753,
+        0.795,
+        0.054152
       ],
       "bounds_max_unity": [
-        0.128126,
-        1.56,
-        0.604824
+        0.108414,
+        1.57,
+        0.590509
       ],
       "uv_min": [
         0.0,
@@ -14604,27 +14650,27 @@
       "tint_role": "Street",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 96,
-      "triangles": 168,
+      "vertices": 92,
+      "triangles": 160,
       "bounds_min_source": [
-        0.13074,
-        -0.19,
-        5e-06
+        0.136296,
+        -0.174651,
+        0.0
       ],
       "bounds_max_source": [
-        1.141522,
-        0.17,
-        0.417682
+        1.051341,
+        0.148488,
+        0.401932
       ],
       "bounds_min_unity": [
-        0.13074,
-        5e-06,
-        -0.19
+        0.136296,
+        0.0,
+        -0.174651
       ],
       "bounds_max_unity": [
-        1.141522,
-        0.417682,
-        0.17
+        1.051341,
+        0.401932,
+        0.148488
       ],
       "uv_min": [
         0.0,
@@ -14644,27 +14690,27 @@
       "tint_role": "Residential",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 48,
-      "triangles": 84,
+      "vertices": 36,
+      "triangles": 64,
       "bounds_min_source": [
-        -0.527281,
-        -0.23,
-        0.122112
+        -0.518057,
+        -0.259061,
+        0.14447
       ],
       "bounds_max_source": [
-        0.484927,
-        0.267281,
-        0.523378
+        0.28,
+        0.292884,
+        0.480329
       ],
       "bounds_min_unity": [
-        -0.527281,
-        0.122112,
-        -0.23
+        -0.518057,
+        0.14447,
+        -0.259061
       ],
       "bounds_max_unity": [
-        0.484927,
-        0.523378,
-        0.267281
+        0.28,
+        0.480329,
+        0.292884
       ],
       "uv_min": [
         0.0,
@@ -14684,27 +14730,27 @@
       "tint_role": "Masonry",
       "placement_mode": "recipe_local_rigid",
       "normalized_height_m": null,
-      "vertices": 85,
-      "triangles": 162,
+      "vertices": 77,
+      "triangles": 142,
       "bounds_min_source": [
-        -0.737235,
-        -0.093736,
-        0.08
+        -0.72,
+        -0.083595,
+        0.09
       ],
       "bounds_max_source": [
-        -0.436567,
-        0.290747,
-        0.46
+        -0.382586,
+        0.285805,
+        0.409772
       ],
       "bounds_min_unity": [
-        -0.737235,
-        0.08,
-        -0.093736
+        -0.72,
+        0.09,
+        -0.083595
       ],
       "bounds_max_unity": [
-        -0.436567,
-        0.46,
-        0.290747
+        -0.382586,
+        0.409772,
+        0.285805
       ],
       "uv_min": [
         0.0,
@@ -14716,5 +14762,5 @@
       ]
     }
   ],
-  "build_signature": "87680a5d05066a52504900a19b0e4ec19955fbe180fc6cc8d60f6e5995e412ad"
+  "build_signature": "a27649807279987d20efc5372e347df48a1c4c63bb97929ed7d9b2b2879b13f7"
 }

@@ -6,18 +6,18 @@ Run this with Blender, not CPython:
     blender --background --factory-startup --python \
         tools/build-bartender-3d-model.py
 
-The bartender is an animation-free model on the exact 31-bone
-production Player Generic A-pose skeleton. His signature is the two
-extra pairs of arms stacked below the canonical pair: each extra arm
+The bartender is an animation-free model on the NpcHumanV2-compatible
+31-bone A-pose skeleton. His signature is the two extra pairs of arms
+stacked below the primary pair: each extra arm
 is three rigid segments anchored on PIVOT_Arm{2,3}.{L,R} empties (the
 wheelchair/cashier-neck mechanism pattern) — the runtime re-parents
 the segments under the pivots and drives shoulder/elbow/wrist
-rotations procedurally, so the shared Avatar and every 31-bone
-validator stay untouched.
+rotations procedurally, so the shared NpcHumanV2-compatible Avatar and
+every 31-bone validator stay untouched.
 
 Blender source space is metres, Z-up, forward -Y and anatomical left
 +X. He is presented from the waist up behind the counter, but the
-canonical legs remain so the silhouette grounds like every other
+shared NpcHumanV2 legs remain so the silhouette grounds like every other
 character.
 """
 
@@ -39,14 +39,15 @@ except ImportError as error:  # pragma: no cover - Blender-only entry.
     ) from error
 
 
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "2.0.0"
 DESIGN_ID = "six_armed_bartender_v1"
 DISPLAY_NAME = "Six-Armed Bartender"
 SEED = 460917
-TOTAL_HEIGHT = 2.00
+TOTAL_HEIGHT = 1.75
 MIN_TRIANGLES = 1400
 MAX_TRIANGLES = 3400
 SHARED_MATERIAL_ASSET = "Assets/Player3D/Materials/Player3DLit.mat"
+SIGNATURE_ANATOMY = ("extra_arm_pairs",)
 
 EXTRA_ARM_PAIRS = (2, 3)
 EXTRA_ARM_SIDES = ("L", "R")
@@ -82,8 +83,8 @@ ARM_PIVOT_NAMES = tuple(
     for suffix in PIVOT_SUFFIXES
 )
 
-HEAD_CENTER = (0.0, -0.030, 1.760)
-HEAD_RADII = (0.105, 0.115, 0.120)
+HEAD_CENTER = (0.0, -0.030, 1.575)
+HEAD_RADII = (0.115, 0.108, 0.125)
 
 
 def load_character_build_base():
@@ -105,6 +106,7 @@ def load_character_build_base():
 
 
 base = load_character_build_base()
+base.NPC_PROFILE_KEY = "six_armed_bartender"
 
 PALETTE = {
     # `coat` is the helper material's neutral source preview color.
@@ -126,8 +128,8 @@ PALETTE = {
     "button": (0.500, 0.400, 0.210, 1.0),
 }
 
-# The helper owns the canonical skeleton and deterministic geometry
-# and export implementation. Override only source identity/palette.
+# The helper owns the NpcHumanV2-compatible skeleton and deterministic
+# geometry/export implementation. Override only source identity/palette.
 base.GENERATOR_VERSION = GENERATOR_VERSION
 base.DESIGN_ID = DESIGN_ID
 base.SEED = SEED
@@ -234,11 +236,16 @@ class BartenderBuilder(base.PedestrianBuilder):
         scene["bp_seed"] = SEED
         scene["bp_has_own_animations"] = False
         scene["bp_runtime_material"] = SHARED_MATERIAL_ASSET
+        scene["bp_anatomy_standard"] = base.NPC_ANATOMY_STANDARD
+        scene["bp_rest_pelvis_height_m"] = base.NPC_PELVIS_HEIGHT
+        scene["bp_signature_anatomy"] = json.dumps(
+            list(SIGNATURE_ANATOMY), separators=(",", ":")
+        )
         scene["bp_arm_design"] = "stacked pivot arm pairs"
 
     def build_body(self) -> None:
         # A broad publican torso: heavier than a pedestrian, on the
-        # canonical bones so the shared Avatar drives him unchanged.
+        # NpcHumanV2 bones so the compatible Avatar drives him unchanged.
         self.add_part(
             "GEO_Torso",
             base.make_tapered_box(
@@ -267,9 +274,9 @@ class BartenderBuilder(base.PedestrianBuilder):
             "GEO_NeckStub",
             base.make_frustum_between(
                 (0, -0.015, 1.335),
-                (0, -0.035, 1.660),
+                (0, -0.026, 1.470),
                 0.082,
-                0.068,
+                0.070,
                 10,
             ),
             "neck",
@@ -508,7 +515,7 @@ class BartenderBuilder(base.PedestrianBuilder):
         self.add_part(
             "HAIR_FlatCap",
             base.make_box(
-                (0.000, -0.010, 1.970),
+                (0.000, -0.010, 1.720),
                 (0.190, 0.200, 0.060),
             ),
             "head",
@@ -519,7 +526,7 @@ class BartenderBuilder(base.PedestrianBuilder):
             self.add_part(
                 f"FACE_Ear.{side}",
                 base.make_ellipsoid(
-                    (x_sign * 0.104, -0.030, 1.752),
+                    (x_sign * 0.112, -0.030, 1.575),
                     (0.020, 0.017, 0.038),
                     8,
                     4,
@@ -531,7 +538,7 @@ class BartenderBuilder(base.PedestrianBuilder):
             self.add_part(
                 f"FACE_EyeWhite.{side}",
                 base.make_ellipsoid(
-                    (x_sign * 0.046, -0.132, 1.785),
+                    (x_sign * 0.050, -0.132, 1.606),
                     (0.020, 0.012, 0.014),
                     8,
                     4,
@@ -543,7 +550,7 @@ class BartenderBuilder(base.PedestrianBuilder):
             self.add_part(
                 f"FACE_Pupil.{side}",
                 base.make_ellipsoid(
-                    (x_sign * 0.046, -0.141, 1.785),
+                    (x_sign * 0.050, -0.141, 1.606),
                     (0.008, 0.006, 0.008),
                     6,
                     3,
@@ -556,8 +563,8 @@ class BartenderBuilder(base.PedestrianBuilder):
         self.add_part(
             "FACE_Nose",
             base.make_tapered_box(
-                (0.0, -0.132, 1.748),
-                (0.0, -0.156, 1.760),
+                (0.0, -0.132, 1.564),
+                (0.0, -0.156, 1.576),
                 (0.034, 0.020, 0),
                 (0.026, 0.014, 0),
             ),
@@ -569,7 +576,7 @@ class BartenderBuilder(base.PedestrianBuilder):
         self.add_part(
             "FACE_Moustache",
             base.make_box(
-                (0.0, -0.142, 1.716),
+                (0.0, -0.142, 1.535),
                 (0.110, 0.030, 0.026),
             ),
             "head",
@@ -649,7 +656,7 @@ def validate_bartender_result(result):
     """Standalone contract check for the bespoke bartender.
 
     Mirrors the shared pedestrian validation but owns the bartender's
-    numbers: the sixteen extra-arm pivots, the canonical resting
+    numbers: the sixteen extra-arm pivots, the authored resting
     height and the six-armed design details.
     """
 
@@ -661,7 +668,7 @@ def validate_bartender_result(result):
         spec.name for spec in base.SKELETON
     ]:
         errors.append(
-            "Generic bone order/names diverge from PlayerCharacter3D"
+            "Bone order/names diverge from NpcHumanV2"
         )
     for bone_spec in base.SKELETON:
         bone = result.rig.data.bones.get(bone_spec.name)
@@ -677,11 +684,11 @@ def validate_bartender_result(result):
             )
         if (bone.head_local - base.v(bone_spec.head)).length > 0.000001:
             errors.append(
-                f"{bone_spec.name} head diverges from canonical A-pose"
+                f"{bone_spec.name} head diverges from NpcHumanV2 A-pose"
             )
         if (bone.tail_local - base.v(bone_spec.tail)).length > 0.000001:
             errors.append(
-                f"{bone_spec.name} tail diverges from canonical A-pose"
+                f"{bone_spec.name} tail diverges from NpcHumanV2 A-pose"
             )
 
     if bpy.data.actions:
@@ -826,6 +833,9 @@ def validate_bartender_result(result):
         "generator_version": GENERATOR_VERSION,
         "design_id": DESIGN_ID,
         "seed": SEED,
+        "anatomy_standard": base.NPC_ANATOMY_STANDARD,
+        "rest_pelvis_height_m": base.NPC_PELVIS_HEIGHT,
+        "signature_anatomy": list(SIGNATURE_ANATOMY),
         "skeleton": [
             {
                 "name": spec.name,
@@ -846,6 +856,15 @@ def validate_bartender_result(result):
                 "color": [
                     base.stable_float(component)
                     for component in part.color
+                ],
+                "vertices": [
+                    [
+                        base.stable_float(component)
+                        for component in (
+                            part.obj.matrix_world @ vertex.co
+                        )
+                    ]
+                    for vertex in part.obj.data.vertices
                 ],
                 "triangles": base.triangulated_count(part.obj.data),
             }
@@ -925,6 +944,11 @@ def write_manifest(path: Path, result, report) -> None:
         "display_name": DISPLAY_NAME,
         "seed": SEED,
         "height_m": TOTAL_HEIGHT,
+        "anatomy_standard": base.NPC_ANATOMY_STANDARD,
+        "rest_pelvis_height_m": base.stable_float(
+            base.NPC_PELVIS_HEIGHT
+        ),
+        "signature_anatomy": list(SIGNATURE_ANATOMY),
         "pose": "apose",
         "forward_axis": "-Y",
         "anatomical_left_axis": "+X",
@@ -995,7 +1019,7 @@ def main() -> None:
     print(f"  Design: {DESIGN_ID}")
     print(
         f"  Skeleton bones: {len(base.SKELETON)} "
-        "(exact Player Generic hierarchy)"
+        "(NpcHumanV2-compatible 31-bone hierarchy)"
     )
     print(f"  Arm pivots: {len(result.pivots)}")
     print(f"  Meshes: {report.mesh_count}")

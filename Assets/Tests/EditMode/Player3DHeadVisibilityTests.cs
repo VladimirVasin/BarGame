@@ -8,12 +8,11 @@ namespace BarPromenade.Tests.EditMode
     /// Taking the hero's head off from the inside.
     ///
     /// This is a regression fixture with a very specific failure behind
-    /// it: the first seated first-person view hid the two anatomical
+    /// it: the first seated first-person view hid only the two anatomical
     /// parts called Head and Neck and left the player looking at the
-    /// inside of his own hair, ears, nose and eyeballs, because on this
-    /// rig those are eighteen further meshes. What is pinned here is
-    /// that the rule is stated against the bones — anything on `head`,
-    /// `neck` or a `face.*` bone — and that on the real production
+    /// inside of the separately bound face and hair meshes. What is pinned
+    /// here is that the rule is stated against the bones — anything on
+    /// `head`, `neck` or a `face.*` bone — and that on the production V2
     /// prefab it catches every one of them and nothing below the collar.
     /// </summary>
     public sealed class Player3DHeadVisibilityTests
@@ -24,20 +23,15 @@ namespace BarPromenade.Tests.EditMode
         {
             "GEO_Head",
             "GEO_Neck",
-            "GEO_Nose",
+            "GEO_FaceSurface",
             "GEO_HairCap",
+            "GEO_HairBack",
+            "GEO_HairTemple.L",
+            "GEO_HairTemple.R",
+            "GEO_HairTuft.01",
+            "GEO_HairTuft.04",
             "GEO_Ear.L",
-            "GEO_Ear.R",
-            "GEO_Eye.L",
-            "GEO_Eye.R",
-            "ACC_Pupil.L",
-            "ACC_Pupil.R",
-            "ACC_Brow.L",
-            "ACC_Brow.R",
-            "ACC_Mouth",
-            "ACC_Stubble",
-            "ACC_UnderEye.L",
-            "ACC_UnderEye.R"
+            "GEO_Ear.R"
         };
 
         /// <summary>And the ones that have to survive, because a seated
@@ -76,8 +70,7 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void OnTheProductionRig_TheWholeHeadComesOffAndGoesBack()
         {
-            GameObject prefab = Resources.Load<GameObject>(
-                Player3DResources.PrefabResourcePath);
+            GameObject prefab = Player3DResources.LoadPrefab();
             if (prefab == null)
             {
                 Assert.Ignore("The Player 3D prefab is not built yet.");
@@ -90,8 +83,13 @@ namespace BarPromenade.Tests.EditMode
                     instance.GetComponentInChildren<
                         Player3DAssetRegistry>(true);
                 Assert.That(registry, Is.Not.Null);
+                Assert.That(
+                    registry.HasFaceAtlas,
+                    Is.True,
+                    "The production default must be the V2 hero.");
 
                 var before = new Dictionary<string, bool>(96);
+                var expectedHiddenRenderers = new HashSet<Renderer>();
                 IReadOnlyList<Player3DMeshBinding> bindings =
                     registry.MeshBindings;
                 Assert.That(bindings, Is.Not.Empty);
@@ -102,15 +100,26 @@ namespace BarPromenade.Tests.EditMode
                     {
                         binding.Renderer.enabled = true;
                         before[binding.MeshName] = true;
+                        if (Player3DHeadVisibility.IsHeadGeometry(
+                                binding.BoneName))
+                        {
+                            expectedHiddenRenderers.Add(binding.Renderer);
+                        }
                     }
                 }
+
+                Assert.That(
+                    expectedHiddenRenderers.Count,
+                    Is.GreaterThanOrEqualTo(MustBeHidden.Length),
+                    "The V2 head must remain a multi-mesh presentation.");
 
                 Player3DHeadVisibility hidden =
                     Player3DHeadVisibility.Hide(registry);
                 Assert.That(
                     hidden.HiddenRendererCount,
-                    Is.GreaterThanOrEqualTo(MustBeHidden.Length),
-                    "The head is more meshes than the skull.");
+                    Is.EqualTo(expectedHiddenRenderers.Count),
+                    "Every enabled renderer classified by the head-bone " +
+                    "rule must be hidden exactly once.");
 
                 for (int index = 0; index < bindings.Count; index++)
                 {
@@ -163,8 +172,7 @@ namespace BarPromenade.Tests.EditMode
         [Test]
         public void ARendererAlreadyOff_IsLeftAlone()
         {
-            GameObject prefab = Resources.Load<GameObject>(
-                Player3DResources.PrefabResourcePath);
+            GameObject prefab = Player3DResources.LoadPrefab();
             if (prefab == null)
             {
                 Assert.Ignore("The Player 3D prefab is not built yet.");
@@ -176,9 +184,9 @@ namespace BarPromenade.Tests.EditMode
                 var registry =
                     instance.GetComponentInChildren<
                         Player3DAssetRegistry>(true);
-                Player3DMeshBinding head = FindBinding(
-                    registry.MeshBindings,
-                    "GEO_Head");
+                Assert.That(registry, Is.Not.Null);
+                Player3DMeshBinding head = FindFirstHeadBinding(
+                    registry.MeshBindings);
                 Assert.That(head, Is.Not.Null);
                 head.Renderer.enabled = false;
 
@@ -227,6 +235,23 @@ namespace BarPromenade.Tests.EditMode
                 Player3DMeshBinding binding = bindings[index];
                 if (binding?.Renderer != null &&
                     binding.MeshName == meshName)
+                {
+                    return binding;
+                }
+            }
+
+            return null;
+        }
+
+        private static Player3DMeshBinding FindFirstHeadBinding(
+            IReadOnlyList<Player3DMeshBinding> bindings)
+        {
+            for (int index = 0; index < bindings.Count; index++)
+            {
+                Player3DMeshBinding binding = bindings[index];
+                if (binding?.Renderer != null &&
+                    Player3DHeadVisibility.IsHeadGeometry(
+                        binding.BoneName))
                 {
                     return binding;
                 }

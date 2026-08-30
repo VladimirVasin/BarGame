@@ -1,11 +1,15 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
 {
     public sealed class BarBartenderAssetTests
     {
+        private const string PlayerModelPath =
+            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
+
         [Test]
         public void Provider_BindsTheSixArmedPrefabContract()
         {
@@ -20,6 +24,11 @@ namespace BarPromenade.Tests.EditMode
             BarBartenderAssetRegistry registry =
                 prefab.GetComponent<BarBartenderAssetRegistry>();
             Assert.That(registry, Is.Not.Null);
+            Assert.That(registry.Animator, Is.Not.Null);
+            Assert.That(registry.Animator.avatar, Is.Not.Null);
+            Assert.That(
+                AssetDatabase.GetAssetPath(registry.Animator.avatar),
+                Is.EqualTo(PlayerModelPath));
             Assert.That(
                 registry.DesignId,
                 Is.EqualTo(BarBartenderProvider.DesignId));
@@ -98,7 +107,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.Empty);
             Assert.That(
                 registry.LocalBounds.size.y,
-                Is.EqualTo(2.00f).Within(0.05f));
+                Is.EqualTo(1.75f).Within(0.05f));
         }
     }
 }

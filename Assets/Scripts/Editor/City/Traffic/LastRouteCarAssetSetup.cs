@@ -237,6 +237,19 @@ namespace BarPromenade.EditorTools
                     manifest.build_signature,
                     manifest.perch_seat_z,
                     manifest.perch_drop_m);
+                registry.ConfigureDashboard(
+                    RequireTransform(transforms, "PIVOT_GloveboxLid"),
+                    RequireTransform(transforms, "PIVOT_RadioPowerKnob"),
+                    RequireTransform(transforms, "PIVOT_RadioTuningKnob"),
+                    RequireTransform(transforms, "PIVOT_RadioNeedle"),
+                    RequireTransform(transforms, "PIVOT_SpeedoNeedle"),
+                    RequireManifestPivot(manifest, "PIVOT_RadioNeedle", "+X")
+                        .travel_m,
+                    RequireRoleRenderer(bindings, "radio_dial"));
+                RequireManifestPivot(manifest, "PIVOT_GloveboxLid", "+X");
+                RequireManifestPivot(manifest, "PIVOT_RadioPowerKnob", "+Y");
+                RequireManifestPivot(manifest, "PIVOT_RadioTuningKnob", "+Y");
+                RequireManifestPivot(manifest, "PIVOT_SpeedoNeedle", "+Y");
 
                 ValidateRegistryBindings(registry, manifest);
                 ValidatePrefabPresentation(root);
@@ -319,6 +332,62 @@ namespace BarPromenade.EditorTools
                 throw new InvalidOperationException(
                     "The perch must sit on the bonnet with the boots ahead " +
                     "of it on the bumper.");
+            }
+
+            // The dash. The lid is on the passenger's side and under the
+            // dash top; the radio and its needle sit on the centre line; the
+            // speedometer is the driver's. Same axes as above - the
+            // registry's own, never an imported node's.
+            Vector3 up = registry.transform.up;
+            float passengerSign = passengerSide >= 0f ? 1f : -1f;
+            float lidSide = Vector3.Dot(
+                registry.GloveboxLidPivot.position - body, right);
+            if (lidSide * passengerSign <= 0f)
+            {
+                throw new InvalidOperationException(
+                    "The glovebox lid must hang on the passenger's side.");
+            }
+
+            if (Vector3.Dot(registry.GloveboxLidPivot.position - body, up) >=
+                manifest.dashboard_top_z)
+            {
+                throw new InvalidOperationException(
+                    "The glovebox lid hinges above the dash top.");
+            }
+
+            foreach (Transform centred in new[]
+                     {
+                         registry.RadioPowerKnobPivot,
+                         registry.RadioTuningKnobPivot,
+                         registry.RadioNeedlePivot
+                     })
+            {
+                if (Mathf.Abs(Vector3.Dot(centred.position - body, right)) >
+                    0.15f)
+                {
+                    throw new InvalidOperationException(
+                        $"{centred.name} is not on the radio's centre line.");
+                }
+            }
+
+            if (registry.RadioNeedleTravel <= 0f)
+            {
+                throw new InvalidOperationException(
+                    "The radio needle has no travel to slide along.");
+            }
+
+            float speedoSide = Vector3.Dot(
+                registry.SpeedoNeedlePivot.position - body, right);
+            if (speedoSide * passengerSign >= 0f)
+            {
+                throw new InvalidOperationException(
+                    "The speedometer must sit in front of the driver.");
+            }
+
+            if (registry.RadioDialRenderer == null)
+            {
+                throw new InvalidOperationException(
+                    "The radio dial renderer is unbound.");
             }
         }
 
@@ -478,6 +547,12 @@ namespace BarPromenade.EditorTools
             {
                 case LastRouteCarMaterialSlot.Headlight: return 6.5f;
                 case LastRouteCarMaterialSlot.TailLight: return 1.4f;
+                // The dial keeps its emission keyword ON so the runtime can
+                // light it through a property block when the radio is
+                // switched on; the block writes black until then. A zero
+                // here would strip the keyword and the dial could never
+                // light at all.
+                case LastRouteCarMaterialSlot.RadioDial: return 1.6f;
                 default: return 0f;
             }
         }
@@ -555,6 +630,7 @@ namespace BarPromenade.EditorTools
                 case LastRouteCarMaterialSlot.Headlight: return Hex("#FFF6D2FF");
                 case LastRouteCarMaterialSlot.TailLight: return Hex("#7A1310FF");
                 case LastRouteCarMaterialSlot.Plate: return Hex("#8E8E82FF");
+                case LastRouteCarMaterialSlot.RadioDial: return Hex("#E9A24CFF");
                 default:
                     throw new ArgumentOutOfRangeException(nameof(slot));
             }
@@ -571,6 +647,7 @@ namespace BarPromenade.EditorTools
                 case LastRouteCarMaterialSlot.Rust: return 0.06f;
                 case LastRouteCarMaterialSlot.Rubber: return 0.08f;
                 case LastRouteCarMaterialSlot.Seat: return 0.12f;
+                case LastRouteCarMaterialSlot.RadioDial: return 0.40f;
                 default: return 0.26f;
             }
         }
@@ -653,6 +730,68 @@ namespace BarPromenade.EditorTools
             return result;
         }
 
+        /// <summary>
+        /// A control pivot as the generator wrote it, with the runtime axis
+        /// the runtime is about to assume. The bus checks its door button
+        /// the same way.
+        /// </summary>
+        private static ManifestPivot RequireManifestPivot(
+            Manifest manifest,
+            string name,
+            string runtimeAxisLocal)
+        {
+            foreach (ManifestPivot pivot in manifest.pivots)
+            {
+                if (pivot.name != name)
+                {
+                    continue;
+                }
+
+                if (pivot.runtime_axis_local != runtimeAxisLocal)
+                {
+                    throw new InvalidOperationException(
+                        $"Pivot '{name}' declares axis " +
+                        $"'{pivot.runtime_axis_local}', expected " +
+                        $"'{runtimeAxisLocal}'.");
+                }
+
+                return pivot;
+            }
+
+            throw new InvalidOperationException(
+                $"The manifest has no pivot '{name}'.");
+        }
+
+        private static Renderer RequireRoleRenderer(
+            List<LastRouteCarRendererBinding> bindings,
+            string role)
+        {
+            Renderer found = null;
+            foreach (LastRouteCarRendererBinding binding in bindings)
+            {
+                if (binding.Role != role)
+                {
+                    continue;
+                }
+
+                if (found != null)
+                {
+                    throw new InvalidOperationException(
+                        $"More than one part carries the role '{role}'.");
+                }
+
+                found = binding.Renderer;
+            }
+
+            if (found == null)
+            {
+                throw new InvalidOperationException(
+                    $"No part carries the role '{role}'.");
+            }
+
+            return found;
+        }
+
         private static Transform RequireTransform(
             Dictionary<string, Transform> transforms,
             string name)
@@ -683,6 +822,7 @@ namespace BarPromenade.EditorTools
             public float perch_soles_z;
             public float perch_drop_m;
             public float seated_headroom_m;
+            public float dashboard_top_z;
             public string build_signature;
             public ManifestPart[] parts;
             public ManifestPivot[] pivots;

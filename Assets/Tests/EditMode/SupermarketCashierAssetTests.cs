@@ -1,11 +1,15 @@
 using System.Collections.Generic;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
 {
     public sealed class SupermarketCashierAssetTests
     {
+        private const string PlayerModelPath =
+            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
+
         private static SupermarketCashierProvider LoadProvider()
         {
             var provider = SupermarketCashierProvider.Load();
@@ -60,6 +64,9 @@ namespace BarPromenade.Tests.EditMode
                 registry.Animator.runtimeAnimatorController,
                 Is.Null);
             Assert.That(registry.Animator.avatar, Is.Not.Null);
+            Assert.That(
+                AssetDatabase.GetAssetPath(registry.Animator.avatar),
+                Is.EqualTo(PlayerModelPath));
 
             // Passive on purpose: no physics, light, audio or camera.
             Assert.That(

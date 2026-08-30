@@ -59,6 +59,29 @@ namespace BarPromenade
             IWalkableArea walkableArea,
             InteractionPromptView promptView)
         {
+            return Create(
+                parent,
+                position,
+                camera,
+                walkableArea,
+                promptView,
+                Player3DVariant.ProductionV2);
+        }
+
+        /// <summary>
+        /// Explicit authoring/test entry point for a packaged player variant.
+        /// Ordinary scene roots use the production V2 overload above. This
+        /// explicit seam keeps the packaged V1 available for fallback tests
+        /// and controlled comparison without making it the live hero.
+        /// </summary>
+        public static PlayerRuntime Create(
+            Transform parent,
+            Vector3 position,
+            Camera camera,
+            IWalkableArea walkableArea,
+            InteractionPromptView promptView,
+            Player3DVariant playerVariant)
+        {
             GameObject player = new GameObject("Player");
             player.transform.SetParent(parent, false);
             player.transform.position = position;
@@ -89,7 +112,9 @@ namespace BarPromenade
             CityClothBodyRegistry.RegisterBody(clothCapsule);
 
             Player3DAssetRegistry registry =
-                Player3DResources.Instantiate(player.transform);
+                Player3DResources.Instantiate(
+                    player.transform,
+                    playerVariant);
             Player3DCharacterPresentation visual =
                 registry.GetComponent<Player3DCharacterPresentation>();
             if (visual == null)

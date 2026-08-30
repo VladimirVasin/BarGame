@@ -434,12 +434,12 @@ MonoBehaviour:
     wristPivot: {fileID: 8141571390530880451}
     gripPivot: {fileID: 8987309915003625082}
   localBounds:
-    m_Center: {x: -0.000000059604645, y: 1, z: 0.05374998}
-    m_Extent: {x: 0.79367507, y: 1, z: 0.17575002}
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.03938289}
+    m_Extent: {x: 0.8050516, y: 0.8749999, z: 0.17215146}
   sourceTriangleCount: 1436
-  sourceGeneratorVersion: 1.0.0
+  sourceGeneratorVersion: 2.0.0
   designId: six_armed_bartender_v1
-  buildSignature: a9145c4d1e698b249735628809588d989213e7ebce71dabd13000325daa5e5c8
+  buildSignature: 0f971e4ef32540629e3fc7b9fd04bd057d0c57a87ab9b06f1ee80913d3a96ee0
 --- !u!1001 &9128250253050573070
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -1074,7 +1074,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 8245922607577156703}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 0
   m_UpdateMode: 0

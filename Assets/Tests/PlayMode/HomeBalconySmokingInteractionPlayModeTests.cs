@@ -964,18 +964,22 @@ namespace BarPromenade.Tests.PlayMode
             Player3DAssetRegistry registry)
         {
             Renderer head = FindPlayerRenderer(registry, "GEO_Head");
-            Renderer nose = FindPlayerRenderer(registry, "GEO_Nose");
-            Vector3 headToNose = Vector3.ProjectOnPlane(
-                nose.bounds.center - head.bounds.center,
+            Renderer visibleFace = FindPlayerRenderer(
+                registry,
+                registry.HasFaceAtlas
+                    ? "GEO_FaceSurface"
+                    : "GEO_Nose");
+            Vector3 headToFace = Vector3.ProjectOnPlane(
+                visibleFace.bounds.center - head.bounds.center,
                 home.transform.up);
             Assert.That(
-                headToNose.sqrMagnitude,
+                headToFace.sqrMagnitude,
                 Is.GreaterThan(0.0001f));
             Vector3 cityFacing =
                 home.transform.TransformDirection(Vector3.right);
             Assert.That(
                 Vector3.Dot(
-                    headToNose.normalized,
+                    headToFace.normalized,
                     cityFacing.normalized),
                 Is.GreaterThan(0.95f),
                 "The sampled smoking rig's visible face must point " +

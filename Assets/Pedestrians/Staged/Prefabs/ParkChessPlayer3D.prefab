@@ -499,12 +499,12 @@ MonoBehaviour:
   sitClip: {fileID: 0}
   actionClip: {fileID: -5634711903878476947, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   localBounds:
-    m_Center: {x: -0.00000011920929, y: 0.8749999, z: 0.03699997}
-    m_Extent: {x: 0.763, y: 0.8749999, z: 0.185}
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.025061056}
+    m_Extent: {x: 0.7714557, y: 0.8749999, z: 0.18695834}
   sourceTriangleCount: 1092
-  sourceGeneratorVersion: 3.2.0
+  sourceGeneratorVersion: 4.0.0
   designId: park_chess_player_v1
-  buildSignature: 4900a8ad9a9edaf9b0f4937abd31f10e7f28b0d0908acf2363a589e381f234b0
+  buildSignature: 191959f2e3f7471da935a16d95cce3057d85a344b7f94bddcb98b6f58ef8a168
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -858,7 +858,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2743164620646884499}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 1
   m_UpdateMode: 0

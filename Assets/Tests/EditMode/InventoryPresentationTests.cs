@@ -62,7 +62,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 assetPath,
                 Is.EqualTo(
-                    "Assets/Resources/Player/Player3DPortrait.png"));
+                    "Assets/Resources/Player/Player3DV2Portrait.png"));
             TextureImporter importer =
                 AssetImporter.GetAtPath(assetPath) as TextureImporter;
             Assert.That(importer, Is.Not.Null);

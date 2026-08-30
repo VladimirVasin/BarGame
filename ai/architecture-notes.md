@@ -63,12 +63,24 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `9` and `10`.
 - **Accepted:** City, Mountain Road, Alpine Village, Bar, Supermarket, Home,
   Stairwell and Church instantiate one
-  `Resources/Player/Player3D` modular hero prefab through `PlayerFactory`.
+  `Resources/Player/Player3DV2` modular hero prefab through `PlayerFactory`.
   Its Generic rig, independent mesh parts, in-place Actions, prefab-derived
   first-person subsets, dedicated 3D portrait, real mesh shadows and analytic
   contact patch are the active player presentation. A runtime-composed
   13-body companion ragdoll temporarily owns those same bones during failed
   balance falls; no alternate hero or renderer swap is used.
+- **Accepted — NpcHumanV2 is the common adult anatomical substrate:** all
+  `21` rigged humanoid NPC models (five pooled street archetypes, thirteen
+  staged roles and bartender/cashier/bus-driver) copy the production Hero V2
+  31-bone A-pose Avatar and use its `0.835 m` rest pelvis. Ordinary silhouettes
+  target roughly `7–7.5` heads and `2.3–2.5` head-width shoulders without
+  increasing polygon density. Canon-required deformations — six bartender
+  arms, the cashier's long neck, the Long-Arm figure, kettle head and hopper
+  feet — remain authored overlays on that substrate, not anatomy regressions.
+  The three unrigged arch-shelter residents use the same proportions as static
+  meshes. `NpcHumanV2AssetSetup.RunBatch` is the single asset-authoring entry
+  point that rebuilds and validates all six pipelines. This decision supersedes
+  older notes that kept ambient passengers on a `0.70 m` rig.
 
 ## MVP decisions
 
@@ -899,7 +911,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   from the bus's own pedestrian yielding, which would otherwise make the bus
   stop for its own passenger.
   Seating is one rule for the whole catalog because every design copies the
-  hero's exact 31-bone rig at a `0.70 m` rest pelvis: `CityPedestrianPresentation`
+  hero's exact 31-bone rig at a `0.835 m` rest pelvis: `CityPedestrianPresentation`
   aligns that bone to the cushion anchor, the same technique
   `CityBusDriverPresentation` already uses for the driver. Sole pinning is
   switched off while seated — on a seat it would drag the model down until the
@@ -914,7 +926,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   purpose, and proves a different contract instead — measured headroom above
   the seated pelvis inside a declared `seated_clearance_m` band, and nothing
   hanging more than the `0.41 m` cushion height below it. The four riders
-  measure `1.030 / 1.055 / 1.050 / 1.050 m` of headroom and `0.354-0.374 m` of
+  measure `0.907-0.918 m` of headroom and `0.375-0.388 m` of
   drop against a `2.05 m` cabin, so the catalog clears the roof with room to
   spare.
   The moving runtime remains City-only. A valid Home/Balcony route would
@@ -2954,6 +2966,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   standing roles idle in place. The `Bartender` anchor is deliberately left
   empty until a dedicated 3D bartender pass, mirroring the empty supermarket
   checkout.
+- **Superseded 2026-08-29 — the bartender anchor is now staffed:** the
+  provider-bound `BarBartender` prefab is a complete `1.75 m` NpcHumanV2
+  figure with the canonical six arms. `BarBartenderWorldBuilder` owns the
+  anchor and `BarBartenderServiceChoreography` owns the implemented physical
+  service motions; only the separate cocktail/minigame expansion remains
+  deferred.
 - **Accepted — The Watcher Cashier:** The supermarket checkout is staffed
   by one bespoke animation-free 3D clerk (`watcher_cashier_v1`) built by
   `tools/build-supermarket-cashier-3d-model.py` on the exact shared 31-bone
@@ -3345,3 +3363,36 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   batch collider. Cloth at rope width (`<= 0.12 m`) keeps the factory's flat
   colour — the weave is sub-pixel — while wider panels ride the shared POI
   cloth sheet through `ApplyClothPanel`.
+- **Accepted — Hero V2 changes the canonical outer garment, while V1 remains
+  the production fallback:** by the user's explicit 2026-08-29 decision, the
+  successor wears an unfastened faded dark olive-drab field jacket with long
+  sleeves and no diagonal satchel strap or buckle, replacing the former
+  burgundy overshirt/strap target in story-bible §7. Pocket construction,
+  cuffs, seams, the right ochre repair patch and the left bandage are painted;
+  no readable insignia or copied film marking implies a military biography.
+  The same user also required Hero V1 not be removed, so its byte-frozen
+  burgundy/strap prefab remains the temporary gameplay default until a later
+  explicit promotion. That bounded production/canon mismatch is accepted and
+  does not license either design to leak into the other.
+- **Accepted — Hero V2 is a parallel explicit variant, not a mutable player
+  preference:** `Player3DResources` and `PlayerFactory` default their old APIs
+  to `ProductionV1`; only a caller naming `ExperimentalV2` can instantiate the
+  candidate. V2 preserves the 31-bone/37-action contract, selects five facial
+  states from a merge-safe MPB atlas and binds one full-colour clothing atlas
+  to a shared white-tint material. Gameplay roots and inventory remain V1, so
+  there is no cross-scene toggle or half-promoted saved state. Direct resource
+  instantiation reapplies the registry palette immediately because prefab MPBs
+  are runtime state and cannot be serialized.
+- **Accepted and implemented 2026-08-29 — Hero V2 is the production default;
+  Hero V1 remains an explicit retained fallback:** by the user's correction,
+  every no-variant `PlayerFactory`/`Player3DResources` route, all eight gameplay
+  roots, prefab-derived first-person subsets and the inventory portrait now
+  resolve to `ProductionV2` / `Player3DV2`. `ProductionV1` still resolves the
+  byte-frozen former prefab and its portrait for rollback and legacy contract
+  checks; those assets are not deleted. This supersedes only the temporary
+  default/candidate clauses in the two decisions immediately above. The live
+  `PlayerCharacterDimensions.PelvisHeight` follows V2's measured `0.835 m`
+  pelvis so contextual clips remain grounded. NpcHumanV2 now gives Route 01
+  ambient walkers the same rest-pelvis and Avatar contract; their per-archetype
+  seated offsets remain independent so canonical silhouettes still clear the
+  cabin.

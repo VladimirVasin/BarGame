@@ -1048,7 +1048,8 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 anchors.Head.position.y,
                 Is.GreaterThan(
-                    anchors.Pelvis.position.y + 0.70f),
+                    anchors.Pelvis.position.y +
+                    presentation.Registry.Metrics.CanonicalHeight * 0.33f),
                 "The waypoint must present an upright seated body, not " +
                 "slide the lying pose across the mattress.");
         }

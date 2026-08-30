@@ -6,6 +6,221 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-29 — Every humanoid NPC moved to the Hero/NPC V2 anatomy contract
+
+The replacement is now in the production assets, not only in a proposal or a
+generator branch. All `21` rigged humanoid NPCs — five pooled walkers,
+thirteen staged roles and the bartender/cashier/bus-driver trio — copy the
+exact 31-bone Hero V2 A-pose Avatar and share its `0.835 m` rest pelvis. The
+ordinary substrate measures `7.49` heads tall with `2.43` head-width shoulders;
+large head/neck/shoulder/torso/arm/pelvis/leg/foot proportions were corrected
+without increasing polygon density. Canonical anomalies remain geometry over
+that substrate: six bartender arms, the cashier's telescoping neck, the
+Long-Arm figure, kettle head and hopper feet were not normalised away.
+
+`tools/build-city-pedestrian-3d-model.py` is now generator `4.0.0` and rebuilt
+its `14` city models plus the deterministic `37`-clip shared library; the
+four-role Mountain Road cafe bank was rebuilt separately. Its final silhouette
+review also lowered the four cafe cast's resting elbows from the old rigid
+shoulder-height pose, put idle hands at the lap/waist, and brought the woman's
+folded paper down from above her head to her cheek. Seated poses were re-solved
+rather than lifted blindly: Route 01's four riders now measure
+`0.907–0.918 m` of headroom above the pelvis and `0.375–0.388 m` below it, and
+the wheelchair, chess/checkers and Ferryman poses were checked against their
+actual seats. Bartender/cashier/driver generators are `2.0.0` (`50/44/48`
+meshes, `1436/1588/1496` triangles). The arch shelter's three unrigged residents
+received the same adult-equivalent silhouette (`7.29` heads, `2.36` shoulder
+widths) in CityMisc `4.7.0`; the catalog fell from `42,878` to `42,750`
+triangles.
+
+All five rig importers now copy
+`Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`; bus passenger pelvis and
+per-archetype seated offsets were updated to the new rest pose. Added
+`NpcHumanV2AssetSetup.RunBatch`, which explicitly rebuilds all six prefab /
+provider pipelines and then runs every embedded asset validator. Its shared
+pipeline guard also prevents the importers from recursively waking one another
+through the common Avatar. An already-running unrelated car PlayMode batch had
+entered that old loop (`412` identical Avatar imports) and was stopped with its
+log preserved before the clean run.
+
+Verification: all three deterministic Blender production builds and the
+CityMisc validator passed with their generated previews/manifests; Unity
+`NpcHumanV2AssetSetup.RunBatch` rebuilt the actual runtime prefabs/providers,
+logged the aggregate success marker and exited `0`. All `21` rigged FBX metas
+copy the Hero V2 Avatar. The five unrelated dirty Church materials were hashed
+before Unity and remained byte-identical. Full EditMode/PlayMode suites were
+not run in fast mode.
+
+## 2026-08-29 — The Ferryman's car has a dashboard, and two things on it answer
+
+The passenger sat in front of two boxes. Now `tools/build-last-route-car-3d-model.py`
+composes a dash in `_build_dashboard`: the slab is drawn AROUND a glovebox
+aperture (aperture by omission, the doorway's rule, with its own hole check on
+`dash_boxes`), and dressed with a binnacle (two recessed dials, chrome rings,
+the fuel needle at "empty"), two slatted vents, an ashtray, a lip along the
+screen base, a tunnel carrying the gear lever and handbrake, three pedals on
+stems to the scuttle, a column stalk, the ignition key, two visors under the
+header and a stalk that finally holds the mirror to the glass. `63` meshes,
+`2880/4200` triangles. New validator rules: five `require_pivot`s with exact
+poses and axes, ownership per pivot, the aperture is a hole, the lid is no
+taller than the knee promise, nothing in `dashboard_parts` stands inside
+either sitter's legs or torso, and nothing ahead of the seat row crosses the
+windscreen band `1.10..1.41`.
+
+Two things are interactive, on the user's decision, and everything else is
+furniture:
+
+- **The radio**, split down the middle: the power knob (driver's side — the
+  passenger's LEFT hand) switches it and lights the dial through a property
+  block on a new `RadioDial` slot whose emission keyword stays ON at `1.6`;
+  the tuning knob steps eight detents and slides the needle along the dial by
+  the manifest's `travel_m`. **It plays nothing yet** — the user will decide
+  what it catches; only the switch click, the detent tick and the latch are
+  heard, as three new `LastRouteCarCueKind`s through the car's existing cue
+  source (`OwnedSourceCount` stays `5`).
+- **The glovebox**, hinged at the aperture's bottom edge, dropped `78` degrees
+  towards the sitter over `0.35 s` on two curves (release-and-catch, push-shut)
+  and EMPTY, on the user's decision.
+
+**Selection is by gaze, through the seat.** While seated the hero's capsule is
+still standing at the door dock outside the car — only his drawn pelvis is on
+the anchor — so the dash is `2.1–2.5 m` from `PlayerInteractor`'s `1.65 m`
+sphere and no collider on the radio could ever be found. The seat's own
+`IInteractable` now evaluates its own camera (not `seatCamera.transform`, which
+is last LateUpdate's pose), casts a ray at the drawn bounds of the bezel and
+the lid (`LastRouteCarDashboardGaze`, pure), caches the answer per frame
+because the interactor asks twice, and answers for whatever he is looking at;
+"stand up" is offered only when he is looking at none of it. The dash branch
+sits BEFORE the seat's height check, or the mountain leg (`26 m` above the
+island dock) refuses it silently. `MaximumPitchDegrees` `42 → 50` so the lid,
+`41` degrees below the eye, is reachable. State is `GameSessionState.CarDashboard`
+because the tunnel raises a NEW car.
+
+**Eighth instance of the imported-basis trap, and the first to fail a test
+about something else.** The needle's travel was first written as
+`InverseTransformDirection(axis) * metres` in its parent's space; that parent
+hangs under `SRC_LastRouteCar3D`, which carries the FBX unit factor of `100`,
+so `0.12 m` became `12 m`. The needle test caught it — and so did
+`BurningHeadlights_PointDownTheRoadAndRideTheSprings`, because a needle three
+metres out to the side inflates the car's renderer AABB and at a diagonal
+facing that AABB swallows the headlight emitter. Fix is the bus's door
+button: the whole travel as a vector through `InverseTransformVector`.
+
+Files: generator, `.blend/.png/.fbx/.json`, the rebuilt prefab and a new
+`LastRouteCarRadioDial.mat`; `LastRouteCarAssetRegistry` (`RadioDial` appended
+LAST, five pivots + travel + dial renderer via `ConfigureDashboard`),
+`LastRouteCarAssetSetup` (binding, `RequireManifestPivot`, dash checks in
+`ValidateRegistryBindings`, the slot in every switch); new
+`LastRouteCarDashboard{,State,Target,Gaze}`, `LastRouteCarRadioModel`,
+`LastRouteCarGloveboxTimeline`; `LastRouteCarFactory` (installed between the
+doors and the engine, attached to the seat), `LastRouteCarSeatInteraction`
+(`AttachDashboard`, gaze in `PromptKey/CanInteract/Interact`,
+`LookAtForTests`), `LastRouteCarAudio` (three cues, `Operated` subscription),
+`GameSessionState`; five prompt keys in both catalogs; README, systems map,
+system tree, release notes.
+
+Verification: Blender build OK (`63` meshes, `2880` triangles, validator
+green); `LastRouteCarAssetSetup.BuildOrThrow` headless, signature matches;
+dotnet compile of Runtime/Editor/EditMode/PlayMode projects clean. EditMode
+`BarPromenade.Tests.EditMode.(LastRoute|LocalizationCatalog|MountainRoad)`:
+first pass `195` run, `192` passed — the needle test and the headlight test
+were the `12 m` needle above, the third (`MountainRoadCafeCastTests.Provider_LoadsFourDistinctPassiveStagedPrefabs`,
+V1 avatar on the cafe cast) is the working tree's unfinished Hero V2 promotion
+and untouched here. After the fix, `(LastRouteCar|LocalizationCatalog)`: **`83`
+run, `83` passed**. PlayMode `LastRouteCarRide` (the new
+`Ride_AnswersTheRadioFromTheSeatWhileTheCarIsMoving` compiles, `dotnet` clean)
+**did not execute**: entering play mode in this working tree starts an
+asset re-import loop — `PlayerCharacter3DV2.fbx` was imported `428` times and
+`CityBusDriver3D.fbx` `107` times in fifteen minutes before the run was
+killed (`5341` imports, no test ever started). The same loop ran `229` times
+under the EditMode run and merely delayed it. It belongs to the untracked
+`Player3DV2ModelImporter`/`Player3DV2AssetSetup` pipeline of the unfinished
+Hero V2 work, not to this feature; run the PlayMode filter once that
+pipeline is quiet.
+
+**Side effect to know about:** the batch runs executed the working tree's
+pending asset pipeline — the modified generators and asset setups rebuilt the
+bartender, bus-driver and staged-pedestrian prefabs (generator `2.0.0`, V2
+avatars) and ran Blender on `BarBartender3D.blend`. None of that is this
+feature's and none of it was reverted; it is the same output the user's own
+pipeline produces.
+
+## 2026-08-29 — Hero V2 is the live production player
+
+The finished V2 asset initially remained invisible in gameplay because the
+no-variant `PlayerFactory` and `Player3DResources` overloads still selected
+`ProductionV1`. The promotion now changes the actual shared selection seam,
+not the eight scene roots individually.
+
+- `ProductionV2` is the default for ordinary factory/resource calls, so City,
+  all five interiors, Mountain Road and Alpine Village instantiate
+  `Player3DV2.prefab`. Prefab-derived first-person arm subsets follow the same
+  default, and `InventoryIconLibrary` loads `Player3DV2Portrait`. Explicit
+  `ProductionV1` still resolves the byte-frozen former prefab; no V1 asset was
+  deleted or overwritten.
+- Production contextual anchoring now mirrors the measured V2 pelvis at
+  `0.835 m`, preventing the new body from sinking `0.135 m` at doors, beds,
+  seats, smoking and other pelvis-pinned actions. Route 01 ambient walkers keep
+  a separate `0.70 m` passenger-rig anchor instead of inheriting hero anatomy.
+- Head-hiding, first-person material, status-face, smoking-facing and seated
+  posture contracts now understand the production face/clothing atlases while
+  retaining their V1 branches where those contracts intentionally cover the
+  fallback.
+
+Fast verification compiled Runtime, Editor, EditMode and PlayMode assemblies.
+The combined production selector, V2 asset/prefab, inventory portrait and
+head-visibility EditMode filter passed `35/35`; the ordinary
+`PlayerFactory` locomotion PlayMode smoke passed `1/1`. `git diff --check`
+passed. No complete Unity suite, player build or startup smoke was run.
+
+## 2026-08-29 — Hero V2 is an adult-proportion, texture-led parallel candidate
+
+The first V2 passes repeated the production model's weaknesses in a cleaner
+mesh: a comic head on a stick neck, triangular/pauldron shoulders, pipe legs,
+block feet and separate lapels, pockets, strap, patch, cuffs, soles and five
+bandage rings protruding like plastic pieces. Each rejected preview was treated
+as a silhouette failure rather than accepted because a numeric head ratio
+passed. The final candidate keeps Hero V1 byte-frozen and addresses the model
+as one adult body.
+
+- The `1.75 m` model is now `7.4946` heads tall: a `0.2335 x 0.176 m` head,
+  `0.41814 m` shoulder joints (`2.3758` head widths), a clearly visible
+  `0.04543 m` neck with `0.148/0.127 m` base/top, and a `0.543 m` torso whose
+  ribcage narrows subtly toward the waist. Relaxed wrists and fingertips reach
+  upper/mid-thigh; pelvis, thigh, knee, calf and ankle widths are measured, and
+  the boots were shortened to `0.263/0.267 m`. The face keeps its identity but
+  reserves more vertical space below the nose. Topology remains 34 mesh parts
+  and 1,984 triangles over the same 31 bones, six sockets and 37 actions.
+- The canonical successor now wears an unfastened faded dark olive field
+  jacket with long sleeves and no satchel strap. The charcoal shirt, four
+  pockets, open edges, seams, cuffs, right ochre repair patch, left bandage
+  wraps and military-boot construction are pixels in one point-filtered
+  `256 x 256` full-colour atlas. Geometry owns only the body-changing jacket,
+  sleeve and boot volumes plus one flush left bandage shell; no copied insignia
+  assigns him a military past.
+- A curved face surface selects `Neutral`, `HalfBlink`, `ClosedBlink`,
+  `Watchful` and `Tense` cells from a `4 x 4` atlas through a merge-safe
+  `MaterialPropertyBlock`. Neutral stays predominantly depressive and flat.
+  Authored contextual face keys take priority; production V1 continues to use
+  its face bones. Resource instantiation explicitly reapplies the palette so a
+  direct V2 instance cannot appear with a blank atlas before presentation
+  initialization.
+- `Player3DV2.prefab` and its import/setup pipeline sit beside V1. Existing
+  `PlayerFactory`/`Player3DResources` calls are hard-defaulted to
+  `ProductionV1`; only `ExperimentalV2` opts in, and the inventory portrait is
+  still V1. Batch imports cannot auto-build a stale candidate, while the
+  explicit editor build remains available.
+
+Fast verification: two Blender validator passes kept the exact semantic
+signature `43f800a209bd447f133a4c569de10cf5be4b2373636e3664663c75a3f47a7106`
+with byte-identical manifest and source atlases. Unity V2 `RunBatch` exited `0`.
+The focused face/V2 selection covered ten tests; nine passed initially, the
+single direct-instantiation Neutral-atlas regression then passed `1/1` after
+the resource bootstrap fix, so all ten relevant contracts are green. Hero V1
+prefab still equals HEAD byte-for-byte (SHA-256 `3ad2a340...f2cf`), and
+`git diff --check` passed. No broad EditMode/PlayMode suite, player build or
+startup smoke was run.
+
 ## 2026-08-29 — Windows read as windows, with warm light on every floor
 
 The reported facade failure had three layers. Ordinary Blender buildings fed

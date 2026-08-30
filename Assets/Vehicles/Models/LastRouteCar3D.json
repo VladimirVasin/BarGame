@@ -15,8 +15,8 @@
     "wheelbase": 2.7,
     "wheel_radius": 0.34
   },
-  "mesh_count": 40,
-  "triangle_count": 2100,
+  "mesh_count": 63,
+  "triangle_count": 2880,
   "bounds_min": [
     -0.94,
     -2.53,
@@ -45,8 +45,19 @@
   "perch_drop_m": 0.505,
   "seated_headroom_m": 1.04,
   "cabin_floor_drop_m": 0.22,
-  "build_signature": "d76e171b2023d167ddd0592b25fdbbcfae1517a0b25b5fb181f19def70df042f",
+  "dashboard_top_z": 1.04,
+  "glovebox_lid_open_degrees": 78.0,
+  "radio_dial_width_m": 0.14,
+  "build_signature": "b497b6d661dee1d4fedf0b6083f1c68b8419434e825992072b1e66a33e76a350",
   "parts": [
+    {
+      "name": "GEO_Ashtray",
+      "role": "ashtray",
+      "material_slot": "Trim",
+      "parent": "ROOT_Body",
+      "vertices": 16,
+      "triangles": 24
+    },
     {
       "name": "GEO_BodyShell",
       "role": "body_shell",
@@ -72,6 +83,14 @@
       "triangles": 12
     },
     {
+      "name": "GEO_ColumnStalk",
+      "role": "column_stalk",
+      "material_slot": "Metal",
+      "parent": "ROOT_Body",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
       "name": "GEO_CrackedGlass",
       "role": "cracked_glass",
       "material_slot": "CrackedGlass",
@@ -80,12 +99,28 @@
       "triangles": 64
     },
     {
+      "name": "GEO_DashLip",
+      "role": "dash_lip",
+      "material_slot": "Dashboard",
+      "parent": "ROOT_Body",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_DashVents",
+      "role": "dash_vents",
+      "material_slot": "Trim",
+      "parent": "ROOT_Body",
+      "vertices": 64,
+      "triangles": 96
+    },
+    {
       "name": "GEO_Dashboard",
       "role": "dashboard",
       "material_slot": "Dashboard",
       "parent": "ROOT_Body",
-      "vertices": 16,
-      "triangles": 24
+      "vertices": 40,
+      "triangles": 60
     },
     {
       "name": "GEO_Dents",
@@ -176,12 +211,44 @@
       "triangles": 32
     },
     {
+      "name": "GEO_GearLever",
+      "role": "gear_lever",
+      "material_slot": "Metal",
+      "parent": "ROOT_Body",
+      "vertices": 20,
+      "triangles": 32
+    },
+    {
       "name": "GEO_Glass",
       "role": "glass",
       "material_slot": "Glass",
       "parent": "ROOT_Body",
       "vertices": 32,
       "triangles": 16
+    },
+    {
+      "name": "GEO_GloveboxCatch",
+      "role": "glovebox_catch",
+      "material_slot": "Chrome",
+      "parent": "PIVOT_GloveboxLid",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_GloveboxCompartment",
+      "role": "glovebox_compartment",
+      "material_slot": "Interior",
+      "parent": "ROOT_Body",
+      "vertices": 32,
+      "triangles": 48
+    },
+    {
+      "name": "GEO_GloveboxLid",
+      "role": "glovebox_lid",
+      "material_slot": "Dashboard",
+      "parent": "PIVOT_GloveboxLid",
+      "vertices": 8,
+      "triangles": 12
     },
     {
       "name": "GEO_Greenhouse",
@@ -240,6 +307,30 @@
       "triangles": 44
     },
     {
+      "name": "GEO_IgnitionKey",
+      "role": "ignition_key",
+      "material_slot": "Chrome",
+      "parent": "ROOT_Body",
+      "vertices": 20,
+      "triangles": 32
+    },
+    {
+      "name": "GEO_InstrumentBezels",
+      "role": "instrument_bezels",
+      "material_slot": "Chrome",
+      "parent": "ROOT_Body",
+      "vertices": 48,
+      "triangles": 84
+    },
+    {
+      "name": "GEO_InstrumentFaces",
+      "role": "instrument_faces",
+      "material_slot": "Plate",
+      "parent": "ROOT_Body",
+      "vertices": 40,
+      "triangles": 72
+    },
+    {
       "name": "GEO_InteriorMirror",
       "role": "interior_mirror",
       "material_slot": "Trim",
@@ -256,6 +347,22 @@
       "triangles": 72
     },
     {
+      "name": "GEO_LeverKnobs",
+      "role": "lever_knobs",
+      "material_slot": "Trim",
+      "parent": "ROOT_Body",
+      "vertices": 16,
+      "triangles": 24
+    },
+    {
+      "name": "GEO_MirrorStalk",
+      "role": "mirror_stalk",
+      "material_slot": "Trim",
+      "parent": "ROOT_Body",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
       "name": "GEO_NumberPlate",
       "role": "number_plate",
       "material_slot": "Plate",
@@ -264,12 +371,68 @@
       "triangles": 24
     },
     {
+      "name": "GEO_PedalPlates",
+      "role": "pedal_plates",
+      "material_slot": "Rubber",
+      "parent": "ROOT_Body",
+      "vertices": 24,
+      "triangles": 36
+    },
+    {
+      "name": "GEO_PedalStems",
+      "role": "pedal_stems",
+      "material_slot": "Metal",
+      "parent": "ROOT_Body",
+      "vertices": 24,
+      "triangles": 36
+    },
+    {
       "name": "GEO_Pillars",
       "role": "pillars",
       "material_slot": "Body",
       "parent": "ROOT_Body",
       "vertices": 72,
       "triangles": 120
+    },
+    {
+      "name": "GEO_RadioBezel",
+      "role": "radio_bezel",
+      "material_slot": "Chrome",
+      "parent": "ROOT_Body",
+      "vertices": 32,
+      "triangles": 48
+    },
+    {
+      "name": "GEO_RadioDial",
+      "role": "radio_dial",
+      "material_slot": "RadioDial",
+      "parent": "ROOT_Body",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_RadioNeedle",
+      "role": "radio_needle",
+      "material_slot": "Chrome",
+      "parent": "PIVOT_RadioNeedle",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_RadioPowerKnob",
+      "role": "radio_knob",
+      "material_slot": "Trim",
+      "parent": "PIVOT_RadioPowerKnob",
+      "vertices": 24,
+      "triangles": 40
+    },
+    {
+      "name": "GEO_RadioTuningKnob",
+      "role": "radio_knob",
+      "material_slot": "Trim",
+      "parent": "PIVOT_RadioTuningKnob",
+      "vertices": 24,
+      "triangles": 40
     },
     {
       "name": "GEO_Rust",
@@ -304,6 +467,14 @@
       "triangles": 24
     },
     {
+      "name": "GEO_SpeedoNeedle",
+      "role": "speedo_needle",
+      "material_slot": "Chrome",
+      "parent": "PIVOT_SpeedoNeedle",
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
       "name": "GEO_SteeringColumn",
       "role": "steering_column",
       "material_slot": "Metal",
@@ -312,12 +483,28 @@
       "triangles": 20
     },
     {
+      "name": "GEO_SunVisors",
+      "role": "sun_visor",
+      "material_slot": "Interior",
+      "parent": "ROOT_Body",
+      "vertices": 16,
+      "triangles": 24
+    },
+    {
       "name": "GEO_TailLights",
       "role": "tail_light",
       "material_slot": "TailLight",
       "parent": "ROOT_Body",
       "vertices": 16,
       "triangles": 24
+    },
+    {
+      "name": "GEO_TransmissionTunnel",
+      "role": "transmission_tunnel",
+      "material_slot": "Interior",
+      "parent": "ROOT_Body",
+      "vertices": 8,
+      "triangles": 12
     },
     {
       "name": "GEO_Trim",
@@ -537,6 +724,91 @@
         0.0
       ],
       "runtime_axis_local": "+Z",
+      "travel_m": 0.0
+    },
+    {
+      "name": "PIVOT_GloveboxLid",
+      "role": "glovebox_lid",
+      "parent": "ROOT_Body",
+      "local_position": [
+        -0.46,
+        -0.93,
+        0.88
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "+X",
+      "travel_m": 0.0
+    },
+    {
+      "name": "PIVOT_RadioNeedle",
+      "role": "radio_needle",
+      "parent": "ROOT_Body",
+      "local_position": [
+        -0.06,
+        -0.93,
+        0.93
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "+X",
+      "travel_m": 0.12
+    },
+    {
+      "name": "PIVOT_RadioPowerKnob",
+      "role": "radio_power_knob",
+      "parent": "ROOT_Body",
+      "local_position": [
+        0.09,
+        -0.93,
+        0.893
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "+Y",
+      "travel_m": 0.0
+    },
+    {
+      "name": "PIVOT_RadioTuningKnob",
+      "role": "radio_tuning_knob",
+      "parent": "ROOT_Body",
+      "local_position": [
+        -0.09,
+        -0.93,
+        0.893
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "+Y",
+      "travel_m": 0.0
+    },
+    {
+      "name": "PIVOT_SpeedoNeedle",
+      "role": "speedo_needle",
+      "parent": "ROOT_Body",
+      "local_position": [
+        0.385,
+        -0.995,
+        1.02
+      ],
+      "local_rotation_degrees": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "runtime_axis_local": "+Y",
       "travel_m": 0.0
     },
     {

@@ -377,12 +377,12 @@ MonoBehaviour:
   - {fileID: 5981048172972854663}
   - {fileID: 4148596422584142910}
   localBounds:
-    m_Center: {x: -0.000000059604645, y: 1.025, z: 0.055249974}
-    m_Extent: {x: 0.79367507, y: 1.025, z: 0.17925002}
+    m_Center: {x: -0.0010001659, y: 1.0249999, z: 0.0406812}
+    m_Extent: {x: 0.8050294, y: 1.0249999, z: 0.17551003}
   sourceTriangleCount: 1588
-  sourceGeneratorVersion: 1.0.0
+  sourceGeneratorVersion: 2.0.0
   designId: watcher_cashier_v1
-  buildSignature: b6aed53841c1ccc675d69eabb983e388996efa412c18b3780ceb2f3194562b43
+  buildSignature: eca36033e15985ab71e20082b576300bd43b5f18d188de901dcee329302cc035
 --- !u!1001 &236290169113557727
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -663,7 +663,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1118600772291069838}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 0
   m_UpdateMode: 0

@@ -23,7 +23,7 @@
   `Assets/Scenes/AlpineVillage.unity`. The last four are appended at build
   indices `7`, `8`, `9` and `10`, preserving every previous index.
 - Runtime assembly: `BarPromenade.Runtime`.
-- Player presentation: one modular `Player3D.prefab` in all eight gameplay
+- Player presentation: one modular `Player3DV2.prefab` in all eight gameplay
   roots, with independent mesh parts, a Generic in-place action set,
   same-prefab first-person subsets, a dedicated portrait, real mesh shadows
   and an analytic contact patch.
@@ -481,10 +481,27 @@ The vertical slice contains:
   A slot's `CharacterController` is enabled only after a unique, obstacle-safe
   spawn and disabled before pooling. The dedicated layer collides with the player,
   ignores other pedestrians and is excluded from camera/interaction queries.
+  The live humanoid-NPC asset set comprises `21` rigged designs: five pooled
+  walkers, `13` staged residents and the dedicated bartender, Watcher Cashier
+  and bus driver. Every rigged design uses `NpcHumanV2`, the exact Hero V2
+  31-bone A-pose hierarchy and Avatar copied from
+  `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
+  `0.835 m` rest pelvis. Pedestrian and staged manifests are generator version
+  `4.0.0`, the three special manifests are `2.0.0`, and
+  `CityPedestrianLocomotion` contains `37` clips; the four Mountain Road
+  cafe roles retain their separate `8`-clip bank. The generated FBXs were
+  reimported and every production prefab/provider output rebuilt; runtime
+  therefore consumes the replaced models, not legacy prefabs behind revised
+  authoring data. The special models measure `50` meshes/`1,436` triangles
+  for the full-body `1.75 m` bartender, `44`/`1,588` for the cashier and
+  `48`/`1,496` for the driver. This is a shared adult anatomical substrate,
+  not a character redesign: the mouthless Long-Arm, kettle and hopper
+  silhouettes, six bartender arms, cashier's undersized head and `18 m`
+  stretch neck, and driver's horizontal eyes remain canonical overlays.
   The pool holds one presentation per registered design — Lampshade Walker,
   Chair Carrier, Kettle Hat Walker, Long-Arm Walker and Helmet Lamp Hopper —
-  each with four material-property-block palettes. All five use the compatible Generic Avatar
-  and dedicated in-place `Idle`/`Walk` loops: the Lampshade keeps a persistent
+  each with four material-property-block palettes. All five use dedicated
+  in-place `Idle`/`Walk` loops: the Lampshade keeps a persistent
   hunch and uneven short step, the chair-burdened walker stays upright with a
   quicker high-knee gait, the stout Kettle Hat Walker moves at `0.90-1.02 m/s`
   on `1.08-1.18x` clips with a constant waddle and counter-phased belly and
@@ -513,8 +530,9 @@ The vertical slice contains:
   passenger seats, rails, dashboard, two animated double-leaf doors, rolling
   wheels and front steering. Each door keeps its outer posts fixed while its
   two independently hinged leaves fold inward around the bus vertical. The
-  separate passive `CityBusDriver3D` uses the shared `Player3DLit` material, an
-  exact 31-bone rig, a normal low-poly head and long horizontal eyes.
+  separate passive `CityBusDriver3D` uses the shared `Player3DLit` material
+  and the `NpcHumanV2` rig/Avatar copied from Hero V2, with a normal low-poly
+  head and its canonical long horizontal eyes.
   Procedural seated IK keeps both hands on the rotating wheel grips. For each
   door command, a deterministic timeline moves only the right hand to the
   dashboard button with `12 mm` travel while the left stays planted, and turns
@@ -850,9 +868,10 @@ The vertical slice contains:
   frontage and roadside descriptors sample the rendered terrain at their
   final XZ anchor, so their geometry, collision proxies and interaction
   docks share the actual pavement height rather than the lot datum;
-- one deterministic `city_misc_citywide_v4` mesh library supplies the passive
-  visuals for the broad City misc pass: `80` semantic kinds resolve to `115`
-  assemblies, `238` role meshes and `42,878` triangles. It covers the 24-family
+- one deterministic `city_misc_citywide_v4` mesh library at generator version
+  `4.7.0` supplies the passive visuals for the broad City misc pass: `80`
+  semantic kinds resolve to `115` assemblies, `238` role meshes and
+  `42,750` triangles. It covers the 24-family
   decoration layer and park landmarks, street lamps and signal housings,
   Route 01 shelters/poles, the eastern yard, cemetery graves and vegetation,
     the church-yard surfaces and planting plus the modified cemetery
@@ -865,8 +884,11 @@ The vertical slice contains:
   compatibility and is not instantiated. These are role meshes rather than
   world prefabs:
   validated plans still own placement, terrain, collision,
-  dynamics, interactions, realtime lights/halos, cloth and NPCs. Tilted
-  cemetery monuments intentionally retain their legacy visual builder;
+  dynamics, interactions, realtime lights/halos, cloth and NPCs. The standing,
+  seated and sleeping Nightlife shelter residents are the three non-rigged
+  humanoids; their baked meshes use the equivalent
+  `static_humanoid_anatomy_v2` adult-proportion standard. Tilted cemetery
+  monuments intentionally retain their legacy visual builder;
 - four first-class open district points of interest on their own full-block
   land-use lots: Old Town's waterworks court, Residential's drying yard,
   Industrial's weighbridge and Nightlife's last-route island. Their canonical
@@ -1043,20 +1065,26 @@ The vertical slice contains:
   entrance's own sidewalk arrival point rather than the road centerline;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
-- one production `Resources/Player/Player3D` prefab used by City, BarInterior,
-  SupermarketInterior, HomeInterior and StairwellInterior. Its `1.75 m`
-  low-poly Generic rig preserves 73 independent mesh objects, 16 explicitly
-  registered anatomical parts, the left-forearm bandage, right-shoulder patch
-  and diagonal strap. One shared URP/Lit material plus per-mesh property blocks
-  retain the palette without per-instance materials;
+- one production `Resources/Player/Player3DV2` prefab selected by all eight
+  gameplay roots, prefab-derived first-person subsets and the inventory
+  portrait. It keeps the `1.75 m`, 31-bone, 37-action contract in 34 mesh parts and
+  1,984 triangles, but uses adult `7.4946`-head proportions, an atlas-driven
+  five-state face and a full-colour point-filtered clothing atlas. Its open
+  olive field jacket has long sleeves and no strap; painted garment and boot
+  construction replace protruding detail meshes;
+- one retained `Resources/Player/Player3D` Hero V1 prefab and its portrait.
+  `Player3DVariant.ProductionV1` can still select that byte-frozen burgundy,
+  strapped model explicitly for fallback and legacy contract checks, but no
+  ordinary gameplay or inventory route selects it;
 - one manual PlayableGraph presentation that damp-blends the in-place
   four-second `Idle` and one-second `Walk` actions from actual planar speed.
   Idle alternates readable breathing and weight shifts; Walk uses full
   contact/down/passing/up phases with independently flexing elbows, knees and
   ankles. Start and stop use `0.14 s`/`0.20 s` smooth envelopes, and visible
   gait cadence follows the blended weight. Root motion stays disabled while
-  registered face bones drive neutral, half/closed blink, watchful and tense
-  states. A failed balance check may temporarily suspend this graph while the
+  the face atlas drives neutral, half/closed blink, watchful and tense states;
+  V1 retains its bone fallback. A failed balance check may temporarily suspend
+  this graph while the
   same registered bones are owned by the bounded ragdoll. Intoxication sway,
   arm spread, knee bend and balance lean are
   additive rotational/limb poses, preserve the authored pelvis position in
@@ -1332,7 +1360,8 @@ The vertical slice contains:
 - one separate runtime-composed `16 x 11 x 3.6 m` `SupermarketInterior` with
   protected aisles, three shelf sections, a stockroom facade and a decorative
   checkout staffed by the Watcher Cashier — a bespoke animation-free 3D
-  clerk on the shared 31-bone Avatar whose five-segment neck lies along a
+  clerk on the shared `NpcHumanV2` 31-bone Hero V2 Avatar at a `0.835 m`
+  rest pelvis, whose five-segment neck lies along a
   pursuit curve: his body never leaves the register, but the head travels
   the whole hall — up to `18 m` of neck — to hover beside the hero,
   the sample-verified curve climbing over any shelf or counter in the
@@ -1604,8 +1633,15 @@ The vertical slice contains:
 - 3D bar patrons drawn from the same pooled city pedestrian prefabs: guests
   sit in booths through the shared seated-ride contract and stand at tables on
   the deterministic layout anchors with per-anchor palette variants, idling
-  through the shared pedestrian presentation; the bartender anchor stays
-  deliberately empty until a dedicated 3D bartender pass;
+  through the shared pedestrian presentation;
+- one dedicated full-body `BarBartender3D` now occupies the authored bartender
+  anchor. `BarBartenderProvider` loads the rebuilt production
+  `Assets/Bar/Bartender/Prefabs/BarBartender.prefab`;
+  `BarBartenderPresentation` gives its three arm pairs independent quiet idle
+  motion, and `BarBartenderServiceChoreography` makes the extra hands follow
+  the selected bottle and vessel while the existing timeline remains
+  authoritative. Ordinary one-bottle service is live; multi-ingredient
+  cocktail ordering and its simultaneous six-arm return chord remain deferred;
 - a scene-local spatial crowd bed plus rare glass/chair cues consume their
   layout radius/gain data and coexist with the existing bar music and
   procedural ambience inside a four-source budget;
@@ -1682,7 +1718,8 @@ The vertical slice contains:
   future bar activities start from a new design. The cemetery gravedigging
   acts are the first minigames built on that footing — city-side, and on the
   surviving `BarMinigameModalLock` rather than the removed catalog.
-- A dedicated 3D bartender (planned next pass; the supermarket cashier
-  shipped as the Watcher Cashier).
+- Multi-ingredient cocktail ordering, mixture state/UI and the bartender's
+  simultaneous six-arm bottle-return chord. The bartender model, runtime
+  presence and ordinary one-bottle service choreography are already shipped.
 
 South City Rollers/Skaters is a design reference only for procedural-world and sprite-character approaches; its code and assets are not present in this repository.

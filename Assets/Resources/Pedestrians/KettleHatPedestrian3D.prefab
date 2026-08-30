@@ -436,12 +436,12 @@ MonoBehaviour:
   sitClip: {fileID: -4212179374122782929, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   actionClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.000000059604645, y: 0.875, z: 0.008940846}
-    m_Extent: {x: 0.62600005, y: 0.875, z: 0.37055907}
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.028378546}
+    m_Extent: {x: 0.61849916, y: 0.8749999, z: 0.38991588}
   sourceTriangleCount: 1356
-  sourceGeneratorVersion: 3.2.0
+  sourceGeneratorVersion: 4.0.0
   designId: kettle_hat_walker_v1
-  buildSignature: 05aa7b836878f769c7c7619a3ad5e5cfce4399f9d0e3a8806abbbc766cf3625a
+  buildSignature: c96cb8cd4e00da753eea61553acf171f29ee7cb5fd744a527d4c19a1b56889a6
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -722,7 +722,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 1252467576968912659}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 1
   m_UpdateMode: 0

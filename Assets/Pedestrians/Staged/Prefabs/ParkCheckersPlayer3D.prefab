@@ -490,12 +490,12 @@ MonoBehaviour:
   sitClip: {fileID: 0}
   actionClip: {fileID: -7761338759945140009, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   localBounds:
-    m_Center: {x: -0.00000011920929, y: 0.87499964, z: 0.03699997}
-    m_Extent: {x: 0.763, y: 0.87499964, z: 0.185}
+    m_Center: {x: -0.0010001659, y: 0.87499964, z: 0.025061056}
+    m_Extent: {x: 0.7714557, y: 0.87499964, z: 0.18695834}
   sourceTriangleCount: 1260
-  sourceGeneratorVersion: 3.2.0
+  sourceGeneratorVersion: 4.0.0
   designId: park_checkers_player_v1
-  buildSignature: 594a615463cc6a1a4a392a48764c4c6643a51e1a140a4509dd8ea65940df9aa2
+  buildSignature: 3755993a476e0947f604ad9a7613bd0e492ca8af651321edd246fc18b8266047
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -910,7 +910,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 4289560702397441544}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 1
   m_UpdateMode: 0

@@ -6,14 +6,15 @@ Run this with Blender, not CPython:
     blender --background --factory-startup --python \
         tools/build-supermarket-cashier-3d-model.py
 
-The cashier is an animation-free model on the exact 31-bone production
-Player Generic A-pose skeleton. His signature is a grotesquely long neck
-built from five rigid segments anchored on PIVOT_Neck.01..05 empties:
+The cashier is an animation-free model on the NpcHumanV2-compatible
+31-bone A-pose skeleton. His signature is a grotesquely long neck built
+from five rigid segments anchored on PIVOT_Neck.01..05 empties:
 the runtime re-parents the segments under the pivots (the wheelchair
 mechanism pattern) and stretches, bends and retracts the chain
-procedurally, so the shared Avatar and every 31-bone validator stay
-untouched. The undersized head and the enormous asymmetric watcher eyes
-ride the chain tip through the ordinary head/eye bones.
+procedurally, so the shared NpcHumanV2-compatible Avatar and every
+31-bone validator stay untouched. The undersized head and the enormous
+asymmetric watcher eyes ride the chain tip through the ordinary
+head/eye bones.
 
 Blender source space is metres, Z-up, forward -Y and anatomical left +X.
 """
@@ -36,7 +37,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "1.0.0"
+GENERATOR_VERSION = "2.0.0"
 DESIGN_ID = "watcher_cashier_v1"
 DISPLAY_NAME = "Watcher Cashier"
 SEED = 731209
@@ -46,6 +47,7 @@ TOTAL_HEIGHT = 2.05
 MIN_TRIANGLES = 1100
 MAX_TRIANGLES = 2200
 SHARED_MATERIAL_ASSET = "Assets/Player3D/Materials/Player3DLit.mat"
+SIGNATURE_ANATOMY = ("stretch_neck", "undersized_head")
 
 NECK_BASE = (0.0, -0.015, 1.335)
 NECK_SEGMENT_COUNT = 5
@@ -84,6 +86,7 @@ def load_character_build_base():
 
 
 base = load_character_build_base()
+base.NPC_PROFILE_KEY = "watcher_cashier"
 
 PALETTE = {
     # `coat` is the helper material's neutral source preview color.
@@ -108,8 +111,8 @@ PALETTE = {
     "button": (0.525, 0.415, 0.220, 1.0),
 }
 
-# The helper owns the canonical skeleton and deterministic geometry and
-# export implementation. Override only source identity and palette.
+# The helper owns the NpcHumanV2-compatible skeleton and deterministic
+# geometry/export implementation. Override only source identity and palette.
 base.GENERATOR_VERSION = GENERATOR_VERSION
 base.DESIGN_ID = DESIGN_ID
 base.SEED = SEED
@@ -653,6 +656,11 @@ class CashierBuilder(base.PedestrianBuilder):
         scene["bp_seed"] = SEED
         scene["bp_has_own_animations"] = False
         scene["bp_runtime_material"] = SHARED_MATERIAL_ASSET
+        scene["bp_anatomy_standard"] = base.NPC_ANATOMY_STANDARD
+        scene["bp_rest_pelvis_height_m"] = base.NPC_PELVIS_HEIGHT
+        scene["bp_signature_anatomy"] = json.dumps(
+            list(SIGNATURE_ANATOMY), separators=(",", ":")
+        )
         scene["bp_neck_design"] = "segmented periscope neck"
         scene["bp_eye_design"] = "wide asymmetric watcher eyes"
 
@@ -673,7 +681,7 @@ def validate_cashier_result(result):
         spec.name for spec in base.SKELETON
     ]:
         errors.append(
-            "Generic bone order/names diverge from PlayerCharacter3D"
+            "Bone order/names diverge from NpcHumanV2"
         )
     for bone_spec in base.SKELETON:
         bone = result.rig.data.bones.get(bone_spec.name)
@@ -689,11 +697,11 @@ def validate_cashier_result(result):
             )
         if (bone.head_local - base.v(bone_spec.head)).length > 0.000001:
             errors.append(
-                f"{bone_spec.name} head diverges from canonical A-pose"
+                f"{bone_spec.name} head diverges from NpcHumanV2 A-pose"
             )
         if (bone.tail_local - base.v(bone_spec.tail)).length > 0.000001:
             errors.append(
-                f"{bone_spec.name} tail diverges from canonical A-pose"
+                f"{bone_spec.name} tail diverges from NpcHumanV2 A-pose"
             )
 
     if bpy.data.actions:
@@ -858,6 +866,9 @@ def validate_cashier_result(result):
         "generator_version": GENERATOR_VERSION,
         "design_id": DESIGN_ID,
         "seed": SEED,
+        "anatomy_standard": base.NPC_ANATOMY_STANDARD,
+        "rest_pelvis_height_m": base.NPC_PELVIS_HEIGHT,
+        "signature_anatomy": list(SIGNATURE_ANATOMY),
         "skeleton": [
             {
                 "name": spec.name,
@@ -878,6 +889,15 @@ def validate_cashier_result(result):
                 "color": [
                     base.stable_float(component)
                     for component in part.color
+                ],
+                "vertices": [
+                    [
+                        base.stable_float(component)
+                        for component in (
+                            part.obj.matrix_world @ vertex.co
+                        )
+                    ]
+                    for vertex in part.obj.data.vertices
                 ],
                 "triangles": base.triangulated_count(part.obj.data),
             }
@@ -975,6 +995,11 @@ def write_manifest(path: Path, result, report) -> None:
         "display_name": DISPLAY_NAME,
         "seed": SEED,
         "height_m": TOTAL_HEIGHT,
+        "anatomy_standard": base.NPC_ANATOMY_STANDARD,
+        "rest_pelvis_height_m": base.stable_float(
+            base.NPC_PELVIS_HEIGHT
+        ),
+        "signature_anatomy": list(SIGNATURE_ANATOMY),
         "pose": "apose",
         "forward_axis": "-Y",
         "anatomical_left_axis": "+X",
@@ -1049,7 +1074,7 @@ def main() -> None:
     print(f"  Design: {DESIGN_ID}")
     print(
         f"  Skeleton bones: {len(base.SKELETON)} "
-        "(exact Player Generic hierarchy)"
+        "(NpcHumanV2-compatible 31-bone hierarchy)"
     )
     print(f"  Neck pivots: {len(result.pivots)}")
     print(f"  Meshes: {report.mesh_count}")

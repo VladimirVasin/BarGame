@@ -1625,7 +1625,7 @@ namespace BarPromenade.Editor
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            if (CityMiscAssetSetup.IsBuilding)
+            if (NpcHumanV2AssetSetup.IsAnyPipelineBuilding)
             {
                 return;
             }

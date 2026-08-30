@@ -7,8 +7,8 @@ Run this with Blender, not CPython:
 
 The generator owns one editable source and animation-free FBX per authored
 design, one shared animation-only locomotion FBX, manifests and review renders.
-Every rider/walker and clip deliberately carries the exact Generic skeleton
-names, parent hierarchy and A-pose rest transforms of PlayerCharacter3D.
+Every rider/walker and clip deliberately carries the NpcHumanV2-compatible
+31-bone Generic names, parent hierarchy and adult A-pose rest transforms.
 
 Blender source space is metres, Z-up, forward -Y and anatomical left +X.
 """
@@ -34,8 +34,13 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "3.2.0"
+GENERATOR_VERSION = "4.0.0"
 CANONICAL_HEIGHT = 1.75
+NPC_ANATOMY_STANDARD = "NpcHumanV2"
+NPC_PELVIS_HEIGHT = 0.835
+# Standalone generators override this immediately after importing the shared
+# module.  The common library takes its profile from ArchetypeSpec instead.
+NPC_PROFILE_KEY = "default"
 SHARED_MATERIAL_NAME = "MAT_Player3DLit"
 ANIMATION_FPS = 24
 ANIMATION_SOURCE = "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx"
@@ -134,6 +139,10 @@ class ArchetypeSpec:
     # ensemble may own a smaller animation-only FBX instead, keeping its
     # highly specific poses out of the ambient pedestrian import contract.
     animation_source: str = ANIMATION_SOURCE
+    # Visible departures from the believable shared human substrate. These
+    # are canon overlays, not validation failures: the story and art bibles
+    # require the named silhouettes to remain abnormal in exactly these ways.
+    signature_anatomy: tuple[str, ...] = ()
 
 
 ARCHETYPES = {
@@ -141,34 +150,39 @@ ARCHETYPES = {
         "lampshade", "lampshade_walker_v1", "Lampshade Walker", 190417,
         "CityPedestrian3D.blend", "CityPedestrian3D", "CityPedestrian3D.png",
         "LampshadeIdle", "LampshadeWalk", (800, 1400),
-        sit_clip="LampshadeSit", seated_clearance_m=(0.99, 1.07),
+        sit_clip="LampshadeSit", seated_clearance_m=(0.85, 0.94),
+        signature_anatomy=("hunched_posture", "lampshade_hood"),
     ),
     "chair_carrier": ArchetypeSpec(
         "chair_carrier", "chair_carrier_v1", "Chair Carrier", 241109,
         "ChairCarrierPedestrian3D.blend", "ChairCarrierPedestrian3D",
         "ChairCarrierPedestrian3D.png", "ChairCarrierIdle", "ChairCarrierWalk",
         (800, 1600),
-        sit_clip="ChairCarrierSit", seated_clearance_m=(1.02, 1.10),
+        sit_clip="ChairCarrierSit", seated_clearance_m=(0.88, 0.97),
+        signature_anatomy=("carried_chair",),
     ),
     "kettle_hat": ArchetypeSpec(
         "kettle_hat", "kettle_hat_walker_v1", "Kettle Hat Walker", 305521,
         "KettleHatPedestrian3D.blend", "KettleHatPedestrian3D",
         "KettleHatPedestrian3D.png", "KettleHatIdle", "KettleHatWalk",
         (800, 1600),
-        sit_clip="KettleHatSit", seated_clearance_m=(1.01, 1.09),
+        sit_clip="KettleHatSit", seated_clearance_m=(0.87, 0.96),
+        signature_anatomy=("stout_short_body", "kettle_headwear"),
     ),
     "long_arm": ArchetypeSpec(
         "long_arm", "long_arm_walker_v1", "Long-Arm Walker", 418833,
         "LongArmPedestrian3D.blend", "LongArmPedestrian3D",
         "LongArmPedestrian3D.png", "LongArmIdle", "LongArmWalk",
         (800, 1300), (0.020, 0.140),
-        sit_clip="LongArmSit", seated_clearance_m=(1.01, 1.09),
+        sit_clip="LongArmSit", seated_clearance_m=(0.87, 0.96),
+        signature_anatomy=("long_forearms", "heavy_hands", "mouthless_face"),
     ),
     "helmet_lamp": ArchetypeSpec(
         "helmet_lamp", "helmet_lamp_hopper_v1", "Helmet Lamp Hopper", 527194,
         "HelmetLampPedestrian3D.blend", "HelmetLampPedestrian3D",
         "HelmetLampPedestrian3D.png", "HelmetLampIdle", "HelmetLampHop",
         (800, 1700), None, (0.080, 0.400),
+        signature_anatomy=("stout_body", "hind_feet"),
     ),
     "pipeback_roller": ArchetypeSpec(
         "pipeback_roller", "pipeback_roller_v1", "Pipeback Roller", 631907,
@@ -178,6 +192,7 @@ ARCHETYPES = {
         wheel_radius_m=0.30,
         staged=True,
         pool_eligible=False,
+        signature_anatomy=("wheelchair_support",),
     ),
     # The drying-yard grandmother. One model serves all three authored
     # instances: two beat carpets with the Soviet plastic beater in the
@@ -303,7 +318,7 @@ ARCHETYPES = {
         # those is why he drives with his feet forward on the pedals
         # instead of hanging them like a bus passenger.
         sit_clip="FerrymanDrive",
-        seated_clearance_m=(0.95, 1.04),
+        seated_clearance_m=(0.90, 1.04),
         seated_floor_drop_m=0.22,
     ),
     "park_chess_player": ArchetypeSpec(
@@ -484,6 +499,10 @@ class ValidationReport:
     bounds_min: tuple[float, float, float]
     bounds_max: tuple[float, float, float]
     build_signature: str
+    head_height_m: float = 0.0
+    head_width_m: float = 0.0
+    heads_tall: float = 0.0
+    shoulder_to_head_width: float = 0.0
 
 
 PALETTE = {
@@ -737,8 +756,8 @@ def v(value: Sequence[float]) -> Vector:
     return Vector(tuple(float(component) for component in value))
 
 
-def player_bone_specs() -> tuple[BoneSpec, ...]:
-    """Canonical PlayerCharacter3D 2.5.0 A-pose skeleton contract."""
+def legacy_player_bone_specs() -> tuple[BoneSpec, ...]:
+    """Legacy V1 rest pose used by the authored geometry coordinates."""
 
     points = {
         "hip.L": (0.083, 0.012, 0.750),
@@ -794,8 +813,142 @@ def player_bone_specs() -> tuple[BoneSpec, ...]:
     )
 
 
-SKELETON = player_bone_specs()
+LEGACY_SKELETON = legacy_player_bone_specs()
+LEGACY_BONE_BY_NAME = {bone.name: bone for bone in LEGACY_SKELETON}
+
+
+def npc_v2_bone_specs() -> tuple[BoneSpec, ...]:
+    """NpcHumanV2 rest pose shared with the production adult substrate.
+
+    The visible model may overlay a canonically abnormal silhouette, but its
+    ordinary joints use the same measured pelvis, knee, shoulder, neck and
+    hand landmarks as Hero V2. Keeping the original bone names and hierarchy
+    preserves every runtime socket and procedural controller.
+    """
+
+    points = {
+        "hip.L": (0.092, 0.010, 0.878),
+        "hip.R": (-0.092, -0.004, 0.878),
+        "knee.L": (0.088, -0.014, 0.485),
+        "knee.R": (-0.088, 0.010, 0.485),
+        "ankle.L": (0.096, -0.022, 0.095),
+        "ankle.R": (-0.096, 0.014, 0.095),
+        "toe.L": (0.096, -0.212, 0.045),
+        "toe.R": (-0.096, -0.180, 0.045),
+        "shoulder.L": (0.210, -0.004, 1.424),
+        "shoulder.R": (-0.208, 0.005, 1.418),
+        "elbow.L": (0.455, -0.012, 1.250),
+        "wrist.L": (0.680, -0.020, 1.075),
+        "hand.L": (0.763, -0.024, 1.025),
+        "elbow.R": (-0.453, -0.008, 1.244),
+        "wrist.R": (-0.678, -0.016, 1.069),
+        "hand.R": (-0.761, -0.020, 1.019),
+    }
+    grip_l = v(points["wrist.L"]).lerp(v(points["hand.L"]), 0.72)
+    grip_r = v(points["wrist.R"]).lerp(v(points["hand.R"]), 0.72)
+
+    return (
+        BoneSpec("root", (0, 0, 0), (0, 0, 0.18), deform=False),
+        BoneSpec("pelvis", (0, 0.008, NPC_PELVIS_HEIGHT), (0, 0.004, 1.015), "root"),
+        BoneSpec("spine", (0, 0.004, 1.015), (0, 0, 1.205), "pelvis", True),
+        BoneSpec("chest", (0, 0, 1.205), (0, -0.010, 1.410), "spine", True),
+        BoneSpec("neck", (0, -0.010, 1.410), (0, -0.025, 1.485), "chest", True),
+        BoneSpec("head", (0, -0.025, 1.485), (0, -0.047, 1.675), "neck", True),
+        BoneSpec("face.eye.L", (0.039, -0.122, 1.606), (0.039, -0.122, 1.620), "head"),
+        BoneSpec("face.eye.R", (-0.039, -0.122, 1.606), (-0.039, -0.122, 1.620), "head"),
+        BoneSpec("face.brow.L", (0.066, -0.119, 1.644), (0.018, -0.127, 1.642), "head"),
+        BoneSpec("face.brow.R", (-0.066, -0.119, 1.642), (-0.018, -0.127, 1.641), "head"),
+        BoneSpec("face.mouth", (-0.032, -0.133, 1.538), (0.036, -0.133, 1.537), "head"),
+        BoneSpec("SOCKET_Mouth", (0.002, -0.141, 1.538), (0.002, -0.201, 1.538), "head", deform=False),
+        BoneSpec("clavicle.L", (0, -0.008, 1.410), points["shoulder.L"], "chest", deform=False),
+        BoneSpec("upper_arm.L", points["shoulder.L"], points["elbow.L"], "clavicle.L", True),
+        BoneSpec("forearm.L", points["elbow.L"], points["wrist.L"], "upper_arm.L", True),
+        BoneSpec("hand.L", points["wrist.L"], points["hand.L"], "forearm.L", True),
+        BoneSpec("SOCKET_Grip.L", tuple(grip_l), tuple(grip_l + Vector((0, -0.055, 0))), "hand.L", deform=False),
+        BoneSpec("SOCKET_Vessel.L", tuple(grip_l), tuple(grip_l + Vector((0, 0, -0.085))), "hand.L", deform=False),
+        BoneSpec("clavicle.R", (0, -0.008, 1.410), points["shoulder.R"], "chest", deform=False),
+        BoneSpec("upper_arm.R", points["shoulder.R"], points["elbow.R"], "clavicle.R", True),
+        BoneSpec("forearm.R", points["elbow.R"], points["wrist.R"], "upper_arm.R", True),
+        BoneSpec("hand.R", points["wrist.R"], points["hand.R"], "forearm.R", True),
+        BoneSpec("SOCKET_Grip.R", tuple(grip_r), tuple(grip_r + Vector((0, -0.055, 0))), "hand.R", deform=False),
+        BoneSpec("SOCKET_Cigarette.R", tuple(grip_r + Vector((0, -0.010, 0.012))), tuple(grip_r + Vector((0, -0.085, 0.012))), "hand.R", deform=False),
+        BoneSpec("SOCKET_Bottle.R", tuple(grip_r), tuple(grip_r + Vector((0, 0, -0.085))), "hand.R", deform=False),
+        BoneSpec("thigh.L", points["hip.L"], points["knee.L"], "pelvis"),
+        BoneSpec("shin.L", points["knee.L"], points["ankle.L"], "thigh.L", True),
+        BoneSpec("foot.L", points["ankle.L"], points["toe.L"], "shin.L", True),
+        BoneSpec("thigh.R", points["hip.R"], points["knee.R"], "pelvis"),
+        BoneSpec("shin.R", points["knee.R"], points["ankle.R"], "thigh.R", True),
+        BoneSpec("foot.R", points["ankle.R"], points["toe.R"], "shin.R", True),
+    )
+
+
+SKELETON = npc_v2_bone_specs()
 BONE_BY_NAME = {bone.name: bone for bone in SKELETON}
+
+
+# Visible geometry in this file was authored against the V1 joints.  Rewriting
+# hundreds of deterministic primitive calls by hand would make the sources
+# harder to review and would very easily separate a prop from its socket.  The
+# V2 pass therefore maps each rigid part from the old rest segment to the new
+# one at the single point where geometry enters the scene.  This changes no
+# topology: it only moves the existing vertices onto the adult substrate.
+NPC_HEAD_SCALES = {
+    "default": (0.86, 0.92),
+    "lampshade": (0.94, 0.96),
+    "kettle_hat": (0.90, 0.95),
+    "long_arm": (0.88, 0.94),
+    "helmet_lamp": (0.87, 0.93),
+    "six_armed_bartender": (0.86, 0.92),
+    # The Watcher's little head is a story silhouette, not an anatomy error.
+    "watcher_cashier": (1.00, 1.00),
+    # The old driver skull was 0.308 m wide.  This stronger X correction puts
+    # the skull itself back in the adult band while retaining the long eyes.
+    "city_bus_driver": (0.62, 0.84),
+}
+
+NPC_RADIAL_SCALES = {
+    "pelvis": 1.10,
+    "spine": 1.02,
+    "chest": 1.10,
+    "neck": 0.94,
+    "clavicle": 1.04,
+    "upper_arm": 1.08,
+    "forearm": 1.08,
+    "hand": 0.96,
+    "thigh": 1.16,
+    "shin": 1.28,
+    "foot": 0.94,
+}
+
+# The vertical face map is deliberately non-uniform.  It gives the jaw, mouth
+# and chin more room, raises the eyes only slightly, and keeps every 1.75 m
+# crown exactly at 1.75 m.  Values are the V1 and Hero/Npc V2 landmarks.
+NPC_HEAD_Z_LANDMARKS = (
+    (1.400, 1.470),
+    (1.430, 1.488),
+    (1.477, 1.538),
+    (1.581, 1.606),
+    (1.627, 1.643),
+    (1.675, 1.725),
+    (1.750, 1.750),
+)
+
+
+def remap_piecewise(value: float, landmarks: Sequence[tuple[float, float]]) -> float:
+    """Map a scalar through ordered landmarks with linear extrapolation."""
+
+    if len(landmarks) < 2:
+        raise ValueError("Piecewise remap requires at least two landmarks")
+    for index in range(len(landmarks) - 1):
+        source_a, target_a = landmarks[index]
+        source_b, target_b = landmarks[index + 1]
+        if value <= source_b:
+            fraction = (value - source_a) / (source_b - source_a)
+            return target_a + (target_b - target_a) * fraction
+    source_a, target_a = landmarks[-2]
+    source_b, target_b = landmarks[-1]
+    fraction = (value - source_a) / (source_b - source_a)
+    return target_a + (target_b - target_a) * fraction
 
 
 def parse_args() -> argparse.Namespace:
@@ -1199,7 +1352,9 @@ class PedestrianBuilder:
         rig.show_in_front = True
         rig.display_type = "WIRE"
         rig["bp_export"] = True
-        rig["bp_skeleton_contract"] = "PlayerCharacter3D exact A-pose v2.5.0"
+        rig["bp_skeleton_contract"] = "NpcHumanV2 compatible A-pose v4.0.0"
+        rig["bp_anatomy_standard"] = NPC_ANATOMY_STANDARD
+        rig["bp_rest_pelvis_height_m"] = NPC_PELVIS_HEIGHT
 
         bpy.context.view_layer.objects.active = rig
         rig.select_set(True)
@@ -1221,6 +1376,209 @@ class PedestrianBuilder:
         rig.select_set(False)
         return rig
 
+    @property
+    def anatomy_profile_key(self) -> str:
+        if self.spec is not None:
+            return self.spec.key
+        return str(globals().get("NPC_PROFILE_KEY", "default"))
+
+    @staticmethod
+    def _segment_rotation(
+        source: BoneSpec,
+        target: BoneSpec,
+    ) -> Quaternion:
+        source_axis = v(source.tail) - v(source.head)
+        target_axis = v(target.tail) - v(target.head)
+        if source_axis.length <= 0.000001 or target_axis.length <= 0.000001:
+            return Quaternion()
+        return source_axis.normalized().rotation_difference(
+            target_axis.normalized()
+        )
+
+    def _remap_head_point(
+        self,
+        point: Vector,
+        role: str,
+        name: str,
+    ) -> Vector:
+        profile = self.anatomy_profile_key
+        if profile == "watcher_cashier":
+            return point.copy()
+        scale_x, scale_y = NPC_HEAD_SCALES.get(
+            profile, NPC_HEAD_SCALES["default"]
+        )
+        is_face = (
+            role.startswith("face")
+            or "face" in role
+            or name.startswith("FACE_")
+        )
+        # Facial landmarks narrow more than the cranium, matching the V2 eye
+        # spacing without turning the whole skull into a pin head.  The bus
+        # driver's canonical horizontal eyes retain their aspect ratio because
+        # their local width is handled separately below.
+        x_scale = min(scale_x, 0.80) if is_face else scale_x
+        mapped = point.copy()
+        mapped.x *= x_scale
+        if profile == "city_bus_driver" and name.startswith("FACE_EyeWhite."):
+            source_center = 0.071 if name.endswith(".L") else -0.062
+            mapped.x = source_center * scale_x + (
+                point.x - source_center
+            ) * 0.82
+        elif profile == "city_bus_driver" and name.startswith("FACE_Pupil."):
+            source_center = 0.077 if name.endswith(".L") else -0.066
+            mapped.x = source_center * scale_x + (
+                point.x - source_center
+            ) * 0.76
+        mapped.y = -0.020 + (point.y + 0.040) * scale_y
+        is_headwear = (
+            role == "signature_silhouette"
+            or name.startswith(("ACC_", "CLO_", "HAIR_", "HAIR"))
+        )
+        if is_headwear:
+            # Hats are costume silhouettes.  They follow the smaller skull but
+            # keep the authored 1.75 m crown instead of being flattened by the
+            # non-uniform face-landmark map below.
+            mapped.z = 1.75 - (1.75 - point.z) * 0.90
+        else:
+            mapped.z = remap_piecewise(point.z, NPC_HEAD_Z_LANDMARKS)
+        return mapped
+
+    def _remap_segment_point(
+        self,
+        point: Vector,
+        bone_name: str,
+        role: str,
+    ) -> Vector:
+        source = LEGACY_BONE_BY_NAME[bone_name]
+        target = BONE_BY_NAME[bone_name]
+        source_head = v(source.head)
+        target_head = v(target.head)
+        source_vector = v(source.tail) - source_head
+        target_vector = v(target.tail) - target_head
+        if source_vector.length <= 0.000001 or target_vector.length <= 0.000001:
+            return point.copy()
+
+        profile = self.anatomy_profile_key
+        family = bone_name.split(".", 1)[0]
+        if (
+            profile == "long_arm"
+            and family in {"forearm", "hand"}
+            and role == "signature_silhouette"
+        ):
+            # This forearm was intentionally authored vertically rather than
+            # along its A-pose bone.  Raise only the elbow end to the new joint
+            # and leave the heavy hand at pavement height; rotating it through
+            # the ordinary bone remap would fling the hand away from the arm.
+            if family == "hand":
+                return point.copy()
+            elbow_weight = max(0.0, min(1.0, (point.z - 0.292) / (1.175 - 0.292)))
+            side = 1.0 if bone_name.endswith(".L") else -1.0
+            return Vector((
+                point.x - side * 0.015 * elbow_weight,
+                point.y - 0.002 * elbow_weight,
+                0.292 + (point.z - 0.292) * ((1.250 - 0.292) / (1.175 - 0.292)),
+            ))
+
+        source_axis = source_vector.normalized()
+        target_axis = target_vector.normalized()
+        rotation = source_axis.rotation_difference(target_axis)
+        local = point - source_head
+        # Both rigs share the exact ankle/toe heights.  Keeping Z literal here
+        # preserves authored sole contact down to the source micrometre; a 3D
+        # quaternion would tip the low-poly sole by a few millimetres merely
+        # because the V2 boot is shorter in Y.
+        if family == "foot":
+            preserve_size = (
+                profile == "helmet_lamp"
+                and role in {"signature_silhouette", "footwear_detail"}
+            )
+            y_scale = (
+                1.0
+                if preserve_size or abs(source_vector.y) <= 0.000001
+                else target_vector.y / source_vector.y
+            )
+            x_scale = 1.0 if preserve_size else NPC_RADIAL_SCALES["foot"]
+            return Vector((
+                target_head.x + local.x * x_scale,
+                target_head.y + local.y * y_scale,
+                point.z,
+            ))
+
+        parallel_distance = local.dot(source_axis)
+        radial = local - source_axis * parallel_distance
+        preserve_dimensions = any(
+            token in role
+            for token in ("prop", "mechanism", "wheel", "carried")
+        )
+        axial_scale = (
+            1.0
+            if preserve_dimensions
+            else target_vector.length / source_vector.length
+        )
+        radial_scale = (
+            1.0
+            if preserve_dimensions
+            else NPC_RADIAL_SCALES.get(family, 1.0)
+        )
+
+        # These deformities are the visible story premise of their designs.
+        # Move them with their joint, but never normalize their actual size.
+        if (
+            profile == "long_arm"
+            and family in {"forearm", "hand"}
+            and role == "signature_silhouette"
+        ) or (
+            profile == "helmet_lamp"
+            and family == "foot"
+            and role in {"signature_silhouette", "footwear_detail"}
+        ):
+            axial_scale = 1.0
+            radial_scale = 1.0
+
+        mapped = (
+            target_head
+            + target_axis * (parallel_distance * axial_scale)
+            + rotation @ (radial * radial_scale)
+        )
+        if not preserve_dimensions and family in {"spine", "chest"}:
+            # One continuous ribcage taper: modest at the waist, broadest at
+            # the upper chest.  It removes the old rectangular/triangular slab
+            # read without making the figure muscular.
+            if family == "chest":
+                progress = max(0.0, min(1.0, (point.z - 0.90) / 0.52))
+                desired_x_scale = 0.98 + progress * 0.14
+            else:
+                progress = max(0.0, min(1.0, (point.z - 0.82) / 0.34))
+                desired_x_scale = 0.98 + progress * 0.06
+            mapped.x = target_head.x + (
+                mapped.x - target_head.x
+            ) * (desired_x_scale / radial_scale)
+        return mapped
+
+    def remap_geometry_point(
+        self,
+        point: Sequence[float],
+        bone_name: str,
+        role: str,
+        name: str,
+    ) -> Vector:
+        source_point = v(point)
+        if (
+            self.anatomy_profile_key == "chair_carrier"
+            and role == "signature_silhouette"
+        ):
+            return source_point
+        if (
+            self.anatomy_profile_key == "pipeback_roller"
+            and role == "signature_silhouette"
+        ):
+            return source_point
+        if bone_name == "root":
+            return source_point
+        if bone_name == "head" or bone_name.startswith("face."):
+            return self._remap_head_point(source_point, role, name)
+        return self._remap_segment_point(source_point, bone_name, role)
+
     def add_part(
         self,
         name: str,
@@ -1237,9 +1595,13 @@ class PedestrianBuilder:
         color = PALETTE[palette_name]
         vertices, faces = geometry
         origin_vector = v(origin or BONE_BY_NAME[bone_name].head)
+        remapped_vertices = [
+            self.remap_geometry_point(vertex, bone_name, role, name)
+            for vertex in vertices
+        ]
         mesh = bpy.data.meshes.new(f"{name}_Mesh")
         mesh.from_pydata(
-            [tuple(vertex - origin_vector) for vertex in vertices],
+            [tuple(vertex - origin_vector) for vertex in remapped_vertices],
             [],
             faces,
         )
@@ -1272,6 +1634,7 @@ class PedestrianBuilder:
         obj["bp_palette"] = palette_name
         obj["bp_base_color"] = list(color)
         obj["bp_generator_version"] = GENERATOR_VERSION
+        obj["bp_anatomy_standard"] = NPC_ANATOMY_STANDARD
         self.result.parts.append(
             PartRecord(obj, bone_name, role, palette_name, color)
         )
@@ -3832,7 +4195,7 @@ class PedestrianBuilder:
 
         self.add_part(
             "GEO_Head",
-            make_ellipsoid((0, -0.030, 1.528), (0.094, 0.090, 0.112), 12, 6),
+            make_ellipsoid((0, -0.030, 1.528), (0.094, 0.090, 0.132), 12, 6),
             "head", "body", "chess_skin",
         )
         self.add_part(
@@ -4129,7 +4492,7 @@ class PedestrianBuilder:
 
         self.add_part(
             "GEO_Head",
-            make_ellipsoid((0, -0.030, 1.528), (0.094, 0.090, 0.112), 12, 6),
+            make_ellipsoid((0, -0.030, 1.528), (0.094, 0.090, 0.132), 12, 6),
             "head", "body", "checkers_skin",
         )
         self.add_part(
@@ -5069,6 +5432,11 @@ class PedestrianBuilder:
         scene["bp_seed"] = self.spec.seed
         scene["bp_has_own_animations"] = False
         scene["bp_runtime_material"] = "Assets/Player3D/Materials/Player3DLit.mat"
+        scene["bp_anatomy_standard"] = NPC_ANATOMY_STANDARD
+        scene["bp_rest_pelvis_height_m"] = NPC_PELVIS_HEIGHT
+        scene["bp_signature_anatomy"] = json.dumps(
+            list(self.spec.signature_anatomy), separators=(",", ":")
+        )
 
 
 def triangulated_count(mesh: bpy.types.Mesh) -> int:
@@ -5087,7 +5455,7 @@ def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> Validation
     errors: list[str] = []
     bones = list(result.rig.data.bones)
     if [bone.name for bone in bones] != [spec.name for spec in SKELETON]:
-        errors.append("Generic bone order/names diverge from PlayerCharacter3D")
+        errors.append("Generic bone order/names diverge from NpcHumanV2")
     for bone_spec in SKELETON:
         bone = result.rig.data.bones.get(bone_spec.name)
         if bone is None:
@@ -5096,11 +5464,11 @@ def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> Validation
         if actual_parent != bone_spec.parent:
             errors.append(f"{bone_spec.name} parent is {actual_parent!r}, expected {bone_spec.parent!r}")
         if (bone.head_local - v(bone_spec.head)).length > 0.000001:
-            errors.append(f"{bone_spec.name} head diverges from canonical Player A-pose")
+            errors.append(f"{bone_spec.name} head diverges from NpcHumanV2 A-pose")
         if (bone.tail_local - v(bone_spec.tail)).length > 0.000001:
-            errors.append(f"{bone_spec.name} tail diverges from canonical Player A-pose")
+            errors.append(f"{bone_spec.name} tail diverges from NpcHumanV2 A-pose")
         if bone.use_deform != bone_spec.deform:
-            errors.append(f"{bone_spec.name} deform flag diverges from canonical Player rig")
+            errors.append(f"{bone_spec.name} deform flag diverges from NpcHumanV2 rig")
 
     if bpy.data.actions:
         errors.append("Pedestrian model must contain no authored Actions")
@@ -5130,6 +5498,7 @@ def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> Validation
     mesh_count = len(result.parts)
     triangle_count = 0
     world_vertices: list[Vector] = []
+    head_vertices: list[Vector] = []
     signature_parts = []
     seen_meshes: set[int] = set()
     for part in sorted(result.parts, key=lambda item: item.obj.name):
@@ -5149,7 +5518,10 @@ def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> Validation
             if len(weights) != 1 or abs(weights[0].weight - 1.0) > 0.000001:
                 errors.append(f"{obj.name} vertex {vertex.index} is not rigidly weighted")
                 break
-            world_vertices.append(obj.matrix_world @ vertex.co)
+            world_vertex = obj.matrix_world @ vertex.co
+            world_vertices.append(world_vertex)
+            if obj.name in {"GEO_Head", "GEO_Skull"}:
+                head_vertices.append(world_vertex)
         triangles = triangulated_count(mesh)
         triangle_count += triangles
         signature_parts.append(
@@ -5191,8 +5563,11 @@ def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> Validation
             errors.append(
                 f"Silhouette must preserve canonical 1.75 m height, got {bounds_max.z:.6f}"
             )
-        if bounds_max.x - bounds_min.x > 1.65:
-            errors.append("A-pose width unexpectedly exceeds the player's envelope")
+        if bounds_max.x - bounds_min.x > 1.70:
+            errors.append(
+                "A-pose width unexpectedly exceeds the NpcHumanV2 envelope: "
+                f"{bounds_max.x - bounds_min.x:.6f} m"
+            )
 
     material = result.material
     emission = False
@@ -5203,10 +5578,43 @@ def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> Validation
     if any(obj.type in {"LIGHT", "CAMERA"} for obj in result.export_collection.objects):
         errors.append("Export collection contains a light or camera")
 
+    head_height = 0.0
+    head_width = 0.0
+    heads_tall = 0.0
+    shoulder_to_head_width = 0.0
+    if head_vertices:
+        head_height = max(point.z for point in head_vertices) - min(
+            point.z for point in head_vertices
+        )
+        head_width = max(point.x for point in head_vertices) - min(
+            point.x for point in head_vertices
+        )
+        heads_tall = CANONICAL_HEIGHT / head_height
+        shoulder_width = abs(
+            BONE_BY_NAME["upper_arm.L"].head[0]
+            - BONE_BY_NAME["upper_arm.R"].head[0]
+        )
+        shoulder_to_head_width = shoulder_width / head_width
+        ordinary_head = archetype.key not in {
+            "lampshade", "kettle_hat", "long_arm", "helmet_lamp"
+        }
+        if ordinary_head and not 6.90 <= heads_tall <= 7.75:
+            errors.append(
+                f"Adult head ratio is {heads_tall:.3f} heads tall; expected 6.90-7.75"
+            )
+        if ordinary_head and not 2.20 <= shoulder_to_head_width <= 2.65:
+            errors.append(
+                "Shoulder/head ratio is "
+                f"{shoulder_to_head_width:.3f}; expected 2.20-2.65"
+            )
+
     signature_payload = {
         "generator_version": GENERATOR_VERSION,
         "design_id": archetype.design_id,
         "seed": archetype.seed,
+        "anatomy_standard": NPC_ANATOMY_STANDARD,
+        "rest_pelvis_height_m": NPC_PELVIS_HEIGHT,
+        "signature_anatomy": list(archetype.signature_anatomy),
         "skeleton": [
             {
                 "name": spec.name,
@@ -5235,6 +5643,10 @@ def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> Validation
         tuple(stable_float(component) for component in bounds_min),
         tuple(stable_float(component) for component in bounds_max),
         signature,
+        stable_float(head_height),
+        stable_float(head_width),
+        stable_float(heads_tall),
+        stable_float(shoulder_to_head_width),
     )
 
 
@@ -5396,6 +5808,25 @@ def write_manifest(
         "display_name": spec.display_name,
         "seed": spec.seed,
         "height_m": CANONICAL_HEIGHT,
+        "anatomy_standard": NPC_ANATOMY_STANDARD,
+        "rest_pelvis_height_m": NPC_PELVIS_HEIGHT,
+        "shoulder_joint_width_m": stable_float(
+            abs(
+                BONE_BY_NAME["upper_arm.L"].head[0]
+                - BONE_BY_NAME["upper_arm.R"].head[0]
+            )
+        ),
+        "hip_joint_width_m": stable_float(
+            abs(
+                BONE_BY_NAME["thigh.L"].head[0]
+                - BONE_BY_NAME["thigh.R"].head[0]
+            )
+        ),
+        "head_height_m": report.head_height_m,
+        "head_width_m": report.head_width_m,
+        "heads_tall": report.heads_tall,
+        "shoulder_to_head_width": report.shoulder_to_head_width,
+        "signature_anatomy": list(spec.signature_anatomy),
         "pose": "apose",
         "forward_axis": "-Y",
         "anatomical_left_axis": "+X",
@@ -5820,11 +6251,11 @@ ACTION_SPECS = (
 SEATED_LEGS = {
     "pelvis": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
     "thigh.L": BonePose(rotation_degrees=(-79.0, 0.0, 3.0)),
-    "shin.L": BonePose(rotation_degrees=(83.0, 0.0, 0.0)),
-    "foot.L": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+    "shin.L": BonePose(rotation_degrees=(130.0, 0.0, 0.0)),
+    "foot.L": BonePose(rotation_degrees=(-43.0, 0.0, 0.0)),
     "thigh.R": BonePose(rotation_degrees=(-79.0, 0.0, -3.0)),
-    "shin.R": BonePose(rotation_degrees=(83.0, 0.0, 0.0)),
-    "foot.R": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+    "shin.R": BonePose(rotation_degrees=(130.0, 0.0, 0.0)),
+    "foot.R": BonePose(rotation_degrees=(-43.0, 0.0, 0.0)),
 }
 
 
@@ -6119,7 +6550,7 @@ def pipeback_base_pose() -> dict[str, BonePose]:
     return offset_pipeback_hands({
         "pelvis": BonePose(
             rotation_degrees=(0.0, 0.0, 0.0),
-            location_m=(0.0, 0.0, 0.0),
+            location_m=(0.0, -0.130, 0.0),
         ),
         "spine": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
         "chest": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
@@ -6127,8 +6558,8 @@ def pipeback_base_pose() -> dict[str, BonePose]:
         "head": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
         "clavicle.L": BonePose(rotation_degrees=(2.0, -4.0, 6.0)),
         "clavicle.R": BonePose(rotation_degrees=(2.0, 4.0, -6.0)),
-        "upper_arm.L": BonePose(rotation_degrees=(38.0, 8.0, 38.0)),
-        "upper_arm.R": BonePose(rotation_degrees=(38.0, -8.0, -38.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(20.0, 8.0, 38.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(20.0, -8.0, -38.0)),
         "forearm.L": BonePose(rotation_degrees=(-96.0, 4.0, -20.0)),
         "forearm.R": BonePose(rotation_degrees=(-96.0, -4.0, 20.0)),
         "hand.L": BonePose(rotation_degrees=(-12.0, -4.0, 4.0)),
@@ -6386,15 +6817,15 @@ def ferryman_base_pose() -> dict[str, BonePose]:
         # seat by seven centimetres the moment its partner kicks.
         #
         # Solved, not posed: swept against the car's own 0.505 m from
-        # bonnet skin to bumper top and landing on 0.5099. Thigh angle
-        # is what moves this number; bending the shin further barely
+        # bonnet skin to bumper top and landing in the 0.5060-0.5077 band.
+        # Thigh angle is what moves this number; bending the shin further barely
         # touches it, which is not obvious and cost a sweep to learn.
         # The left thigh is the shallower of the two because the pelvis
         # above it is turned, not because the legs are meant to differ.
-        "thigh.L": BonePose(rotation_degrees=(-56.0, 0.0, 3.0)),
+        "thigh.L": BonePose(rotation_degrees=(-71.0, 0.0, 3.0)),
         "shin.L": BonePose(rotation_degrees=(42.0, 0.0, 0.0)),
         "foot.L": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
-        "thigh.R": BonePose(rotation_degrees=(-60.0, 0.0, -8.0)),
+        "thigh.R": BonePose(rotation_degrees=(-72.0, 0.0, -8.0)),
         "shin.R": BonePose(rotation_degrees=(38.0, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(6.0, 0.0, -6.0)),
     }
@@ -6467,10 +6898,10 @@ def ferryman_drive_pose() -> dict[str, BonePose]:
         # Driving legs: thighs a little above level and the shins reaching
         # forward at the pedals, not hanging. Converged against the car's
         # 0.22 m of floor rather than chosen - see the docstring.
-        "thigh.L": BonePose(rotation_degrees=(-86.0, 0.0, 4.0)),
+        "thigh.L": BonePose(rotation_degrees=(-90.3, 0.0, 4.0)),
         "shin.L": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
         "foot.L": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
-        "thigh.R": BonePose(rotation_degrees=(-86.0, 0.0, -4.0)),
+        "thigh.R": BonePose(rotation_degrees=(-90.3, 0.0, -4.0)),
         "shin.R": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
     }
@@ -6542,14 +6973,14 @@ def chess_player_base_pose() -> dict[str, BonePose]:
         "hand.R": BonePose(rotation_degrees=(14.0, -18.0, 8.0)),
         # Left foot flat and forward - this is the grounding contact, and
         # the pair of angles that `perch_seat_height_m` converged on.
-        "thigh.L": BonePose(rotation_degrees=(-47.3, 0.0, 4.0)),
+        "thigh.L": BonePose(rotation_degrees=(-72.0, 0.0, 4.0)),
         "shin.L": BonePose(rotation_degrees=(47.3, 0.0, 0.0)),
         "foot.L": BonePose(rotation_degrees=(-10.0, 0.0, 0.0)),
         # Right foot drawn back under the plank, heel up. The knee bends
         # rather than the hip, which is how a foot actually gets tucked:
         # folding the shin swings the ankle back AND up, so this leg
         # cannot steal the ground contact from the left one.
-        "thigh.R": BonePose(rotation_degrees=(-70.0, 0.0, -4.0)),
+        "thigh.R": BonePose(rotation_degrees=(-94.0, 0.0, -4.0)),
         "shin.R": BonePose(rotation_degrees=(105.5, 0.0, 0.0)),
         "foot.R": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
     }
@@ -6619,10 +7050,10 @@ CAFE_PERCH_LEGS = {
     # flat and the right is drawn a little back, so one intentional contact
     # determines the seat height rather than two almost-level soles fighting.
     "thigh.L": BonePose(rotation_degrees=(-87.0, 0.0, 3.0)),
-    "shin.L": BonePose(rotation_degrees=(83.0, 0.0, 0.0)),
+    "shin.L": BonePose(rotation_degrees=(133.0, 0.0, 0.0)),
     "foot.L": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
     "thigh.R": BonePose(rotation_degrees=(-90.0, 0.0, -5.0)),
-    "shin.R": BonePose(rotation_degrees=(112.0, 0.0, 0.0)),
+    "shin.R": BonePose(rotation_degrees=(138.0, 0.0, 0.0)),
     "foot.R": BonePose(rotation_degrees=(26.0, 0.0, -3.0)),
 }
 
@@ -6640,10 +7071,10 @@ def cafe_lone_base_pose() -> dict[str, BonePose]:
             "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
             "clavicle.L": BonePose(rotation_degrees=(5.0, -5.0, 8.0)),
             "clavicle.R": BonePose(rotation_degrees=(5.0, 5.0, -8.0)),
-            "upper_arm.L": BonePose(rotation_degrees=(24.0, 4.0, 30.0)),
-            "upper_arm.R": BonePose(rotation_degrees=(24.0, -4.0, -30.0)),
-            "forearm.L": BonePose(rotation_degrees=(-68.0, 0.0, -18.0)),
-            "forearm.R": BonePose(rotation_degrees=(-68.0, 0.0, 18.0)),
+            "upper_arm.L": BonePose(rotation_degrees=(-30.0, 4.0, 10.0)),
+            "upper_arm.R": BonePose(rotation_degrees=(-30.0, -4.0, -10.0)),
+            "forearm.L": BonePose(rotation_degrees=(-78.0, 0.0, -12.0)),
+            "forearm.R": BonePose(rotation_degrees=(-78.0, 0.0, 12.0)),
             "hand.L": BonePose(rotation_degrees=(6.0, -4.0, 4.0)),
             "hand.R": BonePose(rotation_degrees=(6.0, 4.0, -4.0)),
         },
@@ -6664,10 +7095,10 @@ def cafe_man_base_pose() -> dict[str, BonePose]:
             "head": BonePose(rotation_degrees=(2.0, 8.0, 0.0)),
             "clavicle.L": BonePose(rotation_degrees=(4.0, -5.0, 7.0)),
             "clavicle.R": BonePose(rotation_degrees=(3.0, 5.0, -8.0)),
-            "upper_arm.L": BonePose(rotation_degrees=(25.0, 5.0, 32.0)),
-            "upper_arm.R": BonePose(rotation_degrees=(23.0, -4.0, -29.0)),
-            "forearm.L": BonePose(rotation_degrees=(-70.0, 1.0, -19.0)),
-            "forearm.R": BonePose(rotation_degrees=(-66.0, -1.0, 17.0)),
+            "upper_arm.L": BonePose(rotation_degrees=(-30.0, 5.0, 10.0)),
+            "upper_arm.R": BonePose(rotation_degrees=(-28.0, -4.0, -10.0)),
+            "forearm.L": BonePose(rotation_degrees=(-79.0, 1.0, -13.0)),
+            "forearm.R": BonePose(rotation_degrees=(-76.0, -1.0, 12.0)),
             "hand.L": BonePose(rotation_degrees=(7.0, -4.0, 4.0)),
             "hand.R": BonePose(rotation_degrees=(5.0, 4.0, -4.0)),
         },
@@ -6690,10 +7121,10 @@ def cafe_woman_base_pose() -> dict[str, BonePose]:
             "clavicle.R": BonePose(rotation_degrees=(8.0, 6.0, -11.0)),
             # Left forearm stays low toward the man; the right hand carries
             # the folded paper near the cheek without actually touching it.
-            "upper_arm.L": BonePose(rotation_degrees=(24.0, 4.0, 30.0)),
-            "forearm.L": BonePose(rotation_degrees=(-68.0, 0.0, -18.0)),
+            "upper_arm.L": BonePose(rotation_degrees=(-30.0, 4.0, 10.0)),
+            "forearm.L": BonePose(rotation_degrees=(-78.0, 0.0, -12.0)),
             "hand.L": BonePose(rotation_degrees=(6.0, -4.0, 4.0)),
-            "upper_arm.R": BonePose(rotation_degrees=(-158.0, -2.0, -78.0)),
+            "upper_arm.R": BonePose(rotation_degrees=(-100.0, -2.0, -90.0)),
             "forearm.R": BonePose(rotation_degrees=(-116.0, -45.0, -10.0)),
             "hand.R": BonePose(rotation_degrees=(18.0, -20.0, 12.0)),
         },
@@ -6713,10 +7144,10 @@ def cafe_attendant_base_pose() -> dict[str, BonePose]:
         "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
         "clavicle.L": BonePose(rotation_degrees=(4.0, -5.0, 8.0)),
         "clavicle.R": BonePose(rotation_degrees=(5.0, 5.0, -9.0)),
-        "upper_arm.L": BonePose(rotation_degrees=(34.0, 5.0, 34.0)),
-        "upper_arm.R": BonePose(rotation_degrees=(34.0, -5.0, -34.0)),
-        "forearm.L": BonePose(rotation_degrees=(-82.0, 2.0, -20.0)),
-        "forearm.R": BonePose(rotation_degrees=(-82.0, -2.0, 20.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-30.0, 5.0, 10.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-30.0, -5.0, -10.0)),
+        "forearm.L": BonePose(rotation_degrees=(-78.0, 2.0, -12.0)),
+        "forearm.R": BonePose(rotation_degrees=(-78.0, -2.0, 12.0)),
         "hand.L": BonePose(rotation_degrees=(6.0, -4.0, 4.0)),
         "hand.R": BonePose(rotation_degrees=(6.0, 4.0, -4.0)),
         "thigh.L": BonePose(rotation_degrees=(-4.0, 0.0, 2.0)),
@@ -7088,7 +7519,7 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "upper_arm.R": BonePose(rotation_degrees=(26.0, -8.0, -42.0)),
     })
     pipeback_idle_inhale = merge_pose(pipeback, {
-        "pelvis": BonePose(rotation_degrees=(-6.0, 0.8, -0.6), location_m=(0, 0.004, 0.008)),
+        "pelvis": BonePose(rotation_degrees=(-6.0, 0.8, -0.6), location_m=(0, -0.126, 0.008)),
         "spine": BonePose(rotation_degrees=(6.5, -0.5, 0.8)),
         "chest": BonePose(rotation_degrees=(5.5, 0.8, -1.0)),
         # The neck cancels the body drift so the face stays unnaturally level.
@@ -7096,27 +7527,27 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "head": BonePose(rotation_degrees=(3.0, 0.0, 0.0)),
     })
     pipeback_idle_exhale = merge_pose(pipeback, {
-        "pelvis": BonePose(rotation_degrees=(-8.0, -0.8, 0.6), location_m=(0, -0.003, 0.002)),
+        "pelvis": BonePose(rotation_degrees=(-8.0, -0.8, 0.6), location_m=(0, -0.133, 0.002)),
         "spine": BonePose(rotation_degrees=(3.5, 0.5, -0.8)),
         "chest": BonePose(rotation_degrees=(2.5, -0.8, 1.0)),
         "neck": BonePose(rotation_degrees=(-4.5, 0.8, -0.8)),
         "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
     })
     pipeback_push = merge_pose(pipeback, {
-        "pelvis": BonePose(rotation_degrees=(-2.0, 0.0, 0.0), location_m=(0, -0.018, 0.008)),
+        "pelvis": BonePose(rotation_degrees=(-2.0, 0.0, 0.0), location_m=(0, -0.148, 0.008)),
         "spine": BonePose(rotation_degrees=(11.0, 0.0, 0.0)),
         "chest": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
         "neck": BonePose(rotation_degrees=(-15.0, 0.0, 0.0)),
         "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
-        "upper_arm.L": BonePose(rotation_degrees=(50.0, 7.0, 35.0)),
-        "upper_arm.R": BonePose(rotation_degrees=(50.0, -7.0, -35.0)),
-        "forearm.L": BonePose(rotation_degrees=(-82.0, 4.0, -18.0)),
-        "forearm.R": BonePose(rotation_degrees=(-82.0, -4.0, 18.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(28.0, 7.0, 35.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(28.0, -7.0, -35.0)),
+        "forearm.L": BonePose(rotation_degrees=(-84.0, 4.0, -18.0)),
+        "forearm.R": BonePose(rotation_degrees=(-84.0, -4.0, 18.0)),
         "hand.L": BonePose(rotation_degrees=(-20.0, -4.0, 4.0)),
         "hand.R": BonePose(rotation_degrees=(-20.0, 4.0, -4.0)),
     })
     pipeback_release = merge_pose(pipeback, {
-        "pelvis": BonePose(rotation_degrees=(-9.0, 0.0, 0.0), location_m=(0, 0.006, 0.003)),
+        "pelvis": BonePose(rotation_degrees=(-9.0, 0.0, 0.0), location_m=(0, -0.124, 0.003)),
         "spine": BonePose(rotation_degrees=(2.0, 0.0, 0.0)),
         "chest": BonePose(rotation_degrees=(1.0, 0.0, 0.0)),
         "neck": BonePose(rotation_degrees=(-3.0, 0.0, 0.0)),
@@ -7160,14 +7591,14 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     long_seated = seated_pose(long_arm, {
         "upper_arm.L": BonePose(rotation_degrees=(24.0, 4.0, 30.0)),
         "upper_arm.R": BonePose(rotation_degrees=(24.0, -4.0, -30.0)),
-        "forearm.L": BonePose(rotation_degrees=(-68.0, 0.0, -18.0)),
-        "forearm.R": BonePose(rotation_degrees=(-68.0, 0.0, 18.0)),
+        "forearm.L": BonePose(rotation_degrees=(-88.0, 0.0, -18.0)),
+        "forearm.R": BonePose(rotation_degrees=(-88.0, 0.0, 18.0)),
     })
     long_seated_sway = merge_pose(long_seated, {
         "upper_arm.L": BonePose(rotation_degrees=(21.0, 4.0, 31.0)),
         "upper_arm.R": BonePose(rotation_degrees=(27.0, -4.0, -29.0)),
-        "forearm.L": BonePose(rotation_degrees=(-64.0, 0.0, -18.0)),
-        "forearm.R": BonePose(rotation_degrees=(-72.0, 0.0, 18.0)),
+        "forearm.L": BonePose(rotation_degrees=(-84.0, 0.0, -18.0)),
+        "forearm.R": BonePose(rotation_degrees=(-92.0, 0.0, 18.0)),
     })
     babushka = babushka_base_pose()
     # The strolling smoker: a slow four-step shuffle carried by the
@@ -8065,7 +8496,7 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "pelvis": BonePose(rotation_degrees=(9.0, 0.0, 0.0), location_m=(0, 0.004, -0.014)),
         "spine": BonePose(rotation_degrees=(24.0, 0.0, 0.0)),
         "chest": BonePose(rotation_degrees=(13.0, 0.0, -0.8)),
-        "thigh.R": BonePose(rotation_degrees=(-72.0, 0.0, -4.0)),
+        "thigh.R": BonePose(rotation_degrees=(-96.0, 0.0, -4.0)),
         "shin.R": BonePose(rotation_degrees=(110.0, 0.0, 0.0)),
     })
     chess_sink_inhale = merge_pose(chess_sink, {
@@ -8112,7 +8543,7 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         return {
             # He sits up out of the round back to do it.
             "pelvis": BonePose(
-                rotation_degrees=(to(8.0, 5.0), 0.0, 0.0),
+                rotation_degrees=(8.0, 0.0, 0.0),
                 location_m=(0.0, 0.004, to(-0.010, -0.004)),
             ),
             "spine": BonePose(rotation_degrees=(to(22.0, 16.5), 0.0, 0.0)),
@@ -8214,7 +8645,7 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "pelvis": BonePose(rotation_degrees=(9.0, 0.0, 0.0), location_m=(0, 0.004, -0.013)),
         "spine": BonePose(rotation_degrees=(23.6, 0.0, 0.0)),
         "chest": BonePose(rotation_degrees=(12.8, 0.0, 0.7)),
-        "thigh.R": BonePose(rotation_degrees=(-71.6, 0.0, -4.0)),
+        "thigh.R": BonePose(rotation_degrees=(-95.6, 0.0, -4.0)),
         "shin.R": BonePose(rotation_degrees=(109.0, 0.0, 0.0)),
     })
     checkers_sink_inhale = merge_pose(checkers_sink, {
@@ -9592,7 +10023,9 @@ def write_animation_manifest(path: Path, signature: str, clips: list[dict]) -> N
         "generator": "tools/build-city-pedestrian-3d-model.py",
         "generator_version": GENERATOR_VERSION,
         "blender_version": bpy.app.version_string,
-        "skeleton_source": "PlayerCharacter3D exact A-pose v2.5.0",
+        "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
+        "anatomy_standard": NPC_ANATOMY_STANDARD,
+        "rest_pelvis_height_m": NPC_PELVIS_HEIGHT,
         "bone_count": len(SKELETON),
         "fps": ANIMATION_FPS,
         "root_motion": False,

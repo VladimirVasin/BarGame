@@ -10,6 +10,9 @@ namespace BarPromenade.Tests.PlayMode
 {
     public sealed class Player3DOrdinaryPresentationPlayModeTests
     {
+        private static readonly int BaseMapTransformId =
+            Shader.PropertyToID("_BaseMap_ST");
+
         private GameObject cameraObject;
         private GameObject playerObject;
         private Mesh bakedFootMesh;
@@ -719,8 +722,13 @@ namespace BarPromenade.Tests.PlayMode
                 (Player3DCharacterPresentation)player.Visual;
             Player3DAssetRegistry registry = presentation.Registry;
             Transform pelvis = registry.Anchors.Pelvis;
-            Transform leftEye = FindBone(registry, "face.eye.L");
-            Transform leftBrow = FindBone(registry, "face.brow.L");
+            bool usesFacialAtlas = presentation.UsesFacialAtlas;
+            Transform leftEye = usesFacialAtlas
+                ? null
+                : FindBone(registry, "face.eye.L");
+            Transform leftBrow = usesFacialAtlas
+                ? null
+                : FindBone(registry, "face.brow.L");
             Transform leftUpperArm = GetPartBone(
                 registry,
                 Player3DAnatomicalPart.LeftUpperArm);
@@ -728,13 +736,27 @@ namespace BarPromenade.Tests.PlayMode
                 registry,
                 Player3DAnatomicalPart.RightUpperArm);
             Assert.That(pelvis, Is.Not.Null);
-            Assert.That(leftEye, Is.Not.Null);
-            Assert.That(leftBrow, Is.Not.Null);
+            if (usesFacialAtlas)
+            {
+                Assert.That(registry.HasFaceAtlas, Is.True);
+                AssertAtlasExpression(
+                    registry,
+                    PlayerFacialExpression.Neutral);
+            }
+            else
+            {
+                Assert.That(leftEye, Is.Not.Null);
+                Assert.That(leftBrow, Is.Not.Null);
+            }
             Assert.That(leftUpperArm, Is.Not.Null);
             Assert.That(rightUpperArm, Is.Not.Null);
 
-            Vector3 neutralEyeScale = leftEye.localScale;
-            Quaternion neutralBrowRotation = leftBrow.localRotation;
+            Vector3 neutralEyeScale = leftEye != null
+                ? leftEye.localScale
+                : Vector3.one;
+            Quaternion neutralBrowRotation = leftBrow != null
+                ? leftBrow.localRotation
+                : Quaternion.identity;
             Quaternion neutralPelvisRotation = pelvis.localRotation;
             Quaternion neutralLeftArmRotation =
                 leftUpperArm.localRotation;
@@ -758,14 +780,23 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 presentation.CurrentFacialExpression,
                 Is.EqualTo(PlayerFacialExpression.Watchful));
-            Assert.That(
-                leftEye.localScale.y,
-                Is.GreaterThan(neutralEyeScale.y * 1.1f));
-            Assert.That(
-                Quaternion.Angle(
-                    neutralBrowRotation,
-                    leftBrow.localRotation),
-                Is.GreaterThan(2f));
+            if (usesFacialAtlas)
+            {
+                AssertAtlasExpression(
+                    registry,
+                    PlayerFacialExpression.Watchful);
+            }
+            else
+            {
+                Assert.That(
+                    leftEye.localScale.y,
+                    Is.GreaterThan(neutralEyeScale.y * 1.1f));
+                Assert.That(
+                    Quaternion.Angle(
+                        neutralBrowRotation,
+                        leftBrow.localRotation),
+                    Is.GreaterThan(2f));
+            }
 
             presentation.SetIntoxication(1f);
             presentation.SetBalancePose(0.65f);
@@ -983,10 +1014,19 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 presentation.CurrentFacialExpression,
                 Is.EqualTo(PlayerFacialExpression.Neutral));
-            Assert.That(
-                leftEye.localScale,
-                Is.EqualTo(neutralEyeScale)
-                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+            if (usesFacialAtlas)
+            {
+                AssertAtlasExpression(
+                    registry,
+                    PlayerFacialExpression.Neutral);
+            }
+            else
+            {
+                Assert.That(
+                    leftEye.localScale,
+                    Is.EqualTo(neutralEyeScale)
+                        .Using(Vector3ComparerWithEqualsOperator.Instance));
+            }
             Assert.That(
                 Quaternion.Angle(
                     neutralPelvisRotation,
@@ -1018,6 +1058,26 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             return null;
+        }
+
+        private static void AssertAtlasExpression(
+            Player3DAssetRegistry registry,
+            PlayerFacialExpression expression)
+        {
+            Assert.That(registry.FaceAtlas, Is.Not.Null);
+            Assert.That(registry.FaceAtlas.IsConfigured, Is.True);
+            Assert.That(
+                registry.FaceAtlas.TryGetTextureTransform(
+                    expression,
+                    out Vector4 expectedTransform),
+                Is.True);
+
+            var properties = new MaterialPropertyBlock();
+            registry.FaceAtlas.Renderer.GetPropertyBlock(properties);
+            Assert.That(
+                properties.GetVector(BaseMapTransformId),
+                Is.EqualTo(expectedTransform),
+                $"The production face atlas must display {expression}.");
         }
 
         private static Transform GetPartBone(

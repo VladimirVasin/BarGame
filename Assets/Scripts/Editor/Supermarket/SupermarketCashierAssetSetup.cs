@@ -10,7 +10,7 @@ using UnityEngine.Rendering;
 namespace BarPromenade.Editor
 {
     /// <summary>
-    /// Imports the Watcher Cashier FBX against the shared Player
+    /// Imports the Watcher Cashier FBX against the production Hero/NPC V2
     /// Generic Avatar and builds the passive runtime prefab outside
     /// Resources, binding it to the one addressable provider asset.
     /// </summary>
@@ -22,7 +22,7 @@ namespace BarPromenade.Editor
         public const string ManifestPath =
             "Assets/Supermarket/Cashier/Models/SupermarketCashier3D.json";
         public const string PlayerModelPath =
-            "Assets/Player3D/Models/PlayerCharacter3D.fbx";
+            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         public const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
         public const string PrefabPath =
@@ -111,7 +111,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Supermarket cashier build requires its FBX/manifest, " +
-                    "the production Player model and the shared " +
+                    "the production Hero/NPC V2 model and the shared " +
                     "Player3DLit material.");
             }
 
@@ -196,7 +196,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Supermarket cashier Animator must be " +
-                    "controller-free, use the Player Generic Avatar " +
+                    "controller-free, use the Hero/NPC V2 Generic Avatar " +
                     "and disable root motion.");
             }
 

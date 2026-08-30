@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using BarPromenade;
 using UnityEditor;
 using UnityEngine;
@@ -24,6 +25,8 @@ namespace BarPromenade.Editor
             "Assets/Resources/Player/Player3D.prefab";
 
         private const int BuildSchemaVersion = 2;
+        private const string FrozenProductionBuildSignature =
+            "4b1975d20bc32bccd0c0b8894609744b";
         private const string SetupScriptPath =
             "Assets/Scripts/Editor/Player3D/Player3DAssetSetup.cs";
         private const string ImporterScriptPath =
@@ -32,6 +35,33 @@ namespace BarPromenade.Editor
             "Assets/Scripts/Runtime/Player3D/Player3DAssetRegistry.cs";
         private const float ExpectedHeight = 1.75f;
         private const int MaximumTriangleCount = 4500;
+
+        // Hero V1 is the user's preserved production fallback while Hero V2
+        // is evaluated in parallel. The optional V2 registry schema is not a
+        // reason to reserialize the frozen V1 prefab. If any actual V1 source
+        // or its importer changes, this integrity check stops matching and
+        // the ordinary dependency-stamp rebuild resumes.
+        private static readonly IReadOnlyDictionary<string, string>
+            FrozenProductionSourceSha256 =
+            new Dictionary<string, string>(StringComparer.Ordinal)
+            {
+                {
+                    ModelPath,
+                    "301CBEB458FA6F35BEA2D750F09E64BA86D2BFD8BC457909E850BED55028965D"
+                },
+                {
+                    ManifestPath,
+                    "F3BC5C325F8FA17FD53179DD6D0EEDD09EEE2E9CCE4FA93C604D0C7B12006544"
+                },
+                {
+                    "Assets/Player3D/Animations/PlayerCharacter3DAnimations.fbx",
+                    "B1ABD2956B5980070924200AF3804102FBB7EF8F92E85AFD76C76CDF2ADD8B45"
+                },
+                {
+                    ImporterScriptPath,
+                    "9D5B85583833021C8003C3A24CCD7604832F517C0CCBD5E1772420156C5A470B"
+                }
+            };
 
         private static readonly IReadOnlyDictionary<string, string>
             PaletteHex = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -124,13 +154,53 @@ namespace BarPromenade.Editor
             Player3DAssetRegistry registry = prefab != null
                 ? prefab.GetComponent<Player3DAssetRegistry>()
                 : null;
-            if (registry == null ||
-                !string.Equals(
+            if (registry != null &&
+                (string.Equals(
+                     registry.BuildSignature,
+                     CalculateBuildSignature(),
+                     StringComparison.Ordinal) ||
+                 IsFrozenProductionPrefabIntact(registry)))
+            {
+                return;
+            }
+
+            QueueBuildWhenSourcesExist();
+        }
+
+        private static bool IsFrozenProductionPrefabIntact(
+            Player3DAssetRegistry registry)
+        {
+            if (!string.Equals(
                     registry.BuildSignature,
-                    CalculateBuildSignature(),
+                    FrozenProductionBuildSignature,
                     StringComparison.Ordinal))
             {
-                QueueBuildWhenSourcesExist();
+                return false;
+            }
+
+            foreach (KeyValuePair<string, string> source in
+                     FrozenProductionSourceSha256)
+            {
+                if (!File.Exists(source.Key) ||
+                    !string.Equals(
+                        CalculateFileSha256(source.Key),
+                        source.Value,
+                        StringComparison.Ordinal))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+
+        private static string CalculateFileSha256(string path)
+        {
+            using (SHA256 sha256 = SHA256.Create())
+            using (FileStream stream = File.OpenRead(path))
+            {
+                return BitConverter.ToString(sha256.ComputeHash(stream))
+                    .Replace("-", string.Empty);
             }
         }
 

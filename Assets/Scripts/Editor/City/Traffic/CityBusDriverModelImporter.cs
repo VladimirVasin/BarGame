@@ -26,9 +26,9 @@ namespace BarPromenade.Editor
             }
             else
             {
-                // A clean Library can discover the driver before the Player
-                // FBX. The queued setup imports Player first, then reimports
-                // this FBX against that canonical external Generic Avatar.
+                // A clean Library can discover the driver before the Hero V2
+                // FBX. The queued setup imports Hero V2 first, then reimports
+                // this FBX against that canonical Generic Avatar.
                 importer.avatarSetup =
                     ModelImporterAvatarSetup.CreateFromThisModel;
                 importer.sourceAvatar = null;
@@ -70,8 +70,9 @@ namespace BarPromenade.Editor
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            if (CityBusDriverAssetSetup.IsBuilding ||
-                Player3DAssetSetup.IsBuilding)
+            if (NpcHumanV2AssetSetup.IsAnyPipelineBuilding ||
+                Player3DAssetSetup.IsBuilding ||
+                Player3DV2AssetSetup.IsBuilding)
             {
                 return;
             }

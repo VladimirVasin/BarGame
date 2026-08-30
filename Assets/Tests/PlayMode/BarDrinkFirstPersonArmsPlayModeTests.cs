@@ -189,13 +189,15 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     binding.BoneName,
                     Does.Match(@"^(upper_arm|forearm|hand)\.[LR]$"));
+                Material material = binding.Renderer.sharedMaterial;
+                Assert.That(material, Is.Not.Null);
                 Assert.That(
-                    binding.Renderer.sharedMaterial,
+                    material,
                     Is.Not.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
-                Assert.That(binding.Renderer.sharedMaterial, Is.Not.Null);
+                Assert.That(material.shader, Is.Not.Null);
                 Assert.That(
-                    binding.Renderer.sharedMaterial.name,
-                    Does.StartWith("Player3DLit"));
+                    material.shader.name,
+                    Is.EqualTo("Bar Promenade/PS1 Lit"));
                 Assert.That(
                     binding.Renderer.shadowCastingMode,
                     Is.EqualTo(ShadowCastingMode.Off));

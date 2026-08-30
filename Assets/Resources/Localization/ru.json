@@ -181,6 +181,26 @@
       "value": "E — сесть в машину"
     },
     {
+      "key": "interaction.radio_on",
+      "value": "E — включить магнитолу"
+    },
+    {
+      "key": "interaction.radio_off",
+      "value": "E — выключить магнитолу"
+    },
+    {
+      "key": "interaction.radio_tune",
+      "value": "E — покрутить настройку"
+    },
+    {
+      "key": "interaction.open_glovebox",
+      "value": "E — открыть бардачок"
+    },
+    {
+      "key": "interaction.close_glovebox",
+      "value": "E — закрыть бардачок"
+    },
+    {
       "key": "interaction.play_chess",
       "value": "E — сыграть в шахматы"
     },

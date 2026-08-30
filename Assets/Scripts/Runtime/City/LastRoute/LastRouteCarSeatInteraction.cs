@@ -105,6 +105,9 @@ namespace BarPromenade
         private LastRouteCarSuspension suspension;
         private LastRouteCarDriver driver;
         private LastRouteFerrymanPresentation ferryman;
+        private LastRouteCarDashboard dashboard;
+        private int dashboardGazeFrame = -1;
+        private LastRouteCarDashboardTarget dashboardGazeTarget;
         private Camera seatCamera;
         private PlayerCameraFollow cameraFollow;
         private Player3DHeadVisibility hiddenHead;
@@ -131,12 +134,22 @@ namespace BarPromenade
         private float viewYawOffset;
         private float viewPitch;
 
-        public string PromptKey =>
-            ownsActiveInteraction &&
-            controller != null &&
-            controller.Phase == PlayerAnimatedInteractionPhase.Looping
-                ? StandPromptKey
-                : SitPromptKey;
+        public string PromptKey
+        {
+            get
+            {
+                if (TryResolveDashboardTarget(
+                        out LastRouteCarDashboardTarget target))
+                {
+                    return LastRouteCarDashboard.ResolvePromptKey(
+                        target,
+                        dashboard.RadioOn,
+                        dashboard.GloveboxOpen);
+                }
+
+                return IsSeated ? StandPromptKey : SitPromptKey;
+            }
+        }
 
         public Vector3 InteractionPosition => plan.InteractionPosition;
         public LastRouteCarSeatPlan Plan => plan;
@@ -297,6 +310,21 @@ namespace BarPromenade
         public void AttachFerryman(LastRouteFerrymanPresentation presentation)
         {
             ferryman = presentation;
+        }
+
+        /// <summary>
+        /// Tells the seat what is on the dash in front of it. Once he is in
+        /// and the lens is his own eyes, the seat's ONE interactable answers
+        /// for whatever on the dash he is looking at - the radio's two
+        /// knobs, the glovebox lid - and only offers "stand up" when he is
+        /// looking at none of them. It has to be the seat: his capsule is
+        /// still standing at the door dock outside the car, so the dash is
+        /// beyond the interactor's reach and nothing on it could be found.
+        /// </summary>
+        public void AttachDashboard(LastRouteCarDashboard carDashboard)
+        {
+            dashboard = carDashboard;
+            dashboardGazeFrame = -1;
         }
 
         /// <summary>
@@ -585,15 +613,32 @@ namespace BarPromenade
                 !controller.isActiveAndEnabled ||
                 playerRoot == null ||
                 !plan.IsPresent ||
-                Mathf.Abs(
-                    playerRoot.position.y - plan.EntryRootPosition.y) >
-                    LastRouteCarSeatPlan.ApproachVerticalTolerance ||
                 SceneTransitionService.IsTransitioning)
             {
                 return false;
             }
 
             PlayerAnimatedInteractionPhase phase = controller.Phase;
+
+            // The dash, BEFORE the height check below: on the mountain leg
+            // the root has been carried twenty-six metres above the island
+            // dock the plan was solved against, and the radio has to answer
+            // there and while the car is moving - which is the whole point
+            // of having one.
+            if (ownsActiveInteraction &&
+                phase == PlayerAnimatedInteractionPhase.Looping &&
+                TryResolveDashboardTarget(out _))
+            {
+                return true;
+            }
+
+            if (Mathf.Abs(
+                    playerRoot.position.y - plan.EntryRootPosition.y) >
+                LastRouteCarSeatPlan.ApproachVerticalTolerance)
+            {
+                return false;
+            }
+
             if (ownsActiveInteraction &&
                 phase == PlayerAnimatedInteractionPhase.Looping)
             {
@@ -612,6 +657,14 @@ namespace BarPromenade
         {
             if (!CanInteract(interactor))
             {
+                return;
+            }
+
+            if (IsSeated &&
+                TryResolveDashboardTarget(
+                    out LastRouteCarDashboardTarget dashboardTarget))
+            {
+                dashboard.Operate(dashboardTarget);
                 return;
             }
 
@@ -958,6 +1011,83 @@ namespace BarPromenade
                 seatedPosition,
                 seatedRotation,
                 LastRouteCarSeatViewPlan.FieldOfView);
+        }
+
+        /// <summary>
+        /// What on the dash he is looking at, if he is in the seat, the lens
+        /// is his own eyes and the dash was attached. The ray is the seat's
+        /// OWN evaluation of the eye - not `seatCamera.transform`, which is
+        /// last LateUpdate's pose - and the answer is cached for the frame,
+        /// because the interactor asks once for the prompt and once for the
+        /// key and both have to agree.
+        /// </summary>
+        private bool TryResolveDashboardTarget(
+            out LastRouteCarDashboardTarget target)
+        {
+            target = LastRouteCarDashboardTarget.None;
+            if (dashboard == null ||
+                !dashboard.IsInitialized ||
+                !IsSeated ||
+                !IsFirstPerson)
+            {
+                return false;
+            }
+
+            if (dashboardGazeFrame == Time.frameCount)
+            {
+                target = dashboardGazeTarget;
+                return target != LastRouteCarDashboardTarget.None;
+            }
+
+            dashboardGazeFrame = Time.frameCount;
+            dashboardGazeTarget = LastRouteCarDashboardTarget.None;
+            if (TryEvaluateSeatedCamera(
+                    out Vector3 eye,
+                    out Quaternion look) &&
+                dashboard.TryResolveGazeTarget(
+                    new Ray(eye, look * Vector3.forward),
+                    out target))
+            {
+                dashboardGazeTarget = target;
+            }
+
+            target = dashboardGazeTarget;
+            return target != LastRouteCarDashboardTarget.None;
+        }
+
+        /// <summary>
+        /// Points the seated eye at a world point, for tests that have no
+        /// mouse: the yaw and pitch that would put it dead centre, inside
+        /// the seat's own limits. Invalidates the frame's gaze cache so the
+        /// next question is answered from the new look.
+        /// </summary>
+        internal void LookAtForTests(Vector3 worldPoint)
+        {
+            viewYawOffset = 0f;
+            viewPitch = 0f;
+            if (!TryEvaluateSeatedCamera(
+                    out Vector3 eye,
+                    out Quaternion level))
+            {
+                return;
+            }
+
+            Vector3 local = Quaternion.Inverse(level) * (worldPoint - eye);
+            if (local.sqrMagnitude < 0.000001f)
+            {
+                return;
+            }
+
+            local.Normalize();
+            viewYawOffset = Mathf.Clamp(
+                Mathf.Atan2(local.x, local.z) * Mathf.Rad2Deg,
+                -LastRouteCarSeatViewPlan.MaximumYawOffsetDegrees,
+                LastRouteCarSeatViewPlan.MaximumYawOffsetDegrees);
+            viewPitch = Mathf.Clamp(
+                -Mathf.Asin(Mathf.Clamp(local.y, -1f, 1f)) * Mathf.Rad2Deg,
+                LastRouteCarSeatViewPlan.MinimumPitchDegrees,
+                LastRouteCarSeatViewPlan.MaximumPitchDegrees);
+            dashboardGazeFrame = -1;
         }
 
         /// <summary>

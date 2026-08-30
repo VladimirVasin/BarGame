@@ -400,7 +400,9 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     root.GetComponentsInChildren<AudioSource>(true).Length,
                     Is.EqualTo(LastRouteCarAudio.OwnedSourceCount),
-                    "Every voice on the car is one of the five.");
+                    "Every voice on the car is one of the five - the dash " +
+                    "clicks through the cue source and brings no source of " +
+                    "its own.");
                 Assert.That(
                     audio.IsEngineWanted,
                     Is.False,

@@ -11,7 +11,7 @@ namespace BarPromenade.Tests.EditMode
         private const string ModelPath =
             "Assets/Vehicles/Drivers/Models/CityBusDriver3D.fbx";
         private const string PlayerModelPath =
-            "Assets/Player3D/Models/PlayerCharacter3D.fbx";
+            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         private const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
 
@@ -45,7 +45,8 @@ namespace BarPromenade.Tests.EditMode
                 "The driver FBX must stay animation-free.");
 
             GameObject prefab = CityBusDriverResources.LoadPrefab();
-            GameObject playerPrefab = Player3DResources.LoadPrefab();
+            GameObject playerPrefab = Player3DResources.LoadPrefab(
+                Player3DVariant.ProductionV2);
             Material sharedMaterial =
                 AssetDatabase.LoadAssetAtPath<Material>(SharedMaterialPath);
             Assert.That(prefab, Is.Not.Null);

@@ -418,12 +418,12 @@ MonoBehaviour:
   sitClip: {fileID: 0}
   actionClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.000000059604645, y: 0.8749999, z: 0.033499986}
-    m_Extent: {x: 0.75900006, y: 0.8749999, z: 0.18550003}
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.021403655}
+    m_Extent: {x: 0.7669014, y: 0.8749999, z: 0.18779054}
   sourceTriangleCount: 960
-  sourceGeneratorVersion: 3.2.0
+  sourceGeneratorVersion: 4.0.0
   designId: weigh_attendant_v1
-  buildSignature: af3e4ffcdac371e24c50b3db42debfe4ce38625807c1a35ae1c3f827e9ee7312
+  buildSignature: 7aabb419e05582d88ab3449e277786c19ade480f5fcad0def77d0cf330c19df4
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -776,7 +776,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3777740641672299244}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 1
   m_UpdateMode: 0

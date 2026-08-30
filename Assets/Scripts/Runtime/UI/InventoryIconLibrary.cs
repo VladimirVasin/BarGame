@@ -10,7 +10,7 @@ namespace BarPromenade
         private static Texture2D heroPortrait;
 
         internal const string HeroPortraitResourcePath =
-            "Player/Player3DPortrait";
+            "Player/Player3DV2Portrait";
 
         internal static readonly Rect HeroPortraitUv =
             new Rect(0f, 0f, 1f, 1f);

@@ -775,6 +775,119 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        /// <summary>
+        /// The dash, from the seat, while the car is moving. The seat's own
+        /// interactable refuses "stand up" for the whole ride - there is
+        /// nowhere to get out to - and that used to leave the prompt empty
+        /// from the tunnel to the terrace. Now looking down at the radio is
+        /// answered, the key does what the prompt says, and looking back
+        /// out of the windscreen refuses again. And the speedometer's needle
+        /// has to move with a car that is actually driving.
+        /// </summary>
+        [UnityTest]
+        public IEnumerator Ride_AnswersTheRadioFromTheSeatWhileTheCarIsMoving()
+        {
+            Harness harness = BuildHarness(out GameObject scene);
+            try
+            {
+                var dashboard =
+                    harness.CarRoot.GetComponent<LastRouteCarDashboard>();
+                Assert.That(dashboard, Is.Not.Null, "The car has no dash.");
+                Assert.That(dashboard.RadioOn, Is.False);
+
+                yield return null;
+                Assert.That(harness.Seat.IsSeated, Is.True);
+                Assert.That(harness.Driver.IsDriving, Is.True);
+                yield return null;
+
+                PlayerInteractor interactor = harness.Player.Interactor;
+                Assert.That(
+                    harness.Seat.CanInteract(interactor),
+                    Is.False,
+                    "Looking out of the windscreen, the seat still refuses: " +
+                    "there is nowhere to get out to.");
+
+                Renderer bezel = null;
+                foreach (LastRouteCarRendererBinding binding in harness.Car.Bindings)
+                {
+                    if (binding.Role == LastRouteCarDashboard.RadioBezelRole)
+                    {
+                        bezel = binding.Renderer;
+                    }
+                }
+
+                Assert.That(bezel, Is.Not.Null);
+                Vector3 powerKnob =
+                    bezel.bounds.center + (dashboard.TowardsDriver * 0.06f);
+                harness.Seat.LookAtForTests(powerKnob);
+                Assert.That(
+                    harness.Seat.CanInteract(interactor),
+                    Is.True,
+                    "Looking at the radio's power knob is answered mid-ride.");
+                Assert.That(
+                    harness.Seat.PromptKey,
+                    Is.EqualTo(LastRouteCarDashboard.RadioOnPromptKey));
+
+                harness.Seat.Interact(interactor);
+                Assert.That(dashboard.RadioOn, Is.True, "The key did what the prompt said.");
+                Assert.That(
+                    harness.Seat.IsSeated,
+                    Is.True,
+                    "Switching the radio on did not stand him up.");
+                Assert.That(harness.Driver.IsDriving, Is.True);
+                Assert.That(
+                    GameSessionState.CarDashboard.RadioOn,
+                    Is.True,
+                    "The session carries it through the next tunnel.");
+
+                yield return null;
+                Assert.That(
+                    harness.Seat.PromptKey,
+                    Is.EqualTo(LastRouteCarDashboard.RadioOffPromptKey),
+                    "The same knob now offers to switch it off.");
+                Assert.That(harness.Audio.RadioSwitchCueCount, Is.EqualTo(1));
+
+                Vector3 lidCentre = harness.Car.GloveboxLidPivot
+                    .GetComponentInChildren<Renderer>(true).bounds.center;
+                harness.Seat.LookAtForTests(lidCentre);
+                Assert.That(
+                    harness.Seat.PromptKey,
+                    Is.EqualTo(LastRouteCarDashboard.OpenGloveboxPromptKey));
+                harness.Seat.Interact(interactor);
+                Assert.That(dashboard.GloveboxOpen, Is.True);
+                int settling = 0;
+                while (dashboard.IsGloveboxSwinging && settling < 120)
+                {
+                    yield return null;
+                    settling++;
+                }
+
+                Assert.That(dashboard.GloveboxOpenness, Is.EqualTo(1f).Within(0.001f));
+                Assert.That(
+                    settling,
+                    Is.GreaterThan(5).And.LessThan(60),
+                    "The lid takes a third of a second on the pinned clock.");
+
+                Assert.That(
+                    dashboard.Speed01,
+                    Is.GreaterThan(0.05f),
+                    "The speedometer reads a car that is actually moving.");
+
+                harness.Seat.LookAtForTests(
+                    harness.Player.GameObject.transform.position +
+                    (harness.CarRoot.forward * 30f) +
+                    (Vector3.up * 1.3f));
+                Assert.That(
+                    harness.Seat.CanInteract(interactor),
+                    Is.False,
+                    "Looking away from the dash, the ride is a ride again.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(scene);
+            }
+        }
+
         private sealed class Harness
         {
             public PlayerRuntime Player;

@@ -197,7 +197,8 @@ namespace BarPromenade.Tests.EditMode
                 "on stock URP Lit would leave him gliding through it.");
             Assert.That(material.enableInstancing, Is.True);
 
-            GameObject prefab = Player3DResources.LoadPrefab();
+            GameObject prefab = Player3DResources.LoadPrefab(
+                Player3DVariant.ProductionV1);
             Assert.That(
                 prefab,
                 Is.Not.Null,

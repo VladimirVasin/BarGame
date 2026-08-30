@@ -356,12 +356,12 @@ MonoBehaviour:
   sitClip: {fileID: -3508637186140793292, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   actionClip: {fileID: -8828702316034381432, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   localBounds:
-    m_Center: {x: -0.000000059604645, y: 0.875, z: 0.03699997}
-    m_Extent: {x: 0.75900006, y: 0.875, z: 0.177}
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.025586799}
+    m_Extent: {x: 0.7669122, y: 0.8749999, z: 0.17889863}
   sourceTriangleCount: 992
-  sourceGeneratorVersion: 3.2.0
+  sourceGeneratorVersion: 4.0.0
   designId: last_route_ferryman_v1
-  buildSignature: 68798cce76009731f299b05c0fe28245868b997d4181bf0a955e0fd6b6efffde
+  buildSignature: e189d915a736c45c14e126ea211e369c22b634cf1968c540c90e52c47f221b4c
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -381,8 +381,8 @@ MonoBehaviour:
   coinRestAnchor: {fileID: 5945638283025620257}
   coatHemAnchor: {fileID: 7139910872144190408}
   coatHemRenderer: {fileID: 125539622039208979}
-  coatHemSize: {x: 0.392, y: 0.134}
-  perchPelvisDrop: 0.486308
+  coatHemSize: {x: 0.4312, y: 0.12213713}
+  perchPelvisDrop: 0.485969
   dismountClip: {fileID: 295545915668322158, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   leftUpperArm: {fileID: 1718679455523558788}
   leftForearm: {fileID: 129478784206523706}
@@ -417,7 +417,7 @@ Transform:
   m_GameObject: {fileID: 8042384279453589400}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.0000072406688, y: 0.00040708267, z: -0.0000058576916}
+  m_LocalPosition: {x: -0.0000066138136, y: 0.00046393636, z: -0.0000060275233}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -448,7 +448,7 @@ Transform:
   m_GameObject: {fileID: 8945441569086639999}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -8.7422986e-12, y: 0.001959207, z: 0.00005918797}
+  m_LocalPosition: {x: -9.259363e-12, y: 0.0017633664, z: 0.00006510698}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -766,7 +766,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 3069857681594246024}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 1
   m_UpdateMode: 0

@@ -373,12 +373,12 @@ MonoBehaviour:
   sitClip: {fileID: 7915215364405804742, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   actionClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.000000059604645, y: 0.875, z: 0.026999965}
-    m_Extent: {x: 0.6460844, y: 0.875, z: 0.154}
+    m_Center: {x: -0.000000059604645, y: 0.8749999, z: 0.016318828}
+    m_Extent: {x: 0.6460844, y: 0.8749999, z: 0.15708897}
   sourceTriangleCount: 1044
-  sourceGeneratorVersion: 3.2.0
+  sourceGeneratorVersion: 4.0.0
   designId: long_arm_walker_v1
-  buildSignature: 33bf4ba6e96b7004d0183b05299894637be06abd35dd4da3ffa5e3d6ab2791c5
+  buildSignature: 51a51c0b97708e795e077404a1dd0d3cd986b0da6956926075a0ed41e8934ae7
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -651,7 +651,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 2586085072168868763}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 1
   m_UpdateMode: 0

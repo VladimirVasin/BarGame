@@ -130,7 +130,8 @@ namespace BarPromenade.Tests.PlayMode
                         walkableArea,
                         new Vector3(
                             0f,
-                            PlayerCharacterDimensions.PelvisHeight,
+                            CityBusNpcPassengerController
+                                .PassengerPelvisHeight,
                             0f),
                         CityPedestrianPlanner.AgentRadius,
                         CityBusPassengerDoor.Front,

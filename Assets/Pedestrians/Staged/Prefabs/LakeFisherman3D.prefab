@@ -464,12 +464,12 @@ MonoBehaviour:
   sitClip: {fileID: 0}
   actionClip: {fileID: 0}
   localBounds:
-    m_Center: {x: 0.0022049546, y: 0.875, z: 0.91545016}
-    m_Extent: {x: 0.7642051, y: 0.875, z: 1.0834502}
+    m_Center: {x: 0.0007135272, y: 0.8749999, z: 0.86725515}
+    m_Extent: {x: 0.77201927, y: 0.8749999, z: 1.0510027}
   sourceTriangleCount: 1052
-  sourceGeneratorVersion: 3.2.0
+  sourceGeneratorVersion: 4.0.0
   designId: lake_fisherman_v1
-  buildSignature: 312f908ddea811b33f4bd776a10a1bcf23c2a6d790ad065dd20daa362c9fd897
+  buildSignature: f3af58b3cb216b537c8964ca4dfb6e4395020122f15de45680ffa1b97ad956bb
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -514,7 +514,7 @@ Transform:
   m_GameObject: {fileID: 1395091305751385909}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: -0.019171381, y: -0.0032314793, z: 0.00650752}
+  m_LocalPosition: {x: -0.018016908, y: -0.003746992, z: 0.0072626946}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -545,7 +545,7 @@ Transform:
   m_GameObject: {fileID: 6083424084524311866}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
-  m_LocalPosition: {x: 0.00024, y: 0.0008971776, z: -0.0022907564}
+  m_LocalPosition: {x: 0.0002064, y: 0.00059075, z: -0.001937309}
   m_LocalScale: {x: 1, y: 1, z: 1}
   m_ConstrainProportionsScale: 0
   m_Children: []
@@ -931,7 +931,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5789475621006345326}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 1
   m_UpdateMode: 0

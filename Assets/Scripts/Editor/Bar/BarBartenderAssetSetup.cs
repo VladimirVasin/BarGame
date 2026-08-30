@@ -10,7 +10,7 @@ using UnityEngine.Rendering;
 namespace BarPromenade.Editor
 {
     /// <summary>
-    /// Imports the Six-Armed Bartender FBX against the shared Player
+    /// Imports the Six-Armed Bartender FBX against the production Hero/NPC V2
     /// Generic Avatar and builds the passive runtime prefab outside
     /// Resources, binding it to the one addressable provider asset.
     /// </summary>
@@ -22,7 +22,7 @@ namespace BarPromenade.Editor
         public const string ManifestPath =
             "Assets/Bar/Bartender/Models/BarBartender3D.json";
         public const string PlayerModelPath =
-            "Assets/Player3D/Models/PlayerCharacter3D.fbx";
+            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         public const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
         public const string PrefabPath =
@@ -39,7 +39,7 @@ namespace BarPromenade.Editor
         // The counter he works behind stands 1.4 m; the publican
         // looms a full cashier-class two metres so his head and
         // shoulders read across it from the hall.
-        private const float ExpectedHeight = 2.00f;
+        private const float ExpectedHeight = 1.75f;
         private const int MinimumTriangleCount = 1400;
         private const int MaximumTriangleCount = 3400;
 
@@ -126,7 +126,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Bar bartender build requires its FBX/manifest, " +
-                    "the production Player model and the shared " +
+                    "the production Hero/NPC V2 model and the shared " +
                     "Player3DLit material.");
             }
 
@@ -210,7 +210,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Bar bartender Animator must be controller-free, " +
-                    "use the Player Generic Avatar and disable root " +
+                    "use the Hero/NPC V2 Generic Avatar and disable root " +
                     "motion.");
             }
 

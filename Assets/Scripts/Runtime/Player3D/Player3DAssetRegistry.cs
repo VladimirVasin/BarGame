@@ -93,6 +93,24 @@ namespace BarPromenade
     }
 
     [Serializable]
+    public struct Player3DFacialExpressionKey
+    {
+        [SerializeField, Range(0f, 1f)] private float normalizedTime;
+        [SerializeField] private PlayerFacialExpression expression;
+
+        public Player3DFacialExpressionKey(
+            float normalizedTime,
+            PlayerFacialExpression expression)
+        {
+            this.normalizedTime = Mathf.Clamp01(normalizedTime);
+            this.expression = expression;
+        }
+
+        public float NormalizedTime => normalizedTime;
+        public PlayerFacialExpression Expression => expression;
+    }
+
+    [Serializable]
     public sealed class Player3DAnimationBinding
     {
         [SerializeField] private string clipName;
@@ -100,19 +118,26 @@ namespace BarPromenade
         [SerializeField] private AnimationClip clip;
         [SerializeField] private float authoredDuration;
         [SerializeField] private bool looping;
+        [SerializeField]
+        private Player3DFacialExpressionKey[] facialExpressionKeys =
+            Array.Empty<Player3DFacialExpressionKey>();
 
         public Player3DAnimationBinding(
             string clipName,
             string category,
             AnimationClip clip,
             float authoredDuration,
-            bool looping)
+            bool looping,
+            Player3DFacialExpressionKey[] configuredFacialExpressionKeys =
+                null)
         {
             this.clipName = clipName;
             this.category = category;
             this.clip = clip;
             this.authoredDuration = authoredDuration;
             this.looping = looping;
+            facialExpressionKeys = configuredFacialExpressionKeys ??
+                Array.Empty<Player3DFacialExpressionKey>();
         }
 
         public string ClipName => clipName;
@@ -120,6 +145,166 @@ namespace BarPromenade
         public AnimationClip Clip => clip;
         public float AuthoredDuration => authoredDuration;
         public bool Looping => looping;
+
+        public IReadOnlyList<Player3DFacialExpressionKey>
+            FacialExpressionKeys => facialExpressionKeys;
+
+        public bool TryGetFacialExpression(
+            float normalizedTime,
+            out PlayerFacialExpression expression)
+        {
+            expression = PlayerFacialExpression.Neutral;
+            if (facialExpressionKeys == null ||
+                facialExpressionKeys.Length == 0)
+            {
+                return false;
+            }
+
+            float time = Mathf.Clamp01(normalizedTime);
+            int selectedIndex = -1;
+            float selectedTime = float.NegativeInfinity;
+            for (int index = 0;
+                 index < facialExpressionKeys.Length;
+                 index++)
+            {
+                float keyTime =
+                    facialExpressionKeys[index].NormalizedTime;
+                if (keyTime <= time && keyTime >= selectedTime)
+                {
+                    selectedIndex = index;
+                    selectedTime = keyTime;
+                }
+            }
+
+            if (selectedIndex < 0)
+            {
+                return false;
+            }
+
+            expression = facialExpressionKeys[selectedIndex].Expression;
+            return true;
+        }
+    }
+
+    [Serializable]
+    public struct Player3DFaceAtlasCell
+    {
+        [SerializeField] private PlayerFacialExpression expression;
+        [SerializeField, Min(0)] private int column;
+        [SerializeField, Min(0)] private int row;
+
+        public Player3DFaceAtlasCell(
+            PlayerFacialExpression expression,
+            int column,
+            int row)
+        {
+            this.expression = expression;
+            this.column = column;
+            this.row = row;
+        }
+
+        public PlayerFacialExpression Expression => expression;
+        public int Column => column;
+        public int Row => row;
+    }
+
+    /// <summary>
+    /// Optional Hero V2 face surface. Atlas rows use Unity UV order: row zero
+    /// starts at the texture bottom. Hero V1 omits this binding and keeps its
+    /// registered facial bones.
+    /// </summary>
+    [Serializable]
+    public sealed class Player3DFaceAtlasBinding
+    {
+        [SerializeField] private Renderer renderer;
+        [SerializeField] private Texture2D texture;
+        [SerializeField, Min(1)] private int columns = 4;
+        [SerializeField, Min(1)] private int rows = 4;
+        [SerializeField] private Player3DFaceAtlasCell[] cells =
+            Array.Empty<Player3DFaceAtlasCell>();
+
+        public Player3DFaceAtlasBinding(
+            Renderer renderer,
+            Texture2D texture,
+            int columns,
+            int rows,
+            Player3DFaceAtlasCell[] cells)
+        {
+            this.renderer = renderer;
+            this.texture = texture;
+            this.columns = columns;
+            this.rows = rows;
+            this.cells = cells ?? Array.Empty<Player3DFaceAtlasCell>();
+        }
+
+        public Renderer Renderer => renderer;
+        public Texture2D Texture => texture;
+        public int Columns => columns;
+        public int Rows => rows;
+        public IReadOnlyList<Player3DFaceAtlasCell> Cells => cells;
+
+        public bool IsConfigured =>
+            renderer != null &&
+            texture != null &&
+            columns > 0 &&
+            rows > 0 &&
+            HasCanonicalCells();
+
+        public bool TryGetTextureTransform(
+            PlayerFacialExpression expression,
+            out Vector4 textureTransform)
+        {
+            if (columns <= 0 || rows <= 0 || cells == null)
+            {
+                textureTransform = new Vector4(1f, 1f, 0f, 0f);
+                return false;
+            }
+
+            for (int index = 0; index < cells.Length; index++)
+            {
+                Player3DFaceAtlasCell cell = cells[index];
+                if (cell.Expression != expression ||
+                    cell.Column < 0 ||
+                    cell.Column >= columns ||
+                    cell.Row < 0 ||
+                    cell.Row >= rows)
+                {
+                    continue;
+                }
+
+                float width = 1f / columns;
+                float height = 1f / rows;
+                textureTransform = new Vector4(
+                    width,
+                    height,
+                    cell.Column * width,
+                    cell.Row * height);
+                return true;
+            }
+
+            textureTransform = new Vector4(1f, 1f, 0f, 0f);
+            return false;
+        }
+
+        private bool HasCanonicalCells()
+        {
+            return
+                TryGetTextureTransform(
+                    PlayerFacialExpression.Neutral,
+                    out _) &&
+                TryGetTextureTransform(
+                    PlayerFacialExpression.HalfBlink,
+                    out _) &&
+                TryGetTextureTransform(
+                    PlayerFacialExpression.ClosedBlink,
+                    out _) &&
+                TryGetTextureTransform(
+                    PlayerFacialExpression.Watchful,
+                    out _) &&
+                TryGetTextureTransform(
+                    PlayerFacialExpression.Tense,
+                    out _);
+        }
     }
 
     [Serializable]
@@ -199,6 +384,14 @@ namespace BarPromenade
             Shader.PropertyToID("_BaseColor");
         private static readonly int LegacyColorId =
             Shader.PropertyToID("_Color");
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
+        private static readonly int BaseMapTransformId =
+            Shader.PropertyToID("_BaseMap_ST");
+        private static readonly int LegacyMapId =
+            Shader.PropertyToID("_MainTex");
+        private static readonly int LegacyMapTransformId =
+            Shader.PropertyToID("_MainTex_ST");
 
         [SerializeField] private Animator animator;
         [SerializeField] private Transform modelRoot;
@@ -217,6 +410,7 @@ namespace BarPromenade
         [SerializeField] private string sourcePose;
         [SerializeField] private int sourceTriangleCount;
         [SerializeField] private string buildSignature;
+        [SerializeField] private Player3DFaceAtlasBinding faceAtlas;
         [SerializeField] private bool applyPaletteOnEnable = true;
 
         public Animator Animator => animator;
@@ -232,6 +426,8 @@ namespace BarPromenade
         public string SourcePose => sourcePose;
         public int SourceTriangleCount => sourceTriangleCount;
         public string BuildSignature => buildSignature;
+        public Player3DFaceAtlasBinding FaceAtlas => faceAtlas;
+        public bool HasFaceAtlas => faceAtlas != null && faceAtlas.IsConfigured;
 
         public void Configure(
             Animator configuredAnimator,
@@ -245,7 +441,8 @@ namespace BarPromenade
             string generatorVersion,
             string pose,
             int triangleCount,
-            string configuredBuildSignature)
+            string configuredBuildSignature,
+            Player3DFaceAtlasBinding configuredFaceAtlas = null)
         {
             animator = configuredAnimator;
             modelRoot = configuredModelRoot;
@@ -262,6 +459,7 @@ namespace BarPromenade
             sourcePose = pose ?? string.Empty;
             sourceTriangleCount = triangleCount;
             buildSignature = configuredBuildSignature ?? string.Empty;
+            faceAtlas = configuredFaceAtlas;
         }
 
         public bool TryGetPart(
@@ -325,6 +523,29 @@ namespace BarPromenade
                 target.SetPropertyBlock(properties);
                 properties.Clear();
             }
+
+            ApplyNeutralFaceAtlas(properties);
+        }
+
+        private void ApplyNeutralFaceAtlas(
+            MaterialPropertyBlock properties)
+        {
+            if (!HasFaceAtlas ||
+                !faceAtlas.TryGetTextureTransform(
+                    PlayerFacialExpression.Neutral,
+                    out Vector4 textureTransform))
+            {
+                return;
+            }
+
+            Renderer target = faceAtlas.Renderer;
+            target.GetPropertyBlock(properties);
+            properties.SetTexture(BaseMapId, faceAtlas.Texture);
+            properties.SetVector(BaseMapTransformId, textureTransform);
+            properties.SetTexture(LegacyMapId, faceAtlas.Texture);
+            properties.SetVector(LegacyMapTransformId, textureTransform);
+            target.SetPropertyBlock(properties);
+            properties.Clear();
         }
 
         private void OnEnable()

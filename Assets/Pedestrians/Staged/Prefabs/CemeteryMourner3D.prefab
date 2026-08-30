@@ -400,12 +400,12 @@ MonoBehaviour:
   sitClip: {fileID: 0}
   actionClip: {fileID: 0}
   localBounds:
-    m_Center: {x: 0.019499838, y: 0.875, z: -0.0045000017}
-    m_Extent: {x: 0.77849996, y: 0.875, z: 0.22049996}
+    m_Center: {x: 0.01786989, y: 0.8749999, z: -0.019712001}
+    m_Extent: {x: 0.7857714, y: 0.8749999, z: 0.22608092}
   sourceTriangleCount: 988
-  sourceGeneratorVersion: 3.2.0
+  sourceGeneratorVersion: 4.0.0
   designId: cemetery_mourner_v1
-  buildSignature: 54ae973764c59ac738f79ac7baefbdcdfea486baf8b1e877cb56a881d736414c
+  buildSignature: 69102eeded0cc518ccf738900c41b3225f3b3687e3e930301cf120b1c9014af4
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
@@ -765,7 +765,7 @@ Animator:
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 5507467160571226342}
   m_Enabled: 1
-  m_Avatar: {fileID: 9000000, guid: 4b06778523aebc244b8091e632bd29e8, type: 3}
+  m_Avatar: {fileID: 9000000, guid: 17afea68fb0f9bc4795dc60cd0eef0cf, type: 3}
   m_Controller: {fileID: 0}
   m_CullingMode: 1
   m_UpdateMode: 0

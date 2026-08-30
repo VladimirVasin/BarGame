@@ -60,7 +60,7 @@ namespace BarPromenade.Tests.EditMode
             "Assets/Pedestrians/Animations/" +
             "CityPedestrianLocomotion.fbx";
         private const string PlayerModelPath =
-            "Assets/Player3D/Models/PlayerCharacter3D.fbx";
+            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         private const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
 
@@ -245,7 +245,8 @@ namespace BarPromenade.Tests.EditMode
 
             GameObject pedestrianPrefab =
                 Resources.Load<GameObject>(prefabResourcePath);
-            GameObject playerPrefab = Player3DResources.LoadPrefab();
+            GameObject playerPrefab = Player3DResources.LoadPrefab(
+                Player3DVariant.ProductionV2);
             Material sharedMaterial =
                 AssetDatabase.LoadAssetAtPath<Material>(SharedMaterialPath);
             Assert.That(pedestrianPrefab, Is.Not.Null);

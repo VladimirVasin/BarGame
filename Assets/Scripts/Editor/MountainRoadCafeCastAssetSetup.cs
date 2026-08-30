@@ -18,7 +18,7 @@ namespace BarPromenade.Editor
     public static class MountainRoadCafeCastAssetSetup
     {
         public const string PlayerModelPath =
-            "Assets/Player3D/Models/PlayerCharacter3D.fbx";
+            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         public const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
         public const string AnimationPath =
@@ -215,11 +215,12 @@ namespace BarPromenade.Editor
                 return false;
             }
 
-            // Shared Player assets are dependencies, not cafe-owned sources.
-            // Treating them as rebuild triggers makes this setup and the
-            // Player/pedestrian setup pipelines repeatedly force-import one
-            // another. Interactive editor startup still validates those
-            // dependencies through ValidateDependencyStamp.
+            // The shared Hero/NPC V2 Avatar and Player3DLit material are
+            // dependencies, not cafe-owned sources. Treating them as rebuild
+            // triggers makes this setup and the Hero/pedestrian pipelines
+            // repeatedly force-import one another. Interactive editor startup
+            // still validates those dependencies through
+            // ValidateDependencyStamp.
             if (string.Equals(
                     path,
                     AnimationPath,
@@ -266,7 +267,8 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "Mountain Road cafe cast build requires all four staged " +
                     "FBX/manifest pairs, its isolated animation FBX/manifest, " +
-                    "the production Player model and Player3DLit material.");
+                    "the production Hero/NPC V2 model and Player3DLit " +
+                    "material.");
             }
 
             isBuilding = true;
@@ -582,7 +584,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     $"{descriptor.DisplayName} Animator must be the sole, " +
-                    "controller-free Player Generic Animator with root " +
+                    "controller-free Hero/NPC V2 Generic Animator with root " +
                     "motion disabled.");
             }
 
@@ -1031,7 +1033,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Cafe animation FBX must import as Generic, copy the " +
-                    "production Player Avatar and import no materials.");
+                    "production Hero/NPC V2 Avatar and import no materials.");
             }
 
             AnimationClip[] clips = GetImportedAnimationClips();
@@ -1092,7 +1094,7 @@ namespace BarPromenade.Editor
             if (model == null || playerModel == null)
             {
                 throw new InvalidOperationException(
-                    $"{descriptor.DisplayName} or Player source model " +
+                    $"{descriptor.DisplayName} or Hero/NPC V2 source model " +
                     "failed to import.");
             }
 
@@ -1139,7 +1141,8 @@ namespace BarPromenade.Editor
                 {
                     throw new InvalidOperationException(
                         $"{descriptor.DisplayName} bone '{source.name}' " +
-                        "differs from the production Player Generic rig.");
+                        "differs from the production Hero/NPC V2 Generic " +
+                        "rig.");
                 }
             }
 
@@ -1612,6 +1615,9 @@ namespace BarPromenade.Editor
             }
             else
             {
+                // A clean Library may discover the cafe cast before the
+                // Hero V2 FBX. The queued setup imports Hero V2 first, then
+                // reimports this source onto that canonical Generic Avatar.
                 importer.avatarSetup =
                     ModelImporterAvatarSetup.CreateFromThisModel;
                 importer.sourceAvatar = null;
@@ -1712,7 +1718,7 @@ namespace BarPromenade.Editor
             string[] movedAssets,
             string[] movedFromAssetPaths)
         {
-            if (MountainRoadCafeCastAssetSetup.IsBuilding)
+            if (NpcHumanV2AssetSetup.IsAnyPipelineBuilding)
             {
                 return;
             }

@@ -71,7 +71,13 @@ namespace BarPromenade
         /// </summary>
         public const float MaximumYawOffsetDegrees = 105f;
         public const float MinimumPitchDegrees = -34f;
-        public const float MaximumPitchDegrees = 42f;
+
+        /// <summary>
+        /// Down far enough to look at his own glovebox: its lid sits `41`
+        /// degrees below the eye and, dropped open, hangs between `45` and
+        /// `55`. It was `42` while the dash was a shelf with nothing on it.
+        /// </summary>
+        public const float MaximumPitchDegrees = 50f;
 
         /// <summary>Level. He is sitting in a car looking out of it, not
         /// studying anything on his knees - unlike the board, which has to

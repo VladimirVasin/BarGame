@@ -10,7 +10,7 @@ namespace BarPromenade.Tests.EditMode
     public sealed class MountainRoadCafeCastTests
     {
         private const string PlayerModelPath =
-            "Assets/Player3D/Models/PlayerCharacter3D.fbx";
+            "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         private const string StagedPrefabRoot =
             "Assets/Pedestrians/Staged/Prefabs/";
 
@@ -151,7 +151,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(prefabs.Distinct().Count(), Is.EqualTo(4));
 
             Player3DAssetRegistry playerRegistry =
-                Player3DResources.LoadPrefab()
+                Player3DResources.LoadPrefab(Player3DVariant.ProductionV2)
                     .GetComponent<Player3DAssetRegistry>();
             Assert.That(playerRegistry, Is.Not.Null);
             Assert.That(playerRegistry.Animator.avatar, Is.Not.Null);

@@ -48,7 +48,7 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit  # noqa: E402
 
 
-GENERATOR_VERSION = "4.6.0"
+GENERATOR_VERSION = "4.7.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
     "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter Kit"
@@ -78,6 +78,24 @@ MAX_TRIANGLES = 240000
 FORWARD_ANCHORED_KINDS = {
     "OldTownScaffolding",
     "NightlifeFireEscape",
+}
+
+SHELTER_STATIC_HUMANOID_STANDARD = "static_humanoid_anatomy_v2"
+SHELTER_STATIC_HUMANOID_STANDARD_VERSION = 2.0
+SHELTER_STANDING_EQUIVALENT_HEIGHT_M = 1.75
+SHELTER_HEAD_WIDTH_M = 0.22
+SHELTER_HEAD_HEIGHT_M = 0.24
+SHELTER_SHOULDER_JOINT_SPAN_M = 0.52
+SHELTER_SHOULDER_HALF_SPAN_M = SHELTER_SHOULDER_JOINT_SPAN_M * 0.5
+SHELTER_RESIDENT_KINDS = (
+    "NightlifeShelterStandingPerson",
+    "NightlifeShelterSeatedPerson",
+    "NightlifeShelterSleepingPerson",
+)
+SHELTER_LEGACY_TRIANGLE_CAPS = {
+    "NightlifeShelterStandingPerson": 582,
+    "NightlifeShelterSeatedPerson": 638,
+    "NightlifeShelterSleepingPerson": 414,
 }
 
 Vec2 = tuple[float, float]
@@ -590,6 +608,37 @@ def local_box(
     )
 
 
+def local_grounded_box(
+    x: float,
+    forward: float,
+    width: float,
+    vertical_size: float,
+    depth: float,
+    chamfer: float = 0.025,
+    pitch_x_degrees: float = 0.0,
+    roll_forward_degrees: float = 0.0,
+    yaw_up_degrees: float = 0.0,
+) -> Geometry:
+    """A local box raised by its measured rotated sole, never by guesswork."""
+    geometry = local_box(
+        x,
+        0.0,
+        forward,
+        width,
+        vertical_size,
+        depth,
+        chamfer,
+        pitch_x_degrees,
+        roll_forward_degrees,
+        yaw_up_degrees,
+    )
+    minimum_height = min(vertex[2] for vertex in geometry[0])
+    return transform_geometry(
+        geometry,
+        translation=(0.0, 0.0, -minimum_height),
+    )
+
+
 def local_tube(
     start: tuple[float, float, float],
     end: tuple[float, float, float],
@@ -604,6 +653,45 @@ def local_tube(
         radius if end_radius is None else end_radius,
         sides,
     )
+
+
+def local_profile_tube(
+    points: Sequence[tuple[float, float, float, float]],
+    sides: int = 6,
+    phase: float = 0.0,
+) -> Geometry:
+    """A low-poly limb whose radius can describe calf/knee landmarks."""
+    centers = [local_point(x, height, forward)
+               for x, height, forward, _ in points]
+    axis = normalized(subtract(centers[-1], centers[0]))
+    helper = (0.0, 0.0, 1.0)
+    if abs(dot(axis, helper)) > 0.92:
+        helper = (1.0, 0.0, 0.0)
+    first = normalized(cross(axis, helper))
+    second = normalized(cross(axis, first))
+    vertices: list[Vec3] = []
+    rings: list[tuple[int, ...]] = []
+    for point_index, (center, point) in enumerate(zip(centers, points)):
+        radius = point[3]
+        start = len(vertices)
+        for side in range(sides):
+            angle = side / sides * math.tau + phase + point_index * 0.035
+            radial = add(
+                multiply(first, math.cos(angle) * radius),
+                multiply(second, math.sin(angle) * radius),
+            )
+            vertices.append(add(center, radial))
+        rings.append(tuple(range(start, start + sides)))
+
+    faces: list[Face] = [tuple(reversed(rings[0])), rings[-1]]
+    for lower, upper in zip(rings, rings[1:]):
+        for side in range(sides):
+            following = (side + 1) % sides
+            faces.append((
+                lower[side], lower[following],
+                upper[following], upper[side],
+            ))
+    return vertices, faces
 
 
 def local_vertical_solid(
@@ -683,6 +771,112 @@ def local_ellipsoid(
          radius_forward * pole_scale,
          phase + 0.16),
     ), sides)
+
+
+def local_profile_solid(
+    rings_data: Sequence[tuple[float, float, float, float, float]],
+    sides: int = 6,
+    phase: float = 0.0,
+) -> Geometry:
+    """Closed upright silhouette from height/x/forward/radius-X/radius-Z rings."""
+    return ring_solid_z(tuple(
+        (
+            height,
+            x,
+            forward,
+            radius_x,
+            radius_forward,
+            phase + index * 0.045,
+        )
+        for index, (
+            height,
+            x,
+            forward,
+            radius_x,
+            radius_forward,
+        ) in enumerate(rings_data)
+    ), sides)
+
+
+def local_lateral_profile_solid(
+    rings_data: Sequence[tuple[float, float, float, float, float]],
+    sides: int = 6,
+    phase: float = 0.0,
+) -> Geometry:
+    """Closed X-axis silhouette for a person lying on their side."""
+    vertices: list[Vec3] = []
+    rings: list[tuple[int, ...]] = []
+    for ring_index, (
+        x,
+        height,
+        forward,
+        radius_height,
+        radius_forward,
+    ) in enumerate(rings_data):
+        start = len(vertices)
+        for side in range(sides):
+            angle = side / sides * math.tau + phase + ring_index * 0.045
+            vertices.append((
+                x,
+                forward - math.cos(angle) * radius_forward,
+                height - math.sin(angle) * radius_height,
+            ))
+        rings.append(tuple(range(start, start + sides)))
+
+    faces: list[Face] = [tuple(reversed(rings[0])), rings[-1]]
+    for lower, upper in zip(rings, rings[1:]):
+        for side in range(sides):
+            following = (side + 1) % sides
+            faces.append((
+                lower[side], lower[following],
+                upper[following], upper[side],
+            ))
+    return vertices, faces
+
+
+def local_lateral_ellipsoid(
+    x: float,
+    height: float,
+    forward: float,
+    radius_length: float,
+    radius_height: float,
+    radius_forward: float,
+    sides: int = 7,
+    phase: float = 0.0,
+) -> Geometry:
+    """Low-poly head aligned with the body of a sleeping figure."""
+    pole_scale = 0.10
+    return local_lateral_profile_solid((
+        (
+            x - radius_length,
+            height,
+            forward,
+            radius_height * pole_scale,
+            radius_forward * pole_scale,
+        ),
+        (
+            x - radius_length * 0.45,
+            height,
+            forward,
+            radius_height * 0.86,
+            radius_forward * 0.86,
+        ),
+        (x, height, forward, radius_height, radius_forward),
+        (
+            x + radius_length * 0.45,
+            height,
+            forward,
+            radius_height * 0.86,
+            radius_forward * 0.86,
+        ),
+        (
+            x + radius_length,
+            height,
+            forward,
+            radius_height * pole_scale,
+            radius_forward * pole_scale,
+        ),
+    ), sides, phase)
 
 
 # ----------------------------------------------------- formal recipes --
@@ -4382,42 +4576,70 @@ def build_nightlife_shelter_fire() -> AssemblySpec:
 def build_nightlife_shelter_standing_person() -> AssemblySpec:
     kind, variant = "NightlifeShelterStandingPerson", 0
     outerwear = [
-        local_box(-0.16, 0.055, -0.03, 0.28, 0.11, 0.42, 0.035,
-                  yaw_up_degrees=-4.0),
-        local_box(0.16, 0.055, 0.01, 0.28, 0.11, 0.42, 0.035,
-                  yaw_up_degrees=5.0),
-        local_tube((-0.15, 0.11, -0.02), (-0.13, 0.82, 0.01),
-                   0.085, sides=8, end_radius=0.105),
-        local_tube((0.15, 0.11, 0.02), (0.13, 0.82, 0.02),
-                   0.085, sides=8, end_radius=0.105),
-        local_box(0.0, 1.13, 0.10, 0.54, 0.68, 0.34, 0.085,
-                  pitch_x_degrees=11.0),
-        local_tube((-0.22, 1.38, 0.14), (-0.20, 1.12, 0.34),
-                   0.072, sides=8),
-        local_tube((-0.20, 1.12, 0.34), (-0.07, 1.03, 0.52),
-                   0.060, sides=8),
-        local_tube((0.22, 1.38, 0.14), (0.20, 1.12, 0.34),
-                   0.072, sides=8),
-        local_tube((0.20, 1.12, 0.34), (0.07, 1.03, 0.52),
-                   0.060, sides=8),
+        local_grounded_box(
+            -0.13, -0.035, 0.18, 0.095, 0.30, 0.025,
+            yaw_up_degrees=-4.0),
+        local_grounded_box(
+            0.13, 0.005, 0.18, 0.095, 0.30, 0.025,
+            yaw_up_degrees=5.0),
+        local_profile_solid((
+            (0.10, -0.13, -0.025, 0.060, 0.065),
+            (0.34, -0.135, -0.010, 0.082, 0.078),
+            (0.49, -0.140, 0.000, 0.072, 0.070),
+            (0.68, -0.135, 0.010, 0.100, 0.095),
+            (0.81, -0.130, 0.020, 0.112, 0.105),
+        ), sides=6, phase=0.04),
+        local_profile_solid((
+            (0.10, 0.13, 0.015, 0.060, 0.065),
+            (0.34, 0.135, 0.020, 0.082, 0.078),
+            (0.49, 0.140, 0.020, 0.072, 0.070),
+            (0.68, 0.135, 0.020, 0.100, 0.095),
+            (0.81, 0.130, 0.025, 0.112, 0.105),
+        ), sides=6, phase=0.12),
+        local_profile_solid((
+            (0.78, 0.0, 0.080, 0.225, 0.160),
+            (0.98, 0.0, 0.090, 0.205, 0.150),
+            (1.24, 0.0, 0.100, 0.270, 0.180),
+            (1.38, 0.0, 0.110, 0.265, 0.175),
+            (1.47, 0.0, 0.135, 0.075, 0.075),
+        ), sides=6, phase=0.05),
+        local_tube(
+            (-SHELTER_SHOULDER_HALF_SPAN_M, 1.37, 0.12),
+            (-0.235, 1.10, 0.32),
+            0.075, sides=6, end_radius=0.068),
+        local_tube((-0.235, 1.10, 0.32), (-0.065, 1.00, 0.51),
+                   0.065, sides=6, end_radius=0.052),
+        local_tube(
+            (SHELTER_SHOULDER_HALF_SPAN_M, 1.37, 0.12),
+            (0.235, 1.10, 0.32),
+            0.075, sides=6, end_radius=0.068),
+        local_tube((0.235, 1.10, 0.32), (0.065, 1.00, 0.51),
+                   0.065, sides=6, end_radius=0.052),
     ]
     layer = [
         local_vertical_solid(
-            0.0, 1.38, 1.48, 0.19,
-            0.18, 0.16, top_scale=0.86, sides=9),
+            0.0, 1.39, 1.455, 0.125,
+            0.14, 0.13, top_scale=0.82, sides=6),
         local_vertical_solid(
-            0.0, 1.62, 1.76, 0.22,
-            0.15, 0.14, top_scale=0.74, sides=9),
-        local_box(-0.11, 1.40, 0.27, 0.12, 0.34, 0.055, 0.012,
+            0.0, 1.67, 1.75, 0.18,
+            0.118, 0.105, top_scale=0.86, sides=7),
+        local_box(-0.105, 1.42, 0.27, 0.11, 0.26, 0.050, 0.010,
                   roll_forward_degrees=5.0),
     ]
     skin = [
-        local_ellipsoid(0.0, 1.58, 0.20, 0.13, 0.16, 0.12,
-                        sides=9, phase=0.06),
-        local_ellipsoid(-0.055, 1.02, 0.54, 0.067, 0.075, 0.055,
-                        sides=8),
-        local_ellipsoid(0.055, 1.02, 0.54, 0.067, 0.075, 0.055,
-                        sides=8, phase=0.12),
+        local_ellipsoid(
+            0.0, 1.63, 0.18,
+            SHELTER_HEAD_WIDTH_M * 0.5,
+            SHELTER_HEAD_HEIGHT_M * 0.5,
+            0.095,
+            sides=7,
+            phase=0.06),
+        local_tube((0.0, 1.43, 0.12), (0.0, 1.525, 0.17),
+                   0.060, sides=6, end_radius=0.055),
+        local_ellipsoid(-0.050, 0.99, 0.535, 0.055, 0.065, 0.048,
+                        sides=6),
+        local_ellipsoid(0.050, 0.99, 0.535, 0.055, 0.065, 0.048,
+                        sides=6, phase=0.12),
     ]
     return shelter_person_assembly(kind, outerwear, layer, skin)
 
@@ -4425,46 +4647,70 @@ def build_nightlife_shelter_standing_person() -> AssemblySpec:
 def build_nightlife_shelter_seated_person() -> AssemblySpec:
     kind, variant = "NightlifeShelterSeatedPerson", 0
     outerwear = [
-        local_box(-0.22, 0.055, 0.43, 0.28, 0.11, 0.42, 0.035,
-                  yaw_up_degrees=-7.0),
-        local_box(0.22, 0.055, 0.43, 0.28, 0.11, 0.42, 0.035,
-                  yaw_up_degrees=6.0),
-        local_tube((-0.21, 0.11, 0.40), (-0.20, 0.54, 0.26),
-                   0.085, sides=8, end_radius=0.105),
-        local_tube((0.21, 0.11, 0.40), (0.20, 0.54, 0.26),
-                   0.085, sides=8, end_radius=0.105),
-        local_tube((-0.20, 0.54, 0.26), (-0.14, 0.68, -0.05),
-                   0.105, sides=8),
-        local_tube((0.20, 0.54, 0.26), (0.14, 0.68, -0.05),
-                   0.105, sides=8),
-        local_box(0.0, 0.98, 0.03, 0.56, 0.66, 0.36, 0.085,
-                  pitch_x_degrees=13.0),
-        local_tube((-0.23, 1.22, 0.10), (-0.20, 0.96, 0.31),
-                   0.072, sides=8),
-        local_tube((-0.20, 0.96, 0.31), (-0.07, 0.87, 0.53),
-                   0.060, sides=8),
-        local_tube((0.23, 1.22, 0.10), (0.20, 0.96, 0.31),
-                   0.072, sides=8),
-        local_tube((0.20, 0.96, 0.31), (0.07, 0.87, 0.53),
-                   0.060, sides=8),
+        local_grounded_box(
+            -0.18, 0.43, 0.18, 0.095, 0.30, 0.025,
+            yaw_up_degrees=-7.0),
+        local_grounded_box(
+            0.18, 0.43, 0.18, 0.095, 0.30, 0.025,
+            yaw_up_degrees=6.0),
+        local_profile_tube((
+            (-0.18, 0.10, 0.42, 0.055),
+            (-0.18, 0.34, 0.34, 0.085),
+            (-0.18, 0.54, 0.25, 0.072),
+        ), sides=6, phase=0.04),
+        local_profile_tube((
+            (0.18, 0.10, 0.42, 0.055),
+            (0.18, 0.34, 0.34, 0.085),
+            (0.18, 0.54, 0.25, 0.072),
+        ), sides=6, phase=0.12),
+        local_tube((-0.18, 0.54, 0.25), (-0.13, 0.69, -0.04),
+                   0.085, sides=6, end_radius=0.115),
+        local_tube((0.18, 0.54, 0.25), (0.13, 0.69, -0.04),
+                   0.085, sides=6, end_radius=0.115),
+        local_profile_solid((
+            (0.65, 0.0, -0.040, 0.225, 0.170),
+            (0.84, 0.0, -0.015, 0.205, 0.155),
+            (1.10, 0.0, 0.050, 0.270, 0.180),
+            (1.22, 0.0, 0.100, 0.265, 0.175),
+            (1.32, 0.0, 0.125, 0.075, 0.075),
+        ), sides=6, phase=0.05),
+        local_tube(
+            (-SHELTER_SHOULDER_HALF_SPAN_M, 1.23, 0.11),
+            (-0.23, 0.96, 0.31),
+            0.075, sides=6, end_radius=0.068),
+        local_tube((-0.23, 0.96, 0.31), (-0.065, 0.87, 0.52),
+                   0.065, sides=6, end_radius=0.052),
+        local_tube(
+            (SHELTER_SHOULDER_HALF_SPAN_M, 1.23, 0.11),
+            (0.23, 0.96, 0.31),
+            0.075, sides=6, end_radius=0.068),
+        local_tube((0.23, 0.96, 0.31), (0.065, 0.87, 0.52),
+                   0.065, sides=6, end_radius=0.052),
     ]
     layer = [
         local_vertical_solid(
-            0.0, 1.20, 1.31, 0.13,
-            0.18, 0.16, top_scale=0.86, sides=9),
+            0.0, 1.255, 1.305, 0.115,
+            0.14, 0.13, top_scale=0.82, sides=6),
         local_vertical_solid(
-            0.0, 1.44, 1.57, 0.17,
-            0.15, 0.14, top_scale=0.72, sides=9),
-        local_box(0.12, 1.20, 0.23, 0.11, 0.32, 0.055, 0.012,
+            0.0, 1.50, 1.57, 0.15,
+            0.118, 0.105, top_scale=0.86, sides=7),
+        local_box(0.105, 1.27, 0.23, 0.11, 0.25, 0.050, 0.010,
                   roll_forward_degrees=-5.0),
     ]
     skin = [
-        local_ellipsoid(0.0, 1.40, 0.15, 0.13, 0.16, 0.12,
-                        sides=9, phase=0.09),
-        local_ellipsoid(-0.055, 0.86, 0.55, 0.067, 0.075, 0.055,
-                        sides=8),
-        local_ellipsoid(0.055, 0.86, 0.55, 0.067, 0.075, 0.055,
-                        sides=8, phase=0.12),
+        local_ellipsoid(
+            0.0, 1.45, 0.15,
+            SHELTER_HEAD_WIDTH_M * 0.5,
+            SHELTER_HEAD_HEIGHT_M * 0.5,
+            0.095,
+            sides=7,
+            phase=0.09),
+        local_tube((0.0, 1.285, 0.10), (0.0, 1.36, 0.14),
+                   0.060, sides=6, end_radius=0.055),
+        local_ellipsoid(-0.050, 0.86, 0.545, 0.055, 0.065, 0.048,
+                        sides=6),
+        local_ellipsoid(0.050, 0.86, 0.545, 0.055, 0.065, 0.048,
+                        sides=6, phase=0.12),
     ]
     return shelter_person_assembly(kind, outerwear, layer, skin)
 
@@ -4472,32 +4718,51 @@ def build_nightlife_shelter_seated_person() -> AssemblySpec:
 def build_nightlife_shelter_sleeping_person() -> AssemblySpec:
     kind, variant = "NightlifeShelterSleepingPerson", 0
     outerwear = [
-        local_tube((0.15, 0.28, 0.0), (0.54, 0.25, 0.06),
-                   0.12, sides=8, end_radius=0.10),
-        local_tube((0.54, 0.25, 0.06), (0.88, 0.17, 0.03),
-                   0.09, sides=8, end_radius=0.075),
-        local_tube((0.18, 0.30, -0.06), (0.58, 0.22, -0.09),
-                   0.12, sides=8, end_radius=0.10),
-        local_tube((0.58, 0.22, -0.09), (0.91, 0.14, -0.05),
-                   0.09, sides=8, end_radius=0.075),
-        local_box(0.98, 0.0638, 0.05, 0.30, 0.11, 0.24, 0.035,
-                  roll_forward_degrees=-4.0),
-        local_box(0.99, 0.0638, -0.07, 0.30, 0.11, 0.24, 0.035,
-                  roll_forward_degrees=3.0),
+        local_tube((0.16, 0.30, 0.0), (0.50, 0.25, 0.065),
+                   0.110, sides=6, end_radius=0.085),
+        local_profile_tube((
+            (0.50, 0.25, 0.065, 0.078),
+            (0.66, 0.205, 0.050, 0.086),
+            (0.82, 0.15, 0.035, 0.058),
+        ), sides=6, phase=0.04),
+        local_tube((0.20, 0.31, -0.06), (0.53, 0.22, -0.09),
+                   0.110, sides=6, end_radius=0.085),
+        local_profile_tube((
+            (0.53, 0.22, -0.09, 0.078),
+            (0.69, 0.17, -0.07, 0.086),
+            (0.84, 0.13, -0.05, 0.058),
+        ), sides=6, phase=0.12),
+        local_grounded_box(
+            0.93, 0.04, 0.22, 0.095, 0.17, 0.020,
+            roll_forward_degrees=-4.0),
+        local_grounded_box(
+            0.94, -0.07, 0.22, 0.095, 0.17, 0.020,
+            roll_forward_degrees=3.0),
     ]
     breathing_upper = [
-        local_box(-0.12, 0.31, 0.0, 0.78, 0.31, 0.44, 0.09,
-                  roll_forward_degrees=-4.0),
-        local_box(0.16, 0.39, 0.01, 0.64, 0.20, 0.48, 0.065,
-                  roll_forward_degrees=-7.0),
-        local_tube((-0.30, 0.31, 0.04), (-0.48, 0.18, 0.22),
-                   0.065, sides=8),
+        local_lateral_profile_solid((
+            (-0.40, 0.32, 0.000, 0.140, 0.235),
+            (-0.24, 0.34, 0.000, 0.155, 0.260),
+            (0.08, 0.31, 0.005, 0.125, 0.205),
+            (0.28, 0.29, 0.000, 0.145, 0.225),
+        ), sides=6, phase=0.04),
+        local_tube((-0.34, 0.31, 0.20), (-0.48, 0.18, 0.24),
+                   0.065, sides=6, end_radius=0.055),
     ]
     skin = [
-        local_ellipsoid(-0.60, 0.31, 0.02, 0.14, 0.15, 0.12,
-                        sides=9, phase=0.07),
-        local_ellipsoid(-0.50, 0.15, 0.24, 0.065, 0.070, 0.052,
-                        sides=8, phase=0.14),
+        local_lateral_ellipsoid(
+            -0.60,
+            0.30,
+            0.025,
+            SHELTER_HEAD_HEIGHT_M * 0.5,
+            SHELTER_HEAD_WIDTH_M * 0.5,
+            SHELTER_HEAD_WIDTH_M * 0.5,
+            sides=7,
+            phase=0.07),
+        local_tube((-0.48, 0.30, 0.025), (-0.395, 0.315, 0.015),
+                   0.055, sides=6, end_radius=0.060),
+        local_ellipsoid(-0.50, 0.15, 0.24, 0.055, 0.060, 0.048,
+                        sides=6, phase=0.14),
     ]
     return shelter_person_assembly(
         kind,
@@ -4531,6 +4796,27 @@ def shelter_person_assembly(
         ),
         unity_owned_parts=(
             "Palette property blocks", "Presentation motion", "Collider"),
+        canonical_reference=(
+            (
+                "anatomy_standard_version",
+                SHELTER_STATIC_HUMANOID_STANDARD_VERSION,
+            ),
+            (
+                "standing_equivalent_height_m",
+                SHELTER_STANDING_EQUIVALENT_HEIGHT_M,
+            ),
+            ("head_width_m", SHELTER_HEAD_WIDTH_M),
+            ("head_height_m", SHELTER_HEAD_HEIGHT_M),
+            ("shoulder_joint_span_m", SHELTER_SHOULDER_JOINT_SPAN_M),
+            (
+                "shoulder_joint_span_head_widths",
+                SHELTER_SHOULDER_JOINT_SPAN_M / SHELTER_HEAD_WIDTH_M,
+            ),
+            (
+                "legacy_triangle_cap",
+                float(SHELTER_LEGACY_TRIANGLE_CAPS[kind]),
+            ),
+        ),
         root_derivation="NightlifeArchShelterPlan.PersonGround+Facing",
         coordinate_profile="root_local_direct",
         expected_source_min_z=0.0,
@@ -5372,6 +5658,88 @@ def wave1_compatibility_signature(
     return hashlib.sha256(encoded).hexdigest()
 
 
+def validate_shelter_static_humanoids(
+    assemblies: Sequence[AssemblySpec],
+    problems: list[str],
+) -> None:
+    lookup = {
+        assembly.kind: assembly
+        for assembly in assemblies
+        if assembly.kind in SHELTER_RESIDENT_KINDS
+    }
+    if tuple(lookup) != SHELTER_RESIDENT_KINDS:
+        problems.append(
+            "Nightlife shelter static humanoid roster/order changed")
+        return
+
+    shoulder_ratio = (
+        SHELTER_SHOULDER_JOINT_SPAN_M / SHELTER_HEAD_WIDTH_M
+    )
+    if not 2.3 <= shoulder_ratio <= 2.5:
+        problems.append(
+            "Nightlife shelter shoulder span is outside 2.3-2.5 head widths")
+    heads_tall = (
+        SHELTER_STANDING_EQUIVALENT_HEIGHT_M / SHELTER_HEAD_HEIGHT_M
+    )
+    if not 7.0 <= heads_tall <= 7.5:
+        problems.append(
+            "Nightlife shelter adult profile is outside 7-7.5 heads tall")
+
+    expected_references = {
+        "anatomy_standard_version": SHELTER_STATIC_HUMANOID_STANDARD_VERSION,
+        "standing_equivalent_height_m":
+            SHELTER_STANDING_EQUIVALENT_HEIGHT_M,
+        "head_width_m": SHELTER_HEAD_WIDTH_M,
+        "head_height_m": SHELTER_HEAD_HEIGHT_M,
+        "shoulder_joint_span_m": SHELTER_SHOULDER_JOINT_SPAN_M,
+        "shoulder_joint_span_head_widths": shoulder_ratio,
+    }
+    for kind in SHELTER_RESIDENT_KINDS:
+        assembly = lookup[kind]
+        references = dict(assembly.canonical_reference)
+        for name, expected in expected_references.items():
+            if abs(references.get(name, -1.0) - expected) > BOUNDS_EPSILON:
+                problems.append(
+                    f"{kind} anatomy reference '{name}' drifted")
+        triangle_cap = SHELTER_LEGACY_TRIANGLE_CAPS[kind]
+        actual_triangles = sum(
+            triangle_count(part.geometry) for part in assembly.parts)
+        if actual_triangles > triangle_cap:
+            problems.append(
+                f"{kind} grew to {actual_triangles} triangles; "
+                f"legacy cap is {triangle_cap}")
+        if abs(references.get("legacy_triangle_cap", -1.0) -
+               triangle_cap) > BOUNDS_EPSILON:
+            problems.append(f"{kind} does not publish its legacy triangle cap")
+
+    standing_low, standing_high = combined_bounds(
+        lookup["NightlifeShelterStandingPerson"].parts)
+    if abs(standing_low[2]) > BOUNDS_EPSILON or abs(
+            standing_high[2] -
+            SHELTER_STANDING_EQUIVALENT_HEIGHT_M) > BOUNDS_EPSILON:
+        problems.append(
+            "Nightlife shelter standing adult is not grounded at 1.75 m")
+    standing_width = standing_high[0] - standing_low[0]
+    if not 0.60 <= standing_width <= 0.72:
+        problems.append(
+            "Nightlife shelter standing shoulder/arm silhouette drifted")
+
+    seated_low, seated_high = combined_bounds(
+        lookup["NightlifeShelterSeatedPerson"].parts)
+    if abs(seated_low[2]) > BOUNDS_EPSILON or not (
+            1.54 <= seated_high[2] <= 1.58):
+        problems.append(
+            "Nightlife shelter seated pose lost its grounded height envelope")
+
+    sleeping_low, sleeping_high = combined_bounds(
+        lookup["NightlifeShelterSleepingPerson"].parts)
+    sleeping_length = sleeping_high[0] - sleeping_low[0]
+    if abs(sleeping_low[2]) > BOUNDS_EPSILON or not (
+            1.72 <= sleeping_length <= 1.82) or sleeping_high[2] > 0.55:
+        problems.append(
+            "Nightlife shelter sleeper lost its grounded adult pose envelope")
+
+
 def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     problems: list[str] = []
     names: set[str] = set()
@@ -5516,6 +5884,7 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     ):
         validate_mirror_bounds(assemblies, kind, problems)
     validate_nightlife_arch_alignment(assemblies, problems)
+    validate_shelter_static_humanoids(assemblies, problems)
     wave1_signature = wave1_compatibility_signature(assemblies)
     if wave1_signature != WAVE1_COMPATIBILITY_SIGNATURE:
         problems.append(
@@ -5752,6 +6121,9 @@ def build_scene(assemblies: tuple[AssemblySpec, ...]) -> BuildResult:
     root["bp_scale_mode"] = SCALE_MODE
     root["bp_source_forward_axis"] = "+Y"
     root["bp_legacy_recipe_x_to_unity_local_x"] = -1.0
+    root["bp_static_humanoid_standard"] = SHELTER_STATIC_HUMANOID_STANDARD
+    root["bp_static_humanoid_standard_version"] = \
+        SHELTER_STATIC_HUMANOID_STANDARD_VERSION
     objects: dict[str, bpy.types.Object] = {}
     for assembly in assemblies:
         for part in assembly.parts:
@@ -5860,6 +6232,25 @@ def manifest_for(
                     "root_local_x_to_source_x": 1.0,
                 },
             },
+        },
+        "static_humanoid_contract": {
+            "standard": SHELTER_STATIC_HUMANOID_STANDARD,
+            "standard_version": SHELTER_STATIC_HUMANOID_STANDARD_VERSION,
+            "rigged": False,
+            "resident_kinds": list(SHELTER_RESIDENT_KINDS),
+            "standing_equivalent_height_m":
+                SHELTER_STANDING_EQUIVALENT_HEIGHT_M,
+            "head_width_m": SHELTER_HEAD_WIDTH_M,
+            "head_height_m": SHELTER_HEAD_HEIGHT_M,
+            "heads_tall": stable(
+                SHELTER_STANDING_EQUIVALENT_HEIGHT_M /
+                SHELTER_HEAD_HEIGHT_M),
+            "shoulder_joint_span_m": SHELTER_SHOULDER_JOINT_SPAN_M,
+            "shoulder_joint_span_head_widths": stable(
+                SHELTER_SHOULDER_JOINT_SPAN_M /
+                SHELTER_HEAD_WIDTH_M),
+            "polygon_growth_allowed": False,
+            "legacy_triangle_caps": SHELTER_LEGACY_TRIANGLE_CAPS,
         },
         "part_placement_contract": {
             "recipe_local_rigid": {
