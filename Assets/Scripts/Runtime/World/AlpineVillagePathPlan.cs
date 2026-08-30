@@ -95,6 +95,16 @@ namespace BarPromenade
         public const float SourceWalkableHalfWidth = 1.05f;
         public const float StationWalkableHalfWidth = 1.6f;
 
+        /// <summary>
+        /// How far past the compacted ribbon the ground is still bare soil
+        /// before the snow starts fading back in. The world builder paints
+        /// the terrain with it, and the path contract is judged against it:
+        /// a hero whose centre stays inside the ribbon plus this skirt is
+        /// standing on trodden ground, not on pristine snow. The two must
+        /// read one constant, or the mask and the paint drift apart again.
+        /// </summary>
+        public const float BareSkirtHalfWidth = 0.15f;
+
         // The adit sits behind the rear-row house at beat 08. Its path enters
         // from above house 10, follows the outside of both houses, then turns
         // around house 08's seeded OBB before reaching the adit threshold. A

@@ -41,7 +41,12 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static void ConfigureAtlas(TextureImporter importer)
+        /// <summary>
+        /// The flat pixel-art atlas contract, shared with the pedestrian
+        /// detail atlas importer so a second texture family cannot drift
+        /// from the first by a single flag.
+        /// </summary>
+        internal static void ConfigureAtlas(TextureImporter importer)
         {
             ConfigureCommon(importer);
             importer.alphaSource = TextureImporterAlphaSource.FromInput;
@@ -59,7 +64,7 @@ namespace BarPromenade.Editor
             importer.streamingMipmaps = false;
         }
 
-        private static void ConfigureCommon(TextureImporter importer)
+        internal static void ConfigureCommon(TextureImporter importer)
         {
             importer.textureType = TextureImporterType.Default;
             importer.textureShape = TextureImporterShape.Texture2D;

@@ -31,6 +31,96 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7639136928340834914}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &1055577307911619384
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 1322966287503253356}
+  - component: {fileID: 9161684433860500332}
+  - component: {fileID: 4801709154504554382}
+  m_Layer: 0
+  m_Name: old-town-prototype-01__Plinth
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &1322966287503253356
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1055577307911619384}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 7865723643678459336}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!33 &9161684433860500332
+MeshFilter:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1055577307911619384}
+  m_Mesh: {fileID: 3586168129475487903, guid: 3145e924f4842c94d91adb38698aba2e, type: 3}
+--- !u!23 &4801709154504554382
+MeshRenderer:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 1055577307911619384}
+  m_Enabled: 1
+  m_CastShadows: 1
+  m_ReceiveShadows: 1
+  m_DynamicOccludee: 1
+  m_StaticShadowCaster: 0
+  m_MotionVectors: 1
+  m_LightProbeUsage: 1
+  m_ReflectionProbeUsage: 1
+  m_RayTracingMode: 2
+  m_RayTraceProcedural: 0
+  m_RayTracingAccelStructBuildFlagsOverride: 0
+  m_RayTracingAccelStructBuildFlags: 1
+  m_SmallMeshCulling: 1
+  m_ForceMeshLod: -1
+  m_MeshLodSelectionBias: 0
+  m_RenderingLayerMask: 1
+  m_RendererPriority: 0
+  m_Materials:
+  - {fileID: 2100000, guid: 31321ba15b8f8eb4c954353edc038b1d, type: 2}
+  m_StaticBatchInfo:
+    firstSubMesh: 0
+    subMeshCount: 0
+  m_StaticBatchRoot: {fileID: 0}
+  m_ProbeAnchor: {fileID: 0}
+  m_LightProbeVolumeOverride: {fileID: 0}
+  m_ScaleInLightmap: 1
+  m_ReceiveGI: 1
+  m_PreserveUVs: 0
+  m_IgnoreNormalsForChartDetection: 0
+  m_ImportantGI: 0
+  m_StitchLightmapSeams: 1
+  m_SelectedEditorRenderState: 3
+  m_MinimumChartSize: 4
+  m_AutoUVMaxDistance: 0.5
+  m_AutoUVMaxAngle: 89
+  m_LightmapParameters: {fileID: 0}
+  m_GlobalIlluminationMeshLod: 0
+  m_SortingLayerID: 0
+  m_SortingLayer: 0
+  m_SortingOrder: 0
+  m_MaskInteraction: 0
+  m_AdditionalVertexStreams: {fileID: 0}
 --- !u!1 &1785771897641048727
 GameObject:
   m_ObjectHideFlags: 0
@@ -211,7 +301,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1 &3302613755428487039
+--- !u!1 &4128862948349630040
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -219,23 +309,61 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 248337338078659698}
-  - component: {fileID: 4618927254825287526}
-  - component: {fileID: 3059004947109102434}
+  - component: {fileID: 7865723643678459336}
   m_Layer: 0
-  m_Name: old-town-prototype-01__Shell
+  m_Name: ROOT_old-town-prototype-01
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &248337338078659698
+--- !u!4 &7865723643678459336
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3302613755428487039}
+  m_GameObject: {fileID: 4128862948349630040}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071067}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children:
+  - {fileID: 8144583198937366600}
+  - {fileID: 4117612785351803368}
+  - {fileID: 5917980991280962834}
+  - {fileID: 1322966287503253356}
+  - {fileID: 2028258776861471658}
+  - {fileID: 5082558161353696185}
+  - {fileID: 3705846177305002241}
+  m_Father: {fileID: 7639136928340834914}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
+--- !u!1 &4338430899892106102
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8144583198937366600}
+  - component: {fileID: 1583325096791258627}
+  - component: {fileID: 3279386882348185990}
+  m_Layer: 0
+  m_Name: old-town-prototype-01__FacadePrimary
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8144583198937366600
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4338430899892106102}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -244,21 +372,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7865723643678459336}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &4618927254825287526
+--- !u!33 &1583325096791258627
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3302613755428487039}
-  m_Mesh: {fileID: -8869415145268044881, guid: 3145e924f4842c94d91adb38698aba2e, type: 3}
---- !u!23 &3059004947109102434
+  m_GameObject: {fileID: 4338430899892106102}
+  m_Mesh: {fileID: 31969207242292728, guid: 3145e924f4842c94d91adb38698aba2e, type: 3}
+--- !u!23 &3279386882348185990
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 3302613755428487039}
+  m_GameObject: {fileID: 4338430899892106102}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -301,7 +429,7 @@ MeshRenderer:
   m_SortingOrder: 0
   m_MaskInteraction: 0
   m_AdditionalVertexStreams: {fileID: 0}
---- !u!1 &4128862948349630040
+--- !u!1 &5051363607247961758
 GameObject:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
@@ -309,60 +437,23 @@ GameObject:
   m_PrefabAsset: {fileID: 0}
   serializedVersion: 6
   m_Component:
-  - component: {fileID: 7865723643678459336}
+  - component: {fileID: 4117612785351803368}
+  - component: {fileID: 4030633864405603593}
+  - component: {fileID: 7434983186066755548}
   m_Layer: 0
-  m_Name: ROOT_old-town-prototype-01
+  m_Name: old-town-prototype-01__FacadeSecondary
   m_TagString: Untagged
   m_Icon: {fileID: 0}
   m_NavMeshLayer: 0
   m_StaticEditorFlags: 0
   m_IsActive: 1
---- !u!4 &7865723643678459336
+--- !u!4 &4117612785351803368
 Transform:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 4128862948349630040}
-  serializedVersion: 2
-  m_LocalRotation: {x: 0.7071068, y: -0, z: -0, w: 0.7071067}
-  m_LocalPosition: {x: 0, y: 0, z: 0}
-  m_LocalScale: {x: 1, y: 1, z: 1}
-  m_ConstrainProportionsScale: 0
-  m_Children:
-  - {fileID: 5917980991280962834}
-  - {fileID: 2028258776861471658}
-  - {fileID: 248337338078659698}
-  - {fileID: 2125803883950906719}
-  - {fileID: 5082558161353696185}
-  - {fileID: 3705846177305002241}
-  m_Father: {fileID: 7639136928340834914}
-  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!1 &5423280895708728124
-GameObject:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  serializedVersion: 6
-  m_Component:
-  - component: {fileID: 2125803883950906719}
-  - component: {fileID: 4931741169721592751}
-  - component: {fileID: 9117821616681388056}
-  m_Layer: 0
-  m_Name: old-town-prototype-01__Trim
-  m_TagString: Untagged
-  m_Icon: {fileID: 0}
-  m_NavMeshLayer: 0
-  m_StaticEditorFlags: 0
-  m_IsActive: 1
---- !u!4 &2125803883950906719
-Transform:
-  m_ObjectHideFlags: 0
-  m_CorrespondingSourceObject: {fileID: 0}
-  m_PrefabInstance: {fileID: 0}
-  m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5423280895708728124}
+  m_GameObject: {fileID: 5051363607247961758}
   serializedVersion: 2
   m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
   m_LocalPosition: {x: 0, y: 0, z: 0}
@@ -371,21 +462,21 @@ Transform:
   m_Children: []
   m_Father: {fileID: 7865723643678459336}
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
---- !u!33 &4931741169721592751
+--- !u!33 &4030633864405603593
 MeshFilter:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5423280895708728124}
-  m_Mesh: {fileID: -5857066382996658644, guid: 3145e924f4842c94d91adb38698aba2e, type: 3}
---- !u!23 &9117821616681388056
+  m_GameObject: {fileID: 5051363607247961758}
+  m_Mesh: {fileID: -5450498485354167561, guid: 3145e924f4842c94d91adb38698aba2e, type: 3}
+--- !u!23 &7434983186066755548
 MeshRenderer:
   m_ObjectHideFlags: 0
   m_CorrespondingSourceObject: {fileID: 0}
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
-  m_GameObject: {fileID: 5423280895708728124}
+  m_GameObject: {fileID: 5051363607247961758}
   m_Enabled: 1
   m_CastShadows: 1
   m_ReceiveShadows: 1
@@ -480,27 +571,51 @@ MonoBehaviour:
   modelRoot: {fileID: 7865723643678459336}
   frontAnchor: {fileID: 89452633716934314}
   parts:
-  - sourceName: old-town-prototype-01__Shell
+  - sourceName: old-town-prototype-01__FacadePrimary
     role: 0
-    renderer: {fileID: 3059004947109102434}
-  - sourceName: old-town-prototype-01__Trim
+    surfaceKind: FacadePrimary
+    uvScheme: building_side_atlas_0_1
+    metersPerTile: 0
+    renderer: {fileID: 3279386882348185990}
+  - sourceName: old-town-prototype-01__FacadeSecondary
     role: 1
-    renderer: {fileID: 9117821616681388056}
-  - sourceName: old-town-prototype-01__Roof
+    surfaceKind: FacadeSecondary
+    uvScheme: building_side_atlas_0_1
+    metersPerTile: 0
+    renderer: {fileID: 7434983186066755548}
+  - sourceName: old-town-prototype-01__Plinth
     role: 2
+    surfaceKind: Plinth
+    uvScheme: full_face_projected_0_1
+    metersPerTile: 0
+    renderer: {fileID: 4801709154504554382}
+  - sourceName: old-town-prototype-01__Roof
+    role: 3
+    surfaceKind: Roof
+    uvScheme: world_metre_projected
+    metersPerTile: 4
     renderer: {fileID: 2704858094153324835}
   - sourceName: old-town-prototype-01__Metal
-    role: 3
+    role: 4
+    surfaceKind: Metal
+    uvScheme: world_metre_projected
+    metersPerTile: 1.6
     renderer: {fileID: 7286662172530513247}
   - sourceName: old-town-prototype-01__WindowFrame
-    role: 4
+    role: 5
+    surfaceKind: WindowFrame
+    uvScheme: world_metre_projected
+    metersPerTile: 0.8
     renderer: {fileID: 3362145360316735779}
   - sourceName: old-town-prototype-01__WindowGlass
-    role: 5
+    role: 6
+    surfaceKind: WindowGlass
+    uvScheme: per_window_face_projected_0_1
+    metersPerTile: 0
     renderer: {fileID: 5298850014489400634}
   localBounds:
-    m_Center: {x: 0, y: 20.999998, z: 0.0000019073486}
-    m_Extent: {x: 7, y: 20.999998, z: 6.780001}
+    m_Center: {x: 0, y: 20.999998, z: 0.017501831}
+    m_Extent: {x: 7, y: 20.999998, z: 6.797501}
   roofAttachmentBounds:
     m_Center: {x: 0, y: 34.5, z: 0}
     m_Extent: {x: 6.6, y: 7.5, z: 6.35}
@@ -842,9 +957,9 @@ MonoBehaviour:
   height: 42
   unitFactor: 1
   sourceTriangleCount: 768
-  sourceGeneratorVersion: 1.1.0
-  designId: city_buildings_prototypes_v1
-  buildSignature: aef1de8fd8ba280da1c7f560e6e0b11ec3f78fb94bf05cf693ff936163c2ea2e
+  sourceGeneratorVersion: 2.0.0
+  designId: city_buildings_prototypes_v2
+  buildSignature: 7670234e09fcc68bdebc985d04b0e74810f3e0f4e2f8ad11e840b1c75650ef53
 --- !u!1 &8096628705855659027
 GameObject:
   m_ObjectHideFlags: 0

@@ -25,6 +25,7 @@ namespace BarPromenade
         private GUIStyle feedbackStyle;
         private GUIStyle buttonStyle;
         private GUIStyle statusStyle;
+        private Vector2 logicalPointer;
 
         public void Initialize(BarDrinkShopController shopController)
         {
@@ -43,6 +44,7 @@ namespace BarPromenade
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
                 Screen.height);
+            logicalPointer = RetroUiTheme.LogicalMousePosition(canvas);
             Matrix4x4 previousMatrix = RetroUiTheme.BeginCanvas(canvas);
             try
             {
@@ -60,10 +62,10 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 HeaderRect,
                 RetroUiTheme.Panel,
-                RetroUiTheme.Accent,
-                true,
-                4f,
-                2f);
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
+                1f);
             GUI.Label(
                 new Rect(26f, 17f, 176f, 18f),
                 LocalizationService.Get("drink_shop.title"),
@@ -95,10 +97,10 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 FooterRect,
                 RetroUiTheme.Panel,
-                RetroUiTheme.Accent,
-                true,
-                4f,
-                2f);
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
+                1f);
 
             if (controller.IsBrowsing)
             {
@@ -165,11 +167,14 @@ namespace BarPromenade
             {
                 RetroUiTheme.DrawPanel(
                     rect,
-                    RetroUiTheme.PanelRaised,
-                    RetroUiTheme.Accent,
+                    RetroUiTheme.PanelInset,
+                    RetroUiTheme.BorderMuted,
                     false,
-                    2f,
+                    0f,
                     1f);
+                RetroUiTheme.DrawSelection(
+                    rect,
+                    rect.Contains(logicalPointer));
             }
 
             if (GUI.Button(rect, label, buttonStyle))
@@ -188,7 +193,7 @@ namespace BarPromenade
             titleStyle = RetroUiTheme.CreateLabelStyle(
                 11,
                 TextAnchor.MiddleLeft,
-                RetroUiTheme.AccentPale,
+                RetroUiTheme.Muted,
                 true);
             nameStyle = RetroUiTheme.CreateLabelStyle(
                 17,
@@ -218,7 +223,7 @@ namespace BarPromenade
             statusStyle = RetroUiTheme.CreateLabelStyle(
                 15,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.AccentPale,
+                RetroUiTheme.Text,
                 true);
         }
     }

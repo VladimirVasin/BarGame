@@ -45,16 +45,47 @@ namespace BarPromenade
         public const float MountainRoadFarClipPlane = 120f;
 
         /// <summary>
-        /// Chosen against one shot, not by feel: the mother's house stands
-        /// `82 m` up the lane from the station platform, and at this density
-        /// roughly a quarter of it survives the haze - a warm shape you walk
-        /// into rather than a building you can read. Any denser and the whole
-        /// composition disappears; any thinner and the ridge stops hiding the
-        /// edge of the world, which is what keeps the alpine postcard out.
+        /// The village's haze between gusts, chosen against the one shot the
+        /// canon names: from the station platform (`StationSetback 7 m`
+        /// behind the lane foot) the mother's door stands `7 + 82 + 2 =
+        /// 91 m` away, and at this density `9 %` of it survives the haze - a
+        /// warm point at the limit of sight, the landmark and nothing more.
+        /// This is the base of a wave, not a constant: the gust closes the
+        /// far half of the lane for seconds (<see cref="AlpineVillageStormFogDensity"/>)
+        /// and the haze thins back to here between gusts, with the running
+        /// trough landing near `6 %` at the door. Any denser at the base and
+        /// the house never comes back; any thinner and the `110 m` plane
+        /// shows the edge of the world, which is what keeps the alpine
+        /// postcard out.
         /// </summary>
-        public const float AlpineVillageFogDensity = 0.0145f;
+        public const float AlpineVillageFogDensity = 0.017f;
 
-        public const float AlpineVillageFarClipPlane = 140f;
+        /// <summary>
+        /// The haze at a gust crest. `41 m` is left at `3 %`: the far half
+        /// of the lane closes and the top house is gone for those seconds,
+        /// while the uphill axis and the nearest houses' walls still read.
+        /// The wave that carries the density between base and peak is keyed
+        /// on the raw gust rhythm precisely so that it always comes back
+        /// down; see <see cref="EvaluateAlpineVillageFogDensity"/>.
+        /// </summary>
+        public const float AlpineVillageStormFogDensity = 0.045f;
+
+        /// <summary>
+        /// How much denser the haze gets as the village goes out, at the dim
+        /// end of the warmth grade. It rides on the storm base now and is
+        /// clamped at the storm peak, so the prologue's dim can never be a
+        /// second whiteout on top of the gale's.
+        /// </summary>
+        public const float AlpineVillageDimFogDensityGain = 1.55f;
+
+        /// <summary>
+        /// Past the mother's back wall as seen from the platform (`7 + 82 +
+        /// 2 + 9 = 100 m`) with margin: the landmark is never clipped by the
+        /// plane, only by the haze. The bowl's crests all stand inside it,
+        /// and the cableway's hidden run and far turn both keep their
+        /// `HiddenRunMargin` beyond it.
+        /// </summary>
+        public const float AlpineVillageFarClipPlane = 110f;
         public const float DoorTransitionFarClipPlane = 18f;
         public const float AreaLoadingFarClipPlane = 1f;
         public const float DefaultFarClipPlane = 220f;
@@ -353,16 +384,47 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The village's haze, as a function of how far it has gone out.
+        /// The village's Exp2 density for one storm wave and one warmth
+        /// grade, pure so the tests and the per-frame writer agree to the
+        /// bit. The wave lerps base to peak; the dim end of the warmth grade
+        /// multiplies that; the storm peak clamps the product, because the
+        /// prologue's dim must not add a second whiteout on top of the
+        /// gale's. Warmth is `0` today, so the running density is the wave
+        /// alone: `0.017` between gusts, `0.045` at a crest.
+        /// </summary>
+        public static float EvaluateAlpineVillageFogDensity(
+            float stormGrade,
+            float warmthGrade)
+        {
+            float storm = Mathf.Clamp01(stormGrade);
+            float dim = Mathf.Clamp01(warmthGrade);
+            float breathing = Mathf.Lerp(
+                AlpineVillageFogDensity,
+                AlpineVillageStormFogDensity,
+                storm);
+            float dimmed = breathing *
+                           Mathf.Lerp(1f, AlpineVillageDimFogDensityGain, dim);
+            return Mathf.Min(AlpineVillageStormFogDensity, dimmed);
+        }
+
+        /// <summary>
+        /// The village's haze, as a function of how far the gale has closed
+        /// it (<paramref name="stormGrade"/>, the smoothed storm wave) and
+        /// how far the place has gone out (<paramref name="warmthGrade"/>).
         ///
         /// Fog is applied here and not somewhere else on purpose. Distant
         /// geometry blends TO the fog colour, so a warm sun over a cold haze
         /// is grey soup with a hole in it - the two have to move on one
-        /// weight, which means they have to be written by one call.
+        /// weight, which means they have to be written by one call. The
+        /// storm wave is that call's third input rather than something
+        /// written over it afterwards, for the same reason the warmth grade
+        /// is: this is re-applied every frame by the village root, and
+        /// anything written on top of it from outside is gone by the next.
         /// </summary>
         public static void ApplyAlpineVillageVisibility(
             Camera camera,
-            float warmthGrade)
+            float warmthGrade,
+            float stormGrade = 0f)
         {
             if (camera == null)
             {
@@ -380,13 +442,14 @@ namespace BarPromenade
             RenderSettings.fogColor = fog;
             RenderSettings.fogMode = FogMode.ExponentialSquared;
 
-            // It closes in a little as the place goes out. The permanent
-            // blizzard is an independent property of the place; this grade
-            // changes only the warm read and must not become a second
-            // whiteout that erases the top of the lane.
-            RenderSettings.fogDensity = Mathf.Lerp(
-                AlpineVillageFogDensity,
-                AlpineVillageFogDensity * 1.55f,
+            // The gale is the one thing allowed to close the top of the
+            // lane, and only for the seconds of a gust: the wave is keyed
+            // on the raw rhythm so it always reopens. The warmth grade
+            // closes in a little as the place goes out; it rides on the
+            // storm base and is clamped at the storm peak, so it can never
+            // become a second whiteout of its own.
+            RenderSettings.fogDensity = EvaluateAlpineVillageFogDensity(
+                stormGrade,
                 dim);
         }
 
@@ -394,11 +457,13 @@ namespace BarPromenade
         /// The village grade, and the reason <paramref name="warmthGrade"/> is
         /// a PARAMETER rather than something written over this afterwards.
         ///
-        /// The area's atmosphere re-applies this every game minute. Anything
-        /// another component writes on top of it is wiped inside a second, so
-        /// the only place a dimming pass can live is here, inside the call
-        /// that keeps happening. The mountain road learned this the expensive
-        /// way with its ride blackout.
+        /// The area's atmosphere re-applies the lighting every game minute
+        /// and the visibility every frame. Anything another component writes
+        /// on top of either is wiped at once, so the only place a dimming
+        /// pass can live is here, inside the call that keeps happening. The
+        /// mountain road learned this the expensive way with its ride
+        /// blackout; the storm wave went in the same way for the same
+        /// reason.
         ///
         /// `0` is the village as §12 describes it - warm, and warm is the
         /// baseline, not an effect. `1` is an ordinary mountain village at

@@ -299,6 +299,9 @@ namespace BarPromenade
                 case CityDecorationKind.ResidentialDiscardedFurniture:
                     miscKind = CityMiscKind.ResidentialDiscardedFurniture;
                     return true;
+                case CityDecorationKind.ResidentialCourtyardPocket:
+                    miscKind = CityMiscKind.ResidentialCourtyardPocket;
+                    return true;
                 case CityDecorationKind.ResidentialRooftopGreenhouse:
                     miscKind = CityMiscKind.ResidentialRooftopGreenhouse;
                     return true;
@@ -419,6 +422,9 @@ namespace BarPromenade
                 case CityMiscKind.IndustrialCargo:
                 case CityMiscKind.RoadsideRoadworkAndBicycle:
                     variant = context.Descriptor.Variant & 1;
+                    return true;
+                case CityMiscKind.ResidentialCourtyardPocket:
+                    variant = context.Descriptor.Variant;
                     return true;
                 case CityMiscKind.ResidentialRooftopGreenhouse:
                 {
@@ -755,6 +761,11 @@ namespace BarPromenade
                     break;
                 case CityDecorationKind.ResidentialDiscardedFurniture:
                     BuildFurniture(context, parts);
+                    break;
+                case CityDecorationKind.ResidentialCourtyardPocket:
+                    // City uses the complete imported assembly. The clipped
+                    // Home reconstruction deliberately omits these distant
+                    // shallow pockets instead of inventing a box fallback.
                     break;
                 case CityDecorationKind.ResidentialRooftopGreenhouse:
                     BuildGreenhouse(context, parts);

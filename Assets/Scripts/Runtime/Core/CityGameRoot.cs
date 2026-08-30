@@ -56,6 +56,8 @@ namespace BarPromenade
         public YardWheelchairActor YardWheelchair { get; private set; }
         public IReadOnlyList<DryingYardBabushkaPresentation>
             DryingYardBabushkas { get; private set; }
+        public IReadOnlyList<CityCourtyardResidentPresentation>
+            CourtyardResidents { get; private set; }
         public CityArchShelterPresentation ArchShelterPresentation
         {
             get;
@@ -583,6 +585,16 @@ namespace BarPromenade
             DryingYardBabushkas = DryingYardBabushkaFactory.Create(
                 transform,
                 DryingYardBabushkaPlan.Create(Layout));
+            // Small silent tableaux at the new residential pockets and old
+            // municipal fringe works. Their bodies reuse only unlimited
+            // generic pedestrian archetypes and remain outside both the
+            // roaming pool and the unique staged-NPC providers.
+            CourtyardResidents = CityCourtyardResidentFactory.Create(
+                transform,
+                CityCourtyardResidentPlan.Create(
+                    Layout,
+                    World.DecorationPlan,
+                    World.FringeYardPlan));
             if (World.ArchShelterPlan.IsEnabled)
             {
                 ArchShelterPresentation = World.ArchShelter.Root
@@ -1300,6 +1312,23 @@ namespace BarPromenade
                 GameLog.Field(
                     "duration_ms",
                     timer.ElapsedMilliseconds));
+        }
+
+        private void OnDestroy()
+        {
+            if (CourtyardResidents == null)
+            {
+                return;
+            }
+
+            for (int index = 0;
+                 index < CourtyardResidents.Count;
+                 index++)
+            {
+                CourtyardResidents[index]?.Shutdown();
+            }
+
+            CourtyardResidents = null;
         }
     }
 }

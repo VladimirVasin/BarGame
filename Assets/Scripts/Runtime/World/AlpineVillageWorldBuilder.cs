@@ -63,6 +63,33 @@ namespace BarPromenade
         public const float TerrainCellSize =
             AlpineVillageTerrainSampler.TerrainCell;
 
+        /// <summary>
+        /// The ground mesh's two submeshes. Index `0` is the bowl floor on
+        /// the ordinary shared primitive material; index `1` is the
+        /// enclosing rise on <see cref="AlpineVillageRidgeAppearance"/>'s
+        /// fog-floored material. The warmth pass and the tests address the
+        /// floor by this index rather than by "the first one".
+        /// </summary>
+        public const int TerrainFloorMaterialIndex = 0;
+
+        public const int TerrainRiseMaterialIndex = 1;
+
+        /// <summary>
+        /// How far the rise's copy of the boundary ring sits under the floor
+        /// - the City's `ToeGroundOverlap`. The floor snaps its vertices to
+        /// the composite grid (`Ps1Lit`) and the rise does not, so the SAME
+        /// vertex lands up to half a pixel apart on the two sides of the
+        /// toe and a hairline opens around the whole bowl. The ring of floor
+        /// cells touching the rise is drawn twice: once as floor, once as
+        /// rise on duplicated vertices lowered by this, so the unsnapped
+        /// side is always under the snapped edge. Buried, it never
+        /// z-fights; it only closes the crack.
+        /// </summary>
+        internal const float SeamBurial = 0.08f;
+
+        private static readonly int BaseMapTransformId =
+            Shader.PropertyToID("_BaseMap_ST");
+
         private static readonly Color SnowColor =
             new Color(0.695f, 0.685f, 0.655f, 1f);
         private static readonly Color SoilColor =
@@ -230,9 +257,23 @@ namespace BarPromenade
 
         /// <summary>
         /// One grid mesh over the whole plan, sampled from the shared height
-        /// contract. Snow above, soil in the lane's own cut - the tint is a
-        /// vertex decision so a single mesh carries both without a second
-        /// material.
+        /// contract, with ONE collider and TWO submeshes.
+        ///
+        /// Snow above, soil in the lane's own cut - that tint is a vertex
+        /// decision and needs no second material. The enclosing rise does:
+        /// on the floor's plain Exp2 fog a wall `85 m` off is at `12 %`
+        /// between gusts and gone at a gust crest, so the bowl that was
+        /// moved in to loom would vanish exactly when the storm is fullest.
+        /// A cell is rise when the sampler's ridge term is non-zero there
+        /// AND it stands outside the cableway cut - the valley bed and its
+        /// walls keep the floor material, because the cabin passes them at
+        /// a few metres and a distant wall's fog floor and cold tint would
+        /// be wrong on them. The ring of floor cells touching the rise is
+        /// also emitted into the rise submesh on duplicated vertices lowered
+        /// by <see cref="SeamBurial"/>, so the unsnapped rise lies under the
+        /// snapped floor edge and no hairline can open at the toe. The
+        /// collider takes the whole mesh; the buried ring is under the
+        /// floor and never the first thing a ray hits.
         /// </summary>
         private static GameObject BuildTerrain(
             Transform parent,
@@ -253,9 +294,10 @@ namespace BarPromenade
             IReadOnlyList<AlpineVillagePathDescriptor> paths =
                 AlpineVillagePathPlanner.Create(plan);
 
-            var vertices = new Vector3[(columns + 1) * (rows + 1)];
-            var uvs = new Vector2[vertices.Length];
-            var colors = new Color[vertices.Length];
+            int gridVertexCount = (columns + 1) * (rows + 1);
+            var vertices = new List<Vector3>(gridVertexCount);
+            var uvs = new List<Vector2>(gridVertexCount);
+            var colors = new List<Color>(gridVertexCount);
             for (int row = 0; row <= rows; row++)
             {
                 for (int column = 0; column <= columns; column++)
@@ -268,9 +310,8 @@ namespace BarPromenade
                     float height = AlpineVillageTerrainSampler.SampleHeight(
                         plan,
                         point);
-                    int index = row * (columns + 1) + column;
-                    vertices[index] = new Vector3(x, height, z);
-                    uvs[index] = new Vector2(x, z) * 0.25f;
+                    vertices.Add(new Vector3(x, height, z));
+                    uvs.Add(new Vector2(x, z) * 0.25f);
 
                     // Snow lies everywhere except where feet and doors keep
                     // it off, which is the lane and the aprons.
@@ -285,43 +326,97 @@ namespace BarPromenade
                     {
                         AlpineVillagePathDescriptor path = paths[pathIndex];
                         float pathBare = 1f - Mathf.SmoothStep(
-                            path.SurfaceHalfWidth + 0.15f,
+                            path.SurfaceHalfWidth +
+                            AlpineVillagePathPlanner.BareSkirtHalfWidth,
                             path.SurfaceHalfWidth + 1.35f,
                             path.DistanceToCenterline(point));
                         bare = Mathf.Max(bare, pathBare);
                     }
 
-                    colors[index] = Color.Lerp(SnowColor, SoilColor, bare);
+                    colors.Add(Color.Lerp(SnowColor, SoilColor, bare));
                 }
             }
 
-            var triangles = new int[columns * rows * 6];
-            int cursor = 0;
+            // Classify every cell once at its centre, then split.
+            var riseCells = new bool[rows, columns];
+            for (int row = 0; row < rows; row++)
+            {
+                for (int column = 0; column < columns; column++)
+                {
+                    riseCells[row, column] = IsRiseCell(
+                        plan,
+                        bounds,
+                        columns,
+                        rows,
+                        row,
+                        column);
+                }
+            }
+
+            var floorTriangles = new List<int>(columns * rows * 6);
+            var riseTriangles = new List<int>();
+            var buriedTwins = new Dictionary<int, int>();
             for (int row = 0; row < rows; row++)
             {
                 for (int column = 0; column < columns; column++)
                 {
                     int origin = row * (columns + 1) + column;
-                    triangles[cursor++] = origin;
-                    triangles[cursor++] = origin + columns + 1;
-                    triangles[cursor++] = origin + 1;
-                    triangles[cursor++] = origin + 1;
-                    triangles[cursor++] = origin + columns + 1;
-                    triangles[cursor++] = origin + columns + 2;
+                    if (riseCells[row, column])
+                    {
+                        AppendCell(riseTriangles, origin, columns);
+                        continue;
+                    }
+
+                    AppendCell(floorTriangles, origin, columns);
+                    if (!TouchesRise(riseCells, rows, columns, row, column))
+                    {
+                        continue;
+                    }
+
+                    // The seam ring: the same cell again, on buried copies
+                    // of its four corners, in the rise submesh.
+                    AppendCell(
+                        riseTriangles,
+                        BuriedVertex(
+                            origin,
+                            buriedTwins,
+                            vertices,
+                            uvs,
+                            colors),
+                        BuriedVertex(
+                            origin + 1,
+                            buriedTwins,
+                            vertices,
+                            uvs,
+                            colors),
+                        BuriedVertex(
+                            origin + columns + 1,
+                            buriedTwins,
+                            vertices,
+                            uvs,
+                            colors),
+                        BuriedVertex(
+                            origin + columns + 2,
+                            buriedTwins,
+                            vertices,
+                            uvs,
+                            colors));
                 }
             }
 
             var mesh = new Mesh
             {
                 name = "Alpine Village Ground",
-                indexFormat = vertices.Length > 65000
+                indexFormat = vertices.Count > 65000
                     ? IndexFormat.UInt32
                     : IndexFormat.UInt16
             };
             mesh.SetVertices(vertices);
             mesh.SetUVs(0, uvs);
             mesh.SetColors(colors);
-            mesh.SetTriangles(triangles, 0);
+            mesh.subMeshCount = 2;
+            mesh.SetTriangles(floorTriangles, TerrainFloorMaterialIndex);
+            mesh.SetTriangles(riseTriangles, TerrainRiseMaterialIndex);
             mesh.RecalculateNormals();
             mesh.RecalculateBounds();
 
@@ -329,16 +424,167 @@ namespace BarPromenade
             host.transform.SetParent(parent, false);
             host.AddComponent<MeshFilter>().sharedMesh = mesh;
             MeshRenderer renderer = host.AddComponent<MeshRenderer>();
-            renderer.sharedMaterial =
-                RuntimePrimitiveFactory.DefaultMaterial;
+            // Shadows stay on for the renderer: the floor casts them as
+            // before. The rise's shader has no ShadowCaster pass, so the
+            // wall casts none - recorded on AlpineVillageRidgeAppearance.
             renderer.shadowCastingMode = ShadowCastingMode.On;
             renderer.receiveShadows = true;
+
+            // Both slots exist before either indexed apply, and the array is
+            // written again after them: the indexed path never assigns
+            // `sharedMaterial`, but the order is the contract and this is
+            // what makes it visible.
+            Material[] materials =
+            {
+                RuntimePrimitiveFactory.DefaultMaterial,
+                AlpineVillageRidgeAppearance.RidgeMaterial
+            };
+            renderer.sharedMaterials = materials;
             MountainRoadSurfaceAppearance.Apply(
                 renderer,
-                MountainRoadSurfaceKind.WindSnow,
-                SnowColor);
+                AlpineVillageRidgeAppearance.Surface,
+                SnowColor,
+                TerrainFloorMaterialIndex);
+
+            // The rise takes the floor's own `_BaseMap_ST`, read back rather
+            // than re-derived, so the one sheet runs across the toe at the
+            // pitch the shipped ground already has.
+            var floorProperties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(
+                floorProperties,
+                TerrainFloorMaterialIndex);
+            AlpineVillageRidgeAppearance.Apply(
+                renderer,
+                TerrainRiseMaterialIndex,
+                floorProperties.GetVector(BaseMapTransformId));
+            renderer.sharedMaterials = materials;
+
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
             return host;
+        }
+
+        /// <summary>
+        /// Rise iff the sampler's ridge term is non-zero at the cell centre
+        /// and the cell stands outside the cableway cut's outer half-width.
+        /// Shared with the tests through <see cref="IsRiseCellCentre"/>.
+        /// </summary>
+        private static bool IsRiseCell(
+            AlpineVillagePlan plan,
+            Rect bounds,
+            int columns,
+            int rows,
+            int row,
+            int column)
+        {
+            var centre = new Vector2(
+                bounds.xMin + bounds.width * ((column + 0.5f) / columns),
+                bounds.yMin + bounds.height * ((row + 0.5f) / rows));
+            return IsRiseCellCentre(plan, centre);
+        }
+
+        /// <summary>
+        /// The classification rule at one point, pure, so the mesh test can
+        /// re-derive every cell from the plan.
+        /// </summary>
+        internal static bool IsRiseCellCentre(
+            AlpineVillagePlan plan,
+            Vector2 centre)
+        {
+            return AlpineVillageTerrainSampler.SampleRidgeRise(plan, centre) >
+                   0f &&
+                   AlpineVillageTerrainSampler.DistanceAcrossCablewayLine(
+                       plan,
+                       centre) >=
+                   AlpineVillageTerrainSampler.CablewayCutOuterHalfWidth;
+        }
+
+        /// <summary>
+        /// Whether a floor cell has a rise cell among its eight neighbours
+        /// - the ring rule, corners included, so a diagonal contact is
+        /// buried too.
+        /// </summary>
+        internal static bool TouchesRise(
+            bool[,] riseCells,
+            int rows,
+            int columns,
+            int row,
+            int column)
+        {
+            for (int dRow = -1; dRow <= 1; dRow++)
+            {
+                for (int dColumn = -1; dColumn <= 1; dColumn++)
+                {
+                    int neighbourRow = row + dRow;
+                    int neighbourColumn = column + dColumn;
+                    if ((dRow == 0 && dColumn == 0) ||
+                        neighbourRow < 0 ||
+                        neighbourRow >= rows ||
+                        neighbourColumn < 0 ||
+                        neighbourColumn >= columns)
+                    {
+                        continue;
+                    }
+
+                    if (riseCells[neighbourRow, neighbourColumn])
+                    {
+                        return true;
+                    }
+                }
+            }
+
+            return false;
+        }
+
+        private static void AppendCell(
+            List<int> triangles,
+            int origin,
+            int columns)
+        {
+            AppendCell(
+                triangles,
+                origin,
+                origin + 1,
+                origin + columns + 1,
+                origin + columns + 2);
+        }
+
+        private static void AppendCell(
+            List<int> triangles,
+            int nearLeft,
+            int nearRight,
+            int farLeft,
+            int farRight)
+        {
+            triangles.Add(nearLeft);
+            triangles.Add(farLeft);
+            triangles.Add(nearRight);
+            triangles.Add(nearRight);
+            triangles.Add(farLeft);
+            triangles.Add(farRight);
+        }
+
+        /// <summary>
+        /// The buried copy of one grid vertex, made once and shared by every
+        /// ring cell that touches it.
+        /// </summary>
+        private static int BuriedVertex(
+            int source,
+            Dictionary<int, int> buriedTwins,
+            List<Vector3> vertices,
+            List<Vector2> uvs,
+            List<Color> colors)
+        {
+            if (buriedTwins.TryGetValue(source, out int buried))
+            {
+                return buried;
+            }
+
+            buried = vertices.Count;
+            vertices.Add(vertices[source] - Vector3.up * SeamBurial);
+            uvs.Add(uvs[source]);
+            colors.Add(colors[source]);
+            buriedTwins.Add(source, buried);
+            return buried;
         }
 
         /// <summary>

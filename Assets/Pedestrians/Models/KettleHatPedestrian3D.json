@@ -21,24 +21,24 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 42,
-  "triangle_count": 1356,
+  "mesh_count": 52,
+  "triangle_count": 2004,
   "triangle_budget": [
-    800,
-    1600
+    1600,
+    2300
   ],
   "staged": false,
   "pool_eligible": true,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
-    -0.617499,
+    -0.813048,
     -0.418294,
     0.0
   ],
   "bounds_max": [
-    0.619499,
-    0.361537,
+    0.815048,
+    0.358956,
     1.75
   ],
   "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
@@ -58,7 +58,7 @@
     0.96
   ],
   "perch_seat_height_m": null,
-  "build_signature": "c96cb8cd4e00da753eea61553acf171f29ee7cb5fd744a527d4c19a1b56889a6",
+  "build_signature": "90f42bea66d37f47e733343921d9c4e4b403b4fdae962584aa545720f9e615c4",
   "bones": [
     {
       "name": "root",
@@ -528,6 +528,62 @@
   ],
   "parts": [
     {
+      "name": "ACC_BootHeel.L",
+      "role": "footwear_detail",
+      "bone": "foot.L",
+      "palette_name": "leather",
+      "base_color": [
+        0.055,
+        0.042,
+        0.035,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_BootHeel.R",
+      "role": "footwear_detail",
+      "bone": "foot.R",
+      "palette_name": "leather",
+      "base_color": [
+        0.055,
+        0.042,
+        0.035,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_BootToeCap.L",
+      "role": "footwear_detail",
+      "bone": "foot.L",
+      "palette_name": "leather",
+      "base_color": [
+        0.055,
+        0.042,
+        0.035,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_BootToeCap.R",
+      "role": "footwear_detail",
+      "bone": "foot.R",
+      "palette_name": "leather",
+      "base_color": [
+        0.055,
+        0.042,
+        0.035,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
       "name": "ACC_CoatButton.01",
       "role": "clothing_detail",
       "bone": "pelvis",
@@ -570,6 +626,36 @@
       "triangles": 12
     },
     {
+      "name": "ACC_CoatCuff.L",
+      "role": "clothing_detail",
+      "bone": "forearm.L",
+      "palette_name": "stout_coat",
+      "base_color": [
+        0.15,
+        0.085,
+        0.105,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36,
+      "atlas_region": "Cuff.L"
+    },
+    {
+      "name": "ACC_CoatCuff.R",
+      "role": "clothing_detail",
+      "bone": "forearm.R",
+      "palette_name": "stout_coat_light",
+      "base_color": [
+        0.215,
+        0.13,
+        0.15,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36,
+      "atlas_region": "Cuff.R"
+    },
+    {
       "name": "ACC_Eye.L",
       "role": "face_detail",
       "bone": "head",
@@ -608,36 +694,9 @@
         0.52,
         1.0
       ],
-      "vertices": 28,
-      "triangles": 52
-    },
-    {
-      "name": "ACC_KettleChip.01",
-      "role": "surface_detail",
-      "bone": "head",
-      "palette_name": "kettle_chip",
-      "base_color": [
-        0.155,
-        0.105,
-        0.07,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "ACC_KettleChip.02",
-      "role": "surface_detail",
-      "bone": "head",
-      "palette_name": "kettle_chip",
-      "base_color": [
-        0.155,
-        0.105,
-        0.07,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 36,
+      "triangles": 68,
+      "atlas_region": "KettleBody"
     },
     {
       "name": "ACC_KettleHandlePost.L",
@@ -692,8 +751,8 @@
         0.118,
         1.0
       ],
-      "vertices": 26,
-      "triangles": 48
+      "vertices": 42,
+      "triangles": 80
     },
     {
       "name": "ACC_KettleLid",
@@ -706,8 +765,9 @@
         0.3,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 32,
+      "triangles": 60,
+      "atlas_region": "KettleLid"
     },
     {
       "name": "ACC_KettleRimBand",
@@ -720,8 +780,8 @@
         0.3,
         1.0
       ],
-      "vertices": 28,
-      "triangles": 52
+      "vertices": 36,
+      "triangles": 68
     },
     {
       "name": "ACC_KettleShoulder",
@@ -734,8 +794,9 @@
         0.52,
         1.0
       ],
-      "vertices": 28,
-      "triangles": 52
+      "vertices": 36,
+      "triangles": 68,
+      "atlas_region": "KettleShoulder"
     },
     {
       "name": "ACC_KettleSpout",
@@ -748,8 +809,8 @@
         0.52,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "ACC_KettleSpoutTip",
@@ -762,8 +823,8 @@
         0.3,
         1.0
       ],
-      "vertices": 16,
-      "triangles": 28
+      "vertices": 20,
+      "triangles": 36
     },
     {
       "name": "ACC_Moustache",
@@ -860,8 +921,37 @@
         0.058,
         1.0
       ],
-      "vertices": 28,
-      "triangles": 52
+      "vertices": 36,
+      "triangles": 68,
+      "atlas_region": "CoatHem"
+    },
+    {
+      "name": "CLO_CoatLapel.L",
+      "role": "clothing_detail",
+      "bone": "chest",
+      "palette_name": "stout_coat_light",
+      "base_color": [
+        0.215,
+        0.13,
+        0.15,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_CoatLapel.R",
+      "role": "clothing_detail",
+      "bone": "chest",
+      "palette_name": "stout_coat_light",
+      "base_color": [
+        0.215,
+        0.13,
+        0.15,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
     },
     {
       "name": "CLO_CoatSeam",
@@ -888,8 +978,39 @@
         0.105,
         1.0
       ],
-      "vertices": 86,
-      "triangles": 168
+      "vertices": 146,
+      "triangles": 288,
+      "atlas_region": "Belly"
+    },
+    {
+      "name": "GEO_Fingers.L",
+      "role": "body",
+      "bone": "hand.L",
+      "palette_name": "stout_hand_skin",
+      "base_color": [
+        0.455,
+        0.335,
+        0.255,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12,
+      "atlas_region": "FingerGrooves.L"
+    },
+    {
+      "name": "GEO_Fingers.R",
+      "role": "body",
+      "bone": "hand.R",
+      "palette_name": "stout_hand_skin",
+      "base_color": [
+        0.455,
+        0.335,
+        0.255,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12,
+      "atlas_region": "FingerGrooves.R"
     },
     {
       "name": "GEO_Foot.L",
@@ -903,7 +1024,8 @@
         1.0
       ],
       "vertices": 8,
-      "triangles": 12
+      "triangles": 12,
+      "atlas_region": "Boot.L"
     },
     {
       "name": "GEO_Foot.R",
@@ -917,7 +1039,8 @@
         1.0
       ],
       "vertices": 8,
-      "triangles": 12
+      "triangles": 12,
+      "atlas_region": "Boot.R"
     },
     {
       "name": "GEO_Forearm.L",
@@ -930,8 +1053,8 @@
         0.15,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GEO_Forearm.R",
@@ -944,18 +1067,18 @@
         0.105,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GEO_Hand.L",
       "role": "body",
       "bone": "hand.L",
-      "palette_name": "glove",
+      "palette_name": "stout_hand_skin",
       "base_color": [
-        0.08,
-        0.075,
-        0.065,
+        0.455,
+        0.335,
+        0.255,
         1.0
       ],
       "vertices": 26,
@@ -965,11 +1088,11 @@
       "name": "GEO_Hand.R",
       "role": "body",
       "bone": "hand.R",
-      "palette_name": "glove",
+      "palette_name": "stout_hand_skin",
       "base_color": [
-        0.08,
-        0.075,
-        0.065,
+        0.455,
+        0.335,
+        0.255,
         1.0
       ],
       "vertices": 26,
@@ -986,8 +1109,8 @@
         0.165,
         1.0
       ],
-      "vertices": 62,
-      "triangles": 120
+      "vertices": 114,
+      "triangles": 224
     },
     {
       "name": "GEO_Neck",
@@ -1000,8 +1123,8 @@
         0.058,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GEO_Pelvis",
@@ -1028,8 +1151,8 @@
         0.105,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 28,
+      "triangles": 52
     },
     {
       "name": "GEO_Shin.R",
@@ -1042,8 +1165,8 @@
         0.105,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 28,
+      "triangles": 52
     },
     {
       "name": "GEO_Thigh.L",
@@ -1056,8 +1179,8 @@
         0.105,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 28,
+      "triangles": 52
     },
     {
       "name": "GEO_Thigh.R",
@@ -1070,8 +1193,36 @@
         0.105,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 28,
+      "triangles": 52
+    },
+    {
+      "name": "GEO_Thumb.L",
+      "role": "body",
+      "bone": "hand.L",
+      "palette_name": "stout_hand_skin",
+      "base_color": [
+        0.455,
+        0.335,
+        0.255,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "GEO_Thumb.R",
+      "role": "body",
+      "bone": "hand.R",
+      "palette_name": "stout_hand_skin",
+      "base_color": [
+        0.455,
+        0.335,
+        0.255,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
     },
     {
       "name": "GEO_Torso",
@@ -1084,8 +1235,9 @@
         0.058,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 28,
+      "triangles": 52,
+      "atlas_region": "Torso"
     },
     {
       "name": "GEO_UpperArm.L",
@@ -1098,8 +1250,8 @@
         0.105,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GEO_UpperArm.R",
@@ -1112,8 +1264,150 @@
         0.105,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 24,
+      "triangles": 44
+    }
+  ],
+  "signature_effects": [
+    "boiling_kettle"
+  ],
+  "rig_anchors": [
+    {
+      "name": "ANCHOR_KettleLid",
+      "bone": "head",
+      "kind": "pivot",
+      "parts": [
+        "ACC_KettleLid",
+        "ACC_KettleKnob"
+      ],
+      "axis_from": ""
+    },
+    {
+      "name": "ANCHOR_KettleSpout",
+      "bone": "head",
+      "kind": "anchor",
+      "parts": [
+        "ACC_KettleSpoutTip"
+      ],
+      "axis_from": "ACC_KettleSpout"
+    }
+  ],
+  "texture_bindings": [
+    {
+      "texture_asset": "Assets/Pedestrians/Textures/KettleHatDetailAtlas.png",
+      "width_px": 256,
+      "height_px": 256,
+      "materials": [],
+      "shader_property": "_BaseMap",
+      "color_space": "sRGB",
+      "filter_mode": "Point",
+      "wrap_mode": "Clamp",
+      "mipmaps": false,
+      "compression": "Uncompressed",
+      "uv_channel": 0,
+      "uv_origin": "bottom_left",
+      "uv_safe_inset_px": 1,
+      "material_tint_hex": "FFFFFF",
+      "tint_source": "renderer_palette",
+      "sha256": "34501deb85507f052dd7903303df7a6ec373d1e431b7f8da02143161d5d7ffd7",
+      "regions": [
+        {
+          "name": "FingerGrooves.L",
+          "renderer": "GEO_Fingers.L",
+          "x_px": 0,
+          "y_px": 192,
+          "width_px": 128,
+          "height_px": 64
+        },
+        {
+          "name": "FingerGrooves.R",
+          "renderer": "GEO_Fingers.R",
+          "x_px": 128,
+          "y_px": 192,
+          "width_px": 128,
+          "height_px": 64
+        },
+        {
+          "name": "KettleBody",
+          "renderer": "ACC_KettleBody",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 128,
+          "height_px": 64
+        },
+        {
+          "name": "Cuff.L",
+          "renderer": "ACC_CoatCuff.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Cuff.R",
+          "renderer": "ACC_CoatCuff.R",
+          "x_px": 192,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Torso",
+          "renderer": "GEO_Torso",
+          "x_px": 0,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Belly",
+          "renderer": "GEO_Belly",
+          "x_px": 64,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "KettleShoulder",
+          "renderer": "ACC_KettleShoulder",
+          "x_px": 128,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "KettleLid",
+          "renderer": "ACC_KettleLid",
+          "x_px": 192,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Boot.L",
+          "renderer": "GEO_Foot.L",
+          "x_px": 64,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Boot.R",
+          "renderer": "GEO_Foot.R",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "CoatHem",
+          "renderer": "CLO_CoatHem",
+          "x_px": 192,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        }
+      ]
     }
   ]
 }

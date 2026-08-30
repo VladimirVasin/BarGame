@@ -39,7 +39,12 @@ namespace BarPromenade
         // The only kind that can live on the strip of bare soil
         // between a lot's edge and its building: it is where the
         // facade's downpipe finally reaches the ground.
-        LotGroundDownpipeOutfall = 26
+        LotGroundDownpipeOutfall = 26,
+
+        // A bounded residential life-scene in the shallow strip between
+        // an ordinary apartment facade and its street. Variant selects one
+        // complete authored assembly instead of stretching one prop recipe.
+        ResidentialCourtyardPocket = 27
     }
 
     public enum CityDecorationAnchorKind

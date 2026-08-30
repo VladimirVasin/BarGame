@@ -24,8 +24,9 @@ namespace BarPromenade
         [Min(2.01f)] public float RoadWidth = DefaultRoadWidth;
         [Range(0f, 1f)] public float LoopChance = 0.28f;
         [Min(0f)] public float BuildingInset = 1.25f;
-        // Bars retain this original 5-13 m range. The home and supermarket
-        // also keep using its maximum as their existing authored clamp.
+        // Bars retain this original 5-13 m range. Fixed-metre landmarks use
+        // their authored heights and are omitted when this ceiling cannot
+        // accommodate them.
         [Min(0.1f)] public float MinimumBuildingHeight = 5f;
         [Min(0.1f)] public float MaximumBuildingHeight = 13f;
         // At the production City fog density, even the lowest ordinary roof

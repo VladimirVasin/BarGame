@@ -15,6 +15,11 @@ namespace BarPromenade.Tests.EditMode
         private const float PositionTolerance = 0.003f;
         private const float AngleTolerance = 0.01f;
 
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
+        private static readonly int BaseMapTransformId =
+            Shader.PropertyToID("_BaseMap_ST");
+
         private static readonly CityDistrictKind[] Districts =
         {
             CityDistrictKind.OldTown,
@@ -204,8 +209,62 @@ namespace BarPromenade.Tests.EditMode
             Transform foundation = building.Find(
                 CityBuildingPrototypeWorldBuilder.FoundationObjectName);
             Assert.That(foundation, Is.Not.Null);
-            Assert.That(foundation.GetComponent<Renderer>(), Is.Not.Null);
+            Renderer foundationRenderer =
+                foundation.GetComponent<Renderer>();
+            Assert.That(foundationRenderer, Is.Not.Null);
             Assert.That(foundation.GetComponent<Collider>(), Is.Null);
+            Bounds visibleBounds = CityBuildingPrototypePlacement
+                .TransformBounds(registry.LocalBounds, expectedPose);
+            Assert.That(
+                foundationRenderer.bounds.size.x,
+                Is.EqualTo(
+                    visibleBounds.size.x -
+                    (CityBuildingPrototypeWorldBuilder
+                        .FoundationHorizontalInset * 2f))
+                    .Within(PositionTolerance));
+            Assert.That(
+                foundationRenderer.bounds.size.z,
+                Is.EqualTo(
+                    visibleBounds.size.z -
+                    (CityBuildingPrototypeWorldBuilder
+                        .FoundationHorizontalInset * 2f))
+                    .Within(PositionTolerance));
+            Assert.That(
+                foundationRenderer.bounds.max.y,
+                Is.EqualTo(visibleBounds.min.y + 0.04f)
+                    .Within(PositionTolerance));
+            AssertSurfaceBinding(
+                foundationRenderer,
+                lot.District,
+                CityBuildingSurfaceKind.Plinth);
+
+            int opaqueSurfaceCount = 0;
+            for (int partIndex = 0;
+                 partIndex < registry.Parts.Count;
+                 partIndex++)
+            {
+                CityBuildingPartBinding binding =
+                    registry.Parts[partIndex];
+                if (binding.Role == CityBuildingMeshRole.WindowGlass)
+                {
+                    continue;
+                }
+
+                Assert.That(
+                    CityBuildingSurfaceAppearance.TryResolveSurface(
+                        lot.District,
+                        binding.SurfaceKind,
+                        out CityBuildingSurfaceKind surface),
+                    Is.True,
+                    binding.SourceName);
+                AssertSurfaceBinding(
+                    binding.Renderer,
+                    lot.District,
+                    surface);
+                opaqueSurfaceCount++;
+            }
+
+            Assert.That(opaqueSurfaceCount, Is.EqualTo(6));
 
             Assert.That(
                 registry.TryGetRenderer(
@@ -259,6 +318,31 @@ namespace BarPromenade.Tests.EditMode
                 registry,
                 lot,
                 citySeed);
+        }
+
+        private static void AssertSurfaceBinding(
+            Renderer renderer,
+            CityDistrictKind district,
+            CityBuildingSurfaceKind surface)
+        {
+            Assert.That(renderer, Is.Not.Null);
+            Assert.That(
+                renderer.sharedMaterial,
+                Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            Assert.That(
+                properties.GetTexture(BaseMapId),
+                Is.SameAs(
+                    CityBuildingSurfaceAppearance.GetTexture(
+                        district,
+                        surface)));
+            Assert.That(
+                properties.GetTexture(BaseMapId),
+                Is.Not.SameAs(Texture2D.whiteTexture));
+            Assert.That(
+                properties.GetVector(BaseMapTransformId),
+                Is.EqualTo(new Vector4(1f, 1f, 0f, 0f)));
         }
 
         private static void AssertAttachmentCatalogAndAnchors(
@@ -765,76 +849,172 @@ namespace BarPromenade.Tests.EditMode
                     continue;
                 }
 
-                CityMiscKind kind = SpecialKind(lot);
-                Vector3 expectedScale =
-                    CitySpecialBuildingWorldBuilder.ResolveScale(
+                if (lot.IsSupermarket)
+                {
+                    CitySpecialBuildingWorldBuilder
+                        .BuildSupermarketCityInfrastructure(
+                            building,
+                            lot,
+                            foundationDepth);
+                    CitySupermarketFacadeWorldBuilder.BuildCity(
+                        building,
+                        lot);
+                    AssertAuthoredSupermarketCity(
+                        building,
                         lot,
-                        foundationDepth,
-                        kind);
+                        foundationDepth);
+                    continue;
+                }
 
-                CitySpecialBuildingWorldBuilder.BuildCity(
+                CitySpecialBuildingWorldBuilder
+                    .BuildPlayerHomeCityInfrastructure(
+                        building,
+                        lot,
+                        foundationDepth);
+                PlayerHomeExteriorAssetRegistry registry =
+                    CityPlayerHomeExteriorWorldBuilder.BuildCity(
+                        building,
+                        lot);
+                AssertAuthoredPlayerHomeCity(
                     building,
                     lot,
-                    context.Layout.Seed,
-                    foundationDepth);
-
-                Transform model = building.Find(
-                    CitySpecialBuildingWorldBuilder.ModelRootName);
-                Transform shell = model?.Find(
-                    CitySpecialBuildingWorldBuilder.ShellObjectName);
-                Transform roof = model?.Find(
-                    CitySpecialBuildingWorldBuilder.RoofObjectName);
-                Transform trim = model?.Find(
-                    CitySpecialBuildingWorldBuilder.TrimObjectName);
-                Transform collision = building.Find(
-                    CityBuildingPrototypeWorldBuilder
-                        .LogicalCollisionObjectName);
-                Assert.That(shell, Is.Not.Null, lot.Cell.ToString());
-                Assert.That(roof, Is.Not.Null, lot.Cell.ToString());
-                Assert.That(trim, Is.Not.Null, lot.Cell.ToString());
-                Assert.That(collision, Is.Not.Null, lot.Cell.ToString());
-                Assert.That(
-                    model,
-                    Is.Not.Null);
-                Assert.That(building.Find("Roof"), Is.Null);
-                Assert.That(shell.localScale, Is.EqualTo(expectedScale));
-
-                MeshFilter shellFilter = shell.GetComponent<MeshFilter>();
-                Renderer shellRenderer = shell.GetComponent<Renderer>();
-                Assert.That(shellFilter, Is.Not.Null);
-                Assert.That(shellFilter.sharedMesh, Is.Not.Null);
-                Assert.That(
-                    shellFilter.sharedMesh.name,
-                    Is.EqualTo(
-                        CityMiscAssetProvider.GetExpectedMeshName(
-                            kind,
-                            0,
-                            "Shell_Masonry")));
-                Assert.That(shellRenderer, Is.Not.Null);
-                Assert.That(shell.GetComponent<Collider>(), Is.Null);
-                Assert.That(roof.GetComponent<Collider>(), Is.Null);
-                Assert.That(trim.GetComponent<Collider>(), Is.Null);
-
-                BoxCollider logical = collision.GetComponent<BoxCollider>();
-                Assert.That(logical, Is.Not.Null);
-                Assert.That(collision.GetComponent<Renderer>(), Is.Null);
-                Assert.That(collision.GetComponent<MeshFilter>(), Is.Null);
-                Assert.That(
-                    logical.size,
-                    Is.EqualTo(new Vector3(
-                        lot.Size.x,
-                        lot.Height + foundationDepth,
-                        lot.Size.y)));
-                Assert.That(
-                    shellRenderer.bounds.size.x,
-                    Is.EqualTo(lot.Size.x).Within(0.01f));
-                Assert.That(
-                    shellRenderer.bounds.size.y,
-                    Is.EqualTo(lot.Height).Within(0.01f));
-                Assert.That(
-                    shellRenderer.bounds.size.z,
-                    Is.EqualTo(lot.Size.y).Within(0.01f));
+                    foundationDepth,
+                    registry);
             }
+        }
+
+        private static void AssertAuthoredPlayerHomeCity(
+            Transform building,
+            BuildingLot lot,
+            float foundationDepth,
+            PlayerHomeExteriorAssetRegistry registry)
+        {
+            Transform infrastructure = building.Find(
+                CitySpecialBuildingWorldBuilder.ModelRootName);
+            Assert.That(infrastructure, Is.Not.Null);
+            Transform foundation = infrastructure.Find(
+                CitySpecialBuildingWorldBuilder.FoundationObjectName);
+            Assert.That(foundation, Is.Not.Null);
+            Assert.That(foundation.GetComponent<Collider>(), Is.Null);
+            Renderer foundationRenderer =
+                foundation.GetComponent<Renderer>();
+            Assert.That(foundationRenderer, Is.Not.Null);
+            Assert.That(
+                foundationRenderer.bounds.size.x,
+                Is.EqualTo(
+                        lot.Size.x -
+                        CitySpecialBuildingWorldBuilder
+                            .PlayerHomeFoundationInset * 2f)
+                    .Within(PositionTolerance));
+            Assert.That(
+                foundationRenderer.bounds.size.z,
+                Is.EqualTo(
+                        lot.Size.y -
+                        CitySpecialBuildingWorldBuilder
+                            .PlayerHomeFoundationInset * 2f)
+                    .Within(PositionTolerance));
+
+            Assert.That(
+                infrastructure.Find(
+                    CitySpecialBuildingWorldBuilder.ShellObjectName),
+                Is.Null);
+            Assert.That(
+                infrastructure.Find(
+                    CitySpecialBuildingWorldBuilder.RoofObjectName),
+                Is.Null);
+            Assert.That(
+                infrastructure.Find(
+                    CitySpecialBuildingWorldBuilder.TrimObjectName),
+                Is.Null);
+            Assert.That(building.Find("Front Windows"), Is.Null);
+            string[] obsoleteRuntimeParts =
+            {
+                "Home Roof Accent",
+                "Home Chimney",
+                "Home Balcony Slab",
+                "Home Balcony Door",
+                "Home Balcony Window",
+                "Home Entrance Canopy"
+            };
+            for (int index = 0;
+                 index < obsoleteRuntimeParts.Length;
+                 index++)
+            {
+                Assert.That(
+                    FindRenderer(building, obsoleteRuntimeParts[index]),
+                    Is.Null,
+                    $"Player home retained obsolete runtime geometry " +
+                    $"'{obsoleteRuntimeParts[index]}'.");
+            }
+
+            Assert.That(registry, Is.Not.Null);
+            Assert.That(
+                registry.transform.name,
+                Is.EqualTo(
+                    CityPlayerHomeExteriorWorldBuilder.CityObjectName));
+            Assert.That(
+                registry.DesignId,
+                Is.EqualTo(
+                    CityPlayerHomeExteriorWorldBuilder.DesignId));
+            Assert.That(
+                registry.Dimensions.Width,
+                Is.EqualTo(13f).Within(0.0001f));
+            Assert.That(
+                registry.Dimensions.Depth,
+                Is.EqualTo(12f).Within(0.0001f));
+            Assert.That(
+                registry.Dimensions.Height,
+                Is.EqualTo(8.8f).Within(0.0001f));
+            Assert.That(
+                registry.TryGetAnchor(
+                    CityPlayerHomeExteriorWorldBuilder.DoorAnchorRole,
+                    out Transform doorAnchor),
+                Is.True);
+            AssertVectorNear(doorAnchor.position, lot.DoorPosition);
+
+            PlayerHomeExteriorPartBinding litBinding = registry.Parts
+                .Single(binding => binding.Emissive);
+            Assert.That(
+                litBinding.SourceName,
+                Is.EqualTo("Front Lit Window Glass"));
+            Assert.That(litBinding.Sheet, Is.EqualTo("WindowGlass"));
+            Material homeLitMaterial =
+                CityWindowAppearance.ResolveLitMaterial(
+                    CityWindowFamily.Home);
+            Assert.That(
+                litBinding.Renderer.sharedMaterial,
+                Is.SameAs(homeLitMaterial));
+            Assert.That(
+                registry.Parts.Count(binding =>
+                    binding.Renderer != null &&
+                    binding.Renderer.sharedMaterial == homeLitMaterial),
+                Is.EqualTo(1),
+                "Only the authored upper-left player-home pane may glow.");
+
+            Transform collision = building.Find(
+                CityBuildingPrototypeWorldBuilder
+                    .LogicalCollisionObjectName);
+            Assert.That(collision, Is.Not.Null);
+            BoxCollider logical = collision.GetComponent<BoxCollider>();
+            Assert.That(logical, Is.Not.Null);
+            Assert.That(collision.GetComponent<Renderer>(), Is.Null);
+            Assert.That(collision.GetComponent<MeshFilter>(), Is.Null);
+            Assert.That(
+                logical.size,
+                Is.EqualTo(new Vector3(
+                    lot.Size.x,
+                    lot.Height + foundationDepth,
+                    lot.Size.y)));
+            Collider[] colliders =
+                building.GetComponentsInChildren<Collider>(true);
+            Assert.That(colliders, Has.Length.EqualTo(1));
+            Assert.That(colliders[0], Is.SameAs(logical));
+            Assert.That(
+                building.GetComponentsInChildren<Light>(true),
+                Is.Empty);
+            Assert.That(
+                building.GetComponentsInChildren<Camera>(true),
+                Is.Empty);
         }
 
         private static void AssertAuthoredBarCity(
@@ -1012,6 +1192,7 @@ namespace BarPromenade.Tests.EditMode
             HomeExteriorContextPlan context)
         {
             int observed = 0;
+            int authoredSupermarkets = 0;
             for (int index = 0;
                  index < context.NearbyLots.Count;
                  index++)
@@ -1045,13 +1226,24 @@ namespace BarPromenade.Tests.EditMode
                 }
 
                 Assert.That(building, Is.Not.Null, lot.Cell.ToString());
-                if (lot.IsBar &&
-                    fit == CityBuildingExteriorFit.Full)
+                if (fit == CityBuildingExteriorFit.Full)
                 {
-                    AssertAuthoredBarHomeExterior(
-                        building,
-                        context,
-                        lot);
+                    if (lot.IsBar)
+                    {
+                        AssertAuthoredBarHomeExterior(
+                            building,
+                            context,
+                            lot);
+                    }
+                    else
+                    {
+                        AssertAuthoredSupermarketHomeExterior(
+                            building,
+                            context,
+                            lot);
+                        authoredSupermarkets++;
+                    }
+
                     continue;
                 }
 
@@ -1089,6 +1281,108 @@ namespace BarPromenade.Tests.EditMode
                 observed,
                 Is.GreaterThan(0),
                 "The canonical Home view must include a special neighbor.");
+            Assert.That(
+                authoredSupermarkets,
+                Is.EqualTo(1),
+                "Home must reuse the complete authored supermarket model.");
+        }
+
+        private static void AssertAuthoredSupermarketCity(
+            Transform building,
+            BuildingLot lot,
+            float foundationDepth)
+        {
+            AssertAuthoredSupermarket(
+                building,
+                "Supermarket Exterior",
+                lot.DoorPosition);
+
+            Transform collision = building.Find(
+                CityBuildingPrototypeWorldBuilder
+                    .LogicalCollisionObjectName);
+            Assert.That(collision, Is.Not.Null);
+            BoxCollider logical = collision.GetComponent<BoxCollider>();
+            Assert.That(logical, Is.Not.Null);
+            Assert.That(
+                logical.size,
+                Is.EqualTo(new Vector3(
+                    lot.Size.x,
+                    lot.Height + foundationDepth,
+                    lot.Size.y)));
+            Collider[] colliders =
+                building.GetComponentsInChildren<Collider>(true);
+            Assert.That(colliders, Has.Length.EqualTo(1));
+            Assert.That(colliders[0], Is.SameAs(logical));
+        }
+
+        private static void AssertAuthoredSupermarketHomeExterior(
+            Transform building,
+            HomeExteriorContextPlan context,
+            BuildingLot lot)
+        {
+            Vector3 doorPosition =
+                PlayerHomeBalconyGeometry.ToHomeLocal(
+                    context.PlayerHome,
+                    lot.DoorPosition);
+            AssertAuthoredSupermarket(
+                building,
+                "Exterior Supermarket Model",
+                building.TransformPoint(doorPosition));
+            Assert.That(
+                building.GetComponentsInChildren<Collider>(true),
+                Is.Empty,
+                "The bounded Home supermarket must remain presentation-only.");
+        }
+
+        private static void AssertAuthoredSupermarket(
+            Transform building,
+            string authoredRootName,
+            Vector3 expectedDoorPosition)
+        {
+            Transform infrastructure = building.Find(
+                CitySpecialBuildingWorldBuilder.ModelRootName);
+            Assert.That(infrastructure, Is.Not.Null);
+            Assert.That(
+                infrastructure.Find(
+                    CitySpecialBuildingWorldBuilder.ShellObjectName),
+                Is.Null,
+                "The authored supermarket must not retain its CityMisc shell.");
+            Assert.That(
+                infrastructure.Find(
+                    CitySpecialBuildingWorldBuilder.RoofObjectName),
+                Is.Null);
+            Assert.That(
+                infrastructure.Find(
+                    CitySpecialBuildingWorldBuilder.TrimObjectName),
+                Is.Null);
+            Assert.That(building.Find("Front Windows"), Is.Null);
+
+            Transform authored = building.Find(authoredRootName);
+            Assert.That(authored, Is.Not.Null);
+            SupermarketExteriorAssetRegistry registry =
+                authored.GetComponent<SupermarketExteriorAssetRegistry>();
+            Assert.That(registry, Is.Not.Null);
+            Assert.That(
+                registry.DesignId,
+                Is.EqualTo("supermarket_exterior_v1"));
+            Assert.That(registry.Dimensions.Width,
+                Is.EqualTo(15.5f).Within(0.0001f));
+            Assert.That(registry.Dimensions.Depth,
+                Is.EqualTo(15.5f).Within(0.0001f));
+            Assert.That(registry.Dimensions.Height,
+                Is.EqualTo(6.4f).Within(0.0001f));
+            Assert.That(
+                registry.TryGetAnchor(
+                    "exterior_door",
+                    out Transform doorAnchor),
+                Is.True);
+            AssertVectorNear(doorAnchor.position, expectedDoorPosition);
+            Assert.That(
+                building.GetComponentsInChildren<Light>(true),
+                Is.Empty);
+            Assert.That(
+                building.GetComponentsInChildren<Camera>(true),
+                Is.Empty);
         }
 
         private static void AssertAuthoredBarHomeExterior(

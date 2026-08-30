@@ -6,30 +6,30 @@ namespace BarPromenade
     public sealed partial class CityMapView
     {
         private static readonly Color MountainRoadForest =
-            new Color32(36, 51, 45, 255);
+            RetroUiTheme.MapGround;
         private static readonly Color MountainRoadInk =
-            new Color32(164, 157, 128, 255);
+            RetroUiTheme.Muted;
         private static readonly Color MountainRoadPlateau =
-            new Color32(103, 99, 82, 255);
+            RetroUiTheme.PanelRaised;
         private static readonly Color MountainRoadSnow =
-            new Color32(174, 183, 179, 255);
+            RetroUiTheme.Text;
         private static readonly Color MountainRoadHairpin =
-            new Color32(211, 163, 89, 255);
+            RetroUiTheme.AccentPale;
         private static readonly Color MountainRoadBridge =
-            new Color32(190, 207, 201, 255);
+            RetroUiTheme.Text;
         private static readonly Color MountainRoadCafeGlow =
-            new Color32(226, 199, 116, 255);
+            RetroUiTheme.AccentPale;
         private static readonly Color MountainRoadCableway =
-            new Color32(125, 179, 171, 255);
+            RetroUiTheme.BorderMuted;
 
-        // The village's three tones are warm where every other tab is cold.
-        // That is the whole difference the chart is allowed to state.
+        // The village remains a distinct chart through value hierarchy and
+        // shape, not a private warm palette outside the shared UI system.
         private static readonly Color AlpineVillageGround =
-            new Color32(74, 68, 58, 255);
+            RetroUiTheme.MapGround;
         private static readonly Color AlpineVillageSettled =
-            new Color32(104, 94, 78, 255);
+            RetroUiTheme.PanelRaised;
         private static readonly Color AlpineVillageLane =
-            new Color32(214, 186, 138, 255);
+            RetroUiTheme.Text;
 
         private GameAreaId lastPresentedArea = GameAreaId.City;
 
@@ -43,15 +43,12 @@ namespace BarPromenade
                 bool selected = area == controller.SelectedArea;
                 RetroUiTheme.DrawPanel(
                     tab,
-                    selected
-                        ? RetroUiTheme.PanelRaised
-                        : RetroUiTheme.PanelInset,
-                    selected
-                        ? RetroUiTheme.Accent
-                        : RetroUiTheme.BorderMuted,
-                    selected,
-                    1f,
+                    RetroUiTheme.PanelInset,
+                    RetroUiTheme.BorderMuted,
+                    false,
+                    0f,
                     1f);
+                RetroUiTheme.DrawSelection(tab, selected);
                 string currentPrefix = area == controller.CurrentArea
                     ? "\u25C6 "
                     : string.Empty;
@@ -120,8 +117,8 @@ namespace BarPromenade
                 projection.ScreenRect,
                 AlpineVillageGround,
                 RetroUiTheme.BorderMuted,
-                true,
-                2f,
+                false,
+                0f,
                 1f);
             CityMapMountainRoadOverlay overlay =
                 controller.AlpineVillageOverlay;
@@ -156,8 +153,8 @@ namespace BarPromenade
                 projection.ScreenRect,
                 MountainRoadForest,
                 RetroUiTheme.BorderMuted,
-                true,
-                2f,
+                false,
+                0f,
                 1f);
             CityMapMountainRoadOverlay overlay =
                 controller.MountainRoadOverlay;
@@ -479,9 +476,9 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 travelButton,
                 RetroUiTheme.PanelRaised,
-                RetroUiTheme.Good,
-                true,
-                2f,
+                RetroUiTheme.AccentPale,
+                false,
+                0f,
                 1f);
             bool previousEnabled = GUI.enabled;
             GUI.enabled = controller.CanRequestSelectedAreaTravel;

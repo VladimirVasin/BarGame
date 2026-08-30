@@ -64,6 +64,27 @@ namespace BarPromenade.Tests.EditMode
         private const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
 
+        // The Kettle Hat walker's declared rig and atlas, spelled out by
+        // hand like the material path above because this assembly does
+        // not reference the editor pipeline that owns the constants.
+        private const string KettleHatManifestPath =
+            "Assets/Pedestrians/Models/KettleHatPedestrian3D.json";
+        private const string KettleHatDetailAtlasPath =
+            "Assets/Pedestrians/Textures/KettleHatDetailAtlas.png";
+        private const int KettleHatDetailAtlasSize = 256;
+        private const int KettleHatDetailAtlasUvInsetPixels = 1;
+        private const string BoilingKettleEffectName = "boiling_kettle";
+        private const string KettleLidAnchorName = "ANCHOR_KettleLid";
+        private const string KettleSpoutAnchorName = "ANCHOR_KettleSpout";
+        private const string KettleLidRendererName = "ACC_KettleLid";
+        private const string KettleKnobRendererName = "ACC_KettleKnob";
+        private const float KettleSpoutReachMinimumMetres = 0.35f;
+        private const float KettleSpoutReachMaximumMetres = 0.65f;
+        private const float KettlePivotRestTolerance = 0.00001f;
+        // The palette variant the property-block check reads back; any
+        // non-zero variant proves the tint is the binding's, not white.
+        private const int KettleAtlasProbeVariant = 2;
+
         [TestCase(
             LampshadeModelPath,
             CityPedestrianResources.LampshadePrefabResourcePath,
@@ -84,8 +105,8 @@ namespace BarPromenade.Tests.EditMode
             KettleHatModelPath,
             CityPedestrianResources.KettleHatPrefabResourcePath,
             CityPedestrianResources.KettleHatDesignId,
-            1356,
-            42,
+            2004,
+            52,
             "KettleHatIdle",
             "KettleHatWalk")]
         [TestCase(
@@ -692,6 +713,308 @@ namespace BarPromenade.Tests.EditMode
                         CityPedestrianResources.HelmetLampDesignId,
                         StringComparison.Ordinal)),
                 Is.EqualTo(1));
+        }
+
+        [Test]
+        public void KettleHatWalker_DeclaresItsBoilRigAndDetailAtlas()
+        {
+            // The kettle boils by declaration, the way the hopper's lamp
+            // burns: the archetype says so, the prefab carries passive
+            // anchors the editor measured in the bind pose, and the
+            // runtime factory builds the effect from those. Nothing that
+            // moves or emits lives in the asset.
+            GameObject prefab = Resources.Load<GameObject>(
+                CityPedestrianResources.KettleHatPrefabResourcePath);
+            Assert.That(prefab, Is.Not.Null);
+            CityPedestrianAssetRegistry registry =
+                prefab.GetComponent<CityPedestrianAssetRegistry>();
+            Assert.That(registry, Is.Not.Null);
+            CityKettleHatRigAnchors anchors =
+                prefab.GetComponent<CityKettleHatRigAnchors>();
+            if (anchors == null)
+            {
+                Assert.Ignore(
+                    "The Kettle Hat prefab has not been rebuilt with its " +
+                    "boil rig yet: run NpcHumanV2AssetSetup.RunBatch after " +
+                    "the generator and this contract becomes live.");
+            }
+
+            // The declaration itself, on the catalog and nowhere else.
+            IReadOnlyList<CityPedestrianArchetype> archetypes =
+                CityPedestrianResources.Archetypes;
+            Assert.That(
+                archetypes
+                    .Where(archetype => archetype.CarriesBoilingKettle)
+                    .Select(archetype => archetype.DesignId)
+                    .ToArray(),
+                Is.EqualTo(
+                    new[] { CityPedestrianResources.KettleHatDesignId }),
+                "Only the Kettle Hat walker declares a boiling kettle.");
+            GameObject[] prefabs = CityPedestrianResources.LoadPrefabs();
+            for (int index = 0; index < prefabs.Length; index++)
+            {
+                CityPedestrianAssetRegistry other =
+                    prefabs[index].GetComponent<CityPedestrianAssetRegistry>();
+                bool isKettle = string.Equals(
+                    other.DesignId,
+                    CityPedestrianResources.KettleHatDesignId,
+                    StringComparison.Ordinal);
+                Assert.That(
+                    prefabs[index].GetComponentInChildren<
+                        CityKettleHatRigAnchors>(true) != null,
+                    Is.EqualTo(isKettle),
+                    $"'{other.DesignId}' kettle anchors do not match its " +
+                    "declaration.");
+            }
+
+            // The lid pivot: the head's own frame, under the head, and
+            // the lid and knob re-skinned to it and to nothing else.
+            Assert.That(anchors.PedestrianRegistry, Is.SameAs(registry));
+            Transform head = registry.HeadAnchor;
+            Transform pivot = anchors.LidPivot;
+            Assert.That(pivot, Is.Not.Null);
+            Assert.That(pivot.name, Is.EqualTo(KettleLidAnchorName));
+            Assert.That(pivot.parent, Is.SameAs(head));
+            Assert.That(
+                pivot.localPosition.magnitude,
+                Is.LessThanOrEqualTo(KettlePivotRestTolerance));
+            Assert.That(
+                Quaternion.Angle(pivot.localRotation, Quaternion.identity),
+                Is.LessThanOrEqualTo(KettlePivotRestTolerance));
+            Assert.That(
+                Vector3.Distance(pivot.localScale, Vector3.one),
+                Is.LessThanOrEqualTo(KettlePivotRestTolerance));
+
+            Assert.That(anchors.LidRenderer, Is.Not.Null);
+            Assert.That(anchors.KnobRenderer, Is.Not.Null);
+            Assert.That(
+                anchors.LidRenderer.name,
+                Is.EqualTo(KettleLidRendererName));
+            Assert.That(
+                anchors.KnobRenderer.name,
+                Is.EqualTo(KettleKnobRendererName));
+            for (int index = 0; index < registry.Renderers.Count; index++)
+            {
+                var skinned = registry.Renderers[index] as SkinnedMeshRenderer;
+                Assert.That(
+                    skinned,
+                    Is.Not.Null,
+                    $"'{registry.Renderers[index].name}' must be skinned.");
+                Transform[] bones = skinned.bones;
+                int pivotReferences = bones.Count(bone => bone == pivot);
+                int headReferences = bones.Count(bone => bone == head);
+                bool ridesPivot =
+                    skinned == anchors.LidRenderer ||
+                    skinned == anchors.KnobRenderer;
+                Assert.That(
+                    pivotReferences,
+                    Is.EqualTo(ridesPivot ? 1 : 0),
+                    $"'{skinned.name}' pivot references.");
+                if (ridesPivot)
+                {
+                    Assert.That(
+                        headReferences,
+                        Is.EqualTo(0),
+                        $"'{skinned.name}' must be re-bound off the head.");
+                    Assert.That(
+                        skinned.sharedMesh.bindposes.Length,
+                        Is.EqualTo(bones.Length),
+                        $"'{skinned.name}' bind poses must still match " +
+                        "its bone array: the repoint changes references, " +
+                        "never bind poses.");
+                }
+            }
+
+            // The spout mouth, on the head, at the far end of the spout.
+            Transform spout = anchors.SpoutAnchor;
+            Assert.That(spout, Is.Not.Null);
+            Assert.That(spout.name, Is.EqualTo(KettleSpoutAnchorName));
+            Assert.That(spout.parent, Is.SameAs(head));
+            float reach = Vector3.Distance(spout.position, head.position);
+            Assert.That(
+                reach,
+                Is.InRange(
+                    KettleSpoutReachMinimumMetres,
+                    KettleSpoutReachMaximumMetres));
+            Assert.That(
+                anchors.SpoutReachMetres,
+                Is.EqualTo(reach).Within(0.001f));
+
+            // Nothing that moves or emits is in the asset.
+            Assert.That(
+                prefab.GetComponentsInChildren<ParticleSystem>(true),
+                Is.Empty);
+            Assert.That(
+                prefab.GetComponentsInChildren<CityKettleHatBoilEffect>(true),
+                Is.Empty);
+            Assert.That(prefab.GetComponentsInChildren<Light>(true), Is.Empty);
+
+            // The detail atlas: one PNG on the import contract, bound
+            // through the palette property block so the one shared
+            // material survives, and the manifest vouching for its bytes.
+            Assert.That(registry.DetailAtlas, Is.Not.Null);
+            Assert.That(
+                AssetDatabase.GetAssetPath(registry.DetailAtlas),
+                Is.EqualTo(KettleHatDetailAtlasPath));
+            Assert.That(
+                registry.DetailAtlas.width,
+                Is.EqualTo(KettleHatDetailAtlasSize));
+            Assert.That(
+                registry.DetailAtlas.height,
+                Is.EqualTo(KettleHatDetailAtlasSize));
+            AssertTextureImport(KettleHatDetailAtlasPath, false);
+
+            var manifest = JsonUtility.FromJson<PedestrianModelManifest>(
+                System.IO.File.ReadAllText(KettleHatManifestPath));
+            Assert.That(manifest, Is.Not.Null);
+            Assert.That(
+                manifest.signature_effects,
+                Is.EqualTo(new[] { BoilingKettleEffectName }));
+            Assert.That(manifest.rig_anchors, Has.Length.EqualTo(2));
+            Assert.That(
+                manifest.rig_anchors.Select(anchor => anchor.name).ToArray(),
+                Is.EqualTo(new[] { KettleLidAnchorName, KettleSpoutAnchorName }));
+            Assert.That(
+                manifest.rig_anchors.All(anchor => anchor.bone == "head"),
+                Is.True);
+            Assert.That(manifest.texture_bindings, Has.Length.EqualTo(1));
+            PedestrianTextureBinding binding = manifest.texture_bindings[0];
+            Assert.That(
+                binding.texture_asset,
+                Is.EqualTo(KettleHatDetailAtlasPath));
+            Assert.That(binding.width_px, Is.EqualTo(KettleHatDetailAtlasSize));
+            Assert.That(binding.height_px, Is.EqualTo(KettleHatDetailAtlasSize));
+            Assert.That(binding.materials, Is.Empty);
+            Assert.That(binding.shader_property, Is.EqualTo("_BaseMap"));
+            Assert.That(binding.color_space, Is.EqualTo("sRGB"));
+            Assert.That(binding.filter_mode, Is.EqualTo("Point"));
+            Assert.That(binding.wrap_mode, Is.EqualTo("Clamp"));
+            Assert.That(binding.mipmaps, Is.False);
+            Assert.That(binding.compression, Is.EqualTo("Uncompressed"));
+            Assert.That(binding.uv_channel, Is.EqualTo(0));
+            Assert.That(binding.uv_origin, Is.EqualTo("bottom_left"));
+            Assert.That(
+                binding.uv_safe_inset_px,
+                Is.EqualTo(KettleHatDetailAtlasUvInsetPixels));
+            Assert.That(binding.material_tint_hex, Is.EqualTo("FFFFFF"));
+            Assert.That(binding.tint_source, Is.EqualTo("renderer_palette"));
+            using (var sha = System.Security.Cryptography.SHA256.Create())
+            {
+                string actual = BitConverter
+                    .ToString(sha.ComputeHash(
+                        System.IO.File.ReadAllBytes(KettleHatDetailAtlasPath)))
+                    .Replace("-", string.Empty)
+                    .ToLowerInvariant();
+                Assert.That(
+                    binding.sha256,
+                    Is.EqualTo(actual).IgnoreCase,
+                    "The committed atlas must be the one the generator " +
+                    "hashed; repaint it through the generator.");
+            }
+
+            Assert.That(binding.regions, Is.Not.Empty);
+            Dictionary<string, Renderer> renderersByName = registry.Renderers
+                .ToDictionary(
+                    renderer => renderer.name,
+                    renderer => renderer,
+                    StringComparer.Ordinal);
+            var texturedRenderers = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < binding.regions.Length; index++)
+            {
+                PedestrianTextureRegion region = binding.regions[index];
+                Assert.That(
+                    renderersByName.TryGetValue(
+                        region.renderer,
+                        out Renderer renderer),
+                    Is.True,
+                    $"Region '{region.name}' names an unknown renderer " +
+                    $"'{region.renderer}'.");
+                Assert.That(
+                    texturedRenderers.Add(region.renderer),
+                    Is.True,
+                    $"'{region.renderer}' is claimed by two regions.");
+                AssertUvInsideRegion(
+                    ((SkinnedMeshRenderer)renderer).sharedMesh,
+                    binding,
+                    region);
+            }
+
+            for (int index = 0; index < registry.RendererBindings.Count; index++)
+            {
+                CityPedestrianRendererBinding rendererBinding =
+                    registry.RendererBindings[index];
+                Assert.That(
+                    rendererBinding.UsesDetailAtlas,
+                    Is.EqualTo(
+                        texturedRenderers.Contains(
+                            rendererBinding.RendererName)),
+                    $"'{rendererBinding.RendererName}' atlas flag.");
+            }
+
+            // The atlas reaches exactly the region renderers, tinted by
+            // the palette — the inversion of the Hero V2 clothing
+            // contract, where the atlas carries its own colour on a
+            // material of its own. Checked on an instance: a property
+            // block set on the asset's renderer is never serialized and
+            // only dirties the asset.
+            GameObject instance = UnityEngine.Object.Instantiate(prefab);
+            try
+            {
+                CityPedestrianAssetRegistry instanceRegistry =
+                    instance.GetComponent<CityPedestrianAssetRegistry>();
+                instanceRegistry.ApplyPaletteVariant(KettleAtlasProbeVariant);
+                var properties = new MaterialPropertyBlock();
+                int baseMapId = Shader.PropertyToID("_BaseMap");
+                int baseColorId = Shader.PropertyToID("_BaseColor");
+                for (int index = 0;
+                     index < instanceRegistry.RendererBindings.Count;
+                     index++)
+                {
+                    CityPedestrianRendererBinding rendererBinding =
+                        instanceRegistry.RendererBindings[index];
+                    rendererBinding.Renderer.GetPropertyBlock(properties);
+                    Texture bound = properties.GetTexture(baseMapId);
+                    if (rendererBinding.UsesDetailAtlas)
+                    {
+                        Assert.That(
+                            bound,
+                            Is.SameAs(instanceRegistry.DetailAtlas),
+                            $"'{rendererBinding.RendererName}' must sample " +
+                            "the detail atlas.");
+                        // The block stores the tint as float32 while the
+                        // binding computes it from the serialized variant
+                        // factors, so the two agree to a few thousandths,
+                        // not to the bit.
+                        const float tintTolerance = 0.002f;
+                        Color tint = properties.GetColor(baseColorId);
+                        Color expectedTint = rendererBinding.GetColor(
+                            KettleAtlasProbeVariant);
+                        float tintDifference = Mathf.Max(
+                            Mathf.Abs(tint.r - expectedTint.r),
+                            Mathf.Abs(tint.g - expectedTint.g),
+                            Mathf.Abs(tint.b - expectedTint.b),
+                            Mathf.Abs(tint.a - expectedTint.a));
+                        Assert.That(
+                            tintDifference,
+                            Is.LessThan(tintTolerance),
+                            $"'{rendererBinding.RendererName}' must keep " +
+                            $"its palette tint under the atlas: expected " +
+                            $"{expectedTint}, got {tint}.");
+                    }
+                    else
+                    {
+                        Assert.That(
+                            bound,
+                            Is.Null,
+                            $"'{rendererBinding.RendererName}' has no " +
+                            "atlas region and must stay flat colour.");
+                    }
+                }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
         }
 
         [Test]
@@ -2116,6 +2439,139 @@ namespace BarPromenade.Tests.EditMode
             public bool pool_eligible;
             public float wheel_radius_m;
             public string[] pivot_names;
+
+            // Present only on designs that declare them; JsonUtility
+            // leaves each null everywhere else.
+            public string[] signature_effects;
+            public PedestrianRigAnchor[] rig_anchors;
+            public PedestrianTextureBinding[] texture_bindings;
+        }
+
+        [Serializable]
+        private sealed class PedestrianRigAnchor
+        {
+            public string name;
+            public string bone;
+            public string kind;
+            public string[] parts;
+            public string axis_from;
+        }
+
+        [Serializable]
+        private sealed class PedestrianTextureBinding
+        {
+            public string texture_asset;
+            public int width_px;
+            public int height_px;
+            public string[] materials;
+            public string shader_property;
+            public string color_space;
+            public string filter_mode;
+            public string wrap_mode;
+            public bool mipmaps;
+            public string compression;
+            public int uv_channel;
+            public string uv_origin;
+            public int uv_safe_inset_px;
+            public string material_tint_hex;
+            public string tint_source;
+            public string sha256;
+            public PedestrianTextureRegion[] regions;
+        }
+
+        [Serializable]
+        private sealed class PedestrianTextureRegion
+        {
+            public string name;
+            public string renderer;
+            public int x_px;
+            public int y_px;
+            public int width_px;
+            public int height_px;
+        }
+
+        /// <summary>
+        /// The flat pixel-art import contract, duplicated from the Hero V2
+        /// pipeline tests because the two test files share no helper and
+        /// this assembly cannot ask the editor pipeline for its values.
+        /// </summary>
+        private static void AssertTextureImport(
+            string path,
+            bool alphaIsTransparency)
+        {
+            TextureImporter importer =
+                AssetImporter.GetAtPath(path) as TextureImporter;
+            Assert.That(importer, Is.Not.Null);
+            Assert.That(
+                importer.textureType,
+                Is.EqualTo(TextureImporterType.Default));
+            Assert.That(
+                importer.textureShape,
+                Is.EqualTo(TextureImporterShape.Texture2D));
+            Assert.That(importer.sRGBTexture, Is.True);
+            Assert.That(
+                importer.alphaSource,
+                Is.EqualTo(TextureImporterAlphaSource.FromInput));
+            Assert.That(
+                importer.alphaIsTransparency,
+                Is.EqualTo(alphaIsTransparency));
+            Assert.That(importer.filterMode, Is.EqualTo(FilterMode.Point));
+            Assert.That(importer.wrapMode, Is.EqualTo(TextureWrapMode.Clamp));
+            Assert.That(importer.mipmapEnabled, Is.False);
+            Assert.That(importer.isReadable, Is.False);
+            Assert.That(
+                importer.npotScale,
+                Is.EqualTo(TextureImporterNPOTScale.None));
+            Assert.That(
+                importer.maxTextureSize,
+                Is.EqualTo(KettleHatDetailAtlasSize));
+            Assert.That(
+                importer.textureCompression,
+                Is.EqualTo(TextureImporterCompression.Uncompressed));
+            TextureImporterPlatformSettings standalone =
+                importer.GetPlatformTextureSettings("Standalone");
+            Assert.That(standalone.overridden, Is.True);
+            Assert.That(
+                standalone.maxTextureSize,
+                Is.EqualTo(KettleHatDetailAtlasSize));
+            Assert.That(
+                standalone.textureCompression,
+                Is.EqualTo(TextureImporterCompression.Uncompressed));
+            Assert.That(standalone.crunchedCompression, Is.False);
+        }
+
+        private static void AssertUvInsideRegion(
+            Mesh mesh,
+            PedestrianTextureBinding binding,
+            PedestrianTextureRegion region)
+        {
+            Assert.That(mesh, Is.Not.Null);
+            Vector2[] uv = mesh.uv;
+            Assert.That(uv, Has.Length.EqualTo(mesh.vertexCount));
+            Assert.That(uv, Is.Not.Empty);
+            Vector2 minimum = new Vector2(
+                (float)(region.x_px + binding.uv_safe_inset_px) /
+                binding.width_px,
+                (float)(region.y_px + binding.uv_safe_inset_px) /
+                binding.height_px);
+            Vector2 maximum = new Vector2(
+                (float)(region.x_px + region.width_px -
+                        binding.uv_safe_inset_px) /
+                    binding.width_px,
+                (float)(region.y_px + region.height_px -
+                        binding.uv_safe_inset_px) /
+                    binding.height_px);
+            for (int index = 0; index < uv.Length; index++)
+            {
+                Assert.That(
+                    uv[index].x,
+                    Is.InRange(minimum.x - 0.0001f, maximum.x + 0.0001f),
+                    $"'{region.renderer}' UV0[{index}] leaves '{region.name}'.");
+                Assert.That(
+                    uv[index].y,
+                    Is.InRange(minimum.y - 0.0001f, maximum.y + 0.0001f),
+                    $"'{region.renderer}' UV0[{index}] leaves '{region.name}'.");
+            }
         }
 
         [Serializable]

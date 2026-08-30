@@ -205,8 +205,8 @@
       ],
       "seated": true,
       "seated_headroom_m": 0.913886,
-      "seated_drop_m": 0.388341,
-      "seated_contact_m": 0.128115,
+      "seated_drop_m": 0.390296,
+      "seated_contact_m": 0.128356,
       "seated_floor_drop_limit_m": 0.41
     },
     {
@@ -846,5 +846,5 @@
       "seated_drop_m": 0.598426
     }
   ],
-  "build_signature": "85999c2978207b69a8cb9477d92d9da3e6a9e18546b2852e26ff95ad69c451bf"
+  "build_signature": "03423cb909e3d693ec7746ec0aef8b2ecf763be8438c8fce3f598141e06cfbd8"
 }

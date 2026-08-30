@@ -679,16 +679,14 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void BusRoute_UsesExactOpaqueBlueDistinctFromOtherLines()
+        public void BusRoute_UsesSharedOpaqueTextToneDistinctFromOtherLines()
         {
             Color bus = CityMapView.BusRouteColor;
             Color street = InvokePrivate<Color>(
                 "GetPathColor",
                 CityPathKind.Street);
 
-            Assert.That(bus.r, Is.EqualTo(91f / 255f).Within(0.0001f));
-            Assert.That(bus.g, Is.EqualTo(143f / 255f).Within(0.0001f));
-            Assert.That(bus.b, Is.EqualTo(209f / 255f).Within(0.0001f));
+            Assert.That(bus, Is.EqualTo(RetroUiTheme.Text));
             Assert.That(bus.a, Is.EqualTo(1f).Within(0.0001f));
             Assert.That(bus, Is.Not.EqualTo(street));
             Assert.That(bus, Is.Not.EqualTo(RetroUiTheme.Accent));

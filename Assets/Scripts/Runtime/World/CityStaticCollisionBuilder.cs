@@ -18,6 +18,7 @@ namespace BarPromenade
                     return CityDecorationCollisionTier.Detail;
                 case CityDecorationKind.OldTownStreetMarket:
                 case CityDecorationKind.ResidentialDiscardedFurniture:
+                case CityDecorationKind.ResidentialCourtyardPocket:
                 case CityDecorationKind.IndustrialCargo:
                 case CityDecorationKind.NightlifeVendingAndQueue:
                 case CityDecorationKind.RoadsideDumpsterAndUtility:
@@ -92,6 +93,11 @@ namespace BarPromenade
                     break;
                 case CityDecorationKind.ResidentialDiscardedFurniture:
                     AddFurniture(context, target);
+                    break;
+                case CityDecorationKind.ResidentialCourtyardPocket:
+                    CityCourtyardPocketGeometry.AppendCollisionBounds(
+                        descriptor,
+                        target);
                     break;
                 case CityDecorationKind.IndustrialPipeRack:
                     AddPipeRack(context, target);

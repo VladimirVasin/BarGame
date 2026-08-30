@@ -35,9 +35,7 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(settings));
             }
 
-            return Mathf.Min(
-                PreferredBuildingHeight,
-                settings.MaximumBuildingHeight);
+            return PreferredBuildingHeight;
         }
 
         public static bool SupportsThirdFloor(float buildingHeight)

@@ -60,6 +60,124 @@ PIPEBACK_WHEEL_CENTERS = {
 PIPEBACK_PUSH_RIM_RADIUS = 0.238
 PIPEBACK_SEAT_TOP_M = 0.705
 
+REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "tools"))
+
+import atlas_kit  # noqa: E402  (after the sys.path fix)
+
+# A design may dress a few of its parts with one small detail atlas. The
+# texture is pale grey-on-white detail only - seams, laces, grooves, chips -
+# and the runtime multiplies it by the part's palette colour through the
+# same per-renderer property block that already carries the four palette
+# variants, so one PNG serves every variant and the single shared material
+# stays untouched. Every atlas is 256x256 because the Unity importer pins
+# `maxTextureSize` there for the Hero V2 atlases this contract mirrors.
+DETAIL_ATLAS_SIZE = 256
+DETAIL_ATLAS_UV_INSET_PX = 1
+DETAIL_ATLAS_REGION_PROP = "bp_atlas_region"
+DETAIL_ATLAS_UV_LAYER = "UVMap"
+# Parts without a UV layer sample texel (0, 0) in the Blender preview (one
+# material serves the whole model), so the bottom-left cell of every atlas is
+# reserved pure white and nothing is ever painted into it.
+DETAIL_ATLAS_RESERVED_CELL = (0, 0, 64, 64)
+DETAIL_ATLAS_WHITE = (255, 255, 255, 255)
+# sRGB greys of the painted detail. Light enough that the palette tone still
+# reads through them; the enamel chips are the one dark mark.
+DETAIL_ATLAS_SEAM = (225, 225, 225, 255)
+DETAIL_ATLAS_WEAR = (240, 240, 240, 255)
+DETAIL_ATLAS_GROOVE = (165, 165, 165, 255)
+DETAIL_ATLAS_LACE = (120, 120, 120, 255)
+DETAIL_ATLAS_CHIP = (80, 80, 80, 255)
+KETTLE_DETAIL_ATLAS_NAME = "KettleHatDetailAtlas.png"
+# Lightweight-part gate for every design that goes through validate_result.
+# The ceiling rose from 52 to 60 for the Kettle Hat Walker's hands, boots
+# and cloth details; the floor keeps a design from being one blob.
+MIN_MESH_COUNT = 24
+MAX_MESH_COUNT = 60
+
+
+@dataclass(frozen=True)
+class AtlasRegion:
+    """One bottom-left pixel sub-rect of a detail atlas owned by one part.
+
+    `kind` names the UV layout the part receives: `ring` for a closed
+    frustum (`sides` stations x `rings` rings), `ellipsoid` for a pole-capped
+    ellipsoid (`sides` segments x `rings` rings) and `box` for a box whose
+    faces split between a side panel and a front/instep panel by normal.
+    """
+
+    name: str
+    renderer: str
+    x: int
+    y: int
+    width: int
+    height: int
+    kind: str
+    sides: int = 0
+    rings: int = 0
+
+    @property
+    def rect_px(self) -> tuple[int, int, int, int]:
+        return (self.x, self.y, self.width, self.height)
+
+
+@dataclass(frozen=True)
+class RigAnchorSpec:
+    """A transform the prefab build creates under a bone for a runtime effect.
+
+    The generator never exports these - a skinned part driven through an
+    auxiliary Empty picks up a second centimetre conversion in Unity - it
+    only declares them in the manifest so the editor build and the runtime
+    agree on names, bones and the parts each anchor drives. `pivot` anchors
+    take over the listed parts' skinning entry for `bone`; `anchor` anchors
+    merely mark a point, placed at the far end of `axis_from` when given.
+    """
+
+    name: str
+    bone: str
+    kind: str
+    parts: tuple[str, ...]
+    axis_from: str = ""
+
+
+@dataclass(frozen=True)
+class AtlasReport:
+    """A painted detail atlas as the validator and manifest see it."""
+
+    path: Path
+    sha256: str
+    width: int
+    height: int
+    pixels: bytes
+
+
+# The Kettle Hat Walker's detail atlas: twelve regions on fifteen 64 px cells
+# plus the reserved white cell at (0, 0). Finger grooves and the kettle body
+# take two cells each; everything else is one cell.
+KETTLE_ATLAS_REGIONS = (
+    AtlasRegion("FingerGrooves.L", "GEO_Fingers.L", 0, 192, 128, 64, "ring", 4, 2),
+    AtlasRegion("FingerGrooves.R", "GEO_Fingers.R", 128, 192, 128, 64, "ring", 4, 2),
+    AtlasRegion("KettleBody", "ACC_KettleBody", 0, 128, 128, 64, "ring", 18, 2),
+    AtlasRegion("Cuff.L", "ACC_CoatCuff.L", 128, 128, 64, 64, "ring", 10, 2),
+    AtlasRegion("Cuff.R", "ACC_CoatCuff.R", 192, 128, 64, 64, "ring", 10, 2),
+    AtlasRegion("Torso", "GEO_Torso", 0, 64, 64, 64, "ring", 14, 2),
+    AtlasRegion("Belly", "GEO_Belly", 64, 64, 64, 64, "ellipsoid", 18, 9),
+    AtlasRegion("KettleShoulder", "ACC_KettleShoulder", 128, 64, 64, 64, "ring", 18, 2),
+    AtlasRegion("KettleLid", "ACC_KettleLid", 192, 64, 64, 64, "ring", 16, 2),
+    AtlasRegion("Boot.L", "GEO_Foot.L", 64, 0, 64, 64, "box"),
+    AtlasRegion("Boot.R", "GEO_Foot.R", 128, 0, 64, 64, "box"),
+    AtlasRegion("CoatHem", "CLO_CoatHem", 192, 0, 64, 64, "ring", 18, 2),
+)
+KETTLE_RIG_ANCHORS = (
+    RigAnchorSpec(
+        "ANCHOR_KettleLid", "head", "pivot", ("ACC_KettleLid", "ACC_KettleKnob"),
+    ),
+    RigAnchorSpec(
+        "ANCHOR_KettleSpout", "head", "anchor", ("ACC_KettleSpoutTip",),
+        axis_from="ACC_KettleSpout",
+    ),
+)
+
 
 @dataclass(frozen=True)
 class ArchetypeSpec:
@@ -143,6 +261,20 @@ class ArchetypeSpec:
     # are canon overlays, not validation failures: the story and art bibles
     # require the named silhouettes to remain abnormal in exactly these ways.
     signature_anatomy: tuple[str, ...] = ()
+    # Optional detail atlas: the PNG file name under the texture directory
+    # and the parts that carry UV0 into its regions. Every other part of the
+    # design stays flat colour without a UV layer, exactly like the designs
+    # that declare nothing here.
+    texture_atlas: str | None = None
+    texture_regions: tuple[AtlasRegion, ...] = ()
+    # Transforms the prefab build must create under bones for a declared
+    # runtime effect. Declared here so the manifest, the editor build and
+    # the runtime name the same things; the FBX carries none of them.
+    rig_anchors: tuple[RigAnchorSpec, ...] = ()
+    # Always-on effects this design carries by declaration rather than by
+    # clip: the runtime attaches them per instance and the manifest names
+    # them so the editor can refuse a prefab that disagrees.
+    signature_effects: tuple[str, ...] = ()
 
 
 ARCHETYPES = {
@@ -165,9 +297,17 @@ ARCHETYPES = {
         "kettle_hat", "kettle_hat_walker_v1", "Kettle Hat Walker", 305521,
         "KettleHatPedestrian3D.blend", "KettleHatPedestrian3D",
         "KettleHatPedestrian3D.png", "KettleHatIdle", "KettleHatWalk",
-        (800, 1600),
+        (1600, 2300),
         sit_clip="KettleHatSit", seated_clearance_m=(0.87, 0.96),
         signature_anatomy=("stout_short_body", "kettle_headwear"),
+        # The one pooled walker with a detail atlas and a declared always-on
+        # effect: his kettle boils. The lid pivot and the spout anchor are
+        # built by the prefab pass under `head`; the generator only names
+        # them and the parts they own.
+        texture_atlas=KETTLE_DETAIL_ATLAS_NAME,
+        texture_regions=KETTLE_ATLAS_REGIONS,
+        rig_anchors=KETTLE_RIG_ANCHORS,
+        signature_effects=("boiling_kettle",),
     ),
     "long_arm": ArchetypeSpec(
         "long_arm", "long_arm_walker_v1", "Long-Arm Walker", 418833,
@@ -563,6 +703,10 @@ PALETTE = {
     "kettle_enamel_dark": (0.290, 0.315, 0.300, 1.0),
     "kettle_chip": (0.155, 0.105, 0.070, 1.0),
     "kettle_metal": (0.115, 0.120, 0.118, 1.0),
+    # Bare hands, a middle tone: below the enamel so the kettle stays the
+    # one light detail the art bible gives him, above the coat so a thumb
+    # still separates from a sleeve.
+    "stout_hand_skin": (0.455, 0.335, 0.255, 1.0),
     # Long-Arm Walker. Cold steel blue is the last unused walker hue, and the
     # bare forearms are deliberately the brightest value on the model so the
     # eye lands on the arms first at any distance.
@@ -974,6 +1118,11 @@ def parse_args() -> argparse.Namespace:
         default=Path("Assets/Pedestrians/Staged/Models"),
     )
     parser.add_argument(
+        "--texture-dir",
+        type=Path,
+        default=Path("Assets/Pedestrians/Textures"),
+    )
+    parser.add_argument(
         "--archetype",
         choices=("all", *ARCHETYPES),
         default="all",
@@ -993,7 +1142,8 @@ def parse_args() -> argparse.Namespace:
     # blend's `//` root (often the drive root), unlike Python file writes.
     # Resolve every output from the invocation cwd before touching Blender IO.
     for field_name in (
-        "source_dir", "model_dir", "animation_dir", "staged_model_dir"
+        "source_dir", "model_dir", "animation_dir", "staged_model_dir",
+        "texture_dir",
     ):
         setattr(config, field_name, getattr(config, field_name).resolve())
     return config
@@ -1082,26 +1232,40 @@ def make_ellipsoid(
     radii: Sequence[float],
     segments: int = 12,
     rings: int = 6,
+    orientation: Quaternion | None = None,
 ):
+    # Vertex 0 is the south pole, rings 1..rings-1 follow with `segments`
+    # vertices each, and the north pole is last; the atlas UV helper relies
+    # on exactly this layout. `orientation` (last, so positional callers in
+    # the sibling generators keep working) turns the local Z axis of the
+    # ellipsoid onto another direction; the unrotated arithmetic is left
+    # untouched so every existing design keeps its signature to the bit.
     center_vector = v(center)
     radius_vector = v(radii)
-    vertices = [center_vector + Vector((0, 0, -radius_vector.z))]
+
+    def place(offset: Vector) -> Vector:
+        if orientation is None:
+            return center_vector + offset
+        return center_vector + orientation @ offset
+
+    vertices = [place(Vector((0, 0, -radius_vector.z)))]
     for ring in range(1, rings):
         phi = -math.pi * 0.5 + math.pi * ring / rings
         for segment in range(segments):
             theta = 2.0 * math.pi * segment / segments
             vertices.append(
-                center_vector
-                + Vector(
-                    (
-                        radius_vector.x * math.cos(phi) * math.cos(theta),
-                        radius_vector.y * math.cos(phi) * math.sin(theta),
-                        radius_vector.z * math.sin(phi),
+                place(
+                    Vector(
+                        (
+                            radius_vector.x * math.cos(phi) * math.cos(theta),
+                            radius_vector.y * math.cos(phi) * math.sin(theta),
+                            radius_vector.z * math.sin(phi),
+                        )
                     )
                 )
             )
     top_index = len(vertices)
-    vertices.append(center_vector + Vector((0, 0, radius_vector.z)))
+    vertices.append(place(Vector((0, 0, radius_vector.z))))
     faces: list[tuple[int, ...]] = []
     for segment in range(segments):
         next_segment = (segment + 1) % segments
@@ -1178,8 +1342,12 @@ def combine_geometry(*items):
 
 
 class PedestrianBuilder:
-    def __init__(self, spec: ArchetypeSpec):
+    def __init__(self, spec: ArchetypeSpec, atlas_path: Path | None = None):
         self.spec = spec
+        # Where the painted detail atlas lives, for the review render only:
+        # the Unity side binds the texture through the prefab, never through
+        # the FBX material.
+        self.atlas_path = atlas_path
         self.result: BuildResult | None = None
 
     def build(self) -> BuildResult:
@@ -1193,6 +1361,8 @@ class PedestrianBuilder:
         pedestrian.children.link(presentation)
 
         material = self.create_shared_material()
+        if self.spec.texture_atlas is not None:
+            self.attach_preview_atlas(material)
         root = bpy.data.objects.new("ROOT_Player", None)
         export_collection.objects.link(root)
         root.empty_display_type = "PLAIN_AXES"
@@ -1339,6 +1509,91 @@ class PedestrianBuilder:
         material["bp_runtime_material"] = "Assets/Player3D/Materials/Player3DLit.mat"
         material["bp_emissive"] = False
         return material
+
+    def attach_preview_atlas(self, material: bpy.types.Material) -> None:
+        """Multiply the object colour by the detail atlas in the review render.
+
+        A separate step rather than a parameter of `create_shared_material`:
+        three sibling generators override that zero-argument factory. The
+        Image Texture samples with Closest/CLIP exactly like the Unity
+        import (Point/Clamp), so what the preview shows is what the game
+        draws; parts without UV0 fall on texel (0, 0), the reserved white
+        cell, and stay flat colour. Nothing here reaches the FBX material
+        contract - Unity imports no materials from these files.
+        """
+
+        if self.atlas_path is None or not self.atlas_path.is_file():
+            return
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+        shader = next(node for node in nodes if node.type == "BSDF_PRINCIPLED")
+        object_info = next(node for node in nodes if node.type == "OBJECT_INFO")
+        image = bpy.data.images.load(str(self.atlas_path))
+        image.name = f"IMG_{self.spec.model_name}DetailAtlas"
+        image.pack()
+        texture = nodes.new("ShaderNodeTexImage")
+        texture.image = image
+        texture.interpolation = "Closest"
+        texture.extension = "CLIP"
+        mix = nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        mix.blend_type = "MULTIPLY"
+        factor = next(
+            socket for socket in mix.inputs if socket.identifier == "Factor_Float"
+        )
+        factor.default_value = 1.0
+        color_a = next(socket for socket in mix.inputs if socket.identifier == "A_Color")
+        color_b = next(socket for socket in mix.inputs if socket.identifier == "B_Color")
+        result = next(
+            socket for socket in mix.outputs if socket.identifier == "Result_Color"
+        )
+        for link in list(links):
+            if link.to_socket == shader.inputs["Base Color"]:
+                links.remove(link)
+        links.new(object_info.outputs["Color"], color_a)
+        links.new(texture.outputs["Color"], color_b)
+        links.new(result, shader.inputs["Base Color"])
+        material["bp_detail_atlas"] = self.spec.texture_atlas
+
+    def assign_atlas_uvs(self) -> None:
+        """Lay every declared region's part into its atlas sub-rect.
+
+        Called once the whole design exists and the depsgraph has been
+        updated, because the box panel layout reads world-space vertices.
+        """
+
+        if self.result is None:
+            raise RuntimeError("Build has not been initialized")
+        parts_by_name = {part.obj.name: part for part in self.result.parts}
+        for region in self.spec.texture_regions:
+            part = parts_by_name.get(region.renderer)
+            if part is None:
+                raise RuntimeError(
+                    f"Atlas region {region.name} names a missing part {region.renderer}"
+                )
+            rect_uv = atlas_kit.uv_rect_normalized(
+                region.x, region.y, region.width, region.height,
+                DETAIL_ATLAS_SIZE, DETAIL_ATLAS_UV_INSET_PX,
+            )
+            if region.kind == "ring":
+                atlas_kit.assign_ring_strip_uv(
+                    part.obj, rect_uv, region.sides, region.rings,
+                    region.name, DETAIL_ATLAS_REGION_PROP,
+                )
+            elif region.kind == "ellipsoid":
+                atlas_kit.assign_ellipsoid_strip_uv(
+                    part.obj, rect_uv, region.sides, region.rings,
+                    region.name, DETAIL_ATLAS_REGION_PROP,
+                )
+            elif region.kind == "box":
+                atlas_kit.assign_box_panel_uv(
+                    part.obj, region.rect_px, DETAIL_ATLAS_SIZE,
+                    region.name, DETAIL_ATLAS_REGION_PROP,
+                )
+            else:
+                raise RuntimeError(
+                    f"Atlas region {region.name} has unknown layout {region.kind!r}"
+                )
 
     @staticmethod
     def create_armature(
@@ -2449,28 +2704,32 @@ class PedestrianBuilder:
 
         # Small head sunk into the shoulders. It rides 0.13 m below the head
         # bone so the kettle can cap the silhouette while the face stays
-        # visible beneath the tilted rim.
+        # visible beneath the tilted rim. Denser than the other walkers'
+        # heads because he is the one design carrying a Hero V2 budget.
         self.add_part(
             "GEO_Head",
-            make_ellipsoid((0, -0.030, 1.330), (0.142, 0.134, 0.124), 12, 6),
+            make_ellipsoid((0, -0.030, 1.330), (0.142, 0.134, 0.124), 16, 8),
             "head", "body", "skin",
         )
         self.add_part(
             "GEO_Neck",
-            make_frustum_between((0, -0.012, 1.185), (0, -0.022, 1.275), 0.105, 0.098, 10),
+            make_frustum_between((0, -0.012, 1.185), (0, -0.022, 1.275), 0.105, 0.098, 12),
             "neck", "body", "stout_coat_dark",
         )
+        # A rounded ribcage instead of the old slab; same footprint as the
+        # tapered box it replaces, so the collar and lapels still meet it.
         self.add_part(
             "GEO_Torso",
-            make_tapered_box((0, -0.010, 1.000), (0, -0.016, 1.285), (0.400, 0.310, 0), (0.355, 0.275, 0)),
+            make_frustum_between((0, -0.010, 1.000), (0, -0.016, 1.285), 0.200, 0.178, 14, 0.78),
             "chest", "body", "stout_coat_dark",
         )
         # The signature mass. It is parented to the pelvis so it leads the
         # waddle while the kettle counter-swings on the head. Nothing else in
-        # the silhouette is allowed to be wider.
+        # the silhouette is allowed to be wider. Only its ring count moved:
+        # centre and radii are what the shared seated clips are grounded on.
         self.add_part(
             "GEO_Belly",
-            make_ellipsoid((0, -0.070, 0.815), (0.350, 0.315, 0.265), 14, 7),
+            make_ellipsoid((0, -0.070, 0.815), (0.350, 0.315, 0.265), 18, 9),
             "pelvis", "signature_silhouette", "stout_coat",
         )
         # Structural hips only: deliberately narrower and shorter than the
@@ -2481,48 +2740,69 @@ class PedestrianBuilder:
             "pelvis", "body", "stout_coat_dark",
         )
 
-        limb_points = {
-            "L": ((0.208, -0.004, 1.292), (0.470, -0.010, 1.175)),
-            "R": ((-0.208, 0.004, 1.292), (-0.470, -0.010, 1.175)),
-        }
         leg_points = {
             "L": ((0.083, 0.012, 0.750), (0.103, -0.012, 0.354), (0.112, -0.026, 0.095)),
             "R": ((-0.083, -0.004, 0.750), (-0.103, 0.012, 0.354), (-0.112, 0.018, 0.095)),
         }
         for side in ("L", "R"):
-            shoulder, elbow = limb_points[side]
             hip, knee, ankle = leg_points[side]
             sign = 1.0 if side == "L" else -1.0
-            # Stubby arms: each visible segment covers only part of its bone,
-            # so the arms read as tiny without leaving their own pivots.
-            forearm_start = (sign * 0.352, -0.007, 1.223)
-            forearm_end = (sign * 0.512, -0.014, 1.166)
+            # Sleeves run the whole bone now, shoulder to wrist, so the coat
+            # ends in a cuff at a real wrist instead of stopping mid-forearm
+            # with a glove floating past it. The arms still read short: the
+            # body is short, not the bones.
+            shoulder = v(LEGACY_BONE_BY_NAME[f"upper_arm.{side}"].head)
+            elbow = v(LEGACY_BONE_BY_NAME[f"forearm.{side}"].head)
+            wrist = v(LEGACY_BONE_BY_NAME[f"hand.{side}"].head)
+            hand_tail = v(LEGACY_BONE_BY_NAME[f"hand.{side}"].tail)
+            hand_axis = (hand_tail - wrist).normalized()
             self.add_part(
                 f"GEO_UpperArm.{side}",
-                make_frustum_between(shoulder, forearm_start, 0.084, 0.074, 10),
+                make_frustum_between(shoulder, elbow, 0.084, 0.076, 12),
                 f"upper_arm.{side}", "body", "stout_coat",
             )
             self.add_part(
                 f"GEO_Forearm.{side}",
-                make_frustum_between(forearm_start, forearm_end, 0.072, 0.062, 10),
+                make_frustum_between(elbow, wrist, 0.074, 0.060, 12),
                 f"forearm.{side}", "body",
                 "stout_coat_light" if side == "L" else "stout_coat",
             )
+            # Hero V2 hands: a palm ellipsoid laid along the hand bone, a
+            # thumb frustum leaving it forward and down, and a flat finger
+            # block whose grooves live in the atlas rather than in geometry.
             self.add_part(
                 f"GEO_Hand.{side}",
-                make_ellipsoid((sign * 0.572, -0.017, 1.138), (0.054, 0.044, 0.056), 8, 4),
-                f"hand.{side}", "body", "glove",
+                make_ellipsoid(
+                    (wrist + hand_tail) * 0.5, (0.048, 0.035, 0.066), 8, 4,
+                    orientation=(hand_tail - wrist).to_track_quat("Z", "Y"),
+                ),
+                f"hand.{side}", "body", "stout_hand_skin",
+            )
+            thumb_start = wrist.lerp(hand_tail, 0.25) + Vector((0, -0.030, 0))
+            thumb_end = wrist.lerp(hand_tail, 0.55) + Vector((0, -0.054, -0.012))
+            self.add_part(
+                f"GEO_Thumb.{side}",
+                make_frustum_between(thumb_start, thumb_end, 0.020, 0.014, 6),
+                f"hand.{side}", "body", "stout_hand_skin",
+            )
+            self.add_part(
+                f"GEO_Fingers.{side}",
+                make_frustum_between(
+                    wrist.lerp(hand_tail, 0.62), hand_tail + hand_axis * 0.045,
+                    0.038, 0.030, 4, 0.55,
+                ),
+                f"hand.{side}", "body", "stout_hand_skin",
             )
             # Thick, closely spaced legs. Only the band between the coat hem
             # and the boot top stays visible.
             self.add_part(
                 f"GEO_Thigh.{side}",
-                make_frustum_between(hip, knee, 0.118, 0.102, 12),
+                make_frustum_between(hip, knee, 0.118, 0.102, 14),
                 f"thigh.{side}", "body", "stout_trousers",
             )
             self.add_part(
                 f"GEO_Shin.{side}",
-                make_frustum_between(knee, ankle, 0.100, 0.086, 12),
+                make_frustum_between(knee, ankle, 0.100, 0.086, 14),
                 f"shin.{side}", "body", "stout_trousers",
             )
             x = sign * 0.112
@@ -2534,7 +2814,8 @@ class PedestrianBuilder:
 
     def build_kettle_hat_details(self) -> None:
         # Grounded soles under the supported ShoeSole.L/R naming; these two
-        # boxes own the exact z=0 contact for the whole silhouette.
+        # boxes own the exact z=0 contact for the whole silhouette, and the
+        # toe caps in front of them share that exact z=0 base.
         for side in ("L", "R"):
             x = 0.112 if side == "L" else -0.112
             self.add_part(
@@ -2542,16 +2823,63 @@ class PedestrianBuilder:
                 make_box((x, -0.088, 0.013), (0.222, 0.296, 0.026)),
                 f"foot.{side}", "footwear_detail", "sole",
             )
+            # Heavy boots: a rounded-off toe cap ahead of the box and a heel
+            # counter behind it, both above the sole so the sole keeps the
+            # ground and both overlapping the foot so nothing floats. The
+            # foot remap scales X by 0.94 and Y by ~0.93 around the ankle,
+            # which these overlaps are authored to survive.
+            self.add_part(
+                f"ACC_BootToeCap.{side}",
+                make_tapered_box(
+                    (x, -0.262, 0.0), (x, -0.226, 0.112),
+                    (0.205, 0.078, 0), (0.150, 0.056, 0),
+                ),
+                f"foot.{side}", "footwear_detail", "leather",
+            )
+            self.add_part(
+                f"ACC_BootHeel.{side}",
+                make_box((x, 0.076, 0.080), (0.180, 0.052, 0.100)),
+                f"foot.{side}", "footwear_detail", "leather",
+            )
 
         # A short coat that ends in a flared ring under the belly, so the
         # tiny legs read against a round overhang rather than a flat slab.
         # The hem tapers downward with the belly instead of flaring past it,
-        # which would read as a plate rather than cloth.
+        # which would read as a plate rather than cloth. Radii and heights
+        # are untouched: the seated clips are grounded on them.
         self.add_part(
             "CLO_CoatHem",
-            make_frustum_between((0, -0.070, 0.650), (0, -0.070, 0.572), 0.288, 0.212, 14, 0.90),
+            make_frustum_between((0, -0.070, 0.650), (0, -0.070, 0.572), 0.288, 0.212, 18, 0.90),
             "pelvis", "clothing", "stout_coat_dark",
         )
+        # Cuffs at the wrist end of each sleeve, always a shade off the
+        # sleeve they end (the left sleeve is the light one, so its cuff is
+        # the dark one); the atlas draws their stitch. On the forearm bone
+        # so they turn with the sleeve, not with the hand.
+        for side in ("L", "R"):
+            elbow = v(LEGACY_BONE_BY_NAME[f"forearm.{side}"].head)
+            wrist = v(LEGACY_BONE_BY_NAME[f"hand.{side}"].head)
+            forearm_axis = (wrist - elbow).normalized()
+            self.add_part(
+                f"ACC_CoatCuff.{side}",
+                make_frustum_between(
+                    wrist - forearm_axis * 0.035, wrist + forearm_axis * 0.010,
+                    0.068, 0.072, 10,
+                ),
+                f"forearm.{side}", "clothing_detail",
+                "stout_coat" if side == "L" else "stout_coat_light",
+            )
+        # Lapels: two wedges climbing from the placket to the collar, on the
+        # chest bone with the torso they lie on.
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_CoatLapel.{side}",
+                make_tapered_box(
+                    (sign * 0.050, -0.172, 1.105), (sign * 0.110, -0.166, 1.225),
+                    (0.055, 0.036, 0), (0.090, 0.036, 0),
+                ),
+                "chest", "clothing_detail", "stout_coat_light",
+            )
         self.add_part(
             "CLO_CoatSeam",
             make_tapered_box((0.012, -0.352, 0.660), (0.008, -0.318, 1.020), (0.062, 0.055, 0), (0.070, 0.055, 0)),
@@ -2602,42 +2930,47 @@ class PedestrianBuilder:
         # and the tall handle arc carries the rest of the envelope. The tilt
         # drops the rim past the character's left temple while the front rim
         # still clears both eyes.
+        # The enamel chips that used to be two boxes glued to the body are
+        # painted into the KettleBody atlas region at the same two spots.
         self.add_part(
             "ACC_KettleBody",
-            make_frustum_between((0.050, 0.024, 1.430), (0.005, -0.002, 1.585), 0.335, 0.270, 14, 0.94),
+            make_frustum_between((0.050, 0.024, 1.430), (0.005, -0.002, 1.585), 0.335, 0.270, 18, 0.94),
             "head", "signature_silhouette", "kettle_enamel",
         )
         self.add_part(
             "ACC_KettleRimBand",
-            make_frustum_between((0.053, 0.026, 1.421), (0.046, 0.022, 1.453), 0.343, 0.339, 14, 0.94),
+            make_frustum_between((0.053, 0.026, 1.421), (0.046, 0.022, 1.453), 0.343, 0.339, 18, 0.94),
             "head", "signature_silhouette", "kettle_enamel_dark",
         )
         self.add_part(
             "ACC_KettleShoulder",
-            make_frustum_between((0.005, -0.002, 1.583), (-0.004, -0.007, 1.618), 0.268, 0.175, 14, 0.94),
+            make_frustum_between((0.005, -0.002, 1.583), (-0.004, -0.007, 1.618), 0.268, 0.175, 18, 0.94),
             "head", "signature_silhouette", "kettle_enamel",
         )
+        # Lid and knob: the two parts the runtime lid pivot takes over, so
+        # they rattle together when the kettle boils.
         self.add_part(
             "ACC_KettleLid",
-            make_frustum_between((-0.004, -0.007, 1.615), (-0.010, -0.010, 1.646), 0.180, 0.138, 12, 0.94),
+            make_frustum_between((-0.004, -0.007, 1.615), (-0.010, -0.010, 1.646), 0.180, 0.138, 16, 0.94),
             "head", "signature_silhouette", "kettle_enamel_dark",
         )
         self.add_part(
             "ACC_KettleKnob",
-            make_ellipsoid((-0.012, -0.011, 1.656), (0.046, 0.044, 0.030), 8, 4),
+            make_ellipsoid((-0.012, -0.011, 1.656), (0.046, 0.044, 0.030), 10, 5),
             "head", "surface_detail", "kettle_metal",
         )
         # Spout. It reaches mostly sideways rather than forward so it stays a
         # readable profile from the orbiting chase camera instead of pointing
         # at it; this is the detail that separates a kettle from a lampshade.
+        # The tip is where the steam anchor goes.
         self.add_part(
             "ACC_KettleSpout",
-            make_frustum_between((0.255, -0.105, 1.448), (0.442, -0.190, 1.548), 0.082, 0.052, 10, 0.92),
+            make_frustum_between((0.255, -0.105, 1.448), (0.442, -0.190, 1.548), 0.082, 0.052, 12, 0.92),
             "head", "signature_silhouette", "kettle_enamel",
         )
         self.add_part(
             "ACC_KettleSpoutTip",
-            make_frustum_between((0.442, -0.190, 1.548), (0.486, -0.212, 1.606), 0.052, 0.040, 8, 0.92),
+            make_frustum_between((0.442, -0.190, 1.548), (0.486, -0.212, 1.606), 0.052, 0.040, 10, 0.92),
             "head", "surface_detail", "kettle_enamel_dark",
         )
         # Handle arc. The flat top bar owns the exact 1.75 m envelope.
@@ -2652,14 +2985,11 @@ class PedestrianBuilder:
             make_box((-0.008, 0.000, 1.7275), (0.330, 0.054, 0.045)),
             "head", "signature_silhouette", "kettle_metal",
         )
-        for index, (x, y, z) in enumerate(
-            ((0.216, -0.216, 1.516), (-0.196, -0.238, 1.470)), start=1
-        ):
-            self.add_part(
-                f"ACC_KettleChip.{index:02d}",
-                make_box((x, y, z), (0.070, 0.048, 0.056)),
-                "head", "surface_detail", "kettle_chip",
-            )
+
+        # UV0 last, once every part exists: the box panel layout reads
+        # world-space vertices, so the depsgraph must know the parents.
+        bpy.context.view_layer.update()
+        self.assign_atlas_uvs()
 
     def build_long_arm_body(self) -> None:
         """Build a narrow tall body whose forearms reach the pavement.
@@ -5448,7 +5778,287 @@ def stable_float(value: float) -> float:
     return 0.0 if rounded == -0.0 else rounded
 
 
-def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> ValidationReport:
+def paint_kettle_hat_detail_atlas() -> atlas_kit.PixelCanvas:
+    """Paint the Kettle Hat Walker's detail atlas into a canvas.
+
+    Pure white ground, alpha 255 everywhere, pale greys for cloth detail and
+    one dark grey for the enamel chips. Every region's bottom-left corner is
+    left plain: the ring strip folds a frustum's caps there, and the lid's
+    top cap is in plain view. Coordinates are bottom-left pixels.
+    """
+
+    canvas = atlas_kit.PixelCanvas(DETAIL_ATLAS_SIZE, DETAIL_ATLAS_SIZE)
+    canvas.rect(0, 0, canvas.width, canvas.height, DETAIL_ATLAS_WHITE)
+    regions = {region.name: region for region in KETTLE_ATLAS_REGIONS}
+    rect = atlas_kit.atlas_rect_bottom_left
+    line = atlas_kit.atlas_line_bottom_left
+
+    # Finger blocks: a 4-station strip, 31 px per face. Three grooves per
+    # face split it into four fingers, and a knuckle dot heads each finger
+    # where the block leaves the palm (v ~ 0.3 along the block).
+    for name in ("FingerGrooves.L", "FingerGrooves.R"):
+        region = regions[name]
+        face_width = region.width // 4
+        for face in range(4):
+            face_x = region.x + face * face_width
+            for groove in (1, 2, 3):
+                groove_x = face_x + groove * face_width // 4
+                line(canvas, groove_x, region.y + 20, groove_x, region.y + 60, DETAIL_ATLAS_GROOVE, 2)
+            for finger in range(4):
+                dot_x = face_x + finger * face_width // 4 + face_width // 8
+                rect(canvas, dot_x - 1, region.y + 18, dot_x + 2, region.y + 21, DETAIL_ATLAS_GROOVE)
+
+    # Kettle body: the two chips where the old ACC_KettleChip boxes sat
+    # (u 0.84 / v 0.55 and u 0.64 / v 0.26 of the strip) and a wear band
+    # just above the rim.
+    region = regions["KettleBody"]
+    rect(canvas, region.x + 10, region.y + 5, region.x + region.width, region.y + 8, DETAIL_ATLAS_WEAR)
+    for chip_x, chip_y, chip_w, chip_h in ((105, 34, 9, 7), (79, 16, 8, 6)):
+        rect(
+            canvas,
+            region.x + chip_x, region.y + chip_y,
+            region.x + chip_x + chip_w, region.y + chip_y + chip_h,
+            DETAIL_ATLAS_CHIP,
+        )
+        rect(
+            canvas,
+            region.x + chip_x + 2, region.y + chip_y + chip_h,
+            region.x + chip_x + chip_w - 3, region.y + chip_y + chip_h + 2,
+            DETAIL_ATLAS_CHIP,
+        )
+        rect(
+            canvas,
+            region.x + chip_x - 1, region.y + chip_y - 1,
+            region.x + chip_x + chip_w + 1, region.y + chip_y + chip_h + 3,
+            DETAIL_ATLAS_WEAR,
+        )
+        rect(
+            canvas,
+            region.x + chip_x, region.y + chip_y,
+            region.x + chip_x + chip_w, region.y + chip_y + chip_h,
+            DETAIL_ATLAS_CHIP,
+        )
+
+    # Cuffs: a fold line a third of the way up and a dotted stitch near the
+    # open end.
+    for name in ("Cuff.L", "Cuff.R"):
+        region = regions[name]
+        line(canvas, region.x + 8, region.y + 22, region.x + region.width - 2, region.y + 22, DETAIL_ATLAS_WEAR, 2)
+        for stitch_x in range(region.x + 8, region.x + region.width - 2, 4):
+            rect(canvas, stitch_x, region.y + 52, stitch_x + 2, region.y + 54, DETAIL_ATLAS_SEAM)
+
+    # Torso: the front is at u 0.75 of the strip. A placket down the middle
+    # and two patch pockets either side of it.
+    region = regions["Torso"]
+    front_x = region.x + region.width * 3 // 4
+    line(canvas, front_x, region.y + 6, front_x, region.y + 60, DETAIL_ATLAS_SEAM, 2)
+    for pocket_x in (front_x - 12, front_x + 6):
+        rect(canvas, pocket_x, region.y + 18, pocket_x + 8, region.y + 30, DETAIL_ATLAS_SEAM)
+        rect(canvas, pocket_x + 1, region.y + 19, pocket_x + 7, region.y + 29, DETAIL_ATLAS_WHITE)
+        line(canvas, pocket_x, region.y + 30, pocket_x + 7, region.y + 30, DETAIL_ATLAS_WEAR)
+
+    # Belly: the button line runs down the front of the ellipsoid strip and
+    # tension folds fan away from it where the coat pulls.
+    region = regions["Belly"]
+    front_x = region.x + region.width * 3 // 4
+    line(canvas, front_x, region.y + 14, front_x, region.y + 58, DETAIL_ATLAS_SEAM, 2)
+    for fold_y in (26, 38, 50):
+        line(canvas, front_x - 2, region.y + fold_y, front_x - 11, region.y + fold_y - 4, DETAIL_ATLAS_WEAR, 2)
+        line(canvas, front_x + 2, region.y + fold_y, front_x + 11, region.y + fold_y - 4, DETAIL_ATLAS_WEAR, 2)
+
+    # Kettle shoulder and lid: a ring of wear where the enamel rubs.
+    region = regions["KettleShoulder"]
+    rect(canvas, region.x + 8, region.y + 10, region.x + region.width, region.y + 13, DETAIL_ATLAS_WEAR)
+    region = regions["KettleLid"]
+    rect(canvas, region.x + 8, region.y + 6, region.x + region.width, region.y + 10, DETAIL_ATLAS_WEAR)
+    rect(canvas, region.x + 24, region.y + 6, region.x + 30, region.y + 10, DETAIL_ATLAS_SEAM)
+
+    # Boots: the left half of a box region is the side panel (u back to
+    # front, v sole to ankle), the right half the front/top/sole panel (u
+    # across, v back to toe). Laces and eyelets go on the top, a scuff on
+    # the toe, a heel seam on the side.
+    for name in ("Boot.L", "Boot.R"):
+        region = regions[name]
+        side_x = region.x
+        top_x = region.x + region.width // 2
+        line(canvas, side_x + 8, region.y + 4, side_x + 8, region.y + 56, DETAIL_ATLAS_SEAM)
+        rect(canvas, side_x + 24, region.y + 6, side_x + 31, region.y + 22, DETAIL_ATLAS_WEAR)
+        line(canvas, side_x + 3, region.y + 46, side_x + 30, region.y + 46, DETAIL_ATLAS_WEAR, 2)
+        for lace_y in range(region.y + 22, region.y + 50, 7):
+            rect(canvas, top_x + 9, lace_y, top_x + 12, lace_y + 3, DETAIL_ATLAS_LACE)
+            rect(canvas, top_x + 20, lace_y, top_x + 23, lace_y + 3, DETAIL_ATLAS_LACE)
+            line(canvas, top_x + 11, lace_y + 1, top_x + 21, lace_y + 5, DETAIL_ATLAS_LACE)
+            line(canvas, top_x + 21, lace_y + 1, top_x + 11, lace_y + 5, DETAIL_ATLAS_LACE)
+        rect(canvas, top_x + 3, region.y + 55, top_x + 30, region.y + 60, DETAIL_ATLAS_WEAR)
+        line(canvas, top_x + 4, region.y + 18, top_x + 28, region.y + 18, DETAIL_ATLAS_SEAM, 2)
+
+    # Coat hem: v runs top of the hem to the bottom edge. A stitch along the
+    # edge, a fold half way, and the placket line down the front.
+    region = regions["CoatHem"]
+    front_x = region.x + region.width * 3 // 4
+    line(canvas, front_x, region.y + 6, front_x, region.y + 58, DETAIL_ATLAS_SEAM, 2)
+    for stitch_x in range(region.x + 8, region.x + region.width - 2, 4):
+        rect(canvas, stitch_x, region.y + 54, stitch_x + 2, region.y + 56, DETAIL_ATLAS_SEAM)
+    line(canvas, region.x + 8, region.y + 30, region.x + region.width - 2, region.y + 30, DETAIL_ATLAS_WEAR)
+    return canvas
+
+
+DETAIL_ATLAS_PAINTERS = {
+    KETTLE_DETAIL_ATLAS_NAME: paint_kettle_hat_detail_atlas,
+}
+
+
+def atlas_report_from_canvas(canvas: atlas_kit.PixelCanvas, path: Path) -> AtlasReport:
+    payload = canvas.png_bytes()
+    width, height, pixels = atlas_kit.decode_generated_png(payload, str(path))
+    return AtlasReport(
+        path,
+        hashlib.sha256(payload).hexdigest(),
+        width,
+        height,
+        pixels,
+    )
+
+
+def paint_detail_atlas(spec: ArchetypeSpec, path: Path) -> AtlasReport:
+    """Paint a design's atlas into memory; nothing touches the disk."""
+
+    if spec.texture_atlas is None:
+        raise RuntimeError(f"{spec.design_id} declares no detail atlas")
+    painter = DETAIL_ATLAS_PAINTERS.get(spec.texture_atlas)
+    if painter is None:
+        raise RuntimeError(f"No painter is registered for {spec.texture_atlas}")
+    return atlas_report_from_canvas(painter(), path)
+
+
+def build_detail_atlas(spec: ArchetypeSpec, path: Path) -> AtlasReport:
+    """Paint and write a design's atlas, returning what was written."""
+
+    report = paint_detail_atlas(spec, path)
+    DETAIL_ATLAS_PAINTERS[spec.texture_atlas]().write_png(path)
+    written = hashlib.sha256(path.read_bytes()).hexdigest()
+    if written != report.sha256:
+        raise RuntimeError(
+            f"Detail atlas {path} hashes {written} on disk but {report.sha256} in memory"
+        )
+    return report
+
+
+def validate_detail_atlas(
+    archetype: ArchetypeSpec,
+    result: BuildResult,
+    atlas: AtlasReport | None,
+    errors: list[str],
+) -> None:
+    """The atlas half of `validate_result`: UVs, regions and the PNG itself."""
+
+    if archetype.texture_atlas is None and not archetype.texture_regions:
+        if atlas is not None:
+            errors.append(f"{archetype.design_id} received an atlas it never declared")
+        return
+    if archetype.texture_atlas is None or not archetype.texture_regions:
+        errors.append("A detail atlas needs both a file name and at least one region")
+        return
+
+    occupied: list[tuple[int, int, int, int]] = []
+    reserved_x, reserved_y, reserved_w, reserved_h = DETAIL_ATLAS_RESERVED_CELL
+    for region in archetype.texture_regions:
+        if (
+            region.x < 0 or region.y < 0
+            or region.x + region.width > DETAIL_ATLAS_SIZE
+            or region.y + region.height > DETAIL_ATLAS_SIZE
+        ):
+            errors.append(f"Atlas region {region.name} leaves the {DETAIL_ATLAS_SIZE} px atlas")
+        for other in occupied:
+            if (
+                region.x < other[0] + other[2] and other[0] < region.x + region.width
+                and region.y < other[1] + other[3] and other[1] < region.y + region.height
+            ):
+                errors.append(f"Atlas region {region.name} overlaps another region")
+        if (
+            region.x < reserved_x + reserved_w and reserved_x < region.x + region.width
+            and region.y < reserved_y + reserved_h and reserved_y < region.y + region.height
+        ):
+            errors.append(f"Atlas region {region.name} overlaps the reserved white cell")
+        occupied.append(region.rect_px)
+
+    parts_by_name = {part.obj.name: part for part in result.parts}
+    textured = {region.renderer for region in archetype.texture_regions}
+    for region in archetype.texture_regions:
+        part = parts_by_name.get(region.renderer)
+        if part is None:
+            errors.append(f"Atlas region {region.name} names a missing part {region.renderer}")
+            continue
+        obj = part.obj
+        if obj.get(DETAIL_ATLAS_REGION_PROP) != region.name:
+            errors.append(f"{obj.name} lost atlas region metadata {region.name}")
+        uv_layer = obj.data.uv_layers.get(DETAIL_ATLAS_UV_LAYER)
+        if uv_layer is None or not uv_layer.data:
+            errors.append(f"{obj.name} has no detail atlas UV0")
+            continue
+        inset_min_u = (region.x + DETAIL_ATLAS_UV_INSET_PX) / DETAIL_ATLAS_SIZE
+        inset_min_v = (region.y + DETAIL_ATLAS_UV_INSET_PX) / DETAIL_ATLAS_SIZE
+        inset_max_u = (region.x + region.width - DETAIL_ATLAS_UV_INSET_PX) / DETAIL_ATLAS_SIZE
+        inset_max_v = (region.y + region.height - DETAIL_ATLAS_UV_INSET_PX) / DETAIL_ATLAS_SIZE
+        values = [loop.uv for loop in uv_layer.data]
+        if (
+            min(value.x for value in values) < inset_min_u - 1e-6
+            or max(value.x for value in values) > inset_max_u + 1e-6
+            or min(value.y for value in values) < inset_min_v - 1e-6
+            or max(value.y for value in values) > inset_max_v + 1e-6
+        ):
+            errors.append(
+                f"{obj.name} UV0 escapes the {DETAIL_ATLAS_UV_INSET_PX} px inset of {region.name}"
+            )
+    for part in result.parts:
+        if part.obj.name not in textured and part.obj.data.uv_layers:
+            errors.append(f"{part.obj.name} carries a UV layer without an atlas region")
+
+    if atlas is None:
+        errors.append(f"{archetype.design_id} declares {archetype.texture_atlas} but no atlas was painted")
+        return
+    if atlas.path.name != archetype.texture_atlas:
+        errors.append(f"Atlas {atlas.path.name} is not the declared {archetype.texture_atlas}")
+    if (atlas.width, atlas.height) != (DETAIL_ATLAS_SIZE, DETAIL_ATLAS_SIZE):
+        errors.append(
+            f"Detail atlas must be {DETAIL_ATLAS_SIZE}x{DETAIL_ATLAS_SIZE}, "
+            f"got {atlas.width}x{atlas.height}"
+        )
+        return
+    if any(atlas.pixels[offset] != 255 for offset in range(3, len(atlas.pixels), 4)):
+        errors.append("Detail atlas must be fully opaque (alpha 255 everywhere)")
+    reserved_pixels = reserved_w * reserved_h
+    if (
+        atlas_kit.count_rect_color(
+            atlas.pixels, atlas.width, atlas.height,
+            DETAIL_ATLAS_RESERVED_CELL, {DETAIL_ATLAS_WHITE},
+        )
+        != reserved_pixels
+    ):
+        errors.append("The reserved atlas cell at (0, 0) must stay pure white")
+    if archetype.texture_atlas == KETTLE_DETAIL_ATLAS_NAME:
+        regions = {region.name: region for region in archetype.texture_regions}
+
+        def painted(name: str, color: tuple[int, int, int, int]) -> int:
+            return atlas_kit.count_rect_color(
+                atlas.pixels, atlas.width, atlas.height, regions[name].rect_px, {color},
+            )
+
+        if painted("KettleBody", DETAIL_ATLAS_CHIP) < 60:
+            errors.append("KettleBody region needs its two painted enamel chips")
+        for name in ("FingerGrooves.L", "FingerGrooves.R"):
+            if painted(name, DETAIL_ATLAS_GROOVE) < 200:
+                errors.append(f"{name} region needs painted finger grooves")
+        for name in ("Boot.L", "Boot.R"):
+            if painted(name, DETAIL_ATLAS_LACE) < 40:
+                errors.append(f"{name} region needs painted laces and eyelets")
+
+
+def validate_result(
+    result: BuildResult,
+    archetype: ArchetypeSpec,
+    atlas: AtlasReport | None = None,
+) -> ValidationReport:
     # Parenting and armature setup are data-API operations; force the depsgraph
     # once before reading object matrices for deterministic source bounds.
     bpy.context.view_layer.update()
@@ -5524,28 +6134,48 @@ def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> Validation
                 head_vertices.append(world_vertex)
         triangles = triangulated_count(mesh)
         triangle_count += triangles
-        signature_parts.append(
-            {
-                "name": obj.name,
-                "bone": part.bone,
-                "role": part.role,
-                "palette_name": part.palette_name,
-                "color": [stable_float(component) for component in part.color],
-                "vertices": [
-                    [stable_float(component) for component in (obj.matrix_world @ vertex.co)]
-                    for vertex in mesh.vertices
-                ],
-                "triangles": triangles,
-            }
-        )
+        signature_part = {
+            "name": obj.name,
+            "bone": part.bone,
+            "role": part.role,
+            "palette_name": part.palette_name,
+            "color": [stable_float(component) for component in part.color],
+            "vertices": [
+                [stable_float(component) for component in (obj.matrix_world @ vertex.co)]
+                for vertex in mesh.vertices
+            ],
+            "triangles": triangles,
+        }
+        # Atlas keys only on parts that carry one, so every untextured
+        # design keeps its signature byte for byte.
+        atlas_region = obj.get(DETAIL_ATLAS_REGION_PROP)
+        uv_layer = mesh.uv_layers.get(DETAIL_ATLAS_UV_LAYER)
+        if atlas_region is not None:
+            signature_part["atlas_region"] = str(atlas_region)
+        if uv_layer is not None and uv_layer.data:
+            signature_part["uv_sha256"] = hashlib.sha256(
+                json.dumps(
+                    [
+                        [stable_float(loop.uv.x), stable_float(loop.uv.y)]
+                        for loop in uv_layer.data
+                    ],
+                    separators=(",", ":"),
+                ).encode("utf-8")
+            ).hexdigest()
+        signature_parts.append(signature_part)
+
+    validate_detail_atlas(archetype, result, atlas, errors)
 
     min_triangles, max_triangles = archetype.triangle_budget
     if not min_triangles <= triangle_count <= max_triangles:
         errors.append(
             f"Triangle budget is {triangle_count}; expected {min_triangles}-{max_triangles}"
         )
-    if mesh_count < 24 or mesh_count > 52:
-        errors.append(f"Mesh count is {mesh_count}; expected 24-52 lightweight parts")
+    if mesh_count < MIN_MESH_COUNT or mesh_count > MAX_MESH_COUNT:
+        errors.append(
+            f"Mesh count is {mesh_count}; expected "
+            f"{MIN_MESH_COUNT}-{MAX_MESH_COUNT} lightweight parts"
+        )
     if not world_vertices:
         errors.append("Pedestrian contains no mesh vertices")
         bounds_min = Vector((0, 0, 0))
@@ -5629,6 +6259,23 @@ def validate_result(result: BuildResult, archetype: ArchetypeSpec) -> Validation
         "parts": signature_parts,
         "pivots": signature_pivots,
     }
+    # Declared-only keys: absent from every design that declares nothing,
+    # so the thirteen untextured signatures do not move.
+    if archetype.texture_atlas is not None:
+        signature_payload["texture_atlas"] = archetype.texture_atlas
+    if archetype.signature_effects:
+        signature_payload["signature_effects"] = list(archetype.signature_effects)
+    if archetype.rig_anchors:
+        signature_payload["rig_anchors"] = [
+            {
+                "name": anchor.name,
+                "bone": anchor.bone,
+                "kind": anchor.kind,
+                "parts": list(anchor.parts),
+                "axis_from": anchor.axis_from,
+            }
+            for anchor in archetype.rig_anchors
+        ]
     signature = hashlib.sha256(
         json.dumps(signature_payload, sort_keys=True, separators=(",", ":")).encode("utf-8")
     ).hexdigest()
@@ -5793,13 +6440,24 @@ def save_blend(path: Path) -> None:
     bpy.ops.wm.save_as_mainfile(filepath=str(path), check_existing=False)
 
 
+def texture_asset_path(path: Path) -> str:
+    """The atlas as Unity addresses it: repo-relative with forward slashes."""
+
+    try:
+        return path.resolve().relative_to(REPO_ROOT).as_posix()
+    except ValueError:
+        return path.as_posix()
+
+
 def write_manifest(
     path: Path,
     result: BuildResult,
     report: ValidationReport,
     spec: ArchetypeSpec,
+    atlas: AtlasReport | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
+    parts_by_name = {part.obj.name: part for part in result.parts}
     payload = {
         "generator": "tools/build-city-pedestrian-3d-model.py",
         "generator_version": GENERATOR_VERSION,
@@ -5882,10 +6540,71 @@ def write_manifest(
                 "base_color": [stable_float(component) for component in part.color],
                 "vertices": len(part.obj.data.vertices),
                 "triangles": triangulated_count(part.obj.data),
+                **(
+                    {"atlas_region": str(part.obj[DETAIL_ATLAS_REGION_PROP])}
+                    if part.obj.get(DETAIL_ATLAS_REGION_PROP) is not None
+                    else {}
+                ),
             }
             for part in sorted(result.parts, key=lambda item: item.obj.name)
         ],
     }
+    # Keys present only on designs that declare them; JsonUtility on the
+    # Unity side tolerates their absence, and their absence keeps the
+    # untextured manifests byte-identical.
+    if spec.signature_effects:
+        payload["signature_effects"] = list(spec.signature_effects)
+    if spec.rig_anchors:
+        payload["rig_anchors"] = [
+            {
+                "name": anchor.name,
+                "bone": anchor.bone,
+                "kind": anchor.kind,
+                "parts": list(anchor.parts),
+                "axis_from": anchor.axis_from,
+            }
+            for anchor in spec.rig_anchors
+        ]
+    if spec.texture_atlas is not None:
+        if atlas is None:
+            raise RuntimeError(f"{spec.design_id} manifest needs its painted atlas")
+        for region in spec.texture_regions:
+            if region.renderer not in parts_by_name:
+                raise RuntimeError(f"Atlas region {region.name} names a missing part")
+        payload["texture_bindings"] = [
+            {
+                "texture_asset": texture_asset_path(atlas.path),
+                "width_px": atlas.width,
+                "height_px": atlas.height,
+                # The texture never lives in a material: the runtime binds it
+                # per renderer through the palette property block, so the
+                # one shared material stays shared.
+                "materials": [],
+                "shader_property": "_BaseMap",
+                "color_space": "sRGB",
+                "filter_mode": "Point",
+                "wrap_mode": "Clamp",
+                "mipmaps": False,
+                "compression": "Uncompressed",
+                "uv_channel": 0,
+                "uv_origin": "bottom_left",
+                "uv_safe_inset_px": DETAIL_ATLAS_UV_INSET_PX,
+                "material_tint_hex": "FFFFFF",
+                "tint_source": "renderer_palette",
+                "sha256": atlas.sha256,
+                "regions": [
+                    {
+                        "name": region.name,
+                        "renderer": region.renderer,
+                        "x_px": region.x,
+                        "y_px": region.y,
+                        "width_px": region.width,
+                        "height_px": region.height,
+                    }
+                    for region in spec.texture_regions
+                ],
+            }
+        ]
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
@@ -10282,9 +11001,17 @@ def main() -> None:
     print("CITY PEDESTRIAN ART BUILD")
     print(f"  Blender: {bpy.app.version_string}")
     reports: list[tuple[ArchetypeSpec, ValidationReport]] = []
+    atlases: dict[str, AtlasReport] = {}
     for spec in selected:
-        result = PedestrianBuilder(spec).build()
-        report = validate_result(result, spec)
+        atlas = None
+        if spec.texture_atlas is not None:
+            # Painted before the build so the review render can sample it.
+            atlas = build_detail_atlas(spec, config.texture_dir / spec.texture_atlas)
+            atlases[spec.design_id] = atlas
+        result = PedestrianBuilder(
+            spec, atlas_path=atlas.path if atlas is not None else None
+        ).build()
+        report = validate_result(result, spec, atlas)
         blend_path = config.source_dir / spec.blend_name
         model_dir = config.staged_model_dir if spec.staged else config.model_dir
         fbx_path = model_dir / f"{spec.model_name}.fbx"
@@ -10293,11 +11020,13 @@ def main() -> None:
         if not config.no_preview:
             render_preview(preview_path, result, spec)
         export_fbx(fbx_path, result)
-        write_manifest(manifest_path, result, report, spec)
+        write_manifest(manifest_path, result, report, spec, atlas)
         save_blend(blend_path)
         reports.append((spec, report))
         print(f"  {spec.design_id}: {report.mesh_count} meshes, {report.triangle_count} triangles")
         print(f"    Signature: {report.build_signature}")
+        if atlas is not None:
+            print(f"    Atlas: {atlas.path} sha256 {atlas.sha256}")
         print(f"    Blend: {blend_path}")
         print(f"    FBX: {fbx_path}")
     if config.cafe_cast:
@@ -10311,8 +11040,21 @@ def main() -> None:
         # A second model-only build proves that source geometry and manifests
         # remain deterministic within the same Blender process.
         for spec, first_report in reports:
-            rerun = PedestrianBuilder(spec).build()
-            rerun_report = validate_result(rerun, spec)
+            rerun_atlas = None
+            if spec.texture_atlas is not None:
+                # Re-painted into memory only: the PNG on disk is the one the
+                # manifest already hashed, and it must not be rewritten.
+                first_atlas = atlases[spec.design_id]
+                rerun_atlas = paint_detail_atlas(spec, first_atlas.path)
+                if rerun_atlas.sha256 != first_atlas.sha256:
+                    raise RuntimeError(
+                        f"Non-deterministic detail atlas for {spec.design_id}: "
+                        f"{first_atlas.sha256} != {rerun_atlas.sha256}"
+                    )
+            rerun = PedestrianBuilder(
+                spec, atlas_path=rerun_atlas.path if rerun_atlas is not None else None
+            ).build()
+            rerun_report = validate_result(rerun, spec, rerun_atlas)
             if rerun_report.build_signature != first_report.build_signature:
                 raise RuntimeError(
                     f"Non-deterministic build signature for {spec.design_id}: "

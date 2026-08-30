@@ -6,14 +6,16 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class InventoryView : MonoBehaviour
     {
+        private static readonly Rect InventoryFrame =
+            new Rect(12f, 12f, 616f, 336f);
         private static readonly Rect StatusPanel =
             new Rect(12f, 12f, 150f, 172f);
         private static readonly Rect ItemsPanel =
-            new Rect(172f, 12f, 456f, 172f);
+            new Rect(162f, 12f, 466f, 172f);
         private static readonly Rect DescriptionPanel =
-            new Rect(12f, 194f, 470f, 154f);
+            new Rect(12f, 184f, 470f, 164f);
         private static readonly Rect CommandPanel =
-            new Rect(492f, 194f, 136f, 154f);
+            new Rect(482f, 184f, 146f, 164f);
         private static readonly Rect ExaminePanel =
             new Rect(72f, 38f, 496f, 284f);
 
@@ -89,10 +91,7 @@ namespace BarPromenade
             {
                 RetroUiTheme.FillRect(
                     canvas.LogicalRect,
-                    new Color32(6, 10, 11, 252));
-                RetroUiTheme.DrawDither(
-                    canvas.LogicalRect,
-                    new Color32(126, 151, 139, 11));
+                    RetroUiTheme.Backdrop);
                 if (controller.IsExamining)
                 {
                     DrawExamine();
@@ -110,44 +109,55 @@ namespace BarPromenade
 
         private void DrawInventory()
         {
-            DrawFrame(StatusPanel, "inventory.status");
-            DrawFrame(ItemsPanel, "inventory.items");
-            DrawFrame(DescriptionPanel, "inventory.selected_item");
-            DrawFrame(CommandPanel, "inventory.command");
+            RetroUiTheme.FillRect(
+                InventoryFrame,
+                RetroUiTheme.PanelInset);
+            RetroUiTheme.DrawFrame(
+                InventoryFrame,
+                RetroUiTheme.FrameOuter,
+                RetroUiTheme.FrameInner);
+            DrawSectionRule(
+                new Rect(162f, 12f, 1f, 172f));
+            DrawSectionRule(
+                new Rect(12f, 184f, 616f, 1f));
+            DrawSectionRule(
+                new Rect(482f, 184f, 1f, 164f));
+            DrawHeading(StatusPanel, "inventory.status");
+            DrawHeading(ItemsPanel, "inventory.items");
+            DrawHeading(DescriptionPanel, "inventory.selected_item");
+            DrawHeading(CommandPanel, "inventory.command");
             DrawStatus();
             DrawItems();
             DrawDescription();
             DrawCommands();
         }
 
-        private void DrawFrame(Rect rect, string headingKey)
+        private static void DrawSectionRule(Rect rect)
         {
-            RetroUiTheme.DrawPanel(
-                rect,
-                new Color32(18, 27, 28, 247),
-                new Color32(87, 120, 113, 255),
-                true,
-                3f,
-                1f);
+            RetroUiTheme.FillRect(rect, RetroUiTheme.FrameOuter);
+        }
+
+        private void DrawHeading(Rect rect, string headingKey)
+        {
             GUI.Label(
                 new Rect(rect.x + 8f, rect.y + 4f, rect.width - 16f, 20f),
                 LocalizationService.Get(headingKey),
                 headingStyle);
             RetroUiTheme.FillRect(
                 new Rect(rect.x + 8f, rect.y + 26f, rect.width - 16f, 1f),
-                new Color32(73, 104, 98, 255));
+                RetroUiTheme.FrameInner);
         }
 
         private void DrawStatus()
         {
             Rect portraitRect = new Rect(24f, 43f, 62f, 83f);
-            RetroUiTheme.DrawPanel(
+            RetroUiTheme.FillRect(
                 portraitRect,
-                new Color32(8, 14, 15, 255),
-                RetroUiTheme.BorderMuted,
-                true,
-                2f,
-                1f);
+                RetroUiTheme.Ink);
+            RetroUiTheme.DrawFrame(
+                portraitRect,
+                RetroUiTheme.FrameOuter,
+                RetroUiTheme.FrameInner);
             GUI.DrawTextureWithTexCoords(
                 new Rect(29f, 48f, 52f, 69f),
                 InventoryIconLibrary.GetHeroPortrait(),
@@ -157,23 +167,19 @@ namespace BarPromenade
             DrawStatusBar(
                 new Rect(94f, 43f, 58f, 19f),
                 "inventory.status.intoxication",
-                GameSessionState.IntoxicationLevel,
-                new Color32(189, 151, 85, 255));
+                GameSessionState.IntoxicationLevel);
             DrawStatusBar(
                 new Rect(94f, 64f, 58f, 19f),
                 "inventory.status.hunger",
-                GameSessionState.HungerLevel,
-                new Color32(184, 119, 72, 255));
+                GameSessionState.HungerLevel);
             DrawStatusBar(
                 new Rect(94f, 85f, 58f, 19f),
                 "inventory.status.stress",
-                GameSessionState.StressLevel,
-                new Color32(171, 82, 77, 255));
+                GameSessionState.StressLevel);
             DrawStatusBar(
                 new Rect(94f, 106f, 58f, 19f),
                 "inventory.status.fatigue",
-                GameSessionState.FatigueLevel,
-                new Color32(83, 132, 167, 255));
+                GameSessionState.FatigueLevel);
             GUI.Label(
                 new Rect(23f, 130f, 128f, 18f),
                 string.Format(
@@ -189,8 +195,7 @@ namespace BarPromenade
         private void DrawStatusBar(
             Rect rect,
             string captionLocalizationKey,
-            int level,
-            Color fillColor)
+            int level)
         {
             GUI.Label(
                 new Rect(rect.x, rect.y, rect.width, 9f),
@@ -201,13 +206,11 @@ namespace BarPromenade
                 rect.y + 10f,
                 rect.width,
                 9f);
-            RetroUiTheme.DrawPanel(
+            RetroUiTheme.FillRect(track, RetroUiTheme.Ink);
+            RetroUiTheme.StrokeRect(
                 track,
-                new Color32(7, 12, 13, 255),
-                RetroUiTheme.BorderMuted,
-                false,
                 1f,
-                1f);
+                RetroUiTheme.FrameInner);
             Rect fill = new Rect(
                 track.x + 2f,
                 track.y + 2f,
@@ -217,7 +220,9 @@ namespace BarPromenade
                 track.height - 4f);
             if (fill.width > 0f)
             {
-                RetroUiTheme.FillRect(fill, fillColor);
+                RetroUiTheme.FillRect(
+                    fill,
+                    RetroUiTheme.SelectionText);
             }
 
             GUI.Label(track, Mathf.Clamp(level, 0, 100).ToString(),
@@ -277,19 +282,22 @@ namespace BarPromenade
                     selected = index == controller.SelectedItemIndex;
                 }
 
-                RetroUiTheme.DrawPanel(
-                    slot,
-                    selected
-                        ? new Color32(41, 58, 56, 255)
-                        : new Color32(10, 17, 18, 255),
-                    selected
-                        ? RetroUiTheme.AccentPale
-                        : hovered
-                            ? RetroUiTheme.Accent
-                            : new Color32(65, 88, 84, 255),
-                    selected,
-                    2f,
-                    selected ? 2f : 1f);
+                if (selected)
+                {
+                    RetroUiTheme.DrawSelection(slot, true);
+                }
+                else
+                {
+                    RetroUiTheme.FillRect(
+                        slot,
+                        RetroUiTheme.PanelInset);
+                    RetroUiTheme.DrawFrame(
+                        slot,
+                        hovered
+                            ? RetroUiTheme.FrameOuter
+                            : RetroUiTheme.FrameInner,
+                        RetroUiTheme.FrameInner);
+                }
                 InventoryItemStack stack = items[index];
                 GUI.DrawTexture(
                     new Rect(slot.x + 22f, slot.y + 5f, 36f, 36f),
@@ -374,8 +382,8 @@ namespace BarPromenade
 
             Color previousColor = GUI.color;
             GUI.color = controller.UseFeedbackSucceeded
-                ? RetroUiTheme.AccentPale
-                : new Color32(224, 136, 116, 255);
+                ? RetroUiTheme.SelectionText
+                : RetroUiTheme.Text;
             GUI.Label(
                 new Rect(128f, 307f, 334f, 28f),
                 controller.UseFeedbackMessage,
@@ -387,11 +395,11 @@ namespace BarPromenade
         {
             RetroUiTheme.DrawPanel(
                 ExaminePanel,
-                new Color32(12, 20, 21, 252),
-                RetroUiTheme.Accent,
-                true,
-                4f,
-                2f);
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.FrameOuter,
+                false,
+                0f,
+                1f);
             if (!controller.HasSelection)
             {
                 controller.Cancel();
@@ -419,13 +427,11 @@ namespace BarPromenade
 
         private void DrawPreview(Rect rect)
         {
-            RetroUiTheme.DrawPanel(
+            RetroUiTheme.FillRect(rect, RetroUiTheme.Ink);
+            RetroUiTheme.DrawFrame(
                 rect,
-                new Color32(7, 12, 13, 255),
-                RetroUiTheme.BorderMuted,
-                true,
-                2f,
-                1f);
+                RetroUiTheme.FrameOuter,
+                RetroUiTheme.FrameInner);
             Texture texture = PreviewRenderer != null
                 ? PreviewRenderer.Texture
                 : null;
@@ -464,17 +470,27 @@ namespace BarPromenade
         {
             bool previousEnabled = GUI.enabled;
             GUI.enabled = enabled;
-            RetroUiTheme.DrawPanel(
-                rect,
-                enabled
-                    ? new Color32(29, 43, 42, 255)
-                    : new Color32(17, 23, 24, 255),
-                enabled
-                    ? RetroUiTheme.Accent
-                    : RetroUiTheme.BorderMuted,
-                enabled,
-                2f,
-                1f);
+            RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
+                Screen.width,
+                Screen.height);
+            bool focused = enabled &&
+                           rect.Contains(
+                               RetroUiTheme.LogicalMousePosition(
+                                   canvas));
+            if (focused)
+            {
+                RetroUiTheme.DrawSelection(rect, true);
+            }
+            else
+            {
+                RetroUiTheme.FillRect(
+                    rect,
+                    RetroUiTheme.PanelInset);
+                RetroUiTheme.DrawFrame(
+                    rect,
+                    RetroUiTheme.FrameInner,
+                    RetroUiTheme.FrameInner);
+            }
             if (GUI.Button(
                     rect,
                     label,
@@ -496,34 +512,34 @@ namespace BarPromenade
             headingStyle = RetroUiTheme.CreateLabelStyle(
                 14,
                 TextAnchor.MiddleCenter,
-                new Color32(211, 224, 213, 255),
-                true);
+                RetroUiTheme.Text,
+                false);
             statusStyle = RetroUiTheme.CreateLabelStyle(
                 10,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.AccentPale,
-                true,
+                RetroUiTheme.SelectionText,
+                false,
                 true);
             statusCaptionStyle = RetroUiTheme.CreateLabelStyle(
                 7,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Muted,
-                true);
+                false);
             statusValueStyle = RetroUiTheme.CreateLabelStyle(
                 7,
                 TextAnchor.MiddleCenter,
-                new Color32(231, 236, 224, 255),
-                true);
+                RetroUiTheme.Text,
+                false);
             itemNameStyle = RetroUiTheme.CreateLabelStyle(
                 7,
                 TextAnchor.MiddleCenter,
-                new Color32(185, 198, 188, 255),
-                true);
+                RetroUiTheme.Muted,
+                false);
             selectedItemStyle = RetroUiTheme.CreateLabelStyle(
                 10,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.AccentPale,
-                true,
+                RetroUiTheme.SelectionText,
+                false,
                 true);
             descriptionStyle = RetroUiTheme.CreateLabelStyle(
                 11,
@@ -535,7 +551,7 @@ namespace BarPromenade
                 10,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
-                true);
+                false);
             transparentButtonStyle = new GUIStyle(GUI.skin.button);
             transparentButtonStyle.normal.background = null;
             transparentButtonStyle.hover.background = null;

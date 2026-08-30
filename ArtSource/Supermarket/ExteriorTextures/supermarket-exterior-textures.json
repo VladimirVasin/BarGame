@@ -1,0 +1,70 @@
+{
+  "generator": "tools/build-supermarket-exterior-textures.py",
+  "generator_version": "1.0.0",
+  "design_id": "supermarket_exterior_surfaces_v1",
+  "brand_marks": false,
+  "atlas_quadrants": {
+    "top_left": "front",
+    "top_right": "right",
+    "bottom_left": "rear",
+    "bottom_right": "left"
+  },
+  "textures": [
+    {
+      "basename": "SupermarketExteriorWallAtlas",
+      "resource_path": "Supermarket/ExteriorTextures/SupermarketExteriorWallAtlas",
+      "asset_path": "Assets/Resources/Supermarket/ExteriorTextures/SupermarketExteriorWallAtlas.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Clamp",
+      "meters_per_tile": 15.5,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "sha256_rgb": "f67eee7f1e12e201ac47ba39fca349c3fe2d629f6c1390222fd4c51d8ada545a"
+    },
+    {
+      "basename": "SupermarketExteriorFasciaAtlas",
+      "resource_path": "Supermarket/ExteriorTextures/SupermarketExteriorFasciaAtlas",
+      "asset_path": "Assets/Resources/Supermarket/ExteriorTextures/SupermarketExteriorFasciaAtlas.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Clamp",
+      "meters_per_tile": 15.5,
+      "smoothness": 0.12,
+      "metallic": 0.0,
+      "sha256_rgb": "19df5d67c3f42377189a3ad17313ee63d033572640cdde745f0db5a6bd2b76e2"
+    },
+    {
+      "basename": "SupermarketExteriorBrickAlbedo",
+      "resource_path": "Supermarket/ExteriorTextures/SupermarketExteriorBrickAlbedo",
+      "asset_path": "Assets/Resources/Supermarket/ExteriorTextures/SupermarketExteriorBrickAlbedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Repeat",
+      "meters_per_tile": 1.2,
+      "smoothness": 0.08,
+      "metallic": 0.0,
+      "sha256_rgb": "63e823f546aeaf71a87d83efde3fa3933bcc47e5a5d9a9fd49eaaa4c33a46723"
+    },
+    {
+      "basename": "SupermarketExteriorMetalAlbedo",
+      "resource_path": "Supermarket/ExteriorTextures/SupermarketExteriorMetalAlbedo",
+      "asset_path": "Assets/Resources/Supermarket/ExteriorTextures/SupermarketExteriorMetalAlbedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Repeat",
+      "meters_per_tile": 1.35,
+      "smoothness": 0.24,
+      "metallic": 0.28,
+      "sha256_rgb": "b73ae9387019bd4e79fad5a7dd62a57043c6fe0ee87eddd47f8da3aca577a797"
+    }
+  ]
+}

@@ -136,6 +136,127 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void InterfacePalette_IsSootCharcoalAndBoneByValue()
+        {
+            Assert.That(RetroUiTheme.PanelCornerRadius, Is.Zero);
+            Assert.That(RetroUiTheme.FrameInset, Is.EqualTo(3f));
+            Assert.That(ChannelSpread(RetroUiTheme.Backdrop),
+                Is.LessThan(0.015f));
+            Assert.That(ChannelSpread(RetroUiTheme.Panel),
+                Is.LessThan(0.015f));
+            Assert.That(ChannelSpread(RetroUiTheme.Accent),
+                Is.LessThan(0.075f));
+            Assert.That(ChannelSpread(RetroUiTheme.Text),
+                Is.LessThan(0.08f));
+
+            float backdrop = Luminance(RetroUiTheme.Backdrop);
+            float panel = Luminance(RetroUiTheme.Panel);
+            float frame = Luminance(RetroUiTheme.FrameOuter);
+            float text = Luminance(RetroUiTheme.Text);
+            float selected = Luminance(RetroUiTheme.SelectionText);
+            Assert.That(panel, Is.GreaterThan(backdrop));
+            Assert.That(frame, Is.GreaterThan(panel + 0.25f));
+            Assert.That(text, Is.GreaterThan(frame + 0.20f));
+            Assert.That(selected, Is.GreaterThan(text + 0.07f));
+        }
+
+        [Test]
+        public void InteractiveStyle_UsesTypefaceAndGrayscaleSafeFocus()
+        {
+            var style = new GUIStyle();
+            RetroUiTheme.ConfigureButtonStyle(
+                style,
+                12,
+                TextAnchor.MiddleLeft,
+                RetroUiTheme.Muted,
+                false);
+
+            Assert.That(RetroUiTheme.InterfaceFont, Is.Not.Null);
+            Assert.That(style.font, Is.SameAs(RetroUiTheme.InterfaceFont));
+            Assert.That(style.fontStyle, Is.EqualTo(FontStyle.Normal));
+            Assert.That(style.richText, Is.False);
+            Assert.That(style.normal.background, Is.Null);
+            Assert.That(style.hover.background, Is.Null);
+            Assert.That(style.focused.background, Is.Null);
+            Assert.That(
+                Luminance(style.focused.textColor),
+                Is.GreaterThan(
+                    Luminance(style.normal.textColor) + 0.30f));
+            Assert.That(
+                style.focused.textColor,
+                Is.EqualTo(RetroUiTheme.SelectionText));
+            Assert.That(
+                style.onNormal.textColor,
+                Is.EqualTo(RetroUiTheme.SelectionText));
+        }
+
+        [Test]
+        public void InterfaceTypeface_ContainsEnglishAndCyrillicGlyphs()
+        {
+            Font font = RetroUiTheme.InterfaceFont;
+
+            Assert.That(font, Is.Not.Null);
+            Assert.That(font.HasCharacter('A'), Is.True);
+            Assert.That(font.HasCharacter('z'), Is.True);
+            Assert.That(font.HasCharacter('Ж'), Is.True);
+            Assert.That(font.HasCharacter('я'), Is.True);
+        }
+
+        [Test]
+        public void PackagedTypeface_IsAvailableAsDeterministicRuEnFallback()
+        {
+            Font packaged =
+                Resources.Load<Font>("Fonts/Roboto-Regular");
+
+            Assert.That(packaged, Is.Not.Null);
+            Assert.That(packaged.HasCharacter('A'), Is.True);
+            Assert.That(packaged.HasCharacter('z'), Is.True);
+            Assert.That(packaged.HasCharacter('Ж'), Is.True);
+            Assert.That(packaged.HasCharacter('я'), Is.True);
+        }
+
+        [Test]
+        public void SootPattern_IsStableSparseAndRepeatsEveryEightPixels()
+        {
+            int visible = 0;
+            for (int y = 0; y < 8; y++)
+            {
+                for (int x = 0; x < 8; x++)
+                {
+                    bool sample =
+                        RetroUiTheme.IsSootTexelVisible(x, y);
+                    if (sample)
+                    {
+                        visible++;
+                    }
+
+                    Assert.That(
+                        RetroUiTheme.IsSootTexelVisible(x + 8, y + 8),
+                        Is.EqualTo(sample));
+                }
+            }
+
+            Assert.That(visible, Is.EqualTo(12));
+            Assert.That(
+                RetroUiTheme.IsSootTexelVisible(-1, -1),
+                Is.EqualTo(
+                    RetroUiTheme.IsSootTexelVisible(7, 7)));
+        }
+
+        [Test]
+        public void SemanticStatusColors_RemainDistinctWithoutHue()
+        {
+            float good = Luminance(RetroUiTheme.Good);
+            float bad = Luminance(RetroUiTheme.Bad);
+
+            Assert.That(good - bad, Is.GreaterThan(0.12f));
+            Assert.That(
+                Luminance(RetroUiTheme.SelectionText) -
+                Luminance(RetroUiTheme.SelectionFill),
+                Is.GreaterThan(0.60f));
+        }
+
+        [Test]
         public void CityMapLine_ComposesInsideScaledLogicalGroup()
         {
             MethodInfo createLineMatrix = typeof(CityMapView).GetMethod(
@@ -315,6 +436,20 @@ namespace BarPromenade.Tests.EditMode
                 logicalMarker.Contains(
                     canvas.ScreenToLogical(screenMarker.center)),
                 Is.True);
+        }
+
+        private static float Luminance(Color color)
+        {
+            return color.r * 0.2126f +
+                   color.g * 0.7152f +
+                   color.b * 0.0722f;
+        }
+
+        private static float ChannelSpread(Color color)
+        {
+            float maximum = Mathf.Max(color.r, Mathf.Max(color.g, color.b));
+            float minimum = Mathf.Min(color.r, Mathf.Min(color.g, color.b));
+            return maximum - minimum;
         }
     }
 }

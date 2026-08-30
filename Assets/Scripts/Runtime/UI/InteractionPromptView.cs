@@ -249,12 +249,21 @@ namespace BarPromenade
                 LastRenderedTextFits =
                     requiredTextHeight <= textRect.height + 0.01f;
                 HasRenderedLayout = true;
+
+                bool hovered = clickable &&
+                               rect.Contains(
+                                   RetroUiTheme.LogicalMousePosition(
+                                       canvas));
                 RetroUiTheme.DrawPanel(
                     rect,
-                    RetroUiTheme.PanelRaised,
-                    RetroUiTheme.Accent,
-                    true,
-                    2f,
+                    hovered
+                        ? RetroUiTheme.SelectionFill
+                        : RetroUiTheme.PanelInset,
+                    hovered
+                        ? RetroUiTheme.SelectionText
+                        : RetroUiTheme.FrameOuter,
+                    false,
+                    0f,
                     1f);
                 if (clickable)
                 {
@@ -287,14 +296,14 @@ namespace BarPromenade
             buttonStyle = RetroUiTheme.CreateButtonStyle(
                 11,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.Text,
-                true);
+                RetroUiTheme.SelectionText,
+                false);
             buttonStyle.wordWrap = true;
             labelStyle = RetroUiTheme.CreateLabelStyle(
                 11,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
-                true,
+                false,
                 true);
         }
     }

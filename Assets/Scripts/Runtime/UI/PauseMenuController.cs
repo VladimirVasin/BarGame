@@ -348,7 +348,9 @@ namespace BarPromenade
             GUI.depth = -300;
             RetroUiTheme.FillRect(
                 new Rect(0f, 0f, Screen.width, Screen.height),
-                new Color(0.015f, 0.012f, 0.02f, 0.82f));
+                RetroUiTheme.WithAlpha(
+                    RetroUiTheme.Backdrop,
+                    0.88f));
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
                 Screen.height);
@@ -380,10 +382,10 @@ namespace BarPromenade
             Rect panel = new Rect(198f, 52f, 244f, 268f);
             RetroUiTheme.DrawPanel(
                 panel,
-                RetroUiTheme.Panel,
-                RetroUiTheme.Accent,
-                true,
-                3f,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.FrameOuter,
+                false,
+                0f,
                 1f);
             GUI.Label(
                 new Rect(214f, 70f, 212f, 30f),
@@ -417,10 +419,10 @@ namespace BarPromenade
             Rect panel = new Rect(140f, 40f, 360f, 300f);
             RetroUiTheme.DrawPanel(
                 panel,
-                RetroUiTheme.Panel,
-                RetroUiTheme.Accent,
-                true,
-                3f,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.FrameOuter,
+                false,
+                0f,
                 1f);
             GUI.Label(
                 new Rect(156f, 56f, 328f, 28f),
@@ -519,7 +521,7 @@ namespace BarPromenade
                         y,
                         width,
                         2f),
-                    RetroUiTheme.Accent);
+                    RetroUiTheme.FrameInner);
             }
         }
 
@@ -576,12 +578,12 @@ namespace BarPromenade
             bool selected)
         {
             RetroUiTheme.FillRect(box, RetroUiTheme.PanelInset);
-            RetroUiTheme.StrokeRect(
+            RetroUiTheme.DrawFrame(
                 box,
-                1f,
                 selected
-                    ? RetroUiTheme.Accent
-                    : RetroUiTheme.BorderMuted);
+                    ? RetroUiTheme.SelectionText
+                    : RetroUiTheme.FrameOuter,
+                RetroUiTheme.FrameInner);
             if (value)
             {
                 RetroUiTheme.FillRect(
@@ -590,7 +592,7 @@ namespace BarPromenade
                         box.y + 4f,
                         box.width - 8f,
                         box.height - 8f),
-                    RetroUiTheme.AccentPale);
+                    RetroUiTheme.SelectionText);
             }
         }
 
@@ -695,10 +697,10 @@ namespace BarPromenade
             Rect panel = new Rect(154f, 88f, 332f, 184f);
             RetroUiTheme.DrawPanel(
                 panel,
-                RetroUiTheme.Panel,
-                RetroUiTheme.Accent,
-                true,
-                3f,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.FrameOuter,
+                false,
+                0f,
                 1f);
             GUI.Label(
                 new Rect(174f, 104f, 292f, 28f),
@@ -759,13 +761,7 @@ namespace BarPromenade
                 return;
             }
 
-            RetroUiTheme.DrawPanel(
-                rect,
-                RetroUiTheme.PanelInset,
-                RetroUiTheme.Accent,
-                true,
-                1f,
-                1f);
+            RetroUiTheme.DrawSelection(rect, true);
         }
 
         private void EnsureStyles()
@@ -778,18 +774,18 @@ namespace BarPromenade
             titleStyle = RetroUiTheme.CreateLabelStyle(
                 22,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.AccentPale,
-                true);
+                RetroUiTheme.Text,
+                false);
             selectedStyle = RetroUiTheme.CreateButtonStyle(
                 13,
                 TextAnchor.MiddleLeft,
-                RetroUiTheme.Text,
-                true);
+                RetroUiTheme.SelectionText,
+                false);
             optionStyle = RetroUiTheme.CreateButtonStyle(
                 12,
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Muted,
-                true);
+                false);
             messageStyle = RetroUiTheme.CreateLabelStyle(
                 12,
                 TextAnchor.MiddleCenter,

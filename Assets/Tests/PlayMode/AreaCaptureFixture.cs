@@ -54,6 +54,43 @@ namespace BarPromenade.Tests.PlayMode
         private const int SettleFrames = 12;
 
         /// <summary>
+        /// The longest a shot may wait for its <c>readyWhen</c> condition:
+        /// fifteen seconds of pinned frames, two full primary gust periods,
+        /// so a wave that never crests or never troughs fails the run
+        /// instead of hanging it.
+        /// </summary>
+        private const int MaximumReadyFrames = 900;
+
+        /// <summary>A standing eye, as every village shot uses.</summary>
+        private const float EyeHeight = 1.72f;
+
+        /// <summary>Aim at the house's upper storey, where the windows are,
+        /// rather than at the ground under it.</summary>
+        private const float LandmarkAimHeight = 2f;
+
+        /// <summary>
+        /// Where the mid-lane sideways shot aims: past the toe (`52-60 m`
+        /// from the lane centre) and up toward the crest, so the frame holds
+        /// the slope from its foot to its edge.
+        /// </summary>
+        private const float WallAimDistance = 60f;
+
+        private const float WallAimHeight = 28f;
+
+        /// <summary>
+        /// The wave heights the crest and trough shots wait for. The wave's
+        /// simulated maxima sit around `0.95` and its running minima near
+        /// `0.05`; these are inside both with margin.
+        /// </summary>
+        private const float GustCrestWave = 0.85f;
+
+        /// <summary>Metres down the lane from its foot to the platform's
+        /// uphill apron - on the platform, clear of the canopy.</summary>
+        private const float PlatformApronSetback = 2.5f;
+
+        private const float GustTroughWave = 0.10f;
+
+        /// <summary>
         /// One frame. Either at an absolute place in the world, or - far
         /// more useful in a scene whose geometry you have not measured -
         /// at an offset from the hero, who by definition stands somewhere
@@ -71,7 +108,8 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3 target,
                 float fieldOfView,
                 bool relativeToHero,
-                int delayFrames)
+                int delayFrames,
+                Func<bool> readyWhen)
             {
                 Name = name;
                 Position = position;
@@ -79,6 +117,7 @@ namespace BarPromenade.Tests.PlayMode
                 FieldOfView = fieldOfView;
                 RelativeToHero = relativeToHero;
                 DelayFrames = Mathf.Max(0, delayFrames);
+                ReadyWhen = readyWhen;
             }
 
             public string Name { get; }
@@ -88,13 +127,22 @@ namespace BarPromenade.Tests.PlayMode
             public bool RelativeToHero { get; }
             public int DelayFrames { get; }
 
+            /// <summary>
+            /// Optional: after the fixed delay, keep waiting until this is
+            /// true. A shot of a breathing haze at "a gust crest" cannot be
+            /// timed by a frame count - the rhythm is hashed per seed - so
+            /// it waits on the scene's own wave instead.
+            /// </summary>
+            public Func<bool> ReadyWhen { get; }
+
             /// <summary>A fixed place, for a room whose layout is known.</summary>
             public static Shot At(
                 string name,
                 Vector3 position,
                 Vector3 target,
                 float fieldOfView = 60f,
-                int delayFrames = 0)
+                int delayFrames = 0,
+                Func<bool> readyWhen = null)
             {
                 return new Shot(
                     name,
@@ -102,7 +150,8 @@ namespace BarPromenade.Tests.PlayMode
                     target,
                     fieldOfView,
                     false,
-                    delayFrames);
+                    delayFrames,
+                    readyWhen);
             }
 
             /// <summary>
@@ -121,7 +170,8 @@ namespace BarPromenade.Tests.PlayMode
                     lookOffset,
                     fieldOfView,
                     true,
-                    delayFrames);
+                    delayFrames,
+                    null);
             }
         }
 
@@ -252,6 +302,27 @@ namespace BarPromenade.Tests.PlayMode
                     return cityRoot;
                 },
                 () => CityWindowLightingShots(cityRoot));
+        }
+
+        [UnityTest]
+        [Explicit("Capture and focused runtime contract, not a suite test.")]
+        public IEnumerator CityBuildingSurfaces()
+        {
+            GameSessionState.BeginNewGame();
+            Assert.That(
+                GameSessionState.TryStartGameTimeFromWake(),
+                Is.True);
+            GameSessionState.AdvanceGameTime(360f);
+
+            CityGameRoot cityRoot = null;
+            yield return Capture(
+                SceneIds.City,
+                () =>
+                {
+                    cityRoot = Object.FindAnyObjectByType<CityGameRoot>();
+                    return cityRoot;
+                },
+                () => CityBuildingSurfaceShots(cityRoot));
         }
 
         [UnityTest]
@@ -467,6 +538,28 @@ namespace BarPromenade.Tests.PlayMode
                     1f),
                 FrameSpecialFoundation("00-bar-foundation", bar),
                 FrameSpecialBuilding("01-supermarket", supermarket),
+                FrameSpecialEntrance(
+                    "01-supermarket-entrance-left",
+                    supermarket,
+                    -2.75f),
+                FrameSpecialEntrance(
+                    "01-supermarket-entrance-right",
+                    supermarket,
+                    2.75f),
+                FrameSpecialFrontageEdge(
+                    "01-supermarket-edge-left",
+                    supermarket,
+                    -1f),
+                FrameSpecialFrontageEdge(
+                    "01-supermarket-edge-right",
+                    supermarket,
+                    1f),
+                FrameSpecialFoundation(
+                    "01-supermarket-foundation",
+                    supermarket),
+                FrameSpecialRear(
+                    "01-supermarket-rear",
+                    supermarket),
                 FrameSpecialBuilding("02-player-home", playerHome)
             };
         }
@@ -524,6 +617,165 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             return shots;
+        }
+
+        private static Shot[] CityBuildingSurfaceShots(CityGameRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.Layout, Is.Not.Null);
+            var districts = new[]
+            {
+                CityDistrictKind.OldTown,
+                CityDistrictKind.Residential,
+                CityDistrictKind.Industrial,
+                CityDistrictKind.Nightlife
+            };
+            var shots = new Shot[districts.Length * 3];
+            for (int index = 0; index < districts.Length; index++)
+            {
+                CityDistrictKind district = districts[index];
+                BuildingLot lot = FindOrdinaryFrontage(
+                    root.Layout,
+                    district);
+                CityBuildingAssetRegistry registry =
+                    FindBuiltPrototype(lot);
+                AssertBuiltSurfaceContract(registry);
+
+                string prefix = "building-surfaces-" +
+                    district.ToString().ToLowerInvariant();
+                int shotIndex = index * 3;
+                shots[shotIndex] = FrameBuildingSurface(
+                    prefix + "-oblique",
+                    lot,
+                    registry,
+                    false,
+                    0f);
+                shots[shotIndex + 1] = FrameBuildingSurface(
+                    prefix + "-base-a",
+                    lot,
+                    registry,
+                    true,
+                    0f);
+                shots[shotIndex + 2] = FrameBuildingSurface(
+                    prefix + "-base-b",
+                    lot,
+                    registry,
+                    true,
+                    0.06f);
+            }
+
+            return shots;
+        }
+
+        private static CityBuildingAssetRegistry FindBuiltPrototype(
+            BuildingLot lot)
+        {
+            Vector3 expectedFront = lot.DoorPosition +
+                Vector3.up * CityFacadeGrid.MassBaseElevation;
+            CityBuildingAssetRegistry[] registries =
+                Object.FindObjectsByType<CityBuildingAssetRegistry>();
+            for (int index = 0; index < registries.Length; index++)
+            {
+                CityBuildingAssetRegistry candidate = registries[index];
+                if (candidate.District == lot.District &&
+                    Vector3.Distance(
+                        candidate.FrontAnchor.position,
+                        expectedFront) <= 0.02f)
+                {
+                    return candidate;
+                }
+            }
+
+            Assert.Fail(
+                $"No built {lot.District} prototype resolves lot " +
+                $"{lot.Cell}.");
+            return null;
+        }
+
+        private static void AssertBuiltSurfaceContract(
+            CityBuildingAssetRegistry registry)
+        {
+            Assert.That(registry, Is.Not.Null);
+            int baseMapId = Shader.PropertyToID("_BaseMap");
+            int opaqueCount = 0;
+            Bounds prototypeBounds = default;
+            bool hasBounds = false;
+            for (int index = 0; index < registry.Parts.Count; index++)
+            {
+                CityBuildingPartBinding binding = registry.Parts[index];
+                Renderer renderer = binding.Renderer;
+                Assert.That(renderer, Is.Not.Null);
+                if (!hasBounds)
+                {
+                    prototypeBounds = renderer.bounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    prototypeBounds.Encapsulate(renderer.bounds);
+                }
+
+                if (binding.Role == CityBuildingMeshRole.WindowGlass)
+                {
+                    Assert.That(
+                        renderer.sharedMaterial.shader.name,
+                        Is.EqualTo(
+                            "Bar Promenade/City Building Window Slots"));
+                    continue;
+                }
+
+                Assert.That(
+                    CityBuildingSurfaceAppearance.TryResolveSurface(
+                        registry.District,
+                        binding.SurfaceKind,
+                        out CityBuildingSurfaceKind surface),
+                    Is.True);
+                var properties = new MaterialPropertyBlock();
+                renderer.GetPropertyBlock(properties);
+                Assert.That(
+                    renderer.sharedMaterial,
+                    Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+                Assert.That(
+                    properties.GetTexture(baseMapId),
+                    Is.SameAs(
+                        CityBuildingSurfaceAppearance.GetTexture(
+                            registry.District,
+                            surface)));
+                Assert.That(
+                    properties.GetTexture(baseMapId),
+                    Is.Not.SameAs(Texture2D.whiteTexture));
+                opaqueCount++;
+            }
+
+            Assert.That(opaqueCount, Is.EqualTo(6));
+            Transform foundation = registry.transform.parent.Find(
+                CityBuildingPrototypeWorldBuilder.FoundationObjectName);
+            Assert.That(foundation, Is.Not.Null);
+            Renderer foundationRenderer =
+                foundation.GetComponent<Renderer>();
+            Assert.That(foundationRenderer, Is.Not.Null);
+            var foundationProperties = new MaterialPropertyBlock();
+            foundationRenderer.GetPropertyBlock(foundationProperties);
+            Assert.That(
+                foundationProperties.GetTexture(baseMapId),
+                Is.SameAs(
+                    CityBuildingSurfaceAppearance.GetTexture(
+                        registry.District,
+                        CityBuildingSurfaceKind.Plinth)));
+            Bounds foundationBounds = foundationRenderer.bounds;
+            Assert.That(
+                prototypeBounds.size.x - foundationBounds.size.x,
+                Is.EqualTo(
+                    CityBuildingPrototypeWorldBuilder
+                        .FoundationHorizontalInset * 2f).Within(0.01f));
+            Assert.That(
+                prototypeBounds.size.z - foundationBounds.size.z,
+                Is.EqualTo(
+                    CityBuildingPrototypeWorldBuilder
+                        .FoundationHorizontalInset * 2f).Within(0.01f));
+            Assert.That(
+                foundationBounds.max.y - prototypeBounds.min.y,
+                Is.EqualTo(0.04f).Within(0.005f));
         }
 
         private static BuildingLot FindOrdinaryFrontage(
@@ -879,6 +1131,8 @@ namespace BarPromenade.Tests.PlayMode
             AlpineVillageLaneSample foot = plan.Lane.Sample(2f);
             AlpineVillageLaneSample reveal = plan.Lane.Sample(
                 Mathf.Min(plan.Lane.Length * 0.62f, 52f));
+            AlpineVillageLaneSample midLane = plan.Lane.Sample(
+                plan.Lane.Length * 0.5f);
             return new[]
             {
                 Shot.At(
@@ -912,7 +1166,57 @@ namespace BarPromenade.Tests.PlayMode
                     -1f,
                     6.4f,
                     0.30f,
-                    54f)
+                    54f),
+
+                //  The one composition the canon names: from the platform,
+                //  the mother's house is a warm point at the limit of
+                //  sight. This is the frame that decides whether the far
+                //  plane and the base density keep the landmark; nothing
+                //  else in the set stands where the player first stands.
+                //  The eye is on the platform's uphill apron, not at the
+                //  pad's centre: the centre is under the canopy, whose
+                //  slats filled the first frame. And it waits for the
+                //  trough, because the landmark is promised BETWEEN gusts.
+                Shot.At(
+                    "04-platform-landmark",
+                    foot.Position - foot.Forward * PlatformApronSetback +
+                    Vector3.up * EyeHeight,
+                    plan.MothersHouse.GroundCenter +
+                    Vector3.up * LandmarkAimHeight,
+                    50f,
+                    0,
+                    () => root.StormWave <= GustTroughWave),
+
+                //  The bowl wall sideways from the middle of the lane: a
+                //  cold mass with a crest line, the toe seam under it, and
+                //  no cut line where it meets the plane.
+                Shot.At(
+                    "05-mid-lane-wall-right",
+                    midLane.Position + Vector3.up * EyeHeight,
+                    midLane.Position + midLane.Right * WallAimDistance +
+                    Vector3.up * WallAimHeight,
+                    58f),
+
+                //  Shot 00's framing at the two ends of the breath: with the
+                //  far half of the lane closed at a gust crest, and open
+                //  again in the trough. Each waits on the root's own wave,
+                //  not a frame count - the rhythm is hashed per seed.
+                Shot.At(
+                    "06-lower-uphill-axis-gust-crest",
+                    foot.Position - foot.Forward * 2.6f +
+                    foot.Right * 0.25f + Vector3.up * EyeHeight,
+                    reveal.Position + Vector3.up * 2.2f,
+                    58f,
+                    0,
+                    () => root.StormWave >= GustCrestWave),
+                Shot.At(
+                    "07-lower-uphill-axis-gust-trough",
+                    foot.Position - foot.Forward * 2.6f +
+                    foot.Right * 0.25f + Vector3.up * EyeHeight,
+                    reveal.Position + Vector3.up * 2.2f,
+                    58f,
+                    0,
+                    () => root.StormWave <= GustTroughWave)
             };
         }
 
@@ -1051,6 +1355,61 @@ namespace BarPromenade.Tests.PlayMode
                 (right * (frontage * 0.42f)) +
                 (Vector3.up * ((lot.Height * 0.58f) + 1f));
             return Shot.At(name, position, target, 60f);
+        }
+
+        private static Shot FrameSpecialRear(
+            string name,
+            BuildingLot lot)
+        {
+            Vector3 forward = new Vector3(
+                lot.FrontageDirection.x,
+                0f,
+                lot.FrontageDirection.y).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3 target = lot.Center -
+                forward * (lot.Size.y * 0.34f) +
+                Vector3.up * (lot.Height * 0.46f);
+            Vector3 position = lot.Center -
+                forward * (lot.Size.y * 0.5f + 6.5f) -
+                right * (lot.Size.x * 0.30f) +
+                Vector3.up * (lot.Height * 0.64f + 0.8f);
+            return Shot.At(name, position, target, 58f);
+        }
+
+        private static Shot FrameBuildingSurface(
+            string name,
+            BuildingLot lot,
+            CityBuildingAssetRegistry registry,
+            bool foundationDetail,
+            float lateralShift)
+        {
+            Vector3 forward = new Vector3(
+                lot.FrontageDirection.x,
+                0f,
+                lot.FrontageDirection.y).normalized;
+            Vector3 right = Vector3.Cross(Vector3.up, forward);
+            Vector3 facade = registry.FrontAnchor.position;
+            if (foundationDetail)
+            {
+                Vector3 position = facade +
+                    forward * 3.2f +
+                    right * (registry.FrontageWidth * 0.34f + lateralShift) +
+                    Vector3.up * 0.72f;
+                Vector3 target = facade +
+                    right * (registry.FrontageWidth * 0.18f) +
+                    Vector3.up * 0.35f;
+                return Shot.At(name, position, target, 52f);
+            }
+
+            float distance = Mathf.Clamp(registry.Height * 0.25f, 9f, 12f);
+            Vector3 obliquePosition = facade +
+                forward * distance +
+                right * (registry.FrontageWidth * 0.72f) +
+                Vector3.up * 2.1f;
+            Vector3 obliqueTarget = facade +
+                right * (registry.FrontageWidth * 0.08f) +
+                Vector3.up * (registry.Height * 0.43f);
+            return Shot.At(name, obliquePosition, obliqueTarget, 82f);
         }
 
         private static Shot FrameWindowFacade(
@@ -1222,6 +1581,27 @@ namespace BarPromenade.Tests.PlayMode
                          frame++)
                     {
                         yield return null;
+                    }
+
+                    //  Then, if the shot names a condition, wait for the
+                    //  scene to reach it - bounded, so a condition that is
+                    //  never met is a failed frame, not a hung run.
+                    if (shot.ReadyWhen != null)
+                    {
+                        int waited = 0;
+                        while (!shot.ReadyWhen() &&
+                               waited < MaximumReadyFrames)
+                        {
+                            waited++;
+                            yield return null;
+                        }
+
+                        Assert.That(
+                            shot.ReadyWhen(),
+                            Is.True,
+                            $"'{sceneName}/{shot.Name}' waited " +
+                            $"{MaximumReadyFrames} frames and its moment " +
+                            "never came.");
                     }
 
                     Vector3 from = shot.Position;

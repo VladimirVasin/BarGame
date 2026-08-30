@@ -263,10 +263,10 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
-                RetroUiTheme.Accent,
-                true,
-                4f,
-                2f);
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
+                1f);
             GUI.Label(
                 new Rect(132f, 39f, 376f, 25f),
                 LocalizationService.Get(
@@ -324,15 +324,14 @@ namespace BarPromenade
             Rect button = new Rect(132f, 156f, 376f, 24f);
             RetroUiTheme.DrawPanel(
                 button,
-                DebugTeleportEnabled
-                    ? RetroUiTheme.PanelRaised
-                    : RetroUiTheme.PanelInset,
-                DebugTeleportEnabled
-                    ? RetroUiTheme.Good
-                    : RetroUiTheme.BorderMuted,
-                DebugTeleportEnabled,
-                2f,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
                 1f);
+            RetroUiTheme.DrawSelection(
+                button,
+                DebugTeleportEnabled);
             string label = LocalizationService.Get(
                 DebugTeleportEnabled
                     ? "debug.teleport.enabled"
@@ -367,15 +366,12 @@ namespace BarPromenade
                 bool selected = dayNumber == CurrentGameDayNumber;
                 RetroUiTheme.DrawPanel(
                     button,
-                    selected
-                        ? RetroUiTheme.PanelRaised
-                        : RetroUiTheme.PanelInset,
-                    selected
-                        ? RetroUiTheme.Good
-                        : RetroUiTheme.BorderMuted,
-                    selected,
-                    2f,
+                    RetroUiTheme.PanelInset,
+                    RetroUiTheme.BorderMuted,
+                    false,
+                    0f,
                     1f);
+                RetroUiTheme.DrawSelection(button, selected);
 
                 bool previousEnabled = GUI.enabled;
                 GUI.enabled = previousEnabled && !selected;
@@ -403,10 +399,10 @@ namespace BarPromenade
                     ? RetroUiTheme.PanelRaised
                     : RetroUiTheme.PanelInset,
                 enabled
-                    ? RetroUiTheme.Accent
+                    ? RetroUiTheme.AccentPale
                     : RetroUiTheme.BorderMuted,
-                enabled,
-                2f,
+                false,
+                0f,
                 1f);
 
             bool previousEnabled = GUI.enabled;
@@ -451,7 +447,7 @@ namespace BarPromenade
             titleStyle = RetroUiTheme.CreateLabelStyle(
                 18,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.AccentPale,
+                RetroUiTheme.Text,
                 true);
             hintStyle = RetroUiTheme.CreateLabelStyle(
                 10,

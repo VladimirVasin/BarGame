@@ -336,7 +336,40 @@ namespace BarPromenade.Tests.EditMode
             Part(CityMiscKind.NightlifeShelterSeatedPerson, 0, "Skin_Masonry", CityMiscMeshRole.Masonry),
             Part(CityMiscKind.NightlifeShelterSleepingPerson, 0, "Outerwear_Street", CityMiscMeshRole.Street),
             Part(CityMiscKind.NightlifeShelterSleepingPerson, 0, "BreathingUpper_Residential", CityMiscMeshRole.Residential),
-            Part(CityMiscKind.NightlifeShelterSleepingPerson, 0, "Skin_Masonry", CityMiscMeshRole.Masonry)
+            Part(CityMiscKind.NightlifeShelterSleepingPerson, 0, "Skin_Masonry", CityMiscMeshRole.Masonry),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 0, "TableAndStools_Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 0, "NardiPieces_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 0, "TeaTray_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 1, "BicycleFrame_Residential_PaintedMetal", CityMiscMeshRole.Residential, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 1, "RepairCrate_Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 1, "TyresAndTools_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 2, "Basket_Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 2, "Rope_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 2, "Pulley_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 3, "ChairAndBench_Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 3, "ClampAndTools_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 3, "ReplacementSlats_Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 4, "Broom_Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 4, "Dustpan_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 4, "Bucket_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 5, "LowBench_Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 5, "Planters_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.ResidentialCourtyardPocket, 5, "Basin_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.FringeMasonCart, 0, "Cart_Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.FringeMasonCart, 0, "MasonryLoad_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.FringeMasonCart, 0, "WheelAndHardware_Fixture", CityMiscMeshRole.Fixture),
+            Part(CityMiscKind.FringeWinchServiceSet, 0, "Winch_Industrial", CityMiscMeshRole.Industrial),
+            Part(CityMiscKind.FringeWinchServiceSet, 0, "TimberCrib_Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.FringeWinchServiceSet, 0, "CableAndTools_Fixture", CityMiscMeshRole.Fixture),
+            Part(CityMiscKind.FringeTunnelServiceSet, 0, "BarrierAndRail_Industrial", CityMiscMeshRole.Industrial),
+            Part(CityMiscKind.FringeTunnelServiceSet, 0, "RepairBlocks_Masonry_Stone", CityMiscMeshRole.Masonry, CityMiscSurfaceKind.Stone),
+            Part(CityMiscKind.FringeTunnelServiceSet, 0, "Tools_Fixture", CityMiscMeshRole.Fixture),
+            Part(CityMiscKind.FringeFloodMaintenanceSet, 0, "PumpAndPipe_Industrial", CityMiscMeshRole.Industrial),
+            Part(CityMiscKind.FringeFloodMaintenanceSet, 0, "Planks_Residential_Timber", CityMiscMeshRole.Residential, CityMiscSurfaceKind.Timber),
+            Part(CityMiscKind.FringeFloodMaintenanceSet, 0, "DryHoseAndTools_Fixture", CityMiscMeshRole.Fixture),
+            Part(CityMiscKind.FringeOpenHoodCar, 0, "BodyAndOpenHood_Street_PaintedMetal", CityMiscMeshRole.Street, CityMiscSurfaceKind.PaintedMetal),
+            Part(CityMiscKind.FringeOpenHoodCar, 0, "TyresCabinAndEngine_Street", CityMiscMeshRole.Street),
+            Part(CityMiscKind.FringeOpenHoodCar, 0, "JackRemovedWheelAndTools_Fixture", CityMiscMeshRole.Fixture)
         };
 
         [Test]
@@ -347,17 +380,17 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo("city_misc_citywide_v4"));
             Assert.That(
                 CityMiscAssetProvider.GeneratorVersion,
-                Is.EqualTo("4.7.0"));
+                Is.EqualTo("4.8.0"));
             Assert.That(
                 CityMiscAssetProvider.SupportedKindCount,
-                Is.EqualTo(80));
+                Is.EqualTo(86));
             Assert.That(
                 CityMiscAssetProvider.ExpectedAssemblyCount,
-                Is.EqualTo(115));
+                Is.EqualTo(126));
             Assert.That(
                 CityMiscAssetProvider.ExpectedMeshCount,
-                Is.EqualTo(238));
-            Assert.That(ExpectedParts, Has.Length.EqualTo(238));
+                Is.EqualTo(271));
+            Assert.That(ExpectedParts, Has.Length.EqualTo(271));
 
             var actualNames = new List<string>();
             int assemblies = 0;
@@ -387,13 +420,13 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            Assert.That(assemblies, Is.EqualTo(115));
+            Assert.That(assemblies, Is.EqualTo(126));
             Assert.That(
                 actualNames,
                 Is.EqualTo(ExpectedParts.Select(part => part.MeshName)));
             Assert.That(
                 actualNames.Distinct(StringComparer.Ordinal).Count(),
-                Is.EqualTo(238));
+                Is.EqualTo(271));
             Assert.That(
                 actualNames.Take(33),
                 Is.EqualTo(ExpectedParts.Take(33).Select(part => part.MeshName)),
@@ -432,13 +465,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);
             Assert.That(manifest.animation_count, Is.Zero);
-            Assert.That(manifest.mesh_count, Is.EqualTo(238));
-            Assert.That(manifest.assembly_count, Is.EqualTo(115));
-            Assert.That(manifest.triangle_count, Is.EqualTo(42750));
+            Assert.That(manifest.mesh_count, Is.EqualTo(271));
+            Assert.That(manifest.assembly_count, Is.EqualTo(126));
+            Assert.That(manifest.triangle_count, Is.EqualTo(48926));
             Assert.That(
                 manifest.build_signature,
                 Is.EqualTo(
-                    "a27649807279987d20efc5372e347df48a1c4c63bb97929ed7d9b2b2879b13f7"));
+                    "45026a9b34c7d7390f5c70fdced3090cd27527a7d2c4f2bd09a4832461b256e1"));
             Assert.That(
                 manifest.wave1_compatibility_signature,
                 Is.EqualTo(
@@ -541,7 +574,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(imported.OfType<Material>(), Is.Empty);
             Assert.That(imported.OfType<AnimationClip>(), Is.Empty);
             Mesh[] meshes = imported.OfType<Mesh>().ToArray();
-            Assert.That(meshes, Has.Length.EqualTo(238));
+            Assert.That(meshes, Has.Length.EqualTo(271));
             Assert.That(meshes.All(mesh => mesh.isReadable), Is.True);
             Assert.That(meshes.All(mesh => mesh.vertexCount > 0), Is.True);
 
@@ -609,7 +642,7 @@ namespace BarPromenade.Tests.EditMode
                 actualNames.Add(part.Mesh.name);
             }
 
-            Assert.That(actualNames, Has.Count.EqualTo(238));
+            Assert.That(actualNames, Has.Count.EqualTo(271));
             UnityEngine.Object[] imported =
                 AssetDatabase.LoadAllAssetsAtPath(
                     ModelPath);

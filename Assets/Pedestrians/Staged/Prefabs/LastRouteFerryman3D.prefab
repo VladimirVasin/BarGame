@@ -91,6 +91,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.010079999, g: 0.011960001, b: 0.015449999, a: 1}
     variantTwoColor: {r: 0.012599999, g: 0.0114400005, b: 0.0117, a: 1}
     variantThreeColor: {r: 0.01128, g: 0.013, b: 0.0128999995, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CapBand
     role: signature_silhouette
     paletteName: ferry_cap_band
@@ -99,6 +100,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.39479998, g: 0.4094, b: 0.37080002, a: 1}
     variantTwoColor: {r: 0.49349996, g: 0.39159998, b: 0.2808, a: 1}
     variantThreeColor: {r: 0.4418, g: 0.445, b: 0.30960003, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CapBrim
     role: signature_silhouette
     paletteName: ferry_cap
@@ -107,6 +109,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.057120003, g: 0.06532, b: 0.078279994, a: 1}
     variantTwoColor: {r: 0.0714, g: 0.062480003, b: 0.059279997, a: 1}
     variantThreeColor: {r: 0.063920006, g: 0.071, b: 0.06536, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CapCrown
     role: signature_silhouette
     paletteName: ferry_cap
@@ -115,6 +118,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.057120003, g: 0.06532, b: 0.078279994, a: 1}
     variantTwoColor: {r: 0.0714, g: 0.062480003, b: 0.059279997, a: 1}
     variantThreeColor: {r: 0.063920006, g: 0.071, b: 0.06536, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Jaw
     role: face_detail
     paletteName: ferry_skin
@@ -123,6 +127,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.39479998, g: 0.3634, b: 0.33990002, a: 1}
     variantTwoColor: {r: 0.49349996, g: 0.3476, b: 0.2574, a: 1}
     variantThreeColor: {r: 0.4418, g: 0.395, b: 0.2838, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_MooringRope01
     role: surface_detail
     paletteName: ferry_rope
@@ -131,6 +136,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3024, g: 0.2898, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.378, g: 0.27719998, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.3384, g: 0.315, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_MooringRope02
     role: surface_detail
     paletteName: ferry_rope
@@ -139,6 +145,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3024, g: 0.2898, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.378, g: 0.27719998, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.3384, g: 0.315, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_MooringRope03
     role: surface_detail
     paletteName: ferry_rope
@@ -147,6 +154,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3024, g: 0.2898, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.378, g: 0.27719998, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.3384, g: 0.315, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Mouth
     role: face_detail
     paletteName: ferry_coat_dark
@@ -155,6 +163,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatChest
     role: body
     paletteName: ferry_coat
@@ -163,6 +172,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
     variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
     variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatFacing
     role: clothing
     paletteName: ferry_coat_dark
@@ -171,6 +181,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatHem
     role: clothing
     paletteName: ferry_coat_dark
@@ -179,6 +190,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatSeat
     role: body
     paletteName: ferry_coat_dark
@@ -187,6 +199,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatWaist
     role: body
     paletteName: ferry_coat
@@ -195,6 +208,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
     variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
     variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Collar
     role: clothing
     paletteName: ferry_coat_dark
@@ -203,6 +217,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.L
     role: clothing
     paletteName: ferry_coat
@@ -211,6 +226,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
     variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
     variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.R
     role: clothing
     paletteName: ferry_coat
@@ -219,6 +235,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
     variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
     variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.L
     role: clothing
     paletteName: ferry_coat_dark
@@ -227,6 +244,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.R
     role: clothing
     paletteName: ferry_coat_dark
@@ -235,6 +253,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.L
     role: clothing
     paletteName: ferry_coat
@@ -243,6 +262,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
     variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
     variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.R
     role: clothing
     paletteName: ferry_coat
@@ -251,6 +271,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.09063999, a: 1}
     variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.06863999, a: 1}
     variantThreeColor: {r: 0.07332, g: 0.082, b: 0.07568, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserLower.L
     role: clothing
     paletteName: ferry_coat_dark
@@ -259,6 +280,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserLower.R
     role: clothing
     paletteName: ferry_coat_dark
@@ -267,6 +289,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserUpper.L
     role: clothing
     paletteName: ferry_coat_dark
@@ -275,6 +298,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserUpper.R
     role: clothing
     paletteName: ferry_coat_dark
@@ -283,6 +307,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.04508, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.043119997, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.049, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.L
     role: body
     paletteName: ferry_boot
@@ -291,6 +316,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.063839994, g: 0.06256001, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.079799995, g: 0.05984, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.07144, g: 0.068, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.R
     role: body
     paletteName: ferry_boot
@@ -299,6 +325,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.063839994, g: 0.06256001, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.079799995, g: 0.05984, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.07144, g: 0.068, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.L
     role: body
     paletteName: sole
@@ -307,6 +334,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.R
     role: body
     paletteName: sole
@@ -315,6 +343,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.L
     role: body
     paletteName: ferry_skin
@@ -323,6 +352,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.39479998, g: 0.3634, b: 0.33990002, a: 1}
     variantTwoColor: {r: 0.49349996, g: 0.3476, b: 0.2574, a: 1}
     variantThreeColor: {r: 0.4418, g: 0.395, b: 0.2838, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.R
     role: body
     paletteName: ferry_skin
@@ -331,6 +361,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.39479998, g: 0.3634, b: 0.33990002, a: 1}
     variantTwoColor: {r: 0.49349996, g: 0.3476, b: 0.2574, a: 1}
     variantThreeColor: {r: 0.4418, g: 0.395, b: 0.2838, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Head
     role: body
     paletteName: ferry_skin
@@ -339,6 +370,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.39479998, g: 0.3634, b: 0.33990002, a: 1}
     variantTwoColor: {r: 0.49349996, g: 0.3476, b: 0.2574, a: 1}
     variantThreeColor: {r: 0.4418, g: 0.395, b: 0.2838, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Neck
     role: body
     paletteName: ferry_skin
@@ -347,6 +379,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.39479998, g: 0.3634, b: 0.33990002, a: 1}
     variantTwoColor: {r: 0.49349996, g: 0.3476, b: 0.2574, a: 1}
     variantThreeColor: {r: 0.4418, g: 0.395, b: 0.2838, a: 1}
+    usesDetailAtlas: 0
   headAnchor: {fileID: 1931569759099746037}
   pelvisAnchor: {fileID: 1572943300911589669}
   leftFootAnchor: {fileID: 8979684163591633601}
@@ -365,6 +398,7 @@ MonoBehaviour:
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
+  detailAtlas: {fileID: 0}
 --- !u!114 &3329080958701215131
 MonoBehaviour:
   m_ObjectHideFlags: 0

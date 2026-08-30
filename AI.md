@@ -84,7 +84,16 @@ pattern and owns a mono ballast buzz audible only within `5.6 m`. Its floor
 overlaps the terrain edge, and offset/overlapping lining joints remove the
 former ground gap, coplanar wall flicker and ceiling slits.
 The eastern Yard uses a separate low,
-unlit utility-edge composition and creates no eastern ridge. The gate-free
+unlit utility-edge composition and creates no eastern ridge. Each typed fringe
+Yard also carries one grounded human-scale work scene: a mason's cart at the
+west stone terraces, a service set around the west-industrial winch, a quiet
+barrier/repair set at the tunnel, a dry pump and planks at the floodworks, and
+an old compact car with its hood open, one wheel removed, a jack and tools at
+the eastern utility edge. Generic colliderless residents occupy only selected
+active scenes, never the tunnel set; the north-east `4 x 4` former-lake Yard
+remains deliberately empty. These scenes add no text, interaction, light,
+audio, story reaction, water, cats, children, fire, flags, logos or landmarks.
+The gate-free
 `8 x 5.5 m` portal now leads into a `72 m` faceted rock shell: the first `12 m`
 are straight and physical, the first `11 m` are walkable, and the later
 segments bend west so no rear cap or endpoint is visible. Crossing `8 m`
@@ -197,7 +206,16 @@ bounded symmetric local correction around those beats.
 The chapel, closed adit and ordinary burial ground remain side finds, and every
 permitted threshold/spur consumes one visible compacted-path descriptor in both
 rendering and traversal. `TerrainMeshBounds` extends the inhabited bowl into a
-fully physical `49°` enclosing rise, hidden crest and sampled cableway brink.
+fully physical `58°` enclosing rise, hidden crest and sampled cableway brink,
+and the bowl looms: the toe stands `18 m` outside the top house's envelope
+and the `50 m` crest `31 m` past it — `39°` from the lane head, `36°` from
+the platform toward the open side, `28-31°` sideways from mid-lane. The rise
+is the second submesh of the one ground mesh on its own `CityMountainPhysical`
+material (`AlpineVillageRidgeAppearance`: village haze, the breathing density,
+a `0.30` visibility floor, a `96-108 m` handoff inside the `110 m` plane, the
+floor's own snow sheet, a cold snow-shadow tint, no shadow because the shader
+has no caster pass), its toe ring buried `0.08 m` under the floor and the
+cableway valley kept on the floor material.
 The deterministic passive village kit now carries `19` assemblies / `53`
 role meshes: correctly outward-wound closed wall shells and roof solids, roof
 snow, a distinct top house, facade repairs and shutters,
@@ -211,12 +229,22 @@ wind bed from the same deterministic bearing and gust rhythm. All nine
 garland spans read that shaped wind too: their batched render meshes deform
 with both anchors fixed, while bulbs and the two real lights follow each free
 midpoint. The station
-canopy and moving cabin stay locally dry, while the uphill axis and top house
-remain legible instead of disappearing into a whiteout. The one warmth grade
+canopy and moving cabin stay locally dry. The haze breathes with the gale:
+between gusts it sits at `0.017` (`9 %` of the mother's door at `91 m` from
+the platform — the landmark at the limit of sight), at a gust crest it
+thickens to `0.045` (`41 m` left at `3 %`: the far half of the lane closes
+for seconds and the top house is gone), and it thins back every cycle
+because the wave is keyed on the raw shared gust rhythm (`0.66-0.86`, attack
+`0.5 s`, release `1.0 s`) rather than the shaped gale that pins at `1` for a
+whole thunderstorm slot; one writer applies it every frame, the uphill axis
+and the nearest walls read throughout, and the running trough keeps the
+house at `>= 5 %`. No lightning, thunder, silhouette or panorama comes with
+it. The one warmth grade
 is held at `0` until the prologue exists, but already enters the per-minute
 apply and jointly removes isolated garlands, darkens seeded windows, dirties
 snow, weakens the five practicals and quiets those six local voices without
-changing the storm.
+changing the storm; its dim end rides on the storm base and is clamped at the
+storm peak.
 
 The runtime places one visually
 distinct player home beside a bar street and one deterministic street-front
@@ -235,8 +263,15 @@ fallback and is never selected by ordinary gameplay. Ordinary building masses us
 profile whose roofs fall below one-percent visibility in the fixed City fog;
 the bar, the supermarket and the player home retain their original low-rise
 heights. Every ordinary lot now instantiates one fixed-metre Blender prototype
-for its district and preserves pane-local atlas detail plus deterministic
-row-balanced warm/dark state through the shared UV2 slot shader. The single
+for its district. Each prototype is split into seven semantic surfaces:
+primary/secondary facade, plinth, roof, metal, window frame and window glass.
+Generator `2.0.0` exports `28` meshes / `3,642` triangles across the four
+wrappers. Six opaque surfaces use one of `24` deterministic district sheets through
+side-atlas, full-face or physically scaled UVs; glass preserves pane-local atlas
+detail plus deterministic row-balanced warm/dark state through the shared UV2
+slot shader. The generator rejects competing exterior coplanar faces and broad
+opaque layers closer than `0.03 m`; the terrain foundation sits `0.08 m` inside
+the visible footprint. The single
 Residential bar separately uses the
 complete fixed-metre `bar_exterior_v2`: a two-storey late-Victorian urban pub
 with old brick/render, pitched slate roof, unequal chimneys, a lower service
@@ -249,16 +284,57 @@ and side faces. It replaces the former
 CityMisc bar shell and generic window bands in City and in a fully visible Home
 reconstruction; a Home half-space crossing alone keeps the clipped legacy
 silhouette.
+The street supermarket likewise uses one complete fixed-metre
+`supermarket_exterior_v1` instead of its CityMisc shell, generic apartment
+window bands and runtime-box storefront. Its low `15.5 x 15.5 x 6.4 m` body
+owns dark brick piers, a recessed double entrance, four framed shop windows,
+an integrated weathered cream/ochre/green/burgundy fascia, service elevations,
+parapet and low roof plant. Four dedicated exterior sheets bind through
+authored per-element UVs: wall and fascia atlases clamp, while brick and metal
+repeat at physical scale; the existing roof and supermarket glass families
+remain shared. The authored `ПРОДУКТЫ` sign is original and contains no
+7-Eleven mark, `7`, price or slogan. City aligns the imported
+`exterior_door` anchor to the unchanged lot door, keeps the full logical
+collider, entrance apron, trigger and yard spotlight outside the prefab, and
+uses an `0.14 m` inset foundation. A fully visible Home reconstruction reuses
+the same passive model; only a half-space crossing keeps the clipped legacy
+silhouette.
+The player home likewise uses one complete fixed-metre
+`player_home_exterior_v1` instead of its CityMisc shell, generic window bands
+and runtime-box roof/balcony dressing. Georgian Series 209-1 is the restrained
+architectural reference: repaired render over a brick plinth, a pitched slate
+roof, irregular framed windows, a recessed street entry and a deep supported
+upper gallery. The body remains `13 x 12 x 8.8 m`; its canonical balcony
+begins at the unchanged front plane and projects `2.3 m` toward the street,
+so complete visual bounds reach local `+Z 8.3 m`. Nine semantic sheets use
+authored or metre-scaled UVs, and opaque overlays retain `0.03 m` clearance.
+Exactly one pane stays lit: the upper street window immediately left of the
+balcony; every other pane is dark. Unity aligns the passive asset through the
+unchanged door anchor and still owns logical collision, walkway, mailbox,
+entrance lamp, number `7`, beacon, trigger and transition. Home reconstructs
+the same facade surfaces, authored window positions and recessed entry around
+the real walkable balcony instead of drawing a second generic shell.
+Up to four ordinary Residential frontages receive deterministic shallow
+courtyard pockets no more than `1.05 m` deep. Their six authored variants are
+a Nardi table, bicycle repair, a balcony basket and pulley, chair repair, a
+sweeping kit, and a quiet bench with planters. Doorways, public accesses,
+district points of interest, collision proxies and existing laundry remain
+clear; the pocket proxies participate in the same wind-dressing clearance, so
+a wash line is moved or omitted rather than crossing the new furniture.
+Selected active pockets may borrow generic colliderless residents, but the
+balcony-basket and quiet variants stay unoccupied. The complete courtyard and
+fringe resident pass is capped at eight actors and adds no speech, interaction,
+light, sound or story state.
 The broad passive City misc layer now resolves through the deterministic
-`city_misc_citywide_v4` Blender library at generator version `4.7.0`: `80`
-semantic kinds, `115` assemblies, `238` role meshes and `42,750` triangles
+`city_misc_citywide_v4` Blender library at generator version `4.8.0`: `86`
+semantic kinds, `126` assemblies, `271` role meshes and `48,926` triangles
 cover ordinary decoration and park
 landmarks, night fixtures, Route 01 stops, the eastern yard, cemetery,
 seacoast, fringe service belt, the static shells of all four district points of
 interest, the fixed Nightlife arch shelter with its full-height supported
-service terrace joined to the east wall and south facade end, and the live
-supermarket/player-home shells. Its former bar shell
-remains catalogued only for v4 compatibility and is not instantiated. Unity
+service terrace joined to the east wall and south facade end. Its former bar,
+supermarket and player-home shells remain catalogued only for v4
+compatibility and are not instantiated. Unity
 plans still own placement, terrain, collision, dynamics, interactions, lights,
 halos, cloth and NPCs. Its standing, seated and sleeping Nightlife shelter
 residents are the three non-rigged humanoid exceptions: their baked meshes use
@@ -343,7 +419,19 @@ returns. They spawn at randomly
   stays hunched through idle and walks in short uneven steps, the upright Chair
   Carrier uses a precise high-knee gait beneath an inverted cafe chair, the
   stout short-legged Kettle Hat Walker waddles in fast small steps while its
-  belly and its oversized skewed enamel kettle swing against each other, and
+  belly and its oversized skewed enamel kettle swing against each other — and
+  that kettle is permanently on the boil, in every state including the bus
+  ride: a pure `KettleBoilModel` fed the presentation's own (distance-
+  accelerated) delta through `CityPedestrianPresentation.Advanced` rocks an
+  editor-built `ANCHOR_KettleLid` pivot under the head bone that the lid and
+  knob are re-skinned to (no bone added to the 31-bone rig), and vents a
+  code-built grey steam plume from `ANCHOR_KettleSpout`, attached by the
+  factory and never authored into the prefab, with no Light and no sound. He
+  is also the one pooled walker with a `256 px` detail atlas — light greys
+  multiplied by his palette tint through the shared `Player3DLit` material via
+  the property block, so all four palettes survive — at `2,004` triangles /
+  `52` meshes with full-length sleeves, cuffs, lapels, a thumb and finger
+  block per hand and boots with toe caps and heels; and
   the narrow Long-Arm Walker — the only design whose strangeness is the body
   itself rather than a worn object — shuffles slowly on barely lifted feet
   while bare forearms reaching the pavement swing a quarter cycle behind the
@@ -525,8 +613,8 @@ cabin and `0.41 m` cushion leave `1.64 m`; the four rebuilt riders measure
 approximately `0.907-0.918 m` above the seated pelvis and hang
 `0.375-0.388 m` below it.
 Fare/payment, destination selection, passenger persistence and
-live bus tracking are deferred. The City map still draws Route 01 as a blue
-ink-outlined line beneath the orange player itinerary, plus five numbered
+live bus tracking are deferred. The City map still draws Route 01 as a pale
+neutral line beneath the darker bone-toned player itinerary, plus five numbered
 localized stop markers in the default layout and a compact legend; it has no
 live bus marker. The moving bus runtime is deliberately City-only. Home's
 balcony
@@ -535,6 +623,13 @@ bus actor or director: the real exterior has no Street pass-through with both
 complete-body seams hidden at `56 m`, and the default home faces a visible road
 terminal. The project does not fabricate another road or make bus appearance
 depend on the Balcony camera, avoiding a visible activation/pooling pop.
+
+Every operated runtime IMGUI surface uses `RetroUiTheme` as one crisp
+post-composite `640x360` interface: soot/charcoal/dirty-bone values, flat
+rectangles, thin nested frames, stable grain and grayscale-readable focus.
+The interface reference is UI-only; it does not alter world rendering, camera,
+aspect, audio, gameplay or localized copy. The full contract lives in
+`ai/city-zones-art-bible.md` §15a.
 
 The build starts in `MainMenu`, resets a fresh session and opens the existing
 Home interior in a one-shot sleeping presentation. Its first Home frame holds
@@ -599,11 +694,16 @@ the water, bed, walkable banks and quay work in `CityRiverWorldBuilder.cs` and
 `RoadWalkableArea.cs`; the authored ground before that rim and
 the separate eastern utility edge start at `CityFringeYardPlanner.cs` and
 `CityFringeYardForefieldPlanner.cs` plus
-`CityFringeYardLandmarkPlanner.cs`, receive measured surfaces through
+`CityFringeYardLandmarkPlanner.cs` and `CityFringeYardLifePlanner.cs`, receive
+measured surfaces through
 `CityFringeYardSurfaceAppearance.cs`, split their conforming terrain through
 `CityFringeYardGroundWorldBuilder.cs`, and materialize detail through
 `CityFringeYardWorldBuilder.cs`; its four runtime practical anchors are leased
-by `CityNightAtmosphere.cs` without expanding that pool. Supermarket truth starts
+by `CityNightAtmosphere.cs` without expanding that pool. Residential frontage
+pockets start at `CityCourtyardPocketPlanner.cs` and
+`CityCourtyardPocketGeometry.cs`; their bounded ambient cast is planned and
+instantiated by `CityCourtyardResident{Plan,Factory,Presentation}.cs`.
+Supermarket truth starts
 at `Assets/Scripts/Runtime/Scenes/SupermarketInteriorRoot.cs` and
 `Assets/Scripts/Runtime/World/SupermarketInteriorLayoutPlanner.cs`. Session-time
 truth lives in `Assets/Scripts/Runtime/Core/GameTimeState.cs`,
@@ -668,8 +768,9 @@ repository evidence. This does not require running every test layer.
   determinism check. Blender lives at
   `C:\Program Files\Blender Foundation\Blender 5.0\blender.exe`.
   This is a rule for what is built from now on. The structural runtime-primitive
-  geometry still in the tree — terrain, roads, building masses, infrastructure,
-  dynamic precinct pieces, the mountain road and its terminal — predates it
+  geometry still in the tree — terrain, roads, logical building collision and
+  foundation masses, infrastructure, dynamic precinct pieces, the mountain
+  road and its terminal — predates it
   and is not retroactively invalid. The City and Mountain Road misc libraries
   are explicit bounded migrations; moving anything else remains its own
   decision, taken piece by piece and never as a side effect of another task.
@@ -680,8 +781,9 @@ repository evidence. This does not require running every test layer.
   to any one room; if a number is specific to the bar it lives in the bar's
   generator. The bar is the first thing built on it
   (`tools/build-bar-3d-model.py`, with `tools/bar_parts.py` for Unity-space
-  authoring) and is fully migrated, interior and facade; the apartment,
-  stairwell and supermarket are the intended next users.
+  authoring) and is fully migrated, interior and facade; the supermarket
+  exterior is the next complete fixed-metre user, while its interior and the
+  apartment/stairwell remain future migrations.
 - **Blender's axes reach Unity by SWAPPING the last two, not by negating one.**
   Unity `(x, y, z)` is Blender `(x, z, y)` under the project's export settings
   (`axis_forward="-Z", axis_up="Y"`) plus `bakeAxisConversion`; the

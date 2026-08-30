@@ -1,0 +1,1473 @@
+{
+  "generator": "tools/build-supermarket-exterior-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "design_id": "supermarket_exterior_v1",
+  "display_name": "Bar Promenade Neighbourhood Supermarket Exterior",
+  "dimensions_m": {
+    "width": 15.5,
+    "depth": 15.5,
+    "height": 6.4
+  },
+  "storefront_width_m": 8.4,
+  "canopy_width_m": 9.2,
+  "door_opening_m": {
+    "width": 1.9,
+    "height": 2.4
+  },
+  "authored_text": [
+    "ПРОДУКТЫ"
+  ],
+  "brand_marks": false,
+  "source_axes": {
+    "right": "+X",
+    "forward": "+Y",
+    "up": "+Z"
+  },
+  "unity_axes": {
+    "right": "+X",
+    "forward": "+Z",
+    "up": "+Y",
+    "fbx_axis_forward": "-Z",
+    "fbx_axis_up": "Y",
+    "bake_space_transform": false
+  },
+  "root_contract": {
+    "origin": "footprint_center_ground",
+    "scale_mode": "fixed_meters",
+    "source_forward_axis": "+Y",
+    "unity_forward_axis": "+Z",
+    "axis_conversion": "swap_y_z_and_reverse_winding"
+  },
+  "runtime_wrapper_yaw_degrees": 0.0,
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "surface_clearance_contract": {
+    "opaque_overlay_min_clearance_m": 0.03,
+    "runtime_foundation_inset_m": 0.14,
+    "fascia_bands": "authored_uv_atlas_no_overlay_geometry"
+  },
+  "yard_spotlight_mount_zones": [
+    {
+      "side": "left",
+      "unity_center": [
+        -7.67,
+        3.5,
+        0.0
+      ],
+      "clear_width_m": 2.4,
+      "clear_height_m": 1.4
+    },
+    {
+      "side": "right",
+      "unity_center": [
+        7.67,
+        3.5,
+        0.0
+      ],
+      "clear_width_m": 2.4,
+      "clear_height_m": 1.4
+    }
+  ],
+  "bounds_min": [
+    -7.75,
+    -7.75,
+    0.0
+  ],
+  "bounds_max": [
+    7.75,
+    7.75,
+    6.4
+  ],
+  "mesh_count": 36,
+  "triangle_count": 3984,
+  "anchors": [
+    {
+      "name": "ExteriorDoor",
+      "role": "exterior_door",
+      "local_position": [
+        0.0,
+        7.75,
+        0.0
+      ],
+      "unity_local_position": [
+        0.0,
+        0.0,
+        7.75
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "name": "Left Rendered Wall",
+      "role": "exterior_wall",
+      "group": "fixed",
+      "sheet": "ExteriorWallAtlas",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.72,
+          0.7,
+          0.61
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -7.67,
+        -7.33,
+        0.0
+      ],
+      "bounds_max": [
+        -7.33,
+        7.31,
+        4.36
+      ]
+    },
+    {
+      "name": "Right Rendered Wall",
+      "role": "exterior_wall",
+      "group": "fixed",
+      "sheet": "ExteriorWallAtlas",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.72,
+          0.7,
+          0.61
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        7.33,
+        -7.33,
+        0.0
+      ],
+      "bounds_max": [
+        7.67,
+        7.31,
+        4.36
+      ]
+    },
+    {
+      "name": "Rear Rendered Wall",
+      "role": "exterior_wall",
+      "group": "fixed",
+      "sheet": "ExteriorWallAtlas",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.68,
+          0.67,
+          0.6
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -7.33,
+        -7.67,
+        0.0
+      ],
+      "bounds_max": [
+        7.33,
+        -7.33,
+        4.36
+      ]
+    },
+    {
+      "name": "Front Brick Wings",
+      "role": "exterior_masonry",
+      "group": "frontage",
+      "sheet": "ExteriorBrick",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.52,
+          0.34,
+          0.27
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -7.67,
+        7.31,
+        0.0
+      ],
+      "bounds_max": [
+        7.67,
+        7.65,
+        4.36
+      ]
+    },
+    {
+      "name": "Front Fascia",
+      "role": "exterior_fascia",
+      "group": "fascia",
+      "sheet": "ExteriorFasciaAtlas",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.78,
+          0.75,
+          0.64
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -7.75,
+        7.32,
+        4.36
+      ],
+      "bounds_max": [
+        7.75,
+        7.62,
+        5.68
+      ]
+    },
+    {
+      "name": "Left Fascia",
+      "role": "exterior_fascia",
+      "group": "fascia",
+      "sheet": "ExteriorFasciaAtlas",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.78,
+          0.75,
+          0.64
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -7.67,
+        -7.33,
+        4.36
+      ],
+      "bounds_max": [
+        -7.33,
+        7.35,
+        5.68
+      ]
+    },
+    {
+      "name": "Right Fascia",
+      "role": "exterior_fascia",
+      "group": "fascia",
+      "sheet": "ExteriorFasciaAtlas",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.78,
+          0.75,
+          0.64
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        7.33,
+        -7.33,
+        4.36
+      ],
+      "bounds_max": [
+        7.67,
+        7.35,
+        5.68
+      ]
+    },
+    {
+      "name": "Rear Fascia",
+      "role": "exterior_fascia",
+      "group": "fascia",
+      "sheet": "ExteriorFasciaAtlas",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.78,
+          0.75,
+          0.64
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -7.33,
+        -7.67,
+        4.36
+      ],
+      "bounds_max": [
+        7.33,
+        -7.33,
+        5.68
+      ]
+    },
+    {
+      "name": "Dark Brick Plinth",
+      "role": "exterior_masonry",
+      "group": "fixed",
+      "sheet": "ExteriorBrick",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.29,
+          0.24
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        -7.75,
+        -7.75,
+        0.0
+      ],
+      "bounds_max": [
+        7.75,
+        7.72,
+        0.44
+      ]
+    },
+    {
+      "name": "Flat Membrane Roof",
+      "role": "exterior_roof",
+      "group": "roof",
+      "sheet": "ExteriorRoof",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.2,
+          0.22,
+          0.23
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -7.43,
+        -7.51,
+        5.4
+      ],
+      "bounds_max": [
+        7.43,
+        7.35,
+        5.58
+      ]
+    },
+    {
+      "name": "Parapet Metal Cap",
+      "role": "exterior_metal",
+      "group": "roof",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.7,
+          0.7,
+          0.64
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        -7.75,
+        -7.65,
+        5.68
+      ],
+      "bounds_max": [
+        7.75,
+        7.63,
+        5.82
+      ]
+    },
+    {
+      "name": "Storefront Glass Bays",
+      "role": "exterior_glass",
+      "group": "frontage",
+      "sheet": "ExteriorGlass",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.75,
+          0.7
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        -4.13,
+        7.2125,
+        0.62
+      ],
+      "bounds_max": [
+        4.13,
+        7.2575,
+        3.84
+      ]
+    },
+    {
+      "name": "Storefront Frame",
+      "role": "exterior_metal",
+      "group": "frontage",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.64,
+          0.67,
+          0.62
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 224,
+      "bounds_min": [
+        -4.2,
+        7.235,
+        0.22
+      ],
+      "bounds_max": [
+        4.2,
+        7.335,
+        4.18
+      ]
+    },
+    {
+      "name": "Storefront Kick Panels",
+      "role": "exterior_metal",
+      "group": "frontage",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.43,
+          0.47,
+          0.43
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        -4.13,
+        7.33,
+        0.16
+      ],
+      "bounds_max": [
+        4.13,
+        7.43,
+        0.52
+      ]
+    },
+    {
+      "name": "Storefront Recess And Door Reveals",
+      "role": "exterior_metal",
+      "group": "frontage",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.58,
+          0.6,
+          0.54
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -4.26,
+        7.29,
+        0.0
+      ],
+      "bounds_max": [
+        4.26,
+        7.69,
+        4.36
+      ]
+    },
+    {
+      "name": "Double Door Frame",
+      "role": "exterior_door_frame",
+      "group": "frontage",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.66,
+          0.68,
+          0.62
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        -0.95,
+        7.235,
+        0.12
+      ],
+      "bounds_max": [
+        0.95,
+        7.335,
+        2.52
+      ]
+    },
+    {
+      "name": "Double Door And Transom Glass",
+      "role": "exterior_door",
+      "group": "frontage",
+      "sheet": "ExteriorGlass",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.75,
+          0.7
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -0.94,
+        7.2125,
+        0.22
+      ],
+      "bounds_max": [
+        0.94,
+        7.2575,
+        3.77
+      ]
+    },
+    {
+      "name": "Double Door Pulls",
+      "role": "exterior_metal",
+      "group": "frontage",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.78,
+          0.76,
+          0.66
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        -0.38,
+        7.2825,
+        0.97
+      ],
+      "bounds_max": [
+        0.38,
+        7.3575,
+        1.6025
+      ]
+    },
+    {
+      "name": "Worn Entrance Threshold",
+      "role": "exterior_metal",
+      "group": "frontage",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.35,
+          0.32
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -1.075,
+        7.25,
+        0.0
+      ],
+      "bounds_max": [
+        1.075,
+        7.73,
+        0.11
+      ]
+    },
+    {
+      "name": "Old Entrance Mat",
+      "role": "exterior_dressing",
+      "group": "frontage",
+      "sheet": "ExteriorMat",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.2,
+          0.2,
+          0.17
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -0.86,
+        6.94,
+        0.0
+      ],
+      "bounds_max": [
+        0.86,
+        7.4,
+        0.05
+      ]
+    },
+    {
+      "name": "Storefront Canopy",
+      "role": "exterior_metal",
+      "group": "frontage",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.76,
+          0.74,
+          0.66
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -4.6,
+        7.35,
+        4.1
+      ],
+      "bounds_max": [
+        4.6,
+        7.75,
+        4.26
+      ]
+    },
+    {
+      "name": "Storefront Interior Shadow Box",
+      "role": "exterior_interior",
+      "group": "interior_proxy",
+      "sheet": "ExteriorInteriorDark",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.16,
+          0.18,
+          0.16
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        -4.09,
+        5.12,
+        0.05
+      ],
+      "bounds_max": [
+        4.09,
+        7.24,
+        4.04
+      ]
+    },
+    {
+      "name": "Dark Shelf Silhouettes",
+      "role": "exterior_interior",
+      "group": "interior_proxy",
+      "sheet": "ExteriorInteriorDark",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.2,
+          0.22,
+          0.19
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 192,
+      "triangles": 336,
+      "bounds_min": [
+        -3.975,
+        5.26,
+        0.105
+      ],
+      "bounds_max": [
+        3.975,
+        5.98,
+        2.655
+      ]
+    },
+    {
+      "name": "Interior Fluorescent Strips",
+      "role": "exterior_interior_light",
+      "group": "interior_proxy",
+      "sheet": "ExteriorInteriorLight",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.94,
+          0.74,
+          0.43
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        -3.625,
+        6.09,
+        3.8925
+      ],
+      "bounds_max": [
+        3.625,
+        6.19,
+        3.9275
+      ]
+    },
+    {
+      "name": "Main Shop Sign Field",
+      "role": "exterior_sign_housing",
+      "group": "signage",
+      "sheet": "ExteriorSignHousing",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.13,
+          0.29,
+          0.23
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -3.025,
+        7.62,
+        4.58
+      ],
+      "bounds_max": [
+        3.025,
+        7.7,
+        5.48
+      ]
+    },
+    {
+      "name": "Authored ПРОДУКТЫ Lettering",
+      "role": "exterior_sign_glow",
+      "group": "signage",
+      "sheet": "ExteriorSignGlow",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.92,
+          0.68,
+          0.28
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 480,
+      "triangles": 840,
+      "bounds_min": [
+        -2.465,
+        7.73,
+        4.6925
+      ],
+      "bounds_max": [
+        2.465,
+        7.75,
+        5.287388
+      ]
+    },
+    {
+      "name": "Two Sided Blade Sign Housing",
+      "role": "exterior_sign_housing",
+      "group": "signage",
+      "sheet": "ExteriorSignHousing",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.19,
+          0.32,
+          0.25
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        4.14,
+        6.85,
+        4.34
+      ],
+      "bounds_max": [
+        4.48,
+        7.73,
+        5.46
+      ]
+    },
+    {
+      "name": "Closed Rear Service Door",
+      "role": "exterior_service",
+      "group": "service",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.32,
+          0.36,
+          0.32
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        2.09,
+        -7.715,
+        0.01
+      ],
+      "bounds_max": [
+        3.51,
+        -7.61,
+        2.43
+      ]
+    },
+    {
+      "name": "Rear Service Door Frame And Pull",
+      "role": "exterior_service",
+      "group": "service",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.61,
+          0.61,
+          0.54
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        2.025,
+        -7.74,
+        0.0
+      ],
+      "bounds_max": [
+        3.575,
+        -7.69,
+        2.56
+      ]
+    },
+    {
+      "name": "Rear Louver Housing",
+      "role": "exterior_service",
+      "group": "service",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.28,
+          0.33,
+          0.31
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -3.675,
+        -7.71,
+        2.02
+      ],
+      "bounds_max": [
+        -1.625,
+        -7.67,
+        3.38
+      ]
+    },
+    {
+      "name": "Rear Service Louver Slats",
+      "role": "exterior_service",
+      "group": "service",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.52,
+          0.55,
+          0.5
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 112,
+      "triangles": 196,
+      "bounds_min": [
+        -3.58,
+        -7.75,
+        2.145
+      ],
+      "bounds_max": [
+        -1.72,
+        -7.72,
+        3.235
+      ]
+    },
+    {
+      "name": "Rear Corner Downpipes",
+      "role": "exterior_service",
+      "group": "service",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.55,
+          0.56,
+          0.51
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 72,
+      "triangles": 128,
+      "bounds_min": [
+        -7.75,
+        -5.762798,
+        0.24
+      ],
+      "bounds_max": [
+        7.75,
+        -5.38,
+        4.61
+      ]
+    },
+    {
+      "name": "Rooftop Refrigeration Cases",
+      "role": "exterior_roof_equipment",
+      "group": "roof",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.49,
+          0.52,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -3.9,
+        -2.31,
+        5.6
+      ],
+      "bounds_max": [
+        3.06,
+        3.65,
+        6.22
+      ]
+    },
+    {
+      "name": "Rooftop Fan Guards",
+      "role": "exterior_roof_equipment",
+      "group": "roof",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.42,
+          0.45,
+          0.42
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 88,
+      "bounds_min": [
+        -3.16,
+        -2.01,
+        6.12
+      ],
+      "bounds_max": [
+        2.48,
+        1.58,
+        6.325
+      ]
+    },
+    {
+      "name": "Rooftop Exhaust Stack",
+      "role": "exterior_roof_equipment",
+      "group": "roof",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.48,
+          0.49,
+          0.45
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 40,
+      "triangles": 72,
+      "bounds_min": [
+        4.47,
+        -2.87119,
+        5.8
+      ],
+      "bounds_max": [
+        4.83,
+        -2.52881,
+        6.4
+      ]
+    },
+    {
+      "name": "Old Front Bin",
+      "role": "exterior_dressing",
+      "group": "frontage",
+      "sheet": "ExteriorMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.29,
+          0.26
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        4.74,
+        7.08,
+        0.0
+      ],
+      "bounds_max": [
+        5.36,
+        7.6,
+        0.92
+      ]
+    }
+  ],
+  "build_signature": "c61b80ffe47081b7a13690005c334245074bdd471e7dfc11e9061eb342301dd0"
+}

@@ -612,6 +612,14 @@ namespace BarPromenade.Tests.EditMode
                     expectedTextures.Add(
                         HomeSurfaceAppearance.GetTexture(kind));
                 }
+                foreach (PlayerHomeExteriorSurfaceKind kind in
+                         System.Enum.GetValues(
+                             typeof(PlayerHomeExteriorSurfaceKind)))
+                {
+                    expectedTextures.Add(
+                        PlayerHomeExteriorSurfaceAppearance.GetTexture(
+                            kind));
+                }
 
                 var seenTextures = new HashSet<Texture>();
                 int texturedRendererCount = 0;

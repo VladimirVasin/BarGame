@@ -6,6 +6,526 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-31 — The reference became an interface-only art bible
+
+The complete runtime IMGUI family moved from saturated plum/orange cards and
+cut-corner bevels to one soot/charcoal/dirty-bone system. `RetroUiTheme` now
+owns flat rectangular panels, thin nested frames, a stable 8x8 soot pattern,
+semantic frame/selection values and one shared font path: a Cyrillic-capable OS
+monospace where available, packaged `Roboto-Regular` otherwise, then Unity's
+legacy fallback. Focus is carried by value, fill and frame together, not colour
+alone.
+
+The pass covers prompts, NPC speech, day/start and pause screens, inventory,
+refrigerator inspection, journal, shops, target actions, map and area tabs,
+loading, intoxication/balance/grave HUD and debug presentation. Large modal
+screens use one dominant frame and internal rules instead of a stack of RPG
+cards; the map keeps its semantic shapes while bringing all local inks into
+the same restrained value family. Existing input, hitboxes, localization,
+modal ownership and gameplay paths were preserved.
+
+The new §15a in `ai/city-zones-art-bible.md` makes this an interface-only
+contract. None of the reference's literal birds, skull, blood, diary, poetry,
+portrait or copied text entered the game, and the world camera, aspect,
+materials, lighting, audio and PS1 composite were not changed.
+
+Verification: `BarPromenade.Runtime` and `BarPromenade.EditModeTests` compiled
+successfully with the existing serialization warnings unchanged; the
+`RetroUiThemeTests` set passed as `18/19` followed by the corrected
+single regression at `1/1`, and the changed Route 01 semantic-colour contract
+passed `1/1` in Unity EditMode. Scoped `git diff --check` passed. Fast mode did
+not run the complete EditMode/PlayMode suites or make a player build.
+
+## 2026-08-30 — Courtyard life moved from generic clutter to bounded domestic scenes
+
+The City topology does not contain honest enclosed residential courtyards, so
+the new pass does not pretend that the narrow facade-to-road strips are yards.
+`CityCourtyardPocketPlanner` instead selects at most four shallow (`<=1.05 m`)
+facade-side pockets after ordinary frontage dressing. Six Blender-authored
+variants cover a Nardi table, bicycle repair, balcony basket/pulley, chair
+repair, sweeping kit and a quiet bench with planters. Full blocking proxies
+keep them clear of doors, accesses, district POIs and existing geometry and
+enter static collision before wind dressing, so a laundry line moves or is
+omitted instead of crossing the new scene.
+
+`CityFringeYardLifePlanner` gives every typed fringe Yard exactly one grounded
+human-scale work composition tied to its existing function: mason cart at the
+west stone terraces, winch service at the west-industrial repair frame,
+barrier/repair tools at the tunnel, dry pump and planks at the floodworks, and
+an old compact car with its hood open, one wheel removed, jack and tools at the
+east utility edge. The north-east `4 x 4` former-lake Yard is deliberately not
+part of the pass and remains empty.
+
+`CityCourtyardResident{Plan,Factory,Presentation}` reuses generic non-light
+city archetypes and existing idle/sit presentation for only selected active
+pockets and fringe scenes. Instances are colliderless, outside the roaming
+population and capped at eight across the whole pass; balcony, quiet and
+tunnel scenes remain empty. Nothing adds speech, interaction, audio, light or
+story reaction, and there is no new water, cat, child, fire/homeless duplicate,
+flag, logo, readable text or landmark. These are ordinary level-`0/1` traces,
+so no story-bible registry exception was needed.
+
+The deterministic `city_misc_citywide_v4` library advanced to generator
+version `4.8.0` without changing its design ID: `86` kinds, `126` assemblies,
+`271` passive role meshes and `48,926` triangles. The six courtyard variants
+share one semantic kind; the five fringe work scenes are distinct late-wave
+kinds with their exact contracts isolated in
+`CityMiscAssetProvider.LateCatalog.cs`.
+
+Documentation verification: scoped `git diff --check` passed for the nine
+updated documents. This documentation-only slice did not invoke Unity.
+
+## 2026-08-30 — The bowl looms and the village's haze breathes with the gale
+
+The village had a `49°` enclosing rise that nobody looking could see: it
+started `36 m` outside the last houses (`TerrainMargin 30 + RidgeStandoff 6`),
+topped out at `34 m`, subtended `16-20°` from the lane and was a pale smear
+under a `0.0145` haze that ran to a `140 m` plane. The captures showed a flat
+warm-grey wash over the roofs. The user asked for two things — the village
+"surrounded by mountains" and City-like visibility "because of the storm" —
+and both collided with canon: peaks in frame are `Нельзя` in both bibles and
+City's `0.070` / `48 m` deletes the one landmark, the mother's house, from the
+platform. The resolution was a bounded one, taken by the user and recorded as
+a level-`0` §6 registry row plus an accepted architecture exception: the bowl
+walls loom, and the haze BREATHES — closing the far half of the lane for the
+seconds of a gust and reopening every cycle.
+
+**The wall.** `TerrainMargin 30 -> 12` puts the toe `18 m` outside the top
+house's envelope; `RidgeRisePerMeter 1.15 -> 1.6` (`58°`) and
+`RidgeMaximumRise 34 -> 50` put the crest `31 m` past it, so it stands `39°`
+from the lane head, `36°` from the platform toward the open side and
+`28-31°` sideways from mid-lane. The lateral number is limited by the hull
+being a world-axis AABB around a village turned `19.9°`; an oriented hull is
+the recorded follow-up, not a looser bar. The rise is now the second submesh
+of the one ground mesh (one `MeshCollider`, two materials) on
+`AlpineVillageRidgeAppearance`'s own `Shaders/CityMountainPhysical` material:
+the village's haze colour, the breathing density, visibility floor `0.30`
+(the first capture at `0.12` showed the wall as a shade on the haze that
+nobody would call a mountain; the City's `0.10` works only because a painted
+shell stands behind its rock),
+native fog `9/12 m`, dither handoff `96/108 m` (beyond every crest the plan
+makes — `88 m` mid-lane, `99 m` sideways from the platform — and inside the
+plane), the SAME `WindSnow` sheet as the floor at the SAME `_BaseMap_ST` read
+back from the floor's block, tinted snow-shadow `(0.31, 0.35, 0.41)` (the
+`(0.40, 0.44, 0.48)` first pass was a smudge). Cells
+inside the cableway cut's `19 m` outer half-width keep the floor material,
+because the cabin passes the valley bed and walls at a few metres. The toe
+seam is buried the City's way (`SeamBurial 0.08 m`): the ring of floor cells
+touching the rise is drawn again into the rise submesh on duplicated,
+lowered vertices, so the unsnapped rise lies under the `Ps1Lit`-snapped floor
+edge and no hairline can open. Two consequences are recorded rather than
+"fixed": the shader has no `ShadowCaster` pass, so the rise casts no shadow
+while the floor still does (a `50 m` wall can never shade the lane); and
+`MountainRoadSurfaceAppearance.Apply` gained an optional `materialIndex`
+that writes indexed property blocks and never touches `sharedMaterial`,
+because the singular setter truncates the array. Spindrift refuses to be
+born where the ridge rise exceeds `SpindriftRiseLimit 2 m`.
+
+**The haze.** `RuntimeSceneSetup.AlpineVillageFogDensity 0.0145 -> 0.017`,
+chosen against the canon viewpoint, which is the station pad and not the
+lane foot: `StationSetback 7 + LaneLength 82 + MothersHouseSetback 2 = 91 m`
+to the door, `9 %` of it surviving between gusts. New
+`AlpineVillageStormFogDensity 0.045`: `41 m` at `3 %`, the far half of the
+lane closed and the house gone for those seconds. `AlpineVillageFarClipPlane
+140 -> 110`, past the house's back wall from the platform (`100 m`) with
+margin, so the landmark is only ever cut by haze; the cableway's lower bounds
+still hold (`157 m` and `233 m` against `120`). The wave is keyed on the RAW
+shared gust — `GameWeatherRules.EvaluateGust`, the `0.62 + 0.24 sin(2πt/7.3)
++ 0.14 sin(2πt/1.9)` term extracted verbatim from `EvaluateWind` so the wind
+stays bit-identical (the amplitudes are `double` constants for exactly that
+reason) — and NOT on the shaped `EvaluateGalePulse`, whose trough is `0.72`
+at the lane foot and pinned at `1` at the head for a whole thunderstorm slot;
+a wave on it would close the lane and never reopen it. Target
+`SmoothStep(InverseLerp(0.66, 0.86, gust))` (the floor sits above the mean so
+the `1.9 s` ripple alone cannot hold the wave up), one-pole attack `0.5 s` /
+release `1.0 s` on `Time.deltaTime`, the same delta the game clock advances
+on, so a pause freezes rhythm and haze together. Pure
+`EvaluateAlpineVillageFogDensity(wave, warmth) = Min(peak, Lerp(base, peak,
+wave) · Lerp(1, 1.55, warmth))`: the dim end rides on the storm base and is
+clamped at the storm peak. One writer: `AlpineVillageRoot.Update` advances
+the wave, runs the per-minute lighting pass (visibility was REMOVED from it),
+then `ApplyVisibility()` every frame — `ApplyAlpineVillageVisibility(camera,
+warmth, wave)` and then `AlpineVillageRidgeAppearance.SetHaze(fogColor,
+fogDensity)`, Scenes handing World what Core just wrote so Core stays free of
+World. It keeps running while riding; the ride's fade covers it.
+
+**Canon.** Story bible §6: new level-`0` row lifting «белая мгла, стирающая
+дорогу/улицу и верхний дом» ONLY as a bounded wave; §12 landmark, enclosure,
+weather paragraph, `Нельзя` and `Проверка` amended. Art bible §2.3's stale
+"one `48 m` visibility for every exterior" replaced by per-area draw ranges
+(`48 / 120 / 110`) with the village's the one that breathes; §10g mass
+(`58°`, `18 m`, `50 m`, no panorama), weather (base and crest numbers, the
+wall a present mass through the wave), landmark, `Нельзя` and `Проверка`
+amended. `ai/architecture-notes.md`: an accepted exception that explicitly
+SUPERSEDES the «or whiteout» / «remain readable and unchanged» clauses of the
+2026-08-29 entry, states what replaces them and what is not lifted (no
+silhouette layer, no panorama, no lightning, no danger), and cross-references
+the bounded-fog decision. `AI.md`, `README.md`, `ai/project-overview.md`,
+`ai/systems-map.md` (rows 57 — still `Partial` with its named gap — 58, 94,
+124), `ai/system-tree.md` and `ai/release-notes.md` updated to the real
+constants.
+
+**Tests (written; see Verification).** New
+`AlpineVillageStormVisibilityTests` `[Category("AlpineVillageStorm")]`: the
+constants and the platform-derived far-plane bound; density monotone base to
+peak with the dim clamped at the peak; the gust-extraction refactor guard
+(`EvaluateWind.Strength01 == Clamp01(target · EvaluateGust)` for a developed
+slot); a `600`-game-minute simulation of `AdvanceStormWave` at `1/60` —
+closed fraction in `[0.20, 0.55]`, every `15 s` window reaching `>= 0.85` and
+`<= 0.12`, and the RUNNING trough keeping the door `>= 5 %` from the platform;
+the ridge floor, band and material. `AlpineVillageTests` gained
+`Bowl_LoomsOverTheLaneOnEverySide` (toe `<= 62 m` sideways / `<= 36 m` at the
+head, crest `>= 26°` / `>= 34°`) and `TerrainMesh_BuildsTheRidgeAndTheCablewayBrink`
+now asserts the two submeshes, their materials, the cut exclusion, the buried
+ring and the shared `_BaseMap_ST`. The PlayMode twin
+(`AlpineVillageStormVisibilityPlayModeTests`, 600 frames of the running scene:
+far plane, fog mode, density equal to the pure function of the root's own
+wave, the ridge material's density equal to the fog's, a real trough and a
+real crest) and four new capture shots (`04-platform-landmark` — the canon
+view, pad centre to the mother's house; `05-mid-lane-wall-right`;
+`06/07-lower-uphill-axis-gust-crest/trough`, each waiting on the root's wave
+through a new `readyWhen` hook on `Shot`) landed with it.
+
+Verification: `dotnet build` of Runtime/EditModeTests/PlayModeTests clean.
+Headless EditMode selection
+(`AlpineVillage*|VillageAssetTests|MountainCablewayRideTests|CityWeatherControllerFogShelterTests|CityMountainBoundaryTests|GameWeather`)
+`81`: `79` green plus two first-run reds fixed in the tests themselves — a
+bit-exact colour compare on the haze (float32 vs authored decimal, now
+`0.002` per channel) and the gust refactor guard sweeping past its slot into
+the next slot's transition (now confined to one developed stretch) — then
+`4/4` on the class. PlayMode one fixture per invocation:
+`AlpineVillageStormVisibilityPlayModeTests` `1/1`,
+`AlpineVillageStationExitPlayModeTests` `1/1`,
+`AlpineCablewayRidePlayModeTests` `3/3`.
+`AreaCaptureFixture.AlpineVillage`: nine frames, all LOOKED AT — the first
+strip showed the wall as a shade nobody would call a mountain and the
+platform shot buried under the canopy mid-wave, so the floor went
+`0.12 → 0.30`, the tint one step darker and the platform eye moved to the
+apron waiting for the trough; the re-shot strip shows the crest as a dark
+mass over the roofs in `05`, entering the corners of `00`/`04`, the gust
+closing the far half of the lane in `06` and opening it in `07`, and the
+house a warm point at the limit of sight from the platform. One complete
+EditMode suite: `1,878 / 1,878`. During one launch the concurrent building
+session held a half-written `CityFringeYardPlanner.cs` and Unity refused the
+compile — retried a minute later, clean; nothing to fix on this side.
+
+Files: `Assets/Scripts/Runtime/Core/{RuntimeSceneSetup,GameWeatherRules}.cs`,
+`Assets/Scripts/Runtime/Scenes/AlpineVillageRoot.cs`,
+`Assets/Scripts/Runtime/World/AlpineVillage{Planner,TerrainSampler,StormField,RidgeAppearance,WorldBuilder}.cs`,
+`Assets/Scripts/Runtime/World/MountainRoadSurfaceAppearance.cs`,
+`Assets/Tests/EditMode/{AlpineVillageStormVisibilityTests,AlpineVillageTests}.cs`,
+`AI.md`, `README.md`,
+`ai/{city-story-bible,city-zones-art-bible,architecture-notes,project-overview,systems-map,system-tree,release-notes,work-log}.md`.
+
+## 2026-08-30 — The hero's house became one authored Series 209-1 exterior, with one light left on
+
+The generic City shell, repeated window bands, overlay roof and separately
+boxed balcony were removed from the player-home presentation. Their replacement
+is deterministic `player_home_exterior_v1`: a restrained Georgian Series
+209-1-inspired two-storey house with a `13 x 12 x 8.8 m` logical body, cold
+repaired stucco, brick plinth, pitched slate roof, recessed street entrance and
+a supported upper gallery projecting `2.3 m` beyond the front wall. The export
+contains 47 passive semantic meshes / 7,776 triangles, exact full visual bounds
+`[-6.5,-6,0]..[6.5,8.3,8.8]`, one fixed exterior-door anchor and no gameplay
+components. Its generated signature is
+`91cb3cc200abbf5dfc83891e04fa9ae493ca4d252e9b00d3c9317c6cc5a30790`.
+
+The exterior no longer stretches one sample over a whole building. Nine
+dedicated sheets bind primary and repair stucco, brick plinth, roof slate,
+painted wood, painted metal, window frames, glass and concrete. Elevations own
+their UV regions; repeated micro-surfaces keep a physical metre scale. The
+generator audits a `0.03 m` minimum between competing opaque layers, while the
+runtime foundation is inset `0.08 m`, so old coplanar flicker cannot return.
+City placement now instantiates the passive authored prefab beside one logical
+collider and the existing entrance transaction instead of composing competing
+visible shells.
+
+The lighting rule is exact rather than probabilistic: only
+`Front Lit Window Glass`, the upper street pane at source tangent `+2.15 m` and
+height `5.36 m`, is emissive. It reads left of the balcony from the street;
+every lower, side, rear, gallery and balcony-door pane is dark. The bounded Home
+view reconstructs the same nine surfaces and that same one-window pattern, while
+retaining the physical balcony, open door, ashtray and apartment interaction.
+The City entrance, path, fence gap, mailbox, lamp, number `7`, antenna/red
+beacon and return anchors stay plan-owned and fixed. Layout generation gives the
+home its exact envelope in both street orientations and omits it if a custom
+map cannot fit that envelope instead of silently scaling the architecture.
+
+The prefab authoring bridge now resolves the generator's exact
+`player_home_exterior_v1` root rather than assuming the older `ROOT_*` naming
+convention. Blender validation passed at 47 meshes / 7,776 triangles; the
+texture validator passed all nine sheets (`b568557fa26a866f`); Unity's import,
+prefab and manifest setup passed. Focused EditMode verification
+`PlayerHomeExteriorModelContractTests|PlayerHomeLayoutTests|CityBuildingPrototypeRuntimeTests|HomeSurfaceAppearanceTests`
+passed `64 / 64`. No full regression, player build or scene-capture run was
+requested.
+
+Files: `tools/build-player-home-exterior-{3d-model,textures}.py`,
+`ArtSource/PlayerHome/`, `Assets/{PlayerHome,Resources/PlayerHome}/`,
+`Assets/Scripts/{Runtime/World,Editor/PlayerHome}/`,
+`Assets/Tests/EditMode/{PlayerHomeExteriorModelContractTests,PlayerHomeLayoutTests,CityBuildingPrototypeRuntimeTests,HomeSurfaceAppearanceTests}.cs`,
+`AI.md`, `README.md`, `ai/{city-zones-art-bible,project-overview,system-tree,systems-map,architecture-notes,release-notes,work-log}.md`.
+
+## 2026-08-30 — The two village reds were born red: both tests now measure what the world actually does
+
+`AlpineVillagePathTests.VisiblePaths_CarryEveryPermittedBranch` and
+`AlpineVillageTests.TerrainMesh_BuildsTheRidgeAndTheCablewayBrink` had been
+red since `f6dc86d` wrote them, and three sessions had logged them as
+"pre-existing". Neither guarded a defect.
+
+**The path test compared four constants.** For a household path the corridor
+is `BranchWalkableHalfWidth 1.10` and the hero `MaximumAgentRadius 0.35`, so
+his centre may sit `0.75 m` from the centreline; the ribbon is
+`HouseholdSurfaceHalfWidth 0.62` and the test allowed a hand-written `0.05`
+past it — `0.75 <= 0.67`, false on every seed, identical in every tree. But
+the terrain pass already paints bare soil out to `SurfaceHalfWidth + 0.15 m`
+before the snow fades back, so the corridor never put a hero on pristine
+snow; only the test's slop disagreed with the paint. The skirt is now one
+named constant, `AlpineVillagePathPlanner.BareSkirtHalfWidth = 0.15`, read by
+`AlpineVillageWorldBuilder` and by the test, so mask and paint cannot drift
+apart again. Shrinking the corridor by `8 cm` instead was rejected: it
+narrows real traversal to satisfy a number the ground contradicts.
+
+**The terrain test demanded that a 2 m grid reproduce a kink.** The cut bed
+is piecewise-linear through the pylon grounds and bends AT `support-01`
+(`0.125 -> 0.500 m/m`); the pylon shelf clamps with `Mathf.Min`, which flattens
+the uphill side and is a no-op downhill, so the triangle spanning the node
+cuts the corner by `grade x cell diagonal / 4` — `0.16 m` here, and a number
+that re-rolls with the grid phase every time `TerrainMeshBounds` moves
+(`0.58 -> 0.18 -> 0.162` across three commits that never touched the pylon).
+The sampler everything physical reads is exact there to `0.001 m` (asserted
+just above). The only production change that would close it — a symmetric
+shelf `>= 2.83 m` each side — leaves `0.17 m` of air under the cabin at node
+01, which is the crash `ad50d80` fixed. So the bound is now one-sided and
+derived: the mesh may never rise into the tower (`+0.03`), and may sag below
+the footing by at most the chord sag from that node's own downhill grade
+(`+0.03`). The historical `0.58 m` profile drift would still fail it; the
+grid's own tessellation does not. A `~16 cm` gap under the first pylon's feet
+is accepted as cosmetic; if it is ever seen from the cabin the fix is the
+A-frame footing embed in `MountainCablewayWorldBuilder`, not the sampler.
+
+Verification: headless EditMode `AlpineVillagePathTests|AlpineVillageTests`
+`21 / 21` — the first time supports `02` and `03` were measured at all, since
+NUnit had always stopped at `01`. `dotnet build` of Runtime and EditModeTests
+clean.
+
+Files: `Assets/Scripts/Runtime/World/{AlpineVillagePathPlan,AlpineVillageWorldBuilder}.cs`,
+`Assets/Tests/EditMode/{AlpineVillagePathTests,AlpineVillageTests}.cs`,
+`ai/work-log.md`.
+
+## 2026-08-30 — The Kettle Hat walker's kettle boils, and he got a body worth the kettle
+
+The kettle on `kettle_hat_walker_v1` is permanently on the boil: the lid
+trembles and jumps on a seeded `2.2-3.1 s` vent cycle and a thin grey plume
+leaves the spout, in idle, walk, on the bench, in the Route 01 cabin and in
+the balcony pool alike. The boil is independent of every animation state by
+construction and still belongs to the body: a pure `KettleBoilModel` is fed
+the presentation's own sanitised, distance-accelerated delta through a new
+`CityPedestrianPresentation.Advanced` event raised right after each graph
+write, so a far walker's kettle keeps step with his `2.75x` stride while
+never being a function of the mixer. Lid and steam share that one phase.
+
+**No bone was added.** The rig is locked to the exact 31-bone Hero V2
+hierarchy in three places, so the prefab build creates an identity-frame
+`ANCHOR_KettleLid` empty under the head bone and re-points the single `head`
+entry of `ACC_KettleLid`'s and `ACC_KettleKnob`'s `SkinnedMeshRenderer.bones`
+at it (bind poses untouched; the entry is found by reference and required
+exactly once — Blender clusters every bone, so all 31 are present on each
+part). The lid's centre, the kettle axis and the two tilt axes are measured
+in the bind pose off the imported meshes and stored head-local on a passive
+`CityKettleHatRigAnchors`, next to `ANCHOR_KettleSpout` at the measured mouth
+of the spout (`0.457 m` from the head bone) — the fisherman's bind-pose
+anchor idiom, so gameplay code never re-derives the axis swap or the prefab's
+180° flip. The spike the plan required passed: the re-pointed bone array
+survives `SaveAsPrefabAsset` and a fresh-process load (the EditMode contract
+test reads the prefab back and finds the pivot exactly once on both parts).
+`CityKettleHatBoilEffect` (factory-attached, never authored, every callback
+behind `IsInitialized` because it lands on a live object that is deactivated a
+moment later) writes `localRotation = R`, `localPosition = c − R·c +
+InverseTransformVector(lift)` — under the 100x FBX root one metre is `0.01`
+head-local units, so no metric constant touches a bone child's localPosition —
+and drives a code-built steam ParticleSystem on the shared atmosphere
+material: no Light, no sound, `AlwaysSimulate` (a pooled walker moves while
+culled; the fisherman's `Pause` would leave his plume standing in the street),
+world space on the pavement and local space with a lower, shorter rise while
+seated or aboard the bus so the plume rides the cabin. Stop-and-clear on every
+enable, disable, destroy and space switch; the first play waits for the first
+spout follow in `LateUpdate`.
+
+**The body was reworked to Hero V2 density** — `2,004` triangles / `52`
+meshes from `1,356` / `42`, budget `(1600, 2300)`: head `16x8`, belly `18x9`
+(same centre and radii — the seated contact is measured off it), a
+frustum torso, full-length `12`-side sleeves ending in cuffs, lapels, an
+oriented palm ellipsoid with a thumb and a four-sided finger block per hand in
+a mid-tone `stout_hand_skin` (the white enamel stays his one bright detail;
+"pale hands" are the Long-Arm's), `14`-side legs, boots with a toe cap whose
+base sits exactly on `z = 0` and a heel counter, denser kettle rings, and the
+two `ACC_KettleChip` boxes retired into paint. He is the first pedestrian with
+a texture: a `256 px` detail atlas (seams, pockets, enamel chips, finger
+grooves, laces; alpha `255`; the bottom-left cell reserved pure white because
+every un-UV'd part samples texel `(0,0)` in the Blender preview) whose UVs are
+authored straight into its sub-rectangles and which is bound per renderer
+through the same MaterialPropertyBlock as the palette tint and multiplied by
+it — so `Player3DLit` remains the one shared material, its three gates are
+untouched and all four palette variants survive one PNG. That inverts Hero
+V2's clothing contract on purpose. The atlas painter and the UV helpers moved
+out of `build-player-3d-model-v2.py` into a shared `tools/atlas_kit.py`;
+Hero V2 was rebuilt through it and its atlases and manifest came back
+byte-identical (empty `git status` on `Assets/Player3D/V2/Textures` and the
+V2 JSON; the timestamp-only FBX/blend/preview rewrites were reverted).
+
+**What the generator version did not do:** it stayed `4.0.0`. The new manifest
+keys (`signature_effects`, `rig_anchors`, `texture_bindings`, per-part
+`atlas_region`) are emitted only by designs that declare them and enter the
+build signature only when non-empty, so the other thirteen city manifests
+and signatures are byte-identical and no other prefab's contract moved. The
+determinism rerun now re-paints the atlas into memory and compares its sha
+before comparing signatures. The mesh ceiling in `validate_result` rose from
+`52` to `60` for every design (the kettle sits exactly on `52`). The shared
+locomotion library was re-baked as it always is for a body change; the kettle
+walker's seated numbers moved by a millimetre (`seated_contact 0.128356`,
+`headroom 0.913886`, `drop 0.390296`, `ground_min 0`), so
+`CityPedestrianSeatedRide(0.118, 0.18, 0.914)` and `seated_clearance_m (0.87,
+0.96)` were left alone.
+
+**Two batch-mode facts worth keeping.** `Start-Process` splits a project path
+with a space unless the argument carries its own quotes, and `-executeMethod`
+needs the namespace-qualified `BarPromenade.Editor.NpcHumanV2AssetSetup.RunBatch`.
+And a batch PlayMode frame lasts under a millisecond, so "sixty frames" of
+a `3 /s` emitter is nothing: the steam proof fast-forwards the system a fixed
+`1.5 s` with `Simulate` instead of counting frames.
+
+Verification: Blender `--archetype all` — `Determinism: repeated model
+signatures match`, `CITY PEDESTRIAN ART BUILD OK`, kettle signature
+`90f42bea…`, atlas sha `34501deb…`; Hero V2 byte-identity proof as above;
+`BarPromenade.Editor.NpcHumanV2AssetSetup.RunBatch` — "all rigged NPC prefabs
+and static shelter resident assets were rebuilt and validated"; EditMode
+`CityPedestrianRuntimeTests|KettleBoilModelTests` `33/33` after loosening the
+tint comparison to `0.002` per channel (float32 in the property block);
+PlayMode `CityKettleHatBoilPlayModeTests` `4/4` plus
+`CityPedestrianAirborneGroundingPlayModeTests`, `CityBusNpcPassengerPlayModeTests`
+and `CityBusRidePlayModeTests` all green; the explicit
+`CityKettleHatVisualCapturePlayModeTests` strip at `3/6/12 m` LOOKED AT — the
+plume reads at `3` and `6 m` and is a couple of pixels at `12 m`, the lid tilt
+changes between frames; one complete EditMode suite: `1,866` tests, `1,864`
+passed, the two failures (`AlpineVillagePathTests.VisiblePaths_CarryEveryPermittedBranch`,
+`AlpineVillageTests.TerrainMesh_BuildsTheRidgeAndTheCablewayBrink`) are in the
+village and touch nothing changed here. Not run: full PlayMode suite, player
+build. Note for the next session: a second agent was working in this same
+checkout on the building surfaces and the supermarket throughout, which is why
+the dotnet csproj files had to be patched with unlisted sources before they
+compiled; Unity regenerates them.
+
+Files: `tools/atlas_kit.py` (new), `tools/build-player-3d-model-v2.py`,
+`tools/build-city-pedestrian-3d-model.py`,
+`ArtSource/Pedestrians/Blender/{KettleHatPedestrian3D,CityPedestrianLocomotion}.{blend,png}`
++ contact sheet, `Assets/Pedestrians/Models/KettleHatPedestrian3D.{fbx,json}`,
+`Assets/Pedestrians/Animations/CityPedestrianLocomotion.{fbx,json}`,
+`Assets/Pedestrians/Textures/KettleHatDetailAtlas.png` (new folder),
+`Assets/Resources/Pedestrians/*.prefab` (all 21 NPC prefabs rewritten by
+RunBatch for the new serialized fields; only the kettle's content changed),
+`Assets/Scripts/Editor/City/NPC/{CityPedestrianAssetSetup,CityPedestrianTextureImporter}.cs`,
+`Assets/Scripts/Editor/Player3D/Player3DV2TextureImporter.cs`,
+`Assets/Scripts/Runtime/City/NPC/{CityKettleHatRigAnchors,KettleBoilModel,CityKettleHatBoilEffect,CityPedestrianPresentation,CityPedestrianFactory,CityPedestrianResources,CityPedestrianAssetRegistry}.cs`,
+`Assets/Tests/EditMode/{CityPedestrianRuntimeTests,KettleBoilModelTests}.cs`,
+`Assets/Tests/PlayMode/{CityKettleHatBoilPlayModeTests,CityKettleHatVisualCapturePlayModeTests}.cs`,
+`AI.md`, `README.md`, `ai/{city-zones-art-bible,architecture-notes,project-overview,system-tree,systems-map,release-notes,work-log}.md`.
+
+## 2026-08-30 — The supermarket became a complete authored neighbourhood store
+
+The street supermarket no longer instantiates the old three-role CityMisc box,
+generic apartment window bands or a runtime-box storefront. Deterministic
+`supermarket_exterior_v1` now owns the complete passive
+`15.5 x 15.5 x 6.4 m` exterior in `36` semantic meshes / `3,984` triangles:
+dark brick wings and plinth, rendered side/service walls, an exact `8.4 m`
+four-bay storefront, centred `1.9 x 2.4 m` recessed double door, `9.2 m`
+canopy, parapet, membrane roof, low refrigeration plant, rear service details,
+shallow shelf/light proxies and authored block `ПРОДУКТЫ` lettering. The
+7-Eleven photograph was used only for the low mass, broad glazing and coloured
+fascia idea; there is no copied logo, digit, price, slogan or corporate
+wordmark. A first preview exposed reversed lettering, so the glyph run and its
+asymmetric letters were corrected at source before acceptance. Final model
+signature: `c61b80ffe47081b7a13690005c334245074bdd471e7dfc11e9061eb342301dd0`.
+
+Four deterministic `1024` exterior albedos now split unique wall/fascia
+atlases from physically repeated brick/metal; the roof and warm supermarket
+glass keep their established shared families. Their texture signature is
+`6ed7514911e6f01b`. Fascia bands live in UV, not coplanar plates. The model
+validator reuses the ordinary-building coplanarity scanner and rejects both
+same-plane overlap and broad opaque relief below `0.03 m`; the visible runtime
+foundation is inset `0.14 m` on every horizontal side. Its nearest visible
+wall remains `0.04 m` away, above the shared `0.03 m` clearance floor.
+
+City and fully visible Home views align the imported world-space
+`exterior_door` anchor to the unchanged generated door. Unity still owns the
+full renderer-free logical collider, `4.8 m` apron, `5.6 m` fence opening,
+entrance trigger/action/transition and the fixed cold yard spotlight; the
+passive prefab owns no Collider, Light, Camera, Rigidbody or Animator. A Home
+half-space crossing alone retains the bounds-clipped legacy fallback. Focused
+model/import/runtime tests pin that authority split and the final capture set
+now includes the entrance from both sides, facade edges, foundation and rear.
+The lot is now always the same exact `15.5 x 15.5 x 6.4 m` as the unscaled
+asset; custom settings that cannot contain its footprint omit the landmark.
+The yard-light mount subtracts the authored side-wall inset instead of floating
+`0.08 m` off the wall and rejects a non-side orientation for that fixture.
+
+Verification: the four-sheet texture validator passed with signature
+`6ed7514911e6f01b`; Blender validation passed the semantic, dimension,
+determinism, winding and coplanarity contracts at `36 / 3,984`, signature
+`c61b80ffe47081b7`. Unity import rebuilt and validated the Resources prefab
+with the complete final signature. The final model/foundation and fixed-lot
+contracts passed `2/2`; the side-wall spotlight contract passed its `1/1`
+rerun after its numeric angle tolerance was corrected from `0.01°` to `0.05°`
+for an observed `0.028°` quaternion-rounding difference.
+The final explicit `AreaCaptureFixture.CitySpecialBuildings` PlayMode run
+passed `1/1` and wrote seven current supermarket views: whole frontage, both
+entrance approaches, both facade edges, foundation and rear. Manual review
+found the corrected forward-reading sign, aligned entrance/apron, separated
+facade layers and no legacy shell, generic residential windows or visible
+overlapping surfaces.
+
+## 2026-08-30 — Ordinary buildings gained semantic surfaces and a no-coplanarity contract
+
+The four fixed-metre district prototypes moved from
+`city_buildings_prototypes_v1` to v2. Each now exports seven non-empty semantic
+meshes — primary/secondary facade, plinth, roof, metal, window frame and window
+glass — for `28` meshes / `3,642` triangles total. Facade UV0 is a four-side,
+non-repeating height atlas; every plinth face consumes one complete non-repeating
+`0..1` sheet; roof, metal and frame use physically scaled projection; glass keeps
+its pane-local UV0 and UV2 slot identity. The final deterministic build
+signature is
+`7670234e09fcc68bdebc985d04b0e74810f3e0f4e2f8ad11e840b1c75650ef53`.
+
+A second deterministic pipeline now owns `24` opaque albedo sheets, six for
+each district. Facade and plinth sheets clamp, micro-materials repeat, and the
+generator explicitly prohibits baked windows, apertures, signs, text and lore.
+Unity imports them with path-specific settings and applies texture, tint,
+smoothness and metallic through MPBs on the one packaged shared material;
+`WindowGlass` keeps the existing custom slot shader and no per-building
+material instances are created.
+
+Z-fighting was removed at its sources. Shared Residential wing/rear join faces
+are omitted, rail/trim/frame/metal layers are depth-separated, and the model
+validator now rejects every positive-area same-facing exterior coplanar
+overlap. A second guard rejects broad axis-aligned opaque layers closer than
+`0.03 m`; current plinth and secondary-facade relief is `0.035–0.065 m`, with
+only the slot-identified window stack and tiny metal interlocks kept as narrow
+semantic/area exceptions. Synthetic positive controls pin this audit. The
+terrain foundation keeps its vertical cover but sits `0.08 m`
+inside every horizontal side. Primary landmark lots now put their required
+ordinary core on the complementary surface, preventing the Residential
+laundry/greenhouse collision and the Nightlife fire-escape/cinema collision as
+well as their district equivalents.
+
+Verification: the 24-sheet texture validator passed; Blender direct validation
+and the final build produced the same v2 signature and passed exact/near-layer
+geometry audits plus their synthetic controls. The combined asset/surface
+EditMode selection passed `6/6`; the final focused City surface PlayMode
+capture passed `1/1`, and all `12` district oblique/base frames were inspected
+for texture binding and camera-shift stability. The complementary
+landmark-surface regression passed `1/1`. Full Unity suites, player build and
+startup smoke were intentionally not run in fast mode.
+
 ## 2026-08-29 — Every humanoid NPC moved to the Hero/NPC V2 anatomy contract
 
 The replacement is now in the production assets, not only in a proposal or a

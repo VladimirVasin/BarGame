@@ -276,6 +276,81 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
+        /// The bowl LOOMS, not merely closes. A `49°` rise starting `36 m`
+        /// out subtended `16-20°` from the lane and was a pale smear in the
+        /// haze - the enclosure existed for the walkable mask and for nobody
+        /// looking. From mid-lane sideways and from the head straight up the
+        /// axis, the toe has to be near and the crest has to stand high in
+        /// the frame. The lateral bars are lower because the hull is a
+        /// world-axis rectangle around a village turned `19.9°`: an oriented
+        /// hull is the recorded follow-up, not a looser number.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void Bowl_LoomsOverTheLaneOnEverySide()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            AlpineVillageLaneSample middle =
+                plan.Lane.Sample(plan.Lane.Length * 0.5f);
+            AlpineVillageLaneSample head = plan.Lane.Sample(plan.Lane.Length);
+            const float eyeHeight = 1.72f;
+            (Vector3 origin, Vector3 direction, float toeLimit,
+                float elevationBar, string label)[] rays =
+                {
+                    (middle.Position, middle.Right, 62f, 26f,
+                        "mid-lane toward +Right"),
+                    (middle.Position, -middle.Right, 62f, 26f,
+                        "mid-lane toward -Right"),
+                    (head.Position, plan.Uphill, 36f, 34f,
+                        "lane head uphill")
+                };
+            foreach ((Vector3 origin, Vector3 direction, float toeLimit,
+                         float elevationBar, string label) in rays)
+            {
+                Vector3 flat = new Vector3(
+                    direction.x,
+                    0f,
+                    direction.z).normalized;
+                float eye = AlpineVillageTerrainSampler.SampleHeight(
+                                plan,
+                                new Vector2(origin.x, origin.z)) +
+                            eyeHeight;
+                float toe = 0f;
+                float elevation = 0f;
+                for (float distance = 0.5f;
+                     distance <= RuntimeSceneSetup.AlpineVillageFarClipPlane;
+                     distance += 0.5f)
+                {
+                    Vector3 point = origin + flat * distance;
+                    var pointXZ = new Vector2(point.x, point.z);
+                    if (toe <= 0f &&
+                        AlpineVillageTerrainSampler.SampleRidgeRise(
+                            plan,
+                            pointXZ) > 0f)
+                    {
+                        toe = distance;
+                    }
+
+                    float height = AlpineVillageTerrainSampler.SampleHeight(
+                        plan,
+                        pointXZ);
+                    elevation = Mathf.Max(
+                        elevation,
+                        Mathf.Atan2(height - eye, distance) * Mathf.Rad2Deg);
+                }
+
+                Assert.That(
+                    toe,
+                    Is.GreaterThan(0f).And.LessThanOrEqualTo(toeLimit),
+                    $"The wall's toe stands at {toe} m {label}.");
+                Assert.That(
+                    elevation,
+                    Is.GreaterThanOrEqualTo(elevationBar),
+                    $"The wall subtends only {elevation:0.0} deg {label}.");
+            }
+        }
+
+        /// <summary>
         /// Regression for the enclosure that used to exist only in the pure
         /// sampler. The mesh stopped at TerrainBounds, exactly before the
         /// first non-zero ridge sample, while the descending cable supports
@@ -505,10 +580,40 @@ namespace BarPromenade.Tests.EditMode
                         collider.Raycast(ray, out RaycastHit hit, 160f),
                         Is.True,
                         $"No physical ground under {node.StableId}.");
+
+                    // The ground mesh is a 2 m grid and the cut bed bends AT
+                    // each pylon (0.125 -> 0.500 m/m at support-01), so the
+                    // triangle spanning the node cuts that corner: its chord
+                    // sags by the downhill grade times a quarter of the cell
+                    // diagonal, because the line runs diagonally to the grid.
+                    // No shelf flattens it away without taking the clearance
+                    // the cabin needs (the sampler, which everything physical
+                    // reads, is exact to a millimetre above). So the bound is
+                    // one-sided: the mesh may sag under the footing by that
+                    // chord, it may never rise INTO the tower.
+                    float downhillGrade = index + 1 < cableway.Nodes.Count
+                        ? Mathf.Abs(
+                            (cableway.Nodes[index + 1].GroundPosition.y -
+                             node.GroundPosition.y) /
+                            Mathf.Max(
+                                0.001f,
+                                cableway.Nodes[index + 1].Distance -
+                                node.Distance))
+                        : 0f;
+                    float chordSag = downhillGrade *
+                                     AlpineVillageTerrainSampler.TerrainCell *
+                                     Mathf.Sqrt(2f) * 0.25f;
                     Assert.That(
                         hit.point.y,
-                        Is.EqualTo(node.GroundPosition.y).Within(0.03f),
-                        $"The built mesh floats under {node.StableId}.");
+                        Is.LessThanOrEqualTo(node.GroundPosition.y + 0.03f),
+                        $"The built mesh rises through {node.StableId}.");
+                    Assert.That(
+                        hit.point.y,
+                        Is.GreaterThanOrEqualTo(
+                            node.GroundPosition.y - chordSag - 0.03f),
+                        $"The built mesh floats under {node.StableId}: " +
+                        $"{node.GroundPosition.y - hit.point.y:0.###} m " +
+                        $"against a {chordSag:0.###} m chord sag.");
                 }
 
                 var farRay = new Ray(
@@ -524,11 +629,263 @@ namespace BarPromenade.Tests.EditMode
                         cableway.UpperCableCenter.y -
                         cableway.CabinAttachmentToBottom),
                     "The built mesh rises into the cabin at the far turn.");
+
+                AssertTerrainSubmeshes(plan, world, filter, collider);
             }
             finally
             {
                 Object.DestroyImmediate(host);
             }
+        }
+
+        /// <summary>
+        /// The two-submesh split of the ground: floor and rise on their own
+        /// materials, the cableway cut kept on the floor, the boundary ring
+        /// buried under the floor into the rise submesh, one collider on
+        /// the one mesh, and one sheet across the toe.
+        /// </summary>
+        private static void AssertTerrainSubmeshes(
+            AlpineVillagePlan plan,
+            AlpineVillageWorldResult world,
+            MeshFilter filter,
+            MeshCollider collider)
+        {
+            Mesh mesh = filter.sharedMesh;
+            Assert.That(collider.sharedMesh, Is.SameAs(mesh));
+            Assert.That(mesh.subMeshCount, Is.EqualTo(2));
+
+            MeshRenderer renderer =
+                world.TerrainRoot.GetComponent<MeshRenderer>();
+            Material[] materials = renderer.sharedMaterials;
+            Assert.That(materials.Length, Is.EqualTo(2));
+            Assert.That(
+                materials[AlpineVillageWorldBuilder.TerrainFloorMaterialIndex],
+                Is.SameAs(RuntimePrimitiveFactory.DefaultMaterial));
+            Assert.That(
+                materials[AlpineVillageWorldBuilder.TerrainRiseMaterialIndex],
+                Is.SameAs(AlpineVillageRidgeAppearance.RidgeMaterial));
+
+            // Re-derive the grid the builder sampled.
+            Rect bounds = plan.TerrainMeshBounds;
+            float cell = AlpineVillageWorldBuilder.TerrainCellSize;
+            int columns = Mathf.Max(1, Mathf.CeilToInt(bounds.width / cell));
+            int rows = Mathf.Max(1, Mathf.CeilToInt(bounds.height / cell));
+            int gridVertexCount = (columns + 1) * (rows + 1);
+            var riseCells = new bool[rows, columns];
+            int ringCells = 0;
+            for (int row = 0; row < rows; row++)
+            {
+                for (int column = 0; column < columns; column++)
+                {
+                    riseCells[row, column] =
+                        AlpineVillageWorldBuilder.IsRiseCellCentre(
+                            plan,
+                            CellCentre(bounds, columns, rows, row, column));
+                }
+            }
+
+            for (int row = 0; row < rows; row++)
+            {
+                for (int column = 0; column < columns; column++)
+                {
+                    if (!riseCells[row, column] &&
+                        AlpineVillageWorldBuilder.TouchesRise(
+                            riseCells,
+                            rows,
+                            columns,
+                            row,
+                            column))
+                    {
+                        ringCells++;
+                    }
+                }
+            }
+
+            Assert.That(ringCells, Is.GreaterThan(0), "No toe ring at all.");
+
+            int[] floor = mesh.GetTriangles(
+                AlpineVillageWorldBuilder.TerrainFloorMaterialIndex);
+            int[] rise = mesh.GetTriangles(
+                AlpineVillageWorldBuilder.TerrainRiseMaterialIndex);
+            Assert.That(
+                floor.Length + rise.Length,
+                Is.EqualTo(columns * rows * 6 + ringCells * 6),
+                "The submeshes do not add up to the grid plus its ring.");
+            Assert.That(rise.Length, Is.GreaterThan(ringCells * 6));
+
+            Vector3[] vertices = mesh.vertices;
+            Assert.That(vertices.Length, Is.GreaterThan(gridVertexCount));
+            var twins = new Dictionary<(int, int), int>();
+            for (int index = 0; index < gridVertexCount; index++)
+            {
+                twins[VertexKey(vertices[index])] = index;
+            }
+
+            // Every floor triangle is a floor cell; a floor cell with a
+            // non-zero ridge term is inside the cut.
+            for (int index = 0; index < floor.Length; index += 3)
+            {
+                (int row, int column) = TriangleCell(
+                    vertices,
+                    floor,
+                    index,
+                    bounds,
+                    cell);
+                Vector2 centre = CellCentre(bounds, columns, rows, row, column);
+                Assert.That(
+                    riseCells[row, column],
+                    Is.False,
+                    $"Floor triangle at {centre} is a rise cell.");
+                Assert.That(
+                    floor[index] < gridVertexCount &&
+                    floor[index + 1] < gridVertexCount &&
+                    floor[index + 2] < gridVertexCount,
+                    Is.True,
+                    "A buried vertex is drawn in the floor submesh.");
+                if (AlpineVillageTerrainSampler.SampleRidgeRise(plan, centre) >
+                    0f)
+                {
+                    Assert.That(
+                        AlpineVillageTerrainSampler.DistanceAcrossCablewayLine(
+                            plan,
+                            centre),
+                        Is.LessThan(
+                            AlpineVillageTerrainSampler
+                                .CablewayCutOuterHalfWidth),
+                        $"A rising floor cell at {centre} is outside the cut.");
+                }
+            }
+
+            // Every rise triangle on grid vertices is a rise cell outside
+            // the cut; every rise triangle on buried vertices is a ring cell
+            // whose copies sit exactly SeamBurial under their floor twins.
+            for (int index = 0; index < rise.Length; index += 3)
+            {
+                (int row, int column) = TriangleCell(
+                    vertices,
+                    rise,
+                    index,
+                    bounds,
+                    cell);
+                Vector2 centre = CellCentre(bounds, columns, rows, row, column);
+                bool buried = rise[index] >= gridVertexCount ||
+                              rise[index + 1] >= gridVertexCount ||
+                              rise[index + 2] >= gridVertexCount;
+                if (!buried)
+                {
+                    Assert.That(
+                        riseCells[row, column],
+                        Is.True,
+                        $"Rise triangle at {centre} is not a rise cell.");
+                    Assert.That(
+                        AlpineVillageTerrainSampler.SampleRidgeRise(
+                            plan,
+                            centre),
+                        Is.GreaterThan(0f));
+                    Assert.That(
+                        AlpineVillageTerrainSampler.DistanceAcrossCablewayLine(
+                            plan,
+                            centre),
+                        Is.GreaterThanOrEqualTo(
+                            AlpineVillageTerrainSampler
+                                .CablewayCutOuterHalfWidth),
+                        $"The cut at {centre} wears the wall material.");
+                    continue;
+                }
+
+                Assert.That(
+                    riseCells[row, column],
+                    Is.False,
+                    $"A buried triangle at {centre} is on a rise cell.");
+                Assert.That(
+                    AlpineVillageWorldBuilder.TouchesRise(
+                        riseCells,
+                        rows,
+                        columns,
+                        row,
+                        column),
+                    Is.True,
+                    $"A buried triangle at {centre} touches no rise.");
+                for (int corner = 0; corner < 3; corner++)
+                {
+                    int vertex = rise[index + corner];
+                    Assert.That(
+                        vertex,
+                        Is.GreaterThanOrEqualTo(gridVertexCount),
+                        "A ring triangle mixes grid and buried vertices.");
+                    Assert.That(
+                        twins.TryGetValue(
+                            VertexKey(vertices[vertex]),
+                            out int twin),
+                        Is.True,
+                        "A buried vertex has no floor twin above it.");
+                    Assert.That(
+                        vertices[twin].y - vertices[vertex].y,
+                        Is.EqualTo(AlpineVillageWorldBuilder.SeamBurial)
+                            .Within(0.0005f),
+                        "The ring is not buried by SeamBurial.");
+                }
+            }
+
+            // One sheet across the toe: the rise's tiling is the floor's.
+            var floorProperties = new MaterialPropertyBlock();
+            var riseProperties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(
+                floorProperties,
+                AlpineVillageWorldBuilder.TerrainFloorMaterialIndex);
+            renderer.GetPropertyBlock(
+                riseProperties,
+                AlpineVillageWorldBuilder.TerrainRiseMaterialIndex);
+            Vector4 floorTransform = floorProperties.GetVector("_BaseMap_ST");
+            Vector4 riseTransform = riseProperties.GetVector("_BaseMap_ST");
+            Assert.That(floorTransform, Is.Not.EqualTo(Vector4.zero));
+            Assert.That(riseTransform, Is.EqualTo(floorTransform));
+            Assert.That(
+                riseProperties.GetTexture("_BaseMap"),
+                Is.SameAs(floorProperties.GetTexture("_BaseMap")));
+        }
+
+        private static Vector2 CellCentre(
+            Rect bounds,
+            int columns,
+            int rows,
+            int row,
+            int column)
+        {
+            return new Vector2(
+                bounds.xMin + bounds.width * ((column + 0.5f) / columns),
+                bounds.yMin + bounds.height * ((row + 0.5f) / rows));
+        }
+
+        /// <summary>
+        /// The grid cell a triangle belongs to, from its centroid - which
+        /// works for the buried copies too, since they share their twins'
+        /// ground-plane position.
+        /// </summary>
+        private static (int row, int column) TriangleCell(
+            Vector3[] vertices,
+            int[] triangles,
+            int index,
+            Rect bounds,
+            float cell)
+        {
+            Vector3 centroid = (vertices[triangles[index]] +
+                                vertices[triangles[index + 1]] +
+                                vertices[triangles[index + 2]]) / 3f;
+            // The builder rounds the cell count UP, so the real pitch is a
+            // hair under the nominal cell and must be re-derived from it.
+            int columns = Mathf.Max(1, Mathf.CeilToInt(bounds.width / cell));
+            int rows = Mathf.Max(1, Mathf.CeilToInt(bounds.height / cell));
+            return (
+                Mathf.FloorToInt((centroid.z - bounds.yMin) / (bounds.height / rows)),
+                Mathf.FloorToInt((centroid.x - bounds.xMin) / (bounds.width / columns)));
+        }
+
+        private static (int, int) VertexKey(Vector3 vertex)
+        {
+            return (
+                Mathf.RoundToInt(vertex.x * 1000f),
+                Mathf.RoundToInt(vertex.z * 1000f));
         }
 
         [Test]

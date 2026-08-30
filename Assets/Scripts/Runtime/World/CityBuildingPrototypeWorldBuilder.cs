@@ -16,17 +16,7 @@ namespace BarPromenade
         public const string FoundationObjectName = "Prototype Foundation";
 
         private const float FoundationOverlap = 0.04f;
-
-        private static readonly int BaseMapId =
-            Shader.PropertyToID("_BaseMap");
-        private static readonly int BaseColorId =
-            Shader.PropertyToID("_BaseColor");
-        private static readonly int ColorId =
-            Shader.PropertyToID("_Color");
-        private static readonly int SmoothnessId =
-            Shader.PropertyToID("_Smoothness");
-        private static readonly int MetallicId =
-            Shader.PropertyToID("_Metallic");
+        internal const float FoundationHorizontalInset = 0.08f;
 
         private static CityBuildingAssetProvider provider;
 
@@ -187,36 +177,61 @@ namespace BarPromenade
         {
             Color facade = CityExteriorAppearance
                 .CreateNightFacadeColor(lot);
-            ApplyFlat(
-                GetRenderer(registry, CityBuildingMeshRole.Shell),
-                facade,
-                0.08f,
-                0f);
-            ApplyFlat(
-                GetRenderer(registry, CityBuildingMeshRole.Trim),
-                Color.Lerp(facade, Color.white, 0.22f),
-                0.12f,
-                0.02f);
-            ApplyFlat(
-                GetRenderer(registry, CityBuildingMeshRole.Roof),
-                CityExteriorAppearance.Darken(facade, 0.065f),
-                CityFacadeAppearance.RoofSmoothness,
-                0f);
-            ApplyFlat(
-                GetRenderer(registry, CityBuildingMeshRole.Metal),
-                CityExteriorAppearance.Darken(facade, 0.20f),
-                0.28f,
-                0.52f);
-            ApplyFlat(
-                GetRenderer(registry, CityBuildingMeshRole.WindowFrame),
-                new Color(0.055f, 0.065f, 0.067f),
-                0.18f,
-                0.16f);
+            for (int index = 0; index < registry.Parts.Count; index++)
+            {
+                CityBuildingPartBinding binding = registry.Parts[index];
+                if (binding.Role == CityBuildingMeshRole.WindowGlass)
+                {
+                    continue;
+                }
+
+                if (!CityBuildingSurfaceAppearance.TryResolveSurface(
+                        lot.District,
+                        binding.SurfaceKind,
+                        out CityBuildingSurfaceKind surface))
+                {
+                    throw new InvalidOperationException(
+                        $"City building '{registry.StableId}' has " +
+                        $"unsupported surface '{binding.SurfaceKind}'.");
+                }
+
+                CityBuildingSurfaceAppearance.Apply(
+                    binding.Renderer,
+                    lot.District,
+                    surface,
+                    ResolveSurfaceTint(surface, facade));
+            }
+
             CityBuildingWindowSlotAppearance.Apply(
                 GetRenderer(registry, CityBuildingMeshRole.WindowGlass),
                 registry,
                 lot,
                 citySeed);
+        }
+
+        private static Color ResolveSurfaceTint(
+            CityBuildingSurfaceKind surface,
+            Color facade)
+        {
+            switch (surface)
+            {
+                case CityBuildingSurfaceKind.FacadePrimary:
+                case CityBuildingSurfaceKind.Plinth:
+                    return facade;
+                case CityBuildingSurfaceKind.FacadeSecondary:
+                    return Color.Lerp(facade, Color.white, 0.22f);
+                case CityBuildingSurfaceKind.Roof:
+                    return CityExteriorAppearance.Darken(facade, 0.065f);
+                case CityBuildingSurfaceKind.Metal:
+                    return CityExteriorAppearance.Darken(facade, 0.20f);
+                case CityBuildingSurfaceKind.WindowFrame:
+                    return new Color(0.055f, 0.065f, 0.067f);
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(surface),
+                        surface,
+                        null);
+            }
         }
 
         private static Renderer GetRenderer(
@@ -231,23 +246,6 @@ namespace BarPromenade
             }
 
             return renderer;
-        }
-
-        private static void ApplyFlat(
-            Renderer renderer,
-            Color color,
-            float smoothness,
-            float metallic)
-        {
-            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
-            var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
-            properties.SetTexture(BaseMapId, Texture2D.whiteTexture);
-            properties.SetColor(BaseColorId, color);
-            properties.SetColor(ColorId, color);
-            properties.SetFloat(SmoothnessId, smoothness);
-            properties.SetFloat(MetallicId, metallic);
-            renderer.SetPropertyBlock(properties);
         }
 
         private static void BuildFoundation(
@@ -272,17 +270,23 @@ namespace BarPromenade
                     (bottom + top) * 0.5f,
                     visibleBounds.center.z),
                 new Vector3(
-                    visibleBounds.size.x,
+                    Mathf.Max(
+                        0.1f,
+                        visibleBounds.size.x -
+                        (FoundationHorizontalInset * 2f)),
                     top - bottom,
-                    visibleBounds.size.z),
+                    Mathf.Max(
+                        0.1f,
+                        visibleBounds.size.z -
+                        (FoundationHorizontalInset * 2f))),
                 facade,
                 RuntimePrimitiveFactory.DefaultMaterial,
                 false);
-            ApplyFlat(
+            CityBuildingSurfaceAppearance.Apply(
                 foundation.GetComponent<Renderer>(),
-                facade,
-                0.08f,
-                0f);
+                lot.District,
+                CityBuildingSurfaceKind.Plinth,
+                facade);
         }
 
         internal static void BuildLogicalCollision(

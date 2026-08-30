@@ -13,8 +13,6 @@ namespace BarPromenade
     {
         private const float RailMinimumVisibility = 0.18f;
         private const float StructuralMinimumVisibility = 0.15f;
-        private static readonly Color Slab =
-            new Color(0.23f, 0.23f, 0.20f);
         private static readonly Color Rail =
             new Color(0.18f, 0.25f, 0.25f);
         private static readonly Color AshtrayEnamel =
@@ -23,18 +21,14 @@ namespace BarPromenade
             new Color(0.10f, 0.11f, 0.09f);
         private static readonly Color AshtrayAsh =
             new Color(0.62f, 0.60f, 0.52f);
-        private static readonly Color Frame =
-            new Color(0.22f, 0.27f, 0.25f);
-        private static readonly Color Door =
-            new Color(0.08f, 0.16f, 0.15f);
-        private static readonly Color Facade =
-            new Color(0.20f, 0.22f, 0.19f);
-        private static readonly Color FacadeStain =
-            new Color(0.10f, 0.13f, 0.12f);
-        private static readonly Color Glass =
-            new Color(0.16f, 0.29f, 0.31f, 0.22f);
-        private static readonly Color LowerWindow =
-            new Color(0.20f, 0.36f, 0.42f);
+        private const float ExteriorSkinThickness = 0.03f;
+        private const float ExteriorSkinClearance = 0.031f;
+        private const float FrontEaveHeight = 2.30f;
+        private const float BalconyWallTop = 2.74f;
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
+        private static readonly int BaseMapTransformId =
+            Shader.PropertyToID("_BaseMap_ST");
 
         public static Transform Build(
             Transform parent,
@@ -82,138 +76,503 @@ namespace BarPromenade
         {
             float facadeX =
                 PlayerHomeBalconyGeometry.HomeFacadeX;
-            float lowerHeight =
-                -plan.StreetGroundY;
-            HomeSurfacePrimitives.CreateBox(
-                "Home Lower Exterior Facade",
+            float facadeDepth = interior.RoomSize.y;
+            const float plinthHeight = 0.72f;
+            CreateExteriorSurfaceBox(
+                "Player Home Brick Plinth",
                 parent,
                 new Vector3(
                     facadeX,
-                    plan.StreetGroundY +
-                    lowerHeight * 0.5f,
+                    plan.StreetGroundY + plinthHeight * 0.5f,
                     0f),
                 new Vector3(
                     PlayerHomeBalconyGeometry.WallThickness,
-                    lowerHeight,
-                    interior.RoomSize.y),
-                Facade,
-                HomeSurfaceKind.Concrete,
-                SurfaceProjection.BoxZY,
-                false);
+                    plinthHeight,
+                    facadeDepth),
+                PlayerHomeExteriorSurfaceKind.BrickPlinth,
+                SurfaceProjection.BoxZY);
 
-            float localBuildingTop =
-                PlayerHomeBalconyGeometry
-                    .PreferredBuildingHeight -
-                PlayerHomeBalconyGeometry
-                    .ApartmentFloorElevation;
-            float upperHeight =
-                Mathf.Max(
-                    0f,
-                    localBuildingTop -
-                    interior.RoomHeight);
-            if (upperHeight > 0f)
-            {
-                HomeSurfacePrimitives.CreateBox(
-                    "Home Upper Exterior Facade",
-                    parent,
-                    new Vector3(
-                        facadeX,
-                        interior.RoomHeight +
-                        upperHeight * 0.5f,
-                        0f),
-                    new Vector3(
-                        PlayerHomeBalconyGeometry
-                            .WallThickness,
-                        upperHeight,
-                        interior.RoomSize.y),
-                    Facade,
-                    HomeSurfaceKind.Concrete,
-                    SurfaceProjection.BoxZY,
-                    false);
-                HomeSurfacePrimitives.CreateBox(
-                    "Home Exterior Roof Lip",
-                    parent,
-                    new Vector3(
-                        facadeX + 0.02f,
-                        localBuildingTop + 0.10f,
-                        0f),
-                    new Vector3(
-                        0.38f,
-                        0.20f,
-                        interior.RoomSize.y + 0.32f),
-                    Rail,
-                    HomeSurfaceKind.PaintedMetal,
-                    SurfaceProjection.BoxZY,
-                    false);
-            }
+            float stuccoBottom = plan.StreetGroundY + plinthHeight;
+            BuildSegmentedStuccoBand(
+                parent,
+                facadeX,
+                stuccoBottom,
+                -stuccoBottom,
+                facadeDepth);
+
+            float skinX =
+                facadeX +
+                PlayerHomeBalconyGeometry.WallThickness * 0.5f +
+                ExteriorSkinClearance +
+                ExteriorSkinThickness * 0.5f;
+            BuildApartmentFacadeSkin(
+                parent,
+                interior,
+                plan,
+                skinX);
+            BuildFrontEave(
+                parent,
+                facadeX,
+                facadeDepth);
 
             BuildLowerFacadeWindows(
                 parent,
+                facadeX);
+            BuildRecessedStreetEntry(
+                parent,
                 facadeX,
-                interior.RoomSize.y);
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Lower Facade Damp Stain",
+                plan.StreetGroundY);
+        }
+
+        private static void BuildSegmentedStuccoBand(
+            Transform parent,
+            float facadeX,
+            float bottom,
+            float height,
+            float facadeDepth)
+        {
+            float halfDepth = facadeDepth * 0.5f;
+            float repairMinimum = Mathf.Clamp(
+                1.55f,
+                -halfDepth,
+                halfDepth);
+            float repairMaximum = Mathf.Clamp(
+                3.25f,
+                -halfDepth,
+                halfDepth);
+            CreateStuccoSegment(
+                parent,
+                facadeX,
+                bottom,
+                height,
+                -halfDepth,
+                repairMinimum,
+                PlayerHomeExteriorSurfaceKind.StuccoPrimary);
+            CreateStuccoSegment(
+                parent,
+                facadeX,
+                bottom,
+                height,
+                repairMinimum,
+                repairMaximum,
+                PlayerHomeExteriorSurfaceKind.StuccoRepair);
+            CreateStuccoSegment(
+                parent,
+                facadeX,
+                bottom,
+                height,
+                repairMaximum,
+                halfDepth,
+                PlayerHomeExteriorSurfaceKind.StuccoPrimary);
+        }
+
+        private static void CreateStuccoSegment(
+            Transform parent,
+            float facadeX,
+            float bottom,
+            float height,
+            float minimumZ,
+            float maximumZ,
+            PlayerHomeExteriorSurfaceKind surface)
+        {
+            float depth = maximumZ - minimumZ;
+            if (height <= 0f || depth <= 0f)
+            {
+                return;
+            }
+
+            CreateExteriorSurfaceBox(
+                surface == PlayerHomeExteriorSurfaceKind.StuccoRepair
+                    ? "Player Home Lower Stucco Repair"
+                    : "Player Home Lower Stucco",
                 parent,
                 new Vector3(
-                    facadeX + 0.126f,
-                    -1.72f,
-                    2.45f),
-                new Vector3(0.018f, 1.45f, 1.80f),
-                FacadeStain,
+                    facadeX,
+                    bottom + height * 0.5f,
+                    (minimumZ + maximumZ) * 0.5f),
+                new Vector3(
+                    PlayerHomeBalconyGeometry.WallThickness,
+                    height,
+                    depth),
+                surface,
+                SurfaceProjection.BoxZY,
+                false);
+        }
+
+        private static void BuildApartmentFacadeSkin(
+            Transform parent,
+            HomeInteriorLayoutPlan interior,
+            HomeBalconyLayoutPlan plan,
+            float skinX)
+        {
+            float halfDepth = interior.RoomSize.y * 0.5f;
+            float skinTop = Mathf.Min(
+                interior.RoomHeight,
+                BalconyWallTop);
+            float windowMinimum =
+                plan.WindowCenter.z - plan.WindowSize.z * 0.5f;
+            float windowMaximum =
+                plan.WindowCenter.z + plan.WindowSize.z * 0.5f;
+            float doorMinimum =
+                plan.DoorCenter.z - plan.DoorSize.z * 0.5f;
+            float doorMaximum =
+                plan.DoorCenter.z + plan.DoorSize.z * 0.5f;
+
+            CreateFacadeSkinSegment(
+                parent,
+                "Player Home Frontage South Pier",
+                skinX,
+                0f,
+                skinTop,
+                -halfDepth,
+                windowMinimum,
+                PlayerHomeExteriorSurfaceKind.StuccoPrimary);
+            CreateFacadeSkinSegment(
+                parent,
+                "Player Home Frontage Repair Pier",
+                skinX,
+                0f,
+                skinTop,
+                windowMaximum,
+                doorMinimum,
+                PlayerHomeExteriorSurfaceKind.StuccoRepair);
+            CreateFacadeSkinSegment(
+                parent,
+                "Player Home Frontage North Pier",
+                skinX,
+                0f,
+                skinTop,
+                doorMaximum,
+                halfDepth,
+                PlayerHomeExteriorSurfaceKind.StuccoPrimary);
+
+            float windowBottom =
+                plan.WindowCenter.y - plan.WindowSize.y * 0.5f;
+            float windowTop =
+                plan.WindowCenter.y + plan.WindowSize.y * 0.5f;
+            CreateFacadeSkinSegment(
+                parent,
+                "Player Home Frontage Window Sill",
+                skinX,
+                0f,
+                windowBottom,
+                windowMinimum,
+                windowMaximum,
+                PlayerHomeExteriorSurfaceKind.StuccoPrimary);
+            CreateFacadeSkinSegment(
+                parent,
+                "Player Home Frontage Window Lintel",
+                skinX,
+                windowTop,
+                skinTop,
+                windowMinimum,
+                windowMaximum,
+                PlayerHomeExteriorSurfaceKind.StuccoPrimary);
+            CreateFacadeSkinSegment(
+                parent,
+                "Player Home Frontage Door Lintel",
+                skinX,
+                plan.DoorSize.y,
+                skinTop,
+                doorMinimum,
+                doorMaximum,
+                PlayerHomeExteriorSurfaceKind.StuccoRepair);
+        }
+
+        private static void CreateFacadeSkinSegment(
+            Transform parent,
+            string name,
+            float x,
+            float minimumY,
+            float maximumY,
+            float minimumZ,
+            float maximumZ,
+            PlayerHomeExteriorSurfaceKind surface)
+        {
+            float height = maximumY - minimumY;
+            float depth = maximumZ - minimumZ;
+            if (height <= 0f || depth <= 0f)
+            {
+                return;
+            }
+
+            CreateExteriorSurfaceBox(
+                name,
+                parent,
+                new Vector3(
+                    x,
+                    (minimumY + maximumY) * 0.5f,
+                    (minimumZ + maximumZ) * 0.5f),
+                new Vector3(
+                    ExteriorSkinThickness,
+                    height,
+                    depth),
+                surface,
+                SurfaceProjection.BoxZY,
+                false);
+        }
+
+        private static void BuildFrontEave(
+            Transform parent,
+            float facadeX,
+            float facadeDepth)
+        {
+            float outerEave =
+                facadeX + PlayerHomeBalconyGeometry.BalconyDepth;
+            GameObject roof = CreateExteriorSurfaceBox(
+                "Player Home Front Roof Eave",
+                parent,
+                new Vector3(
+                    outerEave - 0.26f,
+                    FrontEaveHeight,
+                    0f),
+                new Vector3(
+                    0.52f,
+                    0.10f,
+                    facadeDepth + 0.36f),
+                PlayerHomeExteriorSurfaceKind.RoofSlate,
+                SurfaceProjection.BoxXZ,
+                false);
+            roof.transform.localRotation =
+                Quaternion.Euler(0f, 0f, -12f);
+            CreateExteriorSurfaceBox(
+                "Player Home Front Eave Fascia",
+                parent,
+                new Vector3(
+                    outerEave + 0.045f,
+                    FrontEaveHeight - 0.11f,
+                    0f),
+                new Vector3(
+                    0.09f,
+                    0.18f,
+                    facadeDepth + 0.42f),
+                PlayerHomeExteriorSurfaceKind.PaintedWood,
+                SurfaceProjection.BoxZY,
                 false);
         }
 
         private static void BuildLowerFacadeWindows(
             Transform parent,
-            float facadeX,
-            float facadeDepth)
+            float facadeX)
         {
-            float halfDepth = facadeDepth * 0.5f;
-            const float paneWidth = 1.20f;
-            const float paneHeight = 0.58f;
-            const float firstFloorY = -3.20f;
-            const float secondFloorY = -0.85f;
-            int paneCount = Mathf.Max(
-                2,
-                Mathf.FloorToInt(
-                    (facadeDepth - 0.8f) / 1.72f));
-            float spacing =
-                (facadeDepth - 0.90f) / paneCount;
-            for (int floor = 0; floor < 2; floor++)
+            // These are the exact authored front-window positions that fall
+            // inside Home's visible +/-4 m facade slice. The other two bays
+            // in each row sit beyond that cutaway, at -5.10 and +4.75 m.
+            const float windowTangent = 2.15f;
+            const float paneWidth = 1.45f;
+            float[] rowCenters = { -2.80f, 0.66f };
+            float[] rowHeights = { 1.60f, 1.55f };
+            float paneX =
+                facadeX +
+                PlayerHomeBalconyGeometry.WallThickness * 0.5f +
+                ExteriorSkinClearance * 2f +
+                ExteriorSkinThickness * 1.5f;
+            for (int row = 0; row < rowCenters.Length; row++)
             {
-                float y =
-                    floor == 0
-                        ? firstFloorY
-                        : secondFloorY;
-                for (int pane = 0;
-                     pane < paneCount;
-                     pane++)
-                {
-                    float z =
-                        -halfDepth +
-                        0.45f +
-                        spacing * (pane + 0.5f);
-                    GameObject paneObject =
-                        RuntimePrimitiveFactory.CreateBox(
-                            $"Home Lower Facade Window " +
-                            $"{floor + 1}-{pane + 1}",
-                            parent,
-                            new Vector3(
-                                facadeX + 0.126f,
-                                y,
-                                z),
-                            new Vector3(
-                                0.026f,
-                                paneHeight,
-                                Mathf.Min(paneWidth, spacing - 0.24f)),
-                            LowerWindow,
-                            CityNightResources.EmissiveMaterial,
-                            false);
-                    CityNightGlowRegistry.Register(
-                        paneObject.GetComponent<Renderer>(),
-                        LowerWindow);
-                }
+                GameObject paneObject =
+                    RuntimePrimitiveFactory.CreateBox(
+                        $"Player Home Authored Front Window Glass " +
+                        $"{row + 1}",
+                        parent,
+                        new Vector3(
+                            paneX,
+                            rowCenters[row],
+                            windowTangent),
+                        new Vector3(
+                            ExteriorSkinThickness,
+                            rowHeights[row],
+                            paneWidth),
+                        Color.white,
+                        false);
+                PlayerHomeExteriorSurfaceAppearance.Apply(
+                    paneObject.GetComponent<Renderer>(),
+                    PlayerHomeExteriorSurfaceKind.WindowGlass,
+                    row == 1);
+                BuildLowerWindowFrame(
+                    parent,
+                    paneX,
+                    rowCenters[row],
+                    windowTangent,
+                    rowHeights[row],
+                    paneWidth);
             }
+        }
+
+        private static void BuildRecessedStreetEntry(
+            Transform parent,
+            float facadeX,
+            float streetGroundY)
+        {
+            const float entryCenterZ = -0.10f;
+            const float entryWidth = 1.80f;
+            const float doorWidth = 1.15f;
+            const float doorHeight = 2.30f;
+            float outerWall =
+                facadeX +
+                PlayerHomeBalconyGeometry.WallThickness * 0.5f;
+            float entryX =
+                outerWall +
+                ExteriorSkinClearance +
+                ExteriorSkinThickness * 0.5f;
+            CreateExteriorSurfaceBox(
+                "Player Home Recessed Entry Repair Field",
+                parent,
+                new Vector3(
+                    entryX,
+                    streetGroundY + 1.60f,
+                    entryCenterZ),
+                new Vector3(
+                    ExteriorSkinThickness,
+                    3.20f,
+                    entryWidth),
+                PlayerHomeExteriorSurfaceKind.StuccoRepair,
+                SurfaceProjection.BoxZY,
+                false);
+            GameObject door = CreateExteriorSurfaceBox(
+                "Player Home Recessed Entrance Door",
+                parent,
+                new Vector3(
+                    entryX +
+                    ExteriorSkinThickness +
+                    ExteriorSkinClearance,
+                    streetGroundY + doorHeight * 0.5f,
+                    entryCenterZ),
+                new Vector3(
+                    0.10f,
+                    doorHeight,
+                    doorWidth),
+                PlayerHomeExteriorSurfaceKind.PaintedWood,
+                SurfaceProjection.BoxZY,
+                false);
+            float frameX = door.transform.localPosition.x + 0.055f;
+            const float frameWidth = 0.12f;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                CreateExteriorSurfaceBox(
+                    "Player Home Recessed Entrance Jamb",
+                    parent,
+                    new Vector3(
+                        frameX,
+                        streetGroundY +
+                        (doorHeight + frameWidth * 2f) * 0.5f,
+                        entryCenterZ + side *
+                        (doorWidth + frameWidth) * 0.5f),
+                    new Vector3(
+                        0.08f,
+                        doorHeight + frameWidth * 2f,
+                        frameWidth),
+                    PlayerHomeExteriorSurfaceKind.WindowFrame,
+                    SurfaceProjection.BoxZY,
+                    false);
+            }
+
+            CreateExteriorSurfaceBox(
+                "Player Home Recessed Entrance Header",
+                parent,
+                new Vector3(
+                    frameX,
+                    streetGroundY + doorHeight + frameWidth * 0.5f,
+                    entryCenterZ),
+                new Vector3(
+                    0.08f,
+                    frameWidth,
+                    doorWidth + frameWidth * 2f),
+                PlayerHomeExteriorSurfaceKind.WindowFrame,
+                SurfaceProjection.BoxZY,
+                false);
+            CreateExteriorSurfaceBox(
+                "Player Home Recessed Entrance Soffit",
+                parent,
+                new Vector3(
+                    outerWall + 0.31f,
+                    streetGroundY + 3.13f,
+                    entryCenterZ),
+                new Vector3(0.52f, 0.14f, entryWidth),
+                PlayerHomeExteriorSurfaceKind.Concrete,
+                SurfaceProjection.BoxXZ,
+                false);
+        }
+
+        private static void BuildLowerWindowFrame(
+            Transform parent,
+            float x,
+            float y,
+            float z,
+            float height,
+            float width)
+        {
+            const float frameWidth = 0.09f;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                CreateExteriorSurfaceBox(
+                    "Player Home Lower Window Jamb",
+                    parent,
+                    new Vector3(
+                        x,
+                        y,
+                        z + side *
+                        (width + frameWidth) * 0.5f),
+                    new Vector3(
+                        ExteriorSkinThickness + 0.012f,
+                        height + frameWidth * 2f,
+                        frameWidth),
+                    PlayerHomeExteriorSurfaceKind.WindowFrame,
+                    SurfaceProjection.BoxZY,
+                    false);
+                CreateExteriorSurfaceBox(
+                    "Player Home Lower Window Rail",
+                    parent,
+                    new Vector3(
+                        x,
+                        y + side *
+                        (height + frameWidth) * 0.5f,
+                        z),
+                    new Vector3(
+                        ExteriorSkinThickness + 0.012f,
+                        frameWidth,
+                        width),
+                    PlayerHomeExteriorSurfaceKind.WindowFrame,
+                    SurfaceProjection.BoxZY,
+                    false);
+            }
+        }
+
+        private static GameObject CreateExteriorSurfaceBox(
+            string name,
+            Transform parent,
+            Vector3 center,
+            Vector3 size,
+            PlayerHomeExteriorSurfaceKind surface,
+            SurfaceProjection projection,
+            bool addCollider = false)
+        {
+            GameObject result = RuntimePrimitiveFactory.CreateBox(
+                name,
+                parent,
+                center,
+                size,
+                Color.white,
+                addCollider);
+            PlayerHomeExteriorSurfaceAppearance.ApplyProjected(
+                result.GetComponent<Renderer>(),
+                surface,
+                projection);
+            return result;
+        }
+
+        private static void ApplyHomeBalconyGlass(Renderer renderer)
+        {
+            renderer.sharedMaterial = HomeBalconyResources.GlassMaterial;
+            var properties = new MaterialPropertyBlock();
+            renderer.GetPropertyBlock(properties);
+            properties.SetTexture(
+                BaseMapId,
+                PlayerHomeExteriorSurfaceAppearance.GetTexture(
+                    PlayerHomeExteriorSurfaceKind.WindowGlass));
+            properties.SetVector(
+                BaseMapTransformId,
+                new Vector4(1f, 1f, 0f, 0f));
+            renderer.SetPropertyBlock(properties);
         }
 
         private static void BuildDeck(
@@ -224,7 +583,7 @@ namespace BarPromenade
             float slabThickness =
                 PlayerHomeBalconyGeometry
                     .BalconySlabThickness;
-            HomeSurfacePrimitives.CreateBox(
+            CreateExteriorSurfaceBox(
                 "Home Balcony Deck",
                 parent,
                 new Vector3(
@@ -235,11 +594,11 @@ namespace BarPromenade
                     bounds.width,
                     slabThickness,
                     bounds.height),
-                Slab,
-                HomeSurfaceKind.Concrete,
-                SurfaceProjection.BoxXZ);
+                PlayerHomeExteriorSurfaceKind.Concrete,
+                SurfaceProjection.BoxXZ,
+                true);
 
-            HomeSurfacePrimitives.CreateBox(
+            CreateExteriorSurfaceBox(
                 "Home Balcony Threshold",
                 parent,
                 new Vector3(
@@ -252,11 +611,11 @@ namespace BarPromenade
                         .WallThickness + 0.34f,
                     0.09f,
                     plan.DoorSize.z - 0.10f),
-                Frame,
-                HomeSurfaceKind.PlankFloor,
-                SurfaceProjection.BoxXZ);
+                PlayerHomeExteriorSurfaceKind.PaintedWood,
+                SurfaceProjection.BoxXZ,
+                true);
 
-            RuntimePrimitiveFactory.CreateCylinder(
+            GameObject drain = RuntimePrimitiveFactory.CreateCylinder(
                 "Home Balcony Drain",
                 parent,
                 new Vector3(
@@ -264,8 +623,12 @@ namespace BarPromenade
                     0.012f,
                     bounds.yMin + 0.30f),
                 new Vector3(0.20f, 0.012f, 0.20f),
-                Rail,
+                Color.white,
                 false);
+            PlayerHomeExteriorSurfaceAppearance.ApplyProjected(
+                drain.GetComponent<Renderer>(),
+                PlayerHomeExteriorSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxXZ);
         }
 
         private static void BuildGuards(
@@ -318,7 +681,7 @@ namespace BarPromenade
             var outerParts = new List<GameObject>();
             var southParts = new List<GameObject>();
             var northParts = new List<GameObject>();
-            outerParts.Add(HomeSurfacePrimitives.CreateBox(
+            outerParts.Add(CreateExteriorSurfaceBox(
                 "Home Balcony Outer Rail Cap",
                 parent,
                 new Vector3(
@@ -329,11 +692,10 @@ namespace BarPromenade
                     thickness + 0.08f,
                     capHeight,
                     bounds.height + 0.06f),
-                Rail,
-                HomeSurfaceKind.PaintedMetal,
+                PlayerHomeExteriorSurfaceKind.PaintedMetal,
                 SurfaceProjection.BoxXZ,
                 false));
-            southParts.Add(HomeSurfacePrimitives.CreateBox(
+            southParts.Add(CreateExteriorSurfaceBox(
                 "Home Balcony South Rail Cap",
                 parent,
                 new Vector3(
@@ -344,11 +706,10 @@ namespace BarPromenade
                     bounds.width,
                     capHeight,
                     thickness + 0.08f),
-                Rail,
-                HomeSurfaceKind.PaintedMetal,
+                PlayerHomeExteriorSurfaceKind.PaintedMetal,
                 SurfaceProjection.BoxXZ,
                 false));
-            northParts.Add(HomeSurfacePrimitives.CreateBox(
+            northParts.Add(CreateExteriorSurfaceBox(
                 "Home Balcony North Rail Cap",
                 parent,
                 new Vector3(
@@ -359,8 +720,7 @@ namespace BarPromenade
                     bounds.width,
                     capHeight,
                     thickness + 0.08f),
-                Rail,
-                HomeSurfaceKind.PaintedMetal,
+                PlayerHomeExteriorSurfaceKind.PaintedMetal,
                 SurfaceProjection.BoxXZ,
                 false));
 
@@ -492,7 +852,7 @@ namespace BarPromenade
             float height,
             float thickness)
         {
-            return HomeSurfacePrimitives.CreateBox(
+            return CreateExteriorSurfaceBox(
                 name,
                 parent,
                 new Vector3(
@@ -503,8 +863,7 @@ namespace BarPromenade
                     thickness,
                     height,
                     thickness),
-                Rail,
-                HomeSurfaceKind.PaintedMetal,
+                PlayerHomeExteriorSurfaceKind.PaintedMetal,
                 SurfaceProjection.BoxXY,
                 false);
         }
@@ -535,7 +894,7 @@ namespace BarPromenade
             float frameDepth = size.x + 0.10f;
             const float frameWidth = 0.09f;
 
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject glass = RuntimePrimitiveFactory.CreateBox(
                 "Home Balcony Window Glass",
                 parent,
                 center +
@@ -544,13 +903,13 @@ namespace BarPromenade
                     0.035f,
                     size.y - 0.13f,
                     size.z - 0.13f),
-                Glass,
-                HomeBalconyResources.GlassMaterial,
+                Color.white,
                 false);
+            ApplyHomeBalconyGlass(glass.GetComponent<Renderer>());
 
             for (int side = -1; side <= 1; side += 2)
             {
-                HomeSurfacePrimitives.CreateBox(
+                CreateExteriorSurfaceBox(
                     "Home Balcony Window Jamb",
                     parent,
                     center +
@@ -564,11 +923,10 @@ namespace BarPromenade
                         frameDepth,
                         size.y + 0.12f,
                         frameWidth),
-                    Frame,
-                    HomeSurfaceKind.Enamel,
+                    PlayerHomeExteriorSurfaceKind.WindowFrame,
                     SurfaceProjection.BoxZY,
                     false);
-                HomeSurfacePrimitives.CreateBox(
+                CreateExteriorSurfaceBox(
                     "Home Balcony Window Horizontal Frame",
                     parent,
                     center +
@@ -582,13 +940,12 @@ namespace BarPromenade
                         frameDepth,
                         frameWidth,
                         size.z + 0.12f),
-                    Frame,
-                    HomeSurfaceKind.Enamel,
+                    PlayerHomeExteriorSurfaceKind.WindowFrame,
                     SurfaceProjection.BoxZY,
                     false);
             }
 
-            HomeSurfacePrimitives.CreateBox(
+            CreateExteriorSurfaceBox(
                 "Home Balcony Window Mullion",
                 parent,
                 center,
@@ -596,11 +953,10 @@ namespace BarPromenade
                     frameDepth + 0.015f,
                     size.y - 0.04f,
                     0.055f),
-                Frame,
-                HomeSurfaceKind.Enamel,
+                PlayerHomeExteriorSurfaceKind.WindowFrame,
                 SurfaceProjection.BoxZY,
                 false);
-            HomeSurfacePrimitives.CreateBox(
+            CreateExteriorSurfaceBox(
                 "Home Balcony Window Crossbar",
                 parent,
                 center,
@@ -608,11 +964,10 @@ namespace BarPromenade
                     frameDepth + 0.015f,
                     0.055f,
                     size.z - 0.04f),
-                Frame,
-                HomeSurfaceKind.Enamel,
+                PlayerHomeExteriorSurfaceKind.WindowFrame,
                 SurfaceProjection.BoxZY,
                 false);
-            HomeSurfacePrimitives.CreateBox(
+            CreateExteriorSurfaceBox(
                 "Home Balcony Exterior Sill",
                 parent,
                 new Vector3(
@@ -625,8 +980,7 @@ namespace BarPromenade
                     frameDepth + 0.24f,
                     0.11f,
                     size.z + 0.24f),
-                Slab,
-                HomeSurfaceKind.Concrete,
+                PlayerHomeExteriorSurfaceKind.Concrete,
                 SurfaceProjection.BoxXZ,
                 false);
         }
@@ -642,7 +996,7 @@ namespace BarPromenade
             const float frameWidth = 0.10f;
             for (int side = -1; side <= 1; side += 2)
             {
-                HomeSurfacePrimitives.CreateBox(
+                CreateExteriorSurfaceBox(
                     "Home Balcony Door Jamb",
                     parent,
                     new Vector3(
@@ -656,13 +1010,12 @@ namespace BarPromenade
                         frameDepth,
                         size.y,
                         frameWidth),
-                    Frame,
-                    HomeSurfaceKind.Enamel,
+                    PlayerHomeExteriorSurfaceKind.PaintedWood,
                     SurfaceProjection.BoxZY,
                     false);
             }
 
-            HomeSurfacePrimitives.CreateBox(
+            CreateExteriorSurfaceBox(
                 "Home Balcony Door Header",
                 parent,
                 new Vector3(
@@ -673,8 +1026,7 @@ namespace BarPromenade
                     frameDepth,
                     frameWidth,
                     size.z + frameWidth * 2f),
-                Frame,
-                HomeSurfaceKind.Enamel,
+                PlayerHomeExteriorSurfaceKind.PaintedWood,
                 SurfaceProjection.BoxZY,
                 false);
 
@@ -709,7 +1061,7 @@ namespace BarPromenade
 
             for (int side = 0; side < 2; side++)
             {
-                cutawayParts.Add(HomeSurfacePrimitives.CreateBox(
+                cutawayParts.Add(CreateExteriorSurfaceBox(
                     "Home Balcony Door Leaf Stile",
                     pivot,
                     new Vector3(
@@ -723,8 +1075,7 @@ namespace BarPromenade
                         leafDepth,
                         height,
                         frameWidth),
-                    Door,
-                    HomeSurfaceKind.DarkWood,
+                    PlayerHomeExteriorSurfaceKind.PaintedWood,
                     SurfaceProjection.BoxZY,
                     false));
             }
@@ -751,7 +1102,7 @@ namespace BarPromenade
                 leafDepth,
                 frameWidth));
 
-            cutawayParts.Add(HomeSurfacePrimitives.CreateBox(
+            cutawayParts.Add(CreateExteriorSurfaceBox(
                 "Home Balcony Door Lower Panel",
                 pivot,
                 new Vector3(
@@ -762,11 +1113,10 @@ namespace BarPromenade
                     leafDepth - 0.012f,
                     0.62f,
                     width - frameWidth * 2f),
-                Door,
-                HomeSurfaceKind.DarkWood,
+                PlayerHomeExteriorSurfaceKind.PaintedWood,
                 SurfaceProjection.BoxZY,
                 false));
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject doorGlass = RuntimePrimitiveFactory.CreateBox(
                 "Home Balcony Door Glass",
                 pivot,
                 new Vector3(
@@ -777,9 +1127,9 @@ namespace BarPromenade
                     0.028f,
                     height - 1.12f,
                     width - frameWidth * 2f),
-                Glass,
-                HomeBalconyResources.GlassMaterial,
+                Color.white,
                 false);
+            ApplyHomeBalconyGlass(doorGlass.GetComponent<Renderer>());
 
             GameObject handle =
                 RuntimePrimitiveFactory.CreateCylinder(
@@ -797,6 +1147,10 @@ namespace BarPromenade
                     false);
             handle.transform.localRotation =
                 Quaternion.Euler(0f, 0f, 90f);
+            PlayerHomeExteriorSurfaceAppearance.ApplyProjected(
+                handle.GetComponent<Renderer>(),
+                PlayerHomeExteriorSurfaceKind.PaintedMetal,
+                SurfaceProjection.BoxZY);
             cutawayParts.Add(handle);
 
             occlusionRegistry?.Register(
@@ -814,7 +1168,7 @@ namespace BarPromenade
             float depth,
             float frameWidth)
         {
-            return HomeSurfacePrimitives.CreateBox(
+            return CreateExteriorSurfaceBox(
                 name,
                 pivot,
                 new Vector3(
@@ -825,8 +1179,7 @@ namespace BarPromenade
                     depth,
                     frameWidth,
                     width),
-                Door,
-                HomeSurfaceKind.DarkWood,
+                PlayerHomeExteriorSurfaceKind.PaintedWood,
                 SurfaceProjection.BoxZY,
                 false);
         }

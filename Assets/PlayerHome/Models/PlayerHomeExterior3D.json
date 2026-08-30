@@ -1,0 +1,1978 @@
+{
+  "generator": "tools/build-player-home-exterior-3d-model.py",
+  "generator_version": "1.1.0",
+  "blender_version": "5.0.1",
+  "design_id": "player_home_exterior_v1",
+  "display_name": "Bar Promenade Player Home Exterior",
+  "dimensions_m": {
+    "width": 13.0,
+    "depth": 12.0,
+    "height": 8.8
+  },
+  "dimensions_scope": "logical_body_envelope_excludes_authored_front_overhang",
+  "visual_overhang_m": {
+    "front": 2.3,
+    "rear": 0.0,
+    "left": 0.0,
+    "right": 0.0
+  },
+  "door_opening_m": {
+    "width": 1.15,
+    "height": 2.3
+  },
+  "balcony_contract": {
+    "center_tangent_m": -1.45,
+    "width_m": 3.9,
+    "depth_m": 2.3,
+    "floor_elevation_m": 4.7,
+    "back_source_y_m": 6.0,
+    "door_center_tangent_m": -0.5,
+    "window_center_tangent_m": -2.35
+  },
+  "lit_window_contract": {
+    "count": 1,
+    "part_name": "Front Lit Window Glass",
+    "sheet": "WindowGlass",
+    "view": "upper_left_of_balcony_when_seen_from_street",
+    "source_center_m": [
+      2.15,
+      6.022,
+      5.36
+    ],
+    "unity_local_center_m": [
+      2.15,
+      5.36,
+      6.022
+    ],
+    "all_other_window_glass_emissive": false
+  },
+  "roof_contract": {
+    "type": "pitched_gable",
+    "eave_height_m": 7.0,
+    "ridge_height_m": 8.8,
+    "front_eave_source_y_m": 8.3,
+    "rear_eave_source_y_m": -6.0
+  },
+  "authored_text": [],
+  "brand_marks": false,
+  "source_axes": {
+    "right": "+X",
+    "forward": "+Y",
+    "up": "+Z"
+  },
+  "unity_axes": {
+    "right": "+X",
+    "forward": "+Z",
+    "up": "+Y",
+    "fbx_axis_forward": "-Z",
+    "fbx_axis_up": "Y",
+    "bake_space_transform": false
+  },
+  "root_contract": {
+    "name": "player_home_exterior_v1",
+    "origin": "footprint_center_ground",
+    "scale_mode": "fixed_meters",
+    "source_forward_axis": "+Y",
+    "unity_forward_axis": "+Z",
+    "axis_conversion": "swap_y_z_and_reverse_winding"
+  },
+  "runtime_wrapper_yaw_degrees": 0.0,
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "surface_clearance_contract": {
+    "opaque_overlay_min_clearance_m": 0.03,
+    "runtime_foundation_inset_m": 0.08,
+    "facade_uv": "authored_per_elevation_no_whole_building_stretch",
+    "openings": "separate_geometry_not_baked",
+    "home_view_groups": [
+      "frontage",
+      "balcony",
+      "entry"
+    ],
+    "visible_bounds": "body_plus_canonical_outward_balcony_and_roof_overhang"
+  },
+  "texture_bindings": [
+    {
+      "sheet": "StuccoPrimary",
+      "basename": "PlayerHomeExteriorStuccoPrimaryAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorStuccoPrimaryAlbedo",
+      "uv_scheme": "world_metre_projected",
+      "meters_per_tile": 2.4
+    },
+    {
+      "sheet": "StuccoRepair",
+      "basename": "PlayerHomeExteriorStuccoRepairAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorStuccoRepairAlbedo",
+      "uv_scheme": "world_metre_projected",
+      "meters_per_tile": 1.8
+    },
+    {
+      "sheet": "BrickPlinth",
+      "basename": "PlayerHomeExteriorBrickPlinthAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorBrickPlinthAlbedo",
+      "uv_scheme": "world_metre_projected",
+      "meters_per_tile": 1.2
+    },
+    {
+      "sheet": "RoofSlate",
+      "basename": "PlayerHomeExteriorRoofSlateAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorRoofSlateAlbedo",
+      "uv_scheme": "world_metre_projected",
+      "meters_per_tile": 2.4
+    },
+    {
+      "sheet": "PaintedWood",
+      "basename": "PlayerHomeExteriorPaintedWoodAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorPaintedWoodAlbedo",
+      "uv_scheme": "world_metre_projected",
+      "meters_per_tile": 1.0
+    },
+    {
+      "sheet": "PaintedMetal",
+      "basename": "PlayerHomeExteriorPaintedMetalAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorPaintedMetalAlbedo",
+      "uv_scheme": "world_metre_projected",
+      "meters_per_tile": 1.2
+    },
+    {
+      "sheet": "WindowFrame",
+      "basename": "PlayerHomeExteriorWindowFrameAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorWindowFrameAlbedo",
+      "uv_scheme": "world_metre_projected",
+      "meters_per_tile": 0.8
+    },
+    {
+      "sheet": "WindowGlass",
+      "basename": "PlayerHomeExteriorWindowGlassAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorWindowGlassAlbedo",
+      "uv_scheme": "world_metre_projected",
+      "meters_per_tile": 1.0
+    },
+    {
+      "sheet": "Concrete",
+      "basename": "PlayerHomeExteriorConcreteAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorConcreteAlbedo",
+      "uv_scheme": "world_metre_projected",
+      "meters_per_tile": 1.5
+    }
+  ],
+  "bounds_min": [
+    -6.5,
+    -6.0,
+    0.0
+  ],
+  "bounds_max": [
+    6.5,
+    8.3,
+    8.8
+  ],
+  "mesh_count": 47,
+  "triangle_count": 7776,
+  "anchors": [
+    {
+      "name": "ExteriorDoor",
+      "role": "exterior_door",
+      "local_position": [
+        0.0,
+        6.0,
+        0.0
+      ],
+      "unity_local_position": [
+        0.0,
+        0.0,
+        6.0
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "name": "Front Primary Stucco",
+      "role": "exterior_stucco_primary",
+      "group": "frontage",
+      "sheet": "StuccoPrimary",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.49,
+          0.5,
+          0.44
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 176,
+      "triangles": 264,
+      "bounds_min": [
+        -6.25,
+        5.72,
+        0.45
+      ],
+      "bounds_max": [
+        6.25,
+        6.0,
+        6.82
+      ]
+    },
+    {
+      "name": "Front Stucco Repair",
+      "role": "exterior_stucco_repair",
+      "group": "frontage",
+      "sheet": "StuccoRepair",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.58,
+          0.56,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min": [
+        3.45,
+        5.72,
+        3.28
+      ],
+      "bounds_max": [
+        4.45,
+        6.0,
+        4.28
+      ]
+    },
+    {
+      "name": "Left Primary Stucco",
+      "role": "exterior_stucco_primary",
+      "group": "side_left",
+      "sheet": "StuccoPrimary",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.49,
+          0.44
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 112,
+      "triangles": 168,
+      "bounds_min": [
+        -6.39,
+        -5.72,
+        0.45
+      ],
+      "bounds_max": [
+        -6.11,
+        5.86,
+        6.82
+      ]
+    },
+    {
+      "name": "Left Stucco Repair",
+      "role": "exterior_stucco_repair",
+      "group": "side_left",
+      "sheet": "StuccoRepair",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.56,
+          0.55,
+          0.49
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min": [
+        -6.39,
+        4.08,
+        3.2
+      ],
+      "bounds_max": [
+        -6.11,
+        5.18,
+        4.24
+      ]
+    },
+    {
+      "name": "Right Primary Stucco",
+      "role": "exterior_stucco_primary",
+      "group": "side_right",
+      "sheet": "StuccoPrimary",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.49,
+          0.44
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 112,
+      "triangles": 168,
+      "bounds_min": [
+        6.11,
+        -5.72,
+        0.45
+      ],
+      "bounds_max": [
+        6.39,
+        5.86,
+        6.82
+      ]
+    },
+    {
+      "name": "Right Stucco Repair",
+      "role": "exterior_stucco_repair",
+      "group": "side_right",
+      "sheet": "StuccoRepair",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.56,
+          0.55,
+          0.49
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min": [
+        6.11,
+        -5.08,
+        3.18
+      ],
+      "bounds_max": [
+        6.39,
+        -4.0,
+        4.2
+      ]
+    },
+    {
+      "name": "Rear Primary Stucco",
+      "role": "exterior_stucco_primary",
+      "group": "rear",
+      "sheet": "StuccoPrimary",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.46,
+          0.48,
+          0.43
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 192,
+      "bounds_min": [
+        -6.25,
+        -5.86,
+        0.45
+      ],
+      "bounds_max": [
+        6.25,
+        -5.58,
+        6.82
+      ]
+    },
+    {
+      "name": "Rear Stucco Repair",
+      "role": "exterior_stucco_repair",
+      "group": "rear",
+      "sheet": "StuccoRepair",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.55,
+          0.54,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min": [
+        -0.68,
+        -5.86,
+        3.18
+      ],
+      "bounds_max": [
+        0.92,
+        -5.58,
+        4.3
+      ]
+    },
+    {
+      "name": "Left Stucco Gable",
+      "role": "exterior_stucco_primary",
+      "group": "side_left",
+      "sheet": "StuccoPrimary",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.49,
+          0.44
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min": [
+        -6.39,
+        -5.72,
+        6.82
+      ],
+      "bounds_max": [
+        -6.11,
+        5.86,
+        8.54
+      ]
+    },
+    {
+      "name": "Right Stucco Gable",
+      "role": "exterior_stucco_primary",
+      "group": "side_right",
+      "sheet": "StuccoPrimary",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.49,
+          0.44
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min": [
+        6.11,
+        -5.72,
+        6.82
+      ],
+      "bounds_max": [
+        6.39,
+        5.86,
+        8.54
+      ]
+    },
+    {
+      "name": "Front Brick Plinth",
+      "role": "exterior_masonry",
+      "group": "frontage",
+      "sheet": "BrickPlinth",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.26,
+          0.16,
+          0.13
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -6.39,
+        6.0,
+        0.0
+      ],
+      "bounds_max": [
+        6.39,
+        6.14,
+        0.65
+      ]
+    },
+    {
+      "name": "Left Brick Plinth",
+      "role": "exterior_masonry",
+      "group": "side_left",
+      "sheet": "BrickPlinth",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.25,
+          0.15,
+          0.13
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -6.5,
+        -5.86,
+        0.0
+      ],
+      "bounds_max": [
+        -6.36,
+        5.86,
+        0.65
+      ]
+    },
+    {
+      "name": "Right Brick Plinth",
+      "role": "exterior_masonry",
+      "group": "side_right",
+      "sheet": "BrickPlinth",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.25,
+          0.15,
+          0.13
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        6.36,
+        -5.86,
+        0.0
+      ],
+      "bounds_max": [
+        6.5,
+        5.86,
+        0.65
+      ]
+    },
+    {
+      "name": "Rear Brick Plinth",
+      "role": "exterior_masonry",
+      "group": "rear",
+      "sheet": "BrickPlinth",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.15,
+          0.13
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -6.36,
+        -6.0,
+        0.0
+      ],
+      "bounds_max": [
+        6.36,
+        -5.86,
+        0.65
+      ]
+    },
+    {
+      "name": "Pitched Slate Roof",
+      "role": "exterior_roof",
+      "group": "roof",
+      "sheet": "RoofSlate",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.12,
+          0.15,
+          0.17
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 24,
+      "bounds_min": [
+        -6.5,
+        -6.0,
+        6.82
+      ],
+      "bounds_max": [
+        6.5,
+        8.3,
+        8.8
+      ]
+    },
+    {
+      "name": "Front Eave Fascia",
+      "role": "exterior_wood",
+      "group": "frontage",
+      "sheet": "PaintedWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.23,
+          0.34,
+          0.3
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -6.48,
+        8.04,
+        6.785
+      ],
+      "bounds_max": [
+        6.48,
+        8.24,
+        6.965
+      ]
+    },
+    {
+      "name": "Rear Eave Fascia",
+      "role": "exterior_wood",
+      "group": "roof",
+      "sheet": "PaintedWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.22,
+          0.32,
+          0.29
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -6.48,
+        -5.94,
+        6.785
+      ],
+      "bounds_max": [
+        6.48,
+        -5.74,
+        6.965
+      ]
+    },
+    {
+      "name": "Front Window Frames",
+      "role": "exterior_window_frame",
+      "group": "frontage",
+      "sheet": "WindowFrame",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.66,
+          0.65,
+          0.56
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 480,
+      "triangles": 840,
+      "bounds_min": [
+        -5.775,
+        6.0225,
+        1.0934
+      ],
+      "bounds_max": [
+        5.425,
+        6.0975,
+        6.1416
+      ]
+    },
+    {
+      "name": "Front Window Glass",
+      "role": "exterior_glass",
+      "group": "frontage",
+      "sheet": "WindowGlass",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.14,
+          0.23,
+          0.25
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        -5.70075,
+        6.008,
+        1.17425
+      ],
+      "bounds_max": [
+        5.35075,
+        6.036,
+        6.06075
+      ]
+    },
+    {
+      "name": "Front Lit Window Glass",
+      "role": "exterior_glass",
+      "group": "frontage",
+      "sheet": "WindowGlass",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.95,
+          0.62,
+          0.29
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        1.49925,
+        6.008,
+        4.65925
+      ],
+      "bounds_max": [
+        2.80075,
+        6.036,
+        6.06075
+      ]
+    },
+    {
+      "name": "Front Concrete Sills",
+      "role": "exterior_concrete",
+      "group": "frontage",
+      "sheet": "Concrete",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.39,
+          0.4,
+          0.38
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -5.895,
+        5.94,
+        0.95
+      ],
+      "bounds_max": [
+        5.545,
+        6.1,
+        4.555
+      ]
+    },
+    {
+      "name": "Left Window Frames",
+      "role": "exterior_window_frame",
+      "group": "side_left",
+      "sheet": "WindowFrame",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.66,
+          0.65,
+          0.56
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 480,
+      "triangles": 840,
+      "bounds_min": [
+        -6.4875,
+        -4.225,
+        1.1184
+      ],
+      "bounds_max": [
+        -6.4125,
+        3.475,
+        6.1416
+      ]
+    },
+    {
+      "name": "Left Window Glass",
+      "role": "exterior_glass",
+      "group": "side_left",
+      "sheet": "WindowGlass",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.14,
+          0.23,
+          0.25
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -6.426,
+        -4.15075,
+        1.19925
+      ],
+      "bounds_max": [
+        -6.398,
+        3.40075,
+        6.06075
+      ]
+    },
+    {
+      "name": "Left Concrete Sills",
+      "role": "exterior_concrete",
+      "group": "side_left",
+      "sheet": "Concrete",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.39,
+          0.4,
+          0.38
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -6.49,
+        -4.345,
+        0.975
+      ],
+      "bounds_max": [
+        -6.33,
+        3.595,
+        4.555
+      ]
+    },
+    {
+      "name": "Right Window Frames",
+      "role": "exterior_window_frame",
+      "group": "side_right",
+      "sheet": "WindowFrame",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.66,
+          0.65,
+          0.56
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 480,
+      "triangles": 840,
+      "bounds_min": [
+        6.4125,
+        -4.225,
+        1.1184
+      ],
+      "bounds_max": [
+        6.4875,
+        3.475,
+        6.1416
+      ]
+    },
+    {
+      "name": "Right Window Glass",
+      "role": "exterior_glass",
+      "group": "side_right",
+      "sheet": "WindowGlass",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.14,
+          0.23,
+          0.25
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        6.398,
+        -4.15075,
+        1.19925
+      ],
+      "bounds_max": [
+        6.426,
+        3.40075,
+        6.06075
+      ]
+    },
+    {
+      "name": "Right Concrete Sills",
+      "role": "exterior_concrete",
+      "group": "side_right",
+      "sheet": "Concrete",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.39,
+          0.4,
+          0.38
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        6.33,
+        -4.345,
+        0.975
+      ],
+      "bounds_max": [
+        6.49,
+        3.595,
+        4.555
+      ]
+    },
+    {
+      "name": "Rear Window Frames",
+      "role": "exterior_window_frame",
+      "group": "rear",
+      "sheet": "WindowFrame",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.66,
+          0.65,
+          0.56
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 640,
+      "triangles": 1120,
+      "bounds_min": [
+        -5.375,
+        -5.9575,
+        1.1184
+      ],
+      "bounds_max": [
+        5.375,
+        -5.8825,
+        6.1416
+      ]
+    },
+    {
+      "name": "Rear Window Glass",
+      "role": "exterior_glass",
+      "group": "rear",
+      "sheet": "WindowGlass",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.14,
+          0.23,
+          0.25
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 224,
+      "bounds_min": [
+        -5.30075,
+        -5.896,
+        1.19925
+      ],
+      "bounds_max": [
+        5.30075,
+        -5.868,
+        6.06075
+      ]
+    },
+    {
+      "name": "Rear Concrete Sills",
+      "role": "exterior_concrete",
+      "group": "rear",
+      "sheet": "Concrete",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.39,
+          0.4,
+          0.38
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 224,
+      "bounds_min": [
+        -5.495,
+        -5.96,
+        0.975
+      ],
+      "bounds_max": [
+        5.495,
+        -5.8,
+        4.555
+      ]
+    },
+    {
+      "name": "Recessed Entry Reveals",
+      "role": "exterior_stucco_repair",
+      "group": "entry",
+      "sheet": "StuccoRepair",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.55,
+          0.54,
+          0.48
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -1.07,
+        4.96,
+        0.0
+      ],
+      "bounds_max": [
+        0.87,
+        5.94,
+        3.06
+      ]
+    },
+    {
+      "name": "Recessed Entry Soffit",
+      "role": "exterior_concrete",
+      "group": "entry",
+      "sheet": "Concrete",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.38,
+          0.39,
+          0.37
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -1.0,
+        4.96,
+        3.06
+      ],
+      "bounds_max": [
+        0.8,
+        5.94,
+        3.2
+      ]
+    },
+    {
+      "name": "Entry Recess Back Wall",
+      "role": "exterior_stucco_primary",
+      "group": "entry",
+      "sheet": "StuccoPrimary",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.48,
+          0.49,
+          0.44
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -1.0,
+        4.88,
+        0.0
+      ],
+      "bounds_max": [
+        0.8,
+        5.04,
+        3.06
+      ]
+    },
+    {
+      "name": "Player Home Entrance Door",
+      "role": "exterior_door",
+      "group": "entry",
+      "sheet": "PaintedWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.2,
+          0.3,
+          0.27
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -0.675,
+        5.005,
+        0.0
+      ],
+      "bounds_max": [
+        0.475,
+        5.105,
+        2.3
+      ]
+    },
+    {
+      "name": "Player Home Entrance Door Frame",
+      "role": "exterior_window_frame",
+      "group": "entry",
+      "sheet": "WindowFrame",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.64,
+          0.63,
+          0.55
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -0.795,
+        5.08,
+        0.0
+      ],
+      "bounds_max": [
+        0.595,
+        5.16,
+        2.54
+      ]
+    },
+    {
+      "name": "Player Home Entrance Threshold",
+      "role": "exterior_concrete",
+      "group": "entry",
+      "sheet": "Concrete",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.35,
+          0.36,
+          0.35
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -0.825,
+        4.94,
+        0.0
+      ],
+      "bounds_max": [
+        0.625,
+        6.0,
+        0.12
+      ]
+    },
+    {
+      "name": "Upper Half Loggia Back Wall",
+      "role": "exterior_stucco_primary",
+      "group": "balcony",
+      "sheet": "StuccoPrimary",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.49,
+          0.44
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 96,
+      "bounds_min": [
+        -3.4,
+        5.72,
+        4.7
+      ],
+      "bounds_max": [
+        0.5,
+        6.0,
+        7.44
+      ]
+    },
+    {
+      "name": "Upper Half Loggia Concrete Deck",
+      "role": "exterior_concrete",
+      "group": "balcony",
+      "sheet": "Concrete",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.38,
+          0.39,
+          0.37
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -3.4,
+        6.0,
+        4.52
+      ],
+      "bounds_max": [
+        0.5,
+        8.3,
+        4.7
+      ]
+    },
+    {
+      "name": "Balcony Window Frame",
+      "role": "exterior_window_frame",
+      "group": "balcony",
+      "sheet": "WindowFrame",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.66,
+          0.65,
+          0.56
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        -3.09,
+        6.0225,
+        6.2234
+      ],
+      "bounds_max": [
+        -1.61,
+        6.0975,
+        7.3366
+      ]
+    },
+    {
+      "name": "Balcony Window Glass",
+      "role": "exterior_glass",
+      "group": "balcony",
+      "sheet": "WindowGlass",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.14,
+          0.23,
+          0.25
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -3.01575,
+        6.008,
+        6.30425
+      ],
+      "bounds_max": [
+        -1.68425,
+        6.036,
+        7.25575
+      ]
+    },
+    {
+      "name": "Balcony Window Concrete Sill",
+      "role": "exterior_concrete",
+      "group": "balcony",
+      "sheet": "Concrete",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.39,
+          0.4,
+          0.38
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -3.21,
+        5.94,
+        6.08
+      ],
+      "bounds_max": [
+        -1.49,
+        6.1,
+        6.2
+      ]
+    },
+    {
+      "name": "Balcony Painted Wood Door",
+      "role": "exterior_balcony_door",
+      "group": "balcony",
+      "sheet": "PaintedWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.22,
+          0.32,
+          0.28
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        -1.18,
+        6.015,
+        4.7
+      ],
+      "bounds_max": [
+        0.18,
+        6.14,
+        7.04
+      ]
+    },
+    {
+      "name": "Balcony Door Glass",
+      "role": "exterior_glass",
+      "group": "balcony",
+      "sheet": "WindowGlass",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.14,
+          0.23,
+          0.25
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -1.04,
+        6.058,
+        5.41
+      ],
+      "bounds_max": [
+        0.04,
+        6.086,
+        6.85
+      ]
+    },
+    {
+      "name": "Two Storey Gallery Timber",
+      "role": "exterior_wood",
+      "group": "balcony",
+      "sheet": "PaintedWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.23,
+          0.34,
+          0.3
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -3.4,
+        6.1,
+        0.06
+      ],
+      "bounds_max": [
+        0.5,
+        8.2,
+        6.9
+      ]
+    },
+    {
+      "name": "Upper Half Loggia Metal Railing",
+      "role": "exterior_metal",
+      "group": "balcony",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.29,
+          0.28
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 320,
+      "triangles": 560,
+      "bounds_min": [
+        -3.36,
+        6.0,
+        4.75
+      ],
+      "bounds_max": [
+        0.46,
+        8.24,
+        5.75
+      ]
+    },
+    {
+      "name": "Left Galvanized Downpipe",
+      "role": "exterior_metal",
+      "group": "side_left",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.25,
+          0.3,
+          0.29
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 20,
+      "triangles": 36,
+      "bounds_min": [
+        -6.48,
+        -4.967553,
+        0.0
+      ],
+      "bounds_max": [
+        -6.38,
+        -4.872447,
+        6.56
+      ]
+    },
+    {
+      "name": "Right Galvanized Downpipe",
+      "role": "exterior_metal",
+      "group": "side_right",
+      "sheet": "PaintedMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.25,
+          0.3,
+          0.29
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "colliders": [],
+      "vertices": 20,
+      "triangles": 36,
+      "bounds_min": [
+        6.38,
+        -4.967553,
+        0.0
+      ],
+      "bounds_max": [
+        6.48,
+        -4.872447,
+        6.56
+      ]
+    }
+  ],
+  "build_signature": "91cb3cc200abbf5dfc83891e04fa9ae493ca4d252e9b00d3c9317c6cc5a30790"
+}

@@ -9,8 +9,9 @@ namespace BarPromenade
         // The narrow-trace plan has a formal 638-part ceiling. Replacing its
         // tunnel slivers/light stock with six supported caps and a two-post
         // service frame adds at most seven descriptors. Runtime still batches
-        // the fine strokes by 48 m chunk/style/collision.
-        public const int MaximumPartCount = 650;
+        // the fine strokes by 48 m chunk/style/collision. Five grounded life
+        // assemblies are appended after the landmark pass.
+        public const int MaximumPartCount = 656;
         public const float MinimumTunnelDriveClearWidth = 6f;
 
         private const float SurfaceLift = 0.035f;
@@ -90,6 +91,7 @@ namespace BarPromenade
                 layout,
                 yards,
                 forecourt);
+            plan = CityFringeYardLifePlanner.Append(layout, plan);
             CityFringeYardValidator.ValidateOrThrow(layout, mountains, plan);
             return plan;
         }

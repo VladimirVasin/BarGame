@@ -245,6 +245,8 @@ namespace BarPromenade
                             "stable design ID.");
                     }
 
+                    CityKettleHatRigAnchors kettle =
+                        registry.GetComponent<CityKettleHatRigAnchors>();
                     if (requireCatalogComposition)
                     {
                         if (!CityPedestrianResources.TryGetArchetype(
@@ -254,6 +256,23 @@ namespace BarPromenade
                             throw new InvalidOperationException(
                                 $"Pedestrian design '{registry.DesignId}' " +
                                 "is not registered in the ordered catalog.");
+                        }
+
+                        // The boil is declared twice on purpose - on the
+                        // catalog entry and on the prefab's rig anchors -
+                        // and a prefab that carries one without the other
+                        // is a build that went wrong, not a design choice.
+                        if (archetype.CarriesBoilingKettle != (kettle != null))
+                        {
+                            throw new InvalidOperationException(
+                                $"Pedestrian design '{registry.DesignId}' " +
+                                (archetype.CarriesBoilingKettle
+                                    ? "declares a boiling kettle but its " +
+                                      "prefab carries no " +
+                                      nameof(CityKettleHatRigAnchors) + "."
+                                    : "carries " +
+                                      nameof(CityKettleHatRigAnchors) +
+                                      " but declares no boiling kettle."));
                         }
 
                         int existing = 0;
@@ -298,6 +317,24 @@ namespace BarPromenade
                     }
 
                     presentation.Initialize(registry);
+                    if (kettle != null)
+                    {
+                        // Every kettle instance starts with its lid seated,
+                        // whether or not this run gives it an effect: the
+                        // prefab's pivot is identity by contract and the
+                        // pool must never inherit a lid left mid-vent.
+                        kettle.ResetLid();
+                        CityKettleHatBoilEffect boil =
+                            registry.GetComponent<CityKettleHatBoilEffect>();
+                        if (boil == null)
+                        {
+                            boil = registry.gameObject.AddComponent<
+                                CityKettleHatBoilEffect>();
+                        }
+
+                        boil.Initialize(presentation, kettle, (uint)index);
+                    }
+
                     presentation.gameObject.SetActive(false);
                     presentations.Add(presentation);
                 }

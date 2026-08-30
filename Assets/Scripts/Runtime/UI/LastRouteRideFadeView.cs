@@ -114,7 +114,9 @@ namespace BarPromenade
             Color previousColor = GUI.color;
             int previousDepth = GUI.depth;
             GUI.depth = -1000;
-            GUI.color = new Color(0f, 0f, 0f, Mathf.Clamp01(opacity));
+            GUI.color = RetroUiTheme.WithAlpha(
+                RetroUiTheme.Ink,
+                opacity);
             GUI.DrawTexture(
                 new Rect(0f, 0f, Screen.width, Screen.height),
                 Texture2D.whiteTexture,

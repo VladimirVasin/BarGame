@@ -110,6 +110,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantTwoColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantThreeColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Backrest
     role: seat
     paletteName: chair_seat
@@ -118,6 +119,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.09, g: 0.04, b: 0.045, a: 1}
     variantTwoColor: {r: 0.09, g: 0.04, b: 0.045, a: 1}
     variantThreeColor: {r: 0.09, g: 0.04, b: 0.045, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Bellows
     role: bellows
     paletteName: bellows
@@ -126,6 +128,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1428, g: 0.069000006, b: 0.056649998, a: 1}
     variantTwoColor: {r: 0.1785, g: 0.066, b: 0.0429, a: 1}
     variantThreeColor: {r: 0.15980001, g: 0.075, b: 0.0473, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CasterHub.L
     role: caster
     paletteName: chair_frame_light
@@ -134,6 +137,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantTwoColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantThreeColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CasterHub.R
     role: caster
     paletteName: chair_frame_light
@@ -142,6 +146,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantTwoColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantThreeColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CasterTyre.L
     role: caster
     paletteName: chair_tyre
@@ -150,6 +155,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
     variantTwoColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
     variantThreeColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CasterTyre.R
     role: caster
     paletteName: chair_tyre
@@ -158,6 +164,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
     variantTwoColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
     variantThreeColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ChairFrame
     role: wheelchair_frame
     paletteName: chair_frame
@@ -166,6 +173,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.06, g: 0.066, b: 0.068, a: 1}
     variantTwoColor: {r: 0.06, g: 0.066, b: 0.068, a: 1}
     variantThreeColor: {r: 0.06, g: 0.066, b: 0.068, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.L
     role: face_detail
     paletteName: void
@@ -174,6 +182,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.R
     role: face_detail
     paletteName: void
@@ -182,6 +191,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_FootrestStems
     role: wheelchair_frame
     paletteName: chair_frame
@@ -190,6 +200,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.06, g: 0.066, b: 0.068, a: 1}
     variantTwoColor: {r: 0.06, g: 0.066, b: 0.068, a: 1}
     variantThreeColor: {r: 0.06, g: 0.066, b: 0.068, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Footrests
     role: footrest
     paletteName: chair_frame_light
@@ -198,6 +209,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantTwoColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantThreeColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Hair
     role: clothing_detail
     paletteName: roller_coat_dark
@@ -206,6 +218,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.063, g: 0.023, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.07875, g: 0.022, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.0705, g: 0.025, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Mouth
     role: face_detail
     paletteName: void
@@ -214,6 +227,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Nose
     role: face_detail
     paletteName: roller_skin_dark
@@ -222,6 +236,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19739999, g: 0.1426, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.24674998, g: 0.1364, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.2209, g: 0.155, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_OrganPipe.01
     role: signature_silhouette
     paletteName: pipe_brass_dark
@@ -230,6 +245,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.096599996, b: 0.043259997, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.0924, b: 0.032759998, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.105, b: 0.03612, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_OrganPipe.02
     role: signature_silhouette
     paletteName: pipe_ivory
@@ -238,6 +254,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.49139997, g: 0.51060003, b: 0.47895, a: 1}
     variantTwoColor: {r: 0.61424994, g: 0.4884, b: 0.3627, a: 1}
     variantThreeColor: {r: 0.5499, g: 0.555, b: 0.39990002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_OrganPipe.03
     role: signature_silhouette
     paletteName: pipe_brass_light
@@ -246,6 +263,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.47879997, g: 0.4002, b: 0.18540001, a: 1}
     variantTwoColor: {r: 0.59849995, g: 0.3828, b: 0.1404, a: 1}
     variantThreeColor: {r: 0.5358, g: 0.435, b: 0.15480001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_OrganPipe.04
     role: signature_silhouette
     paletteName: pipe_brass
@@ -254,6 +272,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.32759997, g: 0.2622, b: 0.10814999, a: 1}
     variantTwoColor: {r: 0.40949997, g: 0.25079998, b: 0.08189999, a: 1}
     variantThreeColor: {r: 0.36659998, g: 0.285, b: 0.0903, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_OrganPipe.05
     role: signature_silhouette
     paletteName: pipe_ivory
@@ -262,6 +281,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.49139997, g: 0.51060003, b: 0.47895, a: 1}
     variantTwoColor: {r: 0.61424994, g: 0.4884, b: 0.3627, a: 1}
     variantThreeColor: {r: 0.5499, g: 0.555, b: 0.39990002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_OrganPipe.06
     role: signature_silhouette
     paletteName: pipe_brass_dark
@@ -270,6 +290,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.096599996, b: 0.043259997, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.0924, b: 0.032759998, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.105, b: 0.03612, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_PipeManifold
     role: pipe_manifold
     paletteName: pipe_brass_dark
@@ -278,6 +299,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.096599996, b: 0.043259997, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.0924, b: 0.032759998, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.105, b: 0.03612, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_PushLevers
     role: drive_lever
     paletteName: chair_rim
@@ -286,6 +308,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.25, g: 0.225, b: 0.17, a: 1}
     variantTwoColor: {r: 0.25, g: 0.225, b: 0.17, a: 1}
     variantThreeColor: {r: 0.25, g: 0.225, b: 0.17, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_PushRim.L
     role: wheel_rim
     paletteName: chair_rim
@@ -294,6 +317,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.25, g: 0.225, b: 0.17, a: 1}
     variantTwoColor: {r: 0.25, g: 0.225, b: 0.17, a: 1}
     variantThreeColor: {r: 0.25, g: 0.225, b: 0.17, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_PushRim.R
     role: wheel_rim
     paletteName: chair_rim
@@ -302,6 +326,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.25, g: 0.225, b: 0.17, a: 1}
     variantTwoColor: {r: 0.25, g: 0.225, b: 0.17, a: 1}
     variantThreeColor: {r: 0.25, g: 0.225, b: 0.17, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_SeatCushion
     role: seat
     paletteName: chair_seat
@@ -310,6 +335,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.09, g: 0.04, b: 0.045, a: 1}
     variantTwoColor: {r: 0.09, g: 0.04, b: 0.045, a: 1}
     variantThreeColor: {r: 0.09, g: 0.04, b: 0.045, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ShoeSole.L
     role: footwear_detail
     paletteName: sole
@@ -318,6 +344,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ShoeSole.R
     role: footwear_detail
     paletteName: sole
@@ -326,6 +353,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_WheelSpokes.L
     role: wheel_mechanism
     paletteName: chair_frame_light
@@ -334,6 +362,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantTwoColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantThreeColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_WheelSpokes.R
     role: wheel_mechanism
     paletteName: chair_frame_light
@@ -342,6 +371,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantTwoColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
     variantThreeColor: {r: 0.135, g: 0.145, b: 0.145, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_WheelTyre.L
     role: wheel_tyre
     paletteName: chair_tyre
@@ -350,6 +380,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
     variantTwoColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
     variantThreeColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_WheelTyre.R
     role: wheel_tyre
     paletteName: chair_tyre
@@ -358,6 +389,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
     variantTwoColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
     variantThreeColor: {r: 0.018, g: 0.021, b: 0.02, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatBack
     role: clothing
     paletteName: roller_coat_dark
@@ -366,6 +398,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.063, g: 0.023, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.07875, g: 0.022, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.0705, g: 0.025, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatFront.L
     role: clothing
     paletteName: roller_coat_light
@@ -374,6 +407,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.252, g: 0.08280001, b: 0.103, a: 1}
     variantTwoColor: {r: 0.315, g: 0.0792, b: 0.078, a: 1}
     variantThreeColor: {r: 0.282, g: 0.09, b: 0.086, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatFront.R
     role: clothing
     paletteName: roller_coat
@@ -382,6 +416,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1722, g: 0.0506, b: 0.0721, a: 1}
     variantTwoColor: {r: 0.21524999, g: 0.0484, b: 0.054599997, a: 1}
     variantThreeColor: {r: 0.1927, g: 0.055, b: 0.060200002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Collar
     role: clothing_detail
     paletteName: roller_coat_light
@@ -390,6 +425,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.252, g: 0.08280001, b: 0.103, a: 1}
     variantTwoColor: {r: 0.315, g: 0.0792, b: 0.078, a: 1}
     variantThreeColor: {r: 0.282, g: 0.09, b: 0.086, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Foot.L
     role: foot
     paletteName: shoe
@@ -398,6 +434,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0378, g: 0.034959998, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.04725, g: 0.033439998, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.0423, g: 0.038, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Foot.R
     role: foot
     paletteName: shoe
@@ -406,6 +443,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0378, g: 0.034959998, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.04725, g: 0.033439998, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.0423, g: 0.038, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Forearm.L
     role: body
     paletteName: roller_coat_light
@@ -414,6 +452,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.252, g: 0.08280001, b: 0.103, a: 1}
     variantTwoColor: {r: 0.315, g: 0.0792, b: 0.078, a: 1}
     variantThreeColor: {r: 0.282, g: 0.09, b: 0.086, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Forearm.R
     role: body
     paletteName: roller_coat_light
@@ -422,6 +461,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.252, g: 0.08280001, b: 0.103, a: 1}
     variantTwoColor: {r: 0.315, g: 0.0792, b: 0.078, a: 1}
     variantThreeColor: {r: 0.282, g: 0.09, b: 0.086, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.L
     role: hand
     paletteName: roller_skin
@@ -430,6 +470,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.34019998, g: 0.2622, b: 0.22145, a: 1}
     variantTwoColor: {r: 0.42525, g: 0.25079998, b: 0.1677, a: 1}
     variantThreeColor: {r: 0.3807, g: 0.285, b: 0.1849, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.R
     role: hand
     paletteName: roller_skin
@@ -438,6 +479,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.34019998, g: 0.2622, b: 0.22145, a: 1}
     variantTwoColor: {r: 0.42525, g: 0.25079998, b: 0.1677, a: 1}
     variantThreeColor: {r: 0.3807, g: 0.285, b: 0.1849, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Head
     role: body
     paletteName: roller_skin
@@ -446,6 +488,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.34019998, g: 0.2622, b: 0.22145, a: 1}
     variantTwoColor: {r: 0.42525, g: 0.25079998, b: 0.1677, a: 1}
     variantThreeColor: {r: 0.3807, g: 0.285, b: 0.1849, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Neck
     role: body
     paletteName: roller_skin_dark
@@ -454,6 +497,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19739999, g: 0.1426, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.24674998, g: 0.1364, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.2209, g: 0.155, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Pelvis
     role: body
     paletteName: roller_coat
@@ -462,6 +506,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1722, g: 0.0506, b: 0.0721, a: 1}
     variantTwoColor: {r: 0.21524999, g: 0.0484, b: 0.054599997, a: 1}
     variantThreeColor: {r: 0.1927, g: 0.055, b: 0.060200002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Shin.L
     role: body
     paletteName: roller_trousers
@@ -470,6 +515,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.0552, b: 0.06694999, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.0528, b: 0.050699998, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.06, b: 0.0559, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Shin.R
     role: body
     paletteName: roller_trousers
@@ -478,6 +524,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.0552, b: 0.06694999, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.0528, b: 0.050699998, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.06, b: 0.0559, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Thigh.L
     role: body
     paletteName: roller_trousers
@@ -486,6 +533,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.0552, b: 0.06694999, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.0528, b: 0.050699998, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.06, b: 0.0559, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Thigh.R
     role: body
     paletteName: roller_trousers
@@ -494,6 +542,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.0552, b: 0.06694999, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.0528, b: 0.050699998, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.06, b: 0.0559, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Torso
     role: body
     paletteName: roller_coat_dark
@@ -502,6 +551,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.063, g: 0.023, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.07875, g: 0.022, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.0705, g: 0.025, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_UpperArm.L
     role: body
     paletteName: roller_coat
@@ -510,6 +560,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1722, g: 0.0506, b: 0.0721, a: 1}
     variantTwoColor: {r: 0.21524999, g: 0.0484, b: 0.054599997, a: 1}
     variantThreeColor: {r: 0.1927, g: 0.055, b: 0.060200002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_UpperArm.R
     role: body
     paletteName: roller_coat
@@ -518,6 +569,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1722, g: 0.0506, b: 0.0721, a: 1}
     variantTwoColor: {r: 0.21524999, g: 0.0484, b: 0.054599997, a: 1}
     variantThreeColor: {r: 0.1927, g: 0.055, b: 0.060200002, a: 1}
+    usesDetailAtlas: 0
   headAnchor: {fileID: 5720446401286938182}
   pelvisAnchor: {fileID: 4645881237837316502}
   leftFootAnchor: {fileID: 2968845137423897202}
@@ -536,6 +588,7 @@ MonoBehaviour:
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
+  detailAtlas: {fileID: 0}
 --- !u!114 &2287324248261974789
 MonoBehaviour:
   m_ObjectHideFlags: 0

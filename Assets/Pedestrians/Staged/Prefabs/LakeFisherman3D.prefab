@@ -103,6 +103,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.33179998, g: 0.3588, b: 0.38316, a: 1}
     variantTwoColor: {r: 0.41474998, g: 0.3432, b: 0.29016, a: 1}
     variantThreeColor: {r: 0.3713, g: 0.39, b: 0.31992, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.L
     role: face_detail
     paletteName: void
@@ -111,6 +112,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.R
     role: face_detail
     paletteName: void
@@ -119,6 +121,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_HoodCord
     role: surface_detail
     paletteName: slicker_dark
@@ -127,6 +130,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19739999, g: 0.14536001, b: 0.02472, a: 1}
     variantTwoColor: {r: 0.24674998, g: 0.13904001, b: 0.01872, a: 1}
     variantThreeColor: {r: 0.2209, g: 0.158, b: 0.02064, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Moustache
     role: face_detail
     paletteName: fisher_grey
@@ -135,6 +139,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.33179998, g: 0.3588, b: 0.38316, a: 1}
     variantTwoColor: {r: 0.41474998, g: 0.3432, b: 0.29016, a: 1}
     variantThreeColor: {r: 0.3713, g: 0.39, b: 0.31992, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Nose
     role: face_detail
     paletteName: fisher_skin
@@ -143,6 +148,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.33179998, g: 0.24379998, b: 0.19569999, a: 1}
     variantTwoColor: {r: 0.41474998, g: 0.23319998, b: 0.14819999, a: 1}
     variantThreeColor: {r: 0.3713, g: 0.265, b: 0.1634, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_PipeBowl
     role: signature_silhouette
     paletteName: pipe_briar
@@ -151,6 +157,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1386, g: 0.09016, b: 0.056649998, a: 1}
     variantTwoColor: {r: 0.17325, g: 0.08623999, b: 0.0429, a: 1}
     variantThreeColor: {r: 0.1551, g: 0.098, b: 0.0473, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_PipeEmber
     role: signature_silhouette
     paletteName: amber
@@ -159,6 +166,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.525, g: 0.275, b: 0.075, a: 1}
     variantTwoColor: {r: 0.525, g: 0.275, b: 0.075, a: 1}
     variantThreeColor: {r: 0.525, g: 0.275, b: 0.075, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_PipeStem
     role: signature_silhouette
     paletteName: pipe_briar_dark
@@ -167,6 +175,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.06888, g: 0.04416, b: 0.02884, a: 1}
     variantTwoColor: {r: 0.0861, g: 0.04224, b: 0.02184, a: 1}
     variantThreeColor: {r: 0.077080004, g: 0.048, b: 0.02408, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_RodButt
     role: signature_silhouette
     paletteName: rod_cane
@@ -175,6 +184,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19319999, g: 0.13800001, b: 0.074159995, a: 1}
     variantTwoColor: {r: 0.24149999, g: 0.132, b: 0.056159995, a: 1}
     variantThreeColor: {r: 0.21620001, g: 0.15, b: 0.06192, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_RodGrip
     role: signature_silhouette
     paletteName: rod_cork
@@ -183,6 +193,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.2772, g: 0.22540002, b: 0.14934999, a: 1}
     variantTwoColor: {r: 0.3465, g: 0.2156, b: 0.11309999, a: 1}
     variantThreeColor: {r: 0.3102, g: 0.245, b: 0.124699995, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_RodMid
     role: signature_silhouette
     paletteName: rod_cane
@@ -191,6 +202,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19319999, g: 0.13800001, b: 0.074159995, a: 1}
     variantTwoColor: {r: 0.24149999, g: 0.132, b: 0.056159995, a: 1}
     variantThreeColor: {r: 0.21620001, g: 0.15, b: 0.06192, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_RodReel
     role: signature_silhouette
     paletteName: rod_reel
@@ -199,6 +211,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.10752, g: 0.12144, b: 0.13389999, a: 1}
     variantTwoColor: {r: 0.1344, g: 0.11616, b: 0.101399995, a: 1}
     variantThreeColor: {r: 0.12032001, g: 0.132, b: 0.1118, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_RodTip
     role: signature_silhouette
     paletteName: rod_cane
@@ -207,6 +220,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19319999, g: 0.13800001, b: 0.074159995, a: 1}
     variantTwoColor: {r: 0.24149999, g: 0.132, b: 0.056159995, a: 1}
     variantThreeColor: {r: 0.21620001, g: 0.15, b: 0.06192, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_SlickerClasp.01
     role: surface_detail
     paletteName: rod_reel
@@ -215,6 +229,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.10752, g: 0.12144, b: 0.13389999, a: 1}
     variantTwoColor: {r: 0.1344, g: 0.11616, b: 0.101399995, a: 1}
     variantThreeColor: {r: 0.12032001, g: 0.132, b: 0.1118, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_SlickerClasp.02
     role: surface_detail
     paletteName: rod_reel
@@ -223,6 +238,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.10752, g: 0.12144, b: 0.13389999, a: 1}
     variantTwoColor: {r: 0.1344, g: 0.11616, b: 0.101399995, a: 1}
     variantThreeColor: {r: 0.12032001, g: 0.132, b: 0.1118, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_SlickerSeam.01
     role: surface_detail
     paletteName: slicker_dark
@@ -231,6 +247,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19739999, g: 0.14536001, b: 0.02472, a: 1}
     variantTwoColor: {r: 0.24674998, g: 0.13904001, b: 0.01872, a: 1}
     variantThreeColor: {r: 0.2209, g: 0.158, b: 0.02064, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_SlickerSeam.02
     role: surface_detail
     paletteName: slicker_dark
@@ -239,6 +256,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19739999, g: 0.14536001, b: 0.02472, a: 1}
     variantTwoColor: {r: 0.24674998, g: 0.13904001, b: 0.01872, a: 1}
     variantThreeColor: {r: 0.2209, g: 0.158, b: 0.02064, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_SlickerSeam.03
     role: surface_detail
     paletteName: slicker_dark
@@ -247,6 +265,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19739999, g: 0.14536001, b: 0.02472, a: 1}
     variantTwoColor: {r: 0.24674998, g: 0.13904001, b: 0.01872, a: 1}
     variantThreeColor: {r: 0.2209, g: 0.158, b: 0.02064, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_BootShaft.L
     role: clothing
     paletteName: boot_rubber
@@ -255,6 +274,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.05336, b: 0.05356, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.051039997, b: 0.04056, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.058, b: 0.04472, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_BootShaft.R
     role: clothing
     paletteName: boot_rubber
@@ -263,6 +283,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.05336, b: 0.05356, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.051039997, b: 0.04056, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.058, b: 0.04472, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_HoodBrim
     role: signature_silhouette
     paletteName: slicker_light
@@ -271,6 +292,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.49139997, g: 0.39100003, b: 0.082399994, a: 1}
     variantTwoColor: {r: 0.61424994, g: 0.374, b: 0.062399995, a: 1}
     variantThreeColor: {r: 0.5499, g: 0.425, b: 0.0688, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_HoodCollar
     role: clothing
     paletteName: slicker_dark
@@ -279,6 +301,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19739999, g: 0.14536001, b: 0.02472, a: 1}
     variantTwoColor: {r: 0.24674998, g: 0.13904001, b: 0.01872, a: 1}
     variantThreeColor: {r: 0.2209, g: 0.158, b: 0.02064, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_HoodPeak
     role: signature_silhouette
     paletteName: slicker
@@ -287,6 +310,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3822, g: 0.2898, b: 0.046350002, a: 1}
     variantTwoColor: {r: 0.47775, g: 0.27719998, b: 0.0351, a: 1}
     variantThreeColor: {r: 0.4277, g: 0.315, b: 0.038700003, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_HoodShell
     role: signature_silhouette
     paletteName: slicker
@@ -295,6 +319,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3822, g: 0.2898, b: 0.046350002, a: 1}
     variantTwoColor: {r: 0.47775, g: 0.27719998, b: 0.0351, a: 1}
     variantThreeColor: {r: 0.4277, g: 0.315, b: 0.038700003, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.L
     role: clothing
     paletteName: slicker
@@ -303,6 +328,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3822, g: 0.2898, b: 0.046350002, a: 1}
     variantTwoColor: {r: 0.47775, g: 0.27719998, b: 0.0351, a: 1}
     variantThreeColor: {r: 0.4277, g: 0.315, b: 0.038700003, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.R
     role: clothing
     paletteName: slicker
@@ -311,6 +337,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3822, g: 0.2898, b: 0.046350002, a: 1}
     variantTwoColor: {r: 0.47775, g: 0.27719998, b: 0.0351, a: 1}
     variantThreeColor: {r: 0.4277, g: 0.315, b: 0.038700003, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.L
     role: clothing
     paletteName: slicker_dark
@@ -319,6 +346,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19739999, g: 0.14536001, b: 0.02472, a: 1}
     variantTwoColor: {r: 0.24674998, g: 0.13904001, b: 0.01872, a: 1}
     variantThreeColor: {r: 0.2209, g: 0.158, b: 0.02064, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.R
     role: clothing
     paletteName: slicker_dark
@@ -327,6 +355,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19739999, g: 0.14536001, b: 0.02472, a: 1}
     variantTwoColor: {r: 0.24674998, g: 0.13904001, b: 0.01872, a: 1}
     variantThreeColor: {r: 0.2209, g: 0.158, b: 0.02064, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.L
     role: clothing
     paletteName: slicker
@@ -335,6 +364,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3822, g: 0.2898, b: 0.046350002, a: 1}
     variantTwoColor: {r: 0.47775, g: 0.27719998, b: 0.0351, a: 1}
     variantThreeColor: {r: 0.4277, g: 0.315, b: 0.038700003, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.R
     role: clothing
     paletteName: slicker
@@ -343,6 +373,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3822, g: 0.2898, b: 0.046350002, a: 1}
     variantTwoColor: {r: 0.47775, g: 0.27719998, b: 0.0351, a: 1}
     variantThreeColor: {r: 0.4277, g: 0.315, b: 0.038700003, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SlickerChest
     role: body
     paletteName: slicker
@@ -351,6 +382,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3822, g: 0.2898, b: 0.046350002, a: 1}
     variantTwoColor: {r: 0.47775, g: 0.27719998, b: 0.0351, a: 1}
     variantThreeColor: {r: 0.4277, g: 0.315, b: 0.038700003, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SlickerHem
     role: clothing
     paletteName: slicker_dark
@@ -359,6 +391,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19739999, g: 0.14536001, b: 0.02472, a: 1}
     variantTwoColor: {r: 0.24674998, g: 0.13904001, b: 0.01872, a: 1}
     variantThreeColor: {r: 0.2209, g: 0.158, b: 0.02064, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SlickerWaist
     role: body
     paletteName: slicker
@@ -367,6 +400,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3822, g: 0.2898, b: 0.046350002, a: 1}
     variantTwoColor: {r: 0.47775, g: 0.27719998, b: 0.0351, a: 1}
     variantThreeColor: {r: 0.4277, g: 0.315, b: 0.038700003, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_StormYoke
     role: signature_silhouette
     paletteName: slicker_light
@@ -375,6 +409,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.49139997, g: 0.39100003, b: 0.082399994, a: 1}
     variantTwoColor: {r: 0.61424994, g: 0.374, b: 0.062399995, a: 1}
     variantThreeColor: {r: 0.5499, g: 0.425, b: 0.0688, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserUpper.L
     role: clothing
     paletteName: oilskin_trousers
@@ -383,6 +418,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.147, g: 0.1288, b: 0.056649998, a: 1}
     variantTwoColor: {r: 0.18374999, g: 0.1232, b: 0.0429, a: 1}
     variantThreeColor: {r: 0.1645, g: 0.14, b: 0.0473, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserUpper.R
     role: clothing
     paletteName: oilskin_trousers
@@ -391,6 +427,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.147, g: 0.1288, b: 0.056649998, a: 1}
     variantTwoColor: {r: 0.18374999, g: 0.1232, b: 0.0429, a: 1}
     variantThreeColor: {r: 0.1645, g: 0.14, b: 0.0473, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.L
     role: body
     paletteName: boot_rubber
@@ -399,6 +436,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.05336, b: 0.05356, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.051039997, b: 0.04056, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.058, b: 0.04472, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.R
     role: body
     paletteName: boot_rubber
@@ -407,6 +445,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.05336, b: 0.05356, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.051039997, b: 0.04056, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.058, b: 0.04472, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.L
     role: body
     paletteName: sole
@@ -415,6 +454,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.R
     role: body
     paletteName: sole
@@ -423,6 +463,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.L
     role: body
     paletteName: fisher_skin
@@ -431,6 +472,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.33179998, g: 0.24379998, b: 0.19569999, a: 1}
     variantTwoColor: {r: 0.41474998, g: 0.23319998, b: 0.14819999, a: 1}
     variantThreeColor: {r: 0.3713, g: 0.265, b: 0.1634, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.R
     role: body
     paletteName: fisher_skin
@@ -439,6 +481,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.33179998, g: 0.24379998, b: 0.19569999, a: 1}
     variantTwoColor: {r: 0.41474998, g: 0.23319998, b: 0.14819999, a: 1}
     variantThreeColor: {r: 0.3713, g: 0.265, b: 0.1634, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Head
     role: body
     paletteName: fisher_skin
@@ -447,6 +490,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.33179998, g: 0.24379998, b: 0.19569999, a: 1}
     variantTwoColor: {r: 0.41474998, g: 0.23319998, b: 0.14819999, a: 1}
     variantThreeColor: {r: 0.3713, g: 0.265, b: 0.1634, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Neck
     role: body
     paletteName: fisher_skin
@@ -455,6 +499,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.33179998, g: 0.24379998, b: 0.19569999, a: 1}
     variantTwoColor: {r: 0.41474998, g: 0.23319998, b: 0.14819999, a: 1}
     variantThreeColor: {r: 0.3713, g: 0.265, b: 0.1634, a: 1}
+    usesDetailAtlas: 0
   headAnchor: {fileID: 6921006073876123923}
   pelvisAnchor: {fileID: 8004653237461946051}
   leftFootAnchor: {fileID: 458299567099059495}
@@ -473,6 +518,7 @@ MonoBehaviour:
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
+  detailAtlas: {fileID: 0}
 --- !u!114 &1677940000011014437
 MonoBehaviour:
   m_ObjectHideFlags: 0

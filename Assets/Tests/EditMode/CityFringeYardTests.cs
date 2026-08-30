@@ -80,6 +80,14 @@ namespace BarPromenade.Tests.EditMode
                 CityFringeYardKind.SouthFloodWorks,
                 CityFringeYardKind.EastUtilityEdge
             };
+            CityFringeYardPartKind[] expectedLifeKinds =
+            {
+                CityFringeYardPartKind.MasonCart,
+                CityFringeYardPartKind.WinchServiceSet,
+                CityFringeYardPartKind.TunnelServiceSet,
+                CityFringeYardPartKind.FloodMaintenanceSet,
+                CityFringeYardPartKind.OpenHoodCar
+            };
             Assert.That(
                 first.Yards.Select(item => item.AreaId),
                 Is.EqualTo(expectedAreas));
@@ -111,6 +119,17 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(left.Parts));
                 AssertForefieldCoverage(left);
                 AssertPoleSpacing(left);
+                CityFringeYardPartDescriptor[] lifeScenes = left.Parts
+                    .Where(part =>
+                        CityFringeYardLifeValidator.IsLifeKind(part.Kind))
+                    .ToArray();
+                Assert.That(
+                    lifeScenes,
+                    Has.Length.EqualTo(1),
+                    $"{left.AreaId} must carry one human-scale life scene.");
+                Assert.That(
+                    lifeScenes[0].Kind,
+                    Is.EqualTo(expectedLifeKinds[yardIndex]));
                 foreach (CityFringeYardPartDescriptor part in left.Parts)
                 {
                     Assert.That(
@@ -140,6 +159,11 @@ namespace BarPromenade.Tests.EditMode
                     }
                 }
             }
+
+            Assert.That(
+                first.Yards.Sum(yard => yard.Parts.Count(part =>
+                    CityFringeYardLifeValidator.IsLifeKind(part.Kind))),
+                Is.EqualTo(CityFringeYardLifeValidator.ExpectedSceneCount));
 
             AssertVocabulary(first);
             CityFringeYardPracticalDescriptor tunnelPractical =

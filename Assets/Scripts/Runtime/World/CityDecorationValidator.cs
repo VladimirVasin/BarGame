@@ -55,10 +55,17 @@ namespace BarPromenade
             var coreCounts = new Dictionary<Vector2Int, int>();
             var landmarkCounts =
                 new Dictionary<CityDistrictKind, int>();
+            var roofCoreCells = new HashSet<Vector2Int>();
+            var facadeCoreCells = new HashSet<Vector2Int>();
+            var roofLandmarkCells = new HashSet<Vector2Int>();
+            var facadeLandmarkCells = new HashSet<Vector2Int>();
+            var courtyardPocketVariants = new HashSet<int>();
+            var courtyardPocketLots = new HashSet<Vector2Int>();
             string previousId = null;
             int parkLandmarkCount = 0;
             int fountainCount = 0;
             int bandstandCount = 0;
+            int courtyardPocketCount = 0;
 
             for (int index = 0;
                  index < plan.Descriptors.Count;
@@ -85,15 +92,48 @@ namespace BarPromenade
                     layout,
                     lotsByCell);
 
+                if (descriptor.Kind ==
+                    CityDecorationKind.ResidentialCourtyardPocket)
+                {
+                    courtyardPocketCount++;
+                    if (!courtyardPocketVariants.Add(
+                            descriptor.Variant) ||
+                        !courtyardPocketLots.Add(descriptor.LotCell))
+                    {
+                        throw new InvalidOperationException(
+                            "Residential courtyard pockets require " +
+                            "distinct variants and ordinary lots.");
+                    }
+                }
+
                 if (IsOrdinaryLotVisualKind(descriptor.Kind))
                 {
                     Increment(coreCounts, descriptor.LotCell);
+                    if (descriptor.AnchorKind ==
+                        CityDecorationAnchorKind.BuildingRoof)
+                    {
+                        roofCoreCells.Add(descriptor.LotCell);
+                    }
+                    else if (descriptor.AnchorKind ==
+                             CityDecorationAnchorKind.BuildingFacade)
+                    {
+                        facadeCoreCells.Add(descriptor.LotCell);
+                    }
                 }
 
                 if (descriptor.AnchorKind ==
                     CityDecorationAnchorKind.UrbanLandmark)
                 {
                     Increment(landmarkCounts, descriptor.District);
+                    if (ResolveUrbanLandmarkSurface(descriptor.Kind) ==
+                        CityDecorationAnchorKind.BuildingRoof)
+                    {
+                        roofLandmarkCells.Add(descriptor.LotCell);
+                    }
+                    else
+                    {
+                        facadeLandmarkCells.Add(descriptor.LotCell);
+                    }
                 }
                 else if (descriptor.AnchorKind ==
                          CityDecorationAnchorKind.ParkLandmark)
@@ -113,12 +153,40 @@ namespace BarPromenade
             }
 
             ValidateOrdinaryLotCoverage(layout, coreCounts);
+            if (roofCoreCells.Overlaps(roofLandmarkCells) ||
+                facadeCoreCells.Overlaps(facadeLandmarkCells))
+            {
+                throw new InvalidOperationException(
+                    "A landmark surface cannot also carry ordinary core " +
+                    "dressing.");
+            }
             ValidateLandmarkCoverage(
                 layout,
                 landmarkCounts,
                 parkLandmarkCount,
                 fountainCount,
                 bandstandCount);
+            ValidateCourtyardPocketCoverage(
+                plan.Seed,
+                courtyardPocketCount,
+                courtyardPocketVariants);
+        }
+
+        private static CityDecorationAnchorKind ResolveUrbanLandmarkSurface(
+            CityDecorationKind kind)
+        {
+            switch (kind)
+            {
+                case CityDecorationKind.OldTownClockTower:
+                case CityDecorationKind.ResidentialRooftopGreenhouse:
+                case CityDecorationKind.IndustrialGantry:
+                    return CityDecorationAnchorKind.BuildingRoof;
+                case CityDecorationKind.NightlifeCinema:
+                    return CityDecorationAnchorKind.BuildingFacade;
+                default:
+                    throw new InvalidOperationException(
+                        $"Unsupported urban landmark '{kind}'.");
+            }
         }
 
         public static void ValidateOrThrow(
@@ -399,6 +467,20 @@ namespace BarPromenade
                     expectedDistrict = CityDistrictKind.Residential;
                     expectedAnchor = CityDecorationAnchorKind.BuildingFrontage;
                     break;
+                case CityDecorationKind.ResidentialCourtyardPocket:
+                    expectedDistrict = CityDistrictKind.Residential;
+                    expectedAnchor = CityDecorationAnchorKind.BuildingFrontage;
+                    if (descriptor.Variant < 0 ||
+                        descriptor.Variant >=
+                        CityCourtyardPocketGeometry.VariantCount)
+                    {
+                        throw new InvalidOperationException(
+                            $"Residential courtyard pocket " +
+                            $"'{descriptor.StableId}' has an unsupported " +
+                            $"variant '{descriptor.Variant}'.");
+                    }
+
+                    break;
                 case CityDecorationKind.ResidentialRooftopGreenhouse:
                     expectedDistrict = CityDistrictKind.Residential;
                     expectedAnchor = CityDecorationAnchorKind.UrbanLandmark;
@@ -541,6 +623,40 @@ namespace BarPromenade
             }
         }
 
+        private static void ValidateCourtyardPocketCoverage(
+            int seed,
+            int count,
+            ISet<int> variants)
+        {
+            if (count > CityCourtyardPocketPlanner.MaximumPocketCount)
+            {
+                throw new InvalidOperationException(
+                    "The residential district cannot exceed four " +
+                    "courtyard pockets.");
+            }
+
+            if (count != CityCourtyardPocketPlanner.MaximumPocketCount)
+            {
+                return;
+            }
+
+            int optional =
+                CityCourtyardPocketPlanner.ResolveOptionalVariant(seed);
+            if (!variants.Contains(
+                    CityCourtyardPocketGeometry.NardiVariant) ||
+                !variants.Contains(
+                    CityCourtyardPocketGeometry.BicycleVariant) ||
+                !variants.Contains(
+                    CityCourtyardPocketGeometry.BalconyBasketVariant) ||
+                !variants.Contains(optional))
+            {
+                throw new InvalidOperationException(
+                    "A complete residential courtyard set requires " +
+                    "Nardi, bicycle, balcony basket and its seeded " +
+                    "fourth scene.");
+            }
+        }
+
         private static bool RequiresGroundProtection(
             CityDecorationAnchorKind kind)
         {
@@ -560,6 +676,8 @@ namespace BarPromenade
                     return 2.8f;
                 case CityDecorationKind.ResidentialDiscardedFurniture:
                     return 2.5f;
+                case CityDecorationKind.ResidentialCourtyardPocket:
+                    return 2.2f;
                 case CityDecorationKind.IndustrialCargo:
                     return 3.5f;
                 case CityDecorationKind.NightlifeVendingAndQueue:

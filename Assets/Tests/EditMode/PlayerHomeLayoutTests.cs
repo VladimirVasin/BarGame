@@ -30,6 +30,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(home.IsBar, Is.False);
             Assert.That(home.IsPark, Is.False);
             Assert.That(home.HasBuilding, Is.True);
+            Vector2 expectedSize = home.FrontageDirection.x != 0
+                ? new Vector2(12f, 13f)
+                : new Vector2(13f, 12f);
+            Assert.That(home.Size, Is.EqualTo(expectedSize));
             Assert.That(
                 home.Height,
                 Is.EqualTo(
@@ -102,11 +106,13 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [TestCase(6.20f, false)]
-        [TestCase(7.40f, true)]
+        [TestCase(7.40f, false)]
+        [TestCase(8.79f, false)]
+        [TestCase(8.80f, true)]
         [TestCase(13.00f, true)]
-        public void Generate_PlayerHomeHeightHonorsCustomMaximum(
+        public void Generate_PlayerHomeRequiresAuthoredHeight(
             float maximumHeight,
-            bool supportsThirdFloor)
+            bool expectsHome)
         {
             CityGenerationSettings settings =
                 CityGenerationSettings.Default;
@@ -115,26 +121,78 @@ namespace BarPromenade.Tests.EditMode
             CityLayout layout =
                 CityLayoutGenerator.Generate(settings, 73119);
 
+            Assert.That(layout.PlayerHome != null, Is.EqualTo(expectsHome));
             Assert.That(
-                layout.PlayerHome.Height,
-                Is.EqualTo(
-                        Mathf.Min(
+                layout.BuildingLots.Count(lot => lot.IsPlayerHome),
+                Is.EqualTo(expectsHome ? 1 : 0));
+            if (expectsHome)
+            {
+                Assert.That(
+                    layout.PlayerHome.Height,
+                    Is.EqualTo(
                             PlayerHomeBalconyGeometry
-                                .PreferredBuildingHeight,
-                            maximumHeight))
-                    .Within(0.001f));
+                                .PreferredBuildingHeight)
+                        .Within(0.001f));
+                Assert.That(
+                    PlayerHomeBalconyGeometry.SupportsThirdFloor(
+                        layout.PlayerHome.Height),
+                    Is.True);
+            }
+        }
+
+        [Test]
+        public void Generate_OmitsPlayerHomeWhenFootprintIsUndersized()
+        {
+            CityGenerationSettings settings =
+                CityGenerationSettings.Default;
+            settings.BlockWidth =
+                settings.BuildingInset * 2f + 11.99f;
+
+            CityLayout layout =
+                CityLayoutGenerator.Generate(settings, 73119);
+
+            Assert.That(layout.PlayerHome, Is.Null);
             Assert.That(
-                PlayerHomeBalconyGeometry.SupportsThirdFloor(
-                    layout.PlayerHome.Height),
-                Is.EqualTo(supportsThirdFloor));
+                layout.BuildingLots.Any(lot => lot.IsPlayerHome),
+                Is.False);
+        }
+
+        [TestCase(0, 1, 13f, 12f)]
+        [TestCase(1, 0, 12f, 13f)]
+        public void PlayerHomeInfrastructure_AcceptsOrientedEnvelope(
+            int frontageX,
+            int frontageZ,
+            float sizeX,
+            float sizeZ)
+        {
+            var frontage = new Vector2Int(frontageX, frontageZ);
+            var lot = new BuildingLot(
+                new Vector2Int(4, 5),
+                Vector3.zero,
+                new Vector2(sizeX, sizeZ),
+                PlayerHomeBalconyGeometry.PreferredBuildingHeight,
+                Color.gray,
+                "test.player-home",
+                CityDistrictKind.Residential,
+                CityLandUseKind.Building,
+                false,
+                true,
+                false,
+                string.Empty,
+                BarActivityKind.None,
+                frontage,
+                new Vector3(
+                    frontageX * sizeX * 0.5f,
+                    0f,
+                    frontageZ * sizeZ * 0.5f),
+                Vector3.zero,
+                Vector3.zero);
+
             Assert.That(
-                layout.BuildingLots
-                    .Where(lot =>
-                        lot.HasBuilding &&
-                        !lot.IsOrdinaryBuilding)
-                    .All(lot => lot.Height <= maximumHeight),
-                Is.True,
-                "The legacy maximum remains the special-building clamp.");
+                () =>
+                    CitySpecialBuildingWorldBuilder
+                        .ValidatePlayerHome(lot),
+                Throws.Nothing);
         }
 
         [TestCase(GameSessionState.DefaultCitySeed)]
@@ -176,120 +234,133 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void CityHomeFacade_BuildsMatchingThirdFloorBalcony()
+        public void HomeBalconyFacade_UsesAuthoredLayoutAndKeepsAnchors()
         {
-            BuildingLot home = CityLayoutGenerator.Generate(
-                    CityGenerationSettings.Default,
-                    GameSessionState.DefaultCitySeed)
-                .PlayerHome;
-            var root = new GameObject("City Home Facade Test");
+            HomeInteriorLayoutPlan interior =
+                HomeInteriorLayoutPlanner.Generate();
+            HomeBalconyLayoutPlan plan =
+                HomeBalconyLayoutPlanner.Generate(interior);
+            var root = new GameObject("Home Balcony Facade Test");
 
             try
             {
-                Material emissive =
-                    CityNightResources.EmissiveMaterial;
-                CityWorldBuilder.BuildHomeBalconyFacade(
+                Transform balcony = HomeBalconyWorldBuilder.Build(
                     root.transform,
-                    home,
-                    emissive);
-
-                Transform slab =
-                    root.transform.Find("Home Balcony Slab");
+                    interior,
+                    plan);
+                Transform deck =
+                    balcony.Find("Home Balcony Deck");
                 Transform door =
-                    root.transform.Find("Home Balcony Door");
+                    balcony.Find("Home Balcony Ajar Door Pivot");
                 Transform window =
-                    root.transform.Find("Home Balcony Window");
-                Assert.That(slab, Is.Not.Null);
+                    balcony.Find("Home Balcony Window Glass");
+                Assert.That(deck, Is.Not.Null);
                 Assert.That(door, Is.Not.Null);
                 Assert.That(window, Is.Not.Null);
                 Assert.That(
-                    root.transform.Find(
-                        "Home Balcony Front Rail"),
+                    balcony.Find("Home Balcony Outer Guard"),
                     Is.Not.Null);
                 Assert.That(
-                    root.transform.Find(
-                        "Home Balcony Side Rail Left"),
+                    balcony.Find("Home Balcony South Guard"),
                     Is.Not.Null);
                 Assert.That(
-                    root.transform.Find(
-                        "Home Balcony Side Rail Right"),
+                    balcony.Find("Home Balcony North Guard"),
                     Is.Not.Null);
-                Assert.That(
-                    root.transform
-                        .Cast<Transform>()
-                        .Count(
-                            item =>
-                                item.name ==
-                                "Home Balcony Door Frame"),
-                    Is.EqualTo(2));
-                Assert.That(
-                    root.transform
-                        .Cast<Transform>()
-                        .Count(
-                            item =>
-                                item.name ==
-                                "Home Balcony Window Frame"),
-                    Is.EqualTo(2));
 
-                Assert.That(
-                    Vector3.Distance(
-                        slab.localPosition,
-                        PlayerHomeBalconyGeometry
-                            .GetCityBalconyCenter(home)),
-                    Is.LessThan(0.001f));
-                Vector3 expectedDoor =
-                    PlayerHomeBalconyGeometry.ToCityWorld(
-                        home,
-                        new Vector3(
-                            PlayerHomeBalconyGeometry
-                                .HomeFacadeX +
-                            0.035f,
-                            PlayerHomeBalconyGeometry
-                                .DoorHeight * 0.5f,
-                            PlayerHomeBalconyGeometry
-                                .DoorCenterZ));
-                Vector3 expectedWindow =
-                    PlayerHomeBalconyGeometry.ToCityWorld(
-                        home,
-                        new Vector3(
-                            PlayerHomeBalconyGeometry
-                                .HomeFacadeX +
-                            0.035f,
-                            PlayerHomeBalconyGeometry
-                                .WindowCenterY,
-                            PlayerHomeBalconyGeometry
-                                .WindowCenterZ));
-                Assert.That(
-                    Vector3.Distance(
-                        door.localPosition,
-                        expectedDoor),
-                    Is.LessThan(0.001f));
-                Assert.That(
-                    Vector3.Distance(
-                        window.localPosition,
-                        expectedWindow),
-                    Is.LessThan(0.001f));
-                Assert.That(
-                    window
-                        .GetComponent<Renderer>()
-                        .sharedMaterial,
-                    Is.SameAs(emissive));
-                Assert.That(
-                    root.GetComponentsInChildren<Collider>(true),
-                    Is.Empty);
+                string[] authoredFacadeParts =
+                {
+                    "Player Home Brick Plinth",
+                    "Player Home Front Roof Eave",
+                    "Player Home Front Eave Fascia",
+                    "Player Home Recessed Entrance Door"
+                };
+                for (int index = 0;
+                     index < authoredFacadeParts.Length;
+                     index++)
+                {
+                    Assert.That(
+                        balcony.Find(authoredFacadeParts[index]),
+                        Is.Not.Null,
+                        authoredFacadeParts[index]);
+                }
 
+                Renderer[] authoredFacadeGlass = balcony
+                    .GetComponentsInChildren<Renderer>(true)
+                    .Where(
+                        item => item.name.StartsWith(
+                            "Player Home Authored Front Window Glass",
+                            StringComparison.Ordinal))
+                    .ToArray();
+                Assert.That(authoredFacadeGlass, Has.Length.EqualTo(2));
+                Material homeLitMaterial =
+                    CityWindowAppearance.ResolveLitMaterial(
+                        CityWindowFamily.Home);
+                Renderer[] litFacadeGlass = authoredFacadeGlass
+                    .Where(item => item.sharedMaterial == homeLitMaterial)
+                    .ToArray();
                 Assert.That(
-                    CityWorldBuilder
-                        .ShouldBuildGenericFrontWindowRow(
-                            home,
-                            1.5f + 2f * 2.35f),
-                    Is.False);
+                    litFacadeGlass,
+                    Has.Length.EqualTo(1),
+                    "The Home reconstruction must keep exactly the one " +
+                    "authored lit facade pane.");
                 Assert.That(
-                    CityWorldBuilder
-                        .ShouldBuildGenericFrontWindowRow(
-                            home,
-                            1.5f + 1f * 2.35f),
-                    Is.True);
+                    litFacadeGlass[0].name,
+                    Is.EqualTo(
+                        "Player Home Authored Front Window Glass 2"));
+                Assert.That(
+                    litFacadeGlass[0].transform.localPosition.x,
+                    Is.EqualTo(5.227f).Within(0.001f));
+                Assert.That(
+                    litFacadeGlass[0].transform.localPosition.y,
+                    Is.EqualTo(0.66f).Within(0.001f));
+                Assert.That(
+                    litFacadeGlass[0].transform.localPosition.z,
+                    Is.EqualTo(2.15f).Within(0.001f));
+                Assert.That(
+                    balcony.GetComponentsInChildren<Renderer>(true)
+                        .Count(item =>
+                            item.sharedMaterial == homeLitMaterial),
+                    Is.EqualTo(1),
+                    "Balcony and door glazing must remain non-emissive.");
+                Assert.That(
+                    deck.localPosition,
+                    Is.EqualTo(new Vector3(
+                        plan.BalconyBounds.center.x,
+                        -PlayerHomeBalconyGeometry
+                            .BalconySlabThickness * 0.5f,
+                        plan.BalconyBounds.center.y)));
+                Assert.That(
+                    door.localPosition,
+                    Is.EqualTo(new Vector3(
+                        plan.DoorCenter.x - 0.02f,
+                        0f,
+                        plan.DoorCenter.z -
+                        plan.DoorSize.z * 0.5f)));
+                Assert.That(window.localPosition.x,
+                    Is.EqualTo(plan.WindowCenter.x + 0.008f)
+                        .Within(0.001f));
+                Assert.That(window.localPosition.y,
+                    Is.EqualTo(plan.WindowCenter.y).Within(0.001f));
+                Assert.That(window.localPosition.z,
+                    Is.EqualTo(plan.WindowCenter.z).Within(0.001f));
+                Assert.That(deck.GetComponent<Collider>(), Is.Not.Null);
+
+                string[] obsoleteFacadeParts =
+                {
+                    "Home Lower Exterior Facade",
+                    "Home Upper Exterior Facade",
+                    "Home Exterior Roof Lip",
+                    "Home Lower Facade Damp Stain"
+                };
+                for (int index = 0;
+                     index < obsoleteFacadeParts.Length;
+                     index++)
+                {
+                    Assert.That(
+                        balcony.Find(obsoleteFacadeParts[index]),
+                        Is.Null,
+                        obsoleteFacadeParts[index]);
+                }
             }
             finally
             {

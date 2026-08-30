@@ -40,6 +40,24 @@ namespace BarPromenade
         public float AnimationSpeed => animationSpeed;
         public CityPedestrianAssetRegistry Registry => registry;
 
+        /// <summary>The seat this walker is aligned to, or <c>null</c> on
+        /// the pavement.</summary>
+        public Transform SeatAnchor => seatAnchor;
+
+        /// <summary>The sanitised delta the graph was last evaluated with -
+        /// already accelerated for a distant walker.</summary>
+        public float LastAdvanceDeltaTime { get; private set; }
+
+        /// <summary>
+        /// Raised right after the graph has written the bones for one
+        /// <see cref="Advance(float, bool, bool)"/>, with the same delta.
+        /// Secondary motion that must stay in step with the body whatever
+        /// state it is in - the kettle's boil - rides this rather than a
+        /// clock of its own. <see cref="ConfigureCycle"/> evaluates the
+        /// graph directly and does not raise it.
+        /// </summary>
+        public event Action<float> Advanced;
+
         public void Initialize(
             CityPedestrianAssetRegistry assetRegistry)
         {
@@ -216,6 +234,8 @@ namespace BarPromenade
             }
 
             EvaluateGraph(safeDeltaTime);
+            LastAdvanceDeltaTime = safeDeltaTime;
+            Advanced?.Invoke(safeDeltaTime);
         }
 
         public void Shutdown()
@@ -242,6 +262,7 @@ namespace BarPromenade
             archetypeGroundTrimResolved = false;
             footGroundingProbe = null;
             registry = null;
+            Advanced = null;
         }
 
         private void BuildGraph(Animator animator)

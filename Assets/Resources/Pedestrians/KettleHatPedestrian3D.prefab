@@ -1,5 +1,36 @@
 %YAML 1.1
 %TAG !u! tag:unity3d.com,2011:
+--- !u!1 &2234854560500412197
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 8270806639494846527}
+  m_Layer: 0
+  m_Name: ANCHOR_KettleLid
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &8270806639494846527
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 2234854560500412197}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0, y: 0, z: 0, w: 1}
+  m_LocalPosition: {x: 0, y: 0, z: 0}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2393007470793853550}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1 &4251953192794664766
 GameObject:
   m_ObjectHideFlags: 0
@@ -10,6 +41,7 @@ GameObject:
   m_Component:
   - component: {fileID: 3416415619754355724}
   - component: {fileID: 612478226905194333}
+  - component: {fileID: 4706014298453281898}
   m_Layer: 0
   m_Name: KettleHatPedestrian3D
   m_TagString: Untagged
@@ -43,19 +75,23 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 39c1a64142ccea24d87e9e6b0bc2e187, type: 3}
-  m_Name: 
+  m_Name:
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CityPedestrianAssetRegistry
   animator: {fileID: 4858634361413041556}
   modelRoot: {fileID: 1885451389146842537}
   renderers:
+  - {fileID: 1060790036613071523}
+  - {fileID: 5445649134756974946}
+  - {fileID: 611545849359542387}
+  - {fileID: 1035338678316475603}
   - {fileID: 4621250458673900024}
   - {fileID: 4664154750777134146}
   - {fileID: 6091747348180436298}
+  - {fileID: 3019092747546555889}
+  - {fileID: 1145845061712955690}
   - {fileID: 3462251124428662918}
   - {fileID: 7636038794350407135}
   - {fileID: 6534416725577976870}
-  - {fileID: 1666013269011301813}
-  - {fileID: 8471056606863695305}
   - {fileID: 760303210394916298}
   - {fileID: 2574614450740157858}
   - {fileID: 5672459888143179129}
@@ -72,8 +108,12 @@ MonoBehaviour:
   - {fileID: 8287769130002006520}
   - {fileID: 7987887369023001032}
   - {fileID: 4199037607866448008}
+  - {fileID: 9185155012672252104}
+  - {fileID: 5991801000740887771}
   - {fileID: 8167536610538674401}
   - {fileID: 866641220929096637}
+  - {fileID: 4902591837501186851}
+  - {fileID: 5065664142057630063}
   - {fileID: 2774112165629156351}
   - {fileID: 5221035410183314677}
   - {fileID: 8762806552973837414}
@@ -87,10 +127,48 @@ MonoBehaviour:
   - {fileID: 6749347645390531757}
   - {fileID: 1651391715767271999}
   - {fileID: 9109845143429066782}
+  - {fileID: 5405354498699698491}
+  - {fileID: 8014013601367793444}
   - {fileID: 5835890538472157651}
   - {fileID: 2550219162045533978}
   - {fileID: 2522006210433258298}
   rendererBindings:
+  - rendererName: ACC_BootHeel.L
+    role: footwear_detail
+    paletteName: leather
+    renderer: {fileID: 1060790036613071523}
+    baseColor: {r: 0.055, g: 0.042, b: 0.035, a: 1}
+    variantOneColor: {r: 0.0462, g: 0.03864, b: 0.03605, a: 1}
+    variantTwoColor: {r: 0.057749998, g: 0.03696, b: 0.027299998, a: 1}
+    variantThreeColor: {r: 0.0517, g: 0.042, b: 0.030100001, a: 1}
+    usesDetailAtlas: 0
+  - rendererName: ACC_BootHeel.R
+    role: footwear_detail
+    paletteName: leather
+    renderer: {fileID: 5445649134756974946}
+    baseColor: {r: 0.055, g: 0.042, b: 0.035, a: 1}
+    variantOneColor: {r: 0.0462, g: 0.03864, b: 0.03605, a: 1}
+    variantTwoColor: {r: 0.057749998, g: 0.03696, b: 0.027299998, a: 1}
+    variantThreeColor: {r: 0.0517, g: 0.042, b: 0.030100001, a: 1}
+    usesDetailAtlas: 0
+  - rendererName: ACC_BootToeCap.L
+    role: footwear_detail
+    paletteName: leather
+    renderer: {fileID: 611545849359542387}
+    baseColor: {r: 0.055, g: 0.042, b: 0.035, a: 1}
+    variantOneColor: {r: 0.0462, g: 0.03864, b: 0.03605, a: 1}
+    variantTwoColor: {r: 0.057749998, g: 0.03696, b: 0.027299998, a: 1}
+    variantThreeColor: {r: 0.0517, g: 0.042, b: 0.030100001, a: 1}
+    usesDetailAtlas: 0
+  - rendererName: ACC_BootToeCap.R
+    role: footwear_detail
+    paletteName: leather
+    renderer: {fileID: 1035338678316475603}
+    baseColor: {r: 0.055, g: 0.042, b: 0.035, a: 1}
+    variantOneColor: {r: 0.0462, g: 0.03864, b: 0.03605, a: 1}
+    variantTwoColor: {r: 0.057749998, g: 0.03696, b: 0.027299998, a: 1}
+    variantThreeColor: {r: 0.0517, g: 0.042, b: 0.030100001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.01
     role: clothing_detail
     paletteName: button
@@ -99,6 +177,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.1334, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.1276, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.145, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.02
     role: clothing_detail
     paletteName: button
@@ -107,6 +186,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.1334, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.1276, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.145, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.03
     role: clothing_detail
     paletteName: button
@@ -115,6 +195,25 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.1334, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.1276, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.145, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
+  - rendererName: ACC_CoatCuff.L
+    role: clothing_detail
+    paletteName: stout_coat
+    renderer: {fileID: 3019092747546555889}
+    baseColor: {r: 0.15, g: 0.085, b: 0.105, a: 1}
+    variantOneColor: {r: 0.126, g: 0.078200005, b: 0.10814999, a: 1}
+    variantTwoColor: {r: 0.1575, g: 0.0748, b: 0.08189999, a: 1}
+    variantThreeColor: {r: 0.141, g: 0.085, b: 0.0903, a: 1}
+    usesDetailAtlas: 1
+  - rendererName: ACC_CoatCuff.R
+    role: clothing_detail
+    paletteName: stout_coat_light
+    renderer: {fileID: 1145845061712955690}
+    baseColor: {r: 0.215, g: 0.13, b: 0.15, a: 1}
+    variantOneColor: {r: 0.1806, g: 0.1196, b: 0.15450001, a: 1}
+    variantTwoColor: {r: 0.22575, g: 0.11439999, b: 0.117, a: 1}
+    variantThreeColor: {r: 0.20210001, g: 0.13, b: 0.12900001, a: 1}
+    usesDetailAtlas: 1
   - rendererName: ACC_Eye.L
     role: face_detail
     paletteName: void
@@ -123,6 +222,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.R
     role: face_detail
     paletteName: void
@@ -131,6 +231,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_KettleBody
     role: signature_silhouette
     paletteName: kettle_enamel
@@ -139,22 +240,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.43679997, g: 0.50140005, b: 0.53559995, a: 1}
     variantTwoColor: {r: 0.54599994, g: 0.4796, b: 0.40559998, a: 1}
     variantThreeColor: {r: 0.4888, g: 0.545, b: 0.4472, a: 1}
-  - rendererName: ACC_KettleChip.01
-    role: surface_detail
-    paletteName: kettle_chip
-    renderer: {fileID: 1666013269011301813}
-    baseColor: {r: 0.155, g: 0.105, b: 0.07, a: 1}
-    variantOneColor: {r: 0.1302, g: 0.096599996, b: 0.0721, a: 1}
-    variantTwoColor: {r: 0.16274999, g: 0.0924, b: 0.054599997, a: 1}
-    variantThreeColor: {r: 0.14570001, g: 0.105, b: 0.060200002, a: 1}
-  - rendererName: ACC_KettleChip.02
-    role: surface_detail
-    paletteName: kettle_chip
-    renderer: {fileID: 8471056606863695305}
-    baseColor: {r: 0.155, g: 0.105, b: 0.07, a: 1}
-    variantOneColor: {r: 0.1302, g: 0.096599996, b: 0.0721, a: 1}
-    variantTwoColor: {r: 0.16274999, g: 0.0924, b: 0.054599997, a: 1}
-    variantThreeColor: {r: 0.14570001, g: 0.105, b: 0.060200002, a: 1}
+    usesDetailAtlas: 1
   - rendererName: ACC_KettleHandlePost.L
     role: signature_silhouette
     paletteName: kettle_metal
@@ -163,6 +249,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.096599996, g: 0.1104, b: 0.121539995, a: 1}
     variantTwoColor: {r: 0.120749995, g: 0.1056, b: 0.092039995, a: 1}
     variantThreeColor: {r: 0.108100004, g: 0.12, b: 0.10148, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_KettleHandlePost.R
     role: signature_silhouette
     paletteName: kettle_metal
@@ -171,6 +258,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.096599996, g: 0.1104, b: 0.121539995, a: 1}
     variantTwoColor: {r: 0.120749995, g: 0.1056, b: 0.092039995, a: 1}
     variantThreeColor: {r: 0.108100004, g: 0.12, b: 0.10148, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_KettleHandleTop
     role: signature_silhouette
     paletteName: kettle_metal
@@ -179,6 +267,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.096599996, g: 0.1104, b: 0.121539995, a: 1}
     variantTwoColor: {r: 0.120749995, g: 0.1056, b: 0.092039995, a: 1}
     variantThreeColor: {r: 0.108100004, g: 0.12, b: 0.10148, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_KettleKnob
     role: surface_detail
     paletteName: kettle_metal
@@ -187,6 +276,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.096599996, g: 0.1104, b: 0.121539995, a: 1}
     variantTwoColor: {r: 0.120749995, g: 0.1056, b: 0.092039995, a: 1}
     variantThreeColor: {r: 0.108100004, g: 0.12, b: 0.10148, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_KettleLid
     role: signature_silhouette
     paletteName: kettle_enamel_dark
@@ -195,6 +285,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.24359998, g: 0.2898, b: 0.30900002, a: 1}
     variantTwoColor: {r: 0.30449998, g: 0.27719998, b: 0.234, a: 1}
     variantThreeColor: {r: 0.2726, g: 0.315, b: 0.25800002, a: 1}
+    usesDetailAtlas: 1
   - rendererName: ACC_KettleRimBand
     role: signature_silhouette
     paletteName: kettle_enamel_dark
@@ -203,6 +294,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.24359998, g: 0.2898, b: 0.30900002, a: 1}
     variantTwoColor: {r: 0.30449998, g: 0.27719998, b: 0.234, a: 1}
     variantThreeColor: {r: 0.2726, g: 0.315, b: 0.25800002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_KettleShoulder
     role: signature_silhouette
     paletteName: kettle_enamel
@@ -211,6 +303,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.43679997, g: 0.50140005, b: 0.53559995, a: 1}
     variantTwoColor: {r: 0.54599994, g: 0.4796, b: 0.40559998, a: 1}
     variantThreeColor: {r: 0.4888, g: 0.545, b: 0.4472, a: 1}
+    usesDetailAtlas: 1
   - rendererName: ACC_KettleSpout
     role: signature_silhouette
     paletteName: kettle_enamel
@@ -219,6 +312,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.43679997, g: 0.50140005, b: 0.53559995, a: 1}
     variantTwoColor: {r: 0.54599994, g: 0.4796, b: 0.40559998, a: 1}
     variantThreeColor: {r: 0.4888, g: 0.545, b: 0.4472, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_KettleSpoutTip
     role: surface_detail
     paletteName: kettle_enamel_dark
@@ -227,6 +321,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.24359998, g: 0.2898, b: 0.30900002, a: 1}
     variantTwoColor: {r: 0.30449998, g: 0.27719998, b: 0.234, a: 1}
     variantThreeColor: {r: 0.2726, g: 0.315, b: 0.25800002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Moustache
     role: face_detail
     paletteName: void
@@ -235,6 +330,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Nose
     role: face_detail
     paletteName: skin
@@ -243,6 +339,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29819998, g: 0.21620001, b: 0.16995001, a: 1}
     variantTwoColor: {r: 0.37274998, g: 0.2068, b: 0.1287, a: 1}
     variantThreeColor: {r: 0.3337, g: 0.235, b: 0.1419, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ShoeSole.L
     role: footwear_detail
     paletteName: sole
@@ -251,6 +348,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ShoeSole.R
     role: footwear_detail
     paletteName: sole
@@ -259,6 +357,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatBack
     role: clothing
     paletteName: stout_coat_dark
@@ -267,6 +366,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0672, g: 0.041400004, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.08399999, g: 0.0396, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.0752, g: 0.045, b: 0.049879998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatCollar
     role: clothing_detail
     paletteName: stout_coat_light
@@ -275,6 +375,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1806, g: 0.1196, b: 0.15450001, a: 1}
     variantTwoColor: {r: 0.22575, g: 0.11439999, b: 0.117, a: 1}
     variantThreeColor: {r: 0.20210001, g: 0.13, b: 0.12900001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatHem
     role: clothing
     paletteName: stout_coat_dark
@@ -283,6 +384,25 @@ MonoBehaviour:
     variantOneColor: {r: 0.0672, g: 0.041400004, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.08399999, g: 0.0396, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.0752, g: 0.045, b: 0.049879998, a: 1}
+    usesDetailAtlas: 1
+  - rendererName: CLO_CoatLapel.L
+    role: clothing_detail
+    paletteName: stout_coat_light
+    renderer: {fileID: 9185155012672252104}
+    baseColor: {r: 0.215, g: 0.13, b: 0.15, a: 1}
+    variantOneColor: {r: 0.1806, g: 0.1196, b: 0.15450001, a: 1}
+    variantTwoColor: {r: 0.22575, g: 0.11439999, b: 0.117, a: 1}
+    variantThreeColor: {r: 0.20210001, g: 0.13, b: 0.12900001, a: 1}
+    usesDetailAtlas: 0
+  - rendererName: CLO_CoatLapel.R
+    role: clothing_detail
+    paletteName: stout_coat_light
+    renderer: {fileID: 5991801000740887771}
+    baseColor: {r: 0.215, g: 0.13, b: 0.15, a: 1}
+    variantOneColor: {r: 0.1806, g: 0.1196, b: 0.15450001, a: 1}
+    variantTwoColor: {r: 0.22575, g: 0.11439999, b: 0.117, a: 1}
+    variantThreeColor: {r: 0.20210001, g: 0.13, b: 0.12900001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatSeam
     role: clothing
     paletteName: stout_coat_light
@@ -291,6 +411,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1806, g: 0.1196, b: 0.15450001, a: 1}
     variantTwoColor: {r: 0.22575, g: 0.11439999, b: 0.117, a: 1}
     variantThreeColor: {r: 0.20210001, g: 0.13, b: 0.12900001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Belly
     role: signature_silhouette
     paletteName: stout_coat
@@ -299,6 +420,25 @@ MonoBehaviour:
     variantOneColor: {r: 0.126, g: 0.078200005, b: 0.10814999, a: 1}
     variantTwoColor: {r: 0.1575, g: 0.0748, b: 0.08189999, a: 1}
     variantThreeColor: {r: 0.141, g: 0.085, b: 0.0903, a: 1}
+    usesDetailAtlas: 1
+  - rendererName: GEO_Fingers.L
+    role: body
+    paletteName: stout_hand_skin
+    renderer: {fileID: 4902591837501186851}
+    baseColor: {r: 0.455, g: 0.335, b: 0.255, a: 1}
+    variantOneColor: {r: 0.3822, g: 0.3082, b: 0.26264998, a: 1}
+    variantTwoColor: {r: 0.47775, g: 0.2948, b: 0.19889998, a: 1}
+    variantThreeColor: {r: 0.4277, g: 0.335, b: 0.2193, a: 1}
+    usesDetailAtlas: 1
+  - rendererName: GEO_Fingers.R
+    role: body
+    paletteName: stout_hand_skin
+    renderer: {fileID: 5065664142057630063}
+    baseColor: {r: 0.455, g: 0.335, b: 0.255, a: 1}
+    variantOneColor: {r: 0.3822, g: 0.3082, b: 0.26264998, a: 1}
+    variantTwoColor: {r: 0.47775, g: 0.2948, b: 0.19889998, a: 1}
+    variantThreeColor: {r: 0.4277, g: 0.335, b: 0.2193, a: 1}
+    usesDetailAtlas: 1
   - rendererName: GEO_Foot.L
     role: body
     paletteName: leather
@@ -307,6 +447,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.03864, b: 0.03605, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.03696, b: 0.027299998, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.042, b: 0.030100001, a: 1}
+    usesDetailAtlas: 1
   - rendererName: GEO_Foot.R
     role: body
     paletteName: leather
@@ -315,6 +456,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.03864, b: 0.03605, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.03696, b: 0.027299998, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.042, b: 0.030100001, a: 1}
+    usesDetailAtlas: 1
   - rendererName: GEO_Forearm.L
     role: body
     paletteName: stout_coat_light
@@ -323,6 +465,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1806, g: 0.1196, b: 0.15450001, a: 1}
     variantTwoColor: {r: 0.22575, g: 0.11439999, b: 0.117, a: 1}
     variantThreeColor: {r: 0.20210001, g: 0.13, b: 0.12900001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Forearm.R
     role: body
     paletteName: stout_coat
@@ -331,22 +474,25 @@ MonoBehaviour:
     variantOneColor: {r: 0.126, g: 0.078200005, b: 0.10814999, a: 1}
     variantTwoColor: {r: 0.1575, g: 0.0748, b: 0.08189999, a: 1}
     variantThreeColor: {r: 0.141, g: 0.085, b: 0.0903, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.L
     role: body
-    paletteName: glove
+    paletteName: stout_hand_skin
     renderer: {fileID: 7277620586415216602}
-    baseColor: {r: 0.08, g: 0.075, b: 0.065, a: 1}
-    variantOneColor: {r: 0.0672, g: 0.069000006, b: 0.06694999, a: 1}
-    variantTwoColor: {r: 0.08399999, g: 0.066, b: 0.050699998, a: 1}
-    variantThreeColor: {r: 0.0752, g: 0.075, b: 0.0559, a: 1}
+    baseColor: {r: 0.455, g: 0.335, b: 0.255, a: 1}
+    variantOneColor: {r: 0.3822, g: 0.3082, b: 0.26264998, a: 1}
+    variantTwoColor: {r: 0.47775, g: 0.2948, b: 0.19889998, a: 1}
+    variantThreeColor: {r: 0.4277, g: 0.335, b: 0.2193, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.R
     role: body
-    paletteName: glove
+    paletteName: stout_hand_skin
     renderer: {fileID: 1009889650698076983}
-    baseColor: {r: 0.08, g: 0.075, b: 0.065, a: 1}
-    variantOneColor: {r: 0.0672, g: 0.069000006, b: 0.06694999, a: 1}
-    variantTwoColor: {r: 0.08399999, g: 0.066, b: 0.050699998, a: 1}
-    variantThreeColor: {r: 0.0752, g: 0.075, b: 0.0559, a: 1}
+    baseColor: {r: 0.455, g: 0.335, b: 0.255, a: 1}
+    variantOneColor: {r: 0.3822, g: 0.3082, b: 0.26264998, a: 1}
+    variantTwoColor: {r: 0.47775, g: 0.2948, b: 0.19889998, a: 1}
+    variantThreeColor: {r: 0.4277, g: 0.335, b: 0.2193, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Head
     role: body
     paletteName: skin
@@ -355,6 +501,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29819998, g: 0.21620001, b: 0.16995001, a: 1}
     variantTwoColor: {r: 0.37274998, g: 0.2068, b: 0.1287, a: 1}
     variantThreeColor: {r: 0.3337, g: 0.235, b: 0.1419, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Neck
     role: body
     paletteName: stout_coat_dark
@@ -363,6 +510,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0672, g: 0.041400004, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.08399999, g: 0.0396, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.0752, g: 0.045, b: 0.049879998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Pelvis
     role: body
     paletteName: stout_coat_dark
@@ -371,6 +519,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0672, g: 0.041400004, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.08399999, g: 0.0396, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.0752, g: 0.045, b: 0.049879998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Shin.L
     role: body
     paletteName: stout_trousers
@@ -379,6 +528,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0756, g: 0.078200005, b: 0.10814999, a: 1}
     variantTwoColor: {r: 0.0945, g: 0.0748, b: 0.08189999, a: 1}
     variantThreeColor: {r: 0.0846, g: 0.085, b: 0.0903, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Shin.R
     role: body
     paletteName: stout_trousers
@@ -387,6 +537,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0756, g: 0.078200005, b: 0.10814999, a: 1}
     variantTwoColor: {r: 0.0945, g: 0.0748, b: 0.08189999, a: 1}
     variantThreeColor: {r: 0.0846, g: 0.085, b: 0.0903, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Thigh.L
     role: body
     paletteName: stout_trousers
@@ -395,6 +546,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0756, g: 0.078200005, b: 0.10814999, a: 1}
     variantTwoColor: {r: 0.0945, g: 0.0748, b: 0.08189999, a: 1}
     variantThreeColor: {r: 0.0846, g: 0.085, b: 0.0903, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Thigh.R
     role: body
     paletteName: stout_trousers
@@ -403,6 +555,25 @@ MonoBehaviour:
     variantOneColor: {r: 0.0756, g: 0.078200005, b: 0.10814999, a: 1}
     variantTwoColor: {r: 0.0945, g: 0.0748, b: 0.08189999, a: 1}
     variantThreeColor: {r: 0.0846, g: 0.085, b: 0.0903, a: 1}
+    usesDetailAtlas: 0
+  - rendererName: GEO_Thumb.L
+    role: body
+    paletteName: stout_hand_skin
+    renderer: {fileID: 5405354498699698491}
+    baseColor: {r: 0.455, g: 0.335, b: 0.255, a: 1}
+    variantOneColor: {r: 0.3822, g: 0.3082, b: 0.26264998, a: 1}
+    variantTwoColor: {r: 0.47775, g: 0.2948, b: 0.19889998, a: 1}
+    variantThreeColor: {r: 0.4277, g: 0.335, b: 0.2193, a: 1}
+    usesDetailAtlas: 0
+  - rendererName: GEO_Thumb.R
+    role: body
+    paletteName: stout_hand_skin
+    renderer: {fileID: 8014013601367793444}
+    baseColor: {r: 0.455, g: 0.335, b: 0.255, a: 1}
+    variantOneColor: {r: 0.3822, g: 0.3082, b: 0.26264998, a: 1}
+    variantTwoColor: {r: 0.47775, g: 0.2948, b: 0.19889998, a: 1}
+    variantThreeColor: {r: 0.4277, g: 0.335, b: 0.2193, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Torso
     role: body
     paletteName: stout_coat_dark
@@ -411,6 +582,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0672, g: 0.041400004, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.08399999, g: 0.0396, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.0752, g: 0.045, b: 0.049879998, a: 1}
+    usesDetailAtlas: 1
   - rendererName: GEO_UpperArm.L
     role: body
     paletteName: stout_coat
@@ -419,6 +591,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.126, g: 0.078200005, b: 0.10814999, a: 1}
     variantTwoColor: {r: 0.1575, g: 0.0748, b: 0.08189999, a: 1}
     variantThreeColor: {r: 0.141, g: 0.085, b: 0.0903, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_UpperArm.R
     role: body
     paletteName: stout_coat
@@ -427,6 +600,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.126, g: 0.078200005, b: 0.10814999, a: 1}
     variantTwoColor: {r: 0.1575, g: 0.0748, b: 0.08189999, a: 1}
     variantThreeColor: {r: 0.141, g: 0.085, b: 0.0903, a: 1}
+    usesDetailAtlas: 0
   headAnchor: {fileID: 2393007470793853550}
   pelvisAnchor: {fileID: 3328103443291870654}
   leftFootAnchor: {fileID: 5144734480024766042}
@@ -436,15 +610,69 @@ MonoBehaviour:
   sitClip: {fileID: -4212179374122782929, guid: 005737cb93f0f804cb25d506467be7ba, type: 3}
   actionClip: {fileID: 0}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.028378546}
-    m_Extent: {x: 0.61849916, y: 0.8749999, z: 0.38991588}
-  sourceTriangleCount: 1356
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.029669374}
+    m_Extent: {x: 0.81404775, y: 0.8749999, z: 0.38862503}
+  sourceTriangleCount: 2004
   sourceGeneratorVersion: 4.0.0
   designId: kettle_hat_walker_v1
-  buildSignature: c96cb8cd4e00da753eea61553acf171f29ee7cb5fd744a527d4c19a1b56889a6
+  buildSignature: 90f42bea66d37f47e733343921d9c4e4b403b4fdae962584aa545720f9e615c4
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
+  detailAtlas: {fileID: 2800000, guid: 5117bfe1062dbc041a0b0818197e39e1, type: 3}
+--- !u!114 &4706014298453281898
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 4251953192794664766}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 1e92c0a7857124145aa0f36102121488, type: 3}
+  m_Name:
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CityKettleHatRigAnchors
+  pedestrianRegistry: {fileID: 612478226905194333}
+  lidPivot: {fileID: 8270806639494846527}
+  spoutAnchor: {fileID: 2351126773749681363}
+  lidRenderer: {fileID: 932090293881890459}
+  knobRenderer: {fileID: 3553195022294123086}
+  lidCentreLocal: {x: -0.000035999925, y: 0.0014849098, z: 0.0005378663}
+  kettleAxisLocal: {x: -0.37742317, y: 0.91770476, z: -0.12397329}
+  lidTiltAxisALocal: {x: -0.32254875, y: -0.25576782, z: -0.91134226}
+  lidTiltAxisBLocal: {x: -0.8680519, y: -0.30397433, z: 0.39253727}
+  spoutReachMetres: 0.4567228
+--- !u!1 &7523810441934211924
+GameObject:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  serializedVersion: 6
+  m_Component:
+  - component: {fileID: 2351126773749681363}
+  m_Layer: 0
+  m_Name: ANCHOR_KettleSpout
+  m_TagString: Untagged
+  m_Icon: {fileID: 0}
+  m_NavMeshLayer: 0
+  m_StaticEditorFlags: 0
+  m_IsActive: 1
+--- !u!4 &2351126773749681363
+Transform:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 7523810441934211924}
+  serializedVersion: 2
+  m_LocalRotation: {x: 0.10921353, y: -0.83278257, z: -0.3090556, w: -0.44612813}
+  m_LocalPosition: {x: 0.0041232095, y: 0.0013257696, z: -0.0014494978}
+  m_LocalScale: {x: 1, y: 1, z: 1}
+  m_ConstrainProportionsScale: 0
+  m_Children: []
+  m_Father: {fileID: 2393007470793853550}
+  m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
 --- !u!1001 &2134918918708404802
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -493,186 +721,245 @@ PrefabInstance:
       propertyPath: m_LocalEulerAnglesHint.z
       value: 0
       objectReference: {fileID: 0}
-    - target: {fileID: -8449281438559131657, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -8317638253814735213, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: -7648127273013310927, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -5932187954769016124, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -4909098274808759875, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -4700364238101779112, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -4656943872380489352, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -4204159131631905832, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -3951070287074089208, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -3648479783600122991, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: -3564627476139360615, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: -3012322691547237600, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: -2980419545414630535, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: -2762606266129006239, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -2514511103629349376, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -2485639826821461062, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -2032132140832386468, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -2000865627650611676, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
-      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
-    - target: {fileID: -1715875393129005173, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
-      propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -1371299666984437085, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: -966092931409822362, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 360522551934522431, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 813512667098833021, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 919132149155446097, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: m_Name
       value: Model
       objectReference: {fileID: 0}
     - target: {fileID: 1247411742570136793, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Bones.Array.data[5]'
+      value:
+      objectReference: {fileID: 8270806639494846527}
+    - target: {fileID: 1247411742570136793, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 1271753322756352511, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 1302366861848722329, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: 1316772319786003304, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: 1375972397613097185, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 1415001339302502773, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: 1440732396179064465, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 1499508963120387187, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 1670240403242989448, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 2874768829983136458, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 3238015005637419020, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Bones.Array.data[5]'
+      value:
+      objectReference: {fileID: 8270806639494846527}
+    - target: {fileID: 3238015005637419020, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: 3766480067091781555, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 4280447987093580584, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 4474923549216505824, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 4614710351743618799, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 5120073900844281444, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 5982805806369211459, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 5985216152584102931, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 5987642662806437691, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 6049815271255094902, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 6184596203994775223, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: 6623699677481487149, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 6639359160846659391, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
+      objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
+    - target: {fileID: 7122716178188487306, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      propertyPath: 'm_Materials.Array.data[0]'
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 7532042321488784634, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 7589540103723221087, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 7739194570751702462, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 7972729705521996730, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 8321082337032024970, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 8383566853166567325, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 8745863124579087768, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value: 
+      value:
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []
-    m_AddedGameObjects: []
+    m_AddedGameObjects:
+    - targetCorrespondingSourceObject: {fileID: 4365512976932153388, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 8270806639494846527}
+    - targetCorrespondingSourceObject: {fileID: 4365512976932153388, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+      insertIndex: -1
+      addedObject: {fileID: 2351126773749681363}
     m_AddedComponents:
     - targetCorrespondingSourceObject: {fileID: 919132149155446097, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
       insertIndex: -1
       addedObject: {fileID: 4858634361413041556}
   m_SourcePrefab: {fileID: 100100000, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+--- !u!137 &611545849359542387 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -7648127273013310927, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &679922618688484913 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1499508963120387187, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
@@ -698,9 +985,24 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1415001339302502773, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
+--- !u!137 &1035338678316475603 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1440732396179064465, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &1060790036613071523 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1375972397613097185, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &1131017804004956635 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 1302366861848722329, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &1145845061712955690 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 1316772319786003304, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &1238790486497180881 stripped
@@ -730,7 +1032,7 @@ Animator:
   m_LinearVelocityBlending: 0
   m_StabilizeFeet: 0
   m_AnimatePhysics: 0
-  m_WarningMessage: 
+  m_WarningMessage:
   m_HasTransformHierarchy: 1
   m_AllowConstantClipSamplingOptimization: 1
   m_KeepAnimatorStateOnDisable: 0
@@ -738,11 +1040,6 @@ Animator:
 --- !u!137 &1651391715767271999 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 813512667098833021, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
-  m_PrefabInstance: {fileID: 2134918918708404802}
-  m_PrefabAsset: {fileID: 0}
---- !u!137 &1666013269011301813 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -8449281438559131657, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &1774440415960970877 stripped
@@ -790,6 +1087,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 4280447987093580584, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
+--- !u!137 &3019092747546555889 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 3766480067091781555, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &3328103443291870654 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: -5508169512097499140, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
@@ -825,6 +1127,16 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 6639359160846659391, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
+--- !u!137 &4902591837501186851 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -2762606266129006239, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &5065664142057630063 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 6623699677481487149, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
 --- !u!4 &5144734480024766042 stripped
 Transform:
   m_CorrespondingSourceObject: {fileID: 6540640294083535896, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
@@ -833,6 +1145,16 @@ Transform:
 --- !u!137 &5221035410183314677 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 6184596203994775223, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &5405354498699698491 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -2980419545414630535, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &5445649134756974946 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -3012322691547237600, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &5644562424385541172 stripped
@@ -858,6 +1180,11 @@ SkinnedMeshRenderer:
 --- !u!137 &5835890538472157651 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -3648479783600122991, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &5991801000740887771 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -3564627476139360615, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
 --- !u!137 &6091747348180436298 stripped
@@ -895,6 +1222,11 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 8321082337032024970, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
+--- !u!137 &8014013601367793444 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: -966092931409822362, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
 --- !u!137 &8167536610538674401 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -1371299666984437085, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
@@ -915,11 +1247,6 @@ SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 7532042321488784634, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}
---- !u!137 &8471056606863695305 stripped
-SkinnedMeshRenderer:
-  m_CorrespondingSourceObject: {fileID: -1715875393129005173, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
-  m_PrefabInstance: {fileID: 2134918918708404802}
-  m_PrefabAsset: {fileID: 0}
 --- !u!137 &8559061425281652732 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: 7739194570751702462, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
@@ -933,5 +1260,10 @@ SkinnedMeshRenderer:
 --- !u!137 &9109845143429066782 stripped
 SkinnedMeshRenderer:
   m_CorrespondingSourceObject: {fileID: -2032132140832386468, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
+  m_PrefabInstance: {fileID: 2134918918708404802}
+  m_PrefabAsset: {fileID: 0}
+--- !u!137 &9185155012672252104 stripped
+SkinnedMeshRenderer:
+  m_CorrespondingSourceObject: {fileID: 7122716178188487306, guid: 98bef5a6b392d76498d5e30687a29a5c, type: 3}
   m_PrefabInstance: {fileID: 2134918918708404802}
   m_PrefabAsset: {fileID: 0}

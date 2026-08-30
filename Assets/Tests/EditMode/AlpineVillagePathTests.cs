@@ -24,11 +24,19 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(path.StableId, Is.Not.Empty);
                 Assert.That(path.LengthXZ, Is.GreaterThan(0.25f));
 
-                // The centre of a full-sized hero may not leave the visible
-                // compacted strip while still being accepted by the mask.
+                // The centre of a full-sized hero may not leave trodden
+                // ground while still being accepted by the mask. Trodden
+                // ground is the compacted ribbon plus the bare-soil skirt
+                // the terrain pass paints around it - the same constant the
+                // world builder reads - not the ribbon mesh alone: a
+                // household path's corridor (1.10 m) minus the hero (0.35 m)
+                // puts his centre 0.75 m out, inside the 0.62 + 0.15 m of
+                // bare soil and outside the 0.62 m ribbon.
                 Assert.That(
                     path.WalkableHalfWidth - radius,
-                    Is.LessThanOrEqualTo(path.SurfaceHalfWidth + 0.05f),
+                    Is.LessThanOrEqualTo(
+                        path.SurfaceHalfWidth +
+                        AlpineVillagePathPlanner.BareSkirtHalfWidth),
                     path.StableId);
 
                 int samples = Mathf.Max(2, Mathf.CeilToInt(path.LengthXZ));

@@ -6,12 +6,13 @@ namespace BarPromenade
 {
     public enum CityBuildingMeshRole
     {
-        Shell = 0,
-        Trim = 1,
-        Roof = 2,
-        Metal = 3,
-        WindowFrame = 4,
-        WindowGlass = 5
+        FacadePrimary = 0,
+        FacadeSecondary = 1,
+        Plinth = 2,
+        Roof = 3,
+        Metal = 4,
+        WindowFrame = 5,
+        WindowGlass = 6
     }
 
     [Serializable]
@@ -19,20 +20,32 @@ namespace BarPromenade
     {
         [SerializeField] private string sourceName = string.Empty;
         [SerializeField] private CityBuildingMeshRole role;
+        [SerializeField] private string surfaceKind = string.Empty;
+        [SerializeField] private string uvScheme = string.Empty;
+        [SerializeField] private float metersPerTile;
         [SerializeField] private Renderer renderer;
 
         public CityBuildingPartBinding(
             string configuredSourceName,
             CityBuildingMeshRole configuredRole,
+            string configuredSurfaceKind,
+            string configuredUvScheme,
+            float configuredMetersPerTile,
             Renderer configuredRenderer)
         {
             sourceName = configuredSourceName ?? string.Empty;
             role = configuredRole;
+            surfaceKind = configuredSurfaceKind ?? string.Empty;
+            uvScheme = configuredUvScheme ?? string.Empty;
+            metersPerTile = configuredMetersPerTile;
             renderer = configuredRenderer;
         }
 
         public string SourceName => sourceName;
         public CityBuildingMeshRole Role => role;
+        public string SurfaceKind => surfaceKind;
+        public string UvScheme => uvScheme;
+        public float MetersPerTile => metersPerTile;
         public Renderer Renderer => renderer;
     }
 
@@ -100,15 +113,16 @@ namespace BarPromenade
     [DisallowMultipleComponent]
     public sealed class CityBuildingAssetRegistry : MonoBehaviour
     {
-        public const int ExpectedRoleCount = 6;
+        public const int ExpectedRoleCount = 7;
         public const int MaximumTriangleCount = 3500;
         public const int MaximumWindowSlotId = 63;
         public const int WindowSlotUv2Divisor = 256;
 
         private static readonly CityBuildingMeshRole[] ExpectedRoles =
         {
-            CityBuildingMeshRole.Shell,
-            CityBuildingMeshRole.Trim,
+            CityBuildingMeshRole.FacadePrimary,
+            CityBuildingMeshRole.FacadeSecondary,
+            CityBuildingMeshRole.Plinth,
             CityBuildingMeshRole.Roof,
             CityBuildingMeshRole.Metal,
             CityBuildingMeshRole.WindowFrame,
@@ -294,7 +308,8 @@ namespace BarPromenade
             if (parts == null || parts.Length != ExpectedRoleCount)
             {
                 throw new InvalidOperationException(
-                    $"City building '{stableId}' needs six role meshes.");
+                    $"City building '{stableId}' needs seven semantic " +
+                    "surface meshes.");
             }
 
             var seenRoles = new HashSet<CityBuildingMeshRole>();
@@ -310,6 +325,15 @@ namespace BarPromenade
                         binding.SourceName,
                         expectedName,
                         StringComparison.Ordinal) ||
+                    !string.Equals(
+                        binding.SurfaceKind,
+                        binding.Role.ToString(),
+                        StringComparison.Ordinal) ||
+                    !string.Equals(
+                        binding.UvScheme,
+                        GetExpectedUvScheme(binding.Role),
+                        StringComparison.Ordinal) ||
+                    !HasExpectedUvScale(binding) ||
                     !seenRoles.Add(binding.Role) ||
                     !seenRenderers.Add(binding.Renderer) ||
                     !binding.Renderer.transform.IsChildOf(modelRoot))
@@ -318,6 +342,44 @@ namespace BarPromenade
                         $"City building '{stableId}' role binding drifted.");
                 }
             }
+        }
+
+        private static string GetExpectedUvScheme(
+            CityBuildingMeshRole role)
+        {
+            switch (role)
+            {
+                case CityBuildingMeshRole.FacadePrimary:
+                case CityBuildingMeshRole.FacadeSecondary:
+                    return "building_side_atlas_0_1";
+                case CityBuildingMeshRole.Plinth:
+                    return "full_face_projected_0_1";
+                case CityBuildingMeshRole.Roof:
+                case CityBuildingMeshRole.Metal:
+                case CityBuildingMeshRole.WindowFrame:
+                    return "world_metre_projected";
+                case CityBuildingMeshRole.WindowGlass:
+                    return "per_window_face_projected_0_1";
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(role),
+                        role,
+                        "Unknown City building semantic surface role.");
+            }
+        }
+
+        private static bool HasExpectedUvScale(
+            CityBuildingPartBinding binding)
+        {
+            bool metric = string.Equals(
+                binding.UvScheme,
+                "world_metre_projected",
+                StringComparison.Ordinal);
+            return metric
+                ? binding.MetersPerTile > 0f &&
+                  !float.IsNaN(binding.MetersPerTile) &&
+                  !float.IsInfinity(binding.MetersPerTile)
+                : Mathf.Abs(binding.MetersPerTile) <= 0.0001f;
         }
 
         private void ValidateAttachmentMetadata()

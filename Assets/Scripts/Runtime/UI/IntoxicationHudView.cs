@@ -46,8 +46,8 @@ namespace BarPromenade
                     panel,
                     RetroUiTheme.Panel,
                     RetroUiTheme.BorderMuted,
-                    true,
-                    2f,
+                    false,
+                    0f,
                     1f);
 
                 int level = GameSessionState.IntoxicationLevel;
@@ -132,7 +132,7 @@ namespace BarPromenade
                     RetroUiTheme.Ink,
                     RetroUiTheme.BorderMuted,
                     false,
-                    1f,
+                    0f,
                     1f);
                 float fill = Mathf.Clamp01(
                     (intoxication - index * 20f) / 20f);

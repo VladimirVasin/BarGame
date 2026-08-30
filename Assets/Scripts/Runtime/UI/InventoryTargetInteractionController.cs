@@ -545,9 +545,9 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
-                RetroUiTheme.Accent,
-                true,
-                3f,
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
                 1f);
 
             Rect talkRect = new Rect(
@@ -588,9 +588,9 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
-                RetroUiTheme.Accent,
-                true,
-                3f,
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
                 1f);
             GUI.Label(
                 new Rect(
@@ -634,15 +634,12 @@ namespace BarPromenade
         {
             RetroUiTheme.DrawPanel(
                 rect,
-                selected
-                    ? RetroUiTheme.PanelRaised
-                    : RetroUiTheme.PanelInset,
-                selected
-                    ? RetroUiTheme.Accent
-                    : RetroUiTheme.BorderMuted,
-                selected,
-                2f,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
                 1f);
+            RetroUiTheme.DrawSelection(rect, selected);
             if (GUI.Button(
                     rect,
                     LocalizationService.Get(localizationKey),
@@ -682,7 +679,7 @@ namespace BarPromenade
             selectedOptionStyle = RetroUiTheme.CreateButtonStyle(
                 11,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.AccentPale,
+                RetroUiTheme.SelectionText,
                 true);
             messageStyle = RetroUiTheme.CreateLabelStyle(
                 11,

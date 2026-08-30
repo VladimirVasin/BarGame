@@ -148,6 +148,21 @@ namespace BarPromenade
         public const double WindGustPrimaryPeriodMinutes = 7.3d;
 
         public const double WindGustSecondaryPeriodMinutes = 1.9d;
+
+        /// <summary>
+        /// The gust rhythm's shape: a mean with a primary swell and a
+        /// quicker secondary ripple riding on it. Named because the village
+        /// keys its haze on the RAW rhythm (<see cref="EvaluateGust"/>) and
+        /// its tests pin the rhythm's floor (`0.62 - 0.24 - 0.14`) and crest
+        /// (`1.0`) from these rather than from a re-typed literal. Doubles,
+        /// because the rhythm is summed in double before it is cast: a float
+        /// mean promoted to double is not `0.62`, and the wind would stop
+        /// being bit-identical to what every scene already shakes to.
+        /// </summary>
+        public const double WindGustMean = 0.62d;
+
+        public const double WindGustPrimaryAmplitude = 0.24d;
+        public const double WindGustSecondaryAmplitude = 0.14d;
         public const double WindSwayPeriodMinutes = 3.1d;
         public const float WindSwayDegrees = 9f;
 
@@ -360,17 +375,8 @@ namespace BarPromenade
 
             uint phaseHash = HashWind(seed, -1L);
             double tau = 2d * Math.PI;
-            double phaseA = (phaseHash & 0xFFu) / 255d * tau;
-            double phaseB = ((phaseHash >> 8) & 0xFFu) / 255d * tau;
             double phaseC = ((phaseHash >> 16) & 0xFFu) / 255d * tau;
-            float gust = (float)(
-                0.62d +
-                0.24d * Math.Sin(
-                    tau * absoluteGameMinutes /
-                    WindGustPrimaryPeriodMinutes + phaseA) +
-                0.14d * Math.Sin(
-                    tau * absoluteGameMinutes /
-                    WindGustSecondaryPeriodMinutes + phaseB));
+            float gust = EvaluateGust(seed, absoluteGameMinutes);
             float sway = WindSwayDegrees * (float)Math.Sin(
                 tau * absoluteGameMinutes /
                 WindSwayPeriodMinutes + phaseC);
@@ -382,6 +388,45 @@ namespace BarPromenade
         public static WindSample EvaluateCurrentWind()
         {
             return EvaluateWind(
+                GameSessionState.CitySeed,
+                CurrentAbsoluteGameMinutes());
+        }
+
+        /// <summary>
+        /// The bare gust rhythm every wind consumer rides, before the slot's
+        /// base strength scales it: `[0.24, 1]`, with the slot-independent
+        /// phases hashed once per seed.
+        ///
+        /// Exposed on its own because the village's haze has to breathe on
+        /// THIS and not on the shaped strength the spindrift reads. The
+        /// shaped strength saturates - in a thunderstorm slot the village's
+        /// gale pulse is pinned at `1` for the whole ninety minutes - so a
+        /// wave keyed on it would close the lane and never open it again;
+        /// the raw rhythm always comes back down.
+        /// </summary>
+        public static float EvaluateGust(
+            int seed,
+            double absoluteGameMinutes)
+        {
+            ValidateMinutes(absoluteGameMinutes);
+
+            uint phaseHash = HashWind(seed, -1L);
+            double tau = 2d * Math.PI;
+            double phaseA = (phaseHash & 0xFFu) / 255d * tau;
+            double phaseB = ((phaseHash >> 8) & 0xFFu) / 255d * tau;
+            return (float)(
+                WindGustMean +
+                WindGustPrimaryAmplitude * Math.Sin(
+                    tau * absoluteGameMinutes /
+                    WindGustPrimaryPeriodMinutes + phaseA) +
+                WindGustSecondaryAmplitude * Math.Sin(
+                    tau * absoluteGameMinutes /
+                    WindGustSecondaryPeriodMinutes + phaseB));
+        }
+
+        public static float EvaluateCurrentGust()
+        {
+            return EvaluateGust(
                 GameSessionState.CitySeed,
                 CurrentAbsoluteGameMinutes());
         }

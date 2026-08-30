@@ -15,6 +15,7 @@ namespace BarPromenade
         [SerializeField] private Color variantOneColor = Color.white;
         [SerializeField] private Color variantTwoColor = Color.white;
         [SerializeField] private Color variantThreeColor = Color.white;
+        [SerializeField] private bool usesDetailAtlas;
 
         public CityPedestrianRendererBinding(
             string configuredRendererName,
@@ -24,7 +25,8 @@ namespace BarPromenade
             Color configuredBaseColor,
             Color configuredVariantOneColor,
             Color configuredVariantTwoColor,
-            Color configuredVariantThreeColor)
+            Color configuredVariantThreeColor,
+            bool usesDetailAtlas = false)
         {
             rendererName = configuredRendererName ?? string.Empty;
             role = configuredRole ?? string.Empty;
@@ -34,6 +36,7 @@ namespace BarPromenade
             variantOneColor = configuredVariantOneColor;
             variantTwoColor = configuredVariantTwoColor;
             variantThreeColor = configuredVariantThreeColor;
+            this.usesDetailAtlas = usesDetailAtlas;
         }
 
         public string RendererName => rendererName;
@@ -44,6 +47,15 @@ namespace BarPromenade
         public Color VariantOneColor => variantOneColor;
         public Color VariantTwoColor => variantTwoColor;
         public Color VariantThreeColor => variantThreeColor;
+
+        /// <summary>
+        /// True for a part whose UVs are authored into the registry's
+        /// detail atlas. The atlas is light greys multiplied by the palette
+        /// tint, so the four variants keep sharing one texture and one
+        /// material; a part outside the atlas samples nothing and stays
+        /// flat colour.
+        /// </summary>
+        public bool UsesDetailAtlas => usesDetailAtlas;
 
         public Color GetColor(int paletteVariant)
         {
@@ -77,6 +89,10 @@ namespace BarPromenade
             Shader.PropertyToID("_BaseColor");
         private static readonly int LegacyColorId =
             Shader.PropertyToID("_Color");
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
+        private static readonly int LegacyMapId =
+            Shader.PropertyToID("_MainTex");
 
         [SerializeField] private Animator animator;
         [SerializeField] private Transform modelRoot;
@@ -100,6 +116,7 @@ namespace BarPromenade
         [SerializeField] private int paletteVariant;
         [SerializeField] private Light headLamp;
         [SerializeField] private bool preservesAirborneMotion;
+        [SerializeField] private Texture2D detailAtlas;
 
         public Animator Animator => animator;
         public Transform ModelRoot => modelRoot;
@@ -156,6 +173,14 @@ namespace BarPromenade
         /// </summary>
         public bool PreservesAirborneMotion => preservesAirborneMotion;
 
+        /// <summary>
+        /// The design's detail atlas, or <c>null</c> for a flat-colour
+        /// design. It reaches the renderers through the same property block
+        /// as the palette tint, never through a material of its own: the
+        /// whole pedestrian library is validated to share one material.
+        /// </summary>
+        public Texture2D DetailAtlas => detailAtlas;
+
         public static GameObject LoadPrefab()
         {
             return Resources.Load<GameObject>(PrefabResourcePath);
@@ -206,6 +231,12 @@ namespace BarPromenade
             ApplyPaletteVariant(0);
         }
 
+        public void ConfigureDetailAtlas(Texture2D atlas)
+        {
+            detailAtlas = atlas;
+            ApplyPaletteVariant(paletteVariant);
+        }
+
         public void ApplyPaletteVariant(int variant)
         {
             int normalized = variant % 4;
@@ -226,6 +257,14 @@ namespace BarPromenade
                 Color color = binding.GetColor(paletteVariant);
                 properties.SetColor(BaseColorId, color);
                 properties.SetColor(LegacyColorId, color);
+                // No _BaseMap_ST: the UVs are authored straight into the
+                // atlas sub-rectangles, so the texture is bound whole.
+                if (binding.UsesDetailAtlas && detailAtlas != null)
+                {
+                    properties.SetTexture(BaseMapId, detailAtlas);
+                    properties.SetTexture(LegacyMapId, detailAtlas);
+                }
+
                 target.SetPropertyBlock(properties);
                 properties.Clear();
             }

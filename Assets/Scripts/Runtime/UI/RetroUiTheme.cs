@@ -57,45 +57,96 @@ namespace BarPromenade
     {
         public const float LogicalWidth = 640f;
         public const float LogicalHeight = 360f;
+        public const float PanelCornerRadius = 0f;
+        public const float FrameInset = 3f;
 
         public static readonly Color Backdrop =
-            new Color32(10, 8, 16, 247);
+            new Color32(7, 8, 8, 247);
         public static readonly Color Ink =
-            new Color32(19, 15, 25, 255);
+            new Color32(12, 13, 13, 255);
         public static readonly Color Shadow =
-            new Color32(35, 24, 39, 255);
+            new Color32(18, 19, 19, 255);
         public static readonly Color Panel =
-            new Color32(54, 35, 56, 255);
+            new Color32(25, 27, 27, 255);
         public static readonly Color PanelRaised =
-            new Color32(72, 45, 64, 255);
+            new Color32(37, 39, 39, 255);
         public static readonly Color PanelInset =
-            new Color32(30, 25, 38, 255);
+            new Color32(16, 18, 18, 255);
         public static readonly Color BorderMuted =
-            new Color32(113, 72, 91, 255);
+            new Color32(84, 86, 82, 255);
         public static readonly Color Accent =
-            new Color32(230, 166, 74, 255);
+            new Color32(166, 164, 150, 255);
         public static readonly Color AccentPale =
-            new Color32(249, 219, 151, 255);
+            new Color32(220, 216, 197, 255);
         public static readonly Color Text =
-            new Color32(242, 234, 219, 255);
+            new Color32(205, 202, 187, 255);
         public static readonly Color Muted =
-            new Color32(157, 137, 158, 255);
+            new Color32(132, 133, 126, 255);
         public static readonly Color Good =
-            new Color32(102, 181, 125, 255);
+            new Color32(160, 164, 148, 255);
         public static readonly Color Bad =
-            new Color32(201, 77, 104, 255);
+            new Color32(148, 113, 108, 255);
         public static readonly Color Cyan =
-            new Color32(93, 166, 174, 255);
+            new Color32(124, 143, 145, 255);
         public static readonly Color MapGround =
-            new Color32(24, 28, 35, 255);
+            new Color32(20, 23, 24, 255);
         public static readonly Color MapBuilding =
-            new Color32(64, 65, 73, 255);
+            new Color32(55, 58, 58, 255);
         public static readonly Color MapBar =
-            new Color32(105, 43, 38, 255);
+            new Color32(87, 70, 65, 255);
         public static readonly Color MapRoad =
-            new Color32(100, 101, 105, 255);
+            new Color32(96, 98, 96, 255);
+
+        public static readonly Color FrameOuter =
+            new Color32(132, 133, 126, 255);
+        public static readonly Color FrameInner =
+            new Color32(54, 56, 54, 255);
+        public static readonly Color Paper =
+            new Color32(184, 181, 168, 255);
+        public static readonly Color SelectionFill =
+            new Color32(52, 54, 53, 255);
+        public static readonly Color SelectionText =
+            new Color32(232, 228, 209, 255);
 
         private static Texture2D ditherTexture;
+        private static Font interfaceFont;
+        private static bool ownsInterfaceFont;
+
+        private const ulong SootPatternBits =
+            (1UL << 0) |
+            (1UL << 5) |
+            (1UL << 11) |
+            (1UL << 16) |
+            (1UL << 23) |
+            (1UL << 26) |
+            (1UL << 34) |
+            (1UL << 39) |
+            (1UL << 45) |
+            (1UL << 48) |
+            (1UL << 54) |
+            (1UL << 59);
+
+        private static readonly string[] MonospaceFontCandidates =
+        {
+            "Cascadia Mono",
+            "Consolas",
+            "Menlo",
+            "Monaco",
+            "DejaVu Sans Mono",
+            "Liberation Mono",
+            "Courier New"
+        };
+
+        private const string PackagedFontResourcePath =
+            "Fonts/Roboto-Regular";
+
+        /// <summary>
+        /// The platform monospace face used by every themed style. When no
+        /// known Cyrillic-capable monospace face is installed, the project's
+        /// packaged Roboto remains the deterministic RU/EN fallback before
+        /// Unity's legacy runtime face.
+        /// </summary>
+        public static Font InterfaceFont => ResolveInterfaceFont();
 
         public static RetroUiCanvas CalculateCanvas(
             int screenWidth,
@@ -216,11 +267,69 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// A panel. The trailing <paramref name="opacity"/> scales every
-        /// layer of it at once — shadow, fill, dither, border and
-        /// highlight — so a panel can be faded as one object rather than
-        /// coming apart into its parts. Left at one it draws exactly what
-        /// it always drew.
+        /// Draws the shared flat nested frame. It has no corner cuts,
+        /// highlight edge, drop shadow or glow, so focus continues to read
+        /// from value alone after colour is removed.
+        /// </summary>
+        public static void DrawFrame(
+            Rect rect,
+            Color outer,
+            Color inner,
+            float thickness = 1f,
+            float opacity = 1f)
+        {
+            Rect snapped = SnapRect(rect);
+            if (snapped.width <= 0f || snapped.height <= 0f)
+            {
+                return;
+            }
+
+            float line = Mathf.Max(1f, Mathf.Round(thickness));
+            float alpha = Mathf.Clamp01(opacity);
+            StrokeRect(snapped, line, Fade(outer, alpha));
+
+            float inset = Mathf.Max(FrameInset, line + 2f);
+            Rect innerRect = InsetRect(snapped, inset);
+            if (innerRect.width >= 2f && innerRect.height >= 2f)
+            {
+                StrokeRect(
+                    innerRect,
+                    1f,
+                    Fade(inner, alpha));
+            }
+        }
+
+        /// <summary>
+        /// Marks a selected row with both a value shift and a nested frame.
+        /// Text over it should use <see cref="SelectionText"/>.
+        /// </summary>
+        public static void DrawSelection(
+            Rect rect,
+            bool selected,
+            float opacity = 1f)
+        {
+            if (!selected)
+            {
+                return;
+            }
+
+            float alpha = Mathf.Clamp01(opacity);
+            Rect snapped = SnapRect(rect);
+            FillRect(snapped, Fade(SelectionFill, alpha));
+            DrawFrame(
+                snapped,
+                SelectionText,
+                FrameInner,
+                1f,
+                alpha);
+        }
+
+        /// <summary>
+        /// A flat rectangular panel. The legacy <paramref name="corner"/>
+        /// argument is retained for source compatibility but deliberately
+        /// ignored: the interface language owns square corners everywhere.
+        /// The trailing <paramref name="opacity"/> scales the fill, stable
+        /// soot texture and both frame lines as one object.
         /// </summary>
         public static void DrawPanel(
             Rect rect,
@@ -232,51 +341,33 @@ namespace BarPromenade
             float opacity = 1f)
         {
             Rect snapped = SnapRect(rect);
-            float cut = Mathf.Clamp(
-                Mathf.Round(corner),
-                0f,
-                Mathf.Min(snapped.width, snapped.height) * 0.25f);
+            if (snapped.width <= 0f || snapped.height <= 0f)
+            {
+                return;
+            }
+
+            _ = corner;
             float line = Mathf.Max(1f, Mathf.Round(thickness));
             float alpha = Mathf.Clamp01(opacity);
 
-            DrawSteppedFill(
-                new Rect(
-                    snapped.x + 2f,
-                    snapped.y + 2f,
-                    snapped.width,
-                    snapped.height),
-                WithAlpha(Shadow, 0.78f * alpha),
-                cut);
-            DrawSteppedFill(snapped, Fade(fill, alpha), cut);
-            if (dither)
+            FillRect(snapped, Fade(fill, alpha));
+            Rect textureRect = InsetRect(snapped, line + 1f);
+            if (textureRect.width > 0f && textureRect.height > 0f)
             {
                 DrawDither(
-                    new Rect(
-                        snapped.x + line,
-                        snapped.y + line,
-                        snapped.width - line * 2f,
-                        snapped.height - line * 2f),
-                    WithAlpha(AccentPale, 0.055f * alpha));
+                    textureRect,
+                    WithAlpha(
+                        Paper,
+                        (dither ? 0.034f : 0.014f) * alpha));
             }
 
-            DrawSteppedBorder(snapped, Fade(border, alpha), cut, line);
-            Color highlight = Fade(
-                Color.Lerp(border, AccentPale, 0.28f),
+            Color innerFrame = Color.Lerp(fill, border, 0.54f);
+            DrawFrame(
+                snapped,
+                border,
+                innerFrame,
+                line,
                 alpha);
-            FillRect(
-                new Rect(
-                    snapped.x + cut + line,
-                    snapped.y + line,
-                    Mathf.Max(0f, snapped.width - cut * 2f - line * 2f),
-                    line),
-                highlight);
-            FillRect(
-                new Rect(
-                    snapped.x + line,
-                    snapped.y + cut + line,
-                    line,
-                    Mathf.Max(0f, snapped.height - cut * 2f - line * 2f)),
-                highlight);
         }
 
         /// <summary>The colour as it reads at that opacity: its own
@@ -304,8 +395,8 @@ namespace BarPromenade
                 new Rect(
                     0f,
                     0f,
-                    snapped.width * 0.25f,
-                    snapped.height * 0.25f),
+                    snapped.width * 0.125f,
+                    snapped.height * 0.125f),
                 true);
             GUI.color = previousColor;
         }
@@ -324,8 +415,13 @@ namespace BarPromenade
                 fontStyle = bold
                     ? FontStyle.Bold
                     : FontStyle.Normal,
-                wordWrap = wordWrap
+                wordWrap = wordWrap,
+                richText = false,
+                clipping = wordWrap
+                    ? TextClipping.Overflow
+                    : TextClipping.Clip
             };
+            ApplyInterfaceFont(style);
             SetStaticTextColor(style, color);
             return style;
         }
@@ -336,14 +432,36 @@ namespace BarPromenade
             Color color,
             bool bold = true)
         {
-            var style = new GUIStyle(GUI.skin.button)
+            var style = new GUIStyle(GUI.skin.button);
+            ConfigureButtonStyle(
+                style,
+                fontSize,
+                alignment,
+                color,
+                bold);
+            return style;
+        }
+
+        internal static void ConfigureButtonStyle(
+            GUIStyle style,
+            int fontSize,
+            TextAnchor alignment,
+            Color color,
+            bool bold)
+        {
+            if (style == null)
             {
-                alignment = alignment,
-                fontSize = Mathf.Max(1, fontSize),
-                fontStyle = bold
-                    ? FontStyle.Bold
-                    : FontStyle.Normal
-            };
+                throw new System.ArgumentNullException(nameof(style));
+            }
+
+            style.alignment = alignment;
+            style.fontSize = Mathf.Max(1, fontSize);
+            style.fontStyle = bold
+                ? FontStyle.Bold
+                : FontStyle.Normal;
+            style.richText = false;
+            style.clipping = TextClipping.Clip;
+            ApplyInterfaceFont(style);
             style.normal.background = null;
             style.hover.background = null;
             style.active.background = null;
@@ -353,123 +471,6 @@ namespace BarPromenade
             style.onActive.background = null;
             style.onFocused.background = null;
             SetInteractiveTextColors(style, color);
-            return style;
-        }
-
-        /// <summary>
-        /// The cut-cornered slab, drawn as three bands that meet rather
-        /// than as two rectangles that cross. The silhouette is the same
-        /// one it always was; what changes is that no pixel is painted
-        /// twice, which is what lets the slab be drawn at less than full
-        /// opacity without its middle coming out darker than its edges.
-        /// </summary>
-        private static void DrawSteppedFill(
-            Rect rect,
-            Color color,
-            float corner)
-        {
-            if (corner <= 0f)
-            {
-                FillRect(rect, color);
-                return;
-            }
-
-            FillRect(
-                new Rect(
-                    rect.x + corner,
-                    rect.y,
-                    rect.width - corner * 2f,
-                    corner),
-                color);
-            FillRect(
-                new Rect(
-                    rect.x,
-                    rect.y + corner,
-                    rect.width,
-                    rect.height - corner * 2f),
-                color);
-            FillRect(
-                new Rect(
-                    rect.x + corner,
-                    rect.yMax - corner,
-                    rect.width - corner * 2f,
-                    corner),
-                color);
-        }
-
-        private static void DrawSteppedBorder(
-            Rect rect,
-            Color color,
-            float corner,
-            float thickness)
-        {
-            float horizontalWidth =
-                Mathf.Max(0f, rect.width - corner * 2f);
-            float verticalHeight =
-                Mathf.Max(0f, rect.height - corner * 2f);
-            FillRect(
-                new Rect(
-                    rect.x + corner,
-                    rect.y,
-                    horizontalWidth,
-                    thickness),
-                color);
-            FillRect(
-                new Rect(
-                    rect.x + corner,
-                    rect.yMax - thickness,
-                    horizontalWidth,
-                    thickness),
-                color);
-            FillRect(
-                new Rect(
-                    rect.x,
-                    rect.y + corner,
-                    thickness,
-                    verticalHeight),
-                color);
-            FillRect(
-                new Rect(
-                    rect.xMax - thickness,
-                    rect.y + corner,
-                    thickness,
-                    verticalHeight),
-                color);
-
-            if (corner <= 0f)
-            {
-                return;
-            }
-
-            float step = Mathf.Min(corner, thickness * 2f);
-            FillRect(
-                new Rect(
-                    rect.x + thickness,
-                    rect.y + corner - step,
-                    corner,
-                    thickness),
-                color);
-            FillRect(
-                new Rect(
-                    rect.xMax - corner - thickness,
-                    rect.y + corner - step,
-                    corner,
-                    thickness),
-                color);
-            FillRect(
-                new Rect(
-                    rect.x + thickness,
-                    rect.yMax - corner + step - thickness,
-                    corner,
-                    thickness),
-                color);
-            FillRect(
-                new Rect(
-                    rect.xMax - corner - thickness,
-                    rect.yMax - corner + step - thickness,
-                    corner,
-                    thickness),
-                color);
         }
 
         internal static void SetStaticTextColor(
@@ -496,13 +497,162 @@ namespace BarPromenade
             Color color)
         {
             style.normal.textColor = color;
-            style.hover.textColor = AccentPale;
+            style.hover.textColor = SelectionText;
             style.active.textColor = Accent;
-            style.focused.textColor = AccentPale;
-            style.onNormal.textColor = color;
-            style.onHover.textColor = AccentPale;
-            style.onActive.textColor = Accent;
-            style.onFocused.textColor = AccentPale;
+            style.focused.textColor = SelectionText;
+            style.onNormal.textColor = SelectionText;
+            style.onHover.textColor = SelectionText;
+            style.onActive.textColor = Text;
+            style.onFocused.textColor = SelectionText;
+        }
+
+        private static Rect InsetRect(Rect rect, float inset)
+        {
+            float safeInset = Mathf.Max(0f, Mathf.Round(inset));
+            return new Rect(
+                rect.x + safeInset,
+                rect.y + safeInset,
+                Mathf.Max(0f, rect.width - safeInset * 2f),
+                Mathf.Max(0f, rect.height - safeInset * 2f));
+        }
+
+        private static void ApplyInterfaceFont(GUIStyle style)
+        {
+            Font font = InterfaceFont;
+            if (font != null)
+            {
+                style.font = font;
+            }
+        }
+
+        private static Font ResolveInterfaceFont()
+        {
+            if (interfaceFont != null)
+            {
+                return interfaceFont;
+            }
+
+            string[] installedNames = null;
+            try
+            {
+                installedNames = Font.GetOSInstalledFontNames();
+            }
+            catch (System.Exception)
+            {
+                // Headless platforms can have no system font service.
+            }
+
+            if (installedNames != null)
+            {
+                for (int candidateIndex = 0;
+                     candidateIndex < MonospaceFontCandidates.Length;
+                     candidateIndex++)
+                {
+                    string candidate =
+                        MonospaceFontCandidates[candidateIndex];
+                    if (!ContainsFontName(installedNames, candidate))
+                    {
+                        continue;
+                    }
+
+                    try
+                    {
+                        interfaceFont =
+                            Font.CreateDynamicFontFromOSFont(candidate, 16);
+                    }
+                    catch (System.Exception)
+                    {
+                        interfaceFont = null;
+                    }
+
+                    if (interfaceFont != null)
+                    {
+                        if (SupportsRequiredGlyphs(interfaceFont))
+                        {
+                            interfaceFont.name = "RetroUiMonospace";
+                            interfaceFont.hideFlags = HideFlags.DontSave;
+                            ownsInterfaceFont = true;
+                            return interfaceFont;
+                        }
+
+                        DestroyFont(interfaceFont);
+                        interfaceFont = null;
+                    }
+                }
+            }
+
+            interfaceFont =
+                Resources.Load<Font>(PackagedFontResourcePath);
+            if (interfaceFont != null)
+            {
+                ownsInterfaceFont = false;
+                return interfaceFont;
+            }
+
+            interfaceFont = LoadBuiltInFont("LegacyRuntime.ttf");
+            if (interfaceFont == null)
+            {
+                interfaceFont = LoadBuiltInFont("Arial.ttf");
+            }
+
+            ownsInterfaceFont = false;
+            return interfaceFont;
+        }
+
+        private static bool ContainsFontName(
+            string[] installedNames,
+            string candidate)
+        {
+            for (int index = 0; index < installedNames.Length; index++)
+            {
+                if (string.Equals(
+                    installedNames[index],
+                    candidate,
+                    System.StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool SupportsRequiredGlyphs(Font font)
+        {
+            return font != null &&
+                   font.HasCharacter('A') &&
+                   font.HasCharacter('z') &&
+                   font.HasCharacter('Ж') &&
+                   font.HasCharacter('я');
+        }
+
+        private static void DestroyFont(Font font)
+        {
+            if (font == null)
+            {
+                return;
+            }
+
+            if (Application.isPlaying)
+            {
+                Object.Destroy(font);
+            }
+            else
+            {
+                Object.DestroyImmediate(font);
+            }
+        }
+
+        private static Font LoadBuiltInFont(string path)
+        {
+            try
+            {
+                return Resources.GetBuiltinResource<Font>(path);
+            }
+            catch (System.Exception)
+            {
+                return null;
+            }
         }
 
         private static void EnsureDitherTexture()
@@ -513,8 +663,8 @@ namespace BarPromenade
             }
 
             ditherTexture = new Texture2D(
-                4,
-                4,
+                8,
+                8,
                 TextureFormat.RGBA32,
                 false)
             {
@@ -523,13 +673,13 @@ namespace BarPromenade
                 wrapMode = TextureWrapMode.Repeat,
                 hideFlags = HideFlags.DontSave
             };
-            var pixels = new Color32[16];
-            for (int y = 0; y < 4; y++)
+            var pixels = new Color32[64];
+            for (int y = 0; y < 8; y++)
             {
-                for (int x = 0; x < 4; x++)
+                for (int x = 0; x < 8; x++)
                 {
-                    bool visible = (x + y * 2) % 4 == 0;
-                    pixels[y * 4 + x] = visible
+                    bool visible = IsSootTexelVisible(x, y);
+                    pixels[y * 8 + x] = visible
                         ? new Color32(255, 255, 255, 255)
                         : new Color32(255, 255, 255, 0);
                 }
@@ -537,6 +687,14 @@ namespace BarPromenade
 
             ditherTexture.SetPixels32(pixels);
             ditherTexture.Apply(false, true);
+        }
+
+        internal static bool IsSootTexelVisible(int x, int y)
+        {
+            int wrappedX = ((x % 8) + 8) % 8;
+            int wrappedY = ((y % 8) + 8) % 8;
+            int bit = wrappedX + wrappedY * 8;
+            return ((SootPatternBits >> bit) & 1UL) != 0UL;
         }
 
         [RuntimeInitializeOnLoadMethod(
@@ -556,6 +714,14 @@ namespace BarPromenade
             }
 
             ditherTexture = null;
+
+            if (ownsInterfaceFont && interfaceFont != null)
+            {
+                DestroyFont(interfaceFont);
+            }
+
+            interfaceFont = null;
+            ownsInterfaceFont = false;
         }
     }
 }

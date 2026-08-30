@@ -100,6 +100,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3024, g: 0.3266, b: 0.3502, a: 1}
     variantTwoColor: {r: 0.378, g: 0.31239998, b: 0.2652, a: 1}
     variantThreeColor: {r: 0.3384, g: 0.355, b: 0.2924, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Brow.R
     role: face_detail
     paletteName: watch_grey
@@ -108,6 +109,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3024, g: 0.3266, b: 0.3502, a: 1}
     variantTwoColor: {r: 0.378, g: 0.31239998, b: 0.2652, a: 1}
     variantThreeColor: {r: 0.3384, g: 0.355, b: 0.2924, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.01
     role: surface_detail
     paletteName: button
@@ -116,6 +118,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.1334, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.1276, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.145, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.02
     role: surface_detail
     paletteName: button
@@ -124,6 +127,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.1334, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.1276, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.145, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.03
     role: surface_detail
     paletteName: button
@@ -132,6 +136,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.1334, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.1276, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.145, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.L
     role: face_detail
     paletteName: void
@@ -140,6 +145,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.R
     role: face_detail
     paletteName: void
@@ -148,6 +154,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Moustache
     role: face_detail
     paletteName: watch_grey
@@ -156,6 +163,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3024, g: 0.3266, b: 0.3502, a: 1}
     variantTwoColor: {r: 0.378, g: 0.31239998, b: 0.2652, a: 1}
     variantThreeColor: {r: 0.3384, g: 0.355, b: 0.2924, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Mouth
     role: face_detail
     paletteName: void
@@ -164,6 +172,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Nose
     role: face_detail
     paletteName: skin
@@ -172,6 +181,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29819998, g: 0.21620001, b: 0.16995001, a: 1}
     variantTwoColor: {r: 0.37274998, g: 0.2068, b: 0.1287, a: 1}
     variantThreeColor: {r: 0.3337, g: 0.235, b: 0.1419, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_QuiltSeam.01
     role: surface_detail
     paletteName: watch_coat_dark
@@ -180,6 +190,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.0598, b: 0.04944, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.057199996, b: 0.03744, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.065, b: 0.04128, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_QuiltSeam.02
     role: surface_detail
     paletteName: watch_coat_dark
@@ -188,6 +199,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.0598, b: 0.04944, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.057199996, b: 0.03744, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.065, b: 0.04128, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_QuiltSeam.03
     role: surface_detail
     paletteName: watch_coat_dark
@@ -196,6 +208,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.0598, b: 0.04944, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.057199996, b: 0.03744, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.065, b: 0.04128, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_QuiltSeam.04
     role: surface_detail
     paletteName: watch_coat_dark
@@ -204,6 +217,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.0598, b: 0.04944, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.057199996, b: 0.03744, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.065, b: 0.04128, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_QuiltSeam.05
     role: surface_detail
     paletteName: watch_coat_dark
@@ -212,6 +226,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.0598, b: 0.04944, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.057199996, b: 0.03744, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.065, b: 0.04128, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ShirtV
     role: surface_detail
     paletteName: watch_shirt
@@ -220,6 +235,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.19319999, g: 0.19780001, b: 0.18540001, a: 1}
     variantTwoColor: {r: 0.24149999, g: 0.1892, b: 0.1404, a: 1}
     variantThreeColor: {r: 0.21620001, g: 0.215, b: 0.15480001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Stubble
     role: surface_detail
     paletteName: watch_grey
@@ -228,6 +244,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3024, g: 0.3266, b: 0.3502, a: 1}
     variantTwoColor: {r: 0.378, g: 0.31239998, b: 0.2652, a: 1}
     variantThreeColor: {r: 0.3384, g: 0.355, b: 0.2924, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_BootShaft.L
     role: clothing
     paletteName: shoe
@@ -236,6 +253,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0378, g: 0.034959998, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.04725, g: 0.033439998, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.0423, g: 0.038, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_BootShaft.R
     role: clothing
     paletteName: shoe
@@ -244,6 +262,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0378, g: 0.034959998, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.04725, g: 0.033439998, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.0423, g: 0.038, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CapBand
     role: clothing
     paletteName: watch_cap
@@ -252,6 +271,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0924, g: 0.0874, b: 0.082399994, a: 1}
     variantTwoColor: {r: 0.115499996, g: 0.0836, b: 0.062399995, a: 1}
     variantThreeColor: {r: 0.1034, g: 0.095, b: 0.0688, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CapCrown
     role: signature_silhouette
     paletteName: watch_cap
@@ -260,6 +280,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0924, g: 0.0874, b: 0.082399994, a: 1}
     variantTwoColor: {r: 0.115499996, g: 0.0836, b: 0.062399995, a: 1}
     variantThreeColor: {r: 0.1034, g: 0.095, b: 0.0688, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CapDome
     role: signature_silhouette
     paletteName: watch_cap
@@ -268,6 +289,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0924, g: 0.0874, b: 0.082399994, a: 1}
     variantTwoColor: {r: 0.115499996, g: 0.0836, b: 0.062399995, a: 1}
     variantThreeColor: {r: 0.1034, g: 0.095, b: 0.0688, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CapVisor
     role: signature_silhouette
     paletteName: watch_cap
@@ -276,6 +298,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0924, g: 0.0874, b: 0.082399994, a: 1}
     variantTwoColor: {r: 0.115499996, g: 0.0836, b: 0.062399995, a: 1}
     variantThreeColor: {r: 0.1034, g: 0.095, b: 0.0688, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatChest
     role: body
     paletteName: watch_coat
@@ -284,6 +307,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.117599994, g: 0.1196, b: 0.097849995, a: 1}
     variantTwoColor: {r: 0.147, g: 0.11439999, b: 0.074099995, a: 1}
     variantThreeColor: {r: 0.1316, g: 0.13, b: 0.0817, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatHem
     role: clothing
     paletteName: watch_coat_dark
@@ -292,6 +316,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.0598, b: 0.04944, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.057199996, b: 0.03744, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.065, b: 0.04128, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatWaist
     role: body
     paletteName: watch_coat
@@ -300,6 +325,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.117599994, g: 0.1196, b: 0.097849995, a: 1}
     variantTwoColor: {r: 0.147, g: 0.11439999, b: 0.074099995, a: 1}
     variantThreeColor: {r: 0.1316, g: 0.13, b: 0.0817, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Collar
     role: clothing
     paletteName: watch_coat_dark
@@ -308,6 +334,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.0598, b: 0.04944, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.057199996, b: 0.03744, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.065, b: 0.04128, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.L
     role: clothing
     paletteName: watch_coat
@@ -316,6 +343,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.117599994, g: 0.1196, b: 0.097849995, a: 1}
     variantTwoColor: {r: 0.147, g: 0.11439999, b: 0.074099995, a: 1}
     variantThreeColor: {r: 0.1316, g: 0.13, b: 0.0817, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.R
     role: clothing
     paletteName: watch_coat
@@ -324,6 +352,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.117599994, g: 0.1196, b: 0.097849995, a: 1}
     variantTwoColor: {r: 0.147, g: 0.11439999, b: 0.074099995, a: 1}
     variantThreeColor: {r: 0.1316, g: 0.13, b: 0.0817, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.L
     role: clothing
     paletteName: watch_coat_dark
@@ -332,6 +361,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.0598, b: 0.04944, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.057199996, b: 0.03744, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.065, b: 0.04128, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.R
     role: clothing
     paletteName: watch_coat_dark
@@ -340,6 +370,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.0598, b: 0.04944, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.057199996, b: 0.03744, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.065, b: 0.04128, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.L
     role: clothing
     paletteName: watch_coat
@@ -348,6 +379,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.117599994, g: 0.1196, b: 0.097849995, a: 1}
     variantTwoColor: {r: 0.147, g: 0.11439999, b: 0.074099995, a: 1}
     variantThreeColor: {r: 0.1316, g: 0.13, b: 0.0817, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.R
     role: clothing
     paletteName: watch_coat
@@ -356,6 +388,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.117599994, g: 0.1196, b: 0.097849995, a: 1}
     variantTwoColor: {r: 0.147, g: 0.11439999, b: 0.074099995, a: 1}
     variantThreeColor: {r: 0.1316, g: 0.13, b: 0.0817, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserUpper.L
     role: clothing
     paletteName: watch_trousers
@@ -364,6 +397,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0714, g: 0.08280001, b: 0.082399994, a: 1}
     variantTwoColor: {r: 0.08925, g: 0.0792, b: 0.062399995, a: 1}
     variantThreeColor: {r: 0.079900004, g: 0.09, b: 0.0688, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserUpper.R
     role: clothing
     paletteName: watch_trousers
@@ -372,6 +406,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0714, g: 0.08280001, b: 0.082399994, a: 1}
     variantTwoColor: {r: 0.08925, g: 0.0792, b: 0.062399995, a: 1}
     variantThreeColor: {r: 0.079900004, g: 0.09, b: 0.0688, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.L
     role: body
     paletteName: shoe
@@ -380,6 +415,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0378, g: 0.034959998, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.04725, g: 0.033439998, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.0423, g: 0.038, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.R
     role: body
     paletteName: shoe
@@ -388,6 +424,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0378, g: 0.034959998, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.04725, g: 0.033439998, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.0423, g: 0.038, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.L
     role: body
     paletteName: sole
@@ -396,6 +433,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.R
     role: body
     paletteName: sole
@@ -404,6 +442,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.L
     role: body
     paletteName: skin
@@ -412,6 +451,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29819998, g: 0.21620001, b: 0.16995001, a: 1}
     variantTwoColor: {r: 0.37274998, g: 0.2068, b: 0.1287, a: 1}
     variantThreeColor: {r: 0.3337, g: 0.235, b: 0.1419, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.R
     role: body
     paletteName: skin
@@ -420,6 +460,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29819998, g: 0.21620001, b: 0.16995001, a: 1}
     variantTwoColor: {r: 0.37274998, g: 0.2068, b: 0.1287, a: 1}
     variantThreeColor: {r: 0.3337, g: 0.235, b: 0.1419, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Head
     role: body
     paletteName: skin
@@ -428,6 +469,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29819998, g: 0.21620001, b: 0.16995001, a: 1}
     variantTwoColor: {r: 0.37274998, g: 0.2068, b: 0.1287, a: 1}
     variantThreeColor: {r: 0.3337, g: 0.235, b: 0.1419, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Neck
     role: body
     paletteName: skin
@@ -436,6 +478,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29819998, g: 0.21620001, b: 0.16995001, a: 1}
     variantTwoColor: {r: 0.37274998, g: 0.2068, b: 0.1287, a: 1}
     variantThreeColor: {r: 0.3337, g: 0.235, b: 0.1419, a: 1}
+    usesDetailAtlas: 0
   headAnchor: {fileID: 5158907918950970890}
   pelvisAnchor: {fileID: 5224871027018377690}
   leftFootAnchor: {fileID: 2434318978141076030}
@@ -454,6 +497,7 @@ MonoBehaviour:
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
+  detailAtlas: {fileID: 0}
 --- !u!1001 &8866872464553254438
 PrefabInstance:
   m_ObjectHideFlags: 0

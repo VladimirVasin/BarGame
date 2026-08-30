@@ -1441,4 +1441,202 @@ MonoBehaviour:
     role: 2
     surface: 0
     mesh: {fileID: 1412449985112404889, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
-  buildSignature: a27649807279987d20efc5372e347df48a1c4c63bb97929ed7d9b2b2879b13f7
+  - kind: 80
+    variant: 0
+    component: TableAndStools_Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: 3810720657128995250, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 0
+    component: NardiPieces_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -6655248812698049564, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 0
+    component: TeaTray_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -6453909181728610753, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 1
+    component: BicycleFrame_Residential_PaintedMetal
+    role: 7
+    surface: 3
+    mesh: {fileID: 8051495090869428227, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 1
+    component: RepairCrate_Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: 6951970005068221862, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 1
+    component: TyresAndTools_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: -4498596145819018983, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 2
+    component: Basket_Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: 2867660534716293879, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 2
+    component: Rope_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 8182583042255199569, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 2
+    component: Pulley_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -285605018227911249, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 3
+    component: ChairAndBench_Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: -2708354778219806045, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 3
+    component: ClampAndTools_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: 2663322776688808310, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 3
+    component: ReplacementSlats_Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: -8033781179351372368, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 4
+    component: Broom_Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: 2958136644524394682, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 4
+    component: Dustpan_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 179998934483552062, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 4
+    component: Bucket_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -6082553693234632737, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 5
+    component: LowBench_Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: -4739191245307164656, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 5
+    component: Planters_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: 6978228218055969665, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 80
+    variant: 5
+    component: Basin_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -6159853235682788780, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 81
+    variant: 0
+    component: Cart_Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: -3498821429788424917, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 81
+    variant: 0
+    component: MasonryLoad_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -203025045776842466, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 81
+    variant: 0
+    component: WheelAndHardware_Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -5562780237967033619, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 82
+    variant: 0
+    component: Winch_Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: -5799921638582501668, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 82
+    variant: 0
+    component: TimberCrib_Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: 4872485057946992757, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 82
+    variant: 0
+    component: CableAndTools_Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 2033195761103427577, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 83
+    variant: 0
+    component: BarrierAndRail_Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: -4299127649178460338, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 83
+    variant: 0
+    component: RepairBlocks_Masonry_Stone
+    role: 2
+    surface: 1
+    mesh: {fileID: -7187929013821710137, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 83
+    variant: 0
+    component: Tools_Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -5503212597779292164, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 84
+    variant: 0
+    component: PumpAndPipe_Industrial
+    role: 0
+    surface: 0
+    mesh: {fileID: 6186979764487199733, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 84
+    variant: 0
+    component: Planks_Residential_Timber
+    role: 7
+    surface: 2
+    mesh: {fileID: 3524163213626171688, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 84
+    variant: 0
+    component: DryHoseAndTools_Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: 3219166953530466235, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 85
+    variant: 0
+    component: BodyAndOpenHood_Street_PaintedMetal
+    role: 1
+    surface: 3
+    mesh: {fileID: -2730524211244364472, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 85
+    variant: 0
+    component: TyresCabinAndEngine_Street
+    role: 1
+    surface: 0
+    mesh: {fileID: 971321057207407475, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  - kind: 85
+    variant: 0
+    component: JackRemovedWheelAndTools_Fixture
+    role: 9
+    surface: 0
+    mesh: {fileID: -7538893642450632764, guid: 720b098a298e34f4c8db8d702a36060f, type: 3}
+  buildSignature: 45026a9b34c7d7390f5c70fdced3090cd27527a7d2c4f2bd09a4832461b256e1

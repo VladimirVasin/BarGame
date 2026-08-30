@@ -55,7 +55,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.design_id,
                 Is.EqualTo(CityBuildingAssetProvider.ExpectedDesignId));
-            Assert.That(manifest.generator_version, Is.EqualTo("1.1.0"));
+            Assert.That(manifest.generator_version, Is.EqualTo("2.0.0"));
             Assert.That(manifest.fbx_asset_path, Is.EqualTo(ModelPath));
             Assert.That(manifest.unit_factor, Is.EqualTo(1f));
             Assert.That(manifest.unity_axes, Is.Not.Null);
@@ -73,7 +73,11 @@ namespace BarPromenade.Tests.EditMode
                 manifest.prototype_count,
                 Is.EqualTo(
                     CityBuildingAssetProvider.ExpectedPrototypeCount));
-            Assert.That(manifest.mesh_count, Is.EqualTo(24));
+            Assert.That(
+                manifest.mesh_count,
+                Is.EqualTo(
+                    CityBuildingAssetProvider.ExpectedPrototypeCount *
+                    CityBuildingAssetRegistry.ExpectedRoleCount));
             Assert.That(manifest.prototypes, Has.Length.EqualTo(4));
             Assert.That(IsSha256(manifest.build_signature), Is.True);
             Assert.That(manifest.root_contract, Is.Not.Null);
@@ -114,6 +118,15 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 manifest.uv0_encoding.window_glass_scheme,
                 Is.EqualTo("per_window_face_projected_0_1"));
+            Assert.That(
+                manifest.uv0_encoding.building_side_atlas_scheme,
+                Is.EqualTo("building_side_atlas_0_1"));
+            Assert.That(
+                manifest.uv0_encoding.full_face_surface_scheme,
+                Is.EqualTo("full_face_projected_0_1"));
+            Assert.That(
+                manifest.uv0_encoding.metric_surface_scheme,
+                Is.EqualTo("world_metre_projected"));
 
             int triangleTotal = 0;
             for (int index = 0; index < Expected.Length; index++)
@@ -133,7 +146,10 @@ namespace BarPromenade.Tests.EditMode
                     Is.InRange(
                         1,
                         CityBuildingAssetRegistry.MaximumTriangleCount));
-                Assert.That(prototype.parts, Has.Length.EqualTo(6));
+                Assert.That(
+                    prototype.parts,
+                    Has.Length.EqualTo(
+                        CityBuildingAssetRegistry.ExpectedRoleCount));
                 Assert.That(
                     prototype.frontage_width_m,
                     Is.EqualTo(expected.UnityEnvelope.x).Within(.003f));
@@ -211,7 +227,11 @@ namespace BarPromenade.Tests.EditMode
             UnityEngine.Object[] assets =
                 AssetDatabase.LoadAllAssetsAtPath(ModelPath);
             Mesh[] meshes = assets.OfType<Mesh>().ToArray();
-            Assert.That(meshes, Has.Length.EqualTo(24));
+            Assert.That(
+                meshes,
+                Has.Length.EqualTo(
+                    CityBuildingAssetProvider.ExpectedPrototypeCount *
+                    CityBuildingAssetRegistry.ExpectedRoleCount));
             Assert.That(meshes.All(mesh => !mesh.isReadable), Is.True);
             Assert.That(meshes.All(mesh => mesh.vertexCount > 0), Is.True);
             Assert.That(assets.OfType<Material>(), Is.Empty);
@@ -230,7 +250,10 @@ namespace BarPromenade.Tests.EditMode
             {
                 ContractPrototype prototype = manifest.prototypes[index];
                 Transform root = FindDirect(catalog, prototype.root_name);
-                Assert.That(root.childCount, Is.EqualTo(6));
+                Assert.That(
+                    root.childCount,
+                    Is.EqualTo(
+                        CityBuildingAssetRegistry.ExpectedRoleCount));
                 foreach (ContractPart part in prototype.parts)
                 {
                     Transform child = FindDirect(root, part.object_name);
@@ -295,7 +318,10 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     registry.BuildSignature,
                     Is.EqualTo(manifest.build_signature));
-                Assert.That(registry.Parts.Count, Is.EqualTo(6));
+                Assert.That(
+                    registry.Parts.Count,
+                    Is.EqualTo(
+                        CityBuildingAssetRegistry.ExpectedRoleCount));
                 Assert.That(
                     registry.FacadeAttachments.Count,
                     Is.EqualTo(prototype.facade_attachment_bounds.Length));
@@ -336,13 +362,19 @@ namespace BarPromenade.Tests.EditMode
                 AssertPassive(entry.Prefab);
                 Assert.DoesNotThrow(registry.ValidateOrThrow);
 
-                for (int roleIndex = 0; roleIndex < 6; roleIndex++)
+                for (int roleIndex = 0;
+                     roleIndex < CityBuildingAssetRegistry.ExpectedRoleCount;
+                     roleIndex++)
                 {
                     CityBuildingMeshRole role =
                         CityBuildingAssetRegistry.GetExpectedRole(roleIndex);
                     CityBuildingPartBinding binding =
                         registry.Parts[roleIndex];
                     Assert.That(binding.Role, Is.EqualTo(role));
+                    Assert.That(
+                        binding.SurfaceKind,
+                        Is.EqualTo(role.ToString()));
+                    Assert.That(binding.UvScheme, Is.Not.Empty);
                     Assert.That(
                         binding.SourceName,
                         Is.EqualTo(expected.StableId + "__" + role));
@@ -360,7 +392,9 @@ namespace BarPromenade.Tests.EditMode
         private static void AssertStableParts(ContractPrototype prototype)
         {
             var expectedRoles = new HashSet<string>(
-                Enumerable.Range(0, 6).Select(index =>
+                Enumerable.Range(
+                    0,
+                    CityBuildingAssetRegistry.ExpectedRoleCount).Select(index =>
                     CityBuildingAssetRegistry.GetExpectedRole(index)
                         .ToString()),
                 StringComparer.Ordinal);
@@ -371,6 +405,35 @@ namespace BarPromenade.Tests.EditMode
                 prototype.parts.Select(part => part.object_name),
                 Is.EquivalentTo(expectedRoles.Select(role =>
                     prototype.stable_id + "__" + role)));
+            foreach (ContractPart part in prototype.parts)
+            {
+                Assert.That(part.surface_kind, Is.EqualTo(part.role));
+                bool sideAtlas =
+                    part.role == CityBuildingMeshRole.FacadePrimary.ToString() ||
+                    part.role == CityBuildingMeshRole.FacadeSecondary.ToString();
+                bool window =
+                    part.role == CityBuildingMeshRole.WindowGlass.ToString();
+                bool fullFace =
+                    part.role == CityBuildingMeshRole.Plinth.ToString();
+                Assert.That(
+                    part.uv_scheme,
+                    Is.EqualTo(
+                        sideAtlas
+                            ? "building_side_atlas_0_1"
+                            : fullFace
+                                ? "full_face_projected_0_1"
+                            : window
+                                ? "per_window_face_projected_0_1"
+                                : "world_metre_projected"));
+                if (sideAtlas || fullFace || window)
+                {
+                    Assert.That(part.meters_per_tile, Is.EqualTo(0f));
+                }
+                else
+                {
+                    Assert.That(part.meters_per_tile, Is.GreaterThan(0f));
+                }
+            }
 
             var windowUv2 = new HashSet<int>(
                 prototype.window_slots.Select(slot => slot.uv2_slot_id));
@@ -682,6 +745,9 @@ namespace BarPromenade.Tests.EditMode
         private sealed class ContractUv0Encoding
         {
             public string window_glass_scheme;
+            public string building_side_atlas_scheme;
+            public string full_face_surface_scheme;
+            public string metric_surface_scheme;
         }
 
         [Serializable]
@@ -734,6 +800,9 @@ namespace BarPromenade.Tests.EditMode
         {
             public string object_name;
             public string role;
+            public string surface_kind;
+            public string uv_scheme;
+            public float meters_per_tile;
             public int triangles;
             public int[] uv2_slot_ids;
         }

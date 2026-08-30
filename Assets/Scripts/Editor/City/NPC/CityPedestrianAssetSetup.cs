@@ -122,6 +122,58 @@ namespace BarPromenade.Editor
             "Assets/Pedestrians/Staged/Prefabs/LastRouteFerryman3D.prefab";
         public const string LastRouteFerrymanProviderPath =
             "Assets/Resources/City/LastRouteFerrymanProvider.asset";
+        public const string KettleHatDetailAtlasPath =
+            "Assets/Pedestrians/Textures/KettleHatDetailAtlas.png";
+
+        /// <summary>
+        /// Every pedestrian detail atlas the texture importer must lock to
+        /// the flat pixel-art contract. One entry today; the list exists so
+        /// the importer never learns a design's name.
+        /// </summary>
+        public static readonly string[] DetailAtlasPaths =
+        {
+            KettleHatDetailAtlasPath
+        };
+
+        // The detail atlas contract, mirrored from the Hero V2 clothing
+        // atlas: the generator paints into 64 px cells of a 256 px square
+        // and keeps every UV one pixel inside its cell.
+        private const int DetailAtlasWidth = 256;
+        private const int DetailAtlasHeight = 256;
+        private const int DetailAtlasUvSafeInsetPixels = 1;
+        private const string DetailAtlasShaderProperty = "_BaseMap";
+        private const string DetailAtlasColorSpace = "sRGB";
+        private const string DetailAtlasFilterMode = "Point";
+        private const string DetailAtlasWrapMode = "Clamp";
+        private const string DetailAtlasCompression = "Uncompressed";
+        private const string DetailAtlasUvOrigin = "bottom_left";
+        private const string DetailAtlasTintHex = "FFFFFF";
+        // The atlas is greys multiplied by the palette tint that the
+        // registry's property block already sets, never a material tint.
+        private const string DetailAtlasTintSource = "renderer_palette";
+        private const int Sha256HexLength = 64;
+
+        // The boiling kettle: the one declared per-archetype effect, its
+        // two rig anchors and the head bone both ride.
+        private const string BoilingKettleEffectName = "boiling_kettle";
+        private const string RigAnchorKindPivot = "pivot";
+        private const string RigAnchorKindAnchor = "anchor";
+        private const string HeadBoneName = "head";
+        // The spout mouth sits a hand's width to half a metre from the
+        // head bone on a 1.75 m envelope; an anchor that landed on the
+        // kettle body or out past the handle would still look plausible
+        // in the inspector. This does not.
+        private const float KettleSpoutReachMinimumMetres = 0.35f;
+        private const float KettleSpoutReachMaximumMetres = 0.65f;
+        // The pivot's rest is checked in world metres: a local tolerance
+        // under the 100x FBX root would be a millimetre, coarser than the
+        // lid's own tremble.
+        private const float KettlePivotRestPositionTolerance = 0.0001f;
+        private const float KettlePivotRestAngleTolerance = 0.01f;
+        private const float KettleAxisTolerance = 0.001f;
+        // The Hero V2 clothing contract's UV slack: a fortieth of a pixel
+        // on a 256 px atlas.
+        private const float UvTolerance = 0.0001f;
 
         private const string LeftWheelPivotName = "PIVOT_Wheel.L";
         private const string RightWheelPivotName = "PIVOT_Wheel.R";
@@ -229,10 +281,12 @@ namespace BarPromenade.Editor
                 "KettleHatWalk",
                 1.75f,
                 0.75f,
-                800,
                 1600,
+                2300,
                 sitClipName: "KettleHatSit",
-                sitDuration: 2.75f),
+                sitDuration: 2.75f,
+                carriesBoilingKettle: true,
+                detailAtlasPath: KettleHatDetailAtlasPath),
             new PedestrianDescriptor(
                 "Long-Arm Walker",
                 "LongArmPedestrian3D",
@@ -1007,9 +1061,35 @@ namespace BarPromenade.Editor
                 {
                     return false;
                 }
+
+                if (Descriptors[index].HasDetailAtlas &&
+                    !File.Exists(Descriptors[index].DetailAtlasPath))
+                {
+                    return false;
+                }
             }
 
             return true;
+        }
+
+        /// <summary>
+        /// Whether an asset path is one of the pedestrian detail atlases
+        /// the texture importer has to lock down.
+        /// </summary>
+        public static bool IsDetailAtlasPath(string assetPath)
+        {
+            for (int index = 0; index < DetailAtlasPaths.Length; index++)
+            {
+                if (string.Equals(
+                        assetPath,
+                        DetailAtlasPaths[index],
+                        StringComparison.OrdinalIgnoreCase))
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         public static void QueueBuildWhenSourcesExist()
@@ -1073,6 +1153,29 @@ namespace BarPromenade.Editor
                         ImportAssetOptions.ForceSynchronousImport);
                     AssetDatabase.ImportAsset(
                         Descriptors[index].ManifestPath,
+                        ImportAssetOptions.ForceUpdate |
+                        ImportAssetOptions.ForceSynchronousImport);
+                }
+
+                // The generator writes each atlas into a folder the asset
+                // database may never have seen. Importing a path the
+                // database does not know is a silent no-op that leaves
+                // LoadAssetAtPath returning null, so the folder is
+                // discovered first.
+                if (Descriptors.Any(candidate => candidate.HasDetailAtlas))
+                {
+                    AssetDatabase.Refresh();
+                }
+
+                for (int index = 0; index < Descriptors.Length; index++)
+                {
+                    if (!Descriptors[index].HasDetailAtlas)
+                    {
+                        continue;
+                    }
+
+                    AssetDatabase.ImportAsset(
+                        Descriptors[index].DetailAtlasPath,
                         ImportAssetOptions.ForceUpdate |
                         ImportAssetOptions.ForceSynchronousImport);
                 }
@@ -2276,6 +2379,8 @@ namespace BarPromenade.Editor
 
             ValidateFishingRigBindings(prefab, registry, descriptor);
             ValidateCoinRigBindings(prefab, registry, descriptor);
+            ValidateKettleRigBindings(prefab, registry, descriptor);
+            ValidateDetailAtlasBindings(registry, descriptor, manifest);
             ValidateWheelchairBindings(prefab, registry, descriptor);
             if (descriptor.IsWheelchair)
             {
@@ -2690,7 +2795,311 @@ namespace BarPromenade.Editor
                 }
             }
 
+            ValidateSignatureEffects(descriptor, manifest);
+            ValidateRigAnchors(descriptor, manifest, partNames);
+            ValidateTextureBindings(descriptor, manifest, partNames);
             return manifest;
+        }
+
+        /// <summary>
+        /// A design's always-on effect is declared twice — on its
+        /// descriptor here and in the generator's manifest — and the two
+        /// must agree, because the runtime factory builds the effect from
+        /// the prefab's anchors and the anchors are built from the
+        /// descriptor. JsonUtility leaves an absent key null, and absent
+        /// is what every design without an effect writes.
+        /// </summary>
+        private static void ValidateSignatureEffects(
+            PedestrianDescriptor descriptor,
+            CityPedestrianManifest manifest)
+        {
+            string[] effects =
+                manifest.signature_effects ?? Array.Empty<string>();
+            bool declaresKettle = effects.Contains(
+                BoilingKettleEffectName,
+                StringComparer.Ordinal);
+            if (declaresKettle != descriptor.CarriesBoilingKettle ||
+                effects.Length != (descriptor.CarriesBoilingKettle ? 1 : 0))
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' " +
+                    (descriptor.CarriesBoilingKettle
+                        ? "declares a boiling kettle but its manifest " +
+                          $"does not list exactly '{BoilingKettleEffectName}' " +
+                          "under signature_effects."
+                        : "declares no signature effect but its manifest " +
+                          "lists one."));
+            }
+        }
+
+        /// <summary>
+        /// The kettle design's two anchors, exactly as the prefab build
+        /// will make them: a pivot on the head that the lid and knob are
+        /// re-skinned to, and a spout-mouth anchor on the head oriented
+        /// along the spout. Every named part has to exist, because the
+        /// build measures them off the imported meshes.
+        /// </summary>
+        private static void ValidateRigAnchors(
+            PedestrianDescriptor descriptor,
+            CityPedestrianManifest manifest,
+            HashSet<string> partNames)
+        {
+            CityPedestrianManifestRigAnchor[] anchors =
+                manifest.rig_anchors ??
+                Array.Empty<CityPedestrianManifestRigAnchor>();
+            if (!descriptor.CarriesBoilingKettle)
+            {
+                if (anchors.Length != 0)
+                {
+                    throw new InvalidOperationException(
+                        $"'{descriptor.DisplayName}' declares no rig " +
+                        "anchors but its manifest lists some.");
+                }
+
+                return;
+            }
+
+            if (anchors.Length != 2)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' must declare exactly two " +
+                    "rig anchors: the lid pivot and the spout mouth.");
+            }
+
+            RequireRigAnchor(
+                anchors[0],
+                CityKettleHatRigAnchors.LidAnchorName,
+                RigAnchorKindPivot,
+                new[]
+                {
+                    CityKettleHatRigAnchors.LidRendererName,
+                    CityKettleHatRigAnchors.KnobRendererName
+                },
+                string.Empty,
+                partNames);
+            RequireRigAnchor(
+                anchors[1],
+                CityKettleHatRigAnchors.SpoutAnchorName,
+                RigAnchorKindAnchor,
+                new[] { CityKettleHatRigAnchors.SpoutTipRendererName },
+                CityKettleHatRigAnchors.SpoutRendererName,
+                partNames);
+        }
+
+        private static void RequireRigAnchor(
+            CityPedestrianManifestRigAnchor anchor,
+            string expectedName,
+            string expectedKind,
+            string[] expectedParts,
+            string expectedAxisFrom,
+            HashSet<string> partNames)
+        {
+            if (anchor == null ||
+                !string.Equals(
+                    anchor.name,
+                    expectedName,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    anchor.bone,
+                    HeadBoneName,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    anchor.kind,
+                    expectedKind,
+                    StringComparison.Ordinal) ||
+                anchor.parts == null ||
+                !anchor.parts.SequenceEqual(
+                    expectedParts,
+                    StringComparer.Ordinal) ||
+                !string.Equals(
+                    anchor.axis_from ?? string.Empty,
+                    expectedAxisFrom,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"Rig anchor '{expectedName}' must be a '{expectedKind}' " +
+                    $"on '{HeadBoneName}' over " +
+                    $"[{string.Join(", ", expectedParts)}]" +
+                    (expectedAxisFrom.Length == 0
+                        ? "."
+                        : $" with its axis from '{expectedAxisFrom}'."));
+            }
+
+            for (int index = 0; index < expectedParts.Length; index++)
+            {
+                if (!partNames.Contains(expectedParts[index]))
+                {
+                    throw new InvalidOperationException(
+                        $"Rig anchor '{expectedName}' names part " +
+                        $"'{expectedParts[index]}', which the manifest " +
+                        "does not contain.");
+                }
+            }
+
+            if (expectedAxisFrom.Length != 0 &&
+                !partNames.Contains(expectedAxisFrom))
+            {
+                throw new InvalidOperationException(
+                    $"Rig anchor '{expectedName}' takes its axis from " +
+                    $"'{expectedAxisFrom}', which the manifest does not " +
+                    "contain.");
+            }
+        }
+
+        /// <summary>
+        /// The detail atlas contract, ported from the Hero V2 clothing
+        /// atlas with one inversion: the texture lives in the renderer's
+        /// property block beside the palette tint, not in a material of
+        /// its own, so the binding names no materials and its tint source
+        /// is the renderer palette. The PNG is hashed here because a
+        /// repainted atlas that skipped the generator would otherwise ship
+        /// with a manifest still vouching for the old pixels.
+        /// </summary>
+        private static void ValidateTextureBindings(
+            PedestrianDescriptor descriptor,
+            CityPedestrianManifest manifest,
+            HashSet<string> partNames)
+        {
+            CityPedestrianManifestTextureBinding[] bindings =
+                manifest.texture_bindings ??
+                Array.Empty<CityPedestrianManifestTextureBinding>();
+            if (!descriptor.HasDetailAtlas)
+            {
+                if (bindings.Length != 0)
+                {
+                    throw new InvalidOperationException(
+                        $"'{descriptor.DisplayName}' declares no detail " +
+                        "atlas but its manifest binds a texture.");
+                }
+
+                for (int index = 0; index < manifest.parts.Length; index++)
+                {
+                    if (!string.IsNullOrEmpty(
+                            manifest.parts[index].atlas_region))
+                    {
+                        throw new InvalidOperationException(
+                            $"'{descriptor.DisplayName}' part " +
+                            $"'{manifest.parts[index].name}' names an " +
+                            "atlas region without a declared atlas.");
+                    }
+                }
+
+                return;
+            }
+
+            if (bindings.Length != 1 || bindings[0] == null)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' must declare exactly one " +
+                    "texture_binding for its detail atlas.");
+            }
+
+            CityPedestrianManifestTextureBinding binding = bindings[0];
+            if (!string.Equals(
+                    binding.texture_asset,
+                    descriptor.DetailAtlasPath,
+                    StringComparison.Ordinal) ||
+                binding.width_px != DetailAtlasWidth ||
+                binding.height_px != DetailAtlasHeight ||
+                binding.materials == null ||
+                binding.materials.Length != 0 ||
+                binding.shader_property != DetailAtlasShaderProperty ||
+                binding.color_space != DetailAtlasColorSpace ||
+                binding.filter_mode != DetailAtlasFilterMode ||
+                binding.wrap_mode != DetailAtlasWrapMode ||
+                binding.mipmaps ||
+                binding.compression != DetailAtlasCompression ||
+                binding.uv_channel != 0 ||
+                binding.uv_origin != DetailAtlasUvOrigin ||
+                binding.uv_safe_inset_px != DetailAtlasUvSafeInsetPixels ||
+                binding.material_tint_hex != DetailAtlasTintHex ||
+                binding.tint_source != DetailAtlasTintSource)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' detail atlas settings " +
+                    "differ from the material-free, palette-tinted " +
+                    "_BaseMap contract.");
+            }
+
+            if (string.IsNullOrEmpty(binding.sha256) ||
+                binding.sha256.Length != Sha256HexLength ||
+                !string.Equals(
+                    ComputeFileSha256(descriptor.DetailAtlasPath),
+                    binding.sha256,
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' detail atlas on disk does " +
+                    "not match the SHA-256 its manifest declares; rerun " +
+                    "the generator rather than editing the PNG.");
+            }
+
+            CityPedestrianManifestTextureRegion[] regions =
+                binding.regions ??
+                Array.Empty<CityPedestrianManifestTextureRegion>();
+            if (regions.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' detail atlas declares no " +
+                    "regions.");
+            }
+
+            Dictionary<string, string> regionByRenderer =
+                new Dictionary<string, string>(StringComparer.Ordinal);
+            HashSet<string> regionNames =
+                new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < regions.Length; index++)
+            {
+                CityPedestrianManifestTextureRegion region = regions[index];
+                if (region == null ||
+                    string.IsNullOrEmpty(region.name) ||
+                    !regionNames.Add(region.name) ||
+                    string.IsNullOrEmpty(region.renderer) ||
+                    !partNames.Contains(region.renderer) ||
+                    !regionByRenderer.TryAdd(region.renderer, region.name) ||
+                    region.width_px <= 2 * DetailAtlasUvSafeInsetPixels ||
+                    region.height_px <= 2 * DetailAtlasUvSafeInsetPixels ||
+                    region.x_px < 0 ||
+                    region.y_px < 0 ||
+                    region.x_px + region.width_px > DetailAtlasWidth ||
+                    region.y_px + region.height_px > DetailAtlasHeight)
+                {
+                    throw new InvalidOperationException(
+                        $"'{descriptor.DisplayName}' detail atlas region " +
+                        $"'{region?.name}' is malformed, duplicated, off " +
+                        "the atlas or names a renderer the manifest does " +
+                        "not contain.");
+                }
+            }
+
+            for (int index = 0; index < manifest.parts.Length; index++)
+            {
+                CityPedestrianManifestPart part = manifest.parts[index];
+                regionByRenderer.TryGetValue(
+                    part.name,
+                    out string expectedRegion);
+                if (!string.Equals(
+                        part.atlas_region ?? string.Empty,
+                        expectedRegion ?? string.Empty,
+                        StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"'{descriptor.DisplayName}' part '{part.name}' " +
+                        $"records atlas region '{part.atlas_region}' but " +
+                        $"the binding assigns it '{expectedRegion}'.");
+                }
+            }
+        }
+
+        private static string ComputeFileSha256(string path)
+        {
+            using System.Security.Cryptography.SHA256 sha =
+                System.Security.Cryptography.SHA256.Create();
+            using FileStream stream = File.OpenRead(path);
+            return BitConverter
+                .ToString(sha.ComputeHash(stream))
+                .Replace("-", string.Empty)
+                .ToLowerInvariant();
         }
 
         private static CityPedestrianAnimationManifest
@@ -3155,7 +3564,9 @@ namespace BarPromenade.Editor
                             BuildPaletteVariant(
                                 source.palette_name,
                                 baseColor,
-                                3)));
+                                3),
+                            usesDetailAtlas: !string.IsNullOrEmpty(
+                                source.atlas_region)));
                     rendererList.Add(renderer);
                 }
 
@@ -3260,6 +3671,42 @@ namespace BarPromenade.Editor
                     pelvis,
                     sit,
                     action);
+
+                if (descriptor.HasDetailAtlas)
+                {
+                    // The atlas rides the same property block as the
+                    // palette tint, so Player3DLit stays the one material
+                    // every pedestrian renderer is validated to share.
+                    Texture2D detailAtlas =
+                        AssetDatabase.LoadAssetAtPath<Texture2D>(
+                            descriptor.DetailAtlasPath);
+                    if (detailAtlas == null ||
+                        detailAtlas.width != DetailAtlasWidth ||
+                        detailAtlas.height != DetailAtlasHeight)
+                    {
+                        throw new InvalidOperationException(
+                            $"'{descriptor.DisplayName}' detail atlas must " +
+                            $"import as {DetailAtlasWidth}x" +
+                            $"{DetailAtlasHeight} at " +
+                            $"'{descriptor.DetailAtlasPath}'; got " +
+                            $"{detailAtlas?.width ?? 0}x" +
+                            $"{detailAtlas?.height ?? 0}.");
+                    }
+
+                    registry.ConfigureDetailAtlas(detailAtlas);
+                    ValidateRegionUvs(
+                        manifest.texture_bindings[0],
+                        renderersByName);
+                }
+
+                if (descriptor.CarriesBoilingKettle)
+                {
+                    BuildKettleRig(
+                        prefabRoot,
+                        registry,
+                        head,
+                        renderersByName);
+                }
 
                 if (descriptor.CarriesFishingRig)
                 {
@@ -3495,6 +3942,254 @@ namespace BarPromenade.Editor
         }
 
         /// <summary>
+        /// The lid pivot, the spout anchor and the axes the boil effect
+        /// turns the lid about, measured once here in the bind pose off
+        /// the imported meshes. Every kettle part is rigidly skinned to
+        /// the head and the rig is locked at thirty-one bones, so the lid
+        /// gets no bone of its own: an empty with the head's exact frame
+        /// is put under the head and the lid's and knob's one bone
+        /// reference is repointed at it. At rest the mesh is byte for
+        /// byte what it was; the runtime rotates the pivot about the
+        /// lid's centre, which is why that centre is stored head-local.
+        ///
+        /// The axes are never taken from world forward or right — the
+        /// prefab's Model child is turned 180 degrees about Y — but from
+        /// the kettle itself: up the kettle from body to lid, and across
+        /// and along the spout.
+        /// </summary>
+        private static void BuildKettleRig(
+            GameObject prefabRoot,
+            CityPedestrianAssetRegistry registry,
+            Transform head,
+            Dictionary<string, Renderer> renderersByName)
+        {
+            Renderer lidRenderer = RequireRenderer(
+                renderersByName,
+                CityKettleHatRigAnchors.LidRendererName);
+            Renderer knobRenderer = RequireRenderer(
+                renderersByName,
+                CityKettleHatRigAnchors.KnobRendererName);
+            Renderer bodyRenderer = RequireRenderer(
+                renderersByName,
+                CityKettleHatRigAnchors.KettleBodyRendererName);
+            Renderer spoutRenderer = RequireRenderer(
+                renderersByName,
+                CityKettleHatRigAnchors.SpoutRendererName);
+            Renderer spoutTipRenderer = RequireRenderer(
+                renderersByName,
+                CityKettleHatRigAnchors.SpoutTipRendererName);
+
+            Transform lidPivot = CreateBonePivot(
+                head,
+                CityKettleHatRigAnchors.LidAnchorName);
+            RepointSkinnedBone(lidRenderer, head, lidPivot);
+            RepointSkinnedBone(knobRenderer, head, lidPivot);
+
+            Vector3 lidCentreWorld = BindPoseCenter(lidRenderer);
+            Vector3 bodyCentreWorld = BindPoseCenter(bodyRenderer);
+            Vector3 spoutBaseWorld = BindPoseCenter(spoutRenderer);
+            Vector3 spoutTipWorld = BindPoseFarthestPoint(
+                spoutTipRenderer,
+                head.position);
+
+            Vector3 kettleAxisWorld = lidCentreWorld - bodyCentreWorld;
+            Vector3 spoutDirectionWorld = spoutTipWorld - spoutBaseWorld;
+            if (kettleAxisWorld.sqrMagnitude <
+                    KettleAxisTolerance * KettleAxisTolerance ||
+                spoutDirectionWorld.sqrMagnitude <
+                    KettleAxisTolerance * KettleAxisTolerance)
+            {
+                throw new InvalidOperationException(
+                    "The kettle's lid sits on its body or its spout tip " +
+                    "sits on its spout; neither axis can be measured.");
+            }
+
+            kettleAxisWorld.Normalize();
+            spoutDirectionWorld.Normalize();
+            Vector3 tiltAxisAWorld =
+                Vector3.Cross(kettleAxisWorld, spoutDirectionWorld);
+            if (tiltAxisAWorld.sqrMagnitude <
+                KettleAxisTolerance * KettleAxisTolerance)
+            {
+                throw new InvalidOperationException(
+                    "The kettle's spout runs along its own axis; the lid " +
+                    "has no tilt axis across it.");
+            }
+
+            tiltAxisAWorld.Normalize();
+            Vector3 tiltAxisBWorld =
+                Vector3.Cross(kettleAxisWorld, tiltAxisAWorld).normalized;
+
+            Transform spoutAnchor = CreateBoneAnchor(
+                head,
+                CityKettleHatRigAnchors.SpoutAnchorName,
+                spoutTipWorld);
+            spoutAnchor.rotation = Quaternion.LookRotation(
+                spoutDirectionWorld,
+                Vector3.up);
+
+            prefabRoot
+                .AddComponent<CityKettleHatRigAnchors>()
+                .Configure(
+                    registry,
+                    lidPivot,
+                    spoutAnchor,
+                    lidRenderer,
+                    knobRenderer,
+                    head.InverseTransformPoint(lidCentreWorld),
+                    head.InverseTransformDirection(kettleAxisWorld),
+                    head.InverseTransformDirection(tiltAxisAWorld),
+                    head.InverseTransformDirection(tiltAxisBWorld),
+                    Vector3.Distance(spoutTipWorld, head.position));
+        }
+
+        /// <summary>
+        /// An empty under a bone with the bone's exact frame, for a
+        /// skinned part to be re-bound to. The explicit zero, identity and
+        /// one are the whole point: the part's bind pose was computed
+        /// against the bone, and the pivot only stands in for it while
+        /// its local transform is exactly nothing.
+        /// </summary>
+        private static Transform CreateBonePivot(
+            Transform bone,
+            string pivotName)
+        {
+            var pivot = new GameObject(pivotName).transform;
+            pivot.SetParent(bone, false);
+            pivot.localPosition = Vector3.zero;
+            pivot.localRotation = Quaternion.identity;
+            pivot.localScale = Vector3.one;
+            return pivot;
+        }
+
+        /// <summary>
+        /// Replaces the one entry in a skinned renderer's bone array that
+        /// references <paramref name="bone"/> with <paramref name="pivot"/>,
+        /// leaving the bind poses untouched. Blender writes a cluster for
+        /// every bone whether or not it deforms the part, so the bone is
+        /// found by reference rather than assumed at any index, and the
+        /// part is required to reference it exactly once.
+        /// </summary>
+        private static void RepointSkinnedBone(
+            Renderer renderer,
+            Transform bone,
+            Transform pivot)
+        {
+            if (!(renderer is SkinnedMeshRenderer skinned))
+            {
+                throw new InvalidOperationException(
+                    $"'{renderer.name}' must be a SkinnedMeshRenderer to " +
+                    "be re-bound to a pivot.");
+            }
+
+            Transform[] bones = skinned.bones;
+            int hitIndex = -1;
+            int hits = 0;
+            for (int index = 0; index < bones.Length; index++)
+            {
+                if (bones[index] == bone)
+                {
+                    hitIndex = index;
+                    hits++;
+                }
+            }
+
+            if (hits != 1)
+            {
+                throw new InvalidOperationException(
+                    $"'{renderer.name}' references bone '{bone.name}' " +
+                    $"{hits} times; exactly one entry can be repointed.");
+            }
+
+            bones[hitIndex] = pivot;
+            skinned.bones = bones;
+        }
+
+        /// <summary>
+        /// Every atlas region's renderer must carry UV0 that stays inside
+        /// its inset sub-rectangle. Ported from the Hero V2 clothing
+        /// contract: a single vertex outside the cell samples a
+        /// neighbour's pixels and reads as a smear on the wrong part.
+        /// </summary>
+        private static void ValidateRegionUvs(
+            CityPedestrianManifestTextureBinding binding,
+            IReadOnlyDictionary<string, Renderer> renderers)
+        {
+            for (int regionIndex = 0;
+                 regionIndex < binding.regions.Length;
+                 regionIndex++)
+            {
+                CityPedestrianManifestTextureRegion region =
+                    binding.regions[regionIndex];
+                if (!renderers.TryGetValue(
+                        region.renderer,
+                        out Renderer renderer))
+                {
+                    throw new InvalidOperationException(
+                        $"Detail atlas region '{region.name}' references " +
+                        $"missing renderer '{region.renderer}'.");
+                }
+
+                Mesh mesh = GetRendererMesh(renderer);
+                if (mesh == null)
+                {
+                    throw new InvalidOperationException(
+                        $"Textured renderer '{region.renderer}' has no mesh.");
+                }
+
+                Vector2[] uv = mesh.uv;
+                if (uv == null ||
+                    uv.Length != mesh.vertexCount ||
+                    uv.Length == 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Textured renderer '{region.renderer}' must have " +
+                        "UV0.");
+                }
+
+                Vector2 minimum = new Vector2(
+                    (float)(region.x_px + binding.uv_safe_inset_px) /
+                    binding.width_px,
+                    (float)(region.y_px + binding.uv_safe_inset_px) /
+                    binding.height_px);
+                Vector2 maximum = new Vector2(
+                    (float)(region.x_px + region.width_px -
+                            binding.uv_safe_inset_px) /
+                    binding.width_px,
+                    (float)(region.y_px + region.height_px -
+                            binding.uv_safe_inset_px) /
+                    binding.height_px);
+                Vector2 observedMinimum = uv[0];
+                Vector2 observedMaximum = uv[0];
+                for (int uvIndex = 0; uvIndex < uv.Length; uvIndex++)
+                {
+                    Vector2 point = uv[uvIndex];
+                    if (point.x < minimum.x - UvTolerance ||
+                        point.x > maximum.x + UvTolerance ||
+                        point.y < minimum.y - UvTolerance ||
+                        point.y > maximum.y + UvTolerance)
+                    {
+                        throw new InvalidOperationException(
+                            $"Renderer '{region.renderer}' " +
+                            $"UV0[{uvIndex}]={point} lies outside region " +
+                            $"'{region.name}' {minimum}..{maximum}.");
+                    }
+
+                    observedMinimum = Vector2.Min(observedMinimum, point);
+                    observedMaximum = Vector2.Max(observedMaximum, point);
+                }
+
+                if (observedMaximum.x - observedMinimum.x <= UvTolerance ||
+                    observedMaximum.y - observedMinimum.y <= UvTolerance)
+                {
+                    throw new InvalidOperationException(
+                        $"Renderer '{region.renderer}' has degenerate " +
+                        "atlas UV0.");
+                }
+            }
+        }
+
+        /// <summary>
         /// Parents an empty anchor to a bone at a measured world point.
         /// The anchor then travels with that bone for free, which is the
         /// entire reason it exists.
@@ -3716,6 +4411,258 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     $"The rod tip anchor sits {reach:0.###} m from the " +
                     "hand; it must be at the point of the rod.");
+            }
+        }
+
+        /// <summary>
+        /// A kettle design owes its lid pivot and spout anchor on the
+        /// head, with the lid and knob re-bound to the pivot and nobody
+        /// else, and nobody else may carry the component. The pivot's
+        /// rest is checked in world metres because the runtime effect
+        /// assumes the pivot IS the head at rest: a pivot that saved a
+        /// hair off the bone would draw the lid a hair off the kettle in
+        /// every frame the effect is not running.
+        /// </summary>
+        private static void ValidateKettleRigBindings(
+            GameObject prefab,
+            CityPedestrianAssetRegistry registry,
+            PedestrianDescriptor descriptor)
+        {
+            CityKettleHatRigAnchors anchors =
+                prefab.GetComponentInChildren<CityKettleHatRigAnchors>(true);
+            if (!descriptor.CarriesBoilingKettle)
+            {
+                if (anchors != null)
+                {
+                    throw new InvalidOperationException(
+                        $"'{descriptor.DisplayName}' declares no boiling " +
+                        "kettle but its prefab carries kettle anchor " +
+                        "metadata.");
+                }
+
+                return;
+            }
+
+            if (anchors == null ||
+                anchors.PedestrianRegistry != registry ||
+                anchors.LidPivot == null ||
+                anchors.SpoutAnchor == null ||
+                anchors.LidRenderer == null ||
+                anchors.KnobRenderer == null)
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' must bind its lid pivot, " +
+                    "spout anchor and lid and knob renderers.");
+            }
+
+            Transform head = registry.HeadAnchor;
+            if (anchors.LidPivot.parent != head ||
+                anchors.SpoutAnchor.parent != head ||
+                !string.Equals(
+                    head.name,
+                    HeadBoneName,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The kettle's lid pivot and spout anchor must both " +
+                    "ride the head bone.");
+            }
+
+            if (!string.Equals(
+                    anchors.LidPivot.name,
+                    CityKettleHatRigAnchors.LidAnchorName,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    anchors.SpoutAnchor.name,
+                    CityKettleHatRigAnchors.SpoutAnchorName,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    anchors.LidRenderer.name,
+                    CityKettleHatRigAnchors.LidRendererName,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    anchors.KnobRenderer.name,
+                    CityKettleHatRigAnchors.KnobRendererName,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "The kettle's anchors and renderers are bound under " +
+                    "the wrong names.");
+            }
+
+            if (Vector3.Distance(anchors.LidPivot.position, head.position) >
+                    KettlePivotRestPositionTolerance ||
+                Quaternion.Angle(anchors.LidPivot.rotation, head.rotation) >
+                    KettlePivotRestAngleTolerance ||
+                Vector3.Distance(anchors.LidPivot.localScale, Vector3.one) >
+                    KettlePivotRestPositionTolerance)
+            {
+                throw new InvalidOperationException(
+                    "The kettle's lid pivot must rest exactly on the head " +
+                    "bone's frame.");
+            }
+
+            ValidatePivotSkinning(anchors.LidRenderer, head, anchors.LidPivot);
+            ValidatePivotSkinning(anchors.KnobRenderer, head, anchors.LidPivot);
+            for (int index = 0; index < registry.Renderers.Count; index++)
+            {
+                Renderer renderer = registry.Renderers[index];
+                if (renderer == anchors.LidRenderer ||
+                    renderer == anchors.KnobRenderer ||
+                    !(renderer is SkinnedMeshRenderer skinned))
+                {
+                    continue;
+                }
+
+                if (skinned.bones.Contains(anchors.LidPivot))
+                {
+                    throw new InvalidOperationException(
+                        $"'{renderer.name}' is skinned to the lid pivot; " +
+                        "only the lid and its knob may move with it.");
+                }
+            }
+
+            float reach = Vector3.Distance(
+                anchors.SpoutAnchor.position,
+                head.position);
+            if (reach < KettleSpoutReachMinimumMetres ||
+                reach > KettleSpoutReachMaximumMetres ||
+                Mathf.Abs(reach - anchors.SpoutReachMetres) >
+                    KettlePivotRestPositionTolerance)
+            {
+                throw new InvalidOperationException(
+                    $"The spout anchor sits {reach:0.###} m from the head " +
+                    $"(recorded {anchors.SpoutReachMetres:0.###}); it must " +
+                    "be at the mouth of the spout, between " +
+                    $"{KettleSpoutReachMinimumMetres} and " +
+                    $"{KettleSpoutReachMaximumMetres} m.");
+            }
+
+            Vector3 axisK = anchors.KettleAxisLocal;
+            Vector3 axisA = anchors.LidTiltAxisALocal;
+            Vector3 axisB = anchors.LidTiltAxisBLocal;
+            if (Mathf.Abs(axisK.magnitude - 1f) > KettleAxisTolerance ||
+                Mathf.Abs(axisA.magnitude - 1f) > KettleAxisTolerance ||
+                Mathf.Abs(axisB.magnitude - 1f) > KettleAxisTolerance ||
+                Mathf.Abs(Vector3.Dot(axisK, axisA)) > KettleAxisTolerance ||
+                Mathf.Abs(Vector3.Dot(axisK, axisB)) > KettleAxisTolerance ||
+                Mathf.Abs(Vector3.Dot(axisA, axisB)) > KettleAxisTolerance)
+            {
+                throw new InvalidOperationException(
+                    "The kettle's axis and two lid tilt axes must be unit " +
+                    "length and mutually orthogonal.");
+            }
+        }
+
+        /// <summary>
+        /// The lid and the knob reference the pivot exactly once and the
+        /// head not at all — the whole re-binding — and their bind poses
+        /// still line up with their bones, because the repoint changed
+        /// references and nothing else.
+        /// </summary>
+        private static void ValidatePivotSkinning(
+            Renderer renderer,
+            Transform head,
+            Transform pivot)
+        {
+            if (!(renderer is SkinnedMeshRenderer skinned))
+            {
+                throw new InvalidOperationException(
+                    $"'{renderer.name}' must be a SkinnedMeshRenderer.");
+            }
+
+            Transform[] bones = skinned.bones;
+            Mesh mesh = skinned.sharedMesh;
+            if (mesh == null || mesh.bindposes.Length != bones.Length)
+            {
+                throw new InvalidOperationException(
+                    $"'{renderer.name}' bind poses no longer match its " +
+                    "bone array.");
+            }
+
+            int pivotHits = 0;
+            int headHits = 0;
+            for (int index = 0; index < bones.Length; index++)
+            {
+                if (bones[index] == pivot)
+                {
+                    pivotHits++;
+                }
+                else if (bones[index] == head)
+                {
+                    headHits++;
+                }
+            }
+
+            if (pivotHits != 1 || headHits != 0)
+            {
+                throw new InvalidOperationException(
+                    $"'{renderer.name}' must be skinned to the lid pivot " +
+                    $"exactly once and never to the head; found " +
+                    $"{pivotHits} pivot and {headHits} head references.");
+            }
+        }
+
+        /// <summary>
+        /// A design with a detail atlas owes the registry that texture at
+        /// the declared size, and exactly the regions' renderers may
+        /// sample it; a design without one owes nothing. The material is
+        /// not checked here because it is checked where it always was:
+        /// the atlas travels in the property block, and every renderer
+        /// still shares Player3DLit.
+        /// </summary>
+        private static void ValidateDetailAtlasBindings(
+            CityPedestrianAssetRegistry registry,
+            PedestrianDescriptor descriptor,
+            CityPedestrianManifest manifest)
+        {
+            if (!descriptor.HasDetailAtlas)
+            {
+                if (registry.DetailAtlas != null ||
+                    registry.RendererBindings.Any(binding =>
+                        binding != null && binding.UsesDetailAtlas))
+                {
+                    throw new InvalidOperationException(
+                        $"'{descriptor.DisplayName}' declares no detail " +
+                        "atlas but its registry binds one.");
+                }
+
+                return;
+            }
+
+            Texture2D atlas = registry.DetailAtlas;
+            if (atlas == null ||
+                atlas.width != DetailAtlasWidth ||
+                atlas.height != DetailAtlasHeight ||
+                !string.Equals(
+                    AssetDatabase.GetAssetPath(atlas),
+                    descriptor.DetailAtlasPath,
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DisplayName}' registry must hold the " +
+                    $"{DetailAtlasWidth}x{DetailAtlasHeight} detail atlas " +
+                    $"at '{descriptor.DetailAtlasPath}'.");
+            }
+
+            HashSet<string> texturedRenderers = new HashSet<string>(
+                manifest.texture_bindings[0].regions
+                    .Select(region => region.renderer),
+                StringComparer.Ordinal);
+            for (int index = 0; index < registry.RendererBindings.Count; index++)
+            {
+                CityPedestrianRendererBinding binding =
+                    registry.RendererBindings[index];
+                if (binding == null ||
+                    binding.UsesDetailAtlas !=
+                    texturedRenderers.Contains(binding.RendererName))
+                {
+                    throw new InvalidOperationException(
+                        $"'{descriptor.DisplayName}' renderer " +
+                        $"'{binding?.RendererName}' samples the detail " +
+                        "atlas without an atlas region, or has a region " +
+                        "and does not sample it.");
+                }
             }
         }
 
@@ -4215,6 +5162,13 @@ namespace BarPromenade.Editor
             public string build_signature;
             public CityPedestrianManifestBone[] bones;
             public CityPedestrianManifestPart[] parts;
+
+            // Written only by designs that declare them; JsonUtility
+            // leaves each null on every other manifest, and null is read
+            // as empty everywhere they are consumed.
+            public string[] signature_effects;
+            public CityPedestrianManifestRigAnchor[] rig_anchors;
+            public CityPedestrianManifestTextureBinding[] texture_bindings;
         }
 
         [Serializable]
@@ -4232,6 +5186,55 @@ namespace BarPromenade.Editor
             public string bone;
             public string palette_name;
             public float[] base_color;
+
+            /// <summary>
+            /// The detail atlas region this part's UV0 is authored into,
+            /// or null/empty for a flat-colour part.
+            /// </summary>
+            public string atlas_region;
+        }
+
+        [Serializable]
+        private sealed class CityPedestrianManifestRigAnchor
+        {
+            public string name;
+            public string bone;
+            public string kind;
+            public string[] parts;
+            public string axis_from;
+        }
+
+        [Serializable]
+        private sealed class CityPedestrianManifestTextureBinding
+        {
+            public string texture_asset;
+            public int width_px;
+            public int height_px;
+            public string[] materials;
+            public string shader_property;
+            public string color_space;
+            public string filter_mode;
+            public string wrap_mode;
+            public bool mipmaps;
+            public string compression;
+            public int uv_channel;
+            public string uv_origin;
+            public int uv_safe_inset_px;
+            public string material_tint_hex;
+            public string tint_source;
+            public string sha256;
+            public CityPedestrianManifestTextureRegion[] regions;
+        }
+
+        [Serializable]
+        private sealed class CityPedestrianManifestTextureRegion
+        {
+            public string name;
+            public string renderer;
+            public int x_px;
+            public int y_px;
+            public int width_px;
+            public int height_px;
         }
 
         private sealed class PedestrianDescriptor
@@ -4260,8 +5263,12 @@ namespace BarPromenade.Editor
                 float actionDuration = 0f,
                 bool carriesCoinRig = false,
                 string dismountClipName = null,
-                float dismountDuration = 0f)
+                float dismountDuration = 0f,
+                bool carriesBoilingKettle = false,
+                string detailAtlasPath = null)
             {
+                CarriesBoilingKettle = carriesBoilingKettle;
+                DetailAtlasPath = detailAtlasPath;
                 DismountClipName = dismountClipName;
                 DismountDuration = dismountDuration;
                 IsStaged = isStaged;
@@ -4378,6 +5385,24 @@ namespace BarPromenade.Editor
             /// its own for the runtime to hang anything off.
             /// </summary>
             public bool CarriesCoinRig { get; }
+
+            /// <summary>
+            /// Declares the always-on boiling kettle: a lid pivot under
+            /// the head that the lid and knob are re-skinned to, and a
+            /// spout-mouth anchor for the steam. The runtime factory
+            /// builds the effect only from a prefab that carries these,
+            /// so a design that wants to boil has to say so here.
+            /// </summary>
+            public bool CarriesBoilingKettle { get; }
+
+            /// <summary>
+            /// The design's detail atlas, or <c>null</c> for a flat-colour
+            /// design. Light greys multiplied by the palette tint through
+            /// the registry's property block; never a material.
+            /// </summary>
+            public string DetailAtlasPath { get; }
+            public bool HasDetailAtlas =>
+                !string.IsNullOrEmpty(DetailAtlasPath);
 
             public int ExpectedLightCount => CarriesHeadLamp ? 1 : 0;
             public float Height => ExpectedHeight;

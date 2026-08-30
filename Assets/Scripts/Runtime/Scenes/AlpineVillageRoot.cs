@@ -80,6 +80,26 @@ namespace BarPromenade
         /// </summary>
         public float WarmthGrade { get; private set; }
 
+        /// <summary>
+        /// How far the gale has closed the haze this frame, `0` the base
+        /// density and `1` the storm peak. Smoothed from
+        /// <see cref="StormWaveTarget"/> on `Time.deltaTime`.
+        ///
+        /// It is keyed on the RAW shared gust rhythm and not on the shaped
+        /// gale pulse the spindrift reads, because the shaped strength
+        /// saturates: in a thunderstorm slot the pulse's trough is `0.72` at
+        /// the lane foot and pinned at `1` at the head for the whole ninety
+        /// minutes, and a wave on it would close the lane and never reopen
+        /// it. On the raw rhythm the trough returns to the base by
+        /// construction, so the top house comes back every cycle.
+        /// </summary>
+        public float StormWave { get; private set; }
+
+        /// <summary>Where the wave is heading: the raw gust through
+        /// <see cref="AlpineVillageStormFieldRules.EvaluateStormWaveTarget"/>.
+        /// </summary>
+        public float StormWaveTarget { get; private set; }
+
         private Camera areaCamera;
         private int appliedAtmosphereDay = int.MinValue;
         private int appliedAtmosphereMinute = int.MinValue;
@@ -199,6 +219,7 @@ namespace BarPromenade
             BuildCableway();
             BuildCommonUi(ui);
             ApplyCurrentAtmosphere(true);
+            ApplyVisibility();
             IsInitialized = true;
 
             timer.Stop();
@@ -224,8 +245,15 @@ namespace BarPromenade
             WarmthGrade = Mathf.Clamp01(grade);
             Soundscape?.SetWarmthGrade(WarmthGrade);
             ApplyCurrentAtmosphere(true);
+            ApplyVisibility();
         }
 
+        /// <summary>
+        /// The per-minute half of the atmosphere: lighting and the warmth
+        /// presentation. Visibility is NOT here any more - it moves every
+        /// frame with the storm wave and has its own writer,
+        /// <see cref="ApplyVisibility"/>.
+        /// </summary>
         private void ApplyCurrentAtmosphere(bool force = false)
         {
             if (areaCamera == null)
@@ -242,9 +270,6 @@ namespace BarPromenade
                 return;
             }
 
-            RuntimeSceneSetup.ApplyAlpineVillageVisibility(
-                areaCamera,
-                WarmthGrade);
             RuntimeSceneSetup.ApplyAlpineVillageLighting(
                 GameTimeDayNightRules.Evaluate(
                     GameSessionState.GameTimeOfDayMinutes),
@@ -253,6 +278,29 @@ namespace BarPromenade
             ApplyVillageWarmthPresentation();
             appliedAtmosphereDay = day;
             appliedAtmosphereMinute = minute;
+        }
+
+        /// <summary>
+        /// The one writer of the village's fog, background, far plane and
+        /// the wall's own haze term, every frame. The wall is told what was
+        /// just written to `RenderSettings` rather than re-deriving it, so
+        /// the two can never disagree by a frame; and this stays on while
+        /// the hero rides - the ride's fade covers whatever the wave does.
+        /// </summary>
+        private void ApplyVisibility()
+        {
+            if (areaCamera == null)
+            {
+                return;
+            }
+
+            RuntimeSceneSetup.ApplyAlpineVillageVisibility(
+                areaCamera,
+                WarmthGrade,
+                StormWave);
+            AlpineVillageRidgeAppearance.SetHaze(
+                RenderSettings.fogColor,
+                RenderSettings.fogDensity);
         }
 
         /// <summary>
@@ -317,6 +365,11 @@ namespace BarPromenade
                 }
             }
 
+            // The ground carries two submeshes: the floor at index 0 and the
+            // enclosing rise at index 1. Only the floor dirties as the place
+            // goes out - a wall of snow in its own shadow does not - and a
+            // renderer-wide block would leak this tint onto the rise, so
+            // the write is indexed.
             Renderer terrain = World.TerrainRoot.GetComponent<Renderer>();
             if (terrain != null)
             {
@@ -325,7 +378,8 @@ namespace BarPromenade
                     Color.Lerp(
                         Color.white,
                         new Color(0.72f, 0.68f, 0.60f, 1f),
-                        WarmthGrade * 0.55f));
+                        WarmthGrade * 0.55f),
+                    AlpineVillageWorldBuilder.TerrainFloorMaterialIndex);
             }
 
             Light[] lights = World.Root.GetComponentsInChildren<Light>(true);
@@ -426,6 +480,22 @@ namespace BarPromenade
             renderer.SetPropertyBlock(warmthProperties);
         }
 
+        /// <summary>
+        /// The same write, into one submesh's own block. A renderer-wide
+        /// block would sit under every slot's block and tint them all.
+        /// </summary>
+        private void ApplyWarmthColor(
+            Renderer renderer,
+            Color color,
+            int materialIndex)
+        {
+            warmthProperties.Clear();
+            renderer.GetPropertyBlock(warmthProperties, materialIndex);
+            warmthProperties.SetColor("_BaseColor", color);
+            warmthProperties.SetColor("_Color", color);
+            renderer.SetPropertyBlock(warmthProperties, materialIndex);
+        }
+
         private static Color ScaleRgb(Color color, float power)
         {
             return new Color(
@@ -450,10 +520,24 @@ namespace BarPromenade
 
         private void Update()
         {
-            if (IsInitialized)
+            if (!IsInitialized)
             {
-                ApplyCurrentAtmosphere();
+                return;
             }
+
+            // The wave first, on the same delta the game clock advanced on
+            // this frame, so a pause freezes the rhythm and the haze
+            // together; then the per-minute pass; then the one visibility
+            // write that both feed.
+            StormWaveTarget = AlpineVillageStormFieldRules
+                .EvaluateStormWaveTarget(
+                    GameWeatherRules.EvaluateCurrentGust());
+            StormWave = AlpineVillageStormFieldRules.AdvanceStormWave(
+                StormWave,
+                StormWaveTarget,
+                Time.deltaTime);
+            ApplyCurrentAtmosphere();
+            ApplyVisibility();
         }
 
         /// <summary>

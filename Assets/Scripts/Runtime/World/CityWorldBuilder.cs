@@ -1006,15 +1006,31 @@ namespace BarPromenade
                 return;
             }
 
-            CitySpecialBuildingWorldBuilder.BuildCity(
-                building,
-                lot,
-                citySeed,
-                foundationDepth);
-            BuildWindowBands(building, lot, citySeed);
+            if (lot.IsSupermarket)
+            {
+                CitySpecialBuildingWorldBuilder
+                    .BuildSupermarketCityInfrastructure(
+                        building,
+                        lot,
+                        foundationDepth);
+                BuildSupermarketFront(
+                    building,
+                    lot,
+                    walkableArea,
+                    ref supermarket);
+                return;
+            }
 
             if (lot.IsPlayerHome)
             {
+                CitySpecialBuildingWorldBuilder
+                    .BuildPlayerHomeCityInfrastructure(
+                        building,
+                        lot,
+                        foundationDepth);
+                CityPlayerHomeExteriorWorldBuilder.BuildCity(
+                    building,
+                    lot);
                 BuildHomeFront(
                     building,
                     lot,
@@ -1024,15 +1040,12 @@ namespace BarPromenade
                 return;
             }
 
-            if (lot.IsSupermarket)
-            {
-                BuildSupermarketFront(
-                    building,
-                    lot,
-                    walkableArea,
-                    ref supermarket);
-                return;
-            }
+            CitySpecialBuildingWorldBuilder.BuildCity(
+                building,
+                lot,
+                citySeed,
+                foundationDepth);
+            BuildWindowBands(building, lot, citySeed);
 
         }
 
@@ -1450,29 +1463,6 @@ namespace BarPromenade
                 new Vector3(-direction.z, 0f, direction.x);
             bool frontageIsX =
                 Mathf.Abs(direction.x) > 0.5f;
-            Vector3 doorSize = frontageIsX
-                ? new Vector3(0.12f, 2.15f, 1.35f)
-                : new Vector3(1.35f, 2.15f, 0.12f);
-
-            BuildHomeBalconyFacade(
-                parent,
-                lot,
-                emissiveMaterial);
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Door",
-                parent,
-                lot.DoorPosition +
-                (direction * 0.045f) +
-                (Vector3.up * 1.075f),
-                doorSize,
-                HomeDoor,
-                false);
-            BuildHomeDoorFrame(
-                parent,
-                lot.DoorPosition,
-                direction,
-                tangent);
-
             Vector3 apronCenter =
                 (lot.DoorPosition + lot.SidewalkArrivalPosition) * 0.5f;
             float apronLength = Vector3.Distance(
@@ -1528,29 +1518,6 @@ namespace BarPromenade
                 parent,
                 mailboxBase,
                 frontageIsX);
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Roof Accent",
-                parent,
-                lot.Center +
-                (Vector3.up * (lot.Height + 0.48f)),
-                new Vector3(
-                    lot.Size.x + 0.75f,
-                    0.38f,
-                    lot.Size.y + 0.75f),
-                HomeDoor,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Chimney",
-                parent,
-                lot.Center +
-                new Vector3(
-                    -lot.Size.x * 0.28f,
-                    lot.Height + 1.05f,
-                    lot.Size.y * 0.20f),
-                new Vector3(0.68f, 1.55f, 0.68f),
-                new Color(0.24f, 0.19f, 0.17f),
-                false);
-
             BuildHomeAnchor(
                 parent,
                 lot,
@@ -1612,17 +1579,6 @@ namespace BarPromenade
             bool frontageIsX,
             Material emissiveMaterial)
         {
-            RuntimePrimitiveFactory.CreateBox(
-                "Home Entrance Canopy",
-                parent,
-                lot.DoorPosition +
-                (direction * 0.44f) +
-                (Vector3.up * 2.46f),
-                frontageIsX
-                    ? new Vector3(0.85f, 0.10f, 2.05f)
-                    : new Vector3(2.05f, 0.10f, 0.85f),
-                HomeTrim,
-                false);
             RuntimePrimitiveFactory.CreateBox(
                 "Home Entrance Lamp Housing",
                 parent,

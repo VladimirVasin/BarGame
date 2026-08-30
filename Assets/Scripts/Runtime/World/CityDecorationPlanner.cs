@@ -113,6 +113,12 @@ namespace BarPromenade
                 nightPlan,
                 descriptors,
                 occupiedGroundPositions);
+            CityCourtyardPocketPlanner.Append(
+                layout,
+                fencePlan,
+                nightPlan,
+                descriptors,
+                occupiedGroundPositions);
             AddParkFeatures(
                 layout,
                 fencePlan,
@@ -200,6 +206,25 @@ namespace BarPromenade
                 CityDecorationKind kind = ResolveCoreKind(
                     lot.District,
                     (kindHash & 1u) != 0u);
+                if (layout.TryGetPrimaryLandmarkCell(
+                        lot.District,
+                        out Vector2Int landmarkCell) &&
+                    landmarkCell == lot.Cell)
+                {
+                    CityDecorationAnchorKind landmarkSurface =
+                        ResolveLandmarkSurfaceKind(lot.District);
+                    if (ResolveCoreAnchorKind(kind) == landmarkSurface)
+                    {
+                        // Keep the required core dressing on the surface the
+                        // landmark does not own. Nightlife's cinema is the
+                        // facade exception; the other three landmarks own
+                        // their prototype roofs.
+                        kind = landmarkSurface ==
+                            CityDecorationAnchorKind.BuildingRoof
+                                ? ResolveFacadeCoreKind(lot.District)
+                                : ResolveRoofCoreKind(lot.District);
+                    }
+                }
                 CityDecorationAnchorKind anchorKind =
                     ResolveCoreAnchorKind(kind);
                 Vector3 forward = CityBuildingPrototypePlacement
@@ -1293,6 +1318,56 @@ namespace BarPromenade
                     throw new InvalidOperationException(
                         $"Unsupported urban district '{district}'.");
             }
+        }
+
+        private static CityDecorationKind ResolveFacadeCoreKind(
+            CityDistrictKind district)
+        {
+            CityDecorationKind primary = ResolveCoreKind(district, false);
+            if (ResolveCoreAnchorKind(primary) ==
+                CityDecorationAnchorKind.BuildingFacade)
+            {
+                return primary;
+            }
+
+            CityDecorationKind alternate = ResolveCoreKind(district, true);
+            if (ResolveCoreAnchorKind(alternate) ==
+                CityDecorationAnchorKind.BuildingFacade)
+            {
+                return alternate;
+            }
+
+            throw new InvalidOperationException(
+                $"District '{district}' has no facade-safe core dressing.");
+        }
+
+        private static CityDecorationKind ResolveRoofCoreKind(
+            CityDistrictKind district)
+        {
+            CityDecorationKind primary = ResolveCoreKind(district, false);
+            if (ResolveCoreAnchorKind(primary) ==
+                CityDecorationAnchorKind.BuildingRoof)
+            {
+                return primary;
+            }
+
+            CityDecorationKind alternate = ResolveCoreKind(district, true);
+            if (ResolveCoreAnchorKind(alternate) ==
+                CityDecorationAnchorKind.BuildingRoof)
+            {
+                return alternate;
+            }
+
+            throw new InvalidOperationException(
+                $"District '{district}' has no roof-safe core dressing.");
+        }
+
+        private static CityDecorationAnchorKind ResolveLandmarkSurfaceKind(
+            CityDistrictKind district)
+        {
+            return district == CityDistrictKind.Nightlife
+                ? CityDecorationAnchorKind.BuildingFacade
+                : CityDecorationAnchorKind.BuildingRoof;
         }
 
         private static CityDecorationAnchorKind ResolveCoreAnchorKind(

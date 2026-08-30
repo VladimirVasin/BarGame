@@ -69,6 +69,47 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   contact patch are the active player presentation. A runtime-composed
   13-body companion ragdoll temporarily owns those same bones during failed
   balance falls; no alternate hero or renderer swap is used.
+- **Accepted — The Kettle Hat boil is a declared per-archetype effect, not a
+  clip and not a bone:** the kettle walker's lid trembles and vents and his
+  spout steams in every state — idle, walk, bench, Route 01 ride, balcony
+  view — because the boil belongs to the kettle, not to the gait. It is
+  declared three times and must agree: `carriesBoilingKettle` on the
+  `CityPedestrianArchetype`, on the editor `PedestrianDescriptor`, and
+  `signature_effects: ["boiling_kettle"]` in the model manifest; the factory
+  refuses a prefab whose `CityKettleHatRigAnchors` disagree with its catalog
+  entry. The rig stays the exact 31-bone Hero V2 hierarchy: the prefab build
+  creates an identity-frame `ANCHOR_KettleLid` under the head bone and
+  re-points the one `head` entry in the lid's and knob's
+  `SkinnedMeshRenderer.bones` at it (bind poses untouched, found by reference,
+  exactly one hit), measures the lid centre, kettle axis and two tilt axes in
+  the bind pose and stores them head-local, and drops `ANCHOR_KettleSpout` at
+  the measured mouth of the spout — the fisherman's bind-pose-anchor idiom, so
+  no gameplay code re-derives the FBX axis swap or the prefab's 180° flip. A
+  pure `KettleBoilModel` (seeded phase, `2.2-3.1 s` LCG vent period, lift
+  `14 mm` / tilt `5.5°` at the vent, `3 mm` / `1.2°` tremble between) is
+  fed the presentation's own sanitised, distance-accelerated delta through
+  `CityPedestrianPresentation.Advanced`, and `CityKettleHatBoilEffect`
+  (attached by the factory, never authored, guarded by `IsInitialized`
+  because it lands on a live object that is deactivated a moment later)
+  writes the pivot as `localRotation = R`, `localPosition = c − R·c +
+  InverseTransformVector(lift)` — one metre is `0.01` head-local units under
+  the 100x root, so no metric constant ever touches a bone child's
+  `localPosition` — and drives a code-built steam ParticleSystem on the shared
+  atmosphere material with no Light and no sound. Unlike the fisherman's
+  plume the steam is `AlwaysSimulate`, because a pooled walker moves while
+  culled and a paused plume would be left standing in the street; it runs in
+  world space and switches to local space with a lower, shorter rise while
+  the walker is seated or aboard the bus, so it rides the cabin instead of
+  streaming out of its roof. The walker is also the first pedestrian with a
+  texture: a `256 px` grey detail atlas whose UVs are authored straight into
+  its sub-rectangles, bound per renderer through the same property block as
+  the palette tint and multiplied by it — so the one shared `Player3DLit`
+  material and its three "every renderer shares one material" gates are
+  untouched and all four palette variants survive one PNG. This inverts Hero
+  V2's clothing contract (full-colour atlas on its own material, white tint)
+  on purpose. The generator version stayed `4.0.0`: the new manifest keys are
+  emitted only by designs that declare them, so the other thirteen city
+  signatures are byte-identical.
 - **Accepted — NpcHumanV2 is the common adult anatomical substrate:** all
   `21` rigged humanoid NPC models (five pooled street archetypes, thirteen
   staged roles and bartender/cashier/bus-driver) copy the production Hero V2
@@ -160,6 +201,70 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   thunder, danger beat, supernatural sign or whiteout; warm lighting, the one
   uphill axis, the top house and the independent warmth/dimming grade remain
   readable and unchanged.
+- **Accepted architecture exception — 2026-08-30, explicit user request —
+  the village's haze breathes with the gale and the bowl walls loom:** This
+  SUPERSEDES the «or whiteout» and «remain readable and unchanged» clauses of
+  the 2026-08-29 entry above, and is recorded as a new level-`0` row in the
+  story bible's §6 registry with §12 / art-bible §10g amended to match. What
+  replaces them: the village's Exp2 haze is no longer a constant but a wave
+  keyed on the RAW shared gust rhythm (`GameWeatherRules.EvaluateGust`, the
+  same `0.62 + 0.24 sin + 0.14 sin` term `EvaluateWind` already multiplies
+  in, extracted so the wind stays bit-identical). The base density is
+  `0.017`, chosen against the canon viewpoint — the station pad stands
+  `StationSetback 7 m` behind the lane foot, so the mother's door is `7 + 82
+  + 2 = 91 m` away and `9 %` of it survives; the peak is `0.045`, at which
+  `41 m` is left at `3 %`, so at a gust crest the far half of the lane closes
+  for seconds and the top house vanishes. The wave target is
+  `SmoothStep(InverseLerp(0.66, 0.86, gust))` smoothed one-pole with a
+  `0.5 s` attack and `1.0 s` release on `Time.deltaTime` (the game clock
+  advances on the same delta, so a pause freezes rhythm and haze together);
+  the trough is guaranteed by construction, and the EditMode simulation pins
+  it: every `15 s` window reaches a wave `>= 0.85` AND `<= 0.12`, the lane is
+  closed (`wave > 0.5`) for `20-55 %` of the time, and at the RUNNING trough
+  the door keeps `>= 5 %` from the platform (about `6 %` in practice). The
+  dim end of the warmth grade multiplies the breathing density by `1.55` and
+  the product is clamped at the storm peak, so the prologue can never stack a
+  second whiteout on the gale's. One writer: `AlpineVillageRoot.Update`
+  advances the wave, runs the per-minute lighting pass, then calls
+  `ApplyVisibility()` every frame — `RuntimeSceneSetup.ApplyAlpineVillageVisibility(camera,
+  warmth, wave)` followed by `AlpineVillageRidgeAppearance.SetHaze(fogColor,
+  fogDensity)`, so Scenes hands World what Core just wrote and Core stays
+  free of World. The far plane drops `140 -> 110 m`: past the house's back
+  wall from the platform (`100 m`) with margin, so the landmark is only ever
+  cut by haze, never by the plane; the cableway's hidden-run bounds still
+  hold (`157 m` and `233 m` against `120`). **The walls loom:**
+  `TerrainMargin 30 -> 12` puts the ridge toe `18 m` outside the top house's
+  envelope, `RidgeRisePerMeter 1.15 -> 1.6` (`58°`) and `RidgeMaximumRise 34
+  -> 50` make the crest stand `31 m` past the toe — `39°` from the lane head,
+  `36°` from the platform toward the open side, `28-31°` sideways from
+  mid-lane. The lateral figure is limited by the hull being a world-axis AABB
+  around a village turned `19.9°`; an oriented (uphill/right) hull is the
+  recorded follow-up, not a looser number. The rise is the second submesh of
+  the one ground mesh (one `MeshCollider`, two materials): cells whose ridge
+  term is non-zero AND that stand outside the cableway cut's `19 m` outer
+  half-width wear `AlpineVillageRidgeAppearance`'s own material on
+  `Shaders/CityMountainPhysical` — the village's haze colour, the breathing
+  density, visibility floor `0.30` (the City's `0.10` has a painted shell
+  behind its rock; here the wall is the mass, and `0.12` photographed as a
+  shade on the haze), native fog `9/12 m`, dither handoff
+  `96/108 m` (beyond every crest the plan produces and inside the `110 m`
+  plane), the SAME `WindSnow` sheet as the floor at the SAME `_BaseMap_ST`
+  read back from the floor's block, tinted snow-shadow `(0.31, 0.35, 0.41)`
+  — while the valley bed and walls under the cable keep the floor material,
+  because the cabin passes them at a few metres. That shader has no
+  `ShadowCaster` pass: the rise casts no shadow while the floor still does,
+  recorded rather than "fixed" (a `50 m` wall can therefore never shade the
+  lane). The toe seam is buried the City's way: the ring of floor cells
+  touching the rise is emitted again into the rise submesh on duplicated
+  vertices lowered by `SeamBurial 0.08 m`, so the unsnapped rise lies under
+  the `Ps1Lit`-snapped floor edge and no hairline can open. Spindrift refuses
+  to be born where the ridge rise exceeds `2 m`. **What is NOT lifted:** no
+  silhouette layer, no panorama, no peaks in frame, no lightning or thunder,
+  no danger beat, no supernatural sign; the uphill axis and the nearest
+  houses' walls read at every point of the wave, and the house always comes
+  back. This stays inside the bounded-fog decision below (`Accepted — Bounded
+  local fog`): it is the per-area Exp2 haze behind the shared field that
+  breathes, not a second fog of the zone's own.
 - **Accepted architecture exception — 2026-08-27, explicit user request — one
   maintained Cemetery–Church connection:** The earlier art-bible rule that the
   two precincts have no direct connection is lifted only for one internal
@@ -779,7 +884,7 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   add one each, making the bounded worst case `18` local realtime lights; the
   scene Directional and transient lightning Directional are separate. The City
   map consumes the same immutable plan, simplifies its closed geometry, draws
-  a blue ink-outlined loop below the orange player itinerary and adds five
+  a pale neutral loop below the darker bone-toned player itinerary and adds five
   numbered localized stops in the default layout plus a compact legend. It
   deliberately has no live bus marker.
   The City-only passenger MVP uses three ordinary Default-layer trigger children
@@ -1593,20 +1698,23 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   outside this wave: the first already owns bespoke batched geometry and the
   other three have terrain, span or dynamic-renderer coupling.
 - **Accepted — City misc is one citywide role-mesh library, not world
-  prefabs:** current design `city_misc_citywide_v4` contains `72` semantic
-  kinds, `106` assemblies and `205` role meshes (`36,050` triangles) under build
+  prefabs:** current design `city_misc_citywide_v4` at generator `4.8.0`
+  contains `86` semantic kinds, `126` assemblies and `271` role meshes
+  (`48,926` triangles) under build
   signature
-  `64a77e3a537b3815d8cfa9a2d308995737c77c3ea17cbde79717d09dec7caf30`.
+  `45026a9b34c7d7390f5c70fdced3090cd27527a7d2c4f2bd09a4832461b256e1`.
   The provider resolves kind, stable variant and semantic role; the affected
   builders then place or combine those meshes from their existing plans. The
   catalog spans the 24-family decoration layer and parks, street lamps and
   traffic housings, Route 01 shelters/poles, the eastern yard, cemetery,
   seacoast, fringe service belt and the static shells of all four district
-  points of interest, plus the supermarket and player-home shells and the
+  points of interest, plus the compatibility bar, supermarket and player-home
+  shells, six shallow Residential courtyard-pocket variants, five typed-fringe
+  work scenes and the
   church-yard surface/planting kit and the modified cemetery north-fence
-  posts/rails. The former
-  `BarBuildingShell` remains addressable but unused so the v4 catalog and its
-  compatibility signature do not change under a separate bar-art milestone.
+  posts/rails. `BarBuildingShell`, `SupermarketBuildingShell` and
+  `PlayerHomeBuildingShell` remain addressable but unused, preserving their v4
+  compatibility while separate complete exteriors supersede them.
   Per-assembly roots and fixed metre-scale bounds are part of the manifest
   contract. The earlier wave-one and v2 subsets remain frozen
   by compatibility signatures
@@ -1617,14 +1725,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   cemetery monuments deliberately stay on the legacy builder because their
   non-rigid tilt is outside the rigid assembly-placement contract.
 
-  The supermarket and player-home assemblies expose `Shell_Masonry`,
-  `Roof_Street` and `Trim_Industrial` at source envelopes
-  `15.5 x 15.5 x 6.4 m` and `13 x 12 x 8.8 m`.
-  `CitySpecialBuildingWorldBuilder` applies only bounded envelope scale to the
-  generated special lot and aligns source `+Z` to its frontage. Unity retains
-  their shallow terrain skirt, renderer-free logical mass, windows, storefront
-  or balcony dressing, doors, triggers and transitions. Home maps the same pose
-  into apartment-local space and uses the shared Full/Crossing/Hidden policy.
+  The old player-home and supermarket three-role assemblies remain catalogued
+  for v4 compatibility but are superseded by the complete exterior decisions
+  below and are no longer instantiated.
 
 - **Accepted — The canonical bar is one complete fixed-metre pub exterior:**
   design `bar_exterior_v2` replaces both the City misc `BarBuildingShell` and
@@ -1656,22 +1759,102 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   silhouette only for a half-space crossing; imported topology is never cut or
   non-uniformly scaled. The v4 City misc bar shell remains catalogued but is not
   instantiated.
-- **Accepted — Ordinary buildings use fixed-metre district prototypes:**
-  design `city_buildings_prototypes_v1` is one deterministic,
+- **Accepted — The canonical supermarket is one complete original
+  neighbourhood-store exterior:** design `supermarket_exterior_v1` replaces
+  the City misc `SupermarketBuildingShell`, generic apartment window bands and
+  runtime-box storefront in City and every fully visible Home reconstruction.
+  The fixed-metre passive model keeps the canonical
+  `15.5 x 15.5 x 6.4 m` body, source/Unity `+Z` frontage and a centred
+  `exterior_door` anchor on the front edge. It owns dark brick piers and
+  plinth, rendered service walls, a recessed `1.9 m` double glass entrance,
+  four framed bays inside the unchanged `8.4 m` storefront, the unchanged
+  `9.2 m` canopy, integrated weathered cream/ochre/bottle-green/burgundy
+  fascia, authored `ПРОДУКТЫ` lettering, a modest two-sided blade sign,
+  rear service door/louvres/downpipes, parapet, membrane roof and low roof
+  plant. The 7-Eleven photograph is a massing/storefront reference only: the
+  model contains no copied logo, digit `7`, corporate wordmark, price, slogan
+  or exact livery.
+
+  UV ownership follows the thing depicted. `ExteriorWallAtlas` and
+  `ExteriorFasciaAtlas` reserve distinct front/rear/side regions and clamp;
+  `ExteriorBrick` and `ExteriorMetal` repeat only small physical texture, the
+  roof reuses the City roof sheet, and authored glass uses the existing warm
+  supermarket family. Fascia stripes are texture regions in the fascia mesh,
+  not coplanar plates. Opaque joins omit hidden faces or keep at least
+  `0.03 m` relief; the plan-owned visible foundation is inset `0.14 m` on all
+  horizontal sides. The FBX contains no collider, Light, Camera, Rigidbody,
+  Animator or interaction.
+
+  `CitySupermarketFacadeWorldBuilder` measures the imported anchor in world
+  space and aligns it to the unchanged `BuildingLot.DoorPosition`, preserving
+  the FBX `100/0.01` hierarchy. Unity retains the full renderer-free logical
+  collider, `4.8 m` entrance apron, `5.6 m` fence opening, trigger, stationary
+  door action, scene transition and the separate fixed yard spotlight on the
+  clear side-wall mount zone. The spotlight planner subtracts the authored
+  `0.08 m` wall inset and accepts only a facade normal perpendicular to the
+  shop frontage, matching the two declared side-wall zones. The layout owns
+  the same fixed `15.5 x 15.5 x 6.4 m` lot contract as the model and omits the
+  supermarket when configured buildable blocks cannot contain that footprint;
+  it never scales or height-clamps the asset. Full Home placement reuses the
+  same unit-scale
+  collider-free prefab; Hidden omits it and Crossing alone keeps the existing
+  bounds-clipped fallback, so imported topology is never sheared. The old
+  CityMisc supermarket shell stays addressable only for compatibility.
+- **Accepted — The canonical player home is one complete 209-1-inspired
+  exterior:** design `player_home_exterior_v1` replaces the City misc
+  `PlayerHomeBuildingShell`, generic window bands, runtime roof/chimney and
+  duplicate City balcony geometry. Georgian Series 209-1 is a form reference,
+  not a literal reconstruction: the passive model keeps a cold repaired
+  two-storey rendered body, dark brick plinth, pitched slate roof, irregular
+  framed openings, recessed entry and a deep supported upper gallery, without
+  new signage, neighbours, clues or story text.
+
+  `dimensions_m` describes the fixed lot/body contract
+  `13 x 12 x 8.8 m`; it is not the complete renderer bounds. Source `+Y`
+  imports as Unity `+Z`; the unchanged `exterior_door` anchor is at Unity local
+  `(0,0,6)`, and the canonical balcony starts on that front plane and projects
+  `2.3 m` outward. Visual bounds are therefore
+  `[-6.5,-6,0]..[6.5,8.3,8.8]`. The layout never scales the asset: a custom
+  configuration that cannot contain the oriented body or its `8.8 m` height
+  omits the home designation. Unity retains an `0.08 m` inset textured
+  foundation, body-sized renderer-free logical collider, walkway, mailbox,
+  entrance lamp, number `7`, beacon, trigger and transition.
+
+  Nine semantic sheets separate primary/repaired stucco, brick plinth, slate,
+  painted wood/metal, window frames/glass and concrete. UVs are authored per
+  element or repeat only physical microtexture; openings remain separate
+  geometry and broad opaque overlays keep at least `0.03 m` relief. Exactly
+  one `WindowGlass` part is emissive: the upper street pane immediately left
+  of the balcony when viewed from outside; every other pane is dark. The Home
+  scene keeps its existing physical deck/guards/camera/smoking contract and
+  rebuilds the same surfaces, exact visible window positions and recessed
+  entry around it, so City and Home no longer draw competing balcony shells.
+- **Accepted — Ordinary buildings use semantic fixed-metre district prototypes:**
+  design `city_buildings_prototypes_v2` supersedes v1 as one deterministic,
   fixed-metre Blender source with four district grammars: Old Town's
   `FragmentedPerimeter` at `14 x 13.5 x 42 m`, Residential's
   `SetbackCourtyard` at `11.5 x 11.5 x 40 m`, Industrial's
   `LowWideProcess` at `14 x 13.5 x 36 m`, and Nightlife's `TallDense` at
   `12.5 x 12 x 48 m`. Those envelopes fit the production default's minimum
   district footprints and current district height bands without runtime
-  scale. Every prototype owns exactly six passive meshes — `Shell`, `Trim`,
-  `Roof`, `Metal`, `WindowFrame` and `WindowGlass` — for `24` meshes and
-  `3,662` triangles in total, with a hard `3,500`-triangle cap per prototype.
-  Generator `1.1.0` locks that catalog under build signature
-  `aef1de8fd8ba280da1c7f560e6e0b11ec3f78fb94bf05cf693ff936163c2ea2e`.
+  scale. Every prototype owns exactly seven passive semantic meshes —
+  `FacadePrimary`, `FacadeSecondary`, `Plinth`, `Roof`, `Metal`,
+  `WindowFrame` and `WindowGlass` — for `28` meshes and `3,642` triangles in
+  total, with a hard `3,500`-triangle cap per prototype. Generator `2.0.0`
+  locks that catalog under build signature
+  `7670234e09fcc68bdebc985d04b0e74810f3e0f4e2f8ad11e840b1c75650ef53`.
   Source `+Y` is the authored frontage and imports as Unity `+Z`; the origin
   is the footprint centre on the ground. The FBX carries no imported material,
   collider, light, camera or animation assets.
+
+  UV0 is owned by surface meaning rather than by the whole object. The two
+  facade roles use a four-column `Front`/`Rear`/`Left`/`Right` atlas with one
+  non-repeating vertical span; every authored plinth face consumes the complete
+  non-repeating `0..1` sheet; roof, metal and frame use physically scaled metric
+  projection; each glass face remains pane-local `0..1`. The deterministic
+  surface pipeline emits exactly `24` sheets — six opaque roles per district.
+  Facade and plinth sheets clamp, metric micro-materials repeat, and no window,
+  aperture, sign, text or lore is baked into an opaque texture.
 
   Unity wraps the four roots in passive Resources prefabs and binds them
   through `CityBuildingAssetProvider`. Each `CityBuildingAssetRegistry`
@@ -1684,21 +1867,37 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   renderer-free BoxCollider with the exact former lot/foundation envelope, so
   navigation, sound occlusion and special buildings keep their authority.
 
-  Role renderers use shared materials and MPBs. The combined non-readable
+  The six opaque role renderers use the one packaged shared material; texture,
+  tint, smoothness, metallic and identity texture transform are supplied by
+  MPB, so no per-building material instances exist. The combined non-readable
   `WindowGlass` mesh decodes `(slotId + 0.5) / 256` from UV2 and indexes a
   64-entry per-building state table produced by the district window rules.
   Each facade row receives an exact deterministic lit share with at least one
   warm pane and, where the row has more than one pane, at least one dark pane;
   floor and side change the phase instead of the density. Every lit state uses
   the street lamp's `(1, 0.72, 0.42)` colour, a four-step brightness variant,
-  the shared fixture factor and PS1 vertex snap. Generator `1.1.0` gives every
+  the shared fixture factor and PS1 vertex snap. Generator `2.0.0` gives every
   `WindowGlass` face its own projected `0..1` UV0 while preserving UV2, so the
   shader selects one exact quadrant of the 2x2 curtain sheet and multiplies it
-  into both albedo and emission. Roof decorations use kind-specific fixed
-  mounts derived from the
-  Blender generator's actual gables, decks and sawtooth planes; the Old Town
-  clock base and Residential greenhouse deliberately bed into their roofs
-  because v1 has no separate flat pads. Facade mounts and descriptor forward
+  into both albedo and emission.
+
+  Competing exterior planes are invalid data, not a render-order workaround.
+  The pure geometry audit rejects every positive-area, same-facing exterior
+  coplanar overlap. It also rejects axis-aligned exterior opaque overlap of at
+  least `0.05 m2` when the planes are less than `0.03 m` apart; authored plinth
+  and secondary-facade relief keeps `0.035–0.065 m` of margin. Only the
+  slot-identified `0.018 m` facade-to-glass and `0.012 m` frame-to-glass
+  relationships remain under that threshold, while small interlocking metal
+  contacts remain below the area floor. Synthetic positive controls pin the
+  threshold, downward-face exclusion and those two window relationships.
+  Shared internal join faces are omitted and rail, frame and trim layers are
+  separated in depth. The Unity terrain skirt keeps its `0.04 m`
+  vertical overlap but is inset `0.08 m` from every horizontal side. Roof decorations
+  use kind-specific fixed mounts derived from the Blender generator's actual
+  gables, decks and sawtooth planes. A primary landmark and its lot's ordinary
+  core always use complementary surfaces: the Old Town, Residential and
+  Industrial roof landmarks force facade cores, while Nightlife's facade cinema
+  forces its billboard core onto the roof. Facade mounts and descriptor forward
   share the prototype's actual frontage pose, including roadless lots.
   `BuildingLot` remains the collision and planning envelope.
 
@@ -1708,9 +1907,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   exterior wrapper is instantiated unchanged and collider-free. A crossing
   wrapper alone keeps the previous bounds-clipped primitive silhouette: the
   runtime never shears, scales or cuts the deliberately non-readable Blender
-  topology. The supermarket and player home follow the bounded special-shell
-  contract above; the bar follows its separate fixed-metre complete-exterior
-  contract.
+  topology. The player home follows the bounded special-shell contract above;
+  the bar and supermarket follow their separate fixed-metre complete-exterior
+  contracts.
 - **Accepted — The summit opens exactly once, and the opening is a
   terrain mask:** the terminal plateau carries a `MountainRoadBrinkDescriptor`
   on its own descriptor rather than on the terminal plan, because
@@ -2335,12 +2534,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   canonical `CityLayout.Supermarket`, draws it as a non-route grocery-shop
   landmark and resolves pointer hover across bars, home, shop and POIs by
   nearest marker, with deterministic priority ties. It also consumes the
-  immutable bus plan and draws Route 01 below the orange player itinerary as a
-  blue ink-outlined closed winding loop, with five numbered localized stop
+  immutable bus plan and draws Route 01 below the darker player itinerary as a
+  pale neutral closed winding loop, with five numbered localized stop
   markers in the default layout and a compact route/stop legend; it does not
   track the live pooled bus. Localized
   hover names use one high-contrast tooltip that flips and clamps inside the
-  map. Shop and POI landmark markers remain context for the orange player
+  map. Shop and POI landmark markers remain context for the bone-toned player
   itinerary: POIs independently own nearby Route 01 stop targets, but the
   landmark markers do not change bar
   selection or player pathfinding.
@@ -2492,10 +2691,14 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the larger of the
   ordinary and special height maxima rather than retaining the old `13 m`
   vertical cap.
-- **Accepted — Geometry-locked district facade albedos:** City building masses
-  wear one of eight district wall albedos, two per buildable district, through
-  `MaterialPropertyBlock`s on the same shared `RuntimePrimitiveLit`. They are
-  not tiled by metres. `CityFacadeAppearance` derives `_BaseMap_ST` from
+- **Accepted — Geometry-locked district facade albedos remain a bounded legacy
+  path:** the player-home shell, the supermarket's crossing-only fallback and a
+  prototype crossing the Home
+  half-space wear one of eight district wall albedos, two per buildable
+  district, through `MaterialPropertyBlock`s on the same shared
+  `RuntimePrimitiveLit`. Whole ordinary buildings instead use the v2 semantic
+  24-sheet decision above. The legacy sheets are not tiled by metres.
+  `CityFacadeAppearance` derives `_BaseMap_ST` from
   `CityFacadeGrid`, the single source of the bay and floor pitch that the
   window builders also read, so one authored cell covers exactly one pane bay
   and one `2.35 m` storey. Horizontal phase follows the pane-count parity; the
@@ -2509,7 +2712,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   continue behind the topmost geometric row as backing facade detail, but they
   are never the only visible window treatment: the clipped Home fallback now
   builds row-balanced geometric panes through the lot's full authored height.
-- **Accepted — Linear-space facade compensation:** Facade albedos hold a mean
+- **Accepted — Linear-space facade compensation:** Legacy facade and v2
+  ordinary-building albedos hold a mean
   linear luminance of `0.35` and the night facade tint is brightened by
   `1 / 0.62` before it reaches `_BaseColor`, which preserves the brightness the
   flat colour had and never clamps the brightest lot the generator can make, a
@@ -2520,7 +2724,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   and made every facade in the city almost twice as bright as before — a pale,
   chalky wall rather than a grimy one. The bound and the preserved brightness
   are both swept from the live colour ranges by
-  `CityFacadeAppearanceTests`, so widening a district palette fails there.
+  `CityFacadeAppearanceTests` and `CityBuildingSurfaceAppearanceTests`, so
+  widening a district palette or drifting a semantic sheet fails at its owner.
 - **Accepted — District presentation is pure data with windows as the first
   consumer:** `CityDistrictPresentationPlanner` owns stable per-block keys for
   frontage, mass, windows, light and wear plus a one-block transition motif
@@ -2545,10 +2750,18 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   renderer integration is deferred.
 - **Accepted — Crisp UI after the composite:** Runtime IMGUI is intentionally
   drawn after the world composite instead of being degraded with the 3D image.
-  Prompts, segmented intoxication HUD, overhead balance gauge and map use a
-  logical `640x360` canvas with a shared palette,
-  stepped frames and point-filtered accents. Menus, modal inspectors and the
-  map omit persistent key-binding guides and control-hint footers.
+  Prompts, menus, modal inspectors, shops, journal, HUD, balance gauge, loading
+  and map use one logical `640x360` canvas and the shared `RetroUiTheme`.
+  Its interface-only language is soot/charcoal/dirty-bone: flat rectangular
+  panels, thin nested frames, stable deterministic texture, restrained
+  typewriter-like typography and value-plus-frame focus that survives
+  grayscale. OS monospace faces are preferred where they cover Cyrillic;
+  packaged `Fonts/Roboto-Regular` is the deterministic RU/EN fallback. The
+  former plum/orange cards, cut corners, bevel highlights and glow are not part
+  of the language. The reference does not alter world rendering, camera,
+  aspect, composite, audio, gameplay or localized copy. Menus, modal
+  inspectors and the map omit persistent key-binding guides and control-hint
+  footers.
   Clickable modal actions keep action-only labels; every active contextual
   prompt is also a full pointer target and invokes the exact same guarded action
   path as E, Enter or gamepad South instead of duplicating interaction logic.

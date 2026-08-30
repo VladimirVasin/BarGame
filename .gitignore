@@ -43,6 +43,9 @@ crashlytics-build.properties
 /.DS_Store
 Thumbs.db
 Desktop.ini
+*.stackdump
+*.asd
+*.asd.meta
 
 # Blender automatic backup files
 *.blend[0-9]*

@@ -60,7 +60,7 @@ namespace BarPromenade
             GUI.depth = -1000;
             RetroUiTheme.FillRect(
                 new Rect(0f, 0f, Screen.width, Screen.height),
-                Color.black);
+                RetroUiTheme.Ink);
 
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
@@ -80,13 +80,6 @@ namespace BarPromenade
 
         private void DrawProgressBar()
         {
-            RetroUiTheme.FillRect(
-                new Rect(
-                    TrackRect.x + 3f,
-                    TrackRect.y + 3f,
-                    TrackRect.width,
-                    TrackRect.height),
-                RetroUiTheme.Shadow);
             RetroUiTheme.FillRect(
                 TrackRect,
                 RetroUiTheme.Ink);

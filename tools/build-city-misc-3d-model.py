@@ -48,10 +48,11 @@ sys.path.insert(0, str(ROOT / "tools"))
 import interior_kit as kit  # noqa: E402
 
 
-GENERATOR_VERSION = "4.7.0"
+GENERATOR_VERSION = "4.8.0"
 DESIGN_ID = "city_misc_citywide_v4"
 DISPLAY_NAME = (
-    "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter Kit"
+    "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + "
+    "Residential Courtyard Life + Fringe Service Kit"
 )
 V2_GENERATOR_VERSION = "2.0.0"
 V2_DESIGN_ID = "city_misc_all_decor_v2"
@@ -75,6 +76,23 @@ SCALE_MODE = "fixed_meters"
 BOUNDS_EPSILON = 1e-5
 UV_EPSILON = 1e-6
 MAX_TRIANGLES = 240000
+
+# Source X/Y are Unity local X/Z. These caps protect the authored pieces from
+# spilling out of their runtime pockets; the residential strip is deliberately
+# shallow so every composition can sit between facade and street.
+COURTYARD_SERVICE_ENVELOPES = {
+    ("ResidentialCourtyardPocket", 0): (3.40, 1.05, 1.20),
+    ("ResidentialCourtyardPocket", 1): (3.20, 1.05, 1.35),
+    ("ResidentialCourtyardPocket", 2): (2.40, 1.05, 3.20),
+    ("ResidentialCourtyardPocket", 3): (3.00, 1.05, 1.45),
+    ("ResidentialCourtyardPocket", 4): (2.80, 1.05, 1.55),
+    ("ResidentialCourtyardPocket", 5): (3.40, 1.05, 1.25),
+    ("FringeMasonCart", 0): (3.00, 2.20, 1.45),
+    ("FringeWinchServiceSet", 0): (2.80, 2.20, 2.00),
+    ("FringeTunnelServiceSet", 0): (3.40, 2.40, 1.65),
+    ("FringeFloodMaintenanceSet", 0): (3.00, 2.20, 1.45),
+    ("FringeOpenHoodCar", 0): (5.80, 4.20, 2.15),
+}
 FORWARD_ANCHORED_KINDS = {
     "OldTownScaffolding",
     "NightlifeFireEscape",
@@ -333,6 +351,19 @@ def annulus_y(
              front_inner[following], front_inner[side]),
         ))
     return vertices, faces
+
+
+def outward_annulus_y(
+    center: Vec3,
+    outer_radius: float,
+    inner_radius: float,
+    depth: float,
+    sides: int = 12,
+) -> Geometry:
+    """Y annulus with outward winding for standalone passive components."""
+    vertices, faces = annulus_y(
+        center, outer_radius, inner_radius, depth, sides)
+    return vertices, [tuple(reversed(face)) for face in faces]
 
 
 def annulus_z(
@@ -4823,6 +4854,677 @@ def shelter_person_assembly(
     )
 
 
+def courtyard_service_assembly(
+    kind: str,
+    variant: int,
+    parts: tuple[PartSpec, ...],
+    root_derivation: str,
+    canonical_reference: tuple[tuple[str, float], ...],
+) -> AssemblySpec:
+    footprint_x, footprint_forward, height = \
+        COURTYARD_SERVICE_ENVELOPES[(kind, variant)]
+    return AssemblySpec(
+        kind,
+        variant,
+        parts,
+        canonical_reference=(
+            ("footprint_limit_x_m", footprint_x),
+            ("footprint_limit_forward_m", footprint_forward),
+            ("height_limit_m", height),
+            *canonical_reference,
+        ),
+        unity_owned_parts=("CollisionProxy", "ActorPresentation"),
+        root_derivation=root_derivation,
+        coordinate_profile="root_local_direct",
+        expected_source_min_z=0.0,
+    )
+
+
+def build_residential_courtyard_pocket(variant: int) -> AssemblySpec:
+    builders = (
+        build_courtyard_nardi_set,
+        build_courtyard_bicycle_repair,
+        build_courtyard_balcony_basket,
+        build_courtyard_chair_repair,
+        build_courtyard_sweeping_set,
+        build_courtyard_quiet_set,
+    )
+    return builders[variant]()
+
+
+def build_courtyard_nardi_set() -> AssemblySpec:
+    kind, variant = "ResidentialCourtyardPocket", 0
+    timber = [
+        local_box(0.0, 0.69, -0.15, 1.70, 0.10, 0.58, 0.035),
+        local_box(0.0, 0.61, -0.15, 1.52, 0.10, 0.46, 0.025),
+        *(local_vertical_solid(
+            x, 0.0, 0.64, forward, 0.045, 0.045,
+            top_scale=0.90, sides=7)
+          for x in (-0.66, 0.66)
+          for forward in (-0.34, 0.04)),
+        local_box(-0.45, 0.76, -0.15, 0.48, 0.03, 0.42, 0.008),
+        local_box(0.05, 0.76, -0.15, 0.48, 0.03, 0.42, 0.008),
+        *(local_box(
+            x, 0.39, 0.36, 0.42, 0.06, 0.28, 0.018)
+          for x in (-0.75, 0.75)),
+        *(local_vertical_solid(
+            x + offset_x, 0.0, 0.36, 0.36 + offset_forward,
+            0.032, 0.032, top_scale=0.92, sides=7)
+          for x in (-0.75, 0.75)
+          for offset_x in (-0.14, 0.14)
+          for offset_forward in (-0.08, 0.08)),
+    ]
+    pieces = [
+        local_vertical_solid(
+            x, 0.78, 0.825, -0.15 + forward,
+            0.052, 0.052, top_scale=0.94, sides=10)
+        for x, forward in (
+            (-0.58, -0.12), (-0.44, -0.12), (-0.30, -0.12),
+            (-0.16, -0.12), (-0.51, 0.12), (-0.37, 0.12),
+            (-0.23, 0.12), (-0.09, 0.12), (0.05, 0.12),
+        )
+    ]
+    tea = [
+        local_vertical_solid(
+            0.56, 0.78, 0.805, -0.15,
+            0.19, 0.15, top_scale=0.96, sides=12),
+        local_vertical_solid(
+            0.51, 0.805, 0.91, -0.17,
+            0.055, 0.050, top_scale=0.88, sides=10),
+        local_vertical_solid(
+            0.64, 0.805, 0.89, -0.11,
+            0.050, 0.046, top_scale=0.90, sides=10),
+    ]
+    parts = (
+        make_named_part(
+            kind, variant, "TableAndStools_Residential_Timber",
+            "Residential_Timber", *timber),
+        make_named_part(
+            kind, variant, "NardiPieces_Masonry_Stone",
+            "Masonry_Stone", *pieces),
+        make_named_part(
+            kind, variant, "TeaTray_Street_PaintedMetal",
+            "Street_PaintedMetal", *tea),
+    )
+    return courtyard_service_assembly(
+        kind, variant, parts,
+        "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+        (
+            ("seat_a_x_m", -0.75), ("seat_a_forward_m", 0.42),
+            ("seat_b_x_m", 0.75), ("seat_b_forward_m", 0.42),
+            ("seat_height_m", 0.42),
+            ("seat_facing_target_forward_m", -0.15),
+        ),
+    )
+
+
+def build_courtyard_bicycle_repair() -> AssemblySpec:
+    kind, variant = "ResidentialCourtyardPocket", 1
+    rear = (-0.85, 0.82, 0.0)
+    front = (0.45, 0.82, 0.0)
+    crank = (-0.18, 0.72, 0.0)
+    seat_joint = (-0.42, 0.36, 0.0)
+    handle_joint = (0.25, 0.36, 0.0)
+    frame = [
+        local_tube(rear, crank, 0.030, sides=7),
+        local_tube(crank, seat_joint, 0.034, sides=7),
+        local_tube(seat_joint, rear, 0.030, sides=7),
+        local_tube(seat_joint, handle_joint, 0.032, sides=7),
+        local_tube(handle_joint, front, 0.030, sides=7),
+        local_tube(crank, handle_joint, 0.030, sides=7),
+        local_tube(handle_joint, (0.52, 0.09, 0.0), 0.026, sides=7),
+        local_tube((0.37, 0.08, -0.18), (0.59, 0.08, 0.18),
+                   0.022, sides=7),
+    ]
+    repair_crate = [
+        local_grounded_box(
+            1.08, -0.10, 0.58, 0.22, 0.42, 0.025),
+        local_box(1.08, 0.235, -0.10, 0.50, 0.05, 0.34, 0.012),
+        local_box(0.95, 0.285, -0.12, 0.08, 0.06, 0.27, 0.010,
+                  yaw_up_degrees=-8.0),
+    ]
+    tyres_and_tools = [
+        outward_annulus_y(local_point(rear[0], rear[1], rear[2]),
+                          0.40, 0.335, 0.075, 16),
+        outward_annulus_y(local_point(front[0], front[1], front[2]),
+                          0.40, 0.335, 0.075, 16),
+        local_box(-0.45, 0.09, 0.0, 0.31, 0.07, 0.15, 0.012),
+        local_tube((0.90, 0.31, -0.12), (1.18, 0.31, -0.08),
+                   0.018, sides=6),
+        local_tube((1.15, 0.30, -0.23), (0.98, 0.30, 0.03),
+                   0.018, sides=6),
+    ]
+    parts = (
+        make_named_part(
+            kind, variant, "BicycleFrame_Residential_PaintedMetal",
+            "Residential_PaintedMetal", *frame),
+        make_named_part(
+            kind, variant, "RepairCrate_Residential_Timber",
+            "Residential_Timber", *repair_crate),
+        make_named_part(
+            kind, variant, "TyresAndTools_Street",
+            "Street", *tyres_and_tools),
+    )
+    return courtyard_service_assembly(
+        kind, variant, parts,
+        "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+        (
+            ("actor_dock_x_m", 1.15),
+            ("actor_dock_forward_m", 0.35),
+            ("actor_facing_target_x_m", -0.20),
+            ("actor_facing_target_forward_m", 0.0),
+        ),
+    )
+
+
+def build_courtyard_balcony_basket() -> AssemblySpec:
+    kind, variant = "ResidentialCourtyardPocket", 2
+    basket = [
+        local_box(-0.28, 0.055, 0.0, 0.82, 0.11, 0.54, 0.018),
+        local_box(-0.28, 0.13, -0.23, 0.82, 0.23, 0.07, 0.015,
+                  pitch_x_degrees=-7.0),
+        local_box(-0.28, 0.13, 0.23, 0.82, 0.23, 0.07, 0.015,
+                  pitch_x_degrees=7.0),
+        local_box(-0.65, 0.13, 0.0, 0.07, 0.23, 0.42, 0.015,
+                  roll_forward_degrees=-6.0),
+        local_box(0.09, 0.13, 0.0, 0.07, 0.23, 0.42, 0.015,
+                  roll_forward_degrees=6.0),
+        *(local_box(
+            -0.53 + index * 0.17, 0.29, 0.0,
+            0.10, 0.19 + (index % 2) * 0.05, 0.31, 0.018,
+            roll_forward_degrees=(-5.0 + index * 3.0))
+          for index in range(4)),
+    ]
+    rope = [
+        local_tube((-0.60, 0.28, -0.20), (-0.28, 0.60, 0.0),
+                   0.017, sides=6),
+        local_tube((0.04, 0.28, 0.20), (-0.28, 0.60, 0.0),
+                   0.017, sides=6),
+        local_tube((-0.28, 0.60, 0.0), (-0.28, 3.00, 0.0),
+                   0.017, sides=6),
+        local_tube((-0.28, 2.99, 0.0), (0.48, 2.99, -0.18),
+                   0.020, sides=7),
+    ]
+    pulley = [
+        annulus_y(local_point(-0.28, 3.00, 0.0),
+                  0.14, 0.068, 0.08, 12),
+        local_tube((0.47, 2.72, -0.18), (0.47, 3.03, -0.18),
+                   0.045, sides=8),
+        local_box(0.47, 2.73, -0.18, 0.28, 0.08, 0.20, 0.015),
+    ]
+    parts = (
+        make_named_part(
+            kind, variant, "Basket_Residential_Timber",
+            "Residential_Timber", *basket),
+        make_named_part(
+            kind, variant, "Rope_Street", "Street", *rope),
+        make_named_part(
+            kind, variant, "Pulley_Street_PaintedMetal",
+            "Street_PaintedMetal", *pulley),
+    )
+    return courtyard_service_assembly(
+        kind, variant, parts,
+        "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+        (
+            ("actor_dock_x_m", 0.68),
+            ("actor_dock_forward_m", 0.36),
+            ("actor_facing_target_x_m", -0.28),
+            ("actor_facing_target_forward_m", 0.0),
+            ("rope_top_m", 3.14),
+        ),
+    )
+
+
+def build_courtyard_chair_repair() -> AssemblySpec:
+    kind, variant = "ResidentialCourtyardPocket", 3
+    chair_and_bench = [
+        local_box(-0.68, 0.51, -0.10, 0.62, 0.09, 0.50, 0.022),
+        *(local_vertical_solid(
+            -0.68 + x, 0.0, 0.47, -0.10 + forward,
+            0.035, 0.035, top_scale=0.90, sides=7)
+          for x in (-0.23, 0.23)
+          for forward in (-0.18, 0.18)),
+        *(local_vertical_solid(
+            x, 0.50, 1.28, -0.30,
+            0.036, 0.036, top_scale=0.88, sides=7)
+          for x in (-0.91, -0.45)),
+        local_box(-0.68, 0.88, -0.30, 0.46, 0.09, 0.07, 0.014),
+        local_box(-0.68, 1.12, -0.30, 0.46, 0.08, 0.07, 0.014),
+        local_box(0.48, 0.69, -0.14, 1.10, 0.10, 0.48, 0.025),
+        *(local_vertical_solid(
+            x, 0.0, 0.64, forward,
+            0.042, 0.042, top_scale=0.92, sides=7)
+          for x in (0.06, 0.90)
+          for forward in (-0.30, 0.02)),
+    ]
+    clamp_and_tools = [
+        local_box(0.72, 0.78, -0.30, 0.16, 0.20, 0.12, 0.018),
+        local_tube((0.62, 0.88, -0.30), (0.86, 0.88, -0.30),
+                   0.025, sides=7),
+        local_tube((0.22, 0.78, -0.12), (0.55, 0.78, -0.19),
+                   0.020, sides=6),
+        local_box(0.08, 0.775, -0.12, 0.20, 0.055, 0.12, 0.010,
+                  yaw_up_degrees=-12.0),
+    ]
+    replacement_slats = [
+        local_grounded_box(
+            0.42, 0.22, 0.86, 0.055, 0.10, 0.010,
+            yaw_up_degrees=-7.0),
+        local_grounded_box(
+            0.72, 0.16, 0.78, 0.050, 0.10, 0.010,
+            yaw_up_degrees=5.0),
+        local_grounded_box(
+            0.96, 0.08, 0.62, 0.045, 0.09, 0.010,
+            yaw_up_degrees=-3.0),
+    ]
+    parts = (
+        make_named_part(
+            kind, variant, "ChairAndBench_Residential_Timber",
+            "Residential_Timber", *chair_and_bench),
+        make_named_part(
+            kind, variant, "ClampAndTools_Street_PaintedMetal",
+            "Street_PaintedMetal", *clamp_and_tools),
+        make_named_part(
+            kind, variant, "ReplacementSlats_Residential_Timber",
+            "Residential_Timber", *replacement_slats),
+    )
+    return courtyard_service_assembly(
+        kind, variant, parts,
+        "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+        (
+            ("actor_dock_x_m", 1.00),
+            ("actor_dock_forward_m", 0.35),
+            ("actor_facing_target_x_m", -0.55),
+            ("actor_facing_target_forward_m", -0.10),
+        ),
+    )
+
+
+def build_courtyard_sweeping_set() -> AssemblySpec:
+    kind, variant = "ResidentialCourtyardPocket", 4
+    broom = [
+        local_grounded_box(-0.82, -0.10, 0.58, 0.12, 0.20, 0.018),
+        local_tube((-0.82, 0.14, -0.10), (-0.53, 1.47, -0.07),
+                   0.026, sides=7, end_radius=0.022),
+        local_box(-0.77, 0.11, -0.10, 0.48, 0.08, 0.15, 0.012,
+                  yaw_up_degrees=-7.0),
+    ]
+    dustpan = [
+        local_grounded_box(0.38, 0.00, 0.48, 0.07, 0.34, 0.015),
+        local_grounded_box(
+            0.38, -0.13, 0.48, 0.15, 0.07, 0.014,
+            pitch_x_degrees=-12.0),
+        local_tube((0.19, 0.10, 0.02), (0.05, 0.72, -0.02),
+                   0.022, sides=7),
+    ]
+    bucket = [
+        local_vertical_solid(
+            0.92, 0.0, 0.43, -0.12,
+            0.22, 0.19, top_scale=1.05, sides=12),
+        local_tube((0.70, 0.35, -0.12), (0.92, 0.66, -0.12),
+                   0.018, sides=7),
+        local_tube((0.92, 0.66, -0.12), (1.14, 0.35, -0.12),
+                   0.018, sides=7),
+    ]
+    parts = (
+        make_named_part(
+            kind, variant, "Broom_Residential_Timber",
+            "Residential_Timber", *broom),
+        make_named_part(
+            kind, variant, "Dustpan_Street", "Street", *dustpan),
+        make_named_part(
+            kind, variant, "Bucket_Street_PaintedMetal",
+            "Street_PaintedMetal", *bucket),
+    )
+    return courtyard_service_assembly(
+        kind, variant, parts,
+        "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+        (
+            ("actor_dock_x_m", 0.0),
+            ("actor_dock_forward_m", 0.35),
+            ("actor_facing_target_x_m", -0.55),
+            ("actor_facing_target_forward_m", -0.08),
+        ),
+    )
+
+
+def build_courtyard_quiet_set() -> AssemblySpec:
+    kind, variant = "ResidentialCourtyardPocket", 5
+    bench = [
+        local_box(0.0, 0.44, -0.16, 2.05, 0.10, 0.42, 0.025),
+        *(local_vertical_solid(
+            x, 0.0, 0.39, -0.16,
+            0.045, 0.045, top_scale=0.90, sides=7)
+          for x in (-0.78, 0.78)),
+        *(local_vertical_solid(
+            x, 0.44, 1.02, -0.34,
+            0.040, 0.040, top_scale=0.88, sides=7)
+          for x in (-0.88, 0.88)),
+        local_box(0.0, 0.74, -0.34, 1.76, 0.09, 0.07, 0.014),
+        local_box(0.0, 0.96, -0.34, 1.76, 0.08, 0.07, 0.014),
+    ]
+    planters = [
+        local_vertical_solid(
+            x, 0.0, 0.50, -0.14,
+            0.24, 0.21, top_scale=1.04, sides=10)
+        for x in (-1.28, 1.28)
+    ]
+    basin = [
+        local_vertical_solid(
+            0.56, 0.50, 0.61, -0.14,
+            0.28, 0.20, top_scale=1.08, sides=12),
+        local_vertical_solid(
+            0.56, 0.61, 0.66, -0.14,
+            0.21, 0.14, top_scale=0.82, sides=12),
+        local_box(0.22, 0.515, -0.14, 0.22, 0.05, 0.08, 0.010,
+                  yaw_up_degrees=8.0),
+    ]
+    parts = (
+        make_named_part(
+            kind, variant, "LowBench_Residential_Timber",
+            "Residential_Timber", *bench),
+        make_named_part(
+            kind, variant, "Planters_Masonry_Stone",
+            "Masonry_Stone", *planters),
+        make_named_part(
+            kind, variant, "Basin_Street_PaintedMetal",
+            "Street_PaintedMetal", *basin),
+    )
+    return courtyard_service_assembly(
+        kind, variant, parts,
+        "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+        (
+            ("seat_a_x_m", -0.46), ("seat_a_forward_m", 0.20),
+            ("seat_b_x_m", 0.02), ("seat_b_forward_m", 0.20),
+            ("seat_height_m", 0.49),
+            ("seat_facing_target_forward_m", -0.16),
+        ),
+    )
+
+
+def build_fringe_mason_cart() -> AssemblySpec:
+    kind, variant = "FringeMasonCart", 0
+    cart = [
+        local_box(-0.18, 0.68, 0.0, 1.52, 0.12, 1.04, 0.035),
+        local_box(-0.18, 0.82, -0.46, 1.52, 0.30, 0.10, 0.025,
+                  pitch_x_degrees=-5.0),
+        local_box(-0.18, 0.82, 0.46, 1.52, 0.30, 0.10, 0.025,
+                  pitch_x_degrees=5.0),
+        local_tube((0.48, 0.67, -0.39), (1.35, 0.47, -0.39),
+                   0.045, sides=8),
+        local_tube((0.48, 0.67, 0.39), (1.35, 0.47, 0.39),
+                   0.045, sides=8),
+    ]
+    masonry = [
+        local_box(
+            -0.62 + column * 0.42,
+            0.82 + row * 0.20,
+            -0.24 + (column % 2) * 0.30,
+            0.36, 0.18, 0.27, 0.025,
+            yaw_up_degrees=(-3.0 + column * 3.0))
+        for row in range(2)
+        for column in range(3)
+    ]
+    hardware = [
+        outward_annulus_y(local_point(-0.44, 0.38, -0.61),
+                          0.38, 0.28, 0.13, 16),
+        outward_annulus_y(local_point(-0.44, 0.38, 0.61),
+                          0.38, 0.28, 0.13, 16),
+        local_tube((-0.44, 0.38, -0.74), (-0.44, 0.38, 0.74),
+                   0.055, sides=9),
+        local_box(1.28, 0.47, -0.39, 0.24, 0.08, 0.13, 0.012),
+        local_box(1.28, 0.47, 0.39, 0.24, 0.08, 0.13, 0.012),
+    ]
+    parts = (
+        make_named_part(
+            kind, variant, "Cart_Residential_Timber",
+            "Residential_Timber", *cart),
+        make_named_part(
+            kind, variant, "MasonryLoad_Masonry_Stone",
+            "Masonry_Stone", *masonry),
+        make_named_part(
+            kind, variant, "WheelAndHardware_Fixture",
+            "Fixture", *hardware),
+    )
+    return courtyard_service_assembly(
+        kind, variant, parts,
+        "FringeServicePocketPlan.PropGround+Facing",
+        (
+            ("actor_dock_x_m", 0.0),
+            ("actor_dock_forward_m", 1.25),
+            ("actor_facing_target_x_m", -0.18),
+            ("actor_facing_target_forward_m", 0.0),
+        ),
+    )
+
+
+def build_fringe_winch_service_set() -> AssemblySpec:
+    kind, variant = "FringeWinchServiceSet", 0
+    winch = [
+        *(local_tube(
+            (side * 0.78, 0.08, forward),
+            (side * 0.18, 1.58, forward * 0.30),
+            0.055, sides=8, end_radius=0.045)
+          for side in (-1, 1)
+          for forward in (-0.43, 0.43)),
+        local_tube((-0.22, 1.58, -0.13), (0.22, 1.58, 0.13),
+                   0.065, sides=9),
+        local_tube((0.0, 0.78, -0.29), (0.0, 0.78, 0.29),
+                   0.24, sides=12),
+        local_tube((-0.34, 0.78, 0.0), (0.34, 0.78, 0.0),
+                   0.055, sides=8),
+    ]
+    timber = [
+        local_grounded_box(0.0, -0.58, 2.10, 0.16, 0.26, 0.025),
+        local_grounded_box(0.0, 0.58, 2.10, 0.16, 0.26, 0.025),
+        local_grounded_box(-0.72, 0.0, 0.24, 0.22, 1.30, 0.025),
+        local_grounded_box(0.72, 0.0, 0.24, 0.22, 1.30, 0.025),
+    ]
+    cable_and_tools = [
+        local_tube((0.0, 0.76, 0.0), (0.0, 0.20, 0.62),
+                   0.021, sides=7, end_radius=0.016),
+        local_tube((0.0, 0.20, 0.62), (0.14, 0.08, 0.70),
+                   0.020, sides=7),
+        local_tube((0.22, 0.78, 0.30), (0.62, 0.78, 0.46),
+                   0.030, sides=7),
+        local_tube((0.62, 0.78, 0.46), (0.72, 0.58, 0.46),
+                   0.030, sides=7),
+        outward_annulus_z((0.88, 0.25, 0.065), 0.30, 0.22, 0.13, 12),
+        local_grounded_box(-0.94, 0.30, 0.42, 0.12, 0.30, 0.018),
+    ]
+    parts = (
+        make_named_part(
+            kind, variant, "Winch_Industrial", "Industrial", *winch),
+        make_named_part(
+            kind, variant, "TimberCrib_Residential_Timber",
+            "Residential_Timber", *timber),
+        make_named_part(
+            kind, variant, "CableAndTools_Fixture",
+            "Fixture", *cable_and_tools),
+    )
+    return courtyard_service_assembly(
+        kind, variant, parts,
+        "FringeServicePocketPlan.PropGround+Facing",
+        (
+            ("actor_dock_x_m", 1.35),
+            ("actor_dock_forward_m", 0.82),
+            ("actor_facing_target_x_m", 0.0),
+            ("actor_facing_target_forward_m", 0.0),
+        ),
+    )
+
+
+def build_fringe_tunnel_service_set() -> AssemblySpec:
+    kind, variant = "FringeTunnelServiceSet", 0
+    rail = [
+        local_tube((-1.20, 0.08, 0.0), (-1.20, 1.05, 0.0),
+                   0.055, sides=8),
+        local_tube((1.20, 0.08, 0.0), (1.20, 1.05, 0.0),
+                   0.055, sides=8),
+        local_tube((-1.20, 1.00, 0.0), (1.20, 1.00, 0.0),
+                   0.060, sides=8),
+        local_tube((-1.05, 0.12, 0.0), (-0.62, 1.00, 0.0),
+                   0.045, sides=7),
+        local_tube((0.62, 1.00, 0.0), (1.05, 0.12, 0.0),
+                   0.045, sides=7),
+        local_grounded_box(-1.20, 0.0, 0.54, 0.12, 0.42, 0.018),
+        local_grounded_box(1.20, 0.0, 0.54, 0.12, 0.42, 0.018),
+    ]
+    blocks = [
+        local_grounded_box(-0.78, -0.57, 0.58, 0.30, 0.42, 0.035),
+        local_box(-0.22, 0.17, -0.57, 0.50, 0.28, 0.38, 0.030,
+                  yaw_up_degrees=5.0),
+        local_grounded_box(0.35, -0.55, 0.48, 0.24, 0.36, 0.028,
+                           yaw_up_degrees=-7.0),
+    ]
+    tools = [
+        local_tube((0.70, 0.10, -0.52), (1.02, 1.48, -0.30),
+                   0.026, sides=7, end_radius=0.022),
+        local_box(0.68, 0.10, -0.53, 0.38, 0.08, 0.23, 0.015,
+                  roll_forward_degrees=-10.0),
+        local_grounded_box(0.46, 0.62, 0.66, 0.15, 0.34, 0.025),
+        local_box(0.46, 0.19, 0.62, 0.54, 0.08, 0.26, 0.015),
+    ]
+    parts = (
+        make_named_part(
+            kind, variant, "BarrierAndRail_Industrial",
+            "Industrial", *rail),
+        make_named_part(
+            kind, variant, "RepairBlocks_Masonry_Stone",
+            "Masonry_Stone", *blocks),
+        make_named_part(
+            kind, variant, "Tools_Fixture", "Fixture", *tools),
+    )
+    return courtyard_service_assembly(
+        kind, variant, parts,
+        "FringeServicePocketPlan.PropGround+Facing",
+        (
+            ("actor_dock_x_m", 1.55),
+            ("actor_dock_forward_m", 0.90),
+            ("actor_facing_target_x_m", 0.20),
+            ("actor_facing_target_forward_m", 0.0),
+        ),
+    )
+
+
+def build_fringe_flood_maintenance_set() -> AssemblySpec:
+    kind, variant = "FringeFloodMaintenanceSet", 0
+    pump_and_pipe = [
+        local_grounded_box(-0.48, -0.12, 0.82, 0.54, 0.66, 0.065),
+        local_vertical_solid(
+            -0.48, 0.54, 1.08, -0.12,
+            0.28, 0.25, top_scale=0.82, sides=10),
+        local_tube((-0.18, 0.72, -0.10), (0.36, 0.72, -0.10),
+                   0.10, sides=10, end_radius=0.085),
+        local_tube((0.36, 0.72, -0.10), (0.53, 0.40, 0.05),
+                   0.085, sides=10, end_radius=0.070),
+        local_box(-0.48, 0.28, -0.48, 1.04, 0.08, 0.08, 0.015),
+    ]
+    planks = [
+        local_grounded_box(0.34, -0.54, 1.38, 0.13, 0.22, 0.018,
+                           yaw_up_degrees=4.0),
+        local_box(0.38, 0.18, -0.53, 1.28, 0.11, 0.20, 0.018,
+                  yaw_up_degrees=-3.0),
+        local_grounded_box(0.02, 0.43, 0.94, 0.09, 0.16, 0.014,
+                           yaw_up_degrees=-8.0),
+    ]
+    hose_and_tools = [
+        outward_annulus_z((0.86, 0.30, 0.065), 0.32, 0.235, 0.13, 14),
+        local_tube((0.57, 0.08, 0.31), (0.34, 0.19, 0.08),
+                   0.032, sides=8),
+        local_grounded_box(-0.88, 0.42, 0.46, 0.15, 0.34, 0.022),
+        local_box(-0.88, 0.18, 0.42, 0.38, 0.07, 0.26, 0.014),
+        local_tube((-0.98, 0.27, 0.40), (-0.78, 0.27, 0.40),
+                   0.022, sides=7),
+    ]
+    parts = (
+        make_named_part(
+            kind, variant, "PumpAndPipe_Industrial",
+            "Industrial", *pump_and_pipe),
+        make_named_part(
+            kind, variant, "Planks_Residential_Timber",
+            "Residential_Timber", *planks),
+        make_named_part(
+            kind, variant, "DryHoseAndTools_Fixture",
+            "Fixture", *hose_and_tools),
+    )
+    return courtyard_service_assembly(
+        kind, variant, parts,
+        "FringeServicePocketPlan.PropGround+Facing",
+        (
+            ("actor_dock_x_m", 1.35),
+            ("actor_dock_forward_m", 0.88),
+            ("actor_facing_target_x_m", -0.30),
+            ("actor_facing_target_forward_m", 0.0),
+        ),
+    )
+
+
+def build_fringe_open_hood_car() -> AssemblySpec:
+    kind, variant = "FringeOpenHoodCar", 0
+    body = [
+        local_box(0.0, 0.58, 0.0, 4.18, 0.62, 1.62, 0.12),
+        local_box(-1.48, 0.88, 0.0, 0.92, 0.36, 1.48, 0.10,
+                  roll_forward_degrees=3.0),
+        local_box(1.40, 0.83, 0.0, 1.05, 0.26, 1.48, 0.08),
+        local_box(1.31, 1.23, 0.0, 1.18, 0.09, 1.48, 0.025,
+                  roll_forward_degrees=-54.0),
+        local_box(-2.11, 0.46, 0.0, 0.14, 0.19, 1.54, 0.035),
+        local_box(2.11, 0.46, 0.0, 0.14, 0.19, 1.54, 0.035),
+        local_box(-0.05, 0.63, -0.825, 1.42, 0.07, 0.05, 0.010),
+        local_box(-0.05, 0.63, 0.825, 1.42, 0.07, 0.05, 0.010),
+    ]
+    tyres_and_cabin = [
+        *(outward_annulus_y(
+            local_point(x, 0.34, forward),
+            0.34, 0.235, 0.18, 16)
+          for x, forward in (
+              (-1.38, -0.79), (-1.38, 0.79), (1.38, 0.79))),
+        local_box(-0.28, 1.18, 0.0, 1.92, 0.72, 1.43, 0.085),
+        local_box(-0.38, 1.58, 0.0, 1.34, 0.12, 1.34, 0.035),
+        local_box(1.15, 0.91, 0.0, 0.62, 0.25, 1.10, 0.035),
+        local_tube((1.38, 0.34, -0.82), (1.38, 0.34, -0.97),
+                   0.115, sides=10),
+    ]
+    jack_wheel_tools = [
+        outward_annulus_z((1.18, -1.36, 0.09), 0.34, 0.235, 0.18, 14),
+        local_tube((1.10, 0.08, -0.58), (1.38, 0.43, -0.58),
+                   0.038, sides=7),
+        local_tube((1.66, 0.08, -0.58), (1.38, 0.43, -0.58),
+                   0.038, sides=7),
+        local_tube((1.04, 0.08, -0.58), (1.72, 0.08, -0.58),
+                   0.038, sides=7),
+        local_grounded_box(2.00, -1.25, 0.58, 0.08, 0.40, 0.018),
+        local_tube((1.80, 0.12, -1.28), (2.12, 0.12, -1.20),
+                   0.020, sides=7),
+        local_tube((1.82, 0.13, -1.12), (2.11, 0.13, -1.34),
+                   0.020, sides=7),
+    ]
+    parts = (
+        make_named_part(
+            kind, variant, "BodyAndOpenHood_Street_PaintedMetal",
+            "Street_PaintedMetal", *body),
+        make_named_part(
+            kind, variant, "TyresCabinAndEngine_Street",
+            "Street", *tyres_and_cabin),
+        make_named_part(
+            kind, variant, "JackRemovedWheelAndTools_Fixture",
+            "Fixture", *jack_wheel_tools),
+    )
+    return courtyard_service_assembly(
+        kind, variant, parts,
+        "FringeServicePocketPlan.PropGround+Facing",
+        (
+            ("mechanic_dock_x_m", 2.48),
+            ("mechanic_dock_forward_m", -1.48),
+            ("mechanic_facing_target_x_m", 1.30),
+            ("mechanic_facing_target_forward_m", -0.35),
+            ("removed_wheel_x_m", 1.18),
+            ("removed_wheel_forward_m", -1.36),
+        ),
+    )
+
+
 def make_assemblies() -> tuple[AssemblySpec, ...]:
     return (
         # Wave 1 compatibility block. Keep these first 15 assemblies and their
@@ -4917,6 +5619,15 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         build_nightlife_shelter_standing_person(),
         build_nightlife_shelter_seated_person(),
         build_nightlife_shelter_sleeping_person(),
+        # Citywide v4.8: shallow residential life pockets and bounded
+        # municipal service compositions. Append only: the shipped wave-one
+        # and v2 compatibility signatures deliberately cover catalog prefixes.
+        *(build_residential_courtyard_pocket(index) for index in range(6)),
+        build_fringe_mason_cart(),
+        build_fringe_winch_service_set(),
+        build_fringe_tunnel_service_set(),
+        build_fringe_flood_maintenance_set(),
+        build_fringe_open_hood_car(),
     )
 
 
@@ -5084,6 +5795,12 @@ EXPECTED_VARIANTS = {
     "NightlifeShelterStandingPerson": 1,
     "NightlifeShelterSeatedPerson": 1,
     "NightlifeShelterSleepingPerson": 1,
+    "ResidentialCourtyardPocket": 6,
+    "FringeMasonCart": 1,
+    "FringeWinchServiceSet": 1,
+    "FringeTunnelServiceSet": 1,
+    "FringeFloodMaintenanceSet": 1,
+    "FringeOpenHoodCar": 1,
 }
 
 EXPECTED_ROLES = {
@@ -5217,6 +5934,28 @@ EXPECTED_ROLES = {
         "Street", "Residential", "Masonry"),
     ("NightlifeShelterSleepingPerson", 0): (
         "Street", "Residential", "Masonry"),
+    ("ResidentialCourtyardPocket", 0): (
+        "Residential_Timber", "Masonry_Stone", "Street_PaintedMetal"),
+    ("ResidentialCourtyardPocket", 1): (
+        "Residential_PaintedMetal", "Residential_Timber", "Street"),
+    ("ResidentialCourtyardPocket", 2): (
+        "Residential_Timber", "Street", "Street_PaintedMetal"),
+    ("ResidentialCourtyardPocket", 3): (
+        "Residential_Timber", "Street_PaintedMetal", "Residential_Timber"),
+    ("ResidentialCourtyardPocket", 4): (
+        "Residential_Timber", "Street", "Street_PaintedMetal"),
+    ("ResidentialCourtyardPocket", 5): (
+        "Residential_Timber", "Masonry_Stone", "Street_PaintedMetal"),
+    ("FringeMasonCart", 0): (
+        "Residential_Timber", "Masonry_Stone", "Fixture"),
+    ("FringeWinchServiceSet", 0): (
+        "Industrial", "Residential_Timber", "Fixture"),
+    ("FringeTunnelServiceSet", 0): (
+        "Industrial", "Masonry_Stone", "Fixture"),
+    ("FringeFloodMaintenanceSet", 0): (
+        "Industrial", "Residential_Timber", "Fixture"),
+    ("FringeOpenHoodCar", 0): (
+        "Street_PaintedMetal", "Street", "Fixture"),
 }
 
 
@@ -5279,6 +6018,50 @@ EXPECTED_MESH_SUFFIXES = {
         "Outerwear_Street", "Layer_Residential", "Skin_Masonry"),
     ("NightlifeShelterSleepingPerson", 0): (
         "Outerwear_Street", "BreathingUpper_Residential", "Skin_Masonry"),
+    ("ResidentialCourtyardPocket", 0): (
+        "TableAndStools_Residential_Timber",
+        "NardiPieces_Masonry_Stone",
+        "TeaTray_Street_PaintedMetal"),
+    ("ResidentialCourtyardPocket", 1): (
+        "BicycleFrame_Residential_PaintedMetal",
+        "RepairCrate_Residential_Timber",
+        "TyresAndTools_Street"),
+    ("ResidentialCourtyardPocket", 2): (
+        "Basket_Residential_Timber",
+        "Rope_Street",
+        "Pulley_Street_PaintedMetal"),
+    ("ResidentialCourtyardPocket", 3): (
+        "ChairAndBench_Residential_Timber",
+        "ClampAndTools_Street_PaintedMetal",
+        "ReplacementSlats_Residential_Timber"),
+    ("ResidentialCourtyardPocket", 4): (
+        "Broom_Residential_Timber",
+        "Dustpan_Street",
+        "Bucket_Street_PaintedMetal"),
+    ("ResidentialCourtyardPocket", 5): (
+        "LowBench_Residential_Timber",
+        "Planters_Masonry_Stone",
+        "Basin_Street_PaintedMetal"),
+    ("FringeMasonCart", 0): (
+        "Cart_Residential_Timber",
+        "MasonryLoad_Masonry_Stone",
+        "WheelAndHardware_Fixture"),
+    ("FringeWinchServiceSet", 0): (
+        "Winch_Industrial",
+        "TimberCrib_Residential_Timber",
+        "CableAndTools_Fixture"),
+    ("FringeTunnelServiceSet", 0): (
+        "BarrierAndRail_Industrial",
+        "RepairBlocks_Masonry_Stone",
+        "Tools_Fixture"),
+    ("FringeFloodMaintenanceSet", 0): (
+        "PumpAndPipe_Industrial",
+        "Planks_Residential_Timber",
+        "DryHoseAndTools_Fixture"),
+    ("FringeOpenHoodCar", 0): (
+        "BodyAndOpenHood_Street_PaintedMetal",
+        "TyresCabinAndEngine_Street",
+        "JackRemovedWheelAndTools_Fixture"),
 }
 
 
@@ -5822,6 +6605,30 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
                     f"{key} scale parameter {parameter.name} has bad range")
 
         low, high = combined_bounds(assembly.parts)
+        envelope = COURTYARD_SERVICE_ENVELOPES.get(key)
+        if envelope is not None:
+            references = dict(assembly.canonical_reference)
+            expected_limits = {
+                "footprint_limit_x_m": envelope[0],
+                "footprint_limit_forward_m": envelope[1],
+                "height_limit_m": envelope[2],
+            }
+            for reference_name, expected_value in expected_limits.items():
+                if abs(references.get(reference_name, -1.0) -
+                       expected_value) > BOUNDS_EPSILON:
+                    problems.append(
+                        f"{key} canonical {reference_name} drifted")
+            actual_spans = (
+                high[0] - low[0],
+                high[1] - low[1],
+                high[2] - low[2],
+            )
+            for axis_name, actual, maximum in zip(
+                    ("X", "forward", "height"), actual_spans, envelope):
+                if actual > maximum + BOUNDS_EPSILON:
+                    problems.append(
+                        f"{key} {axis_name} span {actual:.3f} m exceeds "
+                        f"its {maximum:.3f} m authored envelope")
         if assembly.kind == "CemeteryFenceRail":
             rail_vertices = assembly.parts[0].geometry[0]
             rail_triangles = triangle_count(assembly.parts[0].geometry)
@@ -5867,11 +6674,11 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         if actual != list(range(count)):
             problems.append(
                 f"{kind} variants are {actual}, expected 0..{count - 1}")
-    if len(assemblies) != 115:
+    if len(assemblies) != 126:
         problems.append(
-            f"assembly count is {len(assemblies)}, expected 115")
-    if len(names) != 238:
-        problems.append(f"mesh count is {len(names)}, expected 238")
+            f"assembly count is {len(assemblies)}, expected 126")
+    if len(names) != 271:
+        problems.append(f"mesh count is {len(names)}, expected 271")
     validate_mirror_bounds(assemblies, "IndustrialCargo", problems)
     validate_mirror_bounds(
         assemblies, "RoadsideRoadworkAndBicycle", problems)

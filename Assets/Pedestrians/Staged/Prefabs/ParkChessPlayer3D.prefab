@@ -106,6 +106,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3234, g: 0.3496, b: 0.37285998, a: 1}
     variantTwoColor: {r: 0.40424997, g: 0.3344, b: 0.28236, a: 1}
     variantThreeColor: {r: 0.3619, g: 0.38, b: 0.31132, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.01
     role: surface_detail
     paletteName: chess_crown_dark
@@ -114,6 +115,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.21419999, g: 0.22816, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.26775, g: 0.21824, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.23969999, g: 0.248, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.02
     role: surface_detail
     paletteName: chess_crown_dark
@@ -122,6 +124,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.21419999, g: 0.22816, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.26775, g: 0.21824, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.23969999, g: 0.248, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatSeam
     role: surface_detail
     paletteName: chess_coat_dark
@@ -130,6 +133,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.04368, g: 0.0598, b: 0.056649998, a: 1}
     variantTwoColor: {r: 0.0546, g: 0.057199996, b: 0.0429, a: 1}
     variantThreeColor: {r: 0.04888, g: 0.065, b: 0.0473, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CrownCross
     role: signature_silhouette
     paletteName: chess_crown_cross
@@ -138,6 +142,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5376, g: 0.57776004, b: 0.58916, a: 1}
     variantTwoColor: {r: 0.67199993, g: 0.55264, b: 0.44616002, a: 1}
     variantThreeColor: {r: 0.6016, g: 0.628, b: 0.49192002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CrownCrossArm
     role: signature_silhouette
     paletteName: chess_crown_cross
@@ -146,6 +151,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5376, g: 0.57776004, b: 0.58916, a: 1}
     variantTwoColor: {r: 0.67199993, g: 0.55264, b: 0.44616002, a: 1}
     variantThreeColor: {r: 0.6016, g: 0.628, b: 0.49192002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.L
     role: face_detail
     paletteName: void
@@ -154,6 +160,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.R
     role: face_detail
     paletteName: void
@@ -162,6 +169,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_LapelCheck.L
     role: surface_detail
     paletteName: chess_check_light
@@ -170,6 +178,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_LapelCheck.R
     role: surface_detail
     paletteName: chess_check_light
@@ -178,6 +187,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Moustache
     role: face_detail
     paletteName: chess_grey
@@ -186,6 +196,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3234, g: 0.3496, b: 0.37285998, a: 1}
     variantTwoColor: {r: 0.40424997, g: 0.3344, b: 0.28236, a: 1}
     variantThreeColor: {r: 0.3619, g: 0.38, b: 0.31132, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Nose
     role: face_detail
     paletteName: chess_skin
@@ -194,6 +205,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.31248, g: 0.24104, b: 0.20393999, a: 1}
     variantTwoColor: {r: 0.3906, g: 0.23055999, b: 0.15444, a: 1}
     variantThreeColor: {r: 0.34968, g: 0.262, b: 0.17028, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfCheck.01
     role: surface_detail
     paletteName: chess_check_light
@@ -202,6 +214,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfCheck.02
     role: surface_detail
     paletteName: chess_check_light
@@ -210,6 +223,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfCheck.03
     role: surface_detail
     paletteName: chess_check_light
@@ -218,6 +232,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfCheck.04
     role: surface_detail
     paletteName: chess_check_light
@@ -226,6 +241,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfCheck.05
     role: surface_detail
     paletteName: chess_check_light
@@ -234,6 +250,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfCheck.06
     role: surface_detail
     paletteName: chess_check_light
@@ -242,6 +259,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatChest
     role: body
     paletteName: chess_coat
@@ -250,6 +268,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.088199995, g: 0.11776001, b: 0.11124, a: 1}
     variantTwoColor: {r: 0.11024999, g: 0.11264001, b: 0.08424, a: 1}
     variantThreeColor: {r: 0.098699994, g: 0.128, b: 0.09288, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatHem
     role: clothing
     paletteName: chess_coat_dark
@@ -258,6 +277,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.04368, g: 0.0598, b: 0.056649998, a: 1}
     variantTwoColor: {r: 0.0546, g: 0.057199996, b: 0.0429, a: 1}
     variantThreeColor: {r: 0.04888, g: 0.065, b: 0.0473, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatWaist
     role: body
     paletteName: chess_coat
@@ -266,6 +286,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.088199995, g: 0.11776001, b: 0.11124, a: 1}
     variantTwoColor: {r: 0.11024999, g: 0.11264001, b: 0.08424, a: 1}
     variantThreeColor: {r: 0.098699994, g: 0.128, b: 0.09288, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatYoke
     role: clothing
     paletteName: chess_coat_light
@@ -274,6 +295,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.1702, b: 0.15965, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.1628, b: 0.1209, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.185, b: 0.1333, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CrownBand
     role: signature_silhouette
     paletteName: chess_crown_dark
@@ -282,6 +304,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.21419999, g: 0.22816, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.26775, g: 0.21824, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.23969999, g: 0.248, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CrownBody
     role: signature_silhouette
     paletteName: chess_crown
@@ -290,6 +313,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.504, g: 0.54096, b: 0.55105, a: 1}
     variantTwoColor: {r: 0.63, g: 0.51744, b: 0.41730002, a: 1}
     variantThreeColor: {r: 0.564, g: 0.588, b: 0.46010002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CrownCollar
     role: signature_silhouette
     paletteName: chess_crown_dark
@@ -298,6 +322,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.21419999, g: 0.22816, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.26775, g: 0.21824, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.23969999, g: 0.248, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CrownKnop
     role: signature_silhouette
     paletteName: chess_crown
@@ -306,6 +331,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.504, g: 0.54096, b: 0.55105, a: 1}
     variantTwoColor: {r: 0.63, g: 0.51744, b: 0.41730002, a: 1}
     variantThreeColor: {r: 0.564, g: 0.588, b: 0.46010002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Lapel.L
     role: clothing
     paletteName: chess_check_dark
@@ -314,6 +340,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.052079998, g: 0.075440004, b: 0.07004, a: 1}
     variantTwoColor: {r: 0.0651, g: 0.07216, b: 0.05304, a: 1}
     variantThreeColor: {r: 0.05828, g: 0.082, b: 0.058480006, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Lapel.R
     role: clothing
     paletteName: chess_check_dark
@@ -322,6 +349,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.052079998, g: 0.075440004, b: 0.07004, a: 1}
     variantTwoColor: {r: 0.0651, g: 0.07216, b: 0.05304, a: 1}
     variantThreeColor: {r: 0.05828, g: 0.082, b: 0.058480006, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_ScarfLoop
     role: clothing
     paletteName: chess_check_dark
@@ -330,6 +358,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.052079998, g: 0.075440004, b: 0.07004, a: 1}
     variantTwoColor: {r: 0.0651, g: 0.07216, b: 0.05304, a: 1}
     variantThreeColor: {r: 0.05828, g: 0.082, b: 0.058480006, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_ScarfTail.L
     role: clothing
     paletteName: chess_check_dark
@@ -338,6 +367,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.052079998, g: 0.075440004, b: 0.07004, a: 1}
     variantTwoColor: {r: 0.0651, g: 0.07216, b: 0.05304, a: 1}
     variantThreeColor: {r: 0.05828, g: 0.082, b: 0.058480006, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_ScarfTail.R
     role: clothing
     paletteName: chess_check_dark
@@ -346,6 +376,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.052079998, g: 0.075440004, b: 0.07004, a: 1}
     variantTwoColor: {r: 0.0651, g: 0.07216, b: 0.05304, a: 1}
     variantThreeColor: {r: 0.05828, g: 0.082, b: 0.058480006, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.L
     role: clothing
     paletteName: chess_coat
@@ -354,6 +385,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.088199995, g: 0.11776001, b: 0.11124, a: 1}
     variantTwoColor: {r: 0.11024999, g: 0.11264001, b: 0.08424, a: 1}
     variantThreeColor: {r: 0.098699994, g: 0.128, b: 0.09288, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.R
     role: clothing
     paletteName: chess_coat
@@ -362,6 +394,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.088199995, g: 0.11776001, b: 0.11124, a: 1}
     variantTwoColor: {r: 0.11024999, g: 0.11264001, b: 0.08424, a: 1}
     variantThreeColor: {r: 0.098699994, g: 0.128, b: 0.09288, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.L
     role: clothing
     paletteName: chess_coat_dark
@@ -370,6 +403,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.04368, g: 0.0598, b: 0.056649998, a: 1}
     variantTwoColor: {r: 0.0546, g: 0.057199996, b: 0.0429, a: 1}
     variantThreeColor: {r: 0.04888, g: 0.065, b: 0.0473, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.R
     role: clothing
     paletteName: chess_coat_dark
@@ -378,6 +412,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.04368, g: 0.0598, b: 0.056649998, a: 1}
     variantTwoColor: {r: 0.0546, g: 0.057199996, b: 0.0429, a: 1}
     variantThreeColor: {r: 0.04888, g: 0.065, b: 0.0473, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.L
     role: clothing
     paletteName: chess_coat
@@ -386,6 +421,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.088199995, g: 0.11776001, b: 0.11124, a: 1}
     variantTwoColor: {r: 0.11024999, g: 0.11264001, b: 0.08424, a: 1}
     variantThreeColor: {r: 0.098699994, g: 0.128, b: 0.09288, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.R
     role: clothing
     paletteName: chess_coat
@@ -394,6 +430,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.088199995, g: 0.11776001, b: 0.11124, a: 1}
     variantTwoColor: {r: 0.11024999, g: 0.11264001, b: 0.08424, a: 1}
     variantThreeColor: {r: 0.098699994, g: 0.128, b: 0.09288, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserLower.L
     role: clothing
     paletteName: chess_trousers
@@ -402,6 +439,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.077250004, a: 1}
     variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.0585, a: 1}
     variantThreeColor: {r: 0.07332, g: 0.082, b: 0.064500004, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserLower.R
     role: clothing
     paletteName: chess_trousers
@@ -410,6 +448,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.077250004, a: 1}
     variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.0585, a: 1}
     variantThreeColor: {r: 0.07332, g: 0.082, b: 0.064500004, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserUpper.L
     role: clothing
     paletteName: chess_trousers
@@ -418,6 +457,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.077250004, a: 1}
     variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.0585, a: 1}
     variantThreeColor: {r: 0.07332, g: 0.082, b: 0.064500004, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserUpper.R
     role: clothing
     paletteName: chess_trousers
@@ -426,6 +466,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.065519996, g: 0.075440004, b: 0.077250004, a: 1}
     variantTwoColor: {r: 0.0819, g: 0.07216, b: 0.0585, a: 1}
     variantThreeColor: {r: 0.07332, g: 0.082, b: 0.064500004, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.L
     role: body
     paletteName: chess_boot
@@ -434,6 +475,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.040319998, g: 0.041400004, b: 0.041199997, a: 1}
     variantTwoColor: {r: 0.050399996, g: 0.0396, b: 0.031199997, a: 1}
     variantThreeColor: {r: 0.04512, g: 0.045, b: 0.0344, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.R
     role: body
     paletteName: chess_boot
@@ -442,6 +484,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.040319998, g: 0.041400004, b: 0.041199997, a: 1}
     variantTwoColor: {r: 0.050399996, g: 0.0396, b: 0.031199997, a: 1}
     variantThreeColor: {r: 0.04512, g: 0.045, b: 0.0344, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.L
     role: body
     paletteName: sole
@@ -450,6 +493,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.R
     role: body
     paletteName: sole
@@ -458,6 +502,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.L
     role: body
     paletteName: chess_skin
@@ -466,6 +511,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.31248, g: 0.24104, b: 0.20393999, a: 1}
     variantTwoColor: {r: 0.3906, g: 0.23055999, b: 0.15444, a: 1}
     variantThreeColor: {r: 0.34968, g: 0.262, b: 0.17028, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.R
     role: body
     paletteName: chess_skin
@@ -474,6 +520,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.31248, g: 0.24104, b: 0.20393999, a: 1}
     variantTwoColor: {r: 0.3906, g: 0.23055999, b: 0.15444, a: 1}
     variantThreeColor: {r: 0.34968, g: 0.262, b: 0.17028, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Head
     role: body
     paletteName: chess_skin
@@ -482,6 +529,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.31248, g: 0.24104, b: 0.20393999, a: 1}
     variantTwoColor: {r: 0.3906, g: 0.23055999, b: 0.15444, a: 1}
     variantThreeColor: {r: 0.34968, g: 0.262, b: 0.17028, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Neck
     role: body
     paletteName: chess_skin
@@ -490,6 +538,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.31248, g: 0.24104, b: 0.20393999, a: 1}
     variantTwoColor: {r: 0.3906, g: 0.23055999, b: 0.15444, a: 1}
     variantThreeColor: {r: 0.34968, g: 0.262, b: 0.17028, a: 1}
+    usesDetailAtlas: 0
   headAnchor: {fileID: 1604880766841958894}
   pelvisAnchor: {fileID: 1828401398741741118}
   leftFootAnchor: {fileID: 8076574606769143258}
@@ -508,6 +557,7 @@ MonoBehaviour:
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
+  detailAtlas: {fileID: 0}
 --- !u!1001 &3085181668359576002
 PrefabInstance:
   m_ObjectHideFlags: 0

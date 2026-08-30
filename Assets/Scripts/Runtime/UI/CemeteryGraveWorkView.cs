@@ -171,7 +171,10 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
-                RetroUiTheme.BorderMuted);
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
+                1f);
             GUI.Label(
                 title,
                 LocalizationService.Get(
@@ -232,7 +235,7 @@ namespace BarPromenade
                 RetroUiTheme.Ink,
                 RetroUiTheme.BorderMuted,
                 false,
-                1f,
+                0f,
                 1f);
             var tiltInner = new Rect(
                 tilt.x + 1f,
@@ -292,7 +295,7 @@ namespace BarPromenade
                 RetroUiTheme.Ink,
                 RetroUiTheme.BorderMuted,
                 false,
-                1f,
+                0f,
                 1f);
             RetroUiTheme.FillRect(
                 new Rect(
@@ -394,7 +397,7 @@ namespace BarPromenade
                     RetroUiTheme.Ink,
                     RetroUiTheme.BorderMuted,
                     false,
-                    1f,
+                    0f,
                     1f);
                 if (index >= model.StrikesLanded)
                 {
@@ -466,7 +469,7 @@ namespace BarPromenade
                 RetroUiTheme.Ink,
                 RetroUiTheme.BorderMuted,
                 false,
-                1f,
+                0f,
                 1f);
             var inner = new Rect(
                 track.x + 1f,
@@ -513,7 +516,7 @@ namespace BarPromenade
                 RetroUiTheme.Ink,
                 RetroUiTheme.BorderMuted,
                 false,
-                1f,
+                0f,
                 1f);
             RetroUiTheme.FillRect(
                 new Rect(

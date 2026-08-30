@@ -117,6 +117,54 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void AuthoredExterior_UsesExactLotOrIsOmittedWhenItCannotFit()
+        {
+            CityGenerationSettings generous =
+                CityGenerationSettings.Default;
+            generous.BlockWidth = 20f;
+            generous.BlockDepth = 21f;
+            generous.MinimumBuildingHeight = 8f;
+            generous.MaximumBuildingHeight = 10f;
+
+            CityLayout fitted = CityLayoutGenerator.Generate(
+                generous,
+                17033);
+            BuildingLot supermarket = fitted.Supermarket;
+            Assert.That(supermarket, Is.Not.Null);
+            Assert.That(
+                supermarket.Size,
+                Is.EqualTo(new Vector2(
+                    SupermarketEntranceGeometry.ExteriorWidth,
+                    SupermarketEntranceGeometry.ExteriorDepth)));
+            Assert.That(
+                supermarket.Height,
+                Is.EqualTo(
+                    SupermarketEntranceGeometry.ExteriorHeight));
+            Assert.That(
+                Vector3.Distance(
+                    supermarket.Center,
+                    supermarket.DoorPosition),
+                Is.EqualTo(
+                    SupermarketEntranceGeometry.ExteriorDepth * 0.5f)
+                    .Within(Tolerance));
+
+            CityGenerationSettings undersized =
+                CityGenerationSettings.Default;
+            undersized.BlockWidth =
+                SupermarketEntranceGeometry.ExteriorWidth +
+                undersized.BuildingInset * 2f -
+                0.1f;
+            CityLayout omitted = CityLayoutGenerator.Generate(
+                undersized,
+                17034);
+
+            Assert.That(omitted.Supermarket, Is.Null);
+            Assert.That(
+                omitted.BuildingLots.Any(lot => lot.IsSupermarket),
+                Is.False);
+        }
+
+        [Test]
         public void TinyLayout_MayOmitSupermarketWhenNoOrdinaryLotRemains()
         {
             CityGenerationSettings settings =

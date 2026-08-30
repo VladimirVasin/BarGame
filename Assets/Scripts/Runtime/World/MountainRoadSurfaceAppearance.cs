@@ -284,11 +284,20 @@ namespace BarPromenade
 
         /// <summary>
         /// Textures a primitive on the plane selected by its proportions.
+        ///
+        /// <paramref name="materialIndex"/> exists for the one renderer in
+        /// the game that carries two materials, the village ground: `-1`
+        /// (the default) is the ordinary single-material path, which owns
+        /// the renderer's shared material and its renderer-wide block; a
+        /// real index writes the blocks for THAT submesh only and leaves
+        /// the materials array alone, because `sharedMaterial = x` on a
+        /// two-slot renderer truncates the array to one.
         /// </summary>
         public static void Apply(
             Renderer renderer,
             MountainRoadSurfaceKind kind,
-            Color sourceTint)
+            Color sourceTint,
+            int materialIndex = -1)
         {
             if (renderer == null)
             {
@@ -299,7 +308,8 @@ namespace BarPromenade
                 renderer,
                 kind,
                 SurfaceAppearanceCore.ResolveBoxProjection(renderer),
-                sourceTint);
+                sourceTint,
+                materialIndex);
         }
 
         /// <summary>
@@ -312,7 +322,8 @@ namespace BarPromenade
             Renderer renderer,
             MountainRoadSurfaceKind kind,
             SurfaceProjection projection,
-            Color sourceTint)
+            Color sourceTint,
+            int materialIndex = -1)
         {
             if (renderer == null)
             {
@@ -320,9 +331,15 @@ namespace BarPromenade
             }
 
             HomeSurfaceRecipe recipe = GetRecipe(kind);
-            ApplySharedProperties(renderer, kind, sourceTint, recipe);
+            ApplySharedProperties(
+                renderer,
+                kind,
+                sourceTint,
+                recipe,
+                RuntimePrimitiveFactory.DefaultMaterial,
+                materialIndex);
             var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
+            GetPropertyBlock(renderer, properties, materialIndex);
             properties.SetVector(
                 BaseMapTransformId,
                 SurfaceAppearanceCore.CreateBaseMapTransform(
@@ -331,7 +348,7 @@ namespace BarPromenade
                     MinimumUvScale,
                     projection,
                     HashSaltBase + (int)kind));
-            renderer.SetPropertyBlock(properties);
+            SetPropertyBlock(renderer, properties, materialIndex);
         }
 
         /// <summary>
@@ -396,33 +413,57 @@ namespace BarPromenade
             Renderer renderer,
             MountainRoadSurfaceKind kind,
             Color sourceTint,
-            HomeSurfaceRecipe recipe)
-        {
-            ApplySharedProperties(
-                renderer,
-                kind,
-                sourceTint,
-                recipe,
-                RuntimePrimitiveFactory.DefaultMaterial);
-        }
-
-        private static void ApplySharedProperties(
-            Renderer renderer,
-            MountainRoadSurfaceKind kind,
-            Color sourceTint,
             HomeSurfaceRecipe recipe,
-            Material sharedMaterial)
+            Material sharedMaterial,
+            int materialIndex = -1)
         {
-            renderer.sharedMaterial = sharedMaterial;
+            // A real index means the caller owns the materials array: this
+            // path must not assign `sharedMaterial`, which would drop every
+            // other slot.
+            if (materialIndex < 0)
+            {
+                renderer.sharedMaterial = sharedMaterial;
+            }
+
             var properties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(properties);
+            GetPropertyBlock(renderer, properties, materialIndex);
             properties.SetTexture(BaseMapId, GetTexture(kind));
             Color displayTint = CreateDisplayTint(sourceTint, kind);
             properties.SetColor(BaseColorId, displayTint);
             properties.SetColor(ColorId, displayTint);
             properties.SetFloat(SmoothnessId, recipe.Smoothness);
             properties.SetFloat(MetallicId, recipe.Metallic);
-            renderer.SetPropertyBlock(properties);
+            SetPropertyBlock(renderer, properties, materialIndex);
+        }
+
+        private static void GetPropertyBlock(
+            Renderer renderer,
+            MaterialPropertyBlock properties,
+            int materialIndex)
+        {
+            if (materialIndex < 0)
+            {
+                renderer.GetPropertyBlock(properties);
+            }
+            else
+            {
+                renderer.GetPropertyBlock(properties, materialIndex);
+            }
+        }
+
+        private static void SetPropertyBlock(
+            Renderer renderer,
+            MaterialPropertyBlock properties,
+            int materialIndex)
+        {
+            if (materialIndex < 0)
+            {
+                renderer.SetPropertyBlock(properties);
+            }
+            else
+            {
+                renderer.SetPropertyBlock(properties, materialIndex);
+            }
         }
 
         private static int ValidateKind(MountainRoadSurfaceKind kind)

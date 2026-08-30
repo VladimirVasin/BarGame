@@ -38,7 +38,7 @@ namespace BarPromenade
         public const string ResourcePath =
             "City/CityBuildingAssetProvider";
         public const string ExpectedDesignId =
-            "city_buildings_prototypes_v1";
+            "city_buildings_prototypes_v2";
         public const int ExpectedPrototypeCount = 4;
 
         private static readonly PrototypeSpec[] ExpectedPrototypes =

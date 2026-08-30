@@ -94,6 +94,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.096599996, g: 0.1104, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.120749995, g: 0.1056, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.108100004, g: 0.12, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_BootCuff.L
     role: footwear_detail
     paletteName: miner_ochre_dark
@@ -102,6 +103,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.126, g: 0.092, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.1575, g: 0.088, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.141, g: 0.1, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_BootCuff.R
     role: footwear_detail
     paletteName: miner_ochre_dark
@@ -110,6 +112,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.126, g: 0.092, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.1575, g: 0.088, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.141, g: 0.1, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.L
     role: face_detail
     paletteName: void
@@ -118,6 +121,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.R
     role: face_detail
     paletteName: void
@@ -126,6 +130,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_HelmetBrim
     role: signature_silhouette
     paletteName: miner_helmet_dark
@@ -134,6 +139,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.096599996, g: 0.1104, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.120749995, g: 0.1056, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.108100004, g: 0.12, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_HelmetDome
     role: signature_silhouette
     paletteName: miner_helmet
@@ -142,6 +148,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3612, g: 0.4002, b: 0.42744997, a: 1}
     variantTwoColor: {r: 0.4515, g: 0.3828, b: 0.32369998, a: 1}
     variantThreeColor: {r: 0.40420002, g: 0.435, b: 0.3569, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_HelmetRidge
     role: surface_detail
     paletteName: miner_helmet_dark
@@ -150,6 +157,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.096599996, g: 0.1104, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.120749995, g: 0.1056, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.108100004, g: 0.12, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_LampBezel
     role: surface_detail
     paletteName: miner_helmet
@@ -158,6 +166,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.3612, g: 0.4002, b: 0.42744997, a: 1}
     variantTwoColor: {r: 0.4515, g: 0.3828, b: 0.32369998, a: 1}
     variantThreeColor: {r: 0.40420002, g: 0.435, b: 0.3569, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_LampCable.01
     role: surface_detail
     paletteName: miner_cable
@@ -166,6 +175,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.052079998, g: 0.05336, b: 0.05768, a: 1}
     variantTwoColor: {r: 0.0651, g: 0.051039997, b: 0.04368, a: 1}
     variantThreeColor: {r: 0.05828, g: 0.058, b: 0.04816, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_LampCable.02
     role: surface_detail
     paletteName: miner_cable
@@ -174,6 +184,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.052079998, g: 0.05336, b: 0.05768, a: 1}
     variantTwoColor: {r: 0.0651, g: 0.051039997, b: 0.04368, a: 1}
     variantThreeColor: {r: 0.05828, g: 0.058, b: 0.04816, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_LampCable.03
     role: surface_detail
     paletteName: miner_cable
@@ -182,6 +193,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.052079998, g: 0.05336, b: 0.05768, a: 1}
     variantTwoColor: {r: 0.0651, g: 0.051039997, b: 0.04368, a: 1}
     variantThreeColor: {r: 0.05828, g: 0.058, b: 0.04816, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_LampHousing
     role: signature_silhouette
     paletteName: miner_helmet_dark
@@ -190,6 +202,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.096599996, g: 0.1104, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.120749995, g: 0.1056, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.108100004, g: 0.12, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_LampLens
     role: signature_silhouette
     paletteName: lamp_lens
@@ -198,6 +211,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.7392, g: 0.7544, b: 0.65919995, a: 1}
     variantTwoColor: {r: 0.92399997, g: 0.7216, b: 0.49919996, a: 1}
     variantThreeColor: {r: 0.8272, g: 0.82, b: 0.5504, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Mouth
     role: face_detail
     paletteName: void
@@ -206,6 +220,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Nose
     role: face_detail
     paletteName: skin
@@ -214,6 +229,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29819998, g: 0.21620001, b: 0.16995001, a: 1}
     variantTwoColor: {r: 0.37274998, g: 0.2068, b: 0.1287, a: 1}
     variantThreeColor: {r: 0.3337, g: 0.235, b: 0.1419, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ShoeSole.L
     role: footwear_detail
     paletteName: sole
@@ -222,6 +238,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ShoeSole.R
     role: footwear_detail
     paletteName: sole
@@ -230,6 +247,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Collar
     role: clothing_detail
     paletteName: miner_ochre_dark
@@ -238,6 +256,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.126, g: 0.092, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.1575, g: 0.088, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.141, g: 0.1, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_HighVisBand
     role: clothing_detail
     paletteName: miner_hivis
@@ -246,6 +265,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5376, g: 0.4784, b: 0.18540001, a: 1}
     variantTwoColor: {r: 0.67199993, g: 0.45759997, b: 0.1404, a: 1}
     variantThreeColor: {r: 0.6016, g: 0.52, b: 0.15480001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_JacketHem
     role: clothing_detail
     paletteName: miner_ochre_dark
@@ -254,6 +274,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.126, g: 0.092, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.1575, g: 0.088, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.141, g: 0.1, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Foot.L
     role: signature_silhouette
     paletteName: miner_rubber
@@ -262,6 +283,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.040319998, g: 0.04048, b: 0.041199997, a: 1}
     variantTwoColor: {r: 0.050399996, g: 0.03872, b: 0.031199997, a: 1}
     variantThreeColor: {r: 0.04512, g: 0.044, b: 0.0344, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Foot.R
     role: signature_silhouette
     paletteName: miner_rubber
@@ -270,6 +292,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.040319998, g: 0.04048, b: 0.041199997, a: 1}
     variantTwoColor: {r: 0.050399996, g: 0.03872, b: 0.031199997, a: 1}
     variantThreeColor: {r: 0.04512, g: 0.044, b: 0.0344, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Forearm.L
     role: body
     paletteName: miner_ochre_light
@@ -278,6 +301,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.35279998, g: 0.2668, b: 0.103, a: 1}
     variantTwoColor: {r: 0.44099995, g: 0.2552, b: 0.078, a: 1}
     variantThreeColor: {r: 0.39479998, g: 0.29, b: 0.086, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Forearm.R
     role: body
     paletteName: miner_ochre
@@ -286,6 +310,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.2604, g: 0.1886, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.32549998, g: 0.1804, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.29140002, g: 0.205, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.L
     role: body
     paletteName: miner_rubber
@@ -294,6 +319,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.040319998, g: 0.04048, b: 0.041199997, a: 1}
     variantTwoColor: {r: 0.050399996, g: 0.03872, b: 0.031199997, a: 1}
     variantThreeColor: {r: 0.04512, g: 0.044, b: 0.0344, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.R
     role: body
     paletteName: miner_rubber
@@ -302,6 +328,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.040319998, g: 0.04048, b: 0.041199997, a: 1}
     variantTwoColor: {r: 0.050399996, g: 0.03872, b: 0.031199997, a: 1}
     variantThreeColor: {r: 0.04512, g: 0.044, b: 0.0344, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Head
     role: body
     paletteName: skin
@@ -310,6 +337,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29819998, g: 0.21620001, b: 0.16995001, a: 1}
     variantTwoColor: {r: 0.37274998, g: 0.2068, b: 0.1287, a: 1}
     variantThreeColor: {r: 0.3337, g: 0.235, b: 0.1419, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Neck
     role: body
     paletteName: miner_ochre_dark
@@ -318,6 +346,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.126, g: 0.092, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.1575, g: 0.088, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.141, g: 0.1, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Pelvis
     role: body
     paletteName: miner_trousers
@@ -326,6 +355,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.088199995, g: 0.09016, b: 0.08034, a: 1}
     variantTwoColor: {r: 0.11024999, g: 0.08623999, b: 0.06084, a: 1}
     variantThreeColor: {r: 0.098699994, g: 0.098, b: 0.067080006, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Shin.L
     role: body
     paletteName: miner_trousers
@@ -334,6 +364,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.088199995, g: 0.09016, b: 0.08034, a: 1}
     variantTwoColor: {r: 0.11024999, g: 0.08623999, b: 0.06084, a: 1}
     variantThreeColor: {r: 0.098699994, g: 0.098, b: 0.067080006, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Shin.R
     role: body
     paletteName: miner_trousers
@@ -342,6 +373,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.088199995, g: 0.09016, b: 0.08034, a: 1}
     variantTwoColor: {r: 0.11024999, g: 0.08623999, b: 0.06084, a: 1}
     variantThreeColor: {r: 0.098699994, g: 0.098, b: 0.067080006, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Thigh.L
     role: body
     paletteName: miner_trousers
@@ -350,6 +382,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.088199995, g: 0.09016, b: 0.08034, a: 1}
     variantTwoColor: {r: 0.11024999, g: 0.08623999, b: 0.06084, a: 1}
     variantThreeColor: {r: 0.098699994, g: 0.098, b: 0.067080006, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Thigh.R
     role: body
     paletteName: miner_trousers
@@ -358,6 +391,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.088199995, g: 0.09016, b: 0.08034, a: 1}
     variantTwoColor: {r: 0.11024999, g: 0.08623999, b: 0.06084, a: 1}
     variantThreeColor: {r: 0.098699994, g: 0.098, b: 0.067080006, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Torso
     role: body
     paletteName: miner_ochre
@@ -366,6 +400,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.2604, g: 0.1886, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.32549998, g: 0.1804, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.29140002, g: 0.205, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_UpperArm.L
     role: body
     paletteName: miner_ochre
@@ -374,6 +409,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.2604, g: 0.1886, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.32549998, g: 0.1804, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.29140002, g: 0.205, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_UpperArm.R
     role: body
     paletteName: miner_ochre
@@ -382,6 +418,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.2604, g: 0.1886, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.32549998, g: 0.1804, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.29140002, g: 0.205, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   headAnchor: {fileID: 3761208081952360342}
   pelvisAnchor: {fileID: 4262684800507566150}
   leftFootAnchor: {fileID: 5936326566770101154}
@@ -400,6 +437,7 @@ MonoBehaviour:
   paletteVariant: 0
   headLamp: {fileID: 2885974950837579249}
   preservesAirborneMotion: 1
+  detailAtlas: {fileID: 0}
 --- !u!1 &1897193864476602828
 GameObject:
   m_ObjectHideFlags: 0

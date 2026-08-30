@@ -95,6 +95,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.24359998, g: 0.0552, b: 0.077250004, a: 1}
     variantTwoColor: {r: 0.30449998, g: 0.0528, b: 0.0585, a: 1}
     variantThreeColor: {r: 0.2726, g: 0.06, b: 0.064500004, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_BouquetBloomB
     role: signature_silhouette
     paletteName: bouquet_bloom
@@ -103,6 +104,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.24359998, g: 0.0552, b: 0.077250004, a: 1}
     variantTwoColor: {r: 0.30449998, g: 0.0528, b: 0.0585, a: 1}
     variantThreeColor: {r: 0.2726, g: 0.06, b: 0.064500004, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_BouquetGreens
     role: surface_detail
     paletteName: bouquet_stem
@@ -111,6 +113,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.1012, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.0968, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.11, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_BouquetStems
     role: surface_detail
     paletteName: bouquet_stem
@@ -119,6 +122,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0462, g: 0.1012, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.057749998, g: 0.0968, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.0517, g: 0.11, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_BouquetWrap
     role: signature_silhouette
     paletteName: bouquet_wrap
@@ -127,6 +131,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.2772, g: 0.27600002, b: 0.24719998, a: 1}
     variantTwoColor: {r: 0.3465, g: 0.264, b: 0.1872, a: 1}
     variantThreeColor: {r: 0.3102, g: 0.3, b: 0.20639999, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.01
     role: surface_detail
     paletteName: button
@@ -135,6 +140,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.1334, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.1276, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.145, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.02
     role: surface_detail
     paletteName: button
@@ -143,6 +149,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.1334, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.1276, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.145, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.03
     role: surface_detail
     paletteName: button
@@ -151,6 +158,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.1302, g: 0.1334, b: 0.11845, a: 1}
     variantTwoColor: {r: 0.16274999, g: 0.1276, b: 0.0897, a: 1}
     variantThreeColor: {r: 0.14570001, g: 0.145, b: 0.098900005, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.L
     role: face_detail
     paletteName: void
@@ -159,6 +167,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.R
     role: face_detail
     paletteName: void
@@ -167,6 +176,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Mouth
     role: face_detail
     paletteName: void
@@ -175,6 +185,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Nose
     role: face_detail
     paletteName: pale_skin
@@ -183,6 +194,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.43679997, g: 0.43240002, b: 0.4429, a: 1}
     variantTwoColor: {r: 0.54599994, g: 0.4136, b: 0.3354, a: 1}
     variantThreeColor: {r: 0.4888, g: 0.47, b: 0.3698, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Coat
     role: clothing
     paletteName: mourner_coat
@@ -191,6 +203,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.04368, g: 0.046, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.0546, g: 0.044, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.04888, g: 0.05, b: 0.049879998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatHem
     role: clothing
     paletteName: mourner_coat_dark
@@ -199,6 +212,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.02352, g: 0.024840001, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.0294, g: 0.02376, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.026320001, g: 0.027, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.L
     role: clothing
     paletteName: mourner_coat
@@ -207,6 +221,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.04368, g: 0.046, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.0546, g: 0.044, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.04888, g: 0.05, b: 0.049879998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.R
     role: clothing
     paletteName: mourner_coat
@@ -215,6 +230,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.04368, g: 0.046, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.0546, g: 0.044, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.04888, g: 0.05, b: 0.049879998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.L
     role: clothing
     paletteName: mourner_coat_dark
@@ -223,6 +239,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.02352, g: 0.024840001, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.0294, g: 0.02376, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.026320001, g: 0.027, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.R
     role: clothing
     paletteName: mourner_coat_dark
@@ -231,6 +248,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.02352, g: 0.024840001, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.0294, g: 0.02376, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.026320001, g: 0.027, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.L
     role: clothing
     paletteName: mourner_coat
@@ -239,6 +257,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.04368, g: 0.046, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.0546, g: 0.044, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.04888, g: 0.05, b: 0.049879998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.R
     role: clothing
     paletteName: mourner_coat
@@ -247,6 +266,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.04368, g: 0.046, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.0546, g: 0.044, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.04888, g: 0.05, b: 0.049879998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Stocking.L
     role: clothing
     paletteName: mourner_stocking
@@ -255,6 +275,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0378, g: 0.04048, b: 0.04944, a: 1}
     variantTwoColor: {r: 0.04725, g: 0.03872, b: 0.03744, a: 1}
     variantThreeColor: {r: 0.0423, g: 0.044, b: 0.04128, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Stocking.R
     role: clothing
     paletteName: mourner_stocking
@@ -263,6 +284,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0378, g: 0.04048, b: 0.04944, a: 1}
     variantTwoColor: {r: 0.04725, g: 0.03872, b: 0.03744, a: 1}
     variantThreeColor: {r: 0.0423, g: 0.044, b: 0.04128, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Veil
     role: signature_silhouette
     paletteName: mourner_veil
@@ -271,6 +293,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.031919997, g: 0.03312, b: 0.045319997, a: 1}
     variantTwoColor: {r: 0.039899997, g: 0.03168, b: 0.034319997, a: 1}
     variantThreeColor: {r: 0.03572, g: 0.036, b: 0.03784, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_VeilCrown
     role: signature_silhouette
     paletteName: mourner_veil
@@ -279,6 +302,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.031919997, g: 0.03312, b: 0.045319997, a: 1}
     variantTwoColor: {r: 0.039899997, g: 0.03168, b: 0.034319997, a: 1}
     variantThreeColor: {r: 0.03572, g: 0.036, b: 0.03784, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_VeilDrape.L
     role: signature_silhouette
     paletteName: mourner_veil
@@ -287,6 +311,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.031919997, g: 0.03312, b: 0.045319997, a: 1}
     variantTwoColor: {r: 0.039899997, g: 0.03168, b: 0.034319997, a: 1}
     variantThreeColor: {r: 0.03572, g: 0.036, b: 0.03784, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_VeilDrape.R
     role: signature_silhouette
     paletteName: mourner_veil
@@ -295,6 +320,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.031919997, g: 0.03312, b: 0.045319997, a: 1}
     variantTwoColor: {r: 0.039899997, g: 0.03168, b: 0.034319997, a: 1}
     variantThreeColor: {r: 0.03572, g: 0.036, b: 0.03784, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_VeilTail
     role: clothing
     paletteName: mourner_veil_dark
@@ -303,6 +329,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0168, g: 0.017479999, b: 0.02472, a: 1}
     variantTwoColor: {r: 0.020999998, g: 0.016719999, b: 0.01872, a: 1}
     variantThreeColor: {r: 0.0188, g: 0.019, b: 0.02064, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_VeilWrap
     role: clothing
     paletteName: mourner_veil_dark
@@ -311,6 +338,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0168, g: 0.017479999, b: 0.02472, a: 1}
     variantTwoColor: {r: 0.020999998, g: 0.016719999, b: 0.01872, a: 1}
     variantThreeColor: {r: 0.0188, g: 0.019, b: 0.02064, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.L
     role: body
     paletteName: shoe
@@ -319,6 +347,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0378, g: 0.034959998, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.04725, g: 0.033439998, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.0423, g: 0.038, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.R
     role: body
     paletteName: shoe
@@ -327,6 +356,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.0378, g: 0.034959998, b: 0.03296, a: 1}
     variantTwoColor: {r: 0.04725, g: 0.033439998, b: 0.02496, a: 1}
     variantThreeColor: {r: 0.0423, g: 0.038, b: 0.027520001, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.L
     role: body
     paletteName: sole
@@ -335,6 +365,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.R
     role: body
     paletteName: sole
@@ -343,6 +374,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Bust
     role: body
     paletteName: mourner_coat
@@ -351,6 +383,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.04368, g: 0.046, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.0546, g: 0.044, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.04888, g: 0.05, b: 0.049879998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.L
     role: body
     paletteName: pale_skin
@@ -359,6 +392,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.43679997, g: 0.43240002, b: 0.4429, a: 1}
     variantTwoColor: {r: 0.54599994, g: 0.4136, b: 0.3354, a: 1}
     variantThreeColor: {r: 0.4888, g: 0.47, b: 0.3698, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.R
     role: body
     paletteName: pale_skin
@@ -367,6 +401,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.43679997, g: 0.43240002, b: 0.4429, a: 1}
     variantTwoColor: {r: 0.54599994, g: 0.4136, b: 0.3354, a: 1}
     variantThreeColor: {r: 0.4888, g: 0.47, b: 0.3698, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Head
     role: body
     paletteName: pale_skin
@@ -375,6 +410,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.43679997, g: 0.43240002, b: 0.4429, a: 1}
     variantTwoColor: {r: 0.54599994, g: 0.4136, b: 0.3354, a: 1}
     variantThreeColor: {r: 0.4888, g: 0.47, b: 0.3698, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Neck
     role: body
     paletteName: pale_skin
@@ -383,6 +419,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.43679997, g: 0.43240002, b: 0.4429, a: 1}
     variantTwoColor: {r: 0.54599994, g: 0.4136, b: 0.3354, a: 1}
     variantThreeColor: {r: 0.4888, g: 0.47, b: 0.3698, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Waist
     role: body
     paletteName: mourner_coat
@@ -391,6 +428,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.04368, g: 0.046, b: 0.059739996, a: 1}
     variantTwoColor: {r: 0.0546, g: 0.044, b: 0.045239996, a: 1}
     variantThreeColor: {r: 0.04888, g: 0.05, b: 0.049879998, a: 1}
+    usesDetailAtlas: 0
   headAnchor: {fileID: 8951598112666893723}
   pelvisAnchor: {fileID: 8295649072794935883}
   leftFootAnchor: {fileID: 1903360539787243951}
@@ -409,6 +447,7 @@ MonoBehaviour:
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
+  detailAtlas: {fileID: 0}
 --- !u!1001 &4660976995884537271
 PrefabInstance:
   m_ObjectHideFlags: 0

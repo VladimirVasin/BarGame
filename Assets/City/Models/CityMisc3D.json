@@ -1,9 +1,9 @@
 {
   "generator": "tools/build-city-misc-3d-model.py",
-  "generator_version": "4.7.0",
+  "generator_version": "4.8.0",
   "blender_version": "5.0.1",
   "design_id": "city_misc_citywide_v4",
-  "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter Kit",
+  "display_name": "City Misc Citywide Catalog + Church Courtyard + Nightlife Shelter + Residential Courtyard Life + Fringe Service Kit",
   "source_axes": {
     "right": "+X",
     "forward": "+Y",
@@ -79,9 +79,9 @@
   "materials": false,
   "preview_materials_in_presentation_only": true,
   "animation_count": 0,
-  "mesh_count": 238,
-  "assembly_count": 115,
-  "triangle_count": 42750,
+  "mesh_count": 271,
+  "assembly_count": 126,
+  "triangle_count": 48926,
   "assemblies": [
     {
       "kind": "IndustrialStacksAndTanks",
@@ -5237,6 +5237,541 @@
         1.051341,
         0.480329,
         0.292884
+      ]
+    },
+    {
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "footprint_limit_x_m": 3.4,
+        "footprint_limit_forward_m": 1.05,
+        "height_limit_m": 1.2,
+        "seat_a_x_m": -0.75,
+        "seat_a_forward_m": 0.42,
+        "seat_b_x_m": 0.75,
+        "seat_b_forward_m": 0.42,
+        "seat_height_m": 0.42,
+        "seat_facing_target_forward_m": -0.15
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "CollisionProxy",
+        "ActorPresentation"
+      ],
+      "root_derivation": "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ResidentialCourtyardPocket_Variant01_TableAndStools_Residential_Timber",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant01_NardiPieces_Masonry_Stone",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant01_TeaTray_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.96,
+        -0.44,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.96,
+        0.5,
+        0.91
+      ],
+      "bounds_min_unity": [
+        -0.96,
+        0.0,
+        -0.44
+      ],
+      "bounds_max_unity": [
+        0.96,
+        0.91,
+        0.5
+      ]
+    },
+    {
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 1,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "footprint_limit_x_m": 3.2,
+        "footprint_limit_forward_m": 1.05,
+        "height_limit_m": 1.35,
+        "actor_dock_x_m": 1.15,
+        "actor_dock_forward_m": 0.35,
+        "actor_facing_target_x_m": -0.2,
+        "actor_facing_target_forward_m": 0.0
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "CollisionProxy",
+        "ActorPresentation"
+      ],
+      "root_derivation": "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ResidentialCourtyardPocket_Variant02_BicycleFrame_Residential_PaintedMetal",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant02_RepairCrate_Residential_Timber",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant02_TyresAndTools_Street"
+      ],
+      "bounds_min_source": [
+        -1.25,
+        -0.31,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.37,
+        0.190336,
+        1.22
+      ],
+      "bounds_min_unity": [
+        -1.25,
+        0.0,
+        -0.31
+      ],
+      "bounds_max_unity": [
+        1.37,
+        1.22,
+        0.190336
+      ]
+    },
+    {
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 2,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "footprint_limit_x_m": 2.4,
+        "footprint_limit_forward_m": 1.05,
+        "height_limit_m": 3.2,
+        "actor_dock_x_m": 0.68,
+        "actor_dock_forward_m": 0.36,
+        "actor_facing_target_x_m": -0.28,
+        "actor_facing_target_forward_m": 0.0,
+        "rope_top_m": 3.14
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "CollisionProxy",
+        "ActorPresentation"
+      ],
+      "root_derivation": "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ResidentialCourtyardPocket_Variant03_Basket_Residential_Timber",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant03_Rope_Street",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant03_Pulley_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -0.695366,
+        -0.28,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.61,
+        0.277048,
+        3.14
+      ],
+      "bounds_min_unity": [
+        -0.695366,
+        0.0,
+        -0.28
+      ],
+      "bounds_max_unity": [
+        0.61,
+        3.14,
+        0.277048
+      ]
+    },
+    {
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 3,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "footprint_limit_x_m": 3.0,
+        "footprint_limit_forward_m": 1.05,
+        "height_limit_m": 1.45,
+        "actor_dock_x_m": 1.0,
+        "actor_dock_forward_m": 0.35,
+        "actor_facing_target_x_m": -0.55,
+        "actor_facing_target_forward_m": -0.1
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "CollisionProxy",
+        "ActorPresentation"
+      ],
+      "root_derivation": "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ResidentialCourtyardPocket_Variant04_ChairAndBench_Residential_Timber",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant04_ClampAndTools_Street_PaintedMetal",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant04_ReplacementSlats_Residential_Timber"
+      ],
+      "bounds_min_source": [
+        -0.99,
+        -0.38,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.27193,
+        0.322031,
+        1.28
+      ],
+      "bounds_min_unity": [
+        -0.99,
+        0.0,
+        -0.38
+      ],
+      "bounds_max_unity": [
+        1.27193,
+        1.28,
+        0.322031
+      ]
+    },
+    {
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 4,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "footprint_limit_x_m": 2.8,
+        "footprint_limit_forward_m": 1.05,
+        "height_limit_m": 1.55,
+        "actor_dock_x_m": 0.0,
+        "actor_dock_forward_m": 0.35,
+        "actor_facing_target_x_m": -0.55,
+        "actor_facing_target_forward_m": -0.08
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "CollisionProxy",
+        "ActorPresentation"
+      ],
+      "root_derivation": "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ResidentialCourtyardPocket_Variant05_Broom_Residential_Timber",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant05_Dustpan_Street",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant05_Bucket_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -1.11,
+        -0.318862,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.154311,
+        0.17,
+        1.474677
+      ],
+      "bounds_min_unity": [
+        -1.11,
+        0.0,
+        -0.318862
+      ],
+      "bounds_max_unity": [
+        1.154311,
+        1.474677,
+        0.17
+      ]
+    },
+    {
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 5,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "footprint_limit_x_m": 3.4,
+        "footprint_limit_forward_m": 1.05,
+        "height_limit_m": 1.25,
+        "seat_a_x_m": -0.46,
+        "seat_a_forward_m": 0.2,
+        "seat_b_x_m": 0.02,
+        "seat_b_forward_m": 0.2,
+        "seat_height_m": 0.49,
+        "seat_facing_target_forward_m": -0.16
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "CollisionProxy",
+        "ActorPresentation"
+      ],
+      "root_derivation": "ResidentialCourtyardPocketPlan.Ground+FacadeFacing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_ResidentialCourtyardPocket_Variant06_LowBench_Residential_Timber",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant06_Planters_Masonry_Stone",
+        "GEO_CMM_ResidentialCourtyardPocket_Variant06_Basin_Street_PaintedMetal"
+      ],
+      "bounds_min_source": [
+        -1.528802,
+        -0.378997,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.528802,
+        0.075309,
+        1.02
+      ],
+      "bounds_min_unity": [
+        -1.528802,
+        0.0,
+        -0.378997
+      ],
+      "bounds_max_unity": [
+        1.528802,
+        1.02,
+        0.075309
+      ]
+    },
+    {
+      "kind": "FringeMasonCart",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "footprint_limit_x_m": 3.0,
+        "footprint_limit_forward_m": 2.2,
+        "height_limit_m": 1.45,
+        "actor_dock_x_m": 0.0,
+        "actor_dock_forward_m": 1.25,
+        "actor_facing_target_x_m": -0.18,
+        "actor_facing_target_forward_m": 0.0
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "CollisionProxy",
+        "ActorPresentation"
+      ],
+      "root_derivation": "FringeServicePocketPlan.PropGround+Facing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_FringeMasonCart_Variant01_Cart_Residential_Timber",
+        "GEO_CMM_FringeMasonCart_Variant01_MasonryLoad_Masonry_Stone",
+        "GEO_CMM_FringeMasonCart_Variant01_WheelAndHardware_Fixture"
+      ],
+      "bounds_min_source": [
+        -0.94,
+        -0.74,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.4,
+        0.74,
+        1.11
+      ],
+      "bounds_min_unity": [
+        -0.94,
+        0.0,
+        -0.74
+      ],
+      "bounds_max_unity": [
+        1.4,
+        1.11,
+        0.74
+      ]
+    },
+    {
+      "kind": "FringeWinchServiceSet",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "footprint_limit_x_m": 2.8,
+        "footprint_limit_forward_m": 2.2,
+        "height_limit_m": 2.0,
+        "actor_dock_x_m": 1.35,
+        "actor_dock_forward_m": 0.82,
+        "actor_facing_target_x_m": 0.0,
+        "actor_facing_target_forward_m": 0.0
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "CollisionProxy",
+        "ActorPresentation"
+      ],
+      "root_derivation": "FringeServicePocketPlan.PropGround+Facing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_FringeWinchServiceSet_Variant01_Winch_Industrial",
+        "GEO_CMM_FringeWinchServiceSet_Variant01_TimberCrib_Residential_Timber",
+        "GEO_CMM_FringeWinchServiceSet_Variant01_CableAndTools_Fixture"
+      ],
+      "bounds_min_source": [
+        -1.15,
+        -0.71,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.18,
+        0.718216,
+        1.644013
+      ],
+      "bounds_min_unity": [
+        -1.15,
+        0.0,
+        -0.71
+      ],
+      "bounds_max_unity": [
+        1.18,
+        1.644013,
+        0.718216
+      ]
+    },
+    {
+      "kind": "FringeTunnelServiceSet",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "footprint_limit_x_m": 3.4,
+        "footprint_limit_forward_m": 2.4,
+        "height_limit_m": 1.65,
+        "actor_dock_x_m": 1.55,
+        "actor_dock_forward_m": 0.9,
+        "actor_facing_target_x_m": 0.2,
+        "actor_facing_target_forward_m": 0.0
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "CollisionProxy",
+        "ActorPresentation"
+      ],
+      "root_derivation": "FringeServicePocketPlan.PropGround+Facing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_FringeTunnelServiceSet_Variant01_BarrierAndRail_Industrial",
+        "GEO_CMM_FringeTunnelServiceSet_Variant01_RepairBlocks_Masonry_Stone",
+        "GEO_CMM_FringeTunnelServiceSet_Variant01_Tools_Fixture"
+      ],
+      "bounds_min_source": [
+        -1.47,
+        -0.781066,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.47,
+        0.79,
+        1.485499
+      ],
+      "bounds_min_unity": [
+        -1.47,
+        0.0,
+        -0.781066
+      ],
+      "bounds_max_unity": [
+        1.47,
+        1.485499,
+        0.79
+      ]
+    },
+    {
+      "kind": "FringeFloodMaintenanceSet",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "footprint_limit_x_m": 3.0,
+        "footprint_limit_forward_m": 2.2,
+        "height_limit_m": 1.45,
+        "actor_dock_x_m": 1.35,
+        "actor_dock_forward_m": 0.88,
+        "actor_facing_target_x_m": -0.3,
+        "actor_facing_target_forward_m": 0.0
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "CollisionProxy",
+        "ActorPresentation"
+      ],
+      "root_derivation": "FringeServicePocketPlan.PropGround+Facing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_FringeFloodMaintenanceSet_Variant01_PumpAndPipe_Industrial",
+        "GEO_CMM_FringeFloodMaintenanceSet_Variant01_Planks_Residential_Timber",
+        "GEO_CMM_FringeFloodMaintenanceSet_Variant01_DryHoseAndTools_Fixture"
+      ],
+      "bounds_min_source": [
+        -1.11,
+        -0.697864,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.18,
+        0.611977,
+        1.08
+      ],
+      "bounds_min_unity": [
+        -1.11,
+        0.0,
+        -0.697864
+      ],
+      "bounds_max_unity": [
+        1.18,
+        1.08,
+        0.611977
+      ]
+    },
+    {
+      "kind": "FringeOpenHoodCar",
+      "variant": 0,
+      "scale_mode": "fixed_meters",
+      "placement_contract": "ground_forward_frame",
+      "canonical_reference": {
+        "footprint_limit_x_m": 5.8,
+        "footprint_limit_forward_m": 4.2,
+        "height_limit_m": 2.15,
+        "mechanic_dock_x_m": 2.48,
+        "mechanic_dock_forward_m": -1.48,
+        "mechanic_facing_target_x_m": 1.3,
+        "mechanic_facing_target_forward_m": -0.35,
+        "removed_wheel_x_m": 1.18,
+        "removed_wheel_forward_m": -1.36
+      },
+      "scale_parameters": [],
+      "unity_owned_parts": [
+        "CollisionProxy",
+        "ActorPresentation"
+      ],
+      "root_derivation": "FringeServicePocketPlan.PropGround+Facing",
+      "coordinate_profile": "root_local_direct",
+      "expected_source_min_z": 0.0,
+      "part_meshes": [
+        "GEO_CMM_FringeOpenHoodCar_Variant01_BodyAndOpenHood_Street_PaintedMetal",
+        "GEO_CMM_FringeOpenHoodCar_Variant01_TyresCabinAndEngine_Street",
+        "GEO_CMM_FringeOpenHoodCar_Variant01_JackRemovedWheelAndTools_Fixture"
+      ],
+      "bounds_min_source": [
+        -2.18,
+        -1.691475,
+        0.0
+      ],
+      "bounds_max_source": [
+        2.29,
+        0.88,
+        1.72319
+      ],
+      "bounds_min_unity": [
+        -2.18,
+        0.0,
+        -1.691475
+      ],
+      "bounds_max_unity": [
+        2.29,
+        1.72319,
+        0.88
       ]
     }
   ],
@@ -14760,7 +15295,1327 @@
         1.0,
         1.0
       ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant01_TableAndStools_Residential_Timber",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 0,
+      "part_role": "Residential_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Residential_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 264,
+      "triangles": 456,
+      "bounds_min_source": [
+        -0.96,
+        -0.44,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.96,
+        0.5,
+        0.775
+      ],
+      "bounds_min_unity": [
+        -0.96,
+        0.0,
+        -0.44
+      ],
+      "bounds_max_unity": [
+        0.96,
+        0.775,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant01_NardiPieces_Masonry_Stone",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 180,
+      "triangles": 324,
+      "bounds_min_source": [
+        -0.632,
+        -0.319455,
+        0.78
+      ],
+      "bounds_max_source": [
+        0.102,
+        0.019455,
+        0.825
+      ],
+      "bounds_min_unity": [
+        -0.632,
+        0.78,
+        -0.319455
+      ],
+      "bounds_max_unity": [
+        0.102,
+        0.825,
+        0.019455
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant01_TeaTray_Street_PaintedMetal",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 116,
+      "bounds_min_source": [
+        0.37,
+        -0.3,
+        0.78
+      ],
+      "bounds_max_source": [
+        0.75,
+        0.0,
+        0.91
+      ],
+      "bounds_min_unity": [
+        0.37,
+        0.78,
+        -0.3
+      ],
+      "bounds_max_unity": [
+        0.75,
+        0.91,
+        0.0
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant02_BicycleFrame_Residential_PaintedMetal",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 1,
+      "part_role": "Residential_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Residential_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 112,
+      "triangles": 192,
+      "bounds_min_source": [
+        -0.871366,
+        -0.191472,
+        0.058552
+      ],
+      "bounds_max_source": [
+        0.608772,
+        0.190336,
+        0.848927
+      ],
+      "bounds_min_unity": [
+        -0.871366,
+        0.058552,
+        -0.191472
+      ],
+      "bounds_max_unity": [
+        0.608772,
+        0.848927,
+        0.190336
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant02_RepairCrate_Residential_Timber",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 1,
+      "part_role": "Residential_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Residential_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        0.79,
+        -0.31,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.37,
+        0.11,
+        0.315
+      ],
+      "bounds_min_unity": [
+        0.79,
+        0.0,
+        -0.31
+      ],
+      "bounds_max_unity": [
+        1.37,
+        0.315,
+        0.11
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant02_TyresAndTools_Street",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 1,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 168,
+      "triangles": 324,
+      "bounds_min_source": [
+        -1.25,
+        -0.23985,
+        0.055
+      ],
+      "bounds_max_source": [
+        1.182546,
+        0.075,
+        1.22
+      ],
+      "bounds_min_unity": [
+        -1.25,
+        0.055,
+        -0.23985
+      ],
+      "bounds_max_unity": [
+        1.182546,
+        1.22,
+        0.075
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant03_Basket_Residential_Timber",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 2,
+      "part_role": "Residential_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Residential_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 144,
+      "triangles": 252,
+      "bounds_min_source": [
+        -0.695366,
+        -0.277048,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.135366,
+        0.277048,
+        0.41194
+      ],
+      "bounds_min_unity": [
+        -0.695366,
+        0.0,
+        -0.277048
+      ],
+      "bounds_max_unity": [
+        0.135366,
+        0.41194,
+        0.277048
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant03_Rope_Street",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 2,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 50,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.61258,
+        -0.214416,
+        0.268771
+      ],
+      "bounds_max_source": [
+        0.484153,
+        0.214416,
+        3.009499
+      ],
+      "bounds_min_unity": [
+        -0.61258,
+        0.268771,
+        -0.214416
+      ],
+      "bounds_max_unity": [
+        0.484153,
+        3.009499,
+        0.214416
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant03_Pulley_Street_PaintedMetal",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 2,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 80,
+      "triangles": 152,
+      "bounds_min_source": [
+        -0.42,
+        -0.28,
+        2.69
+      ],
+      "bounds_max_source": [
+        0.61,
+        0.04,
+        3.14
+      ],
+      "bounds_min_unity": [
+        -0.42,
+        2.69,
+        -0.28
+      ],
+      "bounds_max_unity": [
+        0.61,
+        3.14,
+        0.04
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant04_ChairAndBench_Residential_Timber",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 3,
+      "part_role": "Residential_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Residential_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 204,
+      "triangles": 352,
+      "bounds_min_source": [
+        -0.99,
+        -0.38,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.03,
+        0.15,
+        1.28
+      ],
+      "bounds_min_unity": [
+        -0.99,
+        0.0,
+        -0.38
+      ],
+      "bounds_max_unity": [
+        1.03,
+        1.28,
+        0.15
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant04_ClampAndTools_Street_PaintedMetal",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 3,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 58,
+      "triangles": 100,
+      "bounds_min_source": [
+        -0.030289,
+        -0.36,
+        0.68
+      ],
+      "bounds_max_source": [
+        0.86,
+        -0.04052,
+        0.904373
+      ],
+      "bounds_min_unity": [
+        -0.030289,
+        0.68,
+        -0.36
+      ],
+      "bounds_max_unity": [
+        0.86,
+        0.904373,
+        -0.04052
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant04_ReplacementSlats_Residential_Timber",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 3,
+      "part_role": "Residential_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Residential_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.012888,
+        0.018838,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.27193,
+        0.322031,
+        0.055
+      ],
+      "bounds_min_unity": [
+        -0.012888,
+        0.0,
+        0.018838
+      ],
+      "bounds_max_unity": [
+        1.27193,
+        0.055,
+        0.322031
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant05_Broom_Residential_Timber",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 4,
+      "part_role": "Residential_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Residential_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 46,
+      "triangles": 80,
+      "bounds_min_source": [
+        -1.11,
+        -0.20369,
+        0.0
+      ],
+      "bounds_max_source": [
+        -0.509044,
+        0.00369,
+        1.474677
+      ],
+      "bounds_min_unity": [
+        -1.11,
+        0.0,
+        -0.20369
+      ],
+      "bounds_max_unity": [
+        -0.509044,
+        1.474677,
+        0.00369
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant05_Dustpan_Street",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 4,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 46,
+      "triangles": 80,
+      "bounds_min_source": [
+        0.029076,
+        -0.176918,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.62,
+        0.17,
+        0.724656
+      ],
+      "bounds_min_unity": [
+        0.029076,
+        0.0,
+        -0.176918
+      ],
+      "bounds_max_unity": [
+        0.62,
+        0.724656,
+        0.17
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant05_Bucket_Street_PaintedMetal",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 4,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 52,
+      "triangles": 92,
+      "bounds_min_source": [
+        0.685689,
+        -0.318862,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.154311,
+        0.078862,
+        0.670156
+      ],
+      "bounds_min_unity": [
+        0.685689,
+        0.0,
+        -0.318862
+      ],
+      "bounds_max_unity": [
+        1.154311,
+        0.670156,
+        0.078862
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant06_LowBench_Residential_Timber",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 5,
+      "part_role": "Residential_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Residential_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 104,
+      "triangles": 180,
+      "bounds_min_source": [
+        -1.025,
+        -0.378997,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.025,
+        0.05,
+        1.02
+      ],
+      "bounds_min_unity": [
+        -1.025,
+        0.0,
+        -0.378997
+      ],
+      "bounds_max_unity": [
+        1.025,
+        1.02,
+        0.05
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant06_Planters_Masonry_Stone",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 5,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 40,
+      "triangles": 72,
+      "bounds_min_source": [
+        -1.528802,
+        -0.35244,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.528802,
+        0.07244,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -1.528802,
+        0.0,
+        -0.35244
+      ],
+      "bounds_max_unity": [
+        1.528802,
+        0.5,
+        0.07244
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_ResidentialCourtyardPocket_Variant06_Basin_Street_PaintedMetal",
+      "kind": "ResidentialCourtyardPocket",
+      "variant": 5,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 116,
+      "bounds_min_source": [
+        0.105504,
+        -0.355309,
+        0.49
+      ],
+      "bounds_max_source": [
+        0.861433,
+        0.075309,
+        0.66
+      ],
+      "bounds_min_unity": [
+        0.105504,
+        0.49,
+        -0.355309
+      ],
+      "bounds_max_unity": [
+        0.861433,
+        0.66,
+        0.075309
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeMasonCart_Variant01_Cart_Residential_Timber",
+      "kind": "FringeMasonCart",
+      "variant": 0,
+      "part_role": "Residential_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Residential_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min_source": [
+        -0.94,
+        -0.52114,
+        0.426144
+      ],
+      "bounds_max_source": [
+        1.360082,
+        0.52114,
+        0.972044
+      ],
+      "bounds_min_unity": [
+        -0.94,
+        0.426144,
+        -0.52114
+      ],
+      "bounds_max_unity": [
+        1.360082,
+        0.972044,
+        0.52114
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeMasonCart_Variant01_MasonryLoad_Masonry_Stone",
+      "kind": "FringeMasonCart",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min_source": [
+        -0.806819,
+        -0.384235,
+        0.73
+      ],
+      "bounds_max_source": [
+        0.406819,
+        0.195,
+        1.11
+      ],
+      "bounds_min_unity": [
+        -0.806819,
+        0.73,
+        -0.384235
+      ],
+      "bounds_max_unity": [
+        0.406819,
+        1.11,
+        0.195
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeMasonCart_Variant01_WheelAndHardware_Fixture",
+      "kind": "FringeMasonCart",
+      "variant": 0,
+      "part_role": "Fixture",
+      "surface_kind": "FixtureMetal",
+      "tint_role": "Fixture",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 178,
+      "triangles": 344,
+      "bounds_min_source": [
+        -0.82,
+        -0.74,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.4,
+        0.74,
+        0.76
+      ],
+      "bounds_min_unity": [
+        -0.82,
+        0.0,
+        -0.74
+      ],
+      "bounds_max_unity": [
+        1.4,
+        0.76,
+        0.74
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeWinchServiceSet_Variant01_Winch_Industrial",
+      "kind": "FringeWinchServiceSet",
+      "variant": 0,
+      "part_role": "Industrial",
+      "surface_kind": "IndustrialMetal",
+      "tint_role": "Industrial",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 122,
+      "triangles": 216,
+      "bounds_min_source": [
+        -0.829168,
+        -0.48068,
+        0.057534
+      ],
+      "bounds_max_source": [
+        0.829168,
+        0.48068,
+        1.644013
+      ],
+      "bounds_min_unity": [
+        -0.829168,
+        0.057534,
+        -0.48068
+      ],
+      "bounds_max_unity": [
+        0.829168,
+        1.644013,
+        0.48068
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeWinchServiceSet_Variant01_TimberCrib_Residential_Timber",
+      "kind": "FringeWinchServiceSet",
+      "variant": 0,
+      "part_role": "Residential_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Residential_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -1.05,
+        -0.71,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.05,
+        0.71,
+        0.22
+      ],
+      "bounds_min_unity": [
+        -1.05,
+        0.0,
+        -0.71
+      ],
+      "bounds_max_unity": [
+        1.05,
+        0.22,
+        0.71
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeWinchServiceSet_Variant01_CableAndTools_Fixture",
+      "kind": "FringeWinchServiceSet",
+      "variant": 0,
+      "part_role": "Fixture",
+      "surface_kind": "FixtureMetal",
+      "tint_role": "Fixture",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 120,
+      "triangles": 220,
+      "bounds_min_source": [
+        -1.15,
+        -0.05,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.18,
+        0.718216,
+        0.809248
+      ],
+      "bounds_min_unity": [
+        -1.15,
+        0.0,
+        -0.05
+      ],
+      "bounds_max_unity": [
+        1.18,
+        0.809248,
+        0.718216
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeTunnelServiceSet_Variant01_BarrierAndRail_Industrial",
+      "kind": "FringeTunnelServiceSet",
+      "variant": 0,
+      "part_role": "Industrial",
+      "surface_kind": "IndustrialMetal",
+      "tint_role": "Industrial",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 108,
+      "triangles": 188,
+      "bounds_min_source": [
+        -1.47,
+        -0.21,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.47,
+        0.21,
+        1.06
+      ],
+      "bounds_min_unity": [
+        -1.47,
+        0.0,
+        -0.21
+      ],
+      "bounds_max_unity": [
+        1.47,
+        1.06,
+        0.21
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeTunnelServiceSet_Variant01_RepairBlocks_Masonry_Stone",
+      "kind": "FringeTunnelServiceSet",
+      "variant": 0,
+      "part_role": "Masonry_Stone",
+      "surface_kind": "Stone",
+      "tint_role": "Masonry_Stone",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -1.07,
+        -0.781066,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.610148,
+        -0.342093,
+        0.31
+      ],
+      "bounds_min_unity": [
+        -1.07,
+        0.0,
+        -0.781066
+      ],
+      "bounds_max_unity": [
+        0.610148,
+        0.31,
+        -0.342093
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeTunnelServiceSet_Variant01_Tools_Fixture",
+      "kind": "FringeTunnelServiceSet",
+      "variant": 0,
+      "part_role": "Fixture",
+      "surface_kind": "FixtureMetal",
+      "tint_role": "Fixture",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 62,
+      "triangles": 108,
+      "bounds_min_source": [
+        0.13,
+        -0.645,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.040907,
+        0.79,
+        1.485499
+      ],
+      "bounds_min_unity": [
+        0.13,
+        0.0,
+        -0.645
+      ],
+      "bounds_max_unity": [
+        1.040907,
+        1.485499,
+        0.79
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeFloodMaintenanceSet_Variant01_PumpAndPipe_Industrial",
+      "kind": "FringeFloodMaintenanceSet",
+      "variant": 0,
+      "part_role": "Industrial",
+      "surface_kind": "IndustrialMetal",
+      "tint_role": "Industrial",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 92,
+      "triangles": 164,
+      "bounds_min_source": [
+        -1.0,
+        -0.52,
+        0.0
+      ],
+      "bounds_max_source": [
+        0.592643,
+        0.21,
+        1.08
+      ],
+      "bounds_min_unity": [
+        -1.0,
+        0.0,
+        -0.52
+      ],
+      "bounds_max_unity": [
+        0.592643,
+        1.08,
+        0.21
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeFloodMaintenanceSet_Variant01_Planks_Residential_Timber",
+      "kind": "FringeFloodMaintenanceSet",
+      "variant": 0,
+      "part_role": "Residential_Timber",
+      "surface_kind": "Timber",
+      "tint_role": "Residential_Timber",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min_source": [
+        -0.45656,
+        -0.697864,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.035992,
+        0.574633,
+        0.235
+      ],
+      "bounds_min_unity": [
+        -0.45656,
+        0.0,
+        -0.697864
+      ],
+      "bounds_max_unity": [
+        1.035992,
+        0.235,
+        0.574633
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeFloodMaintenanceSet_Variant01_DryHoseAndTools_Fixture",
+      "kind": "FringeFloodMaintenanceSet",
+      "variant": 0,
+      "part_role": "Fixture",
+      "surface_kind": "FixtureMetal",
+      "tint_role": "Fixture",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 118,
+      "triangles": 220,
+      "bounds_min_source": [
+        -1.11,
+        -0.011977,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.18,
+        0.611977,
+        0.291448
+      ],
+      "bounds_min_unity": [
+        -1.11,
+        0.0,
+        -0.011977
+      ],
+      "bounds_max_unity": [
+        1.18,
+        0.291448,
+        0.611977
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeOpenHoodCar_Variant01_BodyAndOpenHood_Street_PaintedMetal",
+      "kind": "FringeOpenHoodCar",
+      "variant": 0,
+      "part_role": "Street_PaintedMetal",
+      "surface_kind": "PaintedMetal",
+      "tint_role": "Street_PaintedMetal",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 128,
+      "triangles": 224,
+      "bounds_min_source": [
+        -2.18,
+        -0.85,
+        0.27
+      ],
+      "bounds_max_source": [
+        2.18,
+        0.85,
+        1.72319
+      ],
+      "bounds_min_unity": [
+        -2.18,
+        0.27,
+        -0.85
+      ],
+      "bounds_max_unity": [
+        2.18,
+        1.72319,
+        0.85
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeOpenHoodCar_Variant01_TyresCabinAndEngine_Street",
+      "kind": "FringeOpenHoodCar",
+      "variant": 0,
+      "part_role": "Street",
+      "surface_kind": "StreetMetal",
+      "tint_role": "Street",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 260,
+      "triangles": 504,
+      "bounds_min_source": [
+        -1.72,
+        -0.97,
+        0.0
+      ],
+      "bounds_max_source": [
+        1.72,
+        0.88,
+        1.64
+      ],
+      "bounds_min_unity": [
+        -1.72,
+        0.0,
+        -0.97
+      ],
+      "bounds_max_unity": [
+        1.72,
+        1.64,
+        0.88
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_CMM_FringeOpenHoodCar_Variant01_JackRemovedWheelAndTools_Fixture",
+      "kind": "FringeOpenHoodCar",
+      "variant": 0,
+      "part_role": "Fixture",
+      "surface_kind": "FixtureMetal",
+      "tint_role": "Fixture",
+      "placement_mode": "recipe_local_rigid",
+      "normalized_height_m": null,
+      "vertices": 142,
+      "triangles": 260,
+      "bounds_min_source": [
+        0.84,
+        -1.691475,
+        0.0
+      ],
+      "bounds_max_source": [
+        2.29,
+        -0.542,
+        0.453143
+      ],
+      "bounds_min_unity": [
+        0.84,
+        0.0,
+        -1.691475
+      ],
+      "bounds_max_unity": [
+        2.29,
+        0.453143,
+        -0.542
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
     }
   ],
-  "build_signature": "a27649807279987d20efc5372e347df48a1c4c63bb97929ed7d9b2b2879b13f7"
+  "build_signature": "45026a9b34c7d7390f5c70fdced3090cd27527a7d2c4f2bd09a4832461b256e1"
 }

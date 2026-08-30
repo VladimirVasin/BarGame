@@ -1,0 +1,1108 @@
+{
+  "schemaVersion": 1,
+  "generator": "tools/build-city-building-surface-textures.py",
+  "sheetSize": [
+    1024,
+    1024
+  ],
+  "meanLuminanceTarget": 0.35,
+  "meanLuminanceTolerance": 0.02,
+  "maximumNightFacadeChannel": 0.616,
+  "albedoCompensation": 1.612903,
+  "atlasContract": {
+    "surfaces": [
+      "FacadePrimary",
+      "FacadeSecondary"
+    ],
+    "sideOrder": [
+      "Front",
+      "Rear",
+      "Left",
+      "Right"
+    ],
+    "columns": 4,
+    "columnPixels": 256,
+    "gutterPixels": 4,
+    "contentPixels": 248,
+    "vContract": "0=role bottom, 1=role top",
+    "wrapMode": "Clamp"
+  },
+  "fullFaceContract": {
+    "surfaces": [
+      "Plinth"
+    ],
+    "uContract": "0..1 across each plinth face",
+    "vContract": "0..1 bottom-to-top per plinth face",
+    "wrapMode": "Clamp"
+  },
+  "tileContract": {
+    "surfaces": [
+      "Roof",
+      "Metal",
+      "WindowFrame"
+    ],
+    "wrapMode": "Repeat",
+    "metersPerTileIsPhysical": true
+  },
+  "prohibitedBakedContent": [
+    "windows",
+    "apertures",
+    "signs",
+    "text",
+    "lore"
+  ],
+  "sheets": [
+    {
+      "key": "OldTown/FacadePrimary",
+      "district": "OldTown",
+      "surface": "FacadePrimary",
+      "material": "dark aged brick",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/OldTown/FacadePrimary.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/OldTown/FacadePrimary",
+      "unityGuid": "93f97fc9190f01559db1371c48c75b00",
+      "grammar": "old_brick",
+      "seed": "0x167C5E8ADDD4EBAF",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "building-side-atlas",
+        "wrapMode": "Clamp",
+        "sideOrder": [
+          "Front",
+          "Rear",
+          "Left",
+          "Right"
+        ],
+        "columns": 4,
+        "columnPixels": 256,
+        "gutterPixels": 4,
+        "contentPixels": 248,
+        "uContract": "one side across one column content range",
+        "vContract": "0=role bottom, 1=role top; no vertical repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.349716,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.06,
+      "metallic": 0.0,
+      "exposure": 1.082162,
+      "representativeTint": [
+        0.3,
+        0.19,
+        0.14
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 46,
+      "brightnessError": 0.045572,
+      "channelRatio": 1.1539,
+      "minimumSideMacroSeparation": 3.4258,
+      "minimumBottomWearDelta": 14.5425,
+      "sha256": "FDD97F1DE82FDA5F69C5234BEAA089346A789BF0DC62E5BC41284F1AD9E7EF52"
+    },
+    {
+      "key": "OldTown/FacadeSecondary",
+      "district": "OldTown",
+      "surface": "FacadeSecondary",
+      "material": "faded lime plaster",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/OldTown/FacadeSecondary.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/OldTown/FacadeSecondary",
+      "unityGuid": "ccb995820bb33aa38fd6be35be467407",
+      "grammar": "old_plaster",
+      "seed": "0xE743564FA0AE72A4",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "building-side-atlas",
+        "wrapMode": "Clamp",
+        "sideOrder": [
+          "Front",
+          "Rear",
+          "Left",
+          "Right"
+        ],
+        "columns": 4,
+        "columnPixels": 256,
+        "gutterPixels": 4,
+        "contentPixels": 248,
+        "uContract": "one side across one column content range",
+        "vContract": "0=role bottom, 1=role top; no vertical repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.349687,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.07,
+      "metallic": 0.0,
+      "exposure": 1.146521,
+      "representativeTint": [
+        0.58,
+        0.47,
+        0.34
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 36,
+      "brightnessError": 0.045651,
+      "channelRatio": 1.096,
+      "minimumSideMacroSeparation": 3.6309,
+      "minimumBottomWearDelta": 13.3542,
+      "sha256": "78D76BE23326FE4CC19A473D7AFA0BE60D2495EE6F8FAA7D82BE1DBF77946535"
+    },
+    {
+      "key": "OldTown/Plinth",
+      "district": "OldTown",
+      "surface": "Plinth",
+      "material": "dirty pale stone",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/OldTown/Plinth.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/OldTown/Plinth",
+      "unityGuid": "b281b64638ad6e84e29b2035c932f432",
+      "grammar": "stone_plinth",
+      "seed": "0xF766579180EEA45F",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "full-face",
+        "wrapMode": "Clamp",
+        "uContract": "0..1 across each plinth face; no repetition",
+        "vContract": "0..1 bottom-to-top per plinth face; no repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.34996,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 1.115069,
+      "representativeTint": [
+        0.22,
+        0.18,
+        0.14
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 33,
+      "brightnessError": 0.044906,
+      "channelRatio": 1.1062,
+      "bottomWearDelta": 13.2554,
+      "nonRepeatingEdgeDelta": 9.4424,
+      "sha256": "550BA31C8B2805159CC2EB67D96A25E4BC87E621854A56D987F427992403CEB6"
+    },
+    {
+      "key": "OldTown/Roof",
+      "district": "OldTown",
+      "surface": "Roof",
+      "material": "dark weathered slate",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/OldTown/Roof.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/OldTown/Roof",
+      "unityGuid": "79c69fef56bd0ff11231add709c509d5",
+      "grammar": "slate",
+      "seed": "0x9F089B8CEF61C214",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 4.0
+      },
+      "metersPerTile": 4.0,
+      "meanLinearLuminance": 0.349641,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 1.148977,
+      "representativeTint": [
+        0.095,
+        0.15,
+        0.15
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 79,
+      "brightnessError": 0.045777,
+      "channelRatio": 1.0235,
+      "edgeDelta": 6.2614,
+      "seamRatio": 1.4467,
+      "sha256": "ABB2D855A602B7CE8880EBC419713155E8F541FED058EDFFFE749817737463BD"
+    },
+    {
+      "key": "OldTown/Metal",
+      "district": "OldTown",
+      "surface": "Metal",
+      "material": "blackened painted metal",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/OldTown/Metal.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/OldTown/Metal",
+      "unityGuid": "808781868f407f27240fd792422b9d7a",
+      "grammar": "blackened_metal",
+      "seed": "0x3232FF7E9A47E959",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 1.6
+      },
+      "metersPerTile": 1.6,
+      "meanLinearLuminance": 0.350021,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.24,
+      "metallic": 0.58,
+      "exposure": 1.204355,
+      "representativeTint": [
+        0.1,
+        0.11,
+        0.105
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 79,
+      "brightnessError": 0.04474,
+      "channelRatio": 1.0245,
+      "edgeDelta": 2.4217,
+      "seamRatio": 0.9181,
+      "sha256": "898DC0B3722689D1183EF06DD60900E1B1FB172A5F54B7BE25A32BC8F63264D4"
+    },
+    {
+      "key": "OldTown/WindowFrame",
+      "district": "OldTown",
+      "surface": "WindowFrame",
+      "material": "aged dark frame paint",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/OldTown/WindowFrame.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/OldTown/WindowFrame",
+      "unityGuid": "a97db56f8a7dff4fa7046cfd3afb4f47",
+      "grammar": "frame_paint",
+      "seed": "0x02ABBA010D3B40F7",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 0.8
+      },
+      "metersPerTile": 0.8,
+      "meanLinearLuminance": 0.349821,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.16,
+      "metallic": 0.18,
+      "exposure": 1.075238,
+      "representativeTint": [
+        0.42,
+        0.36,
+        0.27
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 73,
+      "brightnessError": 0.045286,
+      "channelRatio": 1.0907,
+      "edgeDelta": 2.5929,
+      "seamRatio": 1.0713,
+      "sha256": "6F15618760269006EFB8E79A6976ECFC1F0EDCE1ABCC30249C59DBBDCA022955"
+    },
+    {
+      "key": "Residential/FacadePrimary",
+      "district": "Residential",
+      "surface": "FacadePrimary",
+      "material": "cold painted concrete panel",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Residential/FacadePrimary.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Residential/FacadePrimary",
+      "unityGuid": "465279a644d5a456f5164ba6e433936b",
+      "grammar": "residential_panel",
+      "seed": "0xC0EA8CCBB5A9B1C9",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "building-side-atlas",
+        "wrapMode": "Clamp",
+        "sideOrder": [
+          "Front",
+          "Rear",
+          "Left",
+          "Right"
+        ],
+        "columns": 4,
+        "columnPixels": 256,
+        "gutterPixels": 4,
+        "contentPixels": 248,
+        "uContract": "one side across one column content range",
+        "vContract": "0=role bottom, 1=role top; no vertical repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.349845,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.09,
+      "metallic": 0.0,
+      "exposure": 1.103203,
+      "representativeTint": [
+        0.2,
+        0.31,
+        0.32
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 35,
+      "brightnessError": 0.04522,
+      "channelRatio": 1.0933,
+      "minimumSideMacroSeparation": 3.209,
+      "minimumBottomWearDelta": 12.0497,
+      "sha256": "A97F1C11E4B8F290355853BA8807C8AC52D3285866F4BA011ACA9CD7A7064D80"
+    },
+    {
+      "key": "Residential/FacadeSecondary",
+      "district": "Residential",
+      "surface": "FacadeSecondary",
+      "material": "faded repaired panel",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Residential/FacadeSecondary.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Residential/FacadeSecondary",
+      "unityGuid": "7150e1efbced39b4a74befa861fd417c",
+      "grammar": "residential_repair",
+      "seed": "0xECD3FA822074A184",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "building-side-atlas",
+        "wrapMode": "Clamp",
+        "sideOrder": [
+          "Front",
+          "Rear",
+          "Left",
+          "Right"
+        ],
+        "columns": 4,
+        "columnPixels": 256,
+        "gutterPixels": 4,
+        "contentPixels": 248,
+        "uContract": "one side across one column content range",
+        "vContract": "0=role bottom, 1=role top; no vertical repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.350035,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.09,
+      "metallic": 0.0,
+      "exposure": 1.12225,
+      "representativeTint": [
+        0.46,
+        0.54,
+        0.5
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 37,
+      "brightnessError": 0.044702,
+      "channelRatio": 1.0697,
+      "minimumSideMacroSeparation": 3.5625,
+      "minimumBottomWearDelta": 12.4436,
+      "sha256": "B01ECE268F8DAC52433578A8D4D465A0A3FF02948D82FDCB97DF288C9E72F29C"
+    },
+    {
+      "key": "Residential/Plinth",
+      "district": "Residential",
+      "surface": "Plinth",
+      "material": "damp painted concrete",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Residential/Plinth.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Residential/Plinth",
+      "unityGuid": "ca4b10c4643f47c60cb91708e1aa6a90",
+      "grammar": "concrete_plinth",
+      "seed": "0x1F52A7849D0A09E8",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "full-face",
+        "wrapMode": "Clamp",
+        "uContract": "0..1 across each plinth face; no repetition",
+        "vContract": "0..1 bottom-to-top per plinth face; no repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.349885,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.06,
+      "metallic": 0.0,
+      "exposure": 1.127063,
+      "representativeTint": [
+        0.17,
+        0.23,
+        0.23
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 25,
+      "brightnessError": 0.045111,
+      "channelRatio": 1.0349,
+      "bottomWearDelta": 13.5091,
+      "nonRepeatingEdgeDelta": 17.2282,
+      "sha256": "AC2211EA1A6254069E3BDC9CCFE48A40959870402BE9B9F364F0B5952FA9FEEF"
+    },
+    {
+      "key": "Residential/Roof",
+      "district": "Residential",
+      "surface": "Roof",
+      "material": "patched roofing felt",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Residential/Roof.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Residential/Roof",
+      "unityGuid": "381491fec1ed34555ed85bc6693a1783",
+      "grammar": "roof_felt",
+      "seed": "0x596A24E774146F0F",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 4.0
+      },
+      "metersPerTile": 4.0,
+      "meanLinearLuminance": 0.349876,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 1.112686,
+      "representativeTint": [
+        0.09,
+        0.13,
+        0.15
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 71,
+      "brightnessError": 0.045136,
+      "channelRatio": 1.0453,
+      "edgeDelta": 4.5148,
+      "seamRatio": 1.8342,
+      "sha256": "98B0CA589BC696167D21E629C41CAD3A2DF6B4B6D6505F478F00332E4AAB779A"
+    },
+    {
+      "key": "Residential/Metal",
+      "district": "Residential",
+      "surface": "Metal",
+      "material": "aged galvanized metal",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Residential/Metal.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Residential/Metal",
+      "unityGuid": "5ed1bc6b999fad65904b4dd4c3342c0b",
+      "grammar": "galvanized",
+      "seed": "0x4A8CF03741FBE329",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 1.8
+      },
+      "metersPerTile": 1.8,
+      "meanLinearLuminance": 0.349809,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.26,
+      "metallic": 0.62,
+      "exposure": 1.171317,
+      "representativeTint": [
+        0.12,
+        0.16,
+        0.17
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 82,
+      "brightnessError": 0.045319,
+      "channelRatio": 1.048,
+      "edgeDelta": 2.7987,
+      "seamRatio": 0.678,
+      "sha256": "BD06DD1385ECCA98D684653B6604C477F634B47C6DDC9593173A88FEE10D41B2"
+    },
+    {
+      "key": "Residential/WindowFrame",
+      "district": "Residential",
+      "surface": "WindowFrame",
+      "material": "weathered frame paint",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Residential/WindowFrame.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Residential/WindowFrame",
+      "unityGuid": "1a84bb8442a317a92852f4b3d21344f5",
+      "grammar": "frame_paint",
+      "seed": "0xE6B98A9AD53B823B",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 0.8
+      },
+      "metersPerTile": 0.8,
+      "meanLinearLuminance": 0.349772,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.17,
+      "metallic": 0.14,
+      "exposure": 1.139185,
+      "representativeTint": [
+        0.62,
+        0.61,
+        0.5
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 74,
+      "brightnessError": 0.045419,
+      "channelRatio": 1.0716,
+      "edgeDelta": 2.5018,
+      "seamRatio": 1.0352,
+      "sha256": "1F1195552B75C21CEB3F0D7ED1BD869B9A9D3FD88C3B3EA9975216E4B08D9E08"
+    },
+    {
+      "key": "Industrial/FacadePrimary",
+      "district": "Industrial",
+      "surface": "FacadePrimary",
+      "material": "painted profiled sheet",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Industrial/FacadePrimary.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Industrial/FacadePrimary",
+      "unityGuid": "9a7b88571101d0e864ce85080dc251d9",
+      "grammar": "industrial_sheet",
+      "seed": "0x13870DC7E6F77172",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "building-side-atlas",
+        "wrapMode": "Clamp",
+        "sideOrder": [
+          "Front",
+          "Rear",
+          "Left",
+          "Right"
+        ],
+        "columns": 4,
+        "columnPixels": 256,
+        "gutterPixels": 4,
+        "contentPixels": 248,
+        "uContract": "one side across one column content range",
+        "vContract": "0=role bottom, 1=role top; no vertical repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.349857,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.16,
+      "metallic": 0.2,
+      "exposure": 1.070647,
+      "representativeTint": [
+        0.25,
+        0.27,
+        0.25
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 51,
+      "brightnessError": 0.045188,
+      "channelRatio": 1.021,
+      "minimumSideMacroSeparation": 3.541,
+      "minimumBottomWearDelta": 11.7942,
+      "sha256": "D44F37A979AEB8F029E1494C91F0CA1ECBC49439972745EF23E81E95D94987C6"
+    },
+    {
+      "key": "Industrial/FacadeSecondary",
+      "district": "Industrial",
+      "surface": "FacadeSecondary",
+      "material": "smoked utility brick",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Industrial/FacadeSecondary.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Industrial/FacadeSecondary",
+      "unityGuid": "ee6e428fb3ff7beee07ea2b998c01877",
+      "grammar": "utility_brick",
+      "seed": "0x88F9F9F6FC240B25",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "building-side-atlas",
+        "wrapMode": "Clamp",
+        "sideOrder": [
+          "Front",
+          "Rear",
+          "Left",
+          "Right"
+        ],
+        "columns": 4,
+        "columnPixels": 256,
+        "gutterPixels": 4,
+        "contentPixels": 248,
+        "uContract": "one side across one column content range",
+        "vContract": "0=role bottom, 1=role top; no vertical repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.349919,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.1,
+      "metallic": 0.02,
+      "exposure": 1.070647,
+      "representativeTint": [
+        0.49,
+        0.38,
+        0.16
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 45,
+      "brightnessError": 0.045018,
+      "channelRatio": 1.1266,
+      "minimumSideMacroSeparation": 4.041,
+      "minimumBottomWearDelta": 4.022,
+      "sha256": "C68877A4EDE5F78B41FC7D58427006812297D2C3311C7BBC9C6DBB436DF0945A"
+    },
+    {
+      "key": "Industrial/Plinth",
+      "district": "Industrial",
+      "surface": "Plinth",
+      "material": "oil-marked structural concrete",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Industrial/Plinth.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Industrial/Plinth",
+      "unityGuid": "28976f5f52b2d01df7a7bc98748f4e13",
+      "grammar": "industrial_plinth",
+      "seed": "0x26B994110126559C",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "full-face",
+        "wrapMode": "Clamp",
+        "uContract": "0..1 across each plinth face; no repetition",
+        "vContract": "0..1 bottom-to-top per plinth face; no repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.349771,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.06,
+      "metallic": 0.0,
+      "exposure": 1.127063,
+      "representativeTint": [
+        0.18,
+        0.2,
+        0.19
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 25,
+      "brightnessError": 0.045422,
+      "channelRatio": 1.0132,
+      "bottomWearDelta": 13.9754,
+      "nonRepeatingEdgeDelta": 15.4697,
+      "sha256": "E479AA31719DFBCD0B8BBA90409CEA9FDC80C6FE2826528D011AD9D95B9B9AA5"
+    },
+    {
+      "key": "Industrial/Roof",
+      "district": "Industrial",
+      "surface": "Roof",
+      "material": "sooted roofing sheet",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Industrial/Roof.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Industrial/Roof",
+      "unityGuid": "6e810f7f926359a872613ef3cf21bf1a",
+      "grammar": "industrial_roof",
+      "seed": "0xB0F62BCBD1913943",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 4.0
+      },
+      "metersPerTile": 4.0,
+      "meanLinearLuminance": 0.350118,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.08,
+      "metallic": 0.2,
+      "exposure": 1.173826,
+      "representativeTint": [
+        0.12,
+        0.14,
+        0.14
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 79,
+      "brightnessError": 0.044475,
+      "channelRatio": 1.0368,
+      "edgeDelta": 2.4723,
+      "seamRatio": 0.6091,
+      "sha256": "0E23B3361DF83C3478DF97684B1CA7E770EA2DED066753E24B4F4B45AC515E66"
+    },
+    {
+      "key": "Industrial/Metal",
+      "district": "Industrial",
+      "surface": "Metal",
+      "material": "oxidized service steel",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Industrial/Metal.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Industrial/Metal",
+      "unityGuid": "f0cd3a85db2fff77cc1df4fc7837ae62",
+      "grammar": "service_steel",
+      "seed": "0x30328B1757101A2B",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 1.8
+      },
+      "metersPerTile": 1.8,
+      "meanLinearLuminance": 0.350225,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.2,
+      "metallic": 0.68,
+      "exposure": 1.068358,
+      "representativeTint": [
+        0.18,
+        0.21,
+        0.2
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 78,
+      "brightnessError": 0.044183,
+      "channelRatio": 1.1026,
+      "edgeDelta": 2.5216,
+      "seamRatio": 0.969,
+      "sha256": "BCDF86552F12517E073150E5E516151A424909F9E8994156C808A5C39BFA6D48"
+    },
+    {
+      "key": "Industrial/WindowFrame",
+      "district": "Industrial",
+      "surface": "WindowFrame",
+      "material": "dirty painted steel frame",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Industrial/WindowFrame.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Industrial/WindowFrame",
+      "unityGuid": "e8d6be5fd98e3d051ed09bcea5d587e2",
+      "grammar": "frame_paint",
+      "seed": "0x343C18F96A29EFBA",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 0.8
+      },
+      "metersPerTile": 0.8,
+      "meanLinearLuminance": 0.349818,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.14,
+      "metallic": 0.28,
+      "exposure": 1.20952,
+      "representativeTint": [
+        0.42,
+        0.4,
+        0.29
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 79,
+      "brightnessError": 0.045294,
+      "channelRatio": 1.0761,
+      "edgeDelta": 2.5215,
+      "seamRatio": 1.0218,
+      "sha256": "8E28C9EEB18B5C674DB488B5F3C77A517C66AD05DA05D2683319DA016ABC9041"
+    },
+    {
+      "key": "Nightlife/FacadePrimary",
+      "district": "Nightlife",
+      "surface": "FacadePrimary",
+      "material": "faded painted plaster",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Nightlife/FacadePrimary.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Nightlife/FacadePrimary",
+      "unityGuid": "56c655cf9fb90569884958bf257b1afc",
+      "grammar": "nightlife_plaster",
+      "seed": "0x0A765D878374D2FA",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "building-side-atlas",
+        "wrapMode": "Clamp",
+        "sideOrder": [
+          "Front",
+          "Rear",
+          "Left",
+          "Right"
+        ],
+        "columns": 4,
+        "columnPixels": 256,
+        "gutterPixels": 4,
+        "contentPixels": 248,
+        "uContract": "one side across one column content range",
+        "vContract": "0=role bottom, 1=role top; no vertical repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.349886,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.1,
+      "metallic": 0.0,
+      "exposure": 1.105566,
+      "representativeTint": [
+        0.19,
+        0.13,
+        0.25
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 31,
+      "brightnessError": 0.045108,
+      "channelRatio": 1.0545,
+      "minimumSideMacroSeparation": 4.0195,
+      "minimumBottomWearDelta": 4.7296,
+      "sha256": "04F0599E7198A77CE430D83AFEFFB77525236A0A74D9E8794E992E1C2BF158D0"
+    },
+    {
+      "key": "Nightlife/FacadeSecondary",
+      "district": "Nightlife",
+      "surface": "FacadeSecondary",
+      "material": "paint-worn old brick",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Nightlife/FacadeSecondary.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Nightlife/FacadeSecondary",
+      "unityGuid": "fabae6e5ec3c939dbcb0523474f4f58f",
+      "grammar": "painted_brick",
+      "seed": "0x0AE57309F6410135",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "building-side-atlas",
+        "wrapMode": "Clamp",
+        "sideOrder": [
+          "Front",
+          "Rear",
+          "Left",
+          "Right"
+        ],
+        "columns": 4,
+        "columnPixels": 256,
+        "gutterPixels": 4,
+        "contentPixels": 248,
+        "uContract": "one side across one column content range",
+        "vContract": "0=role bottom, 1=role top; no vertical repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.349964,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.09,
+      "metallic": 0.0,
+      "exposure": 1.059254,
+      "representativeTint": [
+        0.55,
+        0.12,
+        0.38
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 47,
+      "brightnessError": 0.044895,
+      "channelRatio": 1.0527,
+      "minimumSideMacroSeparation": 3.6641,
+      "minimumBottomWearDelta": 7.697,
+      "sha256": "713EDAF11FD78A4F8596FF5FAD99906A2EEA6308627F0C26BBFFD5DB00B58543"
+    },
+    {
+      "key": "Nightlife/Plinth",
+      "district": "Nightlife",
+      "surface": "Plinth",
+      "material": "service-side dirty render",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Nightlife/Plinth.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Nightlife/Plinth",
+      "unityGuid": "b7feb5eacaee429d12e3cefac0dd3640",
+      "grammar": "nightlife_plinth",
+      "seed": "0xE944417A791E59A2",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 1024,
+      "layout": {
+        "kind": "full-face",
+        "wrapMode": "Clamp",
+        "uContract": "0..1 across each plinth face; no repetition",
+        "vContract": "0..1 bottom-to-top per plinth face; no repetition"
+      },
+      "metersPerTile": null,
+      "meanLinearLuminance": 0.350112,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.06,
+      "metallic": 0.0,
+      "exposure": 1.127063,
+      "representativeTint": [
+        0.15,
+        0.11,
+        0.18
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 25,
+      "brightnessError": 0.044492,
+      "channelRatio": 1.0267,
+      "bottomWearDelta": 13.8657,
+      "nonRepeatingEdgeDelta": 16.6286,
+      "sha256": "60077A71C549EAA8BAF27FE8F24C7F7CC6106B3C2DB0BA58C6382AE94A941AE9"
+    },
+    {
+      "key": "Nightlife/Roof",
+      "district": "Nightlife",
+      "surface": "Roof",
+      "material": "dark patched roofing felt",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Nightlife/Roof.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Nightlife/Roof",
+      "unityGuid": "7b5bfb4dcf03c2d4683d09b5cf852a5a",
+      "grammar": "roof_felt",
+      "seed": "0x3C3EBDE7CD49EFB3",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 4.0
+      },
+      "metersPerTile": 4.0,
+      "meanLinearLuminance": 0.350336,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "exposure": 1.168813,
+      "representativeTint": [
+        0.08,
+        0.09,
+        0.13
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 82,
+      "brightnessError": 0.04388,
+      "channelRatio": 1.0597,
+      "edgeDelta": 4.4051,
+      "seamRatio": 1.7679,
+      "sha256": "625EC4AC0B4BF88623BF3B24FB9D20B45DCDDC5D90EF3192722EA84DAEC9717E"
+    },
+    {
+      "key": "Nightlife/Metal",
+      "district": "Nightlife",
+      "surface": "Metal",
+      "material": "dark painted mounting steel",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Nightlife/Metal.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Nightlife/Metal",
+      "unityGuid": "b17a6953291efc1fb4536a6f833de8ec",
+      "grammar": "painted_metal",
+      "seed": "0xCF6B8133AF1AEE6E",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 1.6
+      },
+      "metersPerTile": 1.6,
+      "meanLinearLuminance": 0.350142,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.22,
+      "metallic": 0.58,
+      "exposure": 1.093802,
+      "representativeTint": [
+        0.11,
+        0.11,
+        0.16
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 73,
+      "brightnessError": 0.04441,
+      "channelRatio": 1.0558,
+      "edgeDelta": 2.3672,
+      "seamRatio": 0.9085,
+      "sha256": "B8AE1FCA8E338AC2808361D71A1CD286B6C3BD743AFE7298B96C03313E14BBBF"
+    },
+    {
+      "key": "Nightlife/WindowFrame",
+      "district": "Nightlife",
+      "surface": "WindowFrame",
+      "material": "aged coloured frame paint",
+      "assetPath": "Assets/Resources/Textures/CityBuildingSurfaces/Nightlife/WindowFrame.png",
+      "resourcePath": "Textures/CityBuildingSurfaces/Nightlife/WindowFrame",
+      "unityGuid": "294eba9165ff22566aca23d97aec19e5",
+      "grammar": "frame_paint",
+      "seed": "0x92F5B31CA497C093",
+      "sourceSize": [
+        1024,
+        1024
+      ],
+      "runtimeMaxSize": 512,
+      "layout": {
+        "kind": "meter-tile",
+        "wrapMode": "Repeat",
+        "metersPerTile": 0.8
+      },
+      "metersPerTile": 0.8,
+      "meanLinearLuminance": 0.349712,
+      "albedoCompensation": 1.612903,
+      "smoothness": 0.16,
+      "metallic": 0.2,
+      "exposure": 1.112686,
+      "representativeTint": [
+        0.45,
+        0.22,
+        0.49
+      ],
+      "containsPaintedWindows": false,
+      "containsText": false,
+      "contrast": 72,
+      "brightnessError": 0.045583,
+      "channelRatio": 1.0567,
+      "edgeDelta": 2.6045,
+      "seamRatio": 1.0572,
+      "sha256": "3B33C0D8FF353E583F6161D2A39EBB5E26C990674D508CDD50E78EEE97D8102D"
+    }
+  ]
+}

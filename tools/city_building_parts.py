@@ -19,13 +19,24 @@ Vec3 = tuple[float, float, float]
 Face = tuple[int, ...]
 
 PART_ROLES = (
-    "Shell",
-    "Trim",
+    "FacadePrimary",
+    "FacadeSecondary",
+    "Plinth",
     "Roof",
     "Metal",
     "WindowFrame",
     "WindowGlass",
 )
+
+_ROLE_SURFACE_CONTRACT = {
+    "FacadePrimary": ("building_side_atlas_0_1", 0.0),
+    "FacadeSecondary": ("building_side_atlas_0_1", 0.0),
+    "Plinth": ("full_face_projected_0_1", 0.0),
+    "Roof": ("world_metre_projected", 4.0),
+    "Metal": ("world_metre_projected", 1.6),
+    "WindowFrame": ("world_metre_projected", 0.8),
+    "WindowGlass": ("per_window_face_projected_0_1", 0.0),
+}
 
 
 @dataclass(frozen=True)
@@ -56,6 +67,9 @@ class FacadeAttachmentBounds:
 class PartSpec:
     object_name: str
     role: str
+    surface_kind: str
+    uv_scheme: str
+    meters_per_tile: float
     geometry: Geometry
 
 
@@ -118,6 +132,44 @@ def box(center: Vec3, size: Vec3, slot_id: int = 0) -> Geometry:
         (3, 0, 4, 7),
     )
     return Geometry(vertices, faces, (slot_id,) * len(faces))
+
+
+_BOX_FACE_NAMES = (
+    "Bottom",
+    "Top",
+    "Rear",
+    "Right",
+    "Front",
+    "Left",
+)
+
+
+def box_without_faces(
+    center: Vec3,
+    size: Vec3,
+    omitted_faces: Iterable[str],
+    slot_id: int = 0,
+) -> Geometry:
+    """Build a box whose named flush-join faces are deliberately open.
+
+    A joined mass needs only one face at a shared plane.  Keeping the face on
+    both source boxes creates equal-depth fragments after export, because
+    ``merge`` concatenates geometry rather than performing a boolean union.
+    """
+
+    omitted = frozenset(omitted_faces)
+    unknown = omitted.difference(_BOX_FACE_NAMES)
+    if unknown:
+        raise ValueError(f"Unknown box faces: {sorted(unknown)}")
+
+    geometry = box(center, size, slot_id)
+    kept_indices = tuple(
+        index for index, name in enumerate(_BOX_FACE_NAMES)
+        if name not in omitted)
+    return Geometry(
+        geometry.vertices,
+        tuple(geometry.faces[index] for index in kept_indices),
+        tuple(geometry.face_slot_ids[index] for index in kept_indices))
 
 
 def gable_roof(
@@ -359,42 +411,85 @@ def facade_bounds(
 def parts_for(
     stable_id: str,
     role_geometry: dict[str, Geometry],
+    metal_meters_per_tile: float,
 ) -> tuple[PartSpec, ...]:
-    return tuple(PartSpec(
-        f"{stable_id}__{role}", role, role_geometry[role])
-                 for role in PART_ROLES)
+    parts: list[PartSpec] = []
+    for role in PART_ROLES:
+        uv_scheme, meters_per_tile = _ROLE_SURFACE_CONTRACT[role]
+        if role == "Metal":
+            meters_per_tile = metal_meters_per_tile
+        parts.append(PartSpec(
+            f"{stable_id}__{role}",
+            role,
+            role,
+            uv_scheme,
+            meters_per_tile,
+            role_geometry[role]))
+    return tuple(parts)
 
 
 def old_town_prototype() -> PrototypeSpec:
     stable_id = "old-town-prototype-01"
     width, depth, height = 14.0, 13.5, 42.0
     half_d = depth * 0.5
-    shell = merge((
+    plinth_relief = 0.035
+    secondary_relief = 0.065
+    facade_edge_clearance = 0.04
+    rear_tower_relief = 0.04
+    facade_primary = merge((
         box((-3.8, 0.0, 15.0), (6.4, depth, 30.0)),
         box((3.9, -0.8, 13.5), (6.2, depth - 1.6, 27.0)),
-        box((0.0, -4.5, 17.0), (3.0, 4.5, 34.0)),
+        box((0.0, -4.5 + rear_tower_relief, 17.0),
+            (3.0, 4.5, 34.0)),
     ))
-    trim_parts: list[Geometry] = [
-        box((-3.8, half_d - 0.10, 1.0), (6.4, 0.20, 2.0)),
-        box((3.9, half_d - 0.90, 0.8), (6.2, 0.20, 1.6)),
-        box((-3.8, half_d - 0.10, 11.0), (6.4, 0.24, 0.32)),
-        box((-3.8, half_d - 0.10, 21.0), (6.4, 0.24, 0.32)),
-        box((3.9, half_d - 0.90, 9.5), (6.2, 0.24, 0.30)),
-        box((3.9, half_d - 0.90, 18.5), (6.2, 0.24, 0.30)),
-        box((-0.2, half_d - 0.16, 2.2), (1.8, 0.35, 0.25)),
+    plinth = merge((
+        box((-3.8,
+             half_d + plinth_relief - 0.20 * 0.5,
+             1.0),
+            (6.4 - facade_edge_clearance * 2.0, 0.20, 2.0)),
+        box((3.9, half_d - 0.90, 0.8),
+            (6.2 - facade_edge_clearance * 2.0, 0.20, 1.6)),
+    ))
+    secondary_parts: list[Geometry] = [
+        box((-3.8,
+             half_d + secondary_relief - 0.24 * 0.5,
+             11.0),
+            (6.4 - facade_edge_clearance * 2.0, 0.24, 0.32)),
+        box((-3.8,
+             half_d + secondary_relief - 0.24 * 0.5,
+             21.0),
+            (6.4 - facade_edge_clearance * 2.0, 0.24, 0.32)),
+        box((3.9,
+             half_d - 0.8 + secondary_relief - 0.24 * 0.5,
+             9.5),
+            (6.2 - facade_edge_clearance * 2.0, 0.24, 0.30)),
+        box((3.9,
+             half_d - 0.8 + secondary_relief - 0.24 * 0.5,
+             18.5),
+            (6.2 - facade_edge_clearance * 2.0, 0.24, 0.30)),
+        box((-0.2,
+             half_d + secondary_relief - 0.35 * 0.5,
+             2.2),
+            (1.8, 0.35, 0.25)),
     ]
     for x in (-6.88, -0.72, 0.82, 6.88):
-        trim_parts.append(box((x, -0.2, 15.0), (0.24, 0.24, 29.0)))
-    trim = merge(trim_parts)
+        secondary_parts.append(
+            box((x, -0.2, 15.0), (0.16, 0.24, 29.0)))
+    facade_secondary = merge(secondary_parts)
     roof = merge((
         gable_roof((-3.8, 0.0), 6.4, depth, 30.0, 36.8),
         gable_roof((3.9, -0.8), 6.2, depth - 1.6, 27.0, 33.0),
-        pyramid_roof((0.0, -4.5), 3.0, 4.5, 34.0, height),
+        pyramid_roof(
+            (0.0, -4.5 + rear_tower_relief),
+            3.0,
+            4.5,
+            34.0,
+            height),
     ))
     metal_parts: list[Geometry] = [
         cylinder_z((-5.0, -2.0), 30.0, 39.0, 0.30, 8),
         cylinder_z((5.2, -3.0), 27.0, 35.0, 0.28, 8),
-        box((6.75, 1.4, 18.0), (0.18, 4.8, 0.18)),
+        box((6.75, 1.4, 18.0), (0.16, 4.8, 0.18)),
         box((6.75, 1.4, 15.5), (0.18, 0.18, 5.2)),
         box((6.75, 3.7, 15.5), (0.18, 0.18, 5.2)),
     ]
@@ -414,8 +509,9 @@ def old_town_prototype() -> PrototypeSpec:
         (5.5, 15.5, 25.5), (0.9, 1.6)))
     frame, glass = window_geometry(slots)
     role_geometry = {
-        "Shell": shell,
-        "Trim": trim,
+        "FacadePrimary": facade_primary,
+        "FacadeSecondary": facade_secondary,
+        "Plinth": plinth,
         "Roof": roof,
         "Metal": metal,
         "WindowFrame": frame,
@@ -425,34 +521,62 @@ def old_town_prototype() -> PrototypeSpec:
         stable_id, "OldTown", "FragmentedPerimeter", width, depth, height,
         (0.0, half_d, 0.0), (-6.6, -6.35, 27.0),
         (6.6, 6.35, height), facade_bounds(width, depth, height),
-        tuple(slots), parts_for(stable_id, role_geometry))
+        tuple(slots), parts_for(stable_id, role_geometry, 1.6))
 
 
 def residential_prototype() -> PrototypeSpec:
     stable_id = "residential-prototype-01"
     width, depth, height = 11.5, 11.5, 40.0
     half_w, half_d = width * 0.5, depth * 0.5
-    shell = merge((
-        box((0.0, 0.0, 0.08), (width, depth, 0.16)),
+    plinth_relief = 0.035
+    facade_edge_clearance = 0.07
+    roof_edge_clearance = 0.04
+    ground_slab_edge_clearance = 0.03
+    ground_slab_rear_clearance = 0.03
+    facade_primary = merge((
+        box((0.0, ground_slab_rear_clearance * 0.5, 0.08),
+            (width - ground_slab_edge_clearance * 2.0,
+             depth - ground_slab_rear_clearance,
+             0.16)),
         box((0.0, -3.65, 15.0), (width, 4.2, 30.0)),
-        box((-4.35, 1.05, 13.0), (2.8, 5.2, 26.0)),
-        box((4.35, 1.05, 13.0), (2.8, 5.2, 26.0)),
+        box_without_faces(
+            (-4.35, 1.05, 13.0),
+            (2.8, 5.2, 26.0),
+            ("Rear",)),
+        box_without_faces(
+            (4.35, 1.05, 13.0),
+            (2.8, 5.2, 26.0),
+            ("Rear",)),
         box((0.0, -1.6, 17.0), (3.2, 3.2, 34.0)),
     ))
-    trim_parts: list[Geometry] = [
-        box((0.0, -5.62, 1.0), (width, 0.25, 2.0)),
-        box((-4.35, 3.62, 0.65), (2.8, 0.25, 1.3)),
-        box((4.35, 3.62, 0.65), (2.8, 0.25, 1.3)),
+    plinth = merge((
+        box((0.0,
+             -half_d - plinth_relief + 0.25 * 0.5,
+             1.0),
+            (width - facade_edge_clearance * 2.0, 0.25, 2.0)),
+        box((-4.35, 3.62, 0.65),
+            (2.8 - facade_edge_clearance * 2.0, 0.25, 1.3)),
+        box((4.35, 3.62, 0.65),
+            (2.8 - facade_edge_clearance * 2.0, 0.25, 1.3)),
+    ))
+    secondary_parts: list[Geometry] = [
         box((0.0, -0.02, 2.8), (3.8, 0.28, 0.22)),
     ]
     for side_x in (-4.35, 4.35):
         for z in (7.0, 12.0, 17.0, 22.0):
-            trim_parts.append(box((side_x, 3.68, z), (2.5, 0.75, 0.18)))
-    trim = merge(trim_parts)
+            secondary_parts.append(
+                box((side_x, 3.68, z), (2.5, 0.75, 0.18)))
+    facade_secondary = merge(secondary_parts)
     roof = merge((
         box((0.0, -3.65, 30.15), (width, 4.2, 0.30)),
-        box((-4.35, 1.05, 26.15), (2.8, 5.2, 0.30)),
-        box((4.35, 1.05, 26.15), (2.8, 5.2, 0.30)),
+        box_without_faces(
+            (-4.35, 1.05, 26.15),
+            (2.8 - roof_edge_clearance * 2.0, 5.2, 0.30),
+            ("Rear",)),
+        box_without_faces(
+            (4.35, 1.05, 26.15),
+            (2.8 - roof_edge_clearance * 2.0, 5.2, 0.30),
+            ("Rear",)),
         pyramid_roof((0.0, -1.6), 3.2, 3.2, 34.0, height),
     ))
     metal_parts: list[Geometry] = [
@@ -465,8 +589,10 @@ def residential_prototype() -> PrototypeSpec:
             for offset in (-1.0, 0.0, 1.0):
                 metal_parts.append(box((side_x + offset, 3.95, z),
                                        (0.06, 0.06, 1.0)))
+            # Recess the rail faces 5 mm behind the posts.  The solids still
+            # interlock, but their front/back planes no longer compete.
             metal_parts.append(box((side_x, 3.95, z + 0.48),
-                                   (2.2, 0.06, 0.06)))
+                                   (2.2, 0.05, 0.06)))
     metal = merge(metal_parts)
 
     slots: list[WindowSlot] = []
@@ -482,8 +608,9 @@ def residential_prototype() -> PrototypeSpec:
         (6.0, 16.0, 26.0), (0.8, 1.55)))
     frame, glass = window_geometry(slots)
     role_geometry = {
-        "Shell": shell,
-        "Trim": trim,
+        "FacadePrimary": facade_primary,
+        "FacadeSecondary": facade_secondary,
+        "Plinth": plinth,
         "Roof": roof,
         "Metal": metal,
         "WindowFrame": frame,
@@ -493,25 +620,49 @@ def residential_prototype() -> PrototypeSpec:
         stable_id, "Residential", "SetbackCourtyard", width, depth, height,
         (0.0, half_d, 0.0), (-5.35, -5.35, 26.0),
         (5.35, 3.4, height), facade_bounds(width, depth, height),
-        tuple(slots), parts_for(stable_id, role_geometry))
+        tuple(slots), parts_for(stable_id, role_geometry, 1.8))
 
 
 def industrial_prototype() -> PrototypeSpec:
     stable_id = "industrial-prototype-01"
     width, depth, height = 14.0, 13.5, 36.0
     half_w, half_d = width * 0.5, depth * 0.5
-    shell = merge((
+    plinth_relief = 0.035
+    secondary_relief = 0.065
+    facade_edge_clearance = 0.04
+    facade_primary = merge((
         box((0.0, 0.0, 12.0), (width, depth, 24.0)),
         box((-4.5, -3.6, 15.0), (4.2, 4.0, 30.0)),
         box((4.8, -4.0, 13.5), (3.8, 3.2, 27.0)),
     ))
-    trim = merge((
-        box((0.0, half_d - 0.08, 1.0), (width, 0.20, 2.0)),
-        box((0.0, half_d - 0.10, 10.0), (width, 0.22, 0.35)),
-        box((-4.5, half_d - 0.16, 5.0), (3.2, 0.35, 7.0)),
-        box((0.0, half_d - 0.18, 4.2), (4.6, 0.40, 6.0)),
-        box((4.9, half_d - 0.16, 4.5), (3.0, 0.35, 6.5)),
-        box((0.0, -half_d + 0.10, 18.0), (width, 0.22, 0.35)),
+    plinth = box(
+        (0.0,
+         half_d + plinth_relief - 0.20 * 0.5,
+         1.0),
+        (width - facade_edge_clearance * 2.0, 0.20, 2.0))
+    facade_secondary = merge((
+        box((0.0,
+             half_d + secondary_relief - 0.22 * 0.5,
+             10.0),
+            (width - facade_edge_clearance * 2.0, 0.22, 0.35)),
+        # Door surrounds begin above the plinth. Their front planes share the
+        # 6.5 cm secondary relief without becoming competing layers.
+        box((-4.5,
+             half_d + secondary_relief - 0.35 * 0.5,
+             5.275),
+            (3.2, 0.35, 6.45)),
+        box((0.0,
+             half_d + secondary_relief - 0.40 * 0.5,
+             4.625),
+            (4.6, 0.40, 5.15)),
+        box((4.9,
+             half_d + secondary_relief - 0.35 * 0.5,
+             4.9),
+            (3.0, 0.35, 5.7)),
+        box((0.0,
+             -half_d - secondary_relief + 0.22 * 0.5,
+             18.0),
+            (width - facade_edge_clearance * 2.0, 0.22, 0.35)),
     ))
     roof_parts: list[Geometry] = []
     bay_width = width / 4.0
@@ -530,12 +681,11 @@ def industrial_prototype() -> PrototypeSpec:
         cylinder_z((-5.0, -4.5), 30.0, height, 0.34, 10),
         cylinder_z((5.1, -4.7), 27.0, 34.5, 0.30, 10),
         cylinder_z((2.5, 2.0), 24.0, 31.0, 0.24, 8),
-        box((0.0, 5.5, 14.0), (10.5, 0.18, 0.18)),
     ]
     for x in (-5.2, -2.6, 0.0, 2.6, 5.2):
         metal_parts.append(box((x, 5.5, 11.0), (0.14, 0.14, 6.2)))
     for z in (11.0, 14.0, 17.0):
-        metal_parts.append(box((0.0, 5.5, z), (10.5, 0.14, 0.14)))
+        metal_parts.append(box((0.0, 5.5, z), (10.4, 0.12, 0.14)))
     metal = merge(metal_parts)
 
     slots: list[WindowSlot] = []
@@ -551,8 +701,9 @@ def industrial_prototype() -> PrototypeSpec:
         (12.0, 20.0), (1.1, 1.45)))
     frame, glass = window_geometry(slots)
     role_geometry = {
-        "Shell": shell,
-        "Trim": trim,
+        "FacadePrimary": facade_primary,
+        "FacadeSecondary": facade_secondary,
+        "Plinth": plinth,
         "Roof": roof,
         "Metal": metal,
         "WindowFrame": frame,
@@ -562,38 +713,58 @@ def industrial_prototype() -> PrototypeSpec:
         stable_id, "Industrial", "LowWideProcess", width, depth, height,
         (0.0, half_d, 0.0), (-6.7, -6.45, 24.0),
         (6.7, 6.45, 30.0), facade_bounds(width, depth, height),
-        tuple(slots), parts_for(stable_id, role_geometry))
+        tuple(slots), parts_for(stable_id, role_geometry, 1.8))
 
 
 def nightlife_prototype() -> PrototypeSpec:
     stable_id = "nightlife-prototype-01"
     width, depth, height = 12.5, 12.0, 48.0
     half_w, half_d = width * 0.5, depth * 0.5
-    shell = merge((
+    plinth_relief = 0.035
+    secondary_relief = 0.065
+    facade_edge_clearance = 0.04
+    facade_primary = merge((
         box((0.0, 0.0, 5.0), (width, depth, 10.0)),
         box((-0.6, -0.4, 21.0), (10.5, 10.6, 32.0)),
         box((1.1, -1.0, 39.0), (7.1, 8.0, 4.0)),
     ))
-    trim_parts: list[Geometry] = [
-        box((0.0, half_d - 0.10, 1.2), (width, 0.22, 2.4)),
-        box((0.0, half_d - 0.10, 8.8), (width, 0.24, 0.35)),
-        box((-0.6, 4.82, 35.0), (10.5, 0.22, 0.35)),
-        box((0.0, half_d - 0.14, 5.0), (3.4, 0.34, 4.8)),
-        box((3.9, half_d - 0.14, 5.3), (3.1, 0.30, 1.8)),
+    plinth = box(
+        (0.0,
+         half_d + plinth_relief - 0.22 * 0.5,
+         1.2),
+        (width - facade_edge_clearance * 2.0, 0.22, 2.4))
+    secondary_parts: list[Geometry] = [
+        box((0.0,
+             half_d + secondary_relief - 0.24 * 0.5,
+             8.8),
+            (width - facade_edge_clearance * 2.0, 0.24, 0.35)),
+        box((-0.6, 4.9 + secondary_relief - 0.20 * 0.5, 35.0),
+            (10.5 - facade_edge_clearance * 2.0, 0.20, 0.35)),
+        box((0.0,
+             half_d + secondary_relief - 0.32 * 0.5,
+             5.0),
+            (3.4, 0.32, 4.8)),
+        box((3.9,
+             half_d + secondary_relief - 0.30 * 0.5,
+             5.3),
+            (3.1, 0.30, 1.8)),
     ]
     for z in (13.0, 19.5, 26.0, 32.5):
-        trim_parts.append(box((-0.6, 4.82, z), (10.5, 0.20, 0.25)))
-    trim = merge(trim_parts)
+        secondary_parts.append(box(
+            (-0.6, 4.9 + secondary_relief - 0.20 * 0.5, z),
+            (10.5 - facade_edge_clearance * 2.0, 0.20, 0.25)))
+    facade_secondary = merge(secondary_parts)
     roof = merge((
-        box((-0.6, -0.4, 37.15), (10.5, 10.6, 0.30)),
+        box((-0.6, -0.4, 37.15),
+            (10.5 - facade_edge_clearance * 2.0, 10.6, 0.30)),
         box((1.1, -1.0, 41.15), (7.1, 8.0, 0.30)),
         pyramid_roof((1.1, -1.0), 5.8, 6.5, 41.0, height),
     ))
     metal_parts: list[Geometry] = [
-        box((5.55, -0.2, 22.0), (0.12, 7.8, 0.12)),
+        box((5.55, -0.2, 22.0), (0.10, 7.8, 0.12)),
         box((5.55, -0.2, 11.0), (0.12, 0.12, 22.0)),
         box((5.55, 3.6, 11.0), (0.12, 0.12, 22.0)),
-        box((-2.9, 3.1, 44.0), (5.2, 0.14, 0.14)),
+        box((-2.9, 3.1, 44.0), (5.2, 0.12, 0.14)),
         box((-5.3, 3.1, 41.8), (0.14, 0.14, 4.5)),
         box((-0.5, 3.1, 41.8), (0.14, 0.14, 4.5)),
     ]
@@ -617,8 +788,9 @@ def nightlife_prototype() -> PrototypeSpec:
         (14.0, 22.0, 30.0), (1.05, 1.75)))
     frame, glass = window_geometry(slots)
     role_geometry = {
-        "Shell": shell,
-        "Trim": trim,
+        "FacadePrimary": facade_primary,
+        "FacadeSecondary": facade_secondary,
+        "Plinth": plinth,
         "Roof": roof,
         "Metal": metal,
         "WindowFrame": frame,
@@ -628,7 +800,7 @@ def nightlife_prototype() -> PrototypeSpec:
         stable_id, "Nightlife", "TallDense", width, depth, height,
         (0.0, half_d, 0.0), (-5.0, -5.1, 37.0),
         (5.0, 4.1, height), facade_bounds(width, depth, height),
-        tuple(slots), parts_for(stable_id, role_geometry))
+        tuple(slots), parts_for(stable_id, role_geometry, 1.6))
 
 
 def build_prototypes() -> tuple[PrototypeSpec, ...]:

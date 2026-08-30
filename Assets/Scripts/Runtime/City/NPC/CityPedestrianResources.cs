@@ -133,7 +133,8 @@ namespace BarPromenade
             float maximumAnimationSpeed,
             int maximumPoolInstances,
             float groundTrim,
-            CityPedestrianSeatedRide seatedRide)
+            CityPedestrianSeatedRide seatedRide,
+            bool carriesBoilingKettle = false)
         {
             if (string.IsNullOrWhiteSpace(designId))
             {
@@ -181,6 +182,7 @@ namespace BarPromenade
             MaximumPoolInstances = maximumPoolInstances;
             GroundTrim = groundTrim;
             SeatedRide = seatedRide;
+            CarriesBoilingKettle = carriesBoilingKettle;
         }
 
         public string DesignId { get; }
@@ -219,6 +221,15 @@ namespace BarPromenade
         public CityPedestrianSeatedRide SeatedRide { get; }
 
         public bool CanRideBus => SeatedRide != null;
+
+        /// <summary>
+        /// True for the one design whose headwear is a kettle on the boil.
+        /// Declared here, on the descriptor and in the model manifest alike,
+        /// the way the hopper's lamp is: the factory attaches the always-on
+        /// boil effect only to a design that says so, and refuses a prefab
+        /// whose rig anchors disagree with its catalog entry.
+        /// </summary>
+        public bool CarriesBoilingKettle { get; }
 
         private static void ValidateRange(
             float minimum,
@@ -351,7 +362,8 @@ namespace BarPromenade
                 1.18f,
                 CityPedestrianArchetype.UnlimitedPoolInstances,
                 0f,
-                KettleHatSeatedRide),
+                KettleHatSeatedRide,
+                carriesBoilingKettle: true),
             // The slowest walker in the catalog: a dragging shuffle whose
             // long clips play back slightly under authored pace.
             new CityPedestrianArchetype(

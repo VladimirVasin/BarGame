@@ -138,6 +138,120 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void LandmarkLots_KeepCoreDressingOffTheLandmarkSurface()
+        {
+            CityDecorationPlan plan = CreatePlan(
+                GameSessionState.DefaultCitySeed,
+                out CityLayout layout,
+                out _,
+                out _);
+            var districts = new[]
+            {
+                CityDistrictKind.OldTown,
+                CityDistrictKind.Residential,
+                CityDistrictKind.Industrial,
+                CityDistrictKind.Nightlife
+            };
+
+            for (int districtIndex = 0;
+                 districtIndex < districts.Length;
+                 districtIndex++)
+            {
+                CityDistrictKind district = districts[districtIndex];
+                Assert.That(
+                    layout.TryGetPrimaryLandmarkCell(
+                        district,
+                        out Vector2Int landmarkCell),
+                    Is.True);
+                int facadeCore = 0;
+                int roofCore = 0;
+                int landmark = 0;
+                for (int index = 0;
+                     index < plan.Descriptors.Count;
+                     index++)
+                {
+                    CityDecorationDescriptor descriptor =
+                        plan.Descriptors[index];
+                    if (descriptor.LotCell != landmarkCell ||
+                        descriptor.District != district)
+                    {
+                        continue;
+                    }
+
+                    switch (descriptor.AnchorKind)
+                    {
+                        case CityDecorationAnchorKind.BuildingFacade:
+                            facadeCore++;
+                            break;
+                        case CityDecorationAnchorKind.BuildingRoof:
+                            roofCore++;
+                            break;
+                        case CityDecorationAnchorKind.UrbanLandmark:
+                            landmark++;
+                            break;
+                    }
+                }
+
+                bool facadeLandmark =
+                    district == CityDistrictKind.Nightlife;
+                Assert.That(
+                    facadeCore,
+                    Is.EqualTo(facadeLandmark ? 0 : 1),
+                    district.ToString());
+                Assert.That(
+                    roofCore,
+                    Is.EqualTo(facadeLandmark ? 1 : 0),
+                    district.ToString());
+                Assert.That(landmark, Is.EqualTo(1), district.ToString());
+            }
+
+            Assert.That(
+                layout.TryGetPrimaryLandmarkCell(
+                    CityDistrictKind.Nightlife,
+                    out Vector2Int nightlifeLandmarkCell),
+                Is.True);
+            var conflictingDescriptors =
+                new List<CityDecorationDescriptor>(
+                    plan.Descriptors.Count);
+            for (int index = 0;
+                 index < plan.Descriptors.Count;
+                 index++)
+            {
+                CityDecorationDescriptor descriptor =
+                    plan.Descriptors[index];
+                if (descriptor.LotCell == nightlifeLandmarkCell &&
+                    descriptor.AnchorKind ==
+                        CityDecorationAnchorKind.BuildingRoof)
+                {
+                    descriptor = new CityDecorationDescriptor(
+                        descriptor.StableId,
+                        CityDecorationKind.NightlifeFireEscape,
+                        CityDecorationAnchorKind.BuildingFacade,
+                        descriptor.District,
+                        descriptor.LotCell,
+                        descriptor.Position,
+                        descriptor.Forward,
+                        descriptor.Variant,
+                        descriptor.Palette,
+                        CityDecorationVisibilityTier.MidRange,
+                        descriptor.CollisionTier);
+                }
+
+                conflictingDescriptors.Add(descriptor);
+            }
+
+            var conflictingPlan = new CityDecorationPlan(
+                plan.Seed,
+                conflictingDescriptors);
+            InvalidOperationException exception = Assert.Throws<
+                InvalidOperationException>(
+                () => conflictingPlan.ValidateOrThrow(layout));
+            Assert.That(
+                exception.Message,
+                Does.Contain("landmark surface"));
+        }
+
+        [Test]
         public void GroundDetails_RespectEntrancesAndNightFixtures()
         {
             CityDecorationPlan plan = CreatePlan(
@@ -176,6 +290,208 @@ namespace BarPromenade.Tests.EditMode
                     Is.False,
                     descriptor.StableId);
             }
+        }
+
+        [Test]
+        public void ResidentialCourtyardPockets_AreFourDistinctClearAndWindAware()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            RoadFencePlan fence = RoadFencePlanner.CreatePlan(layout);
+            CityNightFixturePlan night =
+                CityNightFixturePlanner.CreatePlan(layout);
+            CityDecorationPlan first = CityDecorationPlanner.CreatePlan(
+                layout,
+                fence,
+                night);
+            CityDecorationPlan second = CityDecorationPlanner.CreatePlan(
+                layout,
+                fence,
+                night);
+            List<CityDecorationDescriptor> pockets = CollectKind(
+                first,
+                CityDecorationKind.ResidentialCourtyardPocket);
+            List<CityDecorationDescriptor> repeated = CollectKind(
+                second,
+                CityDecorationKind.ResidentialCourtyardPocket);
+
+            Assert.That(
+                pockets,
+                Has.Count.EqualTo(
+                    CityCourtyardPocketPlanner.MaximumPocketCount));
+            CollectionAssert.AreEqual(pockets, repeated);
+
+            var variants = new HashSet<int>();
+            var lotCells = new HashSet<Vector2Int>();
+            var positions = new List<Vector3>();
+            var pocketProxies = new List<Bounds>();
+            HomeYardSitePlan? homeYard = HomeYardSitePlanner.TryCreate(
+                layout,
+                out HomeYardSitePlan site)
+                ? site
+                : (HomeYardSitePlan?)null;
+            for (int index = 0; index < pockets.Count; index++)
+            {
+                CityDecorationDescriptor pocket = pockets[index];
+                Assert.That(
+                    pocket.District,
+                    Is.EqualTo(CityDistrictKind.Residential));
+                Assert.That(
+                    pocket.AnchorKind,
+                    Is.EqualTo(
+                        CityDecorationAnchorKind.BuildingFrontage));
+                Assert.That(
+                    pocket.CollisionTier,
+                    Is.EqualTo(CityDecorationCollisionTier.Blocking));
+                Assert.That(variants.Add(pocket.Variant), Is.True);
+                Assert.That(lotCells.Add(pocket.LotCell), Is.True);
+                Assert.That(
+                    pocket.TryResolveLot(layout, out BuildingLot lot),
+                    Is.True);
+                Assert.That(lot.IsOrdinaryBuilding, Is.True);
+                Assert.That(
+                    CityCourtyardPocketGeometry.GetDepth(
+                        pocket.Variant),
+                    Is.LessThanOrEqualTo(
+                        CityCourtyardPocketGeometry.MaximumDepth));
+
+                Rect footprint =
+                    CityCourtyardPocketGeometry.CreateFootprint(pocket);
+                Assert.That(
+                    CityCourtyardPocketPlanner.OverlapsStrict(
+                        footprint,
+                        CityCourtyardPocketPlanner
+                            .CreateDoorClearance(lot)),
+                    Is.False,
+                    pocket.StableId);
+                Assert.That(
+                    CityDecorationValidator.IsProtectedGroundAnchor(
+                        pocket.Position,
+                        CityDecorationValidator.ResolveProtectionRadius(
+                            pocket.Kind),
+                        fence,
+                        night),
+                    Is.False,
+                    pocket.StableId);
+                AssertCourtyardFootprintGrounded(
+                    layout,
+                    lot,
+                    pocket,
+                    footprint);
+                AssertCourtyardClearOfAccesses(
+                    layout,
+                    footprint,
+                    pocket.StableId);
+                AssertCourtyardClearOfPointsOfInterest(
+                    layout,
+                    footprint,
+                    pocket.StableId);
+                if (homeYard.HasValue)
+                {
+                    Assert.That(
+                        CityCourtyardPocketPlanner.OverlapsStrict(
+                            footprint,
+                            CityCourtyardPocketPlanner.Expand(
+                                homeYard.Value.GroundBounds,
+                                CityCourtyardPocketPlanner
+                                    .HomeYardClearance)),
+                        Is.False,
+                        pocket.StableId);
+                }
+
+                var proxies = new List<Bounds>();
+                CityStaticCollisionBuilder.AddDecorationProxyBounds(
+                    layout,
+                    pocket,
+                    proxies);
+                Assert.That(proxies, Has.Count.InRange(1, 4));
+                for (int proxyIndex = 0;
+                     proxyIndex < proxies.Count;
+                     proxyIndex++)
+                {
+                    Assert.That(
+                        Contains(
+                            footprint,
+                            ToXZRect(proxies[proxyIndex])),
+                        Is.True,
+                        pocket.StableId);
+                    pocketProxies.Add(proxies[proxyIndex]);
+                }
+
+                positions.Add(pocket.Position);
+            }
+
+            Assert.That(
+                variants,
+                Does.Contain(
+                    CityCourtyardPocketGeometry.NardiVariant));
+            Assert.That(
+                variants,
+                Does.Contain(
+                    CityCourtyardPocketGeometry.BicycleVariant));
+            Assert.That(
+                variants,
+                Does.Contain(
+                    CityCourtyardPocketGeometry.BalconyBasketVariant));
+            Assert.That(
+                variants,
+                Does.Contain(
+                    CityCourtyardPocketPlanner.ResolveOptionalVariant(
+                        layout.Seed)));
+            AssertMinimumPlanarSpacing(
+                positions,
+                CityCourtyardPocketPlanner.MinimumPocketSpacing,
+                "residential courtyard pockets");
+            AssertCourtyardClearOfOtherDecoration(
+                layout,
+                first,
+                pockets);
+
+            CityMountainBoundaryPlan mountainPlan =
+                CityMountainBoundaryPlanner.Create(layout);
+            CityWindDressingPlan windPlan =
+                CityWindDressingPlanner.Create(
+                    layout,
+                    first,
+                    CitySeacoastPlanner.Create(layout),
+                    CityCemeteryPlanner.Create(layout),
+                    CityFringeYardPlanner.Create(
+                        layout,
+                        mountainPlan));
+            int residentialSupportCount = 0;
+            for (int index = 0;
+                 index < windPlan.Supports.Count;
+                 index++)
+            {
+                CityWindDressingSupportDescriptor support =
+                    windPlan.Supports[index];
+                if (support.Zone != CityWindDressingZone.Residential)
+                {
+                    continue;
+                }
+
+                residentialSupportCount++;
+                Bounds supportBounds = AxisAlignedBounds(support.Box);
+                for (int proxyIndex = 0;
+                     proxyIndex < pocketProxies.Count;
+                     proxyIndex++)
+                {
+                    Assert.That(
+                        OverlapsStrict(
+                            supportBounds,
+                            pocketProxies[proxyIndex]),
+                        Is.False,
+                        $"Wind support '{support.StableId}' intersects " +
+                        $"courtyard proxy {proxyIndex}.");
+                }
+            }
+
+            Assert.That(
+                residentialSupportCount,
+                Is.GreaterThan(0),
+                "Courtyard pockets must adapt existing laundry, not erase it.");
         }
 
         [Test]
@@ -339,6 +655,7 @@ namespace BarPromenade.Tests.EditMode
                 { CityDecorationKind.ResidentialBalconies, CityDecorationCollisionTier.None },
                 { CityDecorationKind.ResidentialLaundryAndAntenna, CityDecorationCollisionTier.None },
                 { CityDecorationKind.ResidentialDiscardedFurniture, CityDecorationCollisionTier.Blocking },
+                { CityDecorationKind.ResidentialCourtyardPocket, CityDecorationCollisionTier.Blocking },
                 { CityDecorationKind.ResidentialRooftopGreenhouse, CityDecorationCollisionTier.None },
                 { CityDecorationKind.IndustrialStacksAndTanks, CityDecorationCollisionTier.None },
                 { CityDecorationKind.IndustrialPipeRack, CityDecorationCollisionTier.Detail },
@@ -585,6 +902,252 @@ namespace BarPromenade.Tests.EditMode
 
             Assert.Fail($"No descriptor with suffix '{suffix}'.");
             return default;
+        }
+
+        private static List<CityDecorationDescriptor> CollectKind(
+            CityDecorationPlan plan,
+            CityDecorationKind kind)
+        {
+            var result = new List<CityDecorationDescriptor>();
+            for (int index = 0; index < plan.Descriptors.Count; index++)
+            {
+                if (plan.Descriptors[index].Kind == kind)
+                {
+                    result.Add(plan.Descriptors[index]);
+                }
+            }
+
+            return result;
+        }
+
+        private static void AssertCourtyardFootprintGrounded(
+            CityLayout layout,
+            BuildingLot lot,
+            CityDecorationDescriptor pocket,
+            Rect footprint)
+        {
+            Vector2[] samples =
+            {
+                footprint.center,
+                new Vector2(footprint.xMin, footprint.yMin),
+                new Vector2(footprint.xMin, footprint.yMax),
+                new Vector2(footprint.xMax, footprint.yMin),
+                new Vector2(footprint.xMax, footprint.yMax)
+            };
+            float minimum = float.PositiveInfinity;
+            float maximum = float.NegativeInfinity;
+            for (int index = 0; index < samples.Length; index++)
+            {
+                Assert.That(
+                    CityTerrainSurfacePlan.TrySampleGroundTop(
+                        layout,
+                        samples[index],
+                        out float top,
+                        out CitySurfaceDescriptor surface),
+                    Is.True,
+                    pocket.StableId);
+                Assert.That(surface.Cell, Is.EqualTo(lot.Cell));
+                Assert.That(
+                    surface.Kind,
+                    Is.EqualTo(CitySurfaceKind.BuildableGround));
+                if (index == 0)
+                {
+                    Assert.That(
+                        pocket.Position.y,
+                        Is.EqualTo(top).Within(0.001f),
+                        pocket.StableId);
+                }
+
+                minimum = Mathf.Min(minimum, top);
+                maximum = Mathf.Max(maximum, top);
+            }
+
+            Assert.That(
+                maximum - minimum,
+                Is.LessThanOrEqualTo(
+                    CityCourtyardPocketPlanner.MaximumGroundDelta +
+                    0.001f),
+                pocket.StableId);
+        }
+
+        private static void AssertCourtyardClearOfAccesses(
+            CityLayout layout,
+            Rect footprint,
+            string stableId)
+        {
+            for (int index = 0;
+                 index < layout.OpenAreaAccesses.Count;
+                 index++)
+            {
+                Assert.That(
+                    CityCourtyardPocketPlanner.OverlapsStrict(
+                        footprint,
+                        CityCourtyardPocketPlanner.Expand(
+                            layout.OpenAreaAccesses[index]
+                                .ApproachBounds,
+                            CityCourtyardPocketPlanner
+                                .AccessClearance)),
+                    Is.False,
+                    stableId);
+            }
+
+            for (int pointIndex = 0;
+                 pointIndex < layout.DistrictPointsOfInterest.Count;
+                 pointIndex++)
+            {
+                CityDistrictPointOfInterestDescriptor point =
+                    layout.DistrictPointsOfInterest[pointIndex];
+                for (int accessIndex = 0;
+                     accessIndex < point.Accesses.Count;
+                     accessIndex++)
+                {
+                    Assert.That(
+                        CityCourtyardPocketPlanner.OverlapsStrict(
+                            footprint,
+                            CityCourtyardPocketPlanner.Expand(
+                                point.Accesses[accessIndex]
+                                    .ApproachBounds,
+                                CityCourtyardPocketPlanner
+                                    .AccessClearance)),
+                        Is.False,
+                        stableId);
+                }
+            }
+        }
+
+        private static void AssertCourtyardClearOfPointsOfInterest(
+            CityLayout layout,
+            Rect footprint,
+            string stableId)
+        {
+            for (int index = 0;
+                 index < layout.DistrictPointsOfInterest.Count;
+                 index++)
+            {
+                CityDistrictPointOfInterestDescriptor point =
+                    layout.DistrictPointsOfInterest[index];
+                Assert.That(
+                    CityCourtyardPocketPlanner.OverlapsStrict(
+                        footprint,
+                        CityCourtyardPocketPlanner.Expand(
+                            point.PublicBounds,
+                            CityCourtyardPocketPlanner
+                                .PointOfInterestClearance)),
+                    Is.False,
+                    stableId);
+                if (point.Kind == CityDistrictPointOfInterestKind
+                                      .ResidentialDryingYard)
+                {
+                    Assert.That(
+                        CityCourtyardPocketPlanner.OverlapsStrict(
+                            footprint,
+                            CityCourtyardPocketPlanner.Expand(
+                                point.PublicBounds,
+                                CityCourtyardPocketPlanner
+                                    .DryingYardClearance)),
+                        Is.False,
+                        stableId);
+                }
+            }
+        }
+
+        private static void AssertCourtyardClearOfOtherDecoration(
+            CityLayout layout,
+            CityDecorationPlan plan,
+            IReadOnlyList<CityDecorationDescriptor> pockets)
+        {
+            var otherProxies = new List<Bounds>();
+            var proxyBuffer = new List<Bounds>();
+            for (int index = 0; index < plan.Descriptors.Count; index++)
+            {
+                CityDecorationDescriptor descriptor =
+                    plan.Descriptors[index];
+                if (descriptor.Kind ==
+                        CityDecorationKind.ResidentialCourtyardPocket ||
+                    descriptor.CollisionTier ==
+                        CityDecorationCollisionTier.None)
+                {
+                    continue;
+                }
+
+                proxyBuffer.Clear();
+                CityStaticCollisionBuilder.AddDecorationProxyBounds(
+                    layout,
+                    descriptor,
+                    proxyBuffer);
+                otherProxies.AddRange(proxyBuffer);
+            }
+
+            for (int pocketIndex = 0;
+                 pocketIndex < pockets.Count;
+                 pocketIndex++)
+            {
+                Rect footprint = CityCourtyardPocketPlanner.Expand(
+                    CityCourtyardPocketGeometry.CreateFootprint(
+                        pockets[pocketIndex]),
+                    CityCourtyardPocketPlanner.ProxyClearance);
+                for (int proxyIndex = 0;
+                     proxyIndex < otherProxies.Count;
+                     proxyIndex++)
+                {
+                    Assert.That(
+                        CityCourtyardPocketPlanner.OverlapsStrict(
+                            footprint,
+                            ToXZRect(otherProxies[proxyIndex])),
+                        Is.False,
+                        pockets[pocketIndex].StableId);
+                }
+            }
+        }
+
+        private static Rect ToXZRect(Bounds bounds)
+        {
+            return Rect.MinMaxRect(
+                bounds.min.x,
+                bounds.min.z,
+                bounds.max.x,
+                bounds.max.z);
+        }
+
+        private static bool Contains(Rect outer, Rect inner)
+        {
+            const float tolerance = 0.001f;
+            return inner.xMin >= outer.xMin - tolerance &&
+                   inner.xMax <= outer.xMax + tolerance &&
+                   inner.yMin >= outer.yMin - tolerance &&
+                   inner.yMax <= outer.yMax + tolerance;
+        }
+
+        private static Bounds AxisAlignedBounds(RuntimeOrientedBox box)
+        {
+            Vector3 axisX = box.Rotation *
+                new Vector3(box.Size.x * 0.5f, 0f, 0f);
+            Vector3 axisY = box.Rotation *
+                new Vector3(0f, box.Size.y * 0.5f, 0f);
+            Vector3 axisZ = box.Rotation *
+                new Vector3(0f, 0f, box.Size.z * 0.5f);
+            var extents = new Vector3(
+                Mathf.Abs(axisX.x) +
+                Mathf.Abs(axisY.x) +
+                Mathf.Abs(axisZ.x),
+                Mathf.Abs(axisX.y) +
+                Mathf.Abs(axisY.y) +
+                Mathf.Abs(axisZ.y),
+                Mathf.Abs(axisX.z) +
+                Mathf.Abs(axisY.z) +
+                Mathf.Abs(axisZ.z));
+            return new Bounds(box.Center, extents * 2f);
+        }
+
+        private static bool OverlapsStrict(Bounds left, Bounds right)
+        {
+            const float epsilon = 0.001f;
+            return left.min.x < right.max.x - epsilon &&
+                   left.max.x > right.min.x + epsilon &&
+                   left.min.y < right.max.y - epsilon &&
+                   left.max.y > right.min.y + epsilon &&
+                   left.min.z < right.max.z - epsilon &&
+                   left.max.z > right.min.z + epsilon;
         }
 
         private static void AssertLeansOnWall(

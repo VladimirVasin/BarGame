@@ -4,9 +4,10 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Fits the three low-rise landmark shells authored in Blender to their
-    /// generated lots. Gameplay doors, signs, window bands and collision stay
-    /// plan-owned, so this bridge changes presentation without moving routes.
+    /// Fits the legacy low-rise landmark shells authored in Blender to their
+    /// generated lots. The dedicated pub, supermarket and player-home
+    /// exteriors now use this bridge only for their terrain skirts and
+    /// plan-owned collision.
     /// </summary>
     internal static class CitySpecialBuildingWorldBuilder
     {
@@ -23,6 +24,9 @@ namespace BarPromenade
 
         internal const float BarFoundationSideInset = 0.08f;
         internal const float BarFoundationFrontInset = 0.08f;
+        internal const float SupermarketFoundationInset =
+            SupermarketEntranceGeometry.FoundationInset;
+        internal const float PlayerHomeFoundationInset = 0.08f;
 
         private const string HomeExteriorShellObjectName =
             "Exterior Building Mass";
@@ -44,6 +48,8 @@ namespace BarPromenade
 
         private static readonly Color BarFoundationTint =
             new Color(0.30f, 0.12f, 0.075f, 1f);
+        private static readonly Color SupermarketFoundationTint =
+            new Color(0.34f, 0.25f, 0.21f, 1f);
 
         private static CityMiscAssetProvider provider;
 
@@ -85,7 +91,60 @@ namespace BarPromenade
                 lot,
                 foundationDepth,
                 ResolveCityPose(lot),
-                false);
+                false,
+                CityMiscKind.BarBuildingShell);
+            CityBuildingPrototypeWorldBuilder.BuildLogicalCollision(
+                parent,
+                lot,
+                foundationDepth);
+            return result;
+        }
+
+        /// <summary>
+        /// Keeps the inset terrain skirt and plan-owned full-lot collision for
+        /// the authored supermarket without instantiating its old CityMisc
+        /// shell or generic apartment window bands.
+        /// </summary>
+        public static Transform BuildSupermarketCityInfrastructure(
+            Transform parent,
+            BuildingLot lot,
+            float foundationDepth)
+        {
+            ValidateArguments(parent, lot, foundationDepth);
+            ValidateSupermarket(lot);
+            Transform result = BuildFoundationOnly(
+                parent,
+                lot,
+                foundationDepth,
+                ResolveCityPose(lot),
+                false,
+                CityMiscKind.SupermarketBuildingShell);
+            CityBuildingPrototypeWorldBuilder.BuildLogicalCollision(
+                parent,
+                lot,
+                foundationDepth);
+            return result;
+        }
+
+        /// <summary>
+        /// Keeps the inset terrain skirt and plan-owned full-lot collision for
+        /// the complete player-home model without instantiating its old
+        /// three-role CityMisc shell.
+        /// </summary>
+        public static Transform BuildPlayerHomeCityInfrastructure(
+            Transform parent,
+            BuildingLot lot,
+            float foundationDepth)
+        {
+            ValidateArguments(parent, lot, foundationDepth);
+            ValidatePlayerHome(lot);
+            Transform result = BuildFoundationOnly(
+                parent,
+                lot,
+                foundationDepth,
+                ResolveCityPose(lot),
+                false,
+                CityMiscKind.PlayerHomeBuildingShell);
             CityBuildingPrototypeWorldBuilder.BuildLogicalCollision(
                 parent,
                 lot,
@@ -170,7 +229,39 @@ namespace BarPromenade
                 lot,
                 foundationDepth,
                 homePose,
-                true);
+                true,
+                CityMiscKind.BarBuildingShell);
+        }
+
+        /// <summary>
+        /// Rebuilds only the supermarket terrain skirt in the bounded Home
+        /// view. The same full authored exterior is placed separately at its
+        /// gameplay door, and Home receives no gameplay collision.
+        /// </summary>
+        public static Transform BuildSupermarketHomeInfrastructure(
+            Transform parent,
+            HomeExteriorContextPlan context,
+            BuildingLot lot,
+            float foundationDepth)
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            ValidateArguments(parent, lot, foundationDepth);
+            ValidateSupermarket(lot);
+            CityBuildingPrototypePose homePose =
+                CityBuildingPrototypePlacement.ResolveHomePose(
+                    context.PlayerHome,
+                    ResolveCityPose(lot));
+            return BuildFoundationOnly(
+                parent,
+                lot,
+                foundationDepth,
+                homePose,
+                true,
+                CityMiscKind.SupermarketBuildingShell);
         }
 
         internal static Vector3 GetCanonicalEnvelope(
@@ -181,7 +272,10 @@ namespace BarPromenade
                 case CityMiscKind.BarBuildingShell:
                     return new Vector3(12.2645f, 9.3435f, 13.5237f);
                 case CityMiscKind.SupermarketBuildingShell:
-                    return new Vector3(15.5f, 6.4f, 15.5f);
+                    return new Vector3(
+                        SupermarketEntranceGeometry.ExteriorWidth,
+                        SupermarketEntranceGeometry.ExteriorHeight,
+                        SupermarketEntranceGeometry.ExteriorDepth);
                 case CityMiscKind.PlayerHomeBuildingShell:
                     return new Vector3(13f, 8.8f, 12f);
                 default:
@@ -274,9 +368,9 @@ namespace BarPromenade
             BuildingLot lot,
             float foundationDepth,
             CityBuildingPrototypePose pose,
-            bool homeExterior)
+            bool homeExterior,
+            CityMiscKind kind)
         {
-            const CityMiscKind kind = CityMiscKind.BarBuildingShell;
             Vector3 scale = ResolveScale(
                 lot,
                 foundationDepth,
@@ -319,7 +413,9 @@ namespace BarPromenade
                 foundationDepth + overlap,
                 envelope.z * modelScale.z);
 
-            if (kind == CityMiscKind.BarBuildingShell)
+            if (kind == CityMiscKind.BarBuildingShell ||
+                kind == CityMiscKind.SupermarketBuildingShell ||
+                kind == CityMiscKind.PlayerHomeBuildingShell)
             {
                 // The authored pub begins at its door's true ground plane,
                 // while this legacy infrastructure root still carries the
@@ -328,30 +424,91 @@ namespace BarPromenade
                 // the shopfront at the front. The logical collider remains
                 // full-size and plan-owned outside this renderer.
                 position.y -= CityFacadeGrid.MassBaseElevation;
-                position.z -= BarFoundationFrontInset * 0.5f;
-                size.x = Mathf.Max(
-                    0.1f,
-                    size.x - (BarFoundationSideInset * 2f));
-                size.z = Mathf.Max(
-                    0.1f,
-                    size.z - BarFoundationFrontInset);
+                if (kind == CityMiscKind.BarBuildingShell)
+                {
+                    position.z -= BarFoundationFrontInset * 0.5f;
+                    size.x = Mathf.Max(
+                        0.1f,
+                        size.x - (BarFoundationSideInset * 2f));
+                    size.z = Mathf.Max(
+                        0.1f,
+                        size.z - BarFoundationFrontInset);
+                }
+                else if (kind == CityMiscKind.SupermarketBuildingShell)
+                {
+                    size.x = Mathf.Max(
+                        0.1f,
+                        size.x - (SupermarketFoundationInset * 2f));
+                    size.z = Mathf.Max(
+                        0.1f,
+                        size.z - (SupermarketFoundationInset * 2f));
+                }
+                else
+                {
+                    size.x = Mathf.Max(
+                        0.1f,
+                        size.x - (PlayerHomeFoundationInset * 2f));
+                    size.z = Mathf.Max(
+                        0.1f,
+                        size.z - (PlayerHomeFoundationInset * 2f));
+                }
 
-                HomeSurfaceRecipe recipe =
-                    BarExteriorSurfaceAppearance.GetRecipe(
-                        BarExteriorSurfaceKind.Brick);
+                bool bar = kind == CityMiscKind.BarBuildingShell;
+                bool supermarket =
+                    kind == CityMiscKind.SupermarketBuildingShell;
+                HomeSurfaceRecipe recipe = bar
+                    ? BarExteriorSurfaceAppearance.GetRecipe(
+                        BarExteriorSurfaceKind.Brick)
+                    : supermarket
+                        ? new HomeSurfaceRecipe(
+                        SupermarketExteriorSurfaceAppearance
+                            .BrickTextureResourcePath,
+                        0.72f,
+                        0.07f,
+                        0f,
+                        1f)
+                        : new HomeSurfaceRecipe(
+                            PlayerHomeExteriorSurfaceAppearance
+                                .BrickPlinthTextureResourcePath,
+                            1.2f,
+                            0.07f,
+                            0f,
+                            1f);
+                Color tint = bar
+                    ? BarFoundationTint
+                    : supermarket
+                        ? SupermarketFoundationTint
+                        : Color.white;
                 GameObject texturedFoundation =
                     RuntimePrimitiveFactory.CreateCombinedBoxes(
                         name,
                         root,
                         new[] { new Bounds(position, size) },
-                        BarFoundationTint,
+                        tint,
                         false,
                         recipe.MetersPerTile,
                         RuntimeWorldUvMode.BoxProjected);
-                BarExteriorSurfaceAppearance.Apply(
-                    texturedFoundation.GetComponent<Renderer>(),
-                    BarExteriorSurfaceKind.Brick,
-                    BarFoundationTint);
+                Renderer renderer =
+                    texturedFoundation.GetComponent<Renderer>();
+                if (bar)
+                {
+                    BarExteriorSurfaceAppearance.Apply(
+                        renderer,
+                        BarExteriorSurfaceKind.Brick,
+                        BarFoundationTint);
+                }
+                else if (supermarket)
+                {
+                    SupermarketExteriorSurfaceAppearance.Apply(
+                        renderer,
+                        SupermarketExteriorSurfaceKind.Brick);
+                }
+                else
+                {
+                    PlayerHomeExteriorSurfaceAppearance.Apply(
+                        renderer,
+                        PlayerHomeExteriorSurfaceKind.BrickPlinth);
+                }
                 return;
             }
 
@@ -574,6 +731,68 @@ namespace BarPromenade
             {
                 throw new ArgumentException(
                     "Bar infrastructure requires a bar lot.",
+                    nameof(lot));
+            }
+        }
+
+        internal static void ValidateSupermarket(BuildingLot lot)
+        {
+            if (lot == null || !lot.IsSupermarket)
+            {
+                throw new ArgumentException(
+                    "Supermarket infrastructure requires a supermarket " +
+                    "lot.",
+                    nameof(lot));
+            }
+
+            const float tolerance = 0.001f;
+            if (Mathf.Abs(
+                    lot.Size.x -
+                    SupermarketEntranceGeometry.ExteriorWidth) >
+                tolerance ||
+                Mathf.Abs(
+                    lot.Size.y -
+                    SupermarketEntranceGeometry.ExteriorDepth) >
+                tolerance ||
+                Mathf.Abs(
+                    lot.Height -
+                    SupermarketEntranceGeometry.ExteriorHeight) >
+                tolerance)
+            {
+                throw new ArgumentException(
+                    "The authored supermarket requires its exact fixed-" +
+                    "metre lot envelope.",
+                    nameof(lot));
+            }
+        }
+
+        internal static void ValidatePlayerHome(BuildingLot lot)
+        {
+            if (lot == null || !lot.IsPlayerHome)
+            {
+                throw new ArgumentException(
+                    "Player-home infrastructure requires the player-home " +
+                    "lot.",
+                    nameof(lot));
+            }
+
+            const float tolerance = 0.001f;
+            Vector3 envelope = GetCanonicalEnvelope(
+                CityMiscKind.PlayerHomeBuildingShell);
+            bool frontageIsX = lot.FrontageDirection.x != 0;
+            float expectedSizeX = frontageIsX
+                ? envelope.z
+                : envelope.x;
+            float expectedSizeZ = frontageIsX
+                ? envelope.x
+                : envelope.z;
+            if (Mathf.Abs(lot.Size.x - expectedSizeX) > tolerance ||
+                Mathf.Abs(lot.Size.y - expectedSizeZ) > tolerance ||
+                Mathf.Abs(lot.Height - envelope.y) > tolerance)
+            {
+                throw new ArgumentException(
+                    "The authored player home requires its exact " +
+                    "13 x 12 x 8.8 metre lot envelope.",
                     nameof(lot));
             }
         }

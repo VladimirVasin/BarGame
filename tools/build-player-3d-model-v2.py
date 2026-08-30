@@ -19,17 +19,14 @@ The no-argument invocation writes only new V2 source and Unity assets.
 from __future__ import annotations
 
 import argparse
-import binascii
 import hashlib
 import importlib.util
 import json
 import math
 import os
-import struct
 import sys
 import traceback
 import warnings
-import zlib
 from pathlib import Path
 from typing import Sequence
 
@@ -38,6 +35,10 @@ from mathutils import Vector
 
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
+sys.path.insert(0, str(REPO_ROOT / "tools"))
+
+import atlas_kit  # noqa: E402  (after the sys.path fix)
+
 V1_GENERATOR_PATH = REPO_ROOT / "tools" / "build-player-3d-model.py"
 V2_GENERATOR_VERSION = "1.0.0"
 ATLAS_COLUMNS = 4
@@ -272,104 +273,10 @@ def parse_args() -> tuple[v1.BuildConfig, Path, Path, Path, Path, Path, Path]:
     )
 
 
-def png_chunk(kind: bytes, payload: bytes) -> bytes:
-    checksum = binascii.crc32(kind)
-    checksum = binascii.crc32(payload, checksum) & 0xFFFFFFFF
-    return struct.pack(">I", len(payload)) + kind + payload + struct.pack(">I", checksum)
-
-
-class PixelCanvas:
-    def __init__(self, width: int, height: int):
-        self.width = width
-        self.height = height
-        self.pixels = bytearray(width * height * 4)
-
-    def put(self, x: int, y: int, color: tuple[int, int, int, int]) -> None:
-        if not (0 <= x < self.width and 0 <= y < self.height):
-            return
-        offset = (y * self.width + x) * 4
-        self.pixels[offset : offset + 4] = bytes(color)
-
-    def rect(
-        self,
-        x0: int,
-        y0: int,
-        x1: int,
-        y1: int,
-        color: tuple[int, int, int, int],
-    ) -> None:
-        for y in range(y0, y1):
-            for x in range(x0, x1):
-                self.put(x, y, color)
-
-    def line(
-        self,
-        x0: int,
-        y0: int,
-        x1: int,
-        y1: int,
-        color: tuple[int, int, int, int],
-        thickness: int = 1,
-    ) -> None:
-        dx = abs(x1 - x0)
-        sx = 1 if x0 < x1 else -1
-        dy = -abs(y1 - y0)
-        sy = 1 if y0 < y1 else -1
-        error = dx + dy
-        while True:
-            radius = max(0, thickness - 1)
-            self.rect(x0 - radius, y0 - radius, x0 + radius + 1, y0 + radius + 1, color)
-            if x0 == x1 and y0 == y1:
-                break
-            doubled = 2 * error
-            if doubled >= dy:
-                error += dy
-                x0 += sx
-            if doubled <= dx:
-                error += dx
-                y0 += sy
-
-    def ellipse(
-        self,
-        center_x: int,
-        center_y: int,
-        radius_x: int,
-        radius_y: int,
-        color: tuple[int, int, int, int],
-    ) -> None:
-        if radius_x <= 0 or radius_y <= 0:
-            return
-        for y in range(center_y - radius_y, center_y + radius_y + 1):
-            normalized_y = (y - center_y) / radius_y
-            span = radius_x * math.sqrt(max(0.0, 1.0 - normalized_y * normalized_y))
-            self.rect(
-                math.ceil(center_x - span),
-                y,
-                math.floor(center_x + span) + 1,
-                y + 1,
-                color,
-            )
-
-    def write_png(self, path: Path) -> None:
-        path.parent.mkdir(parents=True, exist_ok=True)
-        stride = self.width * 4
-        raw = bytearray()
-        for y in range(self.height):
-            raw.append(0)
-            start = y * stride
-            raw.extend(self.pixels[start : start + stride])
-        payload = bytearray(b"\x89PNG\r\n\x1a\n")
-        payload.extend(
-            png_chunk(
-                b"IHDR",
-                struct.pack(">IIBBBBB", self.width, self.height, 8, 6, 0, 0, 0),
-            )
-        )
-        payload.extend(png_chunk(b"IDAT", zlib.compress(bytes(raw), 9)))
-        payload.extend(png_chunk(b"IEND", b""))
-        temporary = path.with_suffix(path.suffix + ".tmp")
-        temporary.write_bytes(payload)
-        os.replace(temporary, path)
+# The PNG canvas moved verbatim into the shared `tools/atlas_kit.py` so the
+# City pedestrian generator paints its atlases with the same code.
+png_chunk = atlas_kit.png_chunk
+PixelCanvas = atlas_kit.PixelCanvas
 
 
 SKIN = (174, 141, 123, 255)
@@ -499,44 +406,9 @@ def build_face_atlas(path: Path, expression_sheet_path: Path) -> str:
     return hashlib.sha256(path.read_bytes()).hexdigest()
 
 
-def rgba_from_hex(value: str) -> tuple[int, int, int, int]:
-    value = value.lstrip("#")
-    return (
-        int(value[0:2], 16),
-        int(value[2:4], 16),
-        int(value[4:6], 16),
-        255,
-    )
-
-
-def atlas_rect_bottom_left(
-    canvas: PixelCanvas,
-    x0: int,
-    y0: int,
-    x1: int,
-    y1: int,
-    color: tuple[int, int, int, int],
-) -> None:
-    canvas.rect(x0, canvas.height - y1, x1, canvas.height - y0, color)
-
-
-def atlas_line_bottom_left(
-    canvas: PixelCanvas,
-    x0: int,
-    y0: int,
-    x1: int,
-    y1: int,
-    color: tuple[int, int, int, int],
-    thickness: int = 1,
-) -> None:
-    canvas.line(
-        x0,
-        canvas.height - 1 - y0,
-        x1,
-        canvas.height - 1 - y1,
-        color,
-        thickness,
-    )
+rgba_from_hex = atlas_kit.rgba_from_hex
+atlas_rect_bottom_left = atlas_kit.atlas_rect_bottom_left
+atlas_line_bottom_left = atlas_kit.atlas_line_bottom_left
 
 
 def clothing_region(name: str) -> tuple[int, int, int, int]:
@@ -839,15 +711,12 @@ def make_adult_boot_geometry(
     return vertices, faces
 
 
+CLOTHING_ATLAS_REGION_PROP = "bp_clothing_atlas_region"
+
+
 def uv_region_normalized(name: str, padding_px: float = 1.0) -> tuple[float, float, float, float]:
     x, y, width, height = clothing_region(name)
-    size = float(CLOTHING_ATLAS_SIZE)
-    return (
-        (x + padding_px) / size,
-        (y + padding_px) / size,
-        (x + width - padding_px) / size,
-        (y + height - padding_px) / size,
-    )
+    return atlas_kit.uv_rect_normalized(x, y, width, height, CLOTHING_ATLAS_SIZE, padding_px)
 
 
 def assign_ring_strip_uv(
@@ -858,32 +727,14 @@ def assign_ring_strip_uv(
 ) -> None:
     """Seam-aware UV strip for closed frusta/ringed garment volumes."""
 
-    uv_layer = obj.data.uv_layers.new(name="UVMap")
-    obj["bp_clothing_atlas_region"] = region_name
-    u0, v0, u1, v1 = uv_region_normalized(region_name)
-    for polygon in obj.data.polygons:
-        rings = {vertex_index // sides for vertex_index in polygon.vertices}
-        is_cap = len(rings) == 1 and len(polygon.vertices) >= sides
-        seam = any(vertex_index % sides == 0 for vertex_index in polygon.vertices) and any(
-            vertex_index % sides == sides - 1 for vertex_index in polygon.vertices
-        )
-        for loop_index in polygon.loop_indices:
-            vertex_index = obj.data.loops[loop_index].vertex_index
-            ring_index = min(vertex_index // sides, ring_count - 1)
-            around = vertex_index % sides
-            if is_cap:
-                local_u = 0.03 + 0.02 * (around / max(1, sides - 1))
-                local_v = 0.03
-            else:
-                if seam and around == 0:
-                    around = sides
-                local_u = around / sides
-                local_v = ring_index / max(1, ring_count - 1)
-            uv_layer.data[loop_index].uv = (
-                u0 + (u1 - u0) * local_u,
-                v0 + (v1 - v0) * local_v,
-            )
-    uv_layer.active_render = True
+    atlas_kit.assign_ring_strip_uv(
+        obj,
+        uv_region_normalized(region_name),
+        sides,
+        ring_count,
+        region_name,
+        CLOTHING_ATLAS_REGION_PROP,
+    )
 
 
 def assign_jacket_body_uv(obj: bpy.types.Object) -> None:
@@ -917,31 +768,13 @@ def assign_jacket_body_uv(obj: bpy.types.Object) -> None:
 def assign_boot_uv(obj: bpy.types.Object, region_name: str) -> None:
     """Split one boot region between side-panel and front/instep artwork."""
 
-    uv_layer = obj.data.uv_layers.new(name="UVMap")
-    obj["bp_clothing_atlas_region"] = region_name
-    x, y, width, height = clothing_region(region_name)
-    points = [obj.matrix_world @ vertex.co for vertex in obj.data.vertices]
-    min_x, max_x = min(p.x for p in points), max(p.x for p in points)
-    min_y, max_y = min(p.y for p in points), max(p.y for p in points)
-    min_z, max_z = min(p.z for p in points), max(p.z for p in points)
-    size = float(CLOTHING_ATLAS_SIZE)
-    for polygon in obj.data.polygons:
-        normal = polygon.normal
-        front_panel = abs(normal.z) > 0.50 or abs(normal.y) > 0.55
-        panel_x = x + (width // 2 if front_panel else 0)
-        for loop_index in polygon.loop_indices:
-            point = points[obj.data.loops[loop_index].vertex_index]
-            if front_panel:
-                local_u = (point.x - min_x) / max(1e-6, max_x - min_x)
-                local_v = (max_y - point.y) / max(1e-6, max_y - min_y)
-            else:
-                local_u = (max_y - point.y) / max(1e-6, max_y - min_y)
-                local_v = (point.z - min_z) / max(1e-6, max_z - min_z)
-            uv_layer.data[loop_index].uv = (
-                (panel_x + 1 + local_u * (width // 2 - 2)) / size,
-                (y + 1 + local_v * (height - 2)) / size,
-            )
-    uv_layer.active_render = True
+    atlas_kit.assign_box_panel_uv(
+        obj,
+        clothing_region(region_name),
+        CLOTHING_ATLAS_SIZE,
+        region_name,
+        CLOTHING_ATLAS_REGION_PROP,
+    )
 
 
 class HeroV2Builder(v1.CharacterBuilder):
@@ -1551,49 +1384,8 @@ class HeroV2Builder(v1.CharacterBuilder):
         scene["bp_clothing_atlas"] = str(self.clothing_atlas_path.relative_to(REPO_ROOT)).replace("\\", "/")
 
 
-def read_generated_png(path: Path) -> tuple[int, int, bytes]:
-    """Read the filter-0 RGBA PNGs emitted by PixelCanvas."""
-
-    payload = path.read_bytes()
-    if not payload.startswith(b"\x89PNG\r\n\x1a\n"):
-        raise RuntimeError(f"Generated texture is not PNG: {path}")
-    cursor = 8
-    width = height = 0
-    compressed = bytearray()
-    while cursor < len(payload):
-        length = struct.unpack(">I", payload[cursor : cursor + 4])[0]
-        kind = payload[cursor + 4 : cursor + 8]
-        data = payload[cursor + 8 : cursor + 8 + length]
-        cursor += 12 + length
-        if kind == b"IHDR":
-            width, height, depth, color_type, _, _, _ = struct.unpack(">IIBBBBB", data)
-            if depth != 8 or color_type != 6:
-                raise RuntimeError("Generated atlas must be 8-bit RGBA")
-        elif kind == b"IDAT":
-            compressed.extend(data)
-        elif kind == b"IEND":
-            break
-    raw = zlib.decompress(bytes(compressed))
-    stride = width * 4
-    pixels = bytearray(width * height * 4)
-    for row in range(height):
-        source = row * (stride + 1)
-        if raw[source] != 0:
-            raise RuntimeError("PixelCanvas PNG unexpectedly uses a filtered row")
-        pixels[row * stride : (row + 1) * stride] = raw[source + 1 : source + 1 + stride]
-    return width, height, bytes(pixels)
-
-
-def png_pixel_bottom_left(
-    pixels: bytes,
-    width: int,
-    height: int,
-    x: int,
-    y: int,
-) -> tuple[int, int, int, int]:
-    top_row = height - 1 - y
-    offset = (top_row * width + x) * 4
-    return tuple(pixels[offset : offset + 4])
+read_generated_png = atlas_kit.read_generated_png
+png_pixel_bottom_left = atlas_kit.png_pixel_bottom_left
 
 
 def count_region_color(

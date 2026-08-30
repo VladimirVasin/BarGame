@@ -61,11 +61,6 @@ namespace BarPromenade
         /// a head bone, so this is roughly the crown plus a hand.</summary>
         public const float AnchorClearanceMeters = 0.30f;
 
-        /// <summary>The map tooltip's backdrop, so a line over a head
-        /// reads as the same UI voice as a label under the pointer.</summary>
-        private static readonly Color BubbleBackdrop =
-            new Color32(19, 15, 25, 250);
-
         private struct Bubble
         {
             public Object Owner;
@@ -361,10 +356,10 @@ namespace BarPromenade
 
             RetroUiTheme.DrawPanel(
                 panel,
-                BubbleBackdrop,
-                RetroUiTheme.Accent,
-                true,
-                2f,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.FrameOuter,
+                false,
+                0f,
                 1f,
                 Opacity);
             DrawTail(panel, logicalAnchor.x, Opacity);
@@ -430,9 +425,11 @@ namespace BarPromenade
                 panel.x + 6f,
                 panel.xMax - 6f));
             Color border = RetroUiTheme.Fade(
-                RetroUiTheme.Accent,
+                RetroUiTheme.FrameOuter,
                 opacity);
-            Color fill = RetroUiTheme.Fade(BubbleBackdrop, opacity);
+            Color fill = RetroUiTheme.Fade(
+                RetroUiTheme.PanelInset,
+                opacity);
             DrawOutlinedBlock(
                 new Rect(tipX - 3f, panel.yMax, 6f, 2f),
                 fill,
@@ -523,7 +520,7 @@ namespace BarPromenade
                 9,
                 TextAnchor.UpperLeft,
                 RetroUiTheme.Text,
-                true,
+                false,
                 true);
         }
     }

@@ -507,6 +507,23 @@ namespace BarPromenade
             float normalHalfSize = normalRunsAlongX
                 ? neighbour.Size.x * 0.5f
                 : neighbour.Size.y * 0.5f;
+            float authoredFacadeInset = 0f;
+            if (neighbour.IsSupermarket)
+            {
+                Vector3 frontage = new Vector3(
+                    neighbour.FrontageDirection.x,
+                    0f,
+                    neighbour.FrontageDirection.y).normalized;
+                if (Mathf.Abs(Vector3.Dot(normal, frontage)) > 0.5f)
+                {
+                    // The authored exterior declares clear spotlight zones
+                    // only on its rendered side walls.
+                    return false;
+                }
+
+                authoredFacadeInset =
+                    SupermarketEntranceGeometry.ExteriorWallInset;
+            }
             float facadeHalfSpan = normalRunsAlongX
                 ? neighbour.Size.y * 0.5f
                 : neighbour.Size.x * 0.5f;
@@ -529,7 +546,10 @@ namespace BarPromenade
                 neighbour.Height - RoofClearance);
             Vector3 mountPosition =
                 neighbour.Center +
-                normal * (normalHalfSize + MountProudOffset) +
+                normal * (
+                    normalHalfSize -
+                    authoredFacadeInset +
+                    MountProudOffset) +
                 tangent * tangentOffset +
                 Vector3.up * mountHeight;
             Vector3 aimPosition =

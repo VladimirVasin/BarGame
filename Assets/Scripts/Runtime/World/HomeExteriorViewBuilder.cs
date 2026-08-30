@@ -361,17 +361,14 @@ namespace BarPromenade
                                 context,
                                 lot);
                         }
-                        else
+                        else if (lot.IsSupermarket)
                         {
-                            CitySpecialBuildingWorldBuilder.BuildHomeExterior(
-                                specialBuilding,
-                                context,
-                                lot,
-                                foundationDepth);
-                            BuildWindowBands(
-                                specialBuilding,
-                                context,
-                                lot);
+                            CitySpecialBuildingWorldBuilder
+                                .BuildSupermarketHomeInfrastructure(
+                                    specialBuilding,
+                                    context,
+                                    lot,
+                                    foundationDepth);
                             CitySupermarketFacadeWorldBuilder
                                 .BuildHomeExterior(
                                     specialBuilding,
@@ -513,17 +510,24 @@ namespace BarPromenade
                         roof.GetComponent<Renderer>(),
                         roofColor);
                 }
-                BuildWindowBands(
-                    building,
-                    context,
-                    lot);
                 if (lot.IsSupermarket)
                 {
+                    // The full fixed-metre authored shop is never sheared at
+                    // the Home boundary. This retained primitive storefront
+                    // is already bounds-clipped and exists only for the rare
+                    // crossing silhouette.
                     CitySupermarketFacadeWorldBuilder
-                        .BuildHomeExterior(
+                        .BuildClippedLegacyHomeExterior(
                             building,
                             context,
                             lot);
+                }
+                else
+                {
+                    BuildWindowBands(
+                        building,
+                        context,
+                        lot);
                 }
                 // A crossing pub keeps this clipped legacy silhouette only.
                 // Stretch-clipping a pitched authored roof or chimney would

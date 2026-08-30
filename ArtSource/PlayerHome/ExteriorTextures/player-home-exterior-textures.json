@@ -1,0 +1,145 @@
+{
+  "generator": "tools/build-player-home-exterior-textures.py",
+  "generator_version": "1.0.0",
+  "design_id": "player_home_exterior_surfaces_v1",
+  "authored_text": [],
+  "brand_marks": false,
+  "uv_contract": "world_metre_projected_repeat",
+  "textures": [
+    {
+      "sheet": "StuccoPrimary",
+      "basename": "PlayerHomeExteriorStuccoPrimaryAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorStuccoPrimaryAlbedo",
+      "asset_path": "Assets/Resources/PlayerHome/ExteriorTextures/PlayerHomeExteriorStuccoPrimaryAlbedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Repeat",
+      "meters_per_tile": 2.4,
+      "smoothness": 0.06,
+      "metallic": 0.0,
+      "sha256_rgb": "49683c654eacc31514e0912ad81792c8337f6423914b5017a8a8fb4b9f544a37"
+    },
+    {
+      "sheet": "StuccoRepair",
+      "basename": "PlayerHomeExteriorStuccoRepairAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorStuccoRepairAlbedo",
+      "asset_path": "Assets/Resources/PlayerHome/ExteriorTextures/PlayerHomeExteriorStuccoRepairAlbedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Repeat",
+      "meters_per_tile": 1.8,
+      "smoothness": 0.05,
+      "metallic": 0.0,
+      "sha256_rgb": "f835b4dc6f8216884d4518eb97f10ea3106384ab084dd7f85a21d3ac66193c1e"
+    },
+    {
+      "sheet": "BrickPlinth",
+      "basename": "PlayerHomeExteriorBrickPlinthAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorBrickPlinthAlbedo",
+      "asset_path": "Assets/Resources/PlayerHome/ExteriorTextures/PlayerHomeExteriorBrickPlinthAlbedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Repeat",
+      "meters_per_tile": 1.2,
+      "smoothness": 0.07,
+      "metallic": 0.0,
+      "sha256_rgb": "2fb534df976d066800f0deee1afe34d337a0824b0fd9f3daf139b0d7f5bbe9bd"
+    },
+    {
+      "sheet": "RoofSlate",
+      "basename": "PlayerHomeExteriorRoofSlateAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorRoofSlateAlbedo",
+      "asset_path": "Assets/Resources/PlayerHome/ExteriorTextures/PlayerHomeExteriorRoofSlateAlbedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Repeat",
+      "meters_per_tile": 2.4,
+      "smoothness": 0.12,
+      "metallic": 0.0,
+      "sha256_rgb": "750eac08a553816f414aba48846cee66bec50c9f7784607ee7be6736e055fbf7"
+    },
+    {
+      "sheet": "PaintedWood",
+      "basename": "PlayerHomeExteriorPaintedWoodAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorPaintedWoodAlbedo",
+      "asset_path": "Assets/Resources/PlayerHome/ExteriorTextures/PlayerHomeExteriorPaintedWoodAlbedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Repeat",
+      "meters_per_tile": 1.0,
+      "smoothness": 0.14,
+      "metallic": 0.0,
+      "sha256_rgb": "c2d24e92f597f013de31d661621e1b16c04fdb4d422126747b264ec02d1253e1"
+    },
+    {
+      "sheet": "PaintedMetal",
+      "basename": "PlayerHomeExteriorPaintedMetalAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorPaintedMetalAlbedo",
+      "asset_path": "Assets/Resources/PlayerHome/ExteriorTextures/PlayerHomeExteriorPaintedMetalAlbedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Repeat",
+      "meters_per_tile": 1.2,
+      "smoothness": 0.22,
+      "metallic": 0.24,
+      "sha256_rgb": "175c6797b73c6fc9b4dc92d756d97fb81cc8731ac976714134c5460c7d473643"
+    },
+    {
+      "sheet": "WindowFrame",
+      "basename": "PlayerHomeExteriorWindowFrameAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorWindowFrameAlbedo",
+      "asset_path": "Assets/Resources/PlayerHome/ExteriorTextures/PlayerHomeExteriorWindowFrameAlbedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Repeat",
+      "meters_per_tile": 0.8,
+      "smoothness": 0.13,
+      "metallic": 0.0,
+      "sha256_rgb": "4cc5cb04a39b466304272fa7d7382297e25005fbfbc14c3bf4f080eb3ae82150"
+    },
+    {
+      "sheet": "WindowGlass",
+      "basename": "PlayerHomeExteriorWindowGlassAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorWindowGlassAlbedo",
+      "asset_path": "Assets/Resources/PlayerHome/ExteriorTextures/PlayerHomeExteriorWindowGlassAlbedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Repeat",
+      "meters_per_tile": 1.0,
+      "smoothness": 0.34,
+      "metallic": 0.0,
+      "sha256_rgb": "e5b85888d6fb4e8ca003468e432bd26090fae8e3891974c7a4869018c751fdc2"
+    },
+    {
+      "sheet": "Concrete",
+      "basename": "PlayerHomeExteriorConcreteAlbedo",
+      "resource_path": "PlayerHome/ExteriorTextures/PlayerHomeExteriorConcreteAlbedo",
+      "asset_path": "Assets/Resources/PlayerHome/ExteriorTextures/PlayerHomeExteriorConcreteAlbedo.png",
+      "size": [
+        1024,
+        1024
+      ],
+      "wrap": "Repeat",
+      "meters_per_tile": 1.5,
+      "smoothness": 0.08,
+      "metallic": 0.0,
+      "sha256_rgb": "9b0cc53684d836e73d9ffb8d2a5c31ba701d4719c725810fd3657ceab400c9cc"
+    }
+  ]
+}

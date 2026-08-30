@@ -202,7 +202,9 @@ namespace BarPromenade
             GUI.depth = -300;
             RetroUiTheme.FillRect(
                 new Rect(0f, 0f, Screen.width, Screen.height),
-                new Color(0.015f, 0.012f, 0.02f, 0.82f));
+                RetroUiTheme.WithAlpha(
+                    RetroUiTheme.Backdrop,
+                    0.82f));
             RetroUiCanvas canvas = RetroUiTheme.CalculateCanvas(
                 Screen.width,
                 Screen.height);
@@ -224,9 +226,9 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 panel,
                 RetroUiTheme.Panel,
-                RetroUiTheme.Accent,
-                true,
-                3f,
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
                 1f);
             GUI.Label(
                 new Rect(panel.x + 16f, panel.y + 14f, panel.width - 32f, 30f),
@@ -316,7 +318,7 @@ namespace BarPromenade
             titleStyle = RetroUiTheme.CreateLabelStyle(
                 22,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.AccentPale,
+                RetroUiTheme.Text,
                 true);
             questTitleStyle = RetroUiTheme.CreateLabelStyle(
                 13,

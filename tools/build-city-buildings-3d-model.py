@@ -47,10 +47,15 @@ from city_building_parts import (  # noqa: E402
     combine,
     cylinder_z,
 )
+from city_building_coplanarity import (  # noqa: E402
+    find_axis_aligned_coplanar_overlaps,
+    find_near_coplanar_visible_overlaps,
+    validate_coplanarity_audit_contract,
+)
 
 
-GENERATOR_VERSION = "1.1.0"
-DESIGN_ID = "city_buildings_prototypes_v1"
+GENERATOR_VERSION = "2.0.0"
+DESIGN_ID = "city_buildings_prototypes_v2"
 DISPLAY_NAME = "City Buildings 3D Prototype Catalog"
 FBX_ASSET_PATH = "Assets/City/Models/CityBuildings3D.fbx"
 
@@ -64,12 +69,16 @@ SOURCE_COLLECTION_NAME = "SOURCE_CityBuildings3D"
 PRESENTATION_COLLECTION_NAME = "PRESENTATION_CityBuildings3D"
 MAX_TRIANGLES_PER_PROTOTYPE = 3500
 BOUNDS_EPSILON = 1e-5
-FACADE_OVERHANG_M = 0.035
+FACADE_OVERHANG_M = 0.07
 UV2_DIVISOR = 256.0
 UV2_LAYER_NAME = "UV2_SlotId"
 UV2_SCHEME = "u_centered_uint8"
 UV2_ZERO_MEANS = "non_window_geometry"
 UV0_WINDOW_SCHEME = "per_window_face_projected_0_1"
+UV0_SIDE_ATLAS_SCHEME = "building_side_atlas_0_1"
+UV0_FULL_FACE_SCHEME = "full_face_projected_0_1"
+UV0_METRIC_SCHEME = "world_metre_projected"
+SIDE_ATLAS_GUTTER = 0.004
 FBX_AXIS_FORWARD = "-Z"
 FBX_AXIS_UP = "+Y"
 # Unity's importer bakes the FBX axis conversion into each mesh.  Keeping the
@@ -91,32 +100,36 @@ EXPECTED_PROTOTYPES = (
 
 PREVIEW_PALETTE = {
     "OldTown": {
-        "Shell": (0.30, 0.19, 0.14, 1.0),
-        "Trim": (0.58, 0.47, 0.34, 1.0),
+        "FacadePrimary": (0.30, 0.19, 0.14, 1.0),
+        "FacadeSecondary": (0.58, 0.47, 0.34, 1.0),
+        "Plinth": (0.22, 0.20, 0.17, 1.0),
         "Roof": (0.095, 0.15, 0.15, 1.0),
         "Metal": (0.10, 0.11, 0.105, 1.0),
         "WindowFrame": (0.42, 0.36, 0.27, 1.0),
         "WindowGlass": (0.12, 0.26, 0.29, 1.0),
     },
     "Residential": {
-        "Shell": (0.20, 0.31, 0.32, 1.0),
-        "Trim": (0.46, 0.54, 0.50, 1.0),
+        "FacadePrimary": (0.20, 0.31, 0.32, 1.0),
+        "FacadeSecondary": (0.46, 0.54, 0.50, 1.0),
+        "Plinth": (0.19, 0.22, 0.21, 1.0),
         "Roof": (0.09, 0.13, 0.15, 1.0),
         "Metal": (0.12, 0.16, 0.17, 1.0),
         "WindowFrame": (0.62, 0.61, 0.50, 1.0),
         "WindowGlass": (0.16, 0.34, 0.37, 1.0),
     },
     "Industrial": {
-        "Shell": (0.25, 0.27, 0.25, 1.0),
-        "Trim": (0.49, 0.38, 0.16, 1.0),
+        "FacadePrimary": (0.25, 0.27, 0.25, 1.0),
+        "FacadeSecondary": (0.49, 0.38, 0.16, 1.0),
+        "Plinth": (0.20, 0.21, 0.20, 1.0),
         "Roof": (0.12, 0.14, 0.14, 1.0),
         "Metal": (0.18, 0.21, 0.20, 1.0),
         "WindowFrame": (0.42, 0.40, 0.29, 1.0),
         "WindowGlass": (0.18, 0.31, 0.31, 1.0),
     },
     "Nightlife": {
-        "Shell": (0.19, 0.13, 0.25, 1.0),
-        "Trim": (0.55, 0.12, 0.38, 1.0),
+        "FacadePrimary": (0.19, 0.13, 0.25, 1.0),
+        "FacadeSecondary": (0.55, 0.12, 0.38, 1.0),
+        "Plinth": (0.12, 0.10, 0.15, 1.0),
         "Roof": (0.08, 0.09, 0.13, 1.0),
         "Metal": (0.11, 0.11, 0.16, 1.0),
         "WindowFrame": (0.45, 0.22, 0.49, 1.0),
@@ -195,38 +208,94 @@ def face_normal(vertices: Sequence[Sequence[float]], face: Sequence[int]) -> tup
     return 0.0, 0.0, 0.0
 
 
-def uv0_values(geometry: Geometry) -> list[tuple[float, float]]:
-    raw: list[tuple[float, float]] = []
+def metric_uv0_values(
+    geometry: Geometry,
+    meters_per_tile: float,
+) -> list[tuple[float, float]]:
+    if meters_per_tile <= 0.0:
+        raise ValueError("Metric UVs need a positive metre scale.")
+    values: list[tuple[float, float]] = []
     for face in geometry.faces:
         normal = face_normal(geometry.vertices, face)
         dominant = max(range(3), key=lambda axis: abs(normal[axis]))
         for vertex_index in face:
             x, y, z = geometry.vertices[vertex_index]
             if dominant == 0:
-                raw.append((y, z))
+                projected = (y, z)
             elif dominant == 1:
-                raw.append((x, z))
+                projected = (x, z)
             else:
-                raw.append((x, y))
-    low_u = min(value[0] for value in raw)
-    high_u = max(value[0] for value in raw)
-    low_v = min(value[1] for value in raw)
-    high_v = max(value[1] for value in raw)
-    span_u = max(high_u - low_u, 1e-6)
-    span_v = max(high_v - low_v, 1e-6)
-    return [
-        (stable((u - low_u) / span_u), stable((v - low_v) / span_v))
-        for u, v in raw
-    ]
+                projected = (x, y)
+            values.append((
+                stable(projected[0] / meters_per_tile + 0.5),
+                stable(projected[1] / meters_per_tile + 0.5),
+            ))
+    return values
+
+
+def clamp01(value: float) -> float:
+    return max(0.0, min(1.0, value))
+
+
+def side_atlas_uv0_values(
+    prototype: PrototypeSpec,
+    geometry: Geometry,
+) -> list[tuple[float, float]]:
+    """Pack the four authored building sides into non-repeating columns.
+
+    Front, rear, left and right each own one quarter of the albedo.  Vertical
+    placement is measured against the full prototype height, so panel seams,
+    repairs, damp and ground grime stay aligned across separate semantic
+    meshes instead of restarting on every box or being tiled every few metres.
+    """
+    column_width = 0.25
+    usable_width = column_width - SIDE_ATLAS_GUTTER * 2.0
+    usable_height = 1.0 - SIDE_ATLAS_GUTTER * 2.0
+    values: list[tuple[float, float]] = []
+    for face in geometry.faces:
+        normal = face_normal(geometry.vertices, face)
+        dominant = max(range(3), key=lambda axis: abs(normal[axis]))
+        for vertex_index in face:
+            x, y, z = geometry.vertices[vertex_index]
+            if dominant == 1:
+                if normal[1] >= 0.0:
+                    column = 0
+                    across = x / prototype.frontage_width_m + 0.5
+                else:
+                    column = 1
+                    across = -x / prototype.frontage_width_m + 0.5
+                vertical = z / prototype.height_m
+            elif dominant == 0:
+                if normal[0] < 0.0:
+                    column = 2
+                    across = y / prototype.depth_m + 0.5
+                else:
+                    column = 3
+                    across = -y / prototype.depth_m + 0.5
+                vertical = z / prototype.height_m
+            else:
+                # Hidden caps remain deterministic and sample only the quiet
+                # lower strip of the front column; visible roofs own a
+                # dedicated metric surface instead.
+                column = 0
+                across = x / prototype.frontage_width_m + 0.5
+                vertical = y / prototype.depth_m + 0.5
+
+            values.append((
+                stable(column * column_width + SIDE_ATLAS_GUTTER +
+                       clamp01(across) * usable_width),
+                stable(SIDE_ATLAS_GUTTER +
+                       clamp01(vertical) * usable_height),
+            ))
+    return values
 
 
 def per_face_uv0_values(geometry: Geometry) -> list[tuple[float, float]]:
-    """Map every facade panel independently over the full 0..1 sheet.
+    """Map every face independently over the full 0..1 sheet.
 
-    WindowGlass combines every pane of a prototype into one mesh. Normalizing
-    that whole role at once makes each pane sample only a tiny, unrelated
-    fragment of the window atlas. Per-face projection keeps the combined mesh
-    and UV2 slot IDs intact while giving each authored pane a complete window.
+    WindowGlass needs a complete atlas window per pane. Plinth needs every
+    authored box face to consume the complete non-repeating base treatment.
+    Per-face projection preserves both contracts on combined role meshes.
     """
     values: list[tuple[float, float]] = []
     for face in geometry.faces:
@@ -256,14 +325,27 @@ def per_face_uv0_values(geometry: Geometry) -> list[tuple[float, float]]:
     return values
 
 
-def uv0_values_for_part(part: PartSpec) -> list[tuple[float, float]]:
-    if part.role == "WindowGlass":
+def uv0_values_for_part(
+    prototype: PrototypeSpec,
+    part: PartSpec,
+) -> list[tuple[float, float]]:
+    if part.uv_scheme == UV0_WINDOW_SCHEME:
         return per_face_uv0_values(part.geometry)
-    return uv0_values(part.geometry)
+    if part.uv_scheme == UV0_SIDE_ATLAS_SCHEME:
+        return side_atlas_uv0_values(prototype, part.geometry)
+    if part.uv_scheme == UV0_FULL_FACE_SCHEME:
+        return per_face_uv0_values(part.geometry)
+    if part.uv_scheme == UV0_METRIC_SCHEME:
+        return metric_uv0_values(part.geometry, part.meters_per_tile)
+    raise ValueError(
+        f"Unknown UV scheme '{part.uv_scheme}' on {part.object_name}.")
 
 
-def uv0_bounds(part: PartSpec) -> tuple[tuple[float, float], tuple[float, float]]:
-    values = uv0_values_for_part(part)
+def uv0_bounds(
+    prototype: PrototypeSpec,
+    part: PartSpec,
+) -> tuple[tuple[float, float], tuple[float, float]]:
+    values = uv0_values_for_part(prototype, part)
     return (
         (min(value[0] for value in values),
          min(value[1] for value in values)),
@@ -280,7 +362,11 @@ def uv2_values(geometry: Geometry) -> list[tuple[float, float]]:
     return values
 
 
-def validate_geometry(part: PartSpec, problems: list[str]) -> None:
+def validate_geometry(
+    prototype: PrototypeSpec,
+    part: PartSpec,
+    problems: list[str],
+) -> None:
     geometry = part.geometry
     if not geometry.vertices or not geometry.faces:
         problems.append(f"{part.object_name} is empty")
@@ -305,15 +391,29 @@ def validate_geometry(part: PartSpec, problems: list[str]) -> None:
                 break
         if not area_found:
             problems.append(f"{part.object_name} face {face_index} is degenerate")
-    uv0 = uv0_values_for_part(part)
+    uv0 = uv0_values_for_part(prototype, part)
     uv2 = uv2_values(geometry)
     loop_count = sum(len(face) for face in geometry.faces)
     if len(uv0) != loop_count or len(uv2) != loop_count:
         problems.append(f"{part.object_name} has incomplete UV data")
-    if any(value < -1e-6 or value > 1.0 + 1e-6
-           for uv in uv0 for value in uv):
-        problems.append(f"{part.object_name} UV0 escapes [0,1]")
-    if part.role == "WindowGlass":
+    if part.uv_scheme != UV0_METRIC_SCHEME and any(
+            value < -1e-6 or value > 1.0 + 1e-6
+            for uv in uv0 for value in uv):
+        problems.append(f"{part.object_name} atlas UV0 escapes [0,1]")
+    if part.uv_scheme == UV0_METRIC_SCHEME:
+        low_u = min(value[0] for value in uv0)
+        high_u = max(value[0] for value in uv0)
+        low_v = min(value[1] for value in uv0)
+        high_v = max(value[1] for value in uv0)
+        if max(high_u - low_u, high_v - low_v) < 0.02:
+            problems.append(
+                f"{part.object_name} metric UV footprint is implausibly small")
+    if part.uv_scheme in {UV0_WINDOW_SCHEME, UV0_FULL_FACE_SCHEME}:
+        face_label = (
+            "plinth face"
+            if part.uv_scheme == UV0_FULL_FACE_SCHEME
+            else "window face"
+        )
         cursor = 0
         for face_index, face in enumerate(geometry.faces):
             face_uv = uv0[cursor:cursor + len(face)]
@@ -326,7 +426,7 @@ def validate_geometry(part: PartSpec, problems: list[str]) -> None:
                     abs(high_u - 1.0) > 1e-6 or
                     abs(high_v - 1.0) > 1e-6):
                 problems.append(
-                    f"{part.object_name} window face {face_index} does not "
+                    f"{part.object_name} {face_label} {face_index} does not "
                     "span UV0 0..1")
 
 
@@ -366,10 +466,57 @@ def validate_prototypes(prototypes: Sequence[PrototypeSpec]) -> None:
             if part.object_name != expected_name:
                 problems.append(
                     f"{part.object_name} should be named {expected_name}")
+            expected_scheme = (
+                UV0_SIDE_ATLAS_SCHEME
+                if part.role in {"FacadePrimary", "FacadeSecondary"}
+                else UV0_FULL_FACE_SCHEME
+                if part.role == "Plinth"
+                else UV0_WINDOW_SCHEME
+                if part.role == "WindowGlass"
+                else UV0_METRIC_SCHEME
+            )
+            if part.surface_kind != part.role:
+                problems.append(
+                    f"{part.object_name} surface kind must match its role")
+            if part.uv_scheme != expected_scheme:
+                problems.append(
+                    f"{part.object_name} uses {part.uv_scheme}, expected "
+                    f"{expected_scheme}")
+            if (expected_scheme == UV0_METRIC_SCHEME) != \
+                    (part.meters_per_tile > 0.0):
+                problems.append(
+                    f"{part.object_name} has invalid metres-per-tile "
+                    f"{part.meters_per_tile}")
             if part.object_name in object_names:
                 problems.append(f"duplicate object name {part.object_name}")
             object_names.add(part.object_name)
-            validate_geometry(part, problems)
+            validate_geometry(prototype, part, problems)
+
+        for overlap in find_axis_aligned_coplanar_overlaps(prototype):
+            same_facing = not overlap.has_opposing_normals
+            exterior_facing = (
+                overlap.plane_axis != 2 or
+                overlap.first_normal_sign > 0
+            )
+            if same_facing and exterior_facing:
+                problems.append(
+                    f"{prototype.stable_id} has visible coplanar overlap "
+                    f"{overlap.first_role}[{overlap.first_face_index}] / "
+                    f"{overlap.second_role}[{overlap.second_face_index}] "
+                    f"on axis {overlap.plane_axis} at "
+                    f"{stable(overlap.plane_coordinate)} "
+                    f"({stable(overlap.area)} m2)")
+
+        for overlap in find_near_coplanar_visible_overlaps(prototype):
+            problems.append(
+                f"{prototype.stable_id} has near-coplanar visible overlap "
+                f"{overlap.first_role}[{overlap.first_face_index}] / "
+                f"{overlap.second_role}[{overlap.second_face_index}] "
+                f"on axis {overlap.plane_axis} at "
+                f"{stable(overlap.first_plane_coordinate)} / "
+                f"{stable(overlap.second_plane_coordinate)} "
+                f"({stable(overlap.separation)} m apart, "
+                f"{stable(overlap.area)} m2)")
 
         triangles = prototype_triangle_count(prototype)
         if triangles <= 0 or triangles > MAX_TRIANGLES_PER_PROTOTYPE:
@@ -472,6 +619,9 @@ def prototype_signature_record(prototype: PrototypeSpec) -> dict:
         "parts": [{
             "object_name": part.object_name,
             "role": part.role,
+            "surface_kind": part.surface_kind,
+            "uv_scheme": part.uv_scheme,
+            "meters_per_tile": stable(part.meters_per_tile),
             "vertices": [[stable(value) for value in vertex]
                          for vertex in part.geometry.vertices],
             "faces": [list(face) for face in part.geometry.faces],
@@ -503,6 +653,9 @@ def signature_for(prototypes: Sequence[PrototypeSpec]) -> str:
         },
         "uv0_encoding": {
             "window_glass_scheme": UV0_WINDOW_SCHEME,
+            "building_side_atlas_scheme": UV0_SIDE_ATLAS_SCHEME,
+            "full_face_surface_scheme": UV0_FULL_FACE_SCHEME,
+            "metric_surface_scheme": UV0_METRIC_SCHEME,
         },
         "unit_factor": 1.0,
         "origin": "footprint_center_ground",
@@ -525,10 +678,13 @@ def manifest_for(
         parts: list[dict] = []
         for part in prototype.parts:
             part_low, part_high = geometry_bounds(part.geometry)
-            uv_low, uv_high = uv0_bounds(part)
+            uv_low, uv_high = uv0_bounds(prototype, part)
             parts.append({
                 "object_name": part.object_name,
                 "role": part.role,
+                "surface_kind": part.surface_kind,
+                "uv_scheme": part.uv_scheme,
+                "meters_per_tile": stable(part.meters_per_tile),
                 "vertices": len(part.geometry.vertices),
                 "triangles": triangle_count(part.geometry),
                 "bounds_min_source": [stable(value) for value in part_low],
@@ -632,6 +788,9 @@ def manifest_for(
         },
         "uv0_encoding": {
             "window_glass_scheme": UV0_WINDOW_SCHEME,
+            "building_side_atlas_scheme": UV0_SIDE_ATLAS_SCHEME,
+            "full_face_surface_scheme": UV0_FULL_FACE_SCHEME,
+            "metric_surface_scheme": UV0_METRIC_SCHEME,
         },
         "prototype_count": len(prototypes),
         "mesh_count": mesh_count,
@@ -665,10 +824,14 @@ def reset_scene() -> tuple[bpy.types.Collection, bpy.types.Collection]:
     return source, presentation
 
 
-def assign_uv_layers(mesh: bpy.types.Mesh, part: PartSpec) -> None:
+def assign_uv_layers(
+    mesh: bpy.types.Mesh,
+    prototype: PrototypeSpec,
+    part: PartSpec,
+) -> None:
     uv0 = mesh.uv_layers.new(name="UV0")
     uv2 = mesh.uv_layers.new(name=UV2_LAYER_NAME)
-    values0 = uv0_values_for_part(part)
+    values0 = uv0_values_for_part(prototype, part)
     values2 = uv2_values(part.geometry)
     cursor = 0
     for polygon in mesh.polygons:
@@ -689,7 +852,7 @@ def create_part_object(
     mesh = bpy.data.meshes.new(f"{part.object_name}_Mesh")
     mesh.from_pydata(part.geometry.vertices, [], part.geometry.faces)
     mesh.update(calc_edges=True)
-    assign_uv_layers(mesh, part)
+    assign_uv_layers(mesh, prototype, part)
     obj = bpy.data.objects.new(part.object_name, mesh)
     source.objects.link(obj)
     obj.parent = root
@@ -700,6 +863,9 @@ def create_part_object(
     obj["bp_district"] = prototype.district
     obj["bp_grammar"] = prototype.grammar
     obj["bp_part_role"] = part.role
+    obj["bp_surface_kind"] = part.surface_kind
+    obj["bp_uv_scheme"] = part.uv_scheme
+    obj["bp_meters_per_tile"] = stable(part.meters_per_tile)
     obj["bp_scale_mode"] = "fixed_meters"
     obj["bp_source_forward_axis"] = "+Y"
     return obj
@@ -1057,6 +1223,7 @@ def print_report(
 
 def main() -> int:
     config = parse_args()
+    validate_coplanarity_audit_contract()
     prototypes = build_prototypes()
     validate_prototypes(prototypes)
     signature = signature_for(prototypes)

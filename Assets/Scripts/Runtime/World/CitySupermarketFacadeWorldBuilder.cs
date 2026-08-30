@@ -1,12 +1,16 @@
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using Object = UnityEngine.Object;
 
 namespace BarPromenade
 {
     /// <summary>
-    /// Builds the collider-free storefront shared by City and the bounded
-    /// exterior reconstructed outside the player's Home.
+    /// Places the complete passive, collider-free supermarket exterior in
+    /// City and in the bounded exterior reconstructed outside the Home.
+    /// Gameplay collision, the entrance trigger and the street apron remain
+    /// plan-owned. Only the rare Home boundary-crossing case uses the old
+    /// clipped primitive silhouette because an imported mesh is never sheared.
     /// </summary>
     public static class CitySupermarketFacadeWorldBuilder
     {
@@ -24,7 +28,8 @@ namespace BarPromenade
             new Color(1.20f, 1.05f, 0.64f);
 
         /// <summary>The word both supermarket signs spell.</summary>
-        public const string SignWord = "ПРОДУКТЫ";
+        public const string SignWord =
+            "\u041f\u0420\u041e\u0414\u0423\u041a\u0422\u042b";
 
         private const float BladeCenterY = 4.05f;
         private const float BladeHeight = 3.05f;
@@ -35,12 +40,11 @@ namespace BarPromenade
             BuildingLot lot)
         {
             Validate(parent, lot);
-            Build(
+            BuildAuthored(
                 parent,
                 lot.DoorPosition,
                 ResolveDirection(lot),
-                CityNightResources.EmissiveMaterial,
-                false);
+                "Supermarket Exterior");
         }
 
         public static void BuildHomeExterior(
@@ -54,7 +58,7 @@ namespace BarPromenade
             }
 
             Validate(parent, lot);
-            Build(
+            BuildAuthored(
                 parent,
                 PlayerHomeBalconyGeometry.ToHomeLocal(
                     context.PlayerHome,
@@ -62,17 +66,110 @@ namespace BarPromenade
                 PlayerHomeBalconyGeometry.ToHomeLocalDirection(
                     context.PlayerHome,
                     ResolveDirection(lot)),
-                CityNightResources.EmissiveMaterial,
-                true);
+                "Exterior Supermarket Model");
         }
 
-        private static void Build(
+        public static void BuildClippedLegacyHomeExterior(
+            Transform parent,
+            HomeExteriorContextPlan context,
+            BuildingLot lot)
+        {
+            if (context == null)
+            {
+                throw new ArgumentNullException(nameof(context));
+            }
+
+            Validate(parent, lot);
+            BuildClippedLegacy(
+                parent,
+                PlayerHomeBalconyGeometry.ToHomeLocal(
+                    context.PlayerHome,
+                    lot.DoorPosition),
+                PlayerHomeBalconyGeometry.ToHomeLocalDirection(
+                    context.PlayerHome,
+                    ResolveDirection(lot)),
+                CityNightResources.EmissiveMaterial);
+        }
+
+        private static void BuildAuthored(
             Transform parent,
             Vector3 doorPosition,
             Vector3 direction,
-            Material emissiveMaterial,
-            bool clipToHomeExterior)
+            string objectName)
         {
+            direction.y = 0f;
+            direction.Normalize();
+
+            GameObject prefab = SupermarketExteriorModelResources.LoadPrefab();
+            if (prefab == null)
+            {
+                throw new InvalidOperationException(
+                    "The supermarket exterior model is missing. Run " +
+                    "tools/build-supermarket-exterior-3d-model.py through " +
+                    "Blender, then Bar Promenade/Supermarket/Build Exterior " +
+                    "Runtime Prefab.");
+            }
+
+            GameObject instance = Object.Instantiate(prefab, parent);
+            instance.name = objectName;
+            instance.transform.localPosition = doorPosition;
+            instance.transform.localRotation =
+                Quaternion.LookRotation(direction, Vector3.up);
+            instance.transform.localScale = Vector3.one;
+
+            SupermarketExteriorAssetRegistry registry =
+                instance.GetComponent<SupermarketExteriorAssetRegistry>();
+            if (registry == null)
+            {
+                throw new InvalidOperationException(
+                    "The supermarket exterior prefab has no " +
+                    "SupermarketExteriorAssetRegistry.");
+            }
+
+            if (!registry.TryGetAnchor(
+                    "exterior_door",
+                    out Transform doorAnchor))
+            {
+                throw new InvalidOperationException(
+                    "The supermarket exterior has no exterior_door anchor.");
+            }
+
+            // Unity imports the FBX authoring root at 100 and its children at
+            // 0.01. The anchor's measured world position is the stable value;
+            // localPosition would move the shop by a factor of one hundred.
+            Vector3 targetDoor = parent.TransformPoint(doorPosition);
+            instance.transform.position += targetDoor - doorAnchor.position;
+
+            foreach (SupermarketExteriorPartBinding binding in registry.Parts)
+            {
+                Renderer renderer = binding?.Renderer;
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                if (!SupermarketExteriorSurfaceAppearance.TryResolveSheet(
+                        binding.Sheet,
+                        out SupermarketExteriorSurfaceKind surface))
+                {
+                    throw new InvalidOperationException(
+                        $"The supermarket part '{binding.SourceName}' asks " +
+                        $"for unknown sheet '{binding.Sheet}'.");
+                }
+
+                SupermarketExteriorSurfaceAppearance.Apply(
+                    renderer,
+                    surface);
+            }
+        }
+
+        private static void BuildClippedLegacy(
+            Transform parent,
+            Vector3 doorPosition,
+            Vector3 direction,
+            Material emissiveMaterial)
+        {
+            const bool clipToHomeExterior = true;
             direction.y = 0f;
             direction.Normalize();
             Vector3 tangent = new Vector3(
@@ -492,6 +589,8 @@ namespace BarPromenade
                     "with street frontage.",
                     nameof(lot));
             }
+
+            CitySpecialBuildingWorldBuilder.ValidateSupermarket(lot);
         }
     }
 }

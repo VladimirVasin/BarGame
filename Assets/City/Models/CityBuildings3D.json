@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-city-buildings-3d-model.py",
-  "generator_version": "1.1.0",
+  "generator_version": "2.0.0",
   "blender_version": "5.0.1",
-  "design_id": "city_buildings_prototypes_v1",
+  "design_id": "city_buildings_prototypes_v2",
   "display_name": "City Buildings 3D Prototype Catalog",
   "fbx_asset_path": "Assets/City/Models/CityBuildings3D.fbx",
   "source_axes": {
@@ -45,11 +45,14 @@
     "zero_means": "non_window_geometry"
   },
   "uv0_encoding": {
-    "window_glass_scheme": "per_window_face_projected_0_1"
+    "window_glass_scheme": "per_window_face_projected_0_1",
+    "building_side_atlas_scheme": "building_side_atlas_0_1",
+    "full_face_surface_scheme": "full_face_projected_0_1",
+    "metric_surface_scheme": "world_metre_projected"
   },
   "prototype_count": 4,
-  "mesh_count": 24,
-  "triangle_count": 3662,
+  "mesh_count": 28,
+  "triangle_count": 3642,
   "prototypes": [
     {
       "stable_id": "old-town-prototype-01",
@@ -67,7 +70,7 @@
       ],
       "bounds_max_source": [
         7.0,
-        6.78,
+        6.815,
         42.0
       ],
       "bounds_min_unity": [
@@ -78,7 +81,7 @@
       "bounds_max_unity": [
         7.0,
         42.0,
-        6.78
+        6.815
       ],
       "front_anchor": {
         "position_source": [
@@ -890,8 +893,11 @@
       ],
       "parts": [
         {
-          "object_name": "old-town-prototype-01__Shell",
-          "role": "Shell",
+          "object_name": "old-town-prototype-01__FacadePrimary",
+          "role": "FacadePrimary",
+          "surface_kind": "FacadePrimary",
+          "uv_scheme": "building_side_atlas_0_1",
+          "meters_per_tile": 0.0,
           "vertices": 24,
           "triangles": 36,
           "bounds_min_source": [
@@ -915,41 +921,84 @@
             6.75
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            0.004,
+            0.004
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            0.996,
+            0.996
           ],
           "uv2_slot_ids": [
             0
           ]
         },
         {
-          "object_name": "old-town-prototype-01__Trim",
-          "role": "Trim",
-          "vertices": 88,
-          "triangles": 132,
+          "object_name": "old-town-prototype-01__FacadeSecondary",
+          "role": "FacadeSecondary",
+          "surface_kind": "FacadeSecondary",
+          "uv_scheme": "building_side_atlas_0_1",
+          "meters_per_tile": 0.0,
+          "vertices": 72,
+          "triangles": 108,
           "bounds_min_source": [
-            -7.0,
+            -6.96,
             -0.32,
-            0.0
+            0.5
           ],
           "bounds_max_source": [
-            7.0,
-            6.77,
+            6.96,
+            6.815,
             29.5
           ],
           "bounds_min_unity": [
-            -7.0,
-            0.0,
+            -6.96,
+            0.5,
             -0.32
           ],
           "bounds_max_unity": [
-            7.0,
+            6.96,
             29.5,
-            6.77
+            6.815
+          ],
+          "uv0_min": [
+            0.004691,
+            0.01581
+          ],
+          "uv0_max": [
+            0.880736,
+            0.996
+          ],
+          "uv2_slot_ids": [
+            0
+          ]
+        },
+        {
+          "object_name": "old-town-prototype-01__Plinth",
+          "role": "Plinth",
+          "surface_kind": "Plinth",
+          "uv_scheme": "full_face_projected_0_1",
+          "meters_per_tile": 0.0,
+          "vertices": 16,
+          "triangles": 24,
+          "bounds_min_source": [
+            -6.96,
+            5.75,
+            0.0
+          ],
+          "bounds_max_source": [
+            6.96,
+            6.785,
+            2.0
+          ],
+          "bounds_min_unity": [
+            -6.96,
+            0.0,
+            5.75
+          ],
+          "bounds_max_unity": [
+            6.96,
+            2.0,
+            6.785
           ],
           "uv0_min": [
             0.0,
@@ -966,6 +1015,9 @@
         {
           "object_name": "old-town-prototype-01__Roof",
           "role": "Roof",
+          "surface_kind": "Roof",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 4.0,
           "vertices": 17,
           "triangles": 22,
           "bounds_min_source": [
@@ -989,12 +1041,12 @@
             6.75
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -1.25,
+            -1.1875
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            2.25,
+            11.0
           ],
           "uv2_slot_ids": [
             0
@@ -1003,6 +1055,9 @@
         {
           "object_name": "old-town-prototype-01__Metal",
           "role": "Metal",
+          "surface_kind": "Metal",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 1.6,
           "vertices": 80,
           "triangles": 128,
           "bounds_min_source": [
@@ -1026,12 +1081,12 @@
             3.8
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -2.8125,
+            -1.55
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            4.828125,
+            24.875
           ],
           "uv2_slot_ids": [
             0
@@ -1040,6 +1095,9 @@
         {
           "object_name": "old-town-prototype-01__WindowFrame",
           "role": "WindowFrame",
+          "surface_kind": "WindowFrame",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 0.8,
           "vertices": 720,
           "triangles": 360,
           "bounds_min_source": [
@@ -1063,12 +1121,12 @@
             6.78
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -7.28125,
+            4.71875
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            8.21875,
+            35.34375
           ],
           "uv2_slot_ids": [
             1,
@@ -1121,6 +1179,9 @@
         {
           "object_name": "old-town-prototype-01__WindowGlass",
           "role": "WindowGlass",
+          "surface_kind": "WindowGlass",
+          "uv_scheme": "per_window_face_projected_0_1",
+          "meters_per_tile": 0.0,
           "vertices": 180,
           "triangles": 90,
           "bounds_min_source": [
@@ -1209,10 +1270,10 @@
       "frontage_width_m": 11.5,
       "depth_m": 11.5,
       "height_m": 40.0,
-      "triangle_count": 1238,
+      "triangle_count": 1230,
       "bounds_min_source": [
         -5.78,
-        -5.78,
+        -5.785,
         0.0
       ],
       "bounds_max_source": [
@@ -1223,7 +1284,7 @@
       "bounds_min_unity": [
         -5.78,
         0.0,
-        -5.78
+        -5.785
       ],
       "bounds_max_unity": [
         5.75,
@@ -2184,10 +2245,13 @@
       ],
       "parts": [
         {
-          "object_name": "residential-prototype-01__Shell",
-          "role": "Shell",
+          "object_name": "residential-prototype-01__FacadePrimary",
+          "role": "FacadePrimary",
+          "surface_kind": "FacadePrimary",
+          "uv_scheme": "building_side_atlas_0_1",
+          "meters_per_tile": 0.0,
           "vertices": 40,
-          "triangles": 60,
+          "triangles": 56,
           "bounds_min_source": [
             -5.75,
             -5.75,
@@ -2209,41 +2273,84 @@
             5.75
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            0.004,
+            0.004
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            0.996,
+            0.996
           ],
           "uv2_slot_ids": [
             0
           ]
         },
         {
-          "object_name": "residential-prototype-01__Trim",
-          "role": "Trim",
-          "vertices": 96,
-          "triangles": 144,
+          "object_name": "residential-prototype-01__FacadeSecondary",
+          "role": "FacadeSecondary",
+          "surface_kind": "FacadeSecondary",
+          "uv_scheme": "building_side_atlas_0_1",
+          "meters_per_tile": 0.0,
+          "vertices": 72,
+          "triangles": 108,
           "bounds_min_source": [
-            -5.75,
-            -5.745,
-            0.0
+            -5.6,
+            -0.16,
+            2.69
           ],
           "bounds_max_source": [
-            5.75,
+            5.6,
             4.055,
             22.09
           ],
           "bounds_min_unity": [
-            -5.75,
-            0.0,
-            -5.745
+            -5.6,
+            2.69,
+            -0.16
           ],
           "bounds_max_unity": [
-            5.75,
+            5.6,
             22.09,
             4.055
+          ],
+          "uv0_min": [
+            0.007157,
+            0.070712
+          ],
+          "uv0_max": [
+            0.878367,
+            0.849788
+          ],
+          "uv2_slot_ids": [
+            0
+          ]
+        },
+        {
+          "object_name": "residential-prototype-01__Plinth",
+          "role": "Plinth",
+          "surface_kind": "Plinth",
+          "uv_scheme": "full_face_projected_0_1",
+          "meters_per_tile": 0.0,
+          "vertices": 24,
+          "triangles": 36,
+          "bounds_min_source": [
+            -5.68,
+            -5.785,
+            0.0
+          ],
+          "bounds_max_source": [
+            5.68,
+            3.745,
+            2.0
+          ],
+          "bounds_min_unity": [
+            -5.68,
+            0.0,
+            -5.785
+          ],
+          "bounds_max_unity": [
+            5.68,
+            2.0,
+            3.745
           ],
           "uv0_min": [
             0.0,
@@ -2260,8 +2367,11 @@
         {
           "object_name": "residential-prototype-01__Roof",
           "role": "Roof",
+          "surface_kind": "Roof",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 4.0,
           "vertices": 29,
-          "triangles": 42,
+          "triangles": 38,
           "bounds_min_source": [
             -5.75,
             -5.75,
@@ -2283,12 +2393,12 @@
             3.65
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -0.9375,
+            -0.9375
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            1.9375,
+            10.5
           ],
           "uv2_slot_ids": [
             0
@@ -2297,6 +2407,9 @@
         {
           "object_name": "residential-prototype-01__Metal",
           "role": "Metal",
+          "surface_kind": "Metal",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 1.8,
           "vertices": 296,
           "triangles": 452,
           "bounds_min_source": [
@@ -2320,12 +2433,12 @@
             3.98
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -2.527778,
+            -2.45
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            3.527778,
+            19.944444
           ],
           "uv2_slot_ids": [
             0
@@ -2334,6 +2447,9 @@
         {
           "object_name": "residential-prototype-01__WindowFrame",
           "role": "WindowFrame",
+          "surface_kind": "WindowFrame",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 0.8,
           "vertices": 864,
           "triangles": 432,
           "bounds_min_source": [
@@ -2357,12 +2473,12 @@
             3.68
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -6.0125,
+            4.28125
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            7.0125,
+            33.96875
           ],
           "uv2_slot_ids": [
             1,
@@ -2424,6 +2540,9 @@
         {
           "object_name": "residential-prototype-01__WindowGlass",
           "role": "WindowGlass",
+          "surface_kind": "WindowGlass",
+          "uv_scheme": "per_window_face_projected_0_1",
+          "meters_per_tile": 0.0,
           "vertices": 216,
           "triangles": 108,
           "bounds_min_source": [
@@ -2521,26 +2640,26 @@
       "frontage_width_m": 14.0,
       "depth_m": 13.5,
       "height_m": 36.0,
-      "triangle_count": 798,
+      "triangle_count": 786,
       "bounds_min_source": [
         -7.0,
-        -6.78,
+        -6.815,
         0.0
       ],
       "bounds_max_source": [
         7.03,
-        6.78,
+        6.815,
         36.0
       ],
       "bounds_min_unity": [
         -7.0,
         0.0,
-        -6.78
+        -6.815
       ],
       "bounds_max_unity": [
         7.03,
         36.0,
-        6.78
+        6.815
       ],
       "front_anchor": {
         "position_source": [
@@ -3288,8 +3407,11 @@
       ],
       "parts": [
         {
-          "object_name": "industrial-prototype-01__Shell",
-          "role": "Shell",
+          "object_name": "industrial-prototype-01__FacadePrimary",
+          "role": "FacadePrimary",
+          "surface_kind": "FacadePrimary",
+          "uv_scheme": "building_side_atlas_0_1",
+          "meters_per_tile": 0.0,
           "vertices": 24,
           "triangles": 36,
           "bounds_min_source": [
@@ -3313,41 +3435,84 @@
             6.75
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            0.004,
+            0.004
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            0.996,
+            0.996
           ],
           "uv2_slot_ids": [
             0
           ]
         },
         {
-          "object_name": "industrial-prototype-01__Trim",
-          "role": "Trim",
-          "vertices": 48,
-          "triangles": 72,
+          "object_name": "industrial-prototype-01__FacadeSecondary",
+          "role": "FacadeSecondary",
+          "surface_kind": "FacadeSecondary",
+          "uv_scheme": "building_side_atlas_0_1",
+          "meters_per_tile": 0.0,
+          "vertices": 40,
+          "triangles": 60,
           "bounds_min_source": [
-            -7.0,
-            -6.76,
-            0.0
+            -6.96,
+            -6.815,
+            2.05
           ],
           "bounds_max_source": [
-            7.0,
-            6.77,
+            6.96,
+            6.815,
             18.175
           ],
           "bounds_min_unity": [
-            -7.0,
-            0.0,
-            -6.76
+            -6.96,
+            2.05,
+            -6.815
           ],
           "bounds_max_unity": [
-            7.0,
+            6.96,
             18.175,
-            6.77
+            6.815
+          ],
+          "uv0_min": [
+            0.004691,
+            0.004
+          ],
+          "uv0_max": [
+            0.996,
+            0.996
+          ],
+          "uv2_slot_ids": [
+            0
+          ]
+        },
+        {
+          "object_name": "industrial-prototype-01__Plinth",
+          "role": "Plinth",
+          "surface_kind": "Plinth",
+          "uv_scheme": "full_face_projected_0_1",
+          "meters_per_tile": 0.0,
+          "vertices": 8,
+          "triangles": 12,
+          "bounds_min_source": [
+            -6.96,
+            6.585,
+            0.0
+          ],
+          "bounds_max_source": [
+            6.96,
+            6.785,
+            2.0
+          ],
+          "bounds_min_unity": [
+            -6.96,
+            0.0,
+            6.585
+          ],
+          "bounds_max_unity": [
+            6.96,
+            2.0,
+            6.785
           ],
           "uv0_min": [
             0.0,
@@ -3364,6 +3529,9 @@
         {
           "object_name": "industrial-prototype-01__Roof",
           "role": "Roof",
+          "surface_kind": "Roof",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 4.0,
           "vertices": 48,
           "triangles": 72,
           "bounds_min_source": [
@@ -3387,12 +3555,12 @@
             6.75
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -1.25,
+            -1.1875
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            2.25,
+            8.075
           ],
           "uv2_slot_ids": [
             0
@@ -3401,8 +3569,11 @@
         {
           "object_name": "industrial-prototype-01__Metal",
           "role": "Metal",
-          "vertices": 128,
-          "triangles": 208,
+          "surface_kind": "Metal",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 1.8,
+          "vertices": 120,
+          "triangles": 196,
           "bounds_min_source": [
             -5.34,
             -4.985317,
@@ -3410,7 +3581,7 @@
           ],
           "bounds_max_source": [
             5.4,
-            5.59,
+            5.57,
             36.0
           ],
           "bounds_min_unity": [
@@ -3421,15 +3592,15 @@
           "bounds_max_unity": [
             5.4,
             36.0,
-            5.59
+            5.57
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -2.466667,
+            -2.269621
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            3.594444,
+            20.5
           ],
           "uv2_slot_ids": [
             0
@@ -3438,6 +3609,9 @@
         {
           "object_name": "industrial-prototype-01__WindowFrame",
           "role": "WindowFrame",
+          "surface_kind": "WindowFrame",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 0.8,
           "vertices": 656,
           "triangles": 328,
           "bounds_min_source": [
@@ -3461,12 +3635,12 @@
             6.78
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -7.28125,
+            9.5625
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            8.28125,
+            28.9375
           ],
           "uv2_slot_ids": [
             1,
@@ -3515,6 +3689,9 @@
         {
           "object_name": "industrial-prototype-01__WindowGlass",
           "role": "WindowGlass",
+          "surface_kind": "WindowGlass",
+          "uv_scheme": "per_window_face_projected_0_1",
+          "meters_per_tile": 0.0,
           "vertices": 164,
           "triangles": 82,
           "bounds_min_source": [
@@ -3607,7 +3784,7 @@
       ],
       "bounds_max_source": [
         6.25,
-        6.03,
+        6.065,
         48.0
       ],
       "bounds_min_unity": [
@@ -3618,7 +3795,7 @@
       "bounds_max_unity": [
         6.25,
         48.0,
-        6.03
+        6.065
       ],
       "front_anchor": {
         "position_source": [
@@ -4574,8 +4751,11 @@
       ],
       "parts": [
         {
-          "object_name": "nightlife-prototype-01__Shell",
-          "role": "Shell",
+          "object_name": "nightlife-prototype-01__FacadePrimary",
+          "role": "FacadePrimary",
+          "surface_kind": "FacadePrimary",
+          "uv_scheme": "building_side_atlas_0_1",
+          "meters_per_tile": 0.0,
           "vertices": 24,
           "triangles": 36,
           "bounds_min_source": [
@@ -4599,41 +4779,84 @@
             6.0
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            0.004,
+            0.004
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            0.996,
+            0.996
           ],
           "uv2_slot_ids": [
             0
           ]
         },
         {
-          "object_name": "nightlife-prototype-01__Trim",
-          "role": "Trim",
-          "vertices": 72,
-          "triangles": 108,
+          "object_name": "nightlife-prototype-01__FacadeSecondary",
+          "role": "FacadeSecondary",
+          "surface_kind": "FacadeSecondary",
+          "uv_scheme": "building_side_atlas_0_1",
+          "meters_per_tile": 0.0,
+          "vertices": 64,
+          "triangles": 96,
           "bounds_min_source": [
-            -6.25,
-            4.71,
-            0.0
+            -6.21,
+            4.765,
+            2.6
           ],
           "bounds_max_source": [
-            6.25,
-            6.03,
+            6.21,
+            6.065,
             35.175
           ],
           "bounds_min_unity": [
-            -6.25,
-            0.0,
-            4.71
+            -6.21,
+            2.6,
+            4.765
           ],
           "bounds_max_unity": [
-            6.25,
+            6.21,
             35.175,
-            6.03
+            6.065
+          ],
+          "uv0_min": [
+            0.004774,
+            0.057733
+          ],
+          "uv0_max": [
+            0.778906,
+            0.996
+          ],
+          "uv2_slot_ids": [
+            0
+          ]
+        },
+        {
+          "object_name": "nightlife-prototype-01__Plinth",
+          "role": "Plinth",
+          "surface_kind": "Plinth",
+          "uv_scheme": "full_face_projected_0_1",
+          "meters_per_tile": 0.0,
+          "vertices": 8,
+          "triangles": 12,
+          "bounds_min_source": [
+            -6.21,
+            5.815,
+            0.0
+          ],
+          "bounds_max_source": [
+            6.21,
+            6.035,
+            2.4
+          ],
+          "bounds_min_unity": [
+            -6.21,
+            0.0,
+            5.815
+          ],
+          "bounds_max_unity": [
+            6.21,
+            2.4,
+            6.035
           ],
           "uv0_min": [
             0.0,
@@ -4650,10 +4873,13 @@
         {
           "object_name": "nightlife-prototype-01__Roof",
           "role": "Roof",
+          "surface_kind": "Roof",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 4.0,
           "vertices": 21,
           "triangles": 30,
           "bounds_min_source": [
-            -5.85,
+            -5.81,
             -5.7,
             37.0
           ],
@@ -4663,7 +4889,7 @@
             48.0
           ],
           "bounds_min_unity": [
-            -5.85,
+            -5.81,
             37.0,
             -5.7
           ],
@@ -4673,12 +4899,12 @@
             4.9
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -0.9525,
+            -0.925
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            1.725,
+            12.5
           ],
           "uv2_slot_ids": [
             0
@@ -4687,6 +4913,9 @@
         {
           "object_name": "nightlife-prototype-01__Metal",
           "role": "Metal",
+          "surface_kind": "Metal",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 1.6,
           "vertices": 96,
           "triangles": 144,
           "bounds_min_source": [
@@ -4710,12 +4939,12 @@
             3.7
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -2.9375,
+            -2.0625
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            4.078125,
+            28.04375
           ],
           "uv2_slot_ids": [
             0
@@ -4724,6 +4953,9 @@
         {
           "object_name": "nightlife-prototype-01__WindowFrame",
           "role": "WindowFrame",
+          "surface_kind": "WindowFrame",
+          "uv_scheme": "world_metre_projected",
+          "meters_per_tile": 0.8,
           "vertices": 864,
           "triangles": 432,
           "bounds_min_source": [
@@ -4747,12 +4979,12 @@
             6.03
           ],
           "uv0_min": [
-            0.0,
-            0.0
+            -6.09375,
+            4.03125
           ],
           "uv0_max": [
-            1.0,
-            1.0
+            7.09375,
+            44.25
           ],
           "uv2_slot_ids": [
             1,
@@ -4814,6 +5046,9 @@
         {
           "object_name": "nightlife-prototype-01__WindowGlass",
           "role": "WindowGlass",
+          "surface_kind": "WindowGlass",
+          "uv_scheme": "per_window_face_projected_0_1",
+          "meters_per_tile": 0.0,
           "vertices": 216,
           "triangles": 108,
           "bounds_min_source": [
@@ -4904,5 +5139,5 @@
       ]
     }
   ],
-  "build_signature": "aef1de8fd8ba280da1c7f560e6e0b11ec3f78fb94bf05cf693ff936163c2ea2e"
+  "build_signature": "7670234e09fcc68bdebc985d04b0e74810f3e0f4e2f8ad11e840b1c75650ef53"
 }

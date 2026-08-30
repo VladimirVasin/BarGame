@@ -179,10 +179,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 layout.Supermarket.Height,
                 Is.EqualTo(
-                        Mathf.Clamp(
-                            6.4f,
-                            settings.MinimumBuildingHeight,
-                            settings.MaximumBuildingHeight))
+                        SupermarketEntranceGeometry.ExteriorHeight)
                     .Within(0.001f));
         }
 

@@ -36,7 +36,6 @@ namespace BarPromenade
         private HomeOpeningTimeline timeline;
         private OpeningCameraPose appliedCameraPose;
         private GUIStyle titleStyle;
-        private GUIStyle titleShadowStyle;
         private GUIStyle selectedStyle;
         private GUIStyle optionStyle;
         private bool initialClockFramePending;
@@ -665,22 +664,15 @@ namespace BarPromenade
 
         private void DrawPresentation(RetroUiCanvas canvas)
         {
-            Rect screen = new Rect(
-                0f,
-                0f,
-                RetroUiTheme.LogicalWidth,
-                RetroUiTheme.LogicalHeight);
             if (timeline.MenuVisible)
             {
-                RetroUiTheme.FillRect(
-                    new Rect(0f, 0f, 640f, 25f),
-                    new Color(0f, 0f, 0f, 0.82f));
-                RetroUiTheme.FillRect(
-                    new Rect(0f, 333f, 640f, 27f),
-                    new Color(0f, 0f, 0f, 0.86f));
-                RetroUiTheme.DrawDither(
-                    screen,
-                    new Color(0.72f, 0.63f, 0.50f, 0.025f));
+                RetroUiTheme.DrawPanel(
+                    new Rect(22f, 252f, 596f, 80f),
+                    RetroUiTheme.PanelInset,
+                    RetroUiTheme.FrameOuter,
+                    false,
+                    0f,
+                    1f);
                 DrawMenu(canvas);
             }
 
@@ -692,14 +684,6 @@ namespace BarPromenade
             const float titleY = 270f;
             const float titleWidth = 355f;
             string title = LocalizationService.Get("opening.title");
-            GUI.Label(
-                new Rect(
-                    titleX + 2f,
-                    titleY + 2f,
-                    titleWidth,
-                    32f),
-                title,
-                titleShadowStyle);
             GUI.Label(
                 new Rect(
                     titleX,
@@ -740,13 +724,7 @@ namespace BarPromenade
             bool selected = SelectedOption == option;
             if (selected)
             {
-                RetroUiTheme.DrawPanel(
-                    rect,
-                    new Color(0.08f, 0.055f, 0.06f, 0.92f),
-                    RetroUiTheme.Accent,
-                    true,
-                    1f,
-                    1f);
+                RetroUiTheme.DrawSelection(rect, true);
             }
 
             string prefix = selected ? "> " : "  ";
@@ -773,22 +751,18 @@ namespace BarPromenade
             titleStyle = RetroUiTheme.CreateLabelStyle(
                 22,
                 TextAnchor.MiddleLeft,
-                RetroUiTheme.AccentPale,
-                true);
-            titleShadowStyle = new GUIStyle(titleStyle);
-            RetroUiTheme.SetStaticTextColor(
-                titleShadowStyle,
-                new Color(0f, 0f, 0f, 0.92f));
+                RetroUiTheme.Text,
+                false);
             selectedStyle = RetroUiTheme.CreateButtonStyle(
                 13,
                 TextAnchor.MiddleLeft,
-                RetroUiTheme.Text,
-                true);
+                RetroUiTheme.SelectionText,
+                false);
             optionStyle = RetroUiTheme.CreateButtonStyle(
                 11,
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Muted,
-                true);
+                false);
         }
 
         private static Quaternion LookAt(

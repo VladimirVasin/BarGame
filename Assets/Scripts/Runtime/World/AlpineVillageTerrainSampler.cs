@@ -65,15 +65,26 @@ namespace BarPromenade
         internal const float RidgeStandoff = 6f;
 
         /// <summary>
-        /// Steeper than the hero's `45°` slope limit, and that is the whole
-        /// reason for the number rather than a look: at `0.62` (`32°`) the
-        /// ridge was climbable, so "you can only get here by cabin" was a
-        /// claim held up by the walkable mask alone. `1.15` is `49°`, which
-        /// the `CharacterController` refuses on its own.
+        /// Steeper than the hero's `45°` slope limit, and that is the floor
+        /// of the number rather than a look: at `0.62` (`32°`) the ridge was
+        /// climbable, so "you can only get here by cabin" was a claim held
+        /// up by the walkable mask alone. `1.15` (`49°`) closed that; `1.6`
+        /// is `58°`, chosen so the full `50 m` rise is reached `31 m` past
+        /// the toe instead of `43.5`, which puts the lateral crests
+        /// `83-88 m` from mid-lane - inside the `110 m` draw range and under
+        /// the ridge material's `96 m` handoff - and lifts the wall to
+        /// `39°` from the lane head, `36°` from the platform toward the
+        /// open side and `28-31°` sideways from mid-lane.
         /// </summary>
-        internal const float RidgeRisePerMeter = 1.15f;
+        internal const float RidgeRisePerMeter = 1.6f;
 
-        internal const float RidgeMaximumRise = 34f;
+        /// <summary>
+        /// Full height of the wall over the bowl floor. `34` with the old
+        /// `30 m` margin subtended `16-20°` and dissolved into the haze;
+        /// `50` over the `12 m` margin is what makes the bowl press in over
+        /// the roofs. The plan's world-bounds ceiling follows it.
+        /// </summary>
+        internal const float RidgeMaximumRise = 50f;
 
         /// <summary>
         /// Ground carried past the full rise. The visible mesh must not end on
@@ -279,18 +290,11 @@ namespace BarPromenade
             float enclosedHeight)
         {
             MountainRoadCablewayPlan cableway = plan.Station.Cableway;
-            Vector2 origin = new Vector2(
-                cableway.StationArea.Center.x,
-                cableway.StationArea.Center.z);
-            Vector2 forward = new Vector2(
-                cableway.LineForward.x,
-                cableway.LineForward.z).normalized;
-            Vector2 right = new Vector2(
-                cableway.LineRight.x,
-                cableway.LineRight.z).normalized;
-            Vector2 delta = point - origin;
-            float along = Vector2.Dot(delta, forward);
-            float across = Mathf.Abs(Vector2.Dot(delta, right));
+            ProjectOntoCablewayLine(
+                cableway,
+                point,
+                out float along,
+                out float across);
 
             // TWO FRAMES MEET HERE AND THEY ARE `1.9 m` APART.
             //
@@ -377,6 +381,51 @@ namespace BarPromenade
             }
 
             return enclosedHeight;
+        }
+
+        /// <summary>
+        /// How far the point stands to either side of the cableway line, in
+        /// the same frame the cut is measured in. The ground mesh reads it to
+        /// keep the valley bed and its walls on the floor material: the rise
+        /// term is non-zero all the way down the cut, but the cabin passes
+        /// those slopes at a few metres and they must not wear the distant
+        /// wall's fog floor and cold tint.
+        /// </summary>
+        internal static float DistanceAcrossCablewayLine(
+            AlpineVillagePlan plan,
+            Vector2 point)
+        {
+            if (plan == null)
+            {
+                throw new ArgumentNullException(nameof(plan));
+            }
+
+            ProjectOntoCablewayLine(
+                plan.Station.Cableway,
+                point,
+                out _,
+                out float across);
+            return across;
+        }
+
+        private static void ProjectOntoCablewayLine(
+            MountainRoadCablewayPlan cableway,
+            Vector2 point,
+            out float along,
+            out float across)
+        {
+            Vector2 origin = new Vector2(
+                cableway.StationArea.Center.x,
+                cableway.StationArea.Center.z);
+            Vector2 forward = new Vector2(
+                cableway.LineForward.x,
+                cableway.LineForward.z).normalized;
+            Vector2 right = new Vector2(
+                cableway.LineRight.x,
+                cableway.LineRight.z).normalized;
+            Vector2 delta = point - origin;
+            along = Vector2.Dot(delta, forward);
+            across = Mathf.Abs(Vector2.Dot(delta, right));
         }
 
         private static float SampleCablewayGround(

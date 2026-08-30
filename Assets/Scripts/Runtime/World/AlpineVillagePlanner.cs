@@ -110,7 +110,18 @@ namespace BarPromenade
         /// <summary>How far in front of a threshold the hero stands.</summary>
         public const float DoorDockStandoff = 1.1f;
 
-        public const float TerrainMargin = 30f;
+        /// <summary>
+        /// Flat ground kept around the inhabited hull before the enclosing
+        /// ridge begins its standoff. `30` put the wall's toe `36 m` from the
+        /// last houses and its crest at `16-20°` from the lane - a faint
+        /// smear in the haze, not a bowl. At `12` the toe stands `18 m`
+        /// outside the top house's envelope and the wall looms; it is still
+        /// well past the widest shelf blend (`PlotApron 1.1 +
+        /// ShelfBlendDistance 3.6`), so no plot's flat ever meets the rise.
+        /// Every `TerrainBounds` consumer - validator, map patch, spawn -
+        /// re-derives from the rect it contains.
+        /// </summary>
+        public const float TerrainMargin = 12f;
 
         private const uint HouseWidthSalt = 0x5641_4C31u;
         private const uint HouseDepthSalt = 0x5641_4C32u;

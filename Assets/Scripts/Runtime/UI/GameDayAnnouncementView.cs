@@ -140,17 +140,6 @@ namespace BarPromenade
             {
                 Rect area = new Rect(180f, 54f, 280f, 36f);
                 string text = DisplayedText;
-                Color visibleColor = GUI.color;
-                GUI.color = new Color(0f, 0f, 0f, state.Opacity);
-                GUI.Label(
-                    new Rect(
-                        area.x + 1f,
-                        area.y + 1f,
-                        area.width,
-                        area.height),
-                    text,
-                    style);
-                GUI.color = visibleColor;
                 GUI.Label(area, text, style);
             }
             finally
@@ -169,10 +158,10 @@ namespace BarPromenade
             }
 
             style = RetroUiTheme.CreateLabelStyle(
-                22,
+                18,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.AccentPale,
-                true);
+                RetroUiTheme.SelectionText,
+                false);
         }
 
         private static bool CanPresentInCurrentScene()

@@ -23,6 +23,36 @@ namespace BarPromenade
         public const float MinimumGroundLift = 0.08f;
         public const float MaximumGroundLift = 0.35f;
 
+        /// <summary>
+        /// The most enclosing-ridge rise a strip may be born on. Spindrift
+        /// belongs to the bowl floor; with the toe now `18 m` from the last
+        /// houses the `24 m` field regularly straddles the `58°` wall, and a
+        /// strip emitted on the wall's own slope reads as snow running up a
+        /// cliff rather than along the ground.
+        /// </summary>
+        public const float SpindriftRiseLimit = 2f;
+
+        /// <summary>
+        /// Where on the RAW shared gust rhythm the haze starts to close and
+        /// where it is fully closed. `0.86` is the rhythm's mean plus its
+        /// primary swell; `0.66` sits above the mean so the quick secondary
+        /// ripple alone cannot hold the wave up between swells, which is
+        /// what keeps the top house coming back every cycle.
+        /// </summary>
+        public const float StormWaveGustFloor = 0.66f;
+
+        public const float StormWaveGustCrest = 0.86f;
+
+        /// <summary>
+        /// One-pole smoothing of the wave, asymmetric: a gust closes the
+        /// lane quickly and the haze thins back at half that pace. Real
+        /// seconds; the game clock advances on the same `Time.deltaTime`,
+        /// so a pause freezes both the rhythm and the wave.
+        /// </summary>
+        public const float StormWaveAttackSeconds = 0.5f;
+
+        public const float StormWaveReleaseSeconds = 1f;
+
         public static Vector3 EvaluateTransport(in WindSample wind)
         {
             return wind.HorizontalDirection *
@@ -55,6 +85,45 @@ namespace BarPromenade
                 AlpineVillageWeatherRules.WindCeiling,
                 windStrength01);
             return Mathf.SmoothStep(0f, 1f, normalized);
+        }
+
+        /// <summary>
+        /// Where the haze wants to be for one value of the raw gust rhythm
+        /// (<see cref="GameWeatherRules.EvaluateGust"/>): `0` at or under
+        /// the floor, `1` at or over the crest. Not the shaped gale pulse
+        /// above - that one is pinned at `1` for a whole thunderstorm slot
+        /// at the lane head and could never reopen the street.
+        /// </summary>
+        public static float EvaluateStormWaveTarget(float gust)
+        {
+            float normalized = Mathf.InverseLerp(
+                StormWaveGustFloor,
+                StormWaveGustCrest,
+                gust);
+            return Mathf.SmoothStep(0f, 1f, normalized);
+        }
+
+        /// <summary>
+        /// Moves the wave toward its target over one frame with the attack
+        /// or release constant, whichever way it is going. A non-positive
+        /// step returns the wave unchanged, so a frozen clock holds the
+        /// haze where it is instead of letting it settle on a stale target.
+        /// </summary>
+        public static float AdvanceStormWave(
+            float current,
+            float target,
+            float deltaSeconds)
+        {
+            if (deltaSeconds <= 0f)
+            {
+                return current;
+            }
+
+            float timeConstant = target > current
+                ? StormWaveAttackSeconds
+                : StormWaveReleaseSeconds;
+            float blend = 1f - Mathf.Exp(-deltaSeconds / timeConstant);
+            return Mathf.Clamp01(current + (target - current) * blend);
         }
     }
 
@@ -276,6 +345,13 @@ namespace BarPromenade
                 }
 
                 if (appliedSheltered && IsInsideStationShelter(point))
+                {
+                    continue;
+                }
+
+                // Strips belong to the bowl floor, not to the wall.
+                if (AlpineVillageTerrainSampler.SampleRidgeRise(plan, point) >
+                    AlpineVillageStormFieldRules.SpindriftRiseLimit)
                 {
                     continue;
                 }

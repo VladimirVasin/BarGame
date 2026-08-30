@@ -126,99 +126,144 @@ namespace BarPromenade
         private static readonly Color MapGround =
             RetroUiTheme.MapGround;
         private static readonly Color MapVoid =
-            new Color32(18, 22, 27, 255);
+            RetroUiTheme.Ink;
         private static readonly Color Building =
             RetroUiTheme.MapBuilding;
         private static readonly Color OldTownBuilding =
-            new Color32(91, 76, 68, 255);
+            Color.Lerp(
+                RetroUiTheme.MapBuilding,
+                RetroUiTheme.Muted,
+                0.18f);
         private static readonly Color ResidentialBuilding =
-            new Color32(64, 83, 78, 255);
+            Color.Lerp(
+                RetroUiTheme.MapBuilding,
+                RetroUiTheme.BorderMuted,
+                0.14f);
         private static readonly Color IndustrialBuilding =
-            new Color32(70, 72, 82, 255);
+            Color.Lerp(
+                RetroUiTheme.MapBuilding,
+                RetroUiTheme.Text,
+                0.06f);
         private static readonly Color NightlifeBuilding =
-            new Color32(80, 63, 87, 255);
+            Color.Lerp(
+                RetroUiTheme.MapBuilding,
+                RetroUiTheme.Ink,
+                0.18f);
         private static readonly Color ParkLand =
-            new Color32(54, 83, 60, 255);
+            Color.Lerp(
+                RetroUiTheme.MapGround,
+                RetroUiTheme.PanelRaised,
+                0.24f);
         private static readonly Color WaterfrontLand =
-            new Color32(147, 124, 77, 255);
+            Color.Lerp(
+                RetroUiTheme.MapGround,
+                RetroUiTheme.BorderMuted,
+                0.34f);
         private static readonly Color CemeteryLand =
-            new Color32(66, 77, 65, 255);
+            Color.Lerp(
+                RetroUiTheme.MapGround,
+                RetroUiTheme.Muted,
+                0.12f);
         private static readonly Color YardLand =
-            new Color32(94, 84, 63, 255);
+            Color.Lerp(
+                RetroUiTheme.MapGround,
+                RetroUiTheme.PanelRaised,
+                0.40f);
         private static readonly Color ChurchLand =
-            new Color32(102, 96, 84, 255);
+            Color.Lerp(
+                RetroUiTheme.MapGround,
+                RetroUiTheme.Muted,
+                0.28f);
         private static readonly Color WaterLand =
-            new Color32(35, 91, 119, 255);
+            Color.Lerp(
+                RetroUiTheme.Ink,
+                RetroUiTheme.MapBuilding,
+                0.42f);
         private static readonly Color PierTimber =
-            new Color32(141, 116, 84, 255);
+            Color.Lerp(
+                RetroUiTheme.MapRoad,
+                RetroUiTheme.BorderMuted,
+                0.22f);
         private static readonly Color BoatHut =
-            new Color32(163, 134, 92, 255);
-        // The seacoast landmarks: pale concrete for the mol, the
-        // lighthouse's navigation white, rust for the stranded barge.
+            Color.Lerp(
+                RetroUiTheme.MapRoad,
+                RetroUiTheme.Muted,
+                0.32f);
+        // Seacoast landmarks separate by value and silhouette rather than
+        // by unrelated local hues.
         private static readonly Color MolConcrete =
-            new Color32(132, 133, 126, 255);
+            RetroUiTheme.Muted;
         private static readonly Color LighthouseLight =
-            new Color32(242, 230, 199, 255);
+            RetroUiTheme.Text;
         private static readonly Color BargeRust =
-            new Color32(112, 66, 47, 255);
+            RetroUiTheme.PanelRaised;
         private static readonly Color CemeteryMarker =
-            new Color32(176, 178, 166, 255);
+            RetroUiTheme.Muted;
         private static readonly Color BeachSand =
-            new Color32(178, 158, 111, 255);
+            Color.Lerp(
+                RetroUiTheme.MapGround,
+                RetroUiTheme.Text,
+                0.32f);
         private static readonly Color YardTexture =
-            new Color32(126, 113, 86, 255);
+            Color.Lerp(
+                RetroUiTheme.MapGround,
+                RetroUiTheme.Muted,
+                0.24f);
         private static readonly Color ChurchMarker =
-            new Color32(219, 204, 164, 255);
+            RetroUiTheme.AccentPale;
         private static readonly Color AreaGate =
-            new Color32(226, 178, 96, 255);
+            RetroUiTheme.Text;
         private static readonly Color RiverWater =
-            new Color32(26, 77, 103, 255);
+            WaterLand;
         private static readonly Color RiverPromenade =
-            new Color32(112, 106, 91, 255);
+            RetroUiTheme.MapRoad;
         private static readonly Color MountainToe =
-            new Color32(112, 108, 96, 255);
+            RetroUiTheme.BorderMuted;
         private static readonly Color MountainOuter =
-            new Color32(72, 75, 70, 255);
+            RetroUiTheme.PanelRaised;
         private static readonly Color MountainHatch =
-            new Color32(90, 91, 82, 255);
+            RetroUiTheme.Muted;
         private static readonly Color MountainTunnelThroat =
-            new Color32(25, 28, 27, 255);
+            RetroUiTheme.Ink;
         private static readonly Color MountainRiverCaveMouth =
-            new Color32(20, 24, 24, 255);
+            RetroUiTheme.Shadow;
         private static readonly Color MountainTunnelFrame =
-            new Color32(178, 139, 72, 255);
+            RetroUiTheme.AccentPale;
         private static readonly Color WorksBridge =
-            new Color32(105, 116, 121, 255);
+            RetroUiTheme.Muted;
         private static readonly Color TimberBridge =
-            new Color32(161, 111, 67, 255);
+            RetroUiTheme.BorderMuted;
         private static readonly Color MouthBridge =
-            new Color32(150, 133, 109, 255);
+            Color.Lerp(
+                RetroUiTheme.Muted,
+                RetroUiTheme.BorderMuted,
+                0.50f);
         private static readonly Color PublicPlaceLand =
-            new Color32(123, 112, 91, 255);
+            RetroUiTheme.PanelRaised;
         private static readonly Color BarBuilding =
             RetroUiTheme.MapBar;
         private static readonly Color HomeBuilding =
-            new Color32(70, 116, 124, 255);
+            RetroUiTheme.Accent;
         private static readonly Color Road =
             RetroUiTheme.MapRoad;
         private static readonly Color ParkPath =
-            new Color32(159, 150, 105, 255);
+            RetroUiTheme.Muted;
         private static readonly Color Route =
             RetroUiTheme.Accent;
         private static readonly Color BusRoute =
-            new Color32(91, 143, 209, 255);
+            RetroUiTheme.Text;
         private static readonly Color BusStop =
             RetroUiTheme.AccentPale;
         private static readonly Color UnselectedBar =
             RetroUiTheme.MapBar;
         private static readonly Color Player =
-            RetroUiTheme.Cyan;
+            RetroUiTheme.AccentPale;
         private static readonly Color PlayerHome =
             RetroUiTheme.AccentPale;
         private static readonly Color Supermarket =
-            new Color32(224, 194, 91, 255);
+            RetroUiTheme.AccentPale;
         private static readonly Color TooltipBackdrop =
-            new Color32(19, 15, 25, 250);
+            RetroUiTheme.WithAlpha(RetroUiTheme.Ink, 0.98f);
 
         // The even lattice the point inspector rules over the whole chart,
         // and the scrim that puts out the squares nothing can stand in.
@@ -229,9 +274,9 @@ namespace BarPromenade
         // The mountain road keeps about two squares in five, and there the
         // scrim is the whole answer.
         private static readonly Color TeleportLatticeLine =
-            new Color32(151, 161, 148, 48);
+            RetroUiTheme.WithAlpha(RetroUiTheme.Muted, 0.19f);
         private static readonly Color TeleportDeadSquareScrim =
-            new Color32(12, 14, 17, 92);
+            RetroUiTheme.WithAlpha(RetroUiTheme.Ink, 0.36f);
 
         internal static Color BusRouteColor => BusRoute;
 
@@ -339,9 +384,9 @@ namespace BarPromenade
                 RetroUiTheme.DrawPanel(
                     panel,
                     RetroUiTheme.Panel,
-                    RetroUiTheme.Accent,
-                    true,
-                    3f,
+                    RetroUiTheme.BorderMuted,
+                    false,
+                    0f,
                     1f);
 
                 GUI.Label(
@@ -476,8 +521,8 @@ namespace BarPromenade
                 projection.ScreenRect,
                 MapVoid,
                 RetroUiTheme.BorderMuted,
-                true,
-                2f,
+                false,
+                0f,
                 1f);
             DrawSurfaces(projection);
             DrawAreaGrounds(projection);
@@ -1788,7 +1833,9 @@ namespace BarPromenade
                 }
 
                 Color outline = RetroUiTheme.WithAlpha(
-                    Brighten(region.MapColor, 0.42f),
+                    Brighten(
+                        ResolveAreaRegionMapColor(region.Feature),
+                        0.42f),
                     0.92f);
                 for (int edge = 0;
                      edge < region.Outline.Count;
@@ -2288,10 +2335,10 @@ namespace BarPromenade
                         10f);
                     RetroUiTheme.DrawPanel(
                         routeBadge,
-                        RetroUiTheme.Accent,
+                        RetroUiTheme.AccentPale,
                         RetroUiTheme.Ink,
                         false,
-                        1f,
+                        0f,
                         1f);
                     GUI.contentColor = RetroUiTheme.Ink;
                     GUI.Label(
@@ -2596,9 +2643,9 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 tooltip,
                 TooltipBackdrop,
-                RetroUiTheme.AccentPale,
-                true,
-                2f,
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
                 1f);
             GUI.Label(
                 new Rect(
@@ -2817,8 +2864,8 @@ namespace BarPromenade
                 panel,
                 RetroUiTheme.PanelInset,
                 RetroUiTheme.BorderMuted,
-                true,
-                2f,
+                false,
+                0f,
                 1f);
             if (controller.MapPointInspectionEnabled)
             {
@@ -2890,9 +2937,9 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 clearButton,
                 RetroUiTheme.PanelRaised,
-                RetroUiTheme.Accent,
+                RetroUiTheme.AccentPale,
                 false,
-                1f,
+                0f,
                 1f);
             bool previousEnabled = GUI.enabled;
             GUI.enabled = route.Count > 0;
@@ -3015,10 +3062,10 @@ namespace BarPromenade
                 button,
                 RetroUiTheme.PanelRaised,
                 reachable || travelable
-                    ? RetroUiTheme.Good
+                    ? RetroUiTheme.AccentPale
                     : RetroUiTheme.BorderMuted,
-                reachable || travelable,
-                2f,
+                false,
+                0f,
                 1f);
             if (travelable)
             {
@@ -3064,15 +3111,14 @@ namespace BarPromenade
                 19f);
             RetroUiTheme.DrawPanel(
                 button,
-                controller.MapPointInspectionEnabled
-                    ? RetroUiTheme.Accent
-                    : RetroUiTheme.PanelRaised,
-                controller.MapPointInspectionEnabled
-                    ? RetroUiTheme.AccentPale
-                    : RetroUiTheme.BorderMuted,
-                controller.MapPointInspectionEnabled,
-                1f,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.BorderMuted,
+                false,
+                0f,
                 1f);
+            RetroUiTheme.DrawSelection(
+                button,
+                controller.MapPointInspectionEnabled);
             if (GUI.Button(button, "XYZ", smallButtonStyle))
             {
                 controller.QueueToggleMapPointInspection();
@@ -3151,9 +3197,9 @@ namespace BarPromenade
             RetroUiTheme.DrawPanel(
                 confirmButton,
                 RetroUiTheme.PanelRaised,
-                RetroUiTheme.Good,
-                true,
-                2f,
+                RetroUiTheme.AccentPale,
+                false,
+                0f,
                 1f);
             if (GUI.Button(
                 confirmButton,
@@ -3280,15 +3326,12 @@ namespace BarPromenade
                     barIndex == controller.SelectedBarIndex;
                 RetroUiTheme.DrawPanel(
                     row,
-                    focused
-                        ? RetroUiTheme.PanelRaised
-                        : RetroUiTheme.Panel,
-                    focused
-                        ? RetroUiTheme.Accent
-                        : RetroUiTheme.BorderMuted,
+                    RetroUiTheme.Panel,
+                    RetroUiTheme.BorderMuted,
                     false,
-                    1f,
+                    0f,
                     1f);
+                RetroUiTheme.DrawSelection(row, focused);
 
                 const float buttonWidth = 15f;
                 const float buttonGap = 2f;
@@ -3319,7 +3362,7 @@ namespace BarPromenade
                         RetroUiTheme.PanelRaised,
                         RetroUiTheme.BorderMuted,
                         false,
-                        1f,
+                        0f,
                         1f);
                     GUI.enabled = routeIndex > 0;
                     if (GUI.Button(
@@ -3341,7 +3384,7 @@ namespace BarPromenade
                         RetroUiTheme.PanelRaised,
                         RetroUiTheme.BorderMuted,
                         false,
-                        1f,
+                        0f,
                         1f);
                     GUI.enabled = routeIndex < route.Count - 1;
                     if (GUI.Button(
@@ -3365,7 +3408,7 @@ namespace BarPromenade
                     RetroUiTheme.PanelRaised,
                     RetroUiTheme.Bad,
                     false,
-                    1f,
+                    0f,
                     1f);
                 GUI.enabled = true;
                 if (GUI.Button(
@@ -3764,6 +3807,10 @@ namespace BarPromenade
         {
             switch (surface.Kind)
             {
+                case CitySurfaceKind.BuildableGround:
+                    return MapGround;
+                case CitySurfaceKind.ParkGround:
+                    return ParkLand;
                 case CitySurfaceKind.Water:
                     return WaterLand;
                 case CitySurfaceKind.RiverWater:
@@ -3777,7 +3824,27 @@ namespace BarPromenade
                 case CitySurfaceKind.ChurchGround:
                     return ChurchLand;
                 default:
-                    return surface.MapColor;
+                    return MapGround;
+            }
+        }
+
+        private static Color ResolveAreaRegionMapColor(
+            CityAreaFeatureKind feature)
+        {
+            switch (feature)
+            {
+                case CityAreaFeatureKind.CentralPark:
+                    return ParkLand;
+                case CityAreaFeatureKind.NorthWaterfront:
+                    return WaterfrontLand;
+                case CityAreaFeatureKind.Cemetery:
+                    return CemeteryLand;
+                case CityAreaFeatureKind.Yard:
+                    return YardLand;
+                case CityAreaFeatureKind.Church:
+                    return ChurchLand;
+                default:
+                    return Building;
             }
         }
 
@@ -3866,7 +3933,7 @@ namespace BarPromenade
             titleStyle = RetroUiTheme.CreateLabelStyle(
                 15,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.Accent,
+                RetroUiTheme.Text,
                 true);
             subtitleStyle = RetroUiTheme.CreateLabelStyle(
                 11,

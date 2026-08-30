@@ -105,6 +105,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.31248, g: 0.33856001, b: 0.36255997, a: 1}
     variantTwoColor: {r: 0.3906, g: 0.32384, b: 0.27455997, a: 1}
     variantThreeColor: {r: 0.34968, g: 0.368, b: 0.30272, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.01
     role: surface_detail
     paletteName: checkers_disc_rim
@@ -113,6 +114,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.21419999, g: 0.22816, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.26775, g: 0.21824, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.23969999, g: 0.248, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatButton.02
     role: surface_detail
     paletteName: checkers_disc_rim
@@ -121,6 +123,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.21419999, g: 0.22816, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.26775, g: 0.21824, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.23969999, g: 0.248, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_CoatSeam
     role: surface_detail
     paletteName: checkers_coat_dark
@@ -129,6 +132,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.042, g: 0.041400004, b: 0.037079997, a: 1}
     variantTwoColor: {r: 0.0525, g: 0.0396, b: 0.028079998, a: 1}
     variantThreeColor: {r: 0.047000002, g: 0.045, b: 0.03096, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_DiscPip
     role: signature_silhouette
     paletteName: checkers_disc_ring
@@ -137,6 +141,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5376, g: 0.57776004, b: 0.58916, a: 1}
     variantTwoColor: {r: 0.67199993, g: 0.55264, b: 0.44616002, a: 1}
     variantThreeColor: {r: 0.6016, g: 0.628, b: 0.49192002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.L
     role: face_detail
     paletteName: void
@@ -145,6 +150,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Eye.R
     role: face_detail
     paletteName: void
@@ -153,6 +159,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantTwoColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
     variantThreeColor: {r: 0.008, g: 0.01, b: 0.009, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_LapelSpot.L
     role: surface_detail
     paletteName: checkers_spot_light
@@ -161,6 +168,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_LapelSpot.R
     role: surface_detail
     paletteName: checkers_spot_light
@@ -169,6 +177,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Nose
     role: face_detail
     paletteName: checkers_skin
@@ -177,6 +186,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29568, g: 0.22816, b: 0.19776, a: 1}
     variantTwoColor: {r: 0.36959997, g: 0.21824, b: 0.14976, a: 1}
     variantThreeColor: {r: 0.33088, g: 0.248, b: 0.16512, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfSpot.01
     role: surface_detail
     paletteName: checkers_spot_light
@@ -185,6 +195,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfSpot.02
     role: surface_detail
     paletteName: checkers_spot_light
@@ -193,6 +204,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfSpot.03
     role: surface_detail
     paletteName: checkers_spot_light
@@ -201,6 +213,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfSpot.04
     role: surface_detail
     paletteName: checkers_spot_light
@@ -209,6 +222,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfSpot.05
     role: surface_detail
     paletteName: checkers_spot_light
@@ -217,6 +231,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_ScarfSpot.06
     role: surface_detail
     paletteName: checkers_spot_light
@@ -225,6 +240,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.5166, g: 0.55200005, b: 0.56135, a: 1}
     variantTwoColor: {r: 0.64575, g: 0.528, b: 0.4251, a: 1}
     variantThreeColor: {r: 0.5781, g: 0.6, b: 0.46870002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: ACC_Stubble
     role: face_detail
     paletteName: checkers_grey
@@ -233,6 +249,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.31248, g: 0.33856001, b: 0.36255997, a: 1}
     variantTwoColor: {r: 0.3906, g: 0.32384, b: 0.27455997, a: 1}
     variantThreeColor: {r: 0.34968, g: 0.368, b: 0.30272, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatChest
     role: body
     paletteName: checkers_coat
@@ -241,6 +258,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.08736, g: 0.08648, b: 0.07622, a: 1}
     variantTwoColor: {r: 0.1092, g: 0.08272, b: 0.057719998, a: 1}
     variantThreeColor: {r: 0.09776, g: 0.094, b: 0.06364, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatHem
     role: clothing
     paletteName: checkers_coat_dark
@@ -249,6 +267,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.042, g: 0.041400004, b: 0.037079997, a: 1}
     variantTwoColor: {r: 0.0525, g: 0.0396, b: 0.028079998, a: 1}
     variantThreeColor: {r: 0.047000002, g: 0.045, b: 0.03096, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatWaist
     role: body
     paletteName: checkers_coat
@@ -257,6 +276,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.08736, g: 0.08648, b: 0.07622, a: 1}
     variantTwoColor: {r: 0.1092, g: 0.08272, b: 0.057719998, a: 1}
     variantThreeColor: {r: 0.09776, g: 0.094, b: 0.06364, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_CoatYoke
     role: clothing
     paletteName: checkers_coat_light
@@ -265,6 +285,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.12263999, g: 0.12144, b: 0.10712, a: 1}
     variantTwoColor: {r: 0.15329999, g: 0.11616, b: 0.08112, a: 1}
     variantThreeColor: {r: 0.13724, g: 0.132, b: 0.08944, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_DiscBand
     role: signature_silhouette
     paletteName: checkers_disc_rim
@@ -273,6 +294,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.21419999, g: 0.22816, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.26775, g: 0.21824, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.23969999, g: 0.248, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_DiscBody
     role: signature_silhouette
     paletteName: checkers_disc
@@ -281,6 +303,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.504, g: 0.54096, b: 0.55105, a: 1}
     variantTwoColor: {r: 0.63, g: 0.51744, b: 0.41730002, a: 1}
     variantThreeColor: {r: 0.564, g: 0.588, b: 0.46010002, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_DiscRimLower
     role: signature_silhouette
     paletteName: checkers_disc_rim
@@ -289,6 +312,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.21419999, g: 0.22816, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.26775, g: 0.21824, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.23969999, g: 0.248, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_DiscRimUpper
     role: signature_silhouette
     paletteName: checkers_disc_rim
@@ -297,6 +321,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.21419999, g: 0.22816, b: 0.23174998, a: 1}
     variantTwoColor: {r: 0.26775, g: 0.21824, b: 0.17549999, a: 1}
     variantThreeColor: {r: 0.23969999, g: 0.248, b: 0.1935, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Lapel.L
     role: clothing
     paletteName: checkers_spot_dark
@@ -305,6 +330,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.06808, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.065120004, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.074, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Lapel.R
     role: clothing
     paletteName: checkers_spot_dark
@@ -313,6 +339,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.06808, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.065120004, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.074, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_ScarfLoop
     role: clothing
     paletteName: checkers_spot_dark
@@ -321,6 +348,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.06808, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.065120004, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.074, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_ScarfTail.L
     role: clothing
     paletteName: checkers_spot_dark
@@ -329,6 +357,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.06808, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.065120004, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.074, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_ScarfTail.R
     role: clothing
     paletteName: checkers_spot_dark
@@ -337,6 +366,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.058799997, g: 0.06808, b: 0.061799996, a: 1}
     variantTwoColor: {r: 0.0735, g: 0.065120004, b: 0.0468, a: 1}
     variantThreeColor: {r: 0.0658, g: 0.074, b: 0.051599998, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.L
     role: clothing
     paletteName: checkers_coat
@@ -345,6 +375,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.08736, g: 0.08648, b: 0.07622, a: 1}
     variantTwoColor: {r: 0.1092, g: 0.08272, b: 0.057719998, a: 1}
     variantThreeColor: {r: 0.09776, g: 0.094, b: 0.06364, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_Sleeve.R
     role: clothing
     paletteName: checkers_coat
@@ -353,6 +384,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.08736, g: 0.08648, b: 0.07622, a: 1}
     variantTwoColor: {r: 0.1092, g: 0.08272, b: 0.057719998, a: 1}
     variantThreeColor: {r: 0.09776, g: 0.094, b: 0.06364, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.L
     role: clothing
     paletteName: checkers_coat_dark
@@ -361,6 +393,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.042, g: 0.041400004, b: 0.037079997, a: 1}
     variantTwoColor: {r: 0.0525, g: 0.0396, b: 0.028079998, a: 1}
     variantThreeColor: {r: 0.047000002, g: 0.045, b: 0.03096, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveCuff.R
     role: clothing
     paletteName: checkers_coat_dark
@@ -369,6 +402,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.042, g: 0.041400004, b: 0.037079997, a: 1}
     variantTwoColor: {r: 0.0525, g: 0.0396, b: 0.028079998, a: 1}
     variantThreeColor: {r: 0.047000002, g: 0.045, b: 0.03096, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.L
     role: clothing
     paletteName: checkers_coat
@@ -377,6 +411,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.08736, g: 0.08648, b: 0.07622, a: 1}
     variantTwoColor: {r: 0.1092, g: 0.08272, b: 0.057719998, a: 1}
     variantThreeColor: {r: 0.09776, g: 0.094, b: 0.06364, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_SleeveLower.R
     role: clothing
     paletteName: checkers_coat
@@ -385,6 +420,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.08736, g: 0.08648, b: 0.07622, a: 1}
     variantTwoColor: {r: 0.1092, g: 0.08272, b: 0.057719998, a: 1}
     variantThreeColor: {r: 0.09776, g: 0.094, b: 0.06364, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserLower.L
     role: clothing
     paletteName: checkers_trousers
@@ -393,6 +429,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.055439997, g: 0.05704, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.069299996, g: 0.05456, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.06204, g: 0.062, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserLower.R
     role: clothing
     paletteName: checkers_trousers
@@ -401,6 +438,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.055439997, g: 0.05704, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.069299996, g: 0.05456, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.06204, g: 0.062, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserUpper.L
     role: clothing
     paletteName: checkers_trousers
@@ -409,6 +447,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.055439997, g: 0.05704, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.069299996, g: 0.05456, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.06204, g: 0.062, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: CLO_TrouserUpper.R
     role: clothing
     paletteName: checkers_trousers
@@ -417,6 +456,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.055439997, g: 0.05704, b: 0.054589998, a: 1}
     variantTwoColor: {r: 0.069299996, g: 0.05456, b: 0.041339997, a: 1}
     variantThreeColor: {r: 0.06204, g: 0.062, b: 0.04558, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.L
     role: body
     paletteName: checkers_boot
@@ -425,6 +465,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.03956, b: 0.039139997, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.03784, b: 0.029639998, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.043, b: 0.03268, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Boot.R
     role: body
     paletteName: checkers_boot
@@ -433,6 +474,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.03864, g: 0.03956, b: 0.039139997, a: 1}
     variantTwoColor: {r: 0.048299998, g: 0.03784, b: 0.029639998, a: 1}
     variantThreeColor: {r: 0.04324, g: 0.043, b: 0.03268, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.L
     role: body
     paletteName: sole
@@ -441,6 +483,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_BootSole.R
     role: body
     paletteName: sole
@@ -449,6 +492,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantTwoColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
     variantThreeColor: {r: 0.018, g: 0.019, b: 0.017, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.L
     role: body
     paletteName: checkers_skin
@@ -457,6 +501,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29568, g: 0.22816, b: 0.19776, a: 1}
     variantTwoColor: {r: 0.36959997, g: 0.21824, b: 0.14976, a: 1}
     variantThreeColor: {r: 0.33088, g: 0.248, b: 0.16512, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Hand.R
     role: body
     paletteName: checkers_skin
@@ -465,6 +510,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29568, g: 0.22816, b: 0.19776, a: 1}
     variantTwoColor: {r: 0.36959997, g: 0.21824, b: 0.14976, a: 1}
     variantThreeColor: {r: 0.33088, g: 0.248, b: 0.16512, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Head
     role: body
     paletteName: checkers_skin
@@ -473,6 +519,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29568, g: 0.22816, b: 0.19776, a: 1}
     variantTwoColor: {r: 0.36959997, g: 0.21824, b: 0.14976, a: 1}
     variantThreeColor: {r: 0.33088, g: 0.248, b: 0.16512, a: 1}
+    usesDetailAtlas: 0
   - rendererName: GEO_Neck
     role: body
     paletteName: checkers_skin
@@ -481,6 +528,7 @@ MonoBehaviour:
     variantOneColor: {r: 0.29568, g: 0.22816, b: 0.19776, a: 1}
     variantTwoColor: {r: 0.36959997, g: 0.21824, b: 0.14976, a: 1}
     variantThreeColor: {r: 0.33088, g: 0.248, b: 0.16512, a: 1}
+    usesDetailAtlas: 0
   headAnchor: {fileID: 852191360524284789}
   pelvisAnchor: {fileID: 345071182717414565}
   leftFootAnchor: {fileID: 7891424592179658561}
@@ -499,6 +547,7 @@ MonoBehaviour:
   paletteVariant: 0
   headLamp: {fileID: 0}
   preservesAirborneMotion: 0
+  detailAtlas: {fileID: 0}
 --- !u!1001 &3983149555130751833
 PrefabInstance:
   m_ObjectHideFlags: 0

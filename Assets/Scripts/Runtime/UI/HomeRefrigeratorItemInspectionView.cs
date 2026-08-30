@@ -35,6 +35,7 @@ namespace BarPromenade
         private GUIStyle tooltipStyle;
         private GUIStyle feedbackStyle;
         private GUIStyle actionStyle;
+        private GUIStyle selectedActionStyle;
 
         public void Initialize(
             HomeRefrigeratorItemInspectionController inspectionController)
@@ -105,10 +106,10 @@ namespace BarPromenade
                 new Rect(x, y, width, height));
             RetroUiTheme.DrawPanel(
                 tooltip,
-                RetroUiTheme.PanelRaised,
-                RetroUiTheme.Accent,
-                true,
-                2f,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.FrameOuter,
+                false,
+                0f,
                 1f);
             GUI.Label(tooltip, label, tooltipStyle);
         }
@@ -119,11 +120,11 @@ namespace BarPromenade
                 controller.ActiveDefinition;
             RetroUiTheme.DrawPanel(
                 TitleRect,
-                RetroUiTheme.PanelRaised,
-                RetroUiTheme.Accent,
-                true,
-                4f,
-                2f);
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.FrameOuter,
+                false,
+                0f,
+                1f);
             GUI.Label(
                 new Rect(
                     TitleRect.x + 8f,
@@ -136,10 +137,10 @@ namespace BarPromenade
 
             RetroUiTheme.DrawPanel(
                 DescriptionRect,
-                RetroUiTheme.Panel,
-                RetroUiTheme.BorderMuted,
-                true,
-                3f,
+                RetroUiTheme.PanelInset,
+                RetroUiTheme.FrameOuter,
+                false,
+                0f,
                 1f);
             GUI.Label(
                 new Rect(
@@ -184,23 +185,28 @@ namespace BarPromenade
                 selected = true;
             }
 
-            RetroUiTheme.DrawPanel(
-                rect,
-                selected
-                    ? RetroUiTheme.PanelRaised
-                    : RetroUiTheme.PanelInset,
-                selected
-                    ? RetroUiTheme.Accent
-                    : hovered
-                        ? RetroUiTheme.AccentPale
-                        : RetroUiTheme.BorderMuted,
-                selected,
-                2f,
-                selected ? 2f : 1f);
+            if (selected)
+            {
+                RetroUiTheme.DrawSelection(rect, true);
+            }
+            else
+            {
+                RetroUiTheme.FillRect(
+                    rect,
+                    RetroUiTheme.PanelInset);
+                RetroUiTheme.DrawFrame(
+                    rect,
+                    hovered
+                        ? RetroUiTheme.FrameOuter
+                        : RetroUiTheme.FrameInner,
+                    RetroUiTheme.FrameInner);
+            }
             if (GUI.Button(
                     rect,
                     LocalizationService.Get(ActionKeys[index]),
-                    actionStyle))
+                    selected
+                        ? selectedActionStyle
+                        : actionStyle))
             {
                 controller.InvokeAction(
                     (HomeRefrigeratorItemAction)index);
@@ -217,8 +223,8 @@ namespace BarPromenade
             titleStyle = RetroUiTheme.CreateLabelStyle(
                 18,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.AccentPale,
-                true);
+                RetroUiTheme.Text,
+                false);
             descriptionStyle = RetroUiTheme.CreateLabelStyle(
                 12,
                 TextAnchor.MiddleCenter,
@@ -229,17 +235,22 @@ namespace BarPromenade
                 11,
                 TextAnchor.MiddleCenter,
                 RetroUiTheme.Text,
-                true);
+                false);
             feedbackStyle = RetroUiTheme.CreateLabelStyle(
                 10,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.Bad,
-                true);
+                RetroUiTheme.Muted,
+                false);
             actionStyle = RetroUiTheme.CreateButtonStyle(
                 11,
                 TextAnchor.MiddleCenter,
-                RetroUiTheme.Text,
-                true);
+                RetroUiTheme.Muted,
+                false);
+            selectedActionStyle = RetroUiTheme.CreateButtonStyle(
+                11,
+                TextAnchor.MiddleCenter,
+                RetroUiTheme.SelectionText,
+                false);
         }
     }
 }

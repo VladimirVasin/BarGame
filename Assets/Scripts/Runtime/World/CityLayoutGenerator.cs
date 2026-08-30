@@ -1013,6 +1013,11 @@ namespace BarPromenade
             IReadOnlyDictionary<CityDistrictKind, Vector2Int>
                 primaryLandmarkCells)
         {
+            if (!CanFitAuthoredSupermarket(settings))
+            {
+                return -1;
+            }
+
             var primaryLandmarkLots = new HashSet<int>();
             foreach (Vector2Int cell in primaryLandmarkCells.Values)
             {
@@ -1133,6 +1138,60 @@ namespace BarPromenade
             return bestLotIndex;
         }
 
+        private static bool CanFitAuthoredSupermarket(
+            CityGenerationSettings settings)
+        {
+            const float tolerance = 0.001f;
+            float availableWidth =
+                settings.BlockWidth - settings.BuildingInset * 2f;
+            float availableDepth =
+                settings.BlockDepth - settings.BuildingInset * 2f;
+            return availableWidth + tolerance >=
+                       SupermarketEntranceGeometry.ExteriorWidth &&
+                   availableDepth + tolerance >=
+                       SupermarketEntranceGeometry.ExteriorDepth;
+        }
+
+        private static bool CanFitAuthoredPlayerHome(
+            CityGenerationSettings settings)
+        {
+            const float tolerance = 0.001f;
+            float availableX =
+                settings.BlockWidth - settings.BuildingInset * 2f;
+            float availableZ =
+                settings.BlockDepth - settings.BuildingInset * 2f;
+            bool fitsUnrotated =
+                availableX + tolerance >= 13f &&
+                availableZ + tolerance >= 12f;
+            bool fitsRotated =
+                availableX + tolerance >= 12f &&
+                availableZ + tolerance >= 13f;
+            return (fitsUnrotated || fitsRotated) &&
+                   settings.MaximumBuildingHeight + tolerance >=
+                   PlayerHomeBalconyGeometry.PreferredBuildingHeight;
+        }
+
+        private static bool CanFitAuthoredPlayerHome(
+            CityGenerationSettings settings,
+            Vector2Int frontage)
+        {
+            if (!CanFitAuthoredPlayerHome(settings) ||
+                frontage == Vector2Int.zero)
+            {
+                return false;
+            }
+
+            const float tolerance = 0.001f;
+            float requiredX = frontage.x != 0 ? 12f : 13f;
+            float requiredZ = frontage.x != 0 ? 13f : 12f;
+            float availableX =
+                settings.BlockWidth - settings.BuildingInset * 2f;
+            float availableZ =
+                settings.BlockDepth - settings.BuildingInset * 2f;
+            return availableX + tolerance >= requiredX &&
+                   availableZ + tolerance >= requiredZ;
+        }
+
         private static int SelectHomeLot(
             CityGenerationSettings settings,
             int seed,
@@ -1147,7 +1206,8 @@ namespace BarPromenade
             out Vector2Int homeFrontage)
         {
             homeFrontage = Vector2Int.zero;
-            if (barLots.Count == 0)
+            if (barLots.Count == 0 ||
+                !CanFitAuthoredPlayerHome(settings))
             {
                 return -1;
             }
@@ -1166,12 +1226,16 @@ namespace BarPromenade
                 RoadEdge sharedRoad = RoadEdge.ForCellFrontage(
                     canonicalBar,
                     barFrontage);
+                Vector2Int canonicalHomeFrontage = -barFrontage;
                 if (barLots.Contains(barLotIndex) &&
                     settings.CreatesLot(canonicalHome) &&
                     roadSet.Contains(sharedRoad) &&
-                    pathKinds[sharedRoad] == CityPathKind.Street)
+                    pathKinds[sharedRoad] == CityPathKind.Street &&
+                    CanFitAuthoredPlayerHome(
+                        settings,
+                        canonicalHomeFrontage))
                 {
-                    homeFrontage = -barFrontage;
+                    homeFrontage = canonicalHomeFrontage;
                     return ToLotIndex(
                         canonicalHome.x,
                         canonicalHome.y,
@@ -1226,6 +1290,13 @@ namespace BarPromenade
                     }
 
                     Vector2Int frontage = -direction;
+                    if (!CanFitAuthoredPlayerHome(
+                            settings,
+                            frontage))
+                    {
+                        continue;
+                    }
+
                     Vector3 homeReturn = GetReturnPosition(
                         settings,
                         origin,
@@ -1295,7 +1366,10 @@ namespace BarPromenade
                     lotIndex % settings.BlocksX,
                     lotIndex / settings.BlocksX);
                 if (!settings.CreatesLot(cell) ||
-                    settings.IsParkCell(cell))
+                    settings.IsParkCell(cell) ||
+                    !CanFitAuthoredPlayerHome(
+                        settings,
+                        frontage))
                 {
                     continue;
                 }
@@ -1663,13 +1737,13 @@ namespace BarPromenade
             Vector2 size = landUse != CityLandUseKind.Building
                 ? new Vector2(settings.BlockWidth, settings.BlockDepth)
                 : isPlayerHome
-                    ? new Vector2(
-                        Mathf.Min(13f, maximumWidth),
-                        Mathf.Min(12f, maximumDepth))
+                    ? frontage.x != 0
+                        ? new Vector2(12f, 13f)
+                        : new Vector2(13f, 12f)
                 : isSupermarket
                     ? new Vector2(
-                        maximumWidth,
-                        maximumDepth)
+                        SupermarketEntranceGeometry.ExteriorWidth,
+                        SupermarketEntranceGeometry.ExteriorDepth)
                 : CreateBuildingSize(
                     district,
                     maximumWidth,
@@ -1678,13 +1752,9 @@ namespace BarPromenade
             float height = landUse != CityLandUseKind.Building
                 ? 0.1f
                 : isPlayerHome
-                    ? PlayerHomeBalconyGeometry.ResolveBuildingHeight(
-                        settings)
+                    ? PlayerHomeBalconyGeometry.PreferredBuildingHeight
                 : isSupermarket
-                    ? Mathf.Clamp(
-                        6.4f,
-                        settings.MinimumBuildingHeight,
-                        settings.MaximumBuildingHeight)
+                    ? SupermarketEntranceGeometry.ExteriorHeight
                 : isBar
                     ? CreateBuildingHeight(
                         settings.MinimumBuildingHeight,

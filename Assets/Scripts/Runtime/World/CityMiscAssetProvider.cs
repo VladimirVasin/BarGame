@@ -89,7 +89,13 @@ namespace BarPromenade
         NightlifeShelterFire = 76,
         NightlifeShelterStandingPerson = 77,
         NightlifeShelterSeatedPerson = 78,
-        NightlifeShelterSleepingPerson = 79
+        NightlifeShelterSleepingPerson = 79,
+        ResidentialCourtyardPocket = 80,
+        FringeMasonCart = 81,
+        FringeWinchServiceSet = 82,
+        FringeTunnelServiceSet = 83,
+        FringeFloodMaintenanceSet = 84,
+        FringeOpenHoodCar = 85
     }
 
     /// <summary>
@@ -177,14 +183,14 @@ namespace BarPromenade
     [CreateAssetMenu(
         fileName = "CityMiscAssetProvider",
         menuName = "Bar Promenade/City Misc Asset Provider")]
-    public sealed class CityMiscAssetProvider : ScriptableObject
+    public sealed partial class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.7.0";
+        public const string GeneratorVersion = "4.8.0";
         public const string DesignId = "city_misc_citywide_v4";
-        public const int ExpectedAssemblyCount = 115;
-        public const int ExpectedMeshCount = 238;
-        public const int SupportedKindCount = 80;
+        public const int ExpectedAssemblyCount = 126;
+        public const int ExpectedMeshCount = 271;
+        public const int SupportedKindCount = 86;
 
         private const float GroundTolerance = 0.003f;
 
@@ -269,7 +275,13 @@ namespace BarPromenade
             CityMiscKind.NightlifeShelterFire,
             CityMiscKind.NightlifeShelterStandingPerson,
             CityMiscKind.NightlifeShelterSeatedPerson,
-            CityMiscKind.NightlifeShelterSleepingPerson
+            CityMiscKind.NightlifeShelterSleepingPerson,
+            CityMiscKind.ResidentialCourtyardPocket,
+            CityMiscKind.FringeMasonCart,
+            CityMiscKind.FringeWinchServiceSet,
+            CityMiscKind.FringeTunnelServiceSet,
+            CityMiscKind.FringeFloodMaintenanceSet,
+            CityMiscKind.FringeOpenHoodCar
         };
 
         private static readonly ExpectedPartSpec[] IndustrialStreetParts =
@@ -564,72 +576,6 @@ namespace BarPromenade
             P("Flowers_Residential", CityMiscMeshRole.Residential)
         };
 
-        private static readonly ExpectedPartSpec[]
-            NightlifeArchBridgeShellParts =
-        {
-            P("Shell_Masonry", CityMiscMeshRole.Masonry),
-            P("StepsAndRetaining_Masonry", CityMiscMeshRole.Masonry),
-            P("PlatformSupport_Masonry", CityMiscMeshRole.Masonry),
-            P("PlatformSlab_Street", CityMiscMeshRole.Street),
-            P("Cladding_Industrial", CityMiscMeshRole.Industrial),
-            P("Roof_Street", CityMiscMeshRole.Street)
-        };
-
-        private static readonly ExpectedPartSpec[] NightlifeBurnBarrelParts =
-        {
-            P("Barrel_Industrial", CityMiscMeshRole.Industrial),
-            P("Fuel_Timber", CityMiscMeshRole.Timber)
-        };
-
-        private static readonly ExpectedPartSpec[]
-            NightlifeShelterMattressParts =
-        {
-            P("Mattress_Residential", CityMiscMeshRole.Residential),
-            P("Blanket_Street", CityMiscMeshRole.Street),
-            P("Cardboard_Timber", CityMiscMeshRole.Timber)
-        };
-
-        private static readonly ExpectedPartSpec[]
-            NightlifeShelterRollParts =
-        {
-            P("Roll_Residential", CityMiscMeshRole.Residential),
-            P("Tie_Street", CityMiscMeshRole.Street),
-            P("Cardboard_Timber", CityMiscMeshRole.Timber)
-        };
-
-        private static readonly ExpectedPartSpec[] NightlifeShelterClutterParts =
-        {
-            P("CrateAndCardboard_Timber", CityMiscMeshRole.Timber),
-            P("Bags_Street", CityMiscMeshRole.Street),
-            P("Bottles_Residential", CityMiscMeshRole.Residential),
-            P("Can_Industrial", CityMiscMeshRole.Industrial)
-        };
-
-        private static readonly ExpectedPartSpec[] NightlifeShelterFireParts =
-        {
-            P("FlameCore_Neon", CityMiscMeshRole.Neon),
-            P("FlameOuter_Neon", CityMiscMeshRole.Neon),
-            P("FlameLeftTongue_Neon", CityMiscMeshRole.Neon),
-            P("FlameRightTongue_Neon", CityMiscMeshRole.Neon),
-            P("EmberBed_Neon", CityMiscMeshRole.Neon),
-            P("GroundSpill_BacklitSign", CityMiscMeshRole.BacklitSign)
-        };
-
-        private static readonly ExpectedPartSpec[] NightlifeShelterPersonParts =
-        {
-            P("Outerwear_Street", CityMiscMeshRole.Street),
-            P("Layer_Residential", CityMiscMeshRole.Residential),
-            P("Skin_Masonry", CityMiscMeshRole.Masonry)
-        };
-
-        private static readonly ExpectedPartSpec[]
-            NightlifeShelterSleepingPersonParts =
-        {
-            P("Outerwear_Street", CityMiscMeshRole.Street),
-            P("BreathingUpper_Residential", CityMiscMeshRole.Residential),
-            P("Skin_Masonry", CityMiscMeshRole.Masonry)
-        };
-
         [SerializeField] private CityMiscMeshEntry[] entries =
             Array.Empty<CityMiscMeshEntry>();
         [SerializeField] private string buildSignature = string.Empty;
@@ -726,6 +672,8 @@ namespace BarPromenade
                 case CityMiscKind.ChurchCourtyardShrub:
                 case CityMiscKind.ChurchCourtyardFlowerBed:
                     return 2;
+                case CityMiscKind.ResidentialCourtyardPocket:
+                    return 6;
                 default:
                     if (Supports(kind))
                     {
@@ -1327,6 +1275,32 @@ namespace BarPromenade
                     return NightlifeShelterPersonParts;
                 case CityMiscKind.NightlifeShelterSleepingPerson:
                     return NightlifeShelterSleepingPersonParts;
+                case CityMiscKind.ResidentialCourtyardPocket:
+                    switch (variant)
+                    {
+                        case 0:
+                            return ResidentialCourtyardNardiParts;
+                        case 1:
+                            return ResidentialCourtyardBicycleParts;
+                        case 2:
+                            return ResidentialCourtyardBasketParts;
+                        case 3:
+                            return ResidentialCourtyardChairParts;
+                        case 4:
+                            return ResidentialCourtyardSweepingParts;
+                        default:
+                            return ResidentialCourtyardQuietParts;
+                    }
+                case CityMiscKind.FringeMasonCart:
+                    return FringeMasonCartParts;
+                case CityMiscKind.FringeWinchServiceSet:
+                    return FringeWinchServiceParts;
+                case CityMiscKind.FringeTunnelServiceSet:
+                    return FringeTunnelServiceParts;
+                case CityMiscKind.FringeFloodMaintenanceSet:
+                    return FringeFloodMaintenanceParts;
+                case CityMiscKind.FringeOpenHoodCar:
+                    return FringeOpenHoodCarParts;
                 default:
                     throw UnsupportedKind(kind);
             }

@@ -156,7 +156,7 @@ namespace BarPromenade
                 RetroUiTheme.Ink,
                 RetroUiTheme.BorderMuted,
                 false,
-                1f,
+                0f,
                 1f);
             RetroUiTheme.FillRect(
                 new Rect(

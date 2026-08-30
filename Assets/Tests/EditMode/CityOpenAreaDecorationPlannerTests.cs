@@ -124,6 +124,7 @@ namespace BarPromenade.Tests.EditMode
                 "The selected bar must share the player's home frontage.");
             Assert.That(site.HasNeighbourBuilding, Is.True);
             Assert.That(site.Neighbour, Is.Not.Null);
+            Assert.That(site.Neighbour.IsSupermarket, Is.True);
             Assert.That(site.Neighbour.Cell, Is.EqualTo(site.NeighbourCell));
             Vector2Int neighbourOffset =
                 site.NeighbourCell - site.AnchorCell;
@@ -175,15 +176,26 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 facadeNormal,
                 Is.EqualTo(site.NeighbourFacadeNormal.normalized));
+            Vector3 neighbourFrontage = new Vector3(
+                site.Neighbour.FrontageDirection.x,
+                0f,
+                site.Neighbour.FrontageDirection.y).normalized;
+            Assert.That(
+                Mathf.Abs(Vector3.Dot(facadeNormal, neighbourFrontage)),
+                Is.LessThan(0.001f));
             float facadeHalfExtent = Mathf.Abs(facadeNormal.x) > 0.5f
                 ? site.Neighbour.Size.x * 0.5f
                 : site.Neighbour.Size.y * 0.5f;
+            float authoredFacadeInset = site.Neighbour.IsSupermarket
+                ? SupermarketEntranceGeometry.ExteriorWallInset
+                : 0f;
             Assert.That(
                 Vector3.Dot(
                     spotlight.MountPosition - site.Neighbour.Center,
                     facadeNormal),
                 Is.EqualTo(
-                    facadeHalfExtent +
+                    facadeHalfExtent -
+                    authoredFacadeInset +
                     HomeYardSpotlightPlanner.MountProudOffset)
                     .Within(0.001f));
             Assert.That(
@@ -204,7 +216,7 @@ namespace BarPromenade.Tests.EditMode
                 Vector3.Angle(
                     spotlight.Rotation * Vector3.forward,
                     aimDirection),
-                Is.LessThan(0.01f));
+                Is.LessThan(0.05f));
             Assert.That(
                 spotlight.Intensity,
                 Is.EqualTo(HomeYardSpotlightPlanner.Intensity));

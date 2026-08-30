@@ -85,6 +85,7 @@ namespace BarPromenade
             }
 
             ValidateExpectedMapping(plan);
+            CityFringeYardLifeValidator.ValidateOrThrow(layout, plan);
             CityFringeYardPracticalValidator.ValidateOrThrow(layout, plan);
         }
 

@@ -22,7 +22,7 @@ namespace BarPromenade.Editor
             "Assets/Resources/City/Buildings";
 
         private const string CatalogRootName = "ROOT_CityBuildings3D";
-        private const string ExpectedGeneratorVersion = "1.1.0";
+        private const string ExpectedGeneratorVersion = "2.0.0";
         private const float ContractTolerance = 0.003f;
         private const float BoundsTolerance = 0.02f;
 
@@ -380,6 +380,9 @@ namespace BarPromenade.Editor
                 bindings[index] = new CityBuildingPartBinding(
                     sourcePart.object_name,
                     role,
+                    sourcePart.surface_kind,
+                    sourcePart.uv_scheme,
+                    sourcePart.meters_per_tile,
                     renderer);
             }
 
@@ -519,6 +522,18 @@ namespace BarPromenade.Editor
                 !string.Equals(
                     manifest.uv0_encoding.window_glass_scheme,
                     "per_window_face_projected_0_1",
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    manifest.uv0_encoding.building_side_atlas_scheme,
+                    "building_side_atlas_0_1",
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    manifest.uv0_encoding.full_face_surface_scheme,
+                    "full_face_projected_0_1",
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    manifest.uv0_encoding.metric_surface_scheme,
+                    "world_metre_projected",
                     StringComparison.Ordinal) ||
                 manifest.uv2_encoding == null ||
                 manifest.uv2_encoding.channel_index != 1 ||
@@ -819,7 +834,8 @@ namespace BarPromenade.Editor
                     CityBuildingAssetRegistry.ExpectedRoleCount)
             {
                 throw new InvalidOperationException(
-                    $"City building '{prototype.stable_id}' needs six parts.");
+                    $"City building '{prototype.stable_id}' needs seven " +
+                    "semantic surface parts.");
             }
 
             int triangles = 0;
@@ -836,6 +852,11 @@ namespace BarPromenade.Editor
                         part.object_name,
                         expectedName,
                         StringComparison.Ordinal) ||
+                    !string.Equals(
+                        part.surface_kind,
+                        role.ToString(),
+                        StringComparison.Ordinal) ||
+                    !HasExpectedUvContract(part, role) ||
                     part.vertices <= 0 || part.triangles <= 0 ||
                     !roles.Add(role) ||
                     !objectNames.Add(part.object_name))
@@ -923,8 +944,8 @@ namespace BarPromenade.Editor
                     CityBuildingAssetRegistry.ExpectedRoleCount)
                 {
                     throw new InvalidOperationException(
-                        $"Imported '{prototype.root_name}' must have six " +
-                        "direct mesh children.");
+                        $"Imported '{prototype.root_name}' must have seven " +
+                        "direct semantic mesh children.");
                 }
 
                 var renderers = new List<Renderer>();
@@ -1329,6 +1350,52 @@ namespace BarPromenade.Editor
             return role;
         }
 
+        private static bool HasExpectedUvContract(
+            BuildingPart part,
+            CityBuildingMeshRole role)
+        {
+            string expectedScheme;
+            bool metric;
+            switch (role)
+            {
+                case CityBuildingMeshRole.FacadePrimary:
+                case CityBuildingMeshRole.FacadeSecondary:
+                    expectedScheme = "building_side_atlas_0_1";
+                    metric = false;
+                    break;
+                case CityBuildingMeshRole.Plinth:
+                    expectedScheme = "full_face_projected_0_1";
+                    metric = false;
+                    break;
+                case CityBuildingMeshRole.Roof:
+                case CityBuildingMeshRole.Metal:
+                case CityBuildingMeshRole.WindowFrame:
+                    expectedScheme = "world_metre_projected";
+                    metric = true;
+                    break;
+                case CityBuildingMeshRole.WindowGlass:
+                    expectedScheme = "per_window_face_projected_0_1";
+                    metric = false;
+                    break;
+                default:
+                    return false;
+            }
+
+            if (!string.Equals(
+                    part.uv_scheme,
+                    expectedScheme,
+                    StringComparison.Ordinal))
+            {
+                return false;
+            }
+
+            return metric
+                ? part.meters_per_tile > 0f &&
+                  !float.IsNaN(part.meters_per_tile) &&
+                  !float.IsInfinity(part.meters_per_tile)
+                : Mathf.Abs(part.meters_per_tile) <= ContractTolerance;
+        }
+
         private static void ValidateDependencyStamp()
         {
             if (isBuilding || EditorApplication.isCompiling ||
@@ -1457,6 +1524,9 @@ namespace BarPromenade.Editor
         private sealed class BuildingUv0Encoding
         {
             public string window_glass_scheme;
+            public string building_side_atlas_scheme;
+            public string full_face_surface_scheme;
+            public string metric_surface_scheme;
         }
 
         [Serializable]
@@ -1516,6 +1586,9 @@ namespace BarPromenade.Editor
         {
             public string object_name;
             public string role;
+            public string surface_kind;
+            public string uv_scheme;
+            public float meters_per_tile;
             public int vertices;
             public int triangles;
             public float[] bounds_min_source;
