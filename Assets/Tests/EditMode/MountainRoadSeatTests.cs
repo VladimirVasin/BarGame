@@ -82,8 +82,8 @@ namespace BarPromenade.Tests.EditMode
                         MountainRoadCafeWorldBuilder.EmptyStoolIndex])
                     .Within(0.0001f));
 
-            // And it is one of the two the cafe leaves empty: the cast
-            // occupies the other three, and sitting on one of those would
+            // And it is one of the places the cafe leaves empty: the cast
+            // occupies three others, and sitting on one of those would
             // put the hero inside a staged figure.
             MountainRoadCafeCastPlan cast =
                 MountainRoadCafeCastPlan.Create(plan.Terminal.Cafe);
@@ -108,15 +108,41 @@ namespace BarPromenade.Tests.EditMode
                     "The stool's dock stands inside a staged figure.");
             }
 
-            // Both seats face out of the thing behind them, because a
-            // plank is backed onto from in front: facing the counter would
-            // put the dock inside it, and facing the parapet would put the
-            // dock over the drop.
+            // The regression contract: the loose stool is still approached
+            // from the open aisle, but facing is no longer inferred from
+            // that approach. The hero settles in the same direction as the
+            // three patrons, looking at the counter rather than showing it
+            // his back.
             Assert.That(
                 Vector3.Dot(
                     site.CounterSeat.FaceDirection,
                     plan.Terminal.Cafe.Forward),
+                Is.GreaterThan(0.99f));
+            Assert.That(
+                Vector3.Dot(
+                    site.CounterSeat.ApproachDirection,
+                    plan.Terminal.Cafe.Forward),
                 Is.LessThan(-0.99f));
+            Assert.That(
+                Vector3.Dot(
+                    stool.EntryRotation * Vector3.forward,
+                    plan.Terminal.Cafe.Forward),
+                Is.GreaterThan(0.99f),
+                "The interaction turned the seated hero away from the " +
+                "counter.");
+            Vector3 dockOffset =
+                stool.EntryRootPosition -
+                site.CounterSeat.SeatTopCenter;
+            dockOffset.y = 0f;
+            Assert.That(
+                Vector3.Dot(
+                    dockOffset,
+                    plan.Terminal.Cafe.Forward),
+                Is.EqualTo(
+                    -(site.CounterSeat.SeatDepth * 0.5f +
+                      CityBenchSitPlan.EntryEdgeDistance))
+                    .Within(0.0001f),
+                "Facing the counter must not move the dock into it.");
             Assert.That(
                 plan.Terminal.Cafe.ContainsInterior(
                     stool.EntryRootPosition,

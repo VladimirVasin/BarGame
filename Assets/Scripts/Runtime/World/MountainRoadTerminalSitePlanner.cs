@@ -55,13 +55,15 @@ namespace BarPromenade
         /// The stool the hero is offered, read off the cafe's own row so
         /// the offer and the timber cannot disagree.
         ///
-        /// Of the two the cafe leaves empty, this is the one whose dock
-        /// fits. The seat that finishes the row at the chamfered corner
+        /// Among the places the cafe leaves empty, this is the one whose
+        /// dock fits. The seat that finishes the main row at the chamfered
+        /// corner
         /// would take a plank dock `0.21 m` from that corner's glass —
         /// inside the player's own radius. So it is the middle gap,
-        /// between the lone patron and the couple. And he sits with his
-        /// back to the counter, because a plank seat is backed onto from
-        /// in front and facing the counter would put the dock inside it.
+        /// between the lone patron and the couple. Its dock stays in the
+        /// open aisle, but its facing is independent: the hero approaches
+        /// the loose stool from behind and settles looking at the counter,
+        /// exactly like the three patrons already seated beside him.
         /// </summary>
         public static float CounterSeatCafeRight =>
             MountainRoadCafeWorldBuilder.StoolRightOffsets[
@@ -1157,6 +1159,7 @@ namespace BarPromenade
                 MountainRoadCafeWorldBuilder.StoolSeatDiameter,
                 MountainRoadCafeWorldBuilder.StoolSeatDiameter,
                 yardTop,
+                cafe.Forward,
                 -cafe.Forward);
         }
 

@@ -1,0 +1,185 @@
+using NUnit.Framework;
+using UnityEngine;
+
+namespace BarPromenade.Tests.EditMode
+{
+    public sealed class MountainRoadCafeCollisionWorldBuilderTests
+    {
+        [Test]
+        [Category("MountainRoad")]
+        public void Build_CreatesOnlyPlanOwnedPrimitiveObstacles()
+        {
+            var parent = new GameObject("Cafe Collision Test Root");
+            try
+            {
+                MountainRoadCafePlan plan = MountainRoadPlanner.Create(
+                    GameSessionState.DefaultCitySeed).Terminal.Cafe;
+                MountainRoadCafeCollisionWorldResult result =
+                    MountainRoadCafeCollisionWorldBuilder.Build(
+                        parent.transform,
+                        plan);
+
+                Assert.That(
+                    result.ColliderCount,
+                    Is.EqualTo(
+                        MountainRoadCafeCollisionWorldBuilder
+                            .ExpectedColliderCount));
+                Assert.That(
+                    result.StoolColliders,
+                    Has.Count.EqualTo(
+                        MountainRoadCafeCollisionWorldBuilder
+                            .StoolColliderCount));
+                Assert.That(
+                    result.EntranceClearWidth,
+                    Is.EqualTo(plan.DoorWidth).Within(0.0001f));
+                Assert.That(
+                    result.EntranceClearWidth,
+                    Is.EqualTo(
+                        MountainRoadCafeCollisionWorldBuilder
+                            .RequiredEntranceWidth).Within(0.0001f));
+
+                Assert.That(
+                    result.Root.GetComponentsInChildren<Renderer>(true),
+                    Is.Empty);
+                Assert.That(
+                    result.Root.GetComponentsInChildren<MeshFilter>(true),
+                    Is.Empty);
+                Assert.That(
+                    result.Root.GetComponentsInChildren<MeshCollider>(true),
+                    Is.Empty);
+                Assert.That(
+                    result.Root.GetComponentsInChildren<Light>(true),
+                    Is.Empty);
+                Assert.That(
+                    result.Root.GetComponentsInChildren<Camera>(true),
+                    Is.Empty);
+                Assert.That(
+                    result.Root.GetComponentsInChildren<AudioSource>(true),
+                    Is.Empty);
+
+                Collider[] colliders =
+                    result.Root.GetComponentsInChildren<Collider>(true);
+                Assert.That(
+                    colliders,
+                    Has.Length.EqualTo(result.ColliderCount));
+                for (int index = 0; index < colliders.Length; index++)
+                {
+                    Assert.That(
+                        colliders[index] is BoxCollider ||
+                        colliders[index] is CapsuleCollider,
+                        Is.True,
+                        $"Unexpected collider type at index {index}.");
+                    Assert.That(colliders[index].isTrigger, Is.False);
+                }
+
+                AssertPublishedDescriptorOrder(result);
+                AssertStoolPositions(plan, result);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+            }
+        }
+
+        private static void AssertPublishedDescriptorOrder(
+            MountainRoadCafeCollisionWorldResult result)
+        {
+            string[] expectedIds =
+            {
+                "boundary-west",
+                "boundary-rear",
+                "boundary-south-left",
+                "boundary-south-right",
+                "boundary-chamfer",
+                "boundary-east",
+                "counter-main",
+                "counter-return",
+                "service-cabinet",
+                "fridge",
+                "stool-00",
+                "stool-01",
+                "stool-02",
+                "stool-03",
+                "stool-04",
+                "stool-05",
+                "stool-06"
+            };
+            Assert.That(result.Colliders, Has.Count.EqualTo(expectedIds.Length));
+            for (int index = 0; index < expectedIds.Length; index++)
+            {
+                Assert.That(
+                    result.Colliders[index].name,
+                    Is.EqualTo(expectedIds[index]),
+                    $"Collider descriptor order diverged at {index}.");
+                if (index < 10)
+                {
+                    Assert.That(
+                        result.Colliders[index],
+                        Is.InstanceOf<BoxCollider>());
+                }
+                else
+                {
+                    Assert.That(
+                        result.Colliders[index],
+                        Is.InstanceOf<CapsuleCollider>());
+                }
+            }
+        }
+
+        private static void AssertStoolPositions(
+            MountainRoadCafePlan plan,
+            MountainRoadCafeCollisionWorldResult result)
+        {
+            for (int index = 0;
+                 index < MountainRoadCafeCollisionWorldBuilder
+                     .MainRowStoolCount;
+                 index++)
+            {
+                Vector3 offset =
+                    result.StoolColliders[index].transform.position -
+                    plan.Center;
+                Assert.That(
+                    Vector3.Dot(offset, plan.Right),
+                    Is.EqualTo(
+                        MountainRoadCafeCollisionWorldBuilder
+                            .MainRowStoolRightOffsets[index])
+                        .Within(0.0001f));
+                Assert.That(
+                    Vector3.Dot(offset, plan.Forward),
+                    Is.EqualTo(
+                        MountainRoadCafeCollisionWorldBuilder.StoolForward)
+                        .Within(0.0001f));
+            }
+
+            for (int index = 0;
+                 index < MountainRoadCafeCollisionWorldBuilder
+                     .ReturnStoolLocalPositions.Length;
+                 index++)
+            {
+                int stoolIndex =
+                    MountainRoadCafeCollisionWorldBuilder.MainRowStoolCount +
+                    index;
+                Vector3 offset =
+                    result.StoolColliders[stoolIndex].transform.position -
+                    plan.Center;
+                Vector2 expected =
+                    MountainRoadCafeCollisionWorldBuilder
+                        .ReturnStoolLocalPositions[index];
+                Assert.That(
+                    Vector3.Dot(offset, plan.Right),
+                    Is.EqualTo(expected.x).Within(0.0001f));
+                Assert.That(
+                    Vector3.Dot(offset, plan.Forward),
+                    Is.EqualTo(expected.y).Within(0.0001f));
+                Assert.That(
+                    plan.ContainsInterior(
+                        result.StoolColliders[stoolIndex]
+                            .transform.position,
+                        MountainRoadCafeCollisionWorldBuilder
+                            .StoolColliderRadius),
+                    Is.True,
+                    "A return stool left the five-sided footprint.");
+            }
+        }
+    }
+}

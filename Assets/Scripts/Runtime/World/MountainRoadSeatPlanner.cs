@@ -10,7 +10,9 @@ namespace BarPromenade
     /// Nothing here is new: <see cref="CityBenchSitInteraction"/>, its
     /// plan, its three clips and its prompt are all shared, and neither
     /// knows or cares which area it is in. A bench is the bus seat without
-    /// the bus, and a counter stool is a bench with a counter behind it.
+    /// the bus; the loose counter stool adds one authored distinction: its
+    /// open approach is behind the seated facing, so the hero looks at the
+    /// counter after settling.
     /// </summary>
     public static class MountainRoadSeatPlanner
     {

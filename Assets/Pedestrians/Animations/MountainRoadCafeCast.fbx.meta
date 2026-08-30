@@ -32,11 +32,69 @@ ModelImporter:
     extraUserProperties: []
     clipAnimations:
     - serializedVersion: 16
-      name: CafeAttendantBeat
-      takeName: RIG_Player|CafeAttendantBeat
-      internalID: 1490030595327618393
+      name: CafeAttendantNotice
+      takeName: RIG_Player|CafeAttendantNotice
+      internalID: 3097864120358050459
       firstFrame: 0
-      lastFrame: 120
+      lastFrame: 60
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: CafeAttendantPour
+      takeName: RIG_Player|CafeAttendantPour
+      internalID: 3692449745022551122
+      firstFrame: 0
+      lastFrame: 84
+      wrapMode: 0
+      orientationOffsetY: 0
+      level: 0
+      cycleOffset: 0
+      loop: 0
+      hasAdditiveReferencePose: 0
+      loopTime: 0
+      loopBlend: 0
+      loopBlendOrientation: 1
+      loopBlendPositionY: 1
+      loopBlendPositionXZ: 1
+      keepOriginalOrientation: 1
+      keepOriginalPositionY: 1
+      keepOriginalPositionXZ: 1
+      heightFromFeet: 0
+      mirror: 0
+      bodyMask: 01000000010000000100000001000000010000000100000001000000010000000100000001000000010000000100000001000000
+      curves: []
+      events: []
+      transformMask: []
+      maskType: 3
+      maskSource: {instanceID: 0}
+      additiveReferencePoseFrame: 0
+    - serializedVersion: 16
+      name: CafeAttendantWalk
+      takeName: RIG_Player|CafeAttendantWalk
+      internalID: -7226570737868844738
+      firstFrame: 0
+      lastFrame: 30
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -61,11 +119,11 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: CafeAttendantIdle
-      takeName: RIG_Player|CafeAttendantIdle
-      internalID: -4960035242928509545
+      name: CafeAttendantWipe
+      takeName: RIG_Player|CafeAttendantWipe
+      internalID: -2869807845820341257
       firstFrame: 0
-      lastFrame: 312
+      lastFrame: 216
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
@@ -90,9 +148,9 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: CafeLoneBeat
-      takeName: RIG_Player|CafeLoneBeat
-      internalID: 4552730222156192957
+      name: CafeLoneDrink
+      takeName: RIG_Player|CafeLoneDrink
+      internalID: 7569390780360409588
       firstFrame: 0
       lastFrame: 120
       wrapMode: 0
@@ -101,8 +159,8 @@ ModelImporter:
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
-      loopTime: 1
-      loopBlend: 1
+      loopTime: 0
+      loopBlend: 0
       loopBlendOrientation: 1
       loopBlendPositionY: 1
       loopBlendPositionXZ: 1
@@ -148,19 +206,19 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: CafeManBeat
-      takeName: RIG_Player|CafeManBeat
-      internalID: 4528277057202378950
+      name: CafeManDrink
+      takeName: RIG_Player|CafeManDrink
+      internalID: -334269275527741307
       firstFrame: 0
-      lastFrame: 96
+      lastFrame: 114
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
-      loopTime: 1
-      loopBlend: 1
+      loopTime: 0
+      loopBlend: 0
       loopBlendOrientation: 1
       loopBlendPositionY: 1
       loopBlendPositionXZ: 1
@@ -206,19 +264,19 @@ ModelImporter:
       maskSource: {instanceID: 0}
       additiveReferencePoseFrame: 0
     - serializedVersion: 16
-      name: CafeWomanBeat
-      takeName: RIG_Player|CafeWomanBeat
-      internalID: -8690244647573081008
+      name: CafeWomanDrink
+      takeName: RIG_Player|CafeWomanDrink
+      internalID: -1571020805900183713
       firstFrame: 0
-      lastFrame: 108
+      lastFrame: 114
       wrapMode: 0
       orientationOffsetY: 0
       level: 0
       cycleOffset: 0
       loop: 0
       hasAdditiveReferencePose: 0
-      loopTime: 1
-      loopBlend: 1
+      loopTime: 0
+      loopBlend: 0
       loopBlendOrientation: 1
       loopBlendPositionY: 1
       loopBlendPositionXZ: 1

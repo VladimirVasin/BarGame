@@ -256,7 +256,7 @@ namespace BarPromenade
     /// <summary>
     /// One sittable place on the summit, in the shape
     /// <see cref="CityBenchSeat"/> wants. The site owns two: the bench on
-    /// the brink and one of the cafe's two deliberately empty stools.
+    /// the brink and one of the cafe's deliberately empty stools.
     /// </summary>
     public readonly struct MountainRoadSiteSeatDescriptor
     {
@@ -266,14 +266,21 @@ namespace BarPromenade
             float seatWidth,
             float seatDepth,
             float groundY,
-            Vector3 faceDirection)
+            Vector3 faceDirection,
+            Vector3 approachDirection = default)
         {
+            faceDirection.y = 0f;
+            approachDirection.y = 0f;
             StableId = stableId ?? string.Empty;
             SeatTopCenter = seatTopCenter;
             SeatWidth = seatWidth;
             SeatDepth = seatDepth;
             GroundY = groundY;
             FaceDirection = faceDirection.normalized;
+            ApproachDirection =
+                approachDirection.sqrMagnitude > 0.0001f
+                    ? approachDirection.normalized
+                    : FaceDirection;
         }
 
         public string StableId { get; }
@@ -282,6 +289,7 @@ namespace BarPromenade
         public float SeatDepth { get; }
         public float GroundY { get; }
         public Vector3 FaceDirection { get; }
+        public Vector3 ApproachDirection { get; }
 
         public CityBenchSeat ToBenchSeat()
         {
@@ -291,7 +299,8 @@ namespace BarPromenade
                 SeatWidth,
                 SeatDepth,
                 GroundY,
-                FaceDirection);
+                FaceDirection,
+                approachDirection: ApproachDirection);
         }
     }
 

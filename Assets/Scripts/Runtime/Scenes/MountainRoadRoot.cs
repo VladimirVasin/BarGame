@@ -375,8 +375,7 @@ namespace BarPromenade
                 return;
             }
 
-            World.Cafe.Cast?.TryRequestEpisode(
-                MountainRoadCafeCastEpisode.Attendant);
+            World.Cafe.Cast?.TryRequestHeroNotice();
         }
 
         private void BuildAtmosphere(Camera camera)

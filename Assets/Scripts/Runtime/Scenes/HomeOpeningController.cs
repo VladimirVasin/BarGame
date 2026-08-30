@@ -29,6 +29,20 @@ namespace BarPromenade
         public const float OpeningWakeDurationMultiplier = 1.15f;
         public const float WakeCameraPathHeight = 0.32f;
 
+        // The day-start screen is deliberately one small vertical card.
+        // Keep these logical rects together so drawing and pointer hitboxes
+        // cannot drift apart when the shared 640x360 canvas is scaled.
+        internal static Rect MenuPanelRect =>
+            new Rect(390f, 240f, 228f, 98f);
+        internal static Rect MenuTitleRect =>
+            new Rect(402f, 249f, 204f, 22f);
+        internal static Rect MenuRuleRect =>
+            new Rect(402f, 275f, 204f, 1f);
+        internal static Rect MenuWakeRect =>
+            new Rect(402f, 280f, 204f, 22f);
+        internal static Rect MenuQuitRect =>
+            new Rect(402f, 306f, 204f, 22f);
+
         private readonly BarMinigameModalLock modalLock =
             new BarMinigameModalLock();
 
@@ -667,7 +681,7 @@ namespace BarPromenade
             if (timeline.MenuVisible)
             {
                 RetroUiTheme.DrawPanel(
-                    new Rect(22f, 252f, 596f, 80f),
+                    MenuPanelRect,
                     RetroUiTheme.PanelInset,
                     RetroUiTheme.FrameOuter,
                     false,
@@ -680,29 +694,23 @@ namespace BarPromenade
 
         private void DrawMenu(RetroUiCanvas canvas)
         {
-            const float titleX = 34f;
-            const float titleY = 270f;
-            const float titleWidth = 355f;
             string title = LocalizationService.Get("opening.title");
             GUI.Label(
-                new Rect(
-                    titleX,
-                    titleY,
-                    titleWidth,
-                    32f),
+                MenuTitleRect,
                 title,
                 titleStyle);
+            RetroUiTheme.FillRect(
+                MenuRuleRect,
+                RetroUiTheme.FrameInner);
 
-            Rect wakeRect = new Rect(425f, 260f, 184f, 28f);
-            Rect quitRect = new Rect(425f, 292f, 184f, 24f);
             DrawOption(
                 canvas,
-                wakeRect,
+                MenuWakeRect,
                 HomeOpeningMenuOption.WakeUp,
                 "opening.wake_up");
             DrawOption(
                 canvas,
-                quitRect,
+                MenuQuitRect,
                 HomeOpeningMenuOption.Quit,
                 "opening.quit");
         }
@@ -749,7 +757,7 @@ namespace BarPromenade
             }
 
             titleStyle = RetroUiTheme.CreateLabelStyle(
-                22,
+                14,
                 TextAnchor.MiddleLeft,
                 RetroUiTheme.Text,
                 false);

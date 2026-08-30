@@ -27,14 +27,14 @@ from typing import Iterable, Sequence
 
 try:
     import bpy
-    from mathutils import Euler, Quaternion, Vector
+    from mathutils import Euler, Matrix, Quaternion, Vector
 except ImportError as error:  # pragma: no cover - Blender-only entry point.
     raise SystemExit(
         "This generator must run through Blender's bundled Python."
     ) from error
 
 
-GENERATOR_VERSION = "4.0.0"
+GENERATOR_VERSION = "4.1.0"
 CANONICAL_HEIGHT = 1.75
 NPC_ANATOMY_STANDARD = "NpcHumanV2"
 NPC_PELVIS_HEIGHT = 0.835
@@ -175,6 +175,15 @@ KETTLE_RIG_ANCHORS = (
     RigAnchorSpec(
         "ANCHOR_KettleSpout", "head", "anchor", ("ACC_KettleSpoutTip",),
         axis_from="ACC_KettleSpout",
+    ),
+)
+CAFE_ATTENDANT_RIG_ANCHORS = (
+    RigAnchorSpec(
+        "SOCKET_CafePotSpout",
+        "hand.R",
+        "anchor",
+        ("ACC_CoffeePotSpout",),
+        axis_from="ACC_CoffeePotBody",
     ),
 )
 
@@ -506,12 +515,12 @@ ARCHETYPES = {
     # The four figures inside the Mountain Road terminal cafe are one silent
     # authored tableau rather than an ambient pedestrian population. Each
     # design stays outside Resources and owns only its long idle plus one
-    # rare, fully visible beat in a dedicated eight-clip animation library.
+    # service actions in a dedicated ten-clip animation library.
     "cafe_lone_patron": ArchetypeSpec(
         "cafe_lone_patron", "cafe_lone_patron_v1", "Cafe Lone Patron",
         1327109,
         "MountainCafeLonePatron3D.blend", "MountainCafeLonePatron3D",
-        "MountainCafeLonePatron3D.png", "CafeLoneIdle", "CafeLoneBeat",
+        "MountainCafeLonePatron3D.png", "CafeLoneIdle", "CafeLoneDrink",
         (900, 1900),
         staged=True,
         pool_eligible=False,
@@ -522,7 +531,7 @@ ARCHETYPES = {
         "cafe_couple_man", "cafe_couple_man_v1", "Cafe Couple Man",
         1384157,
         "MountainCafeCoupleMan3D.blend", "MountainCafeCoupleMan3D",
-        "MountainCafeCoupleMan3D.png", "CafeManIdle", "CafeManBeat",
+        "MountainCafeCoupleMan3D.png", "CafeManIdle", "CafeManDrink",
         (900, 1850),
         staged=True,
         pool_eligible=False,
@@ -533,7 +542,7 @@ ARCHETYPES = {
         "cafe_couple_woman", "cafe_couple_woman_v1", "Cafe Couple Woman",
         1439231,
         "MountainCafeCoupleWoman3D.blend", "MountainCafeCoupleWoman3D",
-        "MountainCafeCoupleWoman3D.png", "CafeWomanIdle", "CafeWomanBeat",
+        "MountainCafeCoupleWoman3D.png", "CafeWomanIdle", "CafeWomanDrink",
         (900, 1950),
         staged=True,
         pool_eligible=False,
@@ -544,11 +553,14 @@ ARCHETYPES = {
         "cafe_attendant", "cafe_attendant_v1", "Cafe Attendant",
         1498303,
         "MountainCafeAttendant3D.blend", "MountainCafeAttendant3D",
-        "MountainCafeAttendant3D.png", "CafeAttendantIdle",
-        "CafeAttendantBeat", (900, 2000),
+        "MountainCafeAttendant3D.png", "CafeAttendantWipe",
+        "CafeAttendantWalk", (900, 2000),
         staged=True,
         pool_eligible=False,
         animation_source=CAFE_ANIMATION_SOURCE,
+        action_clip="CafeAttendantPour",
+        dismount_clip="CafeAttendantNotice",
+        rig_anchors=CAFE_ATTENDANT_RIG_ANCHORS,
     ),
 }
 
@@ -588,6 +600,7 @@ class BuildResult:
     material: bpy.types.Material
     parts: list[PartRecord] = field(default_factory=list)
     pivots: dict[str, bpy.types.Object] = field(default_factory=dict)
+    anchors: dict[str, bpy.types.Object] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -892,6 +905,8 @@ PALETTE = {
     "cafe_tie": (0.185, 0.045, 0.042, 1.0),
     "cafe_paper": (0.625, 0.540, 0.330, 1.0),
     "cafe_towel": (0.445, 0.465, 0.420, 1.0),
+    "cafe_pot": (0.245, 0.275, 0.275, 1.0),
+    "cafe_pot_dark": (0.085, 0.095, 0.095, 1.0),
     "cafe_shoe": (0.030, 0.028, 0.027, 1.0),
 }
 
@@ -1914,6 +1929,42 @@ class PedestrianBuilder:
         pivot["bp_pivot"] = True
         self.result.pivots[name] = pivot
         return pivot
+
+    def create_bone_anchor(
+        self,
+        name: str,
+        bone_name: str,
+        location: Sequence[float],
+        forward: Sequence[float],
+    ) -> bpy.types.Object:
+        if self.result is None:
+            raise RuntimeError("Build has not been initialized")
+        if name in self.result.anchors:
+            raise ValueError(f"Duplicate pedestrian anchor {name}")
+        if bone_name not in BONE_BY_NAME:
+            raise ValueError(f"Unknown pedestrian anchor bone {bone_name}")
+
+        direction = v(forward)
+        if direction.length_squared <= 0.0000001:
+            raise ValueError(f"Pedestrian anchor {name} has no forward axis")
+
+        anchor = bpy.data.objects.new(name, None)
+        self.result.export_collection.objects.link(anchor)
+        anchor.parent = self.result.rig
+        anchor.parent_type = "BONE"
+        anchor.parent_bone = bone_name
+        world_rotation = direction.normalized().to_track_quat("Z", "Y")
+        anchor.matrix_world = (
+            Matrix.Translation(v(location))
+            @ world_rotation.to_matrix().to_4x4()
+        )
+        anchor.empty_display_type = "PLAIN_AXES"
+        anchor.empty_display_size = 0.04
+        anchor["bp_export"] = True
+        anchor["bp_anchor"] = True
+        anchor["bp_bone"] = bone_name
+        self.result.anchors[name] = anchor
+        return anchor
 
     def add_pivot_part(
         self,
@@ -5743,15 +5794,78 @@ class PedestrianBuilder:
             "head", "signature_silhouette", "cafe_ivory_dark",
         )
         self.build_cafe_face("cafe_skin", "cafe_skin_shadow", False)
-        # The towel belongs to the visible wiping hand; the clip returns it to
-        # precisely the same local pose and therefore never teleports.
+        # Towel left, pot right: the two props never exchange hands. Runtime
+        # hides the pot while he wipes/notices and reveals it for Walk/Pour.
         self.add_part(
             "ACC_ServiceTowel",
             make_tapered_box(
-                (-0.748, -0.030, 0.940), (-0.748, -0.030, 1.100),
+                (0.748, -0.030, 0.940), (0.748, -0.030, 1.100),
                 (0.180, 0.025, 0), (0.145, 0.025, 0),
             ),
-            "hand.R", "held_prop", "cafe_towel",
+            "hand.L", "held_prop", "cafe_towel",
+        )
+        self.add_part(
+            "ACC_CoffeePotBody",
+            make_frustum_between(
+                (-0.748, -0.022, 0.950),
+                (-0.748, -0.022, 1.095),
+                0.070, 0.058, 12,
+            ),
+            "hand.R", "held_prop", "cafe_pot",
+        )
+        self.add_part(
+            "ACC_CoffeePotLid",
+            make_frustum_between(
+                (-0.748, -0.022, 1.092),
+                (-0.748, -0.022, 1.114),
+                0.066, 0.038, 10,
+            ),
+            "hand.R", "held_prop", "cafe_pot_dark",
+        )
+        coffee_spout_base = (-0.748, -0.076, 1.040)
+        coffee_spout_tip = (-0.748, -0.218, 1.104)
+        self.add_part(
+            "ACC_CoffeePotSpout",
+            make_tapered_box(
+                coffee_spout_base,
+                coffee_spout_tip,
+                (0.070, 0.055, 0),
+                (0.025, 0.030, 0),
+            ),
+            "hand.R", "held_prop", "cafe_pot",
+        )
+        self.create_bone_anchor(
+            "SOCKET_CafePotSpout",
+            "hand.R",
+            coffee_spout_tip,
+            tuple(v(coffee_spout_tip) - v(coffee_spout_base)),
+        )
+        self.add_part(
+            "ACC_CoffeePotHandleTop",
+            make_frustum_between(
+                (-0.690, 0.002, 1.072),
+                (-0.640, 0.010, 1.105),
+                0.014, 0.014, 6,
+            ),
+            "hand.R", "held_prop", "cafe_pot_dark",
+        )
+        self.add_part(
+            "ACC_CoffeePotHandleBottom",
+            make_frustum_between(
+                (-0.690, 0.002, 0.978),
+                (-0.640, 0.010, 0.952),
+                0.014, 0.014, 6,
+            ),
+            "hand.R", "held_prop", "cafe_pot_dark",
+        )
+        self.add_part(
+            "ACC_CoffeePotHandleGrip",
+            make_frustum_between(
+                (-0.640, 0.010, 0.952),
+                (-0.640, 0.010, 1.105),
+                0.014, 0.014, 6,
+            ),
+            "hand.R", "held_prop", "cafe_pot_dark",
         )
 
     def configure_scene_metadata(self) -> None:
@@ -6104,6 +6218,57 @@ def validate_result(
             }
         )
 
+    # Existing mechanism anchors are materialized by their focused Unity
+    # setup. The cafe pot spout is different: its world-space stream needs an
+    # exact transform that follows hand.R directly from the staged FBX.
+    expected_anchors = (
+        tuple(anchor.name for anchor in archetype.rig_anchors)
+        if archetype.key == "cafe_attendant"
+        else ()
+    )
+    if tuple(result.anchors) != expected_anchors:
+        errors.append(
+            f"Rig anchors are {tuple(result.anchors)!r}; "
+            f"expected {expected_anchors!r}"
+        )
+    signature_anchors = []
+    rig_anchor_by_name = {
+        anchor.name: anchor for anchor in archetype.rig_anchors
+    }
+    for name, anchor in result.anchors.items():
+        declaration = rig_anchor_by_name.get(name)
+        expected_bone = declaration.bone if declaration is not None else ""
+        if (
+            anchor.type != "EMPTY"
+            or anchor.parent != result.rig
+            or anchor.parent_type != "BONE"
+            or anchor.parent_bone != expected_bone
+        ):
+            errors.append(
+                f"{name} must be an Empty parented to rig bone "
+                f"{expected_bone!r}"
+            )
+        if (
+            not bool(anchor.get("bp_anchor", False))
+            or anchor.get("bp_bone") != expected_bone
+        ):
+            errors.append(f"{name} lacks its deterministic anchor marker")
+        location = anchor.matrix_world.translation
+        quaternion = anchor.matrix_world.to_quaternion()
+        signature_anchors.append(
+            {
+                "name": name,
+                "bone": expected_bone,
+                "location": [stable_float(value) for value in location],
+                "rotation": [
+                    stable_float(quaternion.w),
+                    stable_float(quaternion.x),
+                    stable_float(quaternion.y),
+                    stable_float(quaternion.z),
+                ],
+            }
+        )
+
     forbidden_fragments = ("bandage", "shoulderpatch", "satchel")
     mesh_count = len(result.parts)
     triangle_count = 0
@@ -6265,7 +6430,19 @@ def validate_result(
         signature_payload["texture_atlas"] = archetype.texture_atlas
     if archetype.signature_effects:
         signature_payload["signature_effects"] = list(archetype.signature_effects)
-    if archetype.rig_anchors:
+    if result.anchors:
+        signature_payload["rig_anchors"] = [
+            {
+                "name": anchor.name,
+                "bone": anchor.bone,
+                "kind": anchor.kind,
+                "parts": list(anchor.parts),
+                "axis_from": anchor.axis_from,
+            }
+            for anchor in archetype.rig_anchors
+        ]
+        signature_payload["exported_anchors"] = signature_anchors
+    elif archetype.rig_anchors:
         signature_payload["rig_anchors"] = [
             {
                 "name": anchor.name,
@@ -6305,6 +6482,8 @@ def select_export_objects(result: BuildResult) -> None:
     result.rig.select_set(True)
     for pivot in result.pivots.values():
         pivot.select_set(True)
+    for anchor in result.anchors.values():
+        anchor.select_set(True)
     for part in result.parts:
         part.obj.select_set(True)
     bpy.context.view_layer.objects.active = result.rig
@@ -6554,6 +6733,8 @@ def write_manifest(
     # untextured manifests byte-identical.
     if spec.signature_effects:
         payload["signature_effects"] = list(spec.signature_effects)
+    if result.anchors:
+        payload["anchor_names"] = list(result.anchors)
     if spec.rig_anchors:
         payload["rig_anchors"] = [
             {
@@ -6908,10 +7089,10 @@ ACTION_SPECS = (
         "the palms slower than the throw was",
         seated=True,
     ),
-    # Mountain Road cafe tableau. These are deliberately long, nearly still
-    # loops plus one rare beat per role; no clip walks, talks or follows the
-    # player. They live in MountainRoadCafeCast.fbx, never in the ambient
-    # CityPedestrianLocomotion import contract.
+    # Mountain Road cafe tableau. The patrons own quiet idles and authored
+    # drink one-shots. The attendant owns an in-place wipe loop, an in-place
+    # service step, and exact-base pour/notice one-shots. They live in
+    # MountainRoadCafeCast.fbx, never in the ambient locomotion contract.
     ActionSpec(
         "CafeLoneIdle", "cafe_lone_patron_v1", 12.0, 288,
         "seated alone with a broad back to the room, forearms low at the counter",
@@ -6920,11 +7101,12 @@ ACTION_SPECS = (
         perched=True,
     ),
     ActionSpec(
-        "CafeLoneBeat", "cafe_lone_patron_v1", 5.0, 120,
+        "CafeLoneDrink", "cafe_lone_patron_v1", 5.0, 120,
         "seated alone with the face held beneath the fedora brim",
-        "one hand shifts a few centimetres toward the cup, pauses, and returns unfinished",
+        "right hand lifts the cup to one restrained sip and replaces it on the saucer",
         seated=True,
         perched=True,
+        one_shot=True,
     ),
     ActionSpec(
         "CafeManIdle", "cafe_couple_man_v1", 10.0, 240,
@@ -6934,11 +7116,12 @@ ACTION_SPECS = (
         perched=True,
     ),
     ActionSpec(
-        "CafeManBeat", "cafe_couple_man_v1", 4.0, 96,
+        "CafeManDrink", "cafe_couple_man_v1", 4.75, 114,
         "seated toward the woman with the near forearm resting low",
-        "the near hand approaches hers, stops short of contact and retracts",
+        "right hand lifts the cup in the same normalized rhythm as the woman",
         seated=True,
         perched=True,
+        one_shot=True,
     ),
     ActionSpec(
         "CafeWomanIdle", "cafe_couple_woman_v1", 11.0, 264,
@@ -6948,21 +7131,34 @@ ACTION_SPECS = (
         perched=True,
     ),
     ActionSpec(
-        "CafeWomanBeat", "cafe_couple_woman_v1", 4.5, 108,
+        "CafeWomanDrink", "cafe_couple_woman_v1", 4.75, 114,
         "seated in red with one elbow held near the counter",
-        "the paper turns slowly, the head lowers, and the motion resets before a bite",
+        "left hand lifts the cup while the folded paper stays in the right fingers",
         seated=True,
         perched=True,
+        one_shot=True,
     ),
     ActionSpec(
-        "CafeAttendantIdle", "cafe_attendant_v1", 13.0, 312,
-        "standing behind the counter, pale uniform pitched toward the pair",
-        "three restrained breaths separated by a too-long mechanical stillness",
+        "CafeAttendantWipe", "cafe_attendant_v1", 9.0, 216,
+        "standing behind the counter with the towel in the left hand",
+        "three unhurried wiping passes over the counter between service calls",
     ),
     ActionSpec(
-        "CafeAttendantBeat", "cafe_attendant_v1", 5.0, 120,
-        "standing behind the counter with a towel in the right hand",
-        "two identical short wiping strokes over one fixed patch, then the exact starting pose",
+        "CafeAttendantWalk", "cafe_attendant_v1", 1.25, 30,
+        "standing behind the counter with towel left and coffee pot right",
+        "one small in-place service step cycle without root translation",
+    ),
+    ActionSpec(
+        "CafeAttendantPour", "cafe_attendant_v1", 3.5, 84,
+        "standing at a patron cup with the coffee pot in the right hand",
+        "pot lifts, tips for one measured pour, rights itself and returns to base",
+        one_shot=True,
+    ),
+    ActionSpec(
+        "CafeAttendantNotice", "cafe_attendant_v1", 2.5, 60,
+        "standing behind the counter with the towel held low",
+        "head and shoulders register the arrival, hold, then return without speech",
+        one_shot=True,
     ),
 )
 
@@ -9396,14 +9592,24 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "chest": BonePose(rotation_degrees=(11.2, 0.0, -0.6)),
         "head": BonePose(rotation_degrees=(6.5, 0.0, 0.0)),
     })
-    cafe_lone_reach = merge_pose(cafe_lone, {
+    cafe_lone_pick = merge_pose(cafe_lone, {
         "upper_arm.R": BonePose(rotation_degrees=(28.0, -3.0, -27.0)),
         "forearm.R": BonePose(rotation_degrees=(-74.0, -2.0, 20.0)),
         "hand.R": BonePose(rotation_degrees=(10.0, 6.0, -5.0)),
         "head": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
     })
-    cafe_lone_pause = merge_pose(cafe_lone_reach, {
-        "hand.R": BonePose(rotation_degrees=(13.0, 7.0, -6.0)),
+    cafe_lone_lift = merge_pose(cafe_lone, {
+        "upper_arm.R": BonePose(rotation_degrees=(-52.0, -4.0, -63.0)),
+        "forearm.R": BonePose(rotation_degrees=(-103.0, -28.0, 22.0)),
+        "hand.R": BonePose(rotation_degrees=(21.0, 14.0, -16.0)),
+        "head": BonePose(rotation_degrees=(3.0, -2.0, 0.0)),
+    })
+    cafe_lone_sip = merge_pose(cafe_lone, {
+        "upper_arm.R": BonePose(rotation_degrees=(-94.0, -3.0, -88.0)),
+        "forearm.R": BonePose(rotation_degrees=(-116.0, -42.0, 12.0)),
+        "hand.R": BonePose(rotation_degrees=(29.0, 22.0, -28.0)),
+        "neck": BonePose(rotation_degrees=(-9.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
     })
 
     cafe_man = cafe_man_base_pose()
@@ -9415,15 +9621,22 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "neck": BonePose(rotation_degrees=(-2.0, 5.0, 0.0)),
         "head": BonePose(rotation_degrees=(5.0, 8.0, 0.0)),
     })
-    cafe_man_near = merge_pose(cafe_man, {
-        "upper_arm.L": BonePose(rotation_degrees=(30.0, 7.0, 38.0)),
-        "forearm.L": BonePose(rotation_degrees=(-76.0, 3.0, -23.0)),
-        "hand.L": BonePose(rotation_degrees=(12.0, -7.0, 6.0)),
-        "chest": BonePose(rotation_degrees=(7.0, 9.0, 1.5)),
-        "head": BonePose(rotation_degrees=(2.0, 10.0, 0.0)),
+    cafe_man_pick = merge_pose(cafe_man, {
+        "upper_arm.R": BonePose(rotation_degrees=(26.0, -4.0, -27.0)),
+        "forearm.R": BonePose(rotation_degrees=(-75.0, -2.0, 20.0)),
+        "hand.R": BonePose(rotation_degrees=(10.0, 6.0, -5.0)),
     })
-    cafe_man_stop = merge_pose(cafe_man_near, {
-        "hand.L": BonePose(rotation_degrees=(15.0, -8.0, 7.0)),
+    cafe_man_lift = merge_pose(cafe_man, {
+        "upper_arm.R": BonePose(rotation_degrees=(-50.0, -4.0, -62.0)),
+        "forearm.R": BonePose(rotation_degrees=(-102.0, -27.0, 21.0)),
+        "hand.R": BonePose(rotation_degrees=(21.0, 14.0, -16.0)),
+    })
+    cafe_man_sip = merge_pose(cafe_man, {
+        "upper_arm.R": BonePose(rotation_degrees=(-92.0, -3.0, -86.0)),
+        "forearm.R": BonePose(rotation_degrees=(-115.0, -40.0, 12.0)),
+        "hand.R": BonePose(rotation_degrees=(28.0, 21.0, -27.0)),
+        "neck": BonePose(rotation_degrees=(-7.0, 5.0, 0.0)),
+        "head": BonePose(rotation_degrees=(-1.0, 8.0, 0.0)),
     })
 
     cafe_woman = cafe_woman_base_pose()
@@ -9434,16 +9647,22 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     cafe_woman_still = merge_pose(cafe_woman, {
         "head": BonePose(rotation_degrees=(8.0, -5.0, 1.0)),
     })
-    cafe_woman_turn = merge_pose(cafe_woman, {
-        "forearm.R": BonePose(rotation_degrees=(-111.0, -39.0, -16.0)),
-        "hand.R": BonePose(rotation_degrees=(28.0, -28.0, 24.0)),
-        "neck": BonePose(rotation_degrees=(-3.0, -3.0, 0.0)),
-        "head": BonePose(rotation_degrees=(11.0, -5.0, 2.0)),
+    cafe_woman_pick = merge_pose(cafe_woman, {
+        "upper_arm.L": BonePose(rotation_degrees=(26.0, 4.0, 27.0)),
+        "forearm.L": BonePose(rotation_degrees=(-75.0, 2.0, -20.0)),
+        "hand.L": BonePose(rotation_degrees=(10.0, -6.0, 5.0)),
     })
-    cafe_woman_lower = merge_pose(cafe_woman_turn, {
-        "spine": BonePose(rotation_degrees=(16.0, -2.0, -1.5)),
-        "head": BonePose(rotation_degrees=(15.0, -5.0, 2.0)),
-        "hand.R": BonePose(rotation_degrees=(33.0, -30.0, 27.0)),
+    cafe_woman_lift = merge_pose(cafe_woman, {
+        "upper_arm.L": BonePose(rotation_degrees=(-50.0, 4.0, 62.0)),
+        "forearm.L": BonePose(rotation_degrees=(-102.0, 27.0, -21.0)),
+        "hand.L": BonePose(rotation_degrees=(21.0, -14.0, 16.0)),
+    })
+    cafe_woman_sip = merge_pose(cafe_woman, {
+        "upper_arm.L": BonePose(rotation_degrees=(-92.0, 3.0, 86.0)),
+        "forearm.L": BonePose(rotation_degrees=(-115.0, 40.0, -12.0)),
+        "hand.L": BonePose(rotation_degrees=(28.0, -21.0, 27.0)),
+        "neck": BonePose(rotation_degrees=(-9.0, -3.0, 0.0)),
+        "head": BonePose(rotation_degrees=(1.0, -5.0, 1.0)),
     })
 
     cafe_attendant = cafe_attendant_base_pose()
@@ -9459,17 +9678,53 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     })
     cafe_attendant_wipe_a = merge_pose(cafe_attendant, {
         "chest": BonePose(rotation_degrees=(8.0, -3.0, -2.0)),
-        "upper_arm.R": BonePose(rotation_degrees=(38.0, -2.0, -28.0)),
-        "forearm.R": BonePose(rotation_degrees=(-90.0, -4.0, 24.0)),
-        "hand.R": BonePose(rotation_degrees=(12.0, 7.0, -5.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(38.0, 2.0, 28.0)),
+        "forearm.L": BonePose(rotation_degrees=(-90.0, 4.0, -24.0)),
+        "hand.L": BonePose(rotation_degrees=(12.0, -7.0, 5.0)),
         "head": BonePose(rotation_degrees=(7.0, -3.0, 0.0)),
     })
     cafe_attendant_wipe_b = merge_pose(cafe_attendant, {
         "chest": BonePose(rotation_degrees=(8.0, 3.0, 2.0)),
-        "upper_arm.R": BonePose(rotation_degrees=(31.0, -8.0, -42.0)),
-        "forearm.R": BonePose(rotation_degrees=(-72.0, -1.0, 16.0)),
-        "hand.R": BonePose(rotation_degrees=(0.0, 2.0, -2.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(31.0, 8.0, 42.0)),
+        "forearm.L": BonePose(rotation_degrees=(-72.0, 1.0, -16.0)),
+        "hand.L": BonePose(rotation_degrees=(0.0, -2.0, 2.0)),
         "head": BonePose(rotation_degrees=(7.0, 3.0, 0.0)),
+    })
+    cafe_attendant_step_l = merge_pose(cafe_attendant, {
+        "pelvis": BonePose(rotation_degrees=(5.0, 0.0, 1.5), location_m=(0, -0.004, -0.030)),
+        "thigh.L": BonePose(rotation_degrees=(-17.0, 0.0, 2.0)),
+        "shin.L": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(8.0, 0.0, -2.0)),
+        "shin.R": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+    })
+    cafe_attendant_step_r = merge_pose(cafe_attendant, {
+        "pelvis": BonePose(rotation_degrees=(5.0, 0.0, -1.5), location_m=(0, -0.004, -0.030)),
+        "thigh.L": BonePose(rotation_degrees=(8.0, 0.0, 2.0)),
+        "shin.L": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-17.0, 0.0, -2.0)),
+        "shin.R": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
+    })
+    cafe_attendant_pass = merge_pose(cafe_attendant, {
+        "thigh.L": BonePose(rotation_degrees=(-4.0, 0.0, 2.0)),
+        "thigh.R": BonePose(rotation_degrees=(-4.0, 0.0, -2.0)),
+    })
+    cafe_attendant_pour_lift = merge_pose(cafe_attendant, {
+        "upper_arm.R": BonePose(rotation_degrees=(12.0, -12.0, -35.0)),
+        "forearm.R": BonePose(rotation_degrees=(-92.0, -8.0, 28.0)),
+        "hand.R": BonePose(rotation_degrees=(12.0, 7.0, -8.0)),
+        "chest": BonePose(rotation_degrees=(9.0, -4.0, -2.0)),
+    })
+    cafe_attendant_pour_tip = merge_pose(cafe_attendant_pour_lift, {
+        "upper_arm.R": BonePose(rotation_degrees=(28.0, -15.0, -48.0)),
+        "forearm.R": BonePose(rotation_degrees=(-78.0, -12.0, 34.0)),
+        "hand.R": BonePose(rotation_degrees=(58.0, 18.0, -24.0)),
+        "head": BonePose(rotation_degrees=(9.0, -5.0, 0.0)),
+    })
+    cafe_attendant_notice = merge_pose(cafe_attendant, {
+        "spine": BonePose(rotation_degrees=(10.0, 5.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(5.5, 8.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-5.0, 12.0, 0.0)),
+        "head": BonePose(rotation_degrees=(2.0, 16.0, 0.0)),
     })
 
     return {
@@ -9628,11 +9883,14 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.84, cafe_lone),
             (1.0, cafe_lone),
         ),
-        "CafeLoneBeat": (
+        "CafeLoneDrink": (
             (0.0, cafe_lone),
-            (0.22, cafe_lone_reach),
-            (0.52, cafe_lone_pause),
-            (0.74, cafe_lone_reach),
+            (0.16, cafe_lone_pick),
+            (0.34, cafe_lone_lift),
+            (0.48, cafe_lone_sip),
+            (0.62, cafe_lone_sip),
+            (0.76, cafe_lone_lift),
+            (0.84, cafe_lone_pick),
             (1.0, cafe_lone),
         ),
         "CafeManIdle": (
@@ -9643,12 +9901,14 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.72, cafe_man_breath),
             (1.0, cafe_man),
         ),
-        "CafeManBeat": (
+        "CafeManDrink": (
             (0.0, cafe_man),
-            (0.18, cafe_man_near),
-            (0.48, cafe_man_stop),
-            (0.66, cafe_man_stop),
-            (0.84, cafe_man_near),
+            (0.16, cafe_man_pick),
+            (0.34, cafe_man_lift),
+            (0.48, cafe_man_sip),
+            (0.62, cafe_man_sip),
+            (0.76, cafe_man_lift),
+            (0.84, cafe_man_pick),
             (1.0, cafe_man),
         ),
         "CafeWomanIdle": (
@@ -9659,30 +9919,44 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.80, cafe_woman_breath),
             (1.0, cafe_woman),
         ),
-        "CafeWomanBeat": (
+        "CafeWomanDrink": (
             (0.0, cafe_woman),
-            (0.20, cafe_woman_turn),
-            (0.48, cafe_woman_lower),
-            (0.68, cafe_woman_lower),
-            (0.84, cafe_woman_turn),
+            (0.16, cafe_woman_pick),
+            (0.34, cafe_woman_lift),
+            (0.48, cafe_woman_sip),
+            (0.62, cafe_woman_sip),
+            (0.76, cafe_woman_lift),
+            (0.84, cafe_woman_pick),
             (1.0, cafe_woman),
         ),
-        "CafeAttendantIdle": (
-            (0.0, cafe_attendant),
-            (0.12, cafe_attendant_breath),
-            (0.24, cafe_attendant),
-            (0.46, cafe_attendant_watch),
-            (0.70, cafe_attendant_watch),
-            (0.84, cafe_attendant_breath),
-            (1.0, cafe_attendant),
-        ),
-        "CafeAttendantBeat": (
+        "CafeAttendantWipe": (
             (0.0, cafe_attendant),
             (0.12, cafe_attendant_wipe_a),
             (0.28, cafe_attendant_wipe_b),
             (0.44, cafe_attendant_wipe_a),
             (0.60, cafe_attendant_wipe_b),
             (0.76, cafe_attendant_wipe_a),
+            (1.0, cafe_attendant),
+        ),
+        "CafeAttendantWalk": (
+            (0.0, cafe_attendant_step_l),
+            (0.25, cafe_attendant_pass),
+            (0.5, cafe_attendant_step_r),
+            (0.75, cafe_attendant_pass),
+            (1.0, cafe_attendant_step_l),
+        ),
+        "CafeAttendantPour": (
+            (0.0, cafe_attendant),
+            (0.20, cafe_attendant_pour_lift),
+            (0.38, cafe_attendant_pour_tip),
+            (0.72, cafe_attendant_pour_tip),
+            (0.88, cafe_attendant_pour_lift),
+            (1.0, cafe_attendant),
+        ),
+        "CafeAttendantNotice": (
+            (0.0, cafe_attendant),
+            (0.24, cafe_attendant_notice),
+            (0.68, cafe_attendant_notice),
             (1.0, cafe_attendant),
         ),
         "WatchmanWatch": (

@@ -1,6 +1,10 @@
+using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
+using UnityEditor;
 using UnityEngine;
+using UnityEngine.TestTools;
+using UnityEngine.TextCore.LowLevel;
 
 namespace BarPromenade.Tests.EditMode
 {
@@ -194,8 +198,15 @@ namespace BarPromenade.Tests.EditMode
         public void InterfaceTypeface_ContainsEnglishAndCyrillicGlyphs()
         {
             Font font = RetroUiTheme.InterfaceFont;
+            Font packaged =
+                Resources.Load<Font>("Fonts/Roboto-Regular");
 
             Assert.That(font, Is.Not.Null);
+            Assert.That(
+                font,
+                Is.SameAs(packaged),
+                "Runtime IMGUI must use the imported project font, never " +
+                "an OS dynamic font that can fail during GameView repaint.");
             Assert.That(font.HasCharacter('A'), Is.True);
             Assert.That(font.HasCharacter('z'), Is.True);
             Assert.That(font.HasCharacter('Ж'), Is.True);
@@ -203,16 +214,54 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
-        public void PackagedTypeface_IsAvailableAsDeterministicRuEnFallback()
+        public void InterfaceTypeface_IsEmbeddedAndRasterizableByTextCore()
         {
+            const string assetPath =
+                "Assets/Resources/Fonts/Roboto-Regular.ttf";
             Font packaged =
                 Resources.Load<Font>("Fonts/Roboto-Regular");
+            var importer =
+                AssetImporter.GetAtPath(assetPath) as TrueTypeFontImporter;
 
             Assert.That(packaged, Is.Not.Null);
-            Assert.That(packaged.HasCharacter('A'), Is.True);
-            Assert.That(packaged.HasCharacter('z'), Is.True);
-            Assert.That(packaged.HasCharacter('Ж'), Is.True);
-            Assert.That(packaged.HasCharacter('я'), Is.True);
+            Assert.That(RetroUiTheme.InterfaceFont, Is.SameAs(packaged));
+            Assert.That(importer, Is.Not.Null);
+            Assert.That(importer.includeFontData, Is.True);
+            Assert.That(
+                FontEngine.InitializeFontEngine(),
+                Is.EqualTo(FontEngineError.Success));
+
+            try
+            {
+                Assert.That(
+                    FontEngine.LoadFontFace(packaged, 16),
+                    Is.EqualTo(FontEngineError.Success));
+
+                const string sample =
+                    "BAR PROMENADE WAKE UP QUIT " +
+                    "БАРНЫЙ ПРОМЕНАД ПРОСНУТЬСЯ ВЫЙТИ";
+                foreach (char character in sample.Distinct())
+                {
+                    if (char.IsWhiteSpace(character))
+                    {
+                        continue;
+                    }
+
+                    Assert.That(
+                        FontEngine.TryGetGlyphWithUnicodeValue(
+                            character,
+                            GlyphLoadFlags.LOAD_RENDER,
+                            out _),
+                        Is.True,
+                        $"Cannot rasterize '{character}'.");
+                }
+            }
+            finally
+            {
+                FontEngine.UnloadFontFace();
+            }
+
+            LogAssert.NoUnexpectedReceived();
         }
 
         [Test]

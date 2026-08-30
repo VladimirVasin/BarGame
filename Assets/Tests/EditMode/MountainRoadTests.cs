@@ -547,9 +547,11 @@ namespace BarPromenade.Tests.EditMode
                     .Count(collider => collider.enabled);
                 Assert.That(
                     cafePhysicalColliders,
-                    Is.InRange(35, 60),
-                    "The cafe should own a bounded physical shell and " +
-                    "furniture set.");
+                    Is.EqualTo(
+                        MountainRoadCafeCollisionWorldBuilder
+                            .ExpectedColliderCount),
+                    "The authored cafe must use only its exact plan-owned " +
+                    "shell, counter, service and seven-stool obstacles.");
                 // Exactly the station's own obstacle plan, and nothing else.
                 // A magic range used to stand here; it read `20` as a ceiling
                 // and said nothing about WHICH solids those were - which is
@@ -783,7 +785,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 Vector3.Distance(
                     world.Cafe.Entrance.position,
-                    groundCenter + Vector3.up * 0.04f),
+                    groundCenter),
                 Is.LessThan(0.001f));
 
             for (int alongStep = -4; alongStep <= 4; alongStep++)

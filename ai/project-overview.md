@@ -99,9 +99,9 @@ The vertical slice contains:
   corridor and tree crowns. The left side owns an enterable glass cafe with a
   bespoke silent four-role cast (lone patron, couple and attendant), two
   deliberate empty stools and rare deterministic gesture beats. The right
-  side owns an operating `58 m`
-  cableway with four cabins, with every cable height rebased from the raised
-  terminal rather than old absolute world heights. At the normal `2.6 m/s`
+  side owns an operating `230 m` cableway with nine supports and eight cabins,
+  with every cable height rebased from the raised terminal rather than old
+  absolute world heights. At the normal `2.6 m/s`
   walk speed the route takes about `238.5 s`, or `3 min 58 s`; the Ferryman's
   Last Route car reads and drives the same route. Layered forest keeps its
   physical/mid/far budgets but now uses three deterministic crown silhouettes.
@@ -394,8 +394,9 @@ The vertical slice contains:
   composite: prompts, pause/start, inventory, shops, inspectors, journal,
   loading, HUD and all map modes share a logical `640x360` canvas, flat
   rectangular panels, thin nested frames, stable panel grain and
-  grayscale-readable focus. A Cyrillic-capable OS monospace is preferred with
-  packaged `Roboto-Regular` as the deterministic RU/EN fallback. Persistent
+  grayscale-readable focus. Packaged `Roboto-Regular` is the deterministic
+  RU/EN primary face; runtime UI has no installed-OS-font dependency, and
+  Unity's legacy face is emergency fallback only. Persistent
   key-binding guides and control-hint footers are intentionally absent from
   menus, modal inspectors and the map; every active contextual prompt is a full pointer
   click target routed through the same guarded action as keyboard/gamepad
@@ -522,9 +523,9 @@ The vertical slice contains:
   31-bone A-pose hierarchy and Avatar copied from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
   `0.835 m` rest pelvis. Pedestrian and staged manifests are generator version
-  `4.0.0`, the three special manifests are `2.0.0`, and
+  `4.1.0`, the three special manifests are `2.0.0`, and
   `CityPedestrianLocomotion` contains `37` clips; the four Mountain Road
-  cafe roles retain their separate `8`-clip bank. The generated FBXs were
+  cafe roles retain their separate `10`-clip bank. The generated FBXs were
   reimported and every production prefab/provider output rebuilt; runtime
   therefore consumes the replaced models, not legacy prefabs behind revised
   authoring data. The special models measure `50` meshes/`1,436` triangles
@@ -872,7 +873,14 @@ The vertical slice contains:
   holes at once, and settles up for every closed grave in one sum. Nothing is
   committed until an act finishes, so every worksite in the yard stays a pure
   function of its own rung in the book of work (`CemeteryGraveWorkLedger`,
-  one stage and one epitaph per plot);
+  one stage and one epitaph per plot). From the session's first sealed
+  grave onward, two ordinary procedural ravens hold to the yard: one on
+  the crown of that first mound, the other a few steps off on vacant
+  ground, facing the grave. They shift their weight, preen, rarely give a
+  dry synthesized caw, follow a passer-by with their heads, flush into the
+  fog when the hero closes within arm's reach and settle back on the same
+  two points once he is nearly out of sight; while a grave-work session
+  runs they neither startle nor call;
 - one deterministic Church precinct on the `4 x 2` open area immediately
   north of that cemetery. Its sole street frontage and exterior entrance face
   west; the altar end faces east. City loads the `44 x 23 x 32 m`
@@ -1323,14 +1331,24 @@ The vertical slice contains:
   plateau. On the left, one five-sided Nighthawks-inspired glass cafe is
   enterable without a scene load. Its lone patron, neighbouring couple and
   attendant are four dedicated staged models rather than pedestrian-pool
-  substitutes; two stools remain empty, and the hero may take the middle one
-  of those two — the only one whose plank dock fits — which the attendant
-  notices through the tableau's own scheduler. Long seeded rests separate
-  short single-episode gestures, with the couple synchronized and no NPC
-  voice bed.
-  On the right, a `58 m` continuously looping cableway moves four
-  colliderless cabins over three grounded supports while its upper return is
-  hidden by a real snowy ridge. The cafe interior and lower station participate
+  substitutes. Its deterministic fixed-metre Blender set contains `51` meshes /
+  `4,970` triangles, `45` semantic anchors and six dynamic prop assemblies.
+  Seven stools follow the main counter and return: three are occupied and four
+  remain empty. The hero may take the middle main-row gap; its dock remains in
+  the aisle while its independent facing now looks at the counter. Three cups
+  visibly drain during the patrons' Drink clips. A pure clock synchronizes the
+  pair, keeps the attendant wiping between episodes, and sends him to walk and
+  pour when a cup crosses its refill threshold. The ten-clip cast has no NPC
+  voice bed and never services the hero. The plan continues to own entry,
+  shelter, anchors, lighting and exactly `17` logical colliders. Two visible
+  practicals and one shadowless technical wash remain. Six neutral semantic
+  detail sheets partition exterior, interior, counter, metal, props and glass;
+  authored UV regions and a zero-overlap validator prevent repeated samples,
+  stretching and flicker without a new base hue, readable brand, `PHILLIES`,
+  `5¢`, price, menu or city background.
+  On the right, a `230 m` continuously looping cableway moves eight
+  colliderless cabins over nine supports while its upper return remains beyond
+  the Mountain Road draw range. The cafe interior and lower station participate
   in the shared weather-shelter query. The rest of the pad is a dressed
   transfer yard of `85` batched parts on existing sheets and existing tints:
   a ploughed snow bank and grit bin, the last road board and a seized

@@ -160,9 +160,18 @@ namespace BarPromenade.Tests.EditMode
 
             MountainRoadSiteSeatDescriptor stool = site.CounterSeat;
             Assert.That(
-                Vector3.Dot(stool.FaceDirection, plan.Plateau.Forward),
+                Vector3.Dot(
+                    stool.FaceDirection,
+                    plan.Terminal.Cafe.Forward),
+                Is.GreaterThan(0.99f),
+                "The seated hero must look into the cafe counter.");
+            Assert.That(
+                Vector3.Dot(
+                    stool.ApproachDirection,
+                    plan.Terminal.Cafe.Forward),
                 Is.LessThan(-0.99f),
-                "The stool must face out of the cafe, not into the counter.");
+                "The counter-facing stool still needs its dock in the " +
+                "open aisle.");
             Assert.That(
                 plan.Terminal.Cafe.ContainsInterior(
                     stool.SeatTopCenter,

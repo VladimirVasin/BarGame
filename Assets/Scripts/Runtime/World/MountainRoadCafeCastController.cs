@@ -13,36 +13,86 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Schedules sparse, deterministic movement across the cafe tableau.
-    /// Only one episode runs at once; the two halves of the couple are one
-    /// synchronized episode rather than two competing ambient gestures.
+    /// Applies one pure service clock to all four authored figures and the
+    /// optional environment-owned cup presentation. No animation events,
+    /// root motion or NPC audio participate in synchronization.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MountainRoadCafeCastController : MonoBehaviour
     {
-        public const float MinimumEpisodeDelaySeconds = 18f;
-        public const float MaximumEpisodeDelaySeconds = 32f;
+        public const float MinimumEpisodeDelaySeconds =
+            MountainRoadCafeServiceTimeline.MinimumWipeSeconds;
+        public const float MaximumEpisodeDelaySeconds =
+            MountainRoadCafeServiceTimeline.MaximumWipeSeconds;
         public const float MinimumEpisodeCooldownSeconds = 35f;
         public const float MaximumEpisodeCooldownSeconds = 55f;
         public const float MaximumSchedulerStepSeconds = 0.25f;
+        public const bool ServesHero = false;
+        private const string LeftCupSocketName = "SOCKET_Vessel.L";
 
-        private readonly float[] cooldownUntilSeconds = new float[3];
-        private System.Random random;
+        // The shared Hero/NPC V2 rig exposes its cup-shaped right-hand
+        // vertical grip as Bottle.R. It is the mirrored counterpart of
+        // Vessel.L and follows the right-hand cafe drink animation.
+        private const string RightCupSocketName = "SOCKET_Bottle.R";
+
         private MountainRoadCafeCastPresentation lonePatron;
         private MountainRoadCafeCastPresentation pairMan;
         private MountainRoadCafeCastPresentation pairWoman;
         private MountainRoadCafeCastPresentation attendant;
+        private MountainRoadCafeServicePresentation servicePresentation;
+        private MountainRoadCafeServiceTimeline timeline;
         private float elapsedSeconds;
-        private float nextEpisodeSeconds;
 
         public bool IsInitialized { get; private set; }
-        public MountainRoadCafeCastEpisode ActiveEpisode { get; private set; }
+        public MountainRoadCafeCastEpisode ActiveEpisode =>
+            ResolveEpisode(timeline?.Frame.Phase ??
+                           MountainRoadCafeServicePhase.Wiping);
         public float ElapsedSeconds => elapsedSeconds;
-        public float NextEpisodeSeconds => nextEpisodeSeconds;
+        public float NextEpisodeSeconds => timeline != null &&
+                                           timeline.Frame.Phase ==
+                                           MountainRoadCafeServicePhase.Wiping
+            ? elapsedSeconds + timeline.RemainingPhaseSeconds
+            : elapsedSeconds;
+        public MountainRoadCafeServiceFrame ServiceFrame => timeline != null
+            ? timeline.Frame
+            : default;
+        public MountainRoadCafeServicePresentation ServicePresentation =>
+            servicePresentation;
+        public Transform AttendantPourSpout => attendant?.Registry
+            ?.FindModelTransform("SOCKET_CafePotSpout");
+        public Transform AttendantMotionRoot => attendant != null
+            ? attendant.transform
+            : null;
+
+        public Transform GetCupHandSocket(MountainRoadCafeCastRole role)
+        {
+            switch (role)
+            {
+                case MountainRoadCafeCastRole.LonePatron:
+                    return lonePatron?.Registry.FindModelTransform(
+                        RightCupSocketName);
+                case MountainRoadCafeCastRole.PairMan:
+                    return pairMan?.Registry.FindModelTransform(
+                        RightCupSocketName);
+                case MountainRoadCafeCastRole.PairWoman:
+                    return pairWoman?.Registry.FindModelTransform(
+                        LeftCupSocketName);
+                default:
+                    return null;
+            }
+        }
 
         public void Initialize(
             IReadOnlyList<MountainRoadCafeCastPresentation> presentations,
             int seed)
+        {
+            Initialize(presentations, seed, null);
+        }
+
+        public void Initialize(
+            IReadOnlyList<MountainRoadCafeCastPresentation> presentations,
+            int seed,
+            MountainRoadCafeServicePresentation configuredServicePresentation)
         {
             if (presentations == null)
             {
@@ -79,13 +129,109 @@ namespace BarPromenade
                     "The cafe requires one member in each of its four roles.");
             }
 
-            random = new System.Random(seed);
+            timeline = new MountainRoadCafeServiceTimeline(seed);
             elapsedSeconds = 0f;
-            ActiveEpisode = MountainRoadCafeCastEpisode.None;
-            nextEpisodeSeconds = NextDelay(
-                MinimumEpisodeDelaySeconds,
-                MaximumEpisodeDelaySeconds);
             IsInitialized = true;
+            if (configuredServicePresentation != null &&
+                !BindServicePresentation(configuredServicePresentation))
+            {
+                throw new InvalidOperationException(
+                    "The supplied cafe service presentation is invalid.");
+            }
+
+            ApplyFrame(timeline.Frame);
+        }
+
+        public bool BindServicePresentation(
+            MountainRoadCafeServicePresentation presentation)
+        {
+            if (!IsInitialized ||
+                presentation == null ||
+                !presentation.IsConfigured ||
+                presentation.IncludesHeroCup ||
+                (servicePresentation != null &&
+                 servicePresentation != presentation))
+            {
+                return false;
+            }
+
+            servicePresentation = presentation;
+            if (!servicePresentation.BindDrinkSockets(
+                    GetCupHandSocket(
+                        MountainRoadCafeCastRole.LonePatron),
+                    GetCupHandSocket(MountainRoadCafeCastRole.PairMan),
+                    GetCupHandSocket(MountainRoadCafeCastRole.PairWoman)))
+            {
+                servicePresentation = null;
+                return false;
+            }
+
+            servicePresentation.SetFrame(timeline.Frame);
+            return true;
+        }
+
+        public bool TryGetCup(
+            MountainRoadCafeCastRole role,
+            out MountainRoadCafeCupView cup)
+        {
+            if (servicePresentation != null)
+            {
+                return servicePresentation.TryGetCup(role, out cup);
+            }
+
+            cup = null;
+            return false;
+        }
+
+        /// <summary>
+        /// Explicit hero-exclusion hook used by the seat interaction. The
+        /// request plays Notice only; the pure timeline cannot assign the
+        /// hero a service target or alter one of the three patron cups.
+        /// </summary>
+        public bool TryRequestHeroNotice()
+        {
+            if (!IsInitialized || !timeline.TryRequestHeroNotice())
+            {
+                return false;
+            }
+
+            ApplyFrame(timeline.Frame);
+            return true;
+        }
+
+        public bool TryRequestEpisode(MountainRoadCafeCastEpisode episode)
+        {
+            if (!IsInitialized ||
+                episode == MountainRoadCafeCastEpisode.None)
+            {
+                return false;
+            }
+
+            bool accepted;
+            switch (episode)
+            {
+                case MountainRoadCafeCastEpisode.LonePatron:
+                    accepted = timeline.TryRequestDrink(
+                        MountainRoadCafeCastRole.LonePatron);
+                    break;
+                case MountainRoadCafeCastEpisode.Couple:
+                    accepted = timeline.TryRequestDrink(
+                        MountainRoadCafeCastRole.PairMan);
+                    break;
+                case MountainRoadCafeCastEpisode.Attendant:
+                    accepted = timeline.TryRequestHeroNotice();
+                    break;
+                default:
+                    accepted = false;
+                    break;
+            }
+
+            if (accepted)
+            {
+                ApplyFrame(timeline.Frame);
+            }
+
+            return accepted;
         }
 
         private void Update()
@@ -95,73 +241,92 @@ namespace BarPromenade
                 return;
             }
 
-            elapsedSeconds += Mathf.Min(
-                Time.deltaTime,
-                MaximumSchedulerStepSeconds);
-            if (ActiveEpisode != MountainRoadCafeCastEpisode.None)
-            {
-                if (IsActiveEpisodePlaying())
-                {
-                    return;
-                }
-
-                int completedIndex = EpisodeIndex(ActiveEpisode);
-                cooldownUntilSeconds[completedIndex] =
-                    elapsedSeconds + NextDelay(
-                        MinimumEpisodeCooldownSeconds,
-                        MaximumEpisodeCooldownSeconds);
-                ActiveEpisode = MountainRoadCafeCastEpisode.None;
-                nextEpisodeSeconds = elapsedSeconds + NextDelay(
-                    MinimumEpisodeDelaySeconds,
-                    MaximumEpisodeDelaySeconds);
-                return;
-            }
-
-            if (elapsedSeconds < nextEpisodeSeconds)
-            {
-                return;
-            }
-
-            MountainRoadCafeCastEpisode episode = ChooseEligibleEpisode();
-            if (episode == MountainRoadCafeCastEpisode.None)
-            {
-                nextEpisodeSeconds = EarliestCooldown();
-                return;
-            }
-
-            if (TryStartEpisode(episode))
-            {
-                ActiveEpisode = episode;
-                return;
-            }
-
-            nextEpisodeSeconds = elapsedSeconds + 1f;
+            float delta = Mathf.Max(0f, Time.deltaTime);
+            elapsedSeconds += delta;
+            timeline.Advance(delta);
+            ApplyFrame(timeline.Frame);
         }
 
-        /// <summary>
-        /// One episode out of turn, for a reason rather than a timer: the
-        /// hero has just sat down at the counter and the man behind it
-        /// notices. It still obeys the one rule the tableau has - never
-        /// two at once - and it still books the ordinary cooldown after
-        /// itself, so being noticed costs the room its next idle beat
-        /// instead of adding a beat on top of it.
-        /// </summary>
-        public bool TryRequestEpisode(MountainRoadCafeCastEpisode episode)
+        private void OnEnable()
         {
-            if (!IsInitialized ||
-                episode == MountainRoadCafeCastEpisode.None ||
-                ActiveEpisode != MountainRoadCafeCastEpisode.None)
+            if (IsInitialized)
             {
-                return false;
+                ApplyFrame(timeline.Frame);
+            }
+        }
+
+        private void OnDisable()
+        {
+            if (!IsInitialized)
+            {
+                return;
             }
 
-            if (!TryStartEpisode(episode))
+            lonePatron.ApplyClip(
+                MountainRoadCafeCastClipKind.Idle,
+                0f);
+            pairMan.ApplyClip(
+                MountainRoadCafeCastClipKind.Idle,
+                0f);
+            pairWoman.ApplyClip(
+                MountainRoadCafeCastClipKind.Idle,
+                0f);
+            attendant.ApplyClip(
+                MountainRoadCafeCastClipKind.Wipe,
+                0f);
+            servicePresentation?.ResetExact();
+        }
+
+        private void ApplyFrame(MountainRoadCafeServiceFrame frame)
+        {
+            lonePatron.ApplyClip(
+                frame.Phase == MountainRoadCafeServicePhase.LoneDrink
+                    ? MountainRoadCafeCastClipKind.Drink
+                    : MountainRoadCafeCastClipKind.Idle,
+                frame.Phase == MountainRoadCafeServicePhase.LoneDrink
+                    ? frame.PhaseElapsedSeconds
+                    : 0f);
+
+            bool coupleDrinks = frame.Phase ==
+                                MountainRoadCafeServicePhase.CoupleDrink;
+            float coupleClock = coupleDrinks
+                ? frame.PhaseElapsedSeconds
+                : 0f;
+            pairMan.ApplyClip(
+                coupleDrinks
+                    ? MountainRoadCafeCastClipKind.Drink
+                    : MountainRoadCafeCastClipKind.Idle,
+                coupleClock);
+            pairWoman.ApplyClip(
+                coupleDrinks
+                    ? MountainRoadCafeCastClipKind.Drink
+                    : MountainRoadCafeCastClipKind.Idle,
+                coupleClock);
+
+            MountainRoadCafeCastClipKind attendantClip;
+            switch (frame.Phase)
             {
-                return false;
+                case MountainRoadCafeServicePhase.Notice:
+                    attendantClip = MountainRoadCafeCastClipKind.Notice;
+                    break;
+                case MountainRoadCafeServicePhase.WalkToCup:
+                case MountainRoadCafeServicePhase.WalkBack:
+                    attendantClip = MountainRoadCafeCastClipKind.Walk;
+                    break;
+                case MountainRoadCafeServicePhase.Pour:
+                    attendantClip = MountainRoadCafeCastClipKind.Pour;
+                    break;
+                default:
+                    attendantClip = MountainRoadCafeCastClipKind.Wipe;
+                    break;
             }
 
-            ActiveEpisode = episode;
-            return true;
+            attendant.ApplyClip(
+                attendantClip,
+                attendantClip == MountainRoadCafeCastClipKind.Wipe
+                    ? elapsedSeconds
+                    : frame.PhaseElapsedSeconds);
+            servicePresentation?.SetFrame(frame);
         }
 
         private void AssignRole(
@@ -200,94 +365,23 @@ namespace BarPromenade
             return value;
         }
 
-        private MountainRoadCafeCastEpisode ChooseEligibleEpisode()
+        private static MountainRoadCafeCastEpisode ResolveEpisode(
+            MountainRoadCafeServicePhase phase)
         {
-            var eligible = new MountainRoadCafeCastEpisode[3];
-            int count = 0;
-            for (int index = 0; index < cooldownUntilSeconds.Length; index++)
+            switch (phase)
             {
-                if (elapsedSeconds >= cooldownUntilSeconds[index])
-                {
-                    eligible[count++] = EpisodeFromIndex(index);
-                }
-            }
-
-            return count > 0
-                ? eligible[random.Next(0, count)]
-                : MountainRoadCafeCastEpisode.None;
-        }
-
-        private bool TryStartEpisode(MountainRoadCafeCastEpisode episode)
-        {
-            switch (episode)
-            {
-                case MountainRoadCafeCastEpisode.LonePatron:
-                    return lonePatron.CanBeginBeat &&
-                           lonePatron.TryBeginBeat();
-                case MountainRoadCafeCastEpisode.Couple:
-                    if (!pairMan.CanBeginBeat ||
-                        !pairWoman.CanBeginBeat)
-                    {
-                        return false;
-                    }
-
-                    return pairMan.TryBeginBeat() &&
-                           pairWoman.TryBeginBeat();
-                case MountainRoadCafeCastEpisode.Attendant:
-                    return attendant.CanBeginBeat &&
-                           attendant.TryBeginBeat();
+                case MountainRoadCafeServicePhase.LoneDrink:
+                    return MountainRoadCafeCastEpisode.LonePatron;
+                case MountainRoadCafeServicePhase.CoupleDrink:
+                    return MountainRoadCafeCastEpisode.Couple;
+                case MountainRoadCafeServicePhase.Notice:
+                case MountainRoadCafeServicePhase.WalkToCup:
+                case MountainRoadCafeServicePhase.Pour:
+                case MountainRoadCafeServicePhase.WalkBack:
+                    return MountainRoadCafeCastEpisode.Attendant;
                 default:
-                    return false;
+                    return MountainRoadCafeCastEpisode.None;
             }
-        }
-
-        private bool IsActiveEpisodePlaying()
-        {
-            switch (ActiveEpisode)
-            {
-                case MountainRoadCafeCastEpisode.LonePatron:
-                    return lonePatron.IsBeatPlaying;
-                case MountainRoadCafeCastEpisode.Couple:
-                    return pairMan.IsBeatPlaying ||
-                           pairWoman.IsBeatPlaying;
-                case MountainRoadCafeCastEpisode.Attendant:
-                    return attendant.IsBeatPlaying;
-                default:
-                    return false;
-            }
-        }
-
-        private float EarliestCooldown()
-        {
-            float earliest = float.PositiveInfinity;
-            for (int index = 0; index < cooldownUntilSeconds.Length; index++)
-            {
-                earliest = Mathf.Min(
-                    earliest,
-                    cooldownUntilSeconds[index]);
-            }
-
-            return Mathf.Max(elapsedSeconds + 0.25f, earliest);
-        }
-
-        private float NextDelay(float minimum, float maximum)
-        {
-            return Mathf.Lerp(
-                minimum,
-                maximum,
-                (float)random.NextDouble());
-        }
-
-        private static int EpisodeIndex(
-            MountainRoadCafeCastEpisode episode)
-        {
-            return (int)episode - 1;
-        }
-
-        private static MountainRoadCafeCastEpisode EpisodeFromIndex(
-            int index)
-        {
-            return (MountainRoadCafeCastEpisode)(index + 1);
         }
     }
 }

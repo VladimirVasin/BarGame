@@ -1,0 +1,281 @@
+{
+  "generator": "tools/build-cemetery-raven-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "design_id": "cemetery_raven_v1",
+  "display_name": "Cemetery Raven",
+  "seed": 51729,
+  "standing_height_m": 0.237,
+  "forward_axis": "-Y",
+  "anatomical_left_axis": "+X",
+  "mesh_count": 10,
+  "triangle_count": 496,
+  "triangle_budget": [
+    350,
+    700
+  ],
+  "pivot_names": [
+    "PIVOT_BodyRoot",
+    "PIVOT_Head",
+    "PIVOT_Wing.L",
+    "PIVOT_Wing.R",
+    "PIVOT_Tail"
+  ],
+  "anchor_names": [
+    "ANCHOR_FeetContact"
+  ],
+  "bounds_min": [
+    -0.068315,
+    -0.210416,
+    0.0
+  ],
+  "bounds_max": [
+    0.068315,
+    0.247795,
+    0.237
+  ],
+  "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
+  "detail_atlas_file": "CemeteryRavenDetailAtlas.png",
+  "detail_atlas_size": 256,
+  "detail_atlas_sha256": "a6322bdbf010c386eaa1ff09a852ef77253b2db3cae31ed8beb16ea5fd24191e",
+  "atlas_regions": [
+    {
+      "name": "BeakDetail",
+      "renderer": "GEO_Beak",
+      "cell": [
+        192,
+        0,
+        64,
+        64
+      ],
+      "layout": "box"
+    },
+    {
+      "name": "BodyFeathers",
+      "renderer": "GEO_Body",
+      "cell": [
+        64,
+        0,
+        128,
+        64
+      ],
+      "layout": "ellipsoid"
+    },
+    {
+      "name": "HeadFeathers",
+      "renderer": "GEO_Head",
+      "cell": [
+        128,
+        64,
+        64,
+        64
+      ],
+      "layout": "ellipsoid"
+    },
+    {
+      "name": "LegScale.L",
+      "renderer": "GEO_Leg.L",
+      "cell": [
+        0,
+        128,
+        64,
+        64
+      ],
+      "layout": "ring"
+    },
+    {
+      "name": "LegScale.R",
+      "renderer": "GEO_Leg.R",
+      "cell": [
+        64,
+        128,
+        64,
+        64
+      ],
+      "layout": "ring"
+    },
+    {
+      "name": "TailBands",
+      "renderer": "GEO_Tail",
+      "cell": [
+        192,
+        64,
+        64,
+        64
+      ],
+      "layout": "box"
+    },
+    {
+      "name": "WingCoverts.L",
+      "renderer": "GEO_Wing.L",
+      "cell": [
+        0,
+        64,
+        64,
+        64
+      ],
+      "layout": "box"
+    },
+    {
+      "name": "WingCoverts.R",
+      "renderer": "GEO_Wing.R",
+      "cell": [
+        64,
+        64,
+        64,
+        64
+      ],
+      "layout": "box"
+    }
+  ],
+  "wing_fold_max_degrees": 70.0,
+  "emissive": false,
+  "colliders": false,
+  "lights": false,
+  "rigidbodies": false,
+  "animation_count": 0,
+  "animations": [],
+  "build_signature": "1f0c65334410d2633c11797dcb46eb3b93ed2df6429e36080f81b844b0b11db1",
+  "parts": [
+    {
+      "name": "GEO_Beak",
+      "pivot": "PIVOT_Head",
+      "role": "raven_beak",
+      "palette_name": "beak_grey",
+      "base_color": [
+        0.34,
+        0.33,
+        0.31,
+        1.0
+      ],
+      "vertices": 14,
+      "triangles": 24
+    },
+    {
+      "name": "GEO_Body",
+      "pivot": "PIVOT_BodyRoot",
+      "role": "raven_body",
+      "palette_name": "body_black",
+      "base_color": [
+        0.105,
+        0.105,
+        0.12,
+        1.0
+      ],
+      "vertices": 62,
+      "triangles": 120
+    },
+    {
+      "name": "GEO_Eye.L",
+      "pivot": "PIVOT_Head",
+      "role": "raven_eye",
+      "palette_name": "eye_pale",
+      "base_color": [
+        0.66,
+        0.64,
+        0.58,
+        1.0
+      ],
+      "vertices": 6,
+      "triangles": 8
+    },
+    {
+      "name": "GEO_Eye.R",
+      "pivot": "PIVOT_Head",
+      "role": "raven_eye",
+      "palette_name": "eye_pale",
+      "base_color": [
+        0.66,
+        0.64,
+        0.58,
+        1.0
+      ],
+      "vertices": 6,
+      "triangles": 8
+    },
+    {
+      "name": "GEO_Head",
+      "pivot": "PIVOT_Head",
+      "role": "raven_head",
+      "palette_name": "head_black",
+      "base_color": [
+        0.115,
+        0.115,
+        0.13,
+        1.0
+      ],
+      "vertices": 42,
+      "triangles": 80
+    },
+    {
+      "name": "GEO_Leg.L",
+      "pivot": "PIVOT_BodyRoot",
+      "role": "raven_leg",
+      "palette_name": "leg_grey",
+      "base_color": [
+        0.3,
+        0.29,
+        0.27,
+        1.0
+      ],
+      "vertices": 22,
+      "triangles": 36
+    },
+    {
+      "name": "GEO_Leg.R",
+      "pivot": "PIVOT_BodyRoot",
+      "role": "raven_leg",
+      "palette_name": "leg_grey",
+      "base_color": [
+        0.3,
+        0.29,
+        0.27,
+        1.0
+      ],
+      "vertices": 22,
+      "triangles": 36
+    },
+    {
+      "name": "GEO_Tail",
+      "pivot": "PIVOT_Tail",
+      "role": "raven_tail",
+      "palette_name": "tail_black",
+      "base_color": [
+        0.095,
+        0.095,
+        0.11,
+        1.0
+      ],
+      "vertices": 22,
+      "triangles": 40
+    },
+    {
+      "name": "GEO_Wing.L",
+      "pivot": "PIVOT_Wing.L",
+      "role": "raven_wing",
+      "palette_name": "wing_black",
+      "base_color": [
+        0.09,
+        0.09,
+        0.105,
+        1.0
+      ],
+      "vertices": 38,
+      "triangles": 72
+    },
+    {
+      "name": "GEO_Wing.R",
+      "pivot": "PIVOT_Wing.R",
+      "role": "raven_wing",
+      "palette_name": "wing_black",
+      "base_color": [
+        0.09,
+        0.09,
+        0.105,
+        1.0
+      ],
+      "vertices": 38,
+      "triangles": 72
+    }
+  ]
+}

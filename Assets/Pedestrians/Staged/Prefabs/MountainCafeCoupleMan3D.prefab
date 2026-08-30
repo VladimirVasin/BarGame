@@ -46,8 +46,15 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.MountainRoadCafeCastAssetRegistry
   animator: {fileID: 2055121185705382364}
-  idleClip: {fileID: 1696308778416157560, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
-  beatClip: {fileID: 4528277057202378950, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+  role: 1
+  defaultClipKind: 0
+  clipBindings:
+  - kind: 0
+    clip: {fileID: 1696308778416157560, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+    loop: 1
+  - kind: 1
+    clip: {fileID: -334269275527741307, guid: 184a9cf36663abd41a5dd7aad4412d2c, type: 3}
+    loop: 0
   modelRoot: {fileID: 4799855461358702325}
   rendererBindings:
   - renderer: {fileID: 7546511379324740570}

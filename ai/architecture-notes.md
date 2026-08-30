@@ -265,6 +265,36 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   back. This stays inside the bounded-fog decision below (`Accepted — Bounded
   local fog`): it is the per-area Exp2 haze behind the shared field that
   breathes, not a second fog of the zone's own.
+- **Accepted architecture exception — 2026-08-31, explicit user request — the
+  cemetery ravens are fauna, not a second Cat:** Story bible §10 reserves
+  significant-event animal presence for the Cat, bans «второй кот», and states
+  the biconditional by name: «Значимым сюжетным событием считается то, при
+  котором есть кот. Если кота нет, событие не значимое, и наоборот». The two
+  cemetery ravens invert every term of the Cat's grammar rather than borrow
+  it: he is already sitting where the hero arrives, he speaks, and he never
+  flees; they arrive only after the hero's own first act of finished work,
+  they say nothing and mark nothing, they flee him at three and a half metres
+  and return only when he is nearly out of sight. Their perch is habit, not
+  significance — the first sealed grave is simply the grave that was there
+  when they arrived — and if a scene ever needs an animal's presence to MEAN
+  the moment, that is the Cat's work by the biconditional, and the ravens
+  leave the frame. §16 laws 1 and 2 hold by name: law 1 («Ни один NPC не
+  знает о преступлении. Никто не намекает») is carried onto the crime — the
+  ravens keep to an ordinary epidemic grave, never hers; law 2 stays whole —
+  no citizen and no system reacts to them, and their own reactions are bird
+  habit exactly as the §6 row words them. §18 holds by name: the marked grave
+  is whichever one the player happened to seal first, its plaque carries an
+  epidemic dead and the player's own eight words, and the pair must read as
+  a bird habit, not a memorial sign — §18's Проверка, «игрок ни разу не
+  предполагает, что копает её могилу», joins the capture checklist for the
+  cemetery frames. §19 is a deliberate refusal: the ravens are NOT added to
+  the closed словарь следов, they carry no story, and no trace ever rides
+  them. They sit on the same shelf as the village dog behind the fence —
+  ordinary provincial fauna with a bounded synthesized voice — and the
+  level-`2` §6 registry row lifting §10c «Хоррор» for them states that
+  reading in canon, while the companion «весь документ» row regularising
+  «свежие раскопанные могилы» for the hero's grave work records a
+  contradiction the shipped gravedigging feature had already created.
 - **Accepted architecture exception — 2026-08-27, explicit user request — one
   maintained Cemetery–Church connection:** The earlier art-bible rule that the
   two precincts have no direct connection is lifted only for one internal
@@ -1637,22 +1667,25 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   a future car. A reserved `7.5 m` centre circle keeps the arrival usable by
   that car. The left landmark
   is a same-scene, physically enterable five-sided glass cafe with a `1.6 m`
-  open door and exactly two practical Spots. Its tableau is a dedicated staged
+  open door, exactly two visible practicals and one shadowless technical wash
+  Spot with no third visible fixture. Its tableau is a dedicated staged
   subsystem rather than part of the pedestrian pool: one lone patron, one
   couple and one attendant use four distinct Generic prefabs and an isolated
-  eight-clip cafe library. Two stools stay deliberately empty. A seeded
-  controller holds `18-32 s` global pauses, enforces `35-55 s` per-role
-  cooldowns and permits at most one gesture episode; the couple begins its
-  paired beat together. NPC voices and free ambience are deliberately absent.
+  ten-clip cafe library. Seven stools are modeled; three are occupied and four
+  stay deliberately empty. A pure service clock holds `18-32 s` Wipe loops,
+  permits at most one drink/refill episode and starts the couple's Drink beat
+  together. Three authored cups visibly drain; below the refill threshold the
+  attendant walks to the owning cup and pours it full. NPC voices and free
+  ambience are deliberately absent, and the hero is never a service target.
   The
-  right landmark is a `58 m` cableway: four colliderless cabins traverse one
-  continuous up/turn/down loop over three grounded colliderless remote supports;
-  only its lower station is physical and its upper return is hidden behind the
-  authored snow-ridge occluder. Cable nodes now derive all vertical offsets
-  from the raised terminal anchor rather than retaining absolute world heights.
-  The terminal is deliberately not a transition, and the car still has no
-  driving controller. Continuous road/plateau geometry remains the only driving
-  collider. A separate colliderless asphalt apron at `+0.025 m` overlaps the
+  right landmark is a `230 m` cableway: eight colliderless cabins traverse one
+  continuous loop over nine supports, while the far turn stands beyond the
+  Mountain Road draw range and the passenger ride cuts to black at `73 m`
+  without presenting an endpoint. Cable nodes derive all vertical offsets from
+  the raised terminal anchor rather than retaining absolute world heights. The
+  cafe remains same-scene; the cableway ride owns its established transition.
+  Continuous road/plateau geometry remains the driving collider. A separate
+  colliderless asphalt apron at `+0.025 m` overlaps the
   entry by `0.45 m` and exposes the complete R`7.5 m` turning pocket without a
   second physics skin, coplanar patchwork or a shoulder lip. Larger grounded
   forest and roadside misc form the close layer,
@@ -1663,6 +1696,35 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   cafe adds three short-range appliance voices, and the cableway adds only a
   visible reducer motor plus roller-crossing clacks. Cafe/cableway map landmarks
   and rain shelter volumes are read from the same validated terminal plan.
+- **Accepted and implemented — The terminal cafe is a bounded Blender
+  migration, not a rewrite of the whole terminal:** the cafe's visible
+  runtime-primitive shell, interior and furniture were replaced by one
+  fixed-metre deterministic Blender-authored set and measured manifest (`51`
+  meshes / `4,970` triangles / `45` anchors / six dynamic props). The terminal
+  plan continues to own the five-sided
+  footprint, `4.4 m` height, `2.8 m` chamfer, open `1.6 m` door, walkability,
+  logical collision, shelter, map landmark, semantic/audio anchors and
+  lighting; imported geometry brings no collider, Light, camera or material.
+  The counter has seven stools: the lone visitor and synchronized pair
+  occupy three, four remain empty, and the existing hero seat stays on one of
+  those empty positions. The attendant remains the fourth silent figure behind
+  the counter. Sitting may keep the existing bounded tableau notice, but it
+  creates no order, item, service, dialogue or new gameplay transaction.
+  The two visible practicals plus one shadowless technical sulphur spill proxy
+  with no third visible fixture remain the complete cafe-light contract; the
+  proxy reaches only the threshold and near apron, never the terrace or brink.
+
+  The user's detailed-texture implementation request accepts one recorded
+  exception to the earlier one-sheet target: the set owns six `512 x 512`
+  colour-neutral semantic detail sheets (exterior, interior, counter, metal,
+  props and glass). They are not six new hue or base-albedo families; they
+  partition wear, grime, glass matting and small edge information so unrelated
+  elements do not stretch or repeat one sample. Their authored UV regions use
+  deterministic offsets/quarter-turns and the generator requires zero broad
+  coplanar overlaps. No sheet may contain readable text, `PHILLIES`, `5¢`, a
+  logo, price, menu, copied city background or a large pre-painted facade. The
+  Nighthawks reference governs only composition and value structure, not
+  setting, period, story, exact camera, costumes or poses.
 - **Accepted — Every 3D object is assembled in Blender:** new geometry is
   authored by a deterministic generator under `tools/build-*-3d-model.py`,
   exported, and imported as a model asset. It is not composed at runtime
@@ -2753,10 +2815,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Prompts, menus, modal inspectors, shops, journal, HUD, balance gauge, loading
   and map use one logical `640x360` canvas and the shared `RetroUiTheme`.
   Its interface-only language is soot/charcoal/dirty-bone: flat rectangular
-  panels, thin nested frames, stable deterministic texture, restrained
-  typewriter-like typography and value-plus-frame focus that survives
-  grayscale. OS monospace faces are preferred where they cover Cyrillic;
-  packaged `Fonts/Roboto-Regular` is the deterministic RU/EN fallback. The
+  panels, thin nested frames, stable deterministic texture, restrained printed
+  typography and value-plus-frame focus that survives grayscale. Packaged
+  `Fonts/Roboto-Regular` is the deterministic RU/EN primary face; installed OS
+  fonts are never requested because Unity 6.5 legacy IMGUI cannot reliably
+  repaint their dynamic faces. Unity's legacy face is emergency fallback only. The
   former plum/orange cards, cut corners, bevel highlights and glow are not part
   of the language. The reference does not alter world rendering, camera,
   aspect, composite, audio, gameplay or localized copy. Menus, modal

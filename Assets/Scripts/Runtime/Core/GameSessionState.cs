@@ -166,6 +166,16 @@ namespace BarPromenade
             graveWork.UnfinishedCount;
 
         /// <summary>
+        /// The plot id of the first grave the hero ever closed with a
+        /// stone, or null while none has been. It survives every area
+        /// change and dies with the session, exactly like the grave
+        /// itself — the cemetery's raven pair keys its claim off this
+        /// one value and nothing else.
+        /// </summary>
+        public static string FirstSealedGravePlotId =>
+            graveWork.FirstSealedPlotId;
+
+        /// <summary>
         /// How far the one journey out of the city has got. Both areas build
         /// the Ferryman and his car from this and nothing else, so he is never
         /// in two places and never in none.
@@ -432,6 +442,7 @@ namespace BarPromenade
         {
             CemeteryGraveWorkStage previous =
                 graveWork.GetStage(plotId);
+            string firstSealedBefore = graveWork.FirstSealedPlotId;
             if (!graveWork.TryAdvance(plotId, stage))
             {
                 return false;
@@ -443,6 +454,18 @@ namespace BarPromenade
                 GameLog.Field("plot", plotId),
                 GameLog.Field("previous_stage", previous.ToString()),
                 GameLog.Field("stage", stage.ToString()));
+            // The null-to-id transition happens once per session, and
+            // only the live build in which it happens can observe it —
+            // which is why it is logged here and not derived later.
+            if (firstSealedBefore == null &&
+                graveWork.FirstSealedPlotId != null)
+            {
+                GameLog.Info(
+                    "city",
+                    "cemetery_first_grave_sealed",
+                    GameLog.Field("plot", plotId));
+            }
+
             if (stage == CemeteryGraveWorkStage.Marked)
             {
                 TryActivateQuest(QuestId.DigTheGrave);

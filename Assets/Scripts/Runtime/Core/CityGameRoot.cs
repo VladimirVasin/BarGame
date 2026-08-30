@@ -90,6 +90,17 @@ namespace BarPromenade
             get;
             private set;
         }
+
+        /// <summary>
+        /// The pair of ordinary ravens that hold to the first grave
+        /// the hero ever seals, or <c>null</c> when the layout grew
+        /// no cemetery.
+        /// </summary>
+        public CityCemeteryRavenController CemeteryRavens
+        {
+            get;
+            private set;
+        }
         public SeacoastFishermanPresentation SeacoastFisherman
         {
             get;
@@ -986,6 +997,21 @@ namespace BarPromenade
                 camera,
                 intoxicationHud,
                 ui.transform);
+            // Two ordinary wintering ravens that hold to the first
+            // grave the hero ever closes with a stone: one on its
+            // mound, one on clear ground a few steps off. Raised
+            // right after the work session because their director
+            // must know when a session owns the camera — nothing
+            // about the birds may be observable inside somebody
+            // else's shot.
+            CemeteryRavens = CityCemeteryRavenController.Create(
+                transform,
+                World.CemeteryPlan,
+                Gravedigging,
+                GraveWork,
+                Player.GameObject.transform,
+                camera,
+                GameSessionState.CitySeed);
             // The argument at the chess set. Null when the layout grew
             // no park: there is then nobody to have it with.
             ParkQuarrel = CityParkQuarrelController.Create(

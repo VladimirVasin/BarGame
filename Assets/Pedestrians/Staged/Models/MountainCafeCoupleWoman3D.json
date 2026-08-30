@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.1.0",
   "blender_version": "5.0.1",
   "design_id": "cafe_couple_woman_v1",
   "display_name": "Cafe Couple Woman",
@@ -46,7 +46,7 @@
   "shared_animation_source": "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx",
   "shared_clips": [
     "CafeWomanIdle",
-    "CafeWomanBeat"
+    "CafeWomanDrink"
   ],
   "rides_bus": false,
   "seated_clearance_m": null,
@@ -54,7 +54,7 @@
     0.43,
     0.5
   ],
-  "build_signature": "9268fa590b7e755cfd6653c3f1f929b6c0c5a886856005d487c485b8218c624e",
+  "build_signature": "369060e0fcc6c28fbf58a0716e98205cf2d62f2e5cff8ffb9c38a531940e6c6f",
   "bones": [
     {
       "name": "root",

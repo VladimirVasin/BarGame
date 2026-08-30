@@ -6,14 +6,150 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-31 — The Home opening stopped borrowing the Editor toolbar
+
+The interface overhaul had framed the old full-width Home opening composition
+as a `596 x 80` panel on the `640 x 360` logical canvas. At 1080p that became a
+`1,788 px` strip, contradicting the art bible's empty day-start composition.
+The title and two actions now form one bottom-right `228 x 98` vertical card;
+the same authored rects own drawing and pointer hitboxes, and a focused layout
+contract caps the panel below 40% of the logical width.
+
+The three labels were also not saying `Gizmos` in localization. The first fix
+only stopped renaming the OS dynamic font; an interactive GameView run then
+proved that Unity 6.5 legacy IMGUI also failed to reload the real `Cascadia
+Mono` face and leaked GameView toolbar content into all three failed draw
+calls. The final fix deletes the OS-font branch entirely. Every themed style
+now uses the imported, embedded `Roboto-Regular`; Unity's legacy font is only
+an emergency fallback when that asset is missing.
+
+Verification: the focused TextCore regression passed `1/1`. It requires the
+exact packaged font, verifies `includeFontData`, loads the face through
+`FontEngine` and rasterizes every distinct RU/EN character used by the Home
+opening without `Unable to load font face`. The compact-layout contract had
+already passed separately. The earlier batch PlayMode check did not exercise
+interactive GameView IMGUI and is not counted as visual proof. Full suites and
+a player build were intentionally not run in fast mode.
+
+## 2026-08-31 — The Mountain terminal cafe became an authored service tableau
+
+The accepted Nighthawks-composition pass is implemented, not merely recorded.
+`tools/build-mountain-road-cafe-3d-model.py` now emits one fixed-metre passive
+Blender/FBX set with `51` semantic meshes, `4,970` triangles, `45` anchors, six
+dynamic prop assemblies and a measured manifest. The shell, glass corner,
+interior, long counter/return, appliances, seven stools and close props replace
+the old runtime-primitive presentation. The plan remains authoritative for the
+five-sided footprint, open `1.6 m` door, shelter, map and sound semantics, three
+realtime Spots and exactly `17` collider-only obstacles. The old cafe geometry
+helper was removed.
+
+Six `512 x 512` colour-neutral semantic sheets split exterior, interior,
+counter, metal, props and glass. Deterministic authored UV offsets/quarter-turns
+keep repeated elements off one sample, and the generator's broad coplanarity
+audit reports zero overlaps. This is the user-accepted detailed-texture
+exception to the earlier one-sheet target; it adds no hue, readable text,
+`PHILLIES`, `5¢`, brand, price, menu or copied city background. A visual
+follow-up closed the unintended `1.41 m` void above the entrance with a full
+opaque wall header and continued the deep fascia across the complete opening;
+the usable `1.6 x 2.28 m` doorway remains unchanged. The glazed frontage's
+luminous head was raised and interlocked `3 mm` into both its top rail and
+fascia, closing the smaller dark reveal without adding a coplanar layer.
+
+The isolated cafe library now contains ten clips. Three environment-owned cups
+lift without their saucers and drain during the patrons' Drink clips; the pair
+shares one exact clock. The attendant loops Wipe, notices a cup only below its
+refill threshold, walks along authored service marks, pours it full from an
+exact exported pot-spout anchor and returns. The pure timeline is hitch-safe
+and never creates a hero target. The hero stool separately gained independent
+seated and approach directions: its dock remains in the open aisle while the
+ordinary seated rig now faces the counter, so no replacement animation was
+needed.
+
+Verification: the environment generator completed its full Blender build and
+validate pass (`51` meshes, `4,970` triangles, `45` anchors, six dynamic props,
+`17` collider descriptors and `overlap_count = 0`); the isolated cast generator
+completed its deterministic build/FBX round-trip with all ten clips and the
+measured pot-spout socket. `MountainRoadCafeAssetSetup.RunBatch` exited `0` and
+rebuilt the environment prefab, four cast prefabs and provider. The focused
+EditMode selection passed the model, collision and hero-seat contracts; its
+first runtime composition exposed two imported-rig binding mistakes, and the
+exact regression rerun passed `19/19`, including all `18` cafe-cast tests and
+the complete Mountain Road world build. Scoped `git diff --check` is clean.
+The entrance follow-up regenerated the environment as `1.0.2` with signature
+`7034eebefe669fc19b75dc2658e7f91e338347917a01003669f1900d1bc59d94`;
+the Unity setup exited `0` and the expanded exact model contract passed `1/1`.
+
+## 2026-08-31 — Two cemetery ravens keep the first sealed grave
+
+From the session's first `Sealed` grave, two ravens hold the cemetery: one
+on the crown of that grave's mound, one a few steps off on vacant ground,
+facing it. Both are armature-free pivot-empty 3D birds on the stairwell
+cat's template (`tools/build-cemetery-raven-3d-model.py`, a `256 px`
+darkening detail atlas over the shared `Player3DLit` material), with pure
+deterministic idle/head/flight models, a pure pair director polled by
+`CityCemeteryRavenController`, and three synthesized caw variants on the
+village dog's one-shot contract (amplitude ≤ `0.72`, two `AmbienceDetails`
+voices, no Lights, no localization keys). The trigger is the new
+`CemeteryGraveWorkLedger.FirstSealedPlotId` — the first plot to cross
+`Sealed`, not the first taken. The birds flush at `3.5 m`, return at
+`33.6 m` (0.7 × the City far plane), head-track only inside `18 m`, and go
+silent, unstartled and neutral-eyed while a grave-work session is active.
+
+The feature ships only with its canon paperwork: a level-`2` §6 registry
+row lifts §10c «Хоррор» solely for the two ordinary ravens, a companion
+«весь документ» §6 row regularises «свежие раскопанные могилы» for the
+hero's own grave work — an already-shipped contradiction this pass makes
+honest rather than fixes silently — a new «Птицы» subsection joins
+art-bible §10c, and an accepted architecture exception in
+`ai/architecture-notes.md` answers «второй кот»: the ravens are fauna, not
+a second Cat.
+
+Known doc drift, flagged and not resolved here: `ai/systems-map.md`'s
+Scene-and-place-music row still records the cemetery place-theme slot as
+an empty Gap while `README.md` describes the shipped cemetery theme.
+
+Files: `Assets/Scripts/Runtime/City/Cemetery/CemeteryRaven*` and
+`CityCemeteryRavenController`,
+`Assets/Scripts/Runtime/Audio/CemeteryRaven{CallSynthesis,Voice}.cs`,
+`CemeteryGraveWorkLedger`/`GameSessionState` (the first-sealed field),
+`CityCemeterySealedGraveWorldBuilder.GetMoundCrownPoint`, `CityGameRoot`,
+`Assets/Scripts/Editor/Cemetery/*`, `tools/build-cemetery-raven-3d-model.py`,
+`Assets/Cemetery/Raven/*`,
+`Assets/Resources/Cemetery/CemeteryRavenProvider.asset`, the new raven
+EditMode/PlayMode tests, `AreaCaptureFixture.CityCemetery`, and the canon
+and documentation set (story bible §6, art bible §10c, architecture-notes,
+AI.md, systems-map, system-tree, project-overview, README, release-notes,
+debug-log).
+
+Verification: all four csproj built with `0` errors (one stale reference to
+the concurrent session's recreated `MountainRoadCafeWorldBuilder.cs` had to
+be re-pointed in the gitignored csproj first). The generator ran twice:
+`build_signature` and `detail_atlas_sha256` byte-identical, `496` triangles
+in `10` meshes, standing height `0.237 m`; both preview renders LOOKED AT
+(the view transform lifts the near-black palette — the in-game read is the
+authority, and the captures confirm it). `CemeteryRavenAssetSetup.Run`
+exit `0` — prefab and provider built and measured. Headless EditMode
+selection (`CemeteryRaven|CemeteryGravediggingTests`): `48/48`. PlayMode
+one fixture per invocation: arrival `1/1`, flush-and-return `1/1`.
+`AreaCaptureFixture.CityCemetery`: four `Captures/City/cemetery-*` frames,
+all LOOKED AT — raven A reads on the mound crown in `02`, both birds sit in
+`01`, the flush is caught wings-out in `03`, and the yard stays an ordinary
+foggy cemetery from the gate in `00` (§18's check holds: nothing but the
+birds marks the grave). Full EditMode suite: `1,924/1,932` — the `8` reds
+are all in the concurrent session's in-flight mountain-road/cafe files
+(`MountainRoadCafe*`, `MountainRoadMisc/Summit/Surface`, `CityMiscAssetTests`
+wave migration), zero of them touch this work; every `CemeteryRaven*` test
+is green in the full run (`36/36`, gravedigging `12/12`).
+
 ## 2026-08-31 — The reference became an interface-only art bible
 
 The complete runtime IMGUI family moved from saturated plum/orange cards and
 cut-corner bevels to one soot/charcoal/dirty-bone system. `RetroUiTheme` now
 owns flat rectangular panels, thin nested frames, a stable 8x8 soot pattern,
-semantic frame/selection values and one shared font path: a Cyrillic-capable OS
-monospace where available, packaged `Roboto-Regular` otherwise, then Unity's
-legacy fallback. Focus is carried by value, fill and frame together, not colour
+semantic frame/selection values and one shared font path: packaged
+`Roboto-Regular` with embedded RU/EN data, then Unity's legacy face as an
+emergency fallback. Installed OS fonts are never requested. Focus is carried
+by value, fill and frame together, not colour
 alone.
 
 The pass covers prompts, NPC speech, day/start and pause screens, inventory,

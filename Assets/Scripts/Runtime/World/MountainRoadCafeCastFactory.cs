@@ -105,7 +105,7 @@ namespace BarPromenade
                     registry.ApplyBaseColors();
                     registry.Animator.applyRootMotion = false;
                     registry.Animator.cullingMode =
-                        AnimatorCullingMode.AlwaysAnimate;
+                        AnimatorCullingMode.CullUpdateTransforms;
 
                     var presentation = instance.AddComponent<
                         MountainRoadCafeCastPresentation>();
@@ -165,12 +165,31 @@ namespace BarPromenade
             MountainRoadCafeCastAssetRegistry registry = registries[0];
             if (registry.Animator == null ||
                 registry.ModelRoot == null ||
+                registry.Role != role ||
                 registry.IdleClip == null ||
                 registry.BeatClip == null)
             {
                 throw new InvalidOperationException(
                     "The " + role +
                     " prefab has an incomplete cafe cast registry.");
+            }
+
+            int expectedClipCount =
+                role == MountainRoadCafeCastRole.Attendant ? 4 : 2;
+            if (registry.ClipBindings.Count != expectedClipCount)
+            {
+                throw new InvalidOperationException(
+                    "The " + role + " prefab has the wrong authored " +
+                    "clip count.");
+            }
+
+            if (role == MountainRoadCafeCastRole.Attendant &&
+                registry.FindModelTransform(
+                    "SOCKET_CafePotSpout") == null)
+            {
+                throw new InvalidOperationException(
+                    "The cafe attendant prefab is missing its measured " +
+                    "coffee-pot spout anchor.");
             }
 
             if (registry.RendererBindings.Count == 0)

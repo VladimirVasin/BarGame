@@ -57,7 +57,7 @@ Manual snapshots include the current `hunger`, `stress` and `fatigue` beside
 | `session` | start/end, seed, route, active bar, return state, drinking mutations and resolved drink purchases with cash before/after |
 | `needs`, `inventory` | visible hunger/fatigue passive-progression boundaries, explicit hunger/stress/fatigue mutations, committed alcohol relief and atomic item-use results |
 | `scene` | loaded/ready plus transition requested, rejected, fallback, completed or failed |
-| `city`, `bar` | deterministic layout/world summaries, bar placement, spawn choice and initialization timings |
+| `city`, `bar` | deterministic layout/world summaries, bar placement, spawn choice and initialization timings, the session's first sealed grave (`cemetery_first_grave_sealed`) and the cemetery raven pair (`cemetery_raven_spawned`, `cemetery_raven_provider_missing`, `cemetery_raven_plot_missing`) |
 | `interaction`, `map` | entrance/exit results, map lifecycle and City test-teleport mode/result events; path rebuilds are verbose-only |
 | `intoxication`, `balance` | stage changes and balance scheduling, start, result, fall, recovery or cancellation |
 | `diagnostics` | manual snapshots and support-directory commands |

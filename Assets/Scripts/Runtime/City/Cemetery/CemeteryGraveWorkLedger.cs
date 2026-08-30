@@ -57,6 +57,7 @@ namespace BarPromenade
             new List<CemeteryGraveWorkRecord>();
         private readonly
             ReadOnlyCollection<CemeteryGraveWorkRecord> recordsView;
+        private string firstSealedPlotId;
 
         public CemeteryGraveWorkLedger()
         {
@@ -87,9 +88,21 @@ namespace BarPromenade
             }
         }
 
+        /// <summary>
+        /// The first plot ever to cross
+        /// <see cref="CemeteryGraveWorkStage.Sealed"/>, or null while
+        /// no grave has been closed with a stone this session. The
+        /// record order cannot answer this — it is the order plots
+        /// were TAKEN, and a man holding three holes seals them in
+        /// whatever order he likes — so the crossing is written down
+        /// once, here, and cleared only with the rest of the book.
+        /// </summary>
+        public string FirstSealedPlotId => firstSealedPlotId;
+
         public void Reset()
         {
             records.Clear();
+            firstSealedPlotId = null;
         }
 
         public CemeteryGraveWorkStage GetStage(string plotId)
@@ -140,6 +153,7 @@ namespace BarPromenade
                         plotId,
                         stage,
                         string.Empty));
+                NoteFirstSealed(plotId, stage);
                 return true;
             }
 
@@ -153,6 +167,7 @@ namespace BarPromenade
                 plotId,
                 stage,
                 record.Epitaph);
+            NoteFirstSealed(plotId, stage);
             return true;
         }
 
@@ -180,6 +195,25 @@ namespace BarPromenade
                 records[index].Stage,
                 cut);
             return true;
+        }
+
+        /// <summary>
+        /// Called from BOTH successful TryAdvance branches, because
+        /// both can be the crossing: a live game walks a known record
+        /// up to Sealed, while a test may write Sealed or Paid
+        /// straight onto an unclaimed plot in one jump — the ladder
+        /// is monotone, so whichever write first carries any plot to
+        /// Sealed or past it is exactly the first seal.
+        /// </summary>
+        private void NoteFirstSealed(
+            string plotId,
+            CemeteryGraveWorkStage stage)
+        {
+            if (stage >= CemeteryGraveWorkStage.Sealed &&
+                firstSealedPlotId == null)
+            {
+                firstSealedPlotId = plotId;
+            }
         }
 
         private int FindIndex(string plotId)

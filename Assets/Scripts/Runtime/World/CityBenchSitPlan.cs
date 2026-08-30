@@ -19,8 +19,11 @@ namespace BarPromenade
 
     /// <summary>
     /// One sittable bench seat in the city, in world space: where the
-    /// timber is, how big it is, how high the walking surface sits and
-    /// which way the sitter faces.
+    /// timber is, how big it is, how high the walking surface sits, which
+    /// way the sitter faces and which side remains open for the approach.
+    /// Ordinary benches use the same direction for both. A loose counter
+    /// stool is approached from behind while the seated body faces the
+    /// counter, so those two directions are deliberately opposite.
     /// </summary>
     public readonly struct CityBenchSeat
     {
@@ -39,9 +42,11 @@ namespace BarPromenade
             float groundY,
             Vector3 faceDirection,
             float approachClearance = DefaultApproachClearance,
-            CityBenchSeatKind kind = CityBenchSeatKind.Plank)
+            CityBenchSeatKind kind = CityBenchSeatKind.Plank,
+            Vector3 approachDirection = default)
         {
             faceDirection.y = 0f;
+            approachDirection.y = 0f;
             if (string.IsNullOrEmpty(id) ||
                 faceDirection.sqrMagnitude <= 0.0001f ||
                 seatWidth <= 0f ||
@@ -60,6 +65,10 @@ namespace BarPromenade
             SeatDepth = seatDepth;
             GroundY = groundY;
             FaceDirection = faceDirection.normalized;
+            ApproachDirection =
+                approachDirection.sqrMagnitude > 0.0001f
+                    ? approachDirection.normalized
+                    : FaceDirection;
             ApproachClearance = approachClearance;
             Kind = kind;
             IsPresent = true;
@@ -71,6 +80,7 @@ namespace BarPromenade
         public float SeatDepth { get; }
         public float GroundY { get; }
         public Vector3 FaceDirection { get; }
+        public Vector3 ApproachDirection { get; }
         public float ApproachClearance { get; }
         public CityBenchSeatKind Kind { get; }
         public bool IsPresent { get; }
@@ -155,6 +165,7 @@ namespace BarPromenade
             SeatDepth = seat.SeatDepth;
             ApproachClearance = seat.ApproachClearance;
             Vector3 faceDirection = seat.FaceDirection;
+            ApproachDirection = seat.ApproachDirection;
 
             // The sitter's own right hand, which is the plank end a
             // game seat is entered past. Both free game seats put that
@@ -175,9 +186,9 @@ namespace BarPromenade
                 seat.GroundY + PlayerFactory.GroundedRootOffset;
             EntryRootPosition = entryRoot;
 
-            // Facing is the seated facing either way: across the board
-            // at the man opposite, or out at whatever the plank was
-            // built to look at.
+            // Facing is always the seated facing. It need not point at the
+            // dock: the mountain counter stool is entered from the open
+            // aisle behind it and ends facing the counter.
             EntryRotation = Quaternion.LookRotation(
                 faceDirection,
                 Vector3.up);
@@ -209,7 +220,7 @@ namespace BarPromenade
                 // The pelvis walks upright to the seat front edge before
                 // it drops onto the plank, mirroring the bus door
                 // waypoint.
-                Vector3 waypointGround = seatGround + faceDirection *
+                Vector3 waypointGround = seatGround + ApproachDirection *
                     (seat.SeatDepth * 0.5f + 0.10f);
                 waypointGround.y = entryRoot.y;
                 PelvisTransition =
@@ -231,11 +242,15 @@ namespace BarPromenade
                 ? triggerGround +
                     sideDirection * (SideDockDistance * 0.5f) -
                     faceDirection * 0.35f
-                : triggerGround + faceDirection * 0.3f;
-            TriggerRotation = EntryRotation;
+                : triggerGround + ApproachDirection * 0.3f;
+            TriggerRotation = boardSeat
+                ? EntryRotation
+                : Quaternion.LookRotation(
+                    ApproachDirection,
+                    Vector3.up);
 
-            // Trigger local axes follow the facing: X spans the plank,
-            // Z reaches over the approach side. A game plank also
+            // Trigger local axes follow the open approach side: X spans
+            // the plank, Z reaches over the dock. A game plank also
             // offers itself along its own end, because that end is the
             // only part of it a body can stand beside — and it leans
             // its depth backwards onto the open lawn, so the volume
@@ -266,6 +281,7 @@ namespace BarPromenade
         public float SeatWidth { get; }
         public float SeatDepth { get; }
         public float ApproachClearance { get; }
+        public Vector3 ApproachDirection { get; }
         public Vector3 EntryRootPosition { get; }
         public Quaternion EntryRotation { get; }
         public Vector3 EntryHipPosition { get; }
@@ -285,7 +301,8 @@ namespace BarPromenade
         /// <summary>
         /// The planar step from the middle of a seat to the dock a body
         /// walks to before the enter clip takes over. An ordinary plank
-        /// is backed up onto from the front. A game plank cannot be:
+        /// uses its facing as its approach; a loose stool may author the
+        /// opposite open side independently. A game plank cannot use either:
         /// the table stands exactly there, so its dock waits off the
         /// plank's end on the sitter's right instead, and the hips
         /// travel in sideways.
@@ -305,7 +322,7 @@ namespace BarPromenade
             Vector3 face = seat.FaceDirection;
             if (seat.Kind == CityBenchSeatKind.Plank)
             {
-                return face *
+                return seat.ApproachDirection *
                     (seat.SeatDepth * 0.5f + EntryEdgeDistance);
             }
 
@@ -316,8 +333,9 @@ namespace BarPromenade
         /// <summary>
         /// Plans the walked detour a sitter takes when he stands on the
         /// wrong side of the timber: around the nearer plank end, hugging
-        /// the seat's approach clearance, to the front where the entry
-        /// dock waits. Fills up to <see cref="MaximumApproachWaypoints"/>
+        /// the seat's approach clearance, to the authored open side where
+        /// the entry dock waits. Fills up to
+        /// <see cref="MaximumApproachWaypoints"/>
         /// corners into the buffer and returns how many are needed —
         /// zero when the sitter already stands on the dock side.
         /// </summary>
@@ -340,15 +358,22 @@ namespace BarPromenade
             }
 
             Vector3 face = EntryRotation * Vector3.forward;
-            var tangent = new Vector3(face.z, 0f, -face.x);
+            bool boardSeat = Kind != CityBenchSeatKind.Plank;
+            Vector3 approach = boardSeat
+                ? face
+                : ApproachDirection;
+            var tangent = new Vector3(
+                approach.z,
+                0f,
+                -approach.x);
             var center = new Vector3(
                 InteractionPosition.x,
                 EntryRootPosition.y,
                 InteractionPosition.z);
             Vector3 offset = fromPosition - center;
             offset.y = 0f;
-            float longitudinal = Vector3.Dot(offset, face);
-            if (Kind != CityBenchSeatKind.Plank)
+            float longitudinal = Vector3.Dot(offset, approach);
+            if (boardSeat)
             {
                 return BuildBoardApproachWaypoints(
                     center,
@@ -375,12 +400,13 @@ namespace BarPromenade
                 // Starting behind the backrest: first clear the rear
                 // corner, deep enough that a shelter's back wall stays
                 // outside the capsule.
-                buffer[count++] = center + corridor - face *
+                buffer[count++] = center + corridor - approach *
                     (frontEdge +
                      Mathf.Max(EntryEdgeDistance, ApproachClearance));
             }
 
-            buffer[count++] = center + corridor + face * frontDistance;
+            buffer[count++] =
+                center + corridor + approach * frontDistance;
             return count;
         }
 
@@ -810,7 +836,8 @@ namespace BarPromenade
                 groundY,
                 seat.FaceDirection,
                 seat.ApproachClearance,
-                seat.Kind);
+                seat.Kind,
+                seat.ApproachDirection);
         }
 
         private static void SampleWalkwayTops(

@@ -337,7 +337,7 @@ namespace BarPromenade
             CheckOneApproach(
                 site,
                 seat.SeatTopCenter,
-                seat.FaceDirection,
+                seat.ApproachDirection,
                 seat.SeatWidth,
                 near,
                 near + SeatApproachDepth,

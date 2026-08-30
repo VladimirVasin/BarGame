@@ -18,7 +18,10 @@ while only the interior street loops remain seed-optional. The
 default footprint also extends east to a reachable `3 x 2` cemetery with
 deterministic physical landmarks and street access, a separate `4 x 2`
 church precinct immediately north of it, and the residual plain `4 x 4`
-north-east yard (the drained former lake block). The church owns a large
+north-east yard (the drained former lake block). Once the hero has sealed
+his first grave, two ordinary procedural ravens hold to the cemetery — one
+on that grave's mound, one on open ground nearby — flushing from a close
+approach and returning when he withdraws. The church owns a large
 Blender-authored exterior and a west-facing street entrance into its separate
 runtime-composed interior;
 the north edge carries the dressed seacoast precinct — mol, beacon,
@@ -160,6 +163,23 @@ the surrounding far stand and both ridge rings keep every road reveal from
 becoming a second vista. Natural debris gathers into five unequal roadside
 chapters with deliberate gaps around those structural beats and a shared
 conservative footprint clearance against all existing roadside furniture.
+The cafe's visible shell, interior and furniture now come from one
+deterministic fixed-metre Blender set: `51` semantic meshes / `4,970`
+triangles, `45` anchors and six dynamic prop assemblies. The terminal plan
+still owns its five-sided footprint, open `1.6 m` door, shelter, map landmark,
+three causal appliance voices and exactly `17` logical colliders. Seven stools
+follow the long counter and return: the lone visitor and synchronized pair
+occupy three, four stay empty, and the hero keeps the middle main-row seat.
+Its approach remains in the aisle while its seated facing now points at the
+counter. Three environment-owned coffee cups visibly drain as their owners use
+dedicated Drink clips; at the refill threshold the attendant leaves the Wipe
+loop, walks to the cup and pours it full. The ten-clip cast stays silent and the
+attendant never serves the hero. Two visible practicals plus one shadowless
+technical sulphur wash retain the light contract. Six colour-neutral semantic
+detail sheets split exterior, interior, counter, metal, props and glass without
+adding a new hue, readable text, `PHILLIES`, `5¢`, logo, price, menu or copied
+city background; authored UV regions and a zero-overlap validator prevent
+stretching, repeated samples and coplanar flicker.
 Eight of the
 twelve roadside-misc kinds — `102` of `159` placements — now render from a
 deterministic `19`-mesh Blender library combined into `12` runtime batches;
@@ -391,9 +411,9 @@ returns. They spawn at randomly
   31-bone A-pose hierarchy and Avatar copied from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a shared
   `0.835 m` rest pelvis. Pedestrian and staged manifests are generator version
-  `4.0.0`, the three special manifests are `2.0.0`, and the
+  `4.1.0`, the three special manifests are `2.0.0`, and the
   `CityPedestrianLocomotion` bank now contains `37` clips; the four Mountain
-  Road cafe roles retain their separate `8`-clip bank. Their FBXs were
+  Road cafe roles retain their separate `10`-clip bank. Their FBXs were
   reimported and the production prefabs/provider assets rebuilt, so runtime uses
   these models rather than retaining the former bodies behind new plans.
   The special models measure `50` meshes/`1,436` triangles for the

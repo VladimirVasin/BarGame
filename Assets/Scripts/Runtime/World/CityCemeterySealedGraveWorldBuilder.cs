@@ -296,6 +296,46 @@ namespace BarPromenade
                 plan.Ground.z);
         }
 
+        /// <summary>
+        /// Centre of the mound's top course — the one honest perch a
+        /// finished grave offers a bird. It is computed from the same
+        /// course tables <see cref="BuildMound"/> stacks, so it can
+        /// never drift from the geometry something is asked to stand
+        /// on; a copy of these numbers anywhere else would be a perch
+        /// that floats the day the mound changes.
+        /// </summary>
+        public static Vector3 GetMoundCrownPoint(
+            CemeteryGravediggingPlan plan)
+        {
+            if (plan == null)
+            {
+                throw new ArgumentNullException(nameof(plan));
+            }
+
+            // The top course's centre: the shared mound seat plus the
+            // course's own offset, both stated in the grave's frame.
+            // Course offsets are measured from the common centre, not
+            // accumulated up the stack.
+            int top = CourseHeights.Length - 1;
+            Vector2 offset = CourseOffsets[top];
+            Vector3 local = plan.Heading * new Vector3(
+                offset.x,
+                0f,
+                -MoundFootShiftMeters + offset.y);
+            float height = 0f;
+            for (int course = 0;
+                 course < CourseHeights.Length;
+                 course++)
+            {
+                height += CourseHeights[course];
+            }
+
+            return new Vector3(
+                plan.Ground.x + local.x,
+                plan.GroundTopY + height,
+                plan.Ground.z + local.z);
+        }
+
         private static float MeasureLowestPoint(Transform mover)
         {
             Renderer[] renderers =

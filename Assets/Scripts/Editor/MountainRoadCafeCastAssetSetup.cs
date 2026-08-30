@@ -28,6 +28,8 @@ namespace BarPromenade.Editor
         public const string ProviderPath =
             "Assets/Resources/MountainRoad/" +
             "MountainRoadCafeCastProvider.asset";
+        public const string CoffeePotSpoutAnchorName =
+            "SOCKET_CafePotSpout";
 
         public const string LonePatronModelPath =
             "Assets/Pedestrians/Staged/Models/" +
@@ -88,10 +90,16 @@ namespace BarPromenade.Editor
                 LonePatronModelPath,
                 LonePatronManifestPath,
                 LonePatronPrefabPath,
-                "CafeLoneIdle",
-                12f,
-                "CafeLoneBeat",
-                5f,
+                MountainRoadCafeCastClipKind.Idle,
+                new[]
+                {
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.Idle,
+                        "CafeLoneIdle", 12f, true),
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.Drink,
+                        "CafeLoneDrink", 5f, false)
+                },
                 900,
                 1900),
             new CafeCastDescriptor(
@@ -102,10 +110,16 @@ namespace BarPromenade.Editor
                 PairManModelPath,
                 PairManManifestPath,
                 PairManPrefabPath,
-                "CafeManIdle",
-                10f,
-                "CafeManBeat",
-                4f,
+                MountainRoadCafeCastClipKind.Idle,
+                new[]
+                {
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.Idle,
+                        "CafeManIdle", 10f, true),
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.Drink,
+                        "CafeManDrink", 4.75f, false)
+                },
                 900,
                 1850),
             new CafeCastDescriptor(
@@ -116,10 +130,16 @@ namespace BarPromenade.Editor
                 PairWomanModelPath,
                 PairWomanManifestPath,
                 PairWomanPrefabPath,
-                "CafeWomanIdle",
-                11f,
-                "CafeWomanBeat",
-                4.5f,
+                MountainRoadCafeCastClipKind.Idle,
+                new[]
+                {
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.Idle,
+                        "CafeWomanIdle", 11f, true),
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.Drink,
+                        "CafeWomanDrink", 4.75f, false)
+                },
                 900,
                 1950),
             new CafeCastDescriptor(
@@ -130,10 +150,22 @@ namespace BarPromenade.Editor
                 AttendantModelPath,
                 AttendantManifestPath,
                 AttendantPrefabPath,
-                "CafeAttendantIdle",
-                13f,
-                "CafeAttendantBeat",
-                5f,
+                MountainRoadCafeCastClipKind.Wipe,
+                new[]
+                {
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.Wipe,
+                        "CafeAttendantWipe", 9f, true),
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.Walk,
+                        "CafeAttendantWalk", 1.25f, true),
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.Pour,
+                        "CafeAttendantPour", 3.5f, false),
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.Notice,
+                        "CafeAttendantNotice", 2.5f, false)
+                },
                 900,
                 2000)
         };
@@ -142,6 +174,8 @@ namespace BarPromenade.Editor
         private static bool buildQueued;
 
         public static bool IsBuilding => isBuilding;
+        private static int ExpectedClipCount =>
+            Descriptors.Sum(descriptor => descriptor.Clips.Length);
 
         static MountainRoadCafeCastAssetSetup()
         {
@@ -242,6 +276,35 @@ namespace BarPromenade.Editor
                     descriptor.ManifestPath,
                     path,
                     StringComparison.OrdinalIgnoreCase));
+        }
+
+        public static bool TryGetClipLoopFlag(
+            string clipName,
+            out bool loop)
+        {
+            for (int descriptorIndex = 0;
+                 descriptorIndex < Descriptors.Length;
+                 descriptorIndex++)
+            {
+                CafeClipDescriptor[] clips =
+                    Descriptors[descriptorIndex].Clips;
+                for (int clipIndex = 0;
+                     clipIndex < clips.Length;
+                     clipIndex++)
+                {
+                    if (string.Equals(
+                            clips[clipIndex].Name,
+                            clipName,
+                            StringComparison.Ordinal))
+                    {
+                        loop = clips[clipIndex].Loop;
+                        return true;
+                    }
+                }
+            }
+
+            loop = false;
+            return false;
         }
 
         public static void QueueBuildWhenSourcesExist()
@@ -365,20 +428,26 @@ namespace BarPromenade.Editor
                     $"'{descriptor.ModelPath}'.");
             }
 
-            AnimationClip idle = LoadAnimationClip(
-                descriptor.IdleClipName,
-                descriptor.IdleDuration,
-                animationManifest);
-            AnimationClip beat = LoadAnimationClip(
-                descriptor.BeatClipName,
-                descriptor.BeatDuration,
-                animationManifest);
+            var clipBindings = new MountainRoadCafeCastClipBinding[
+                descriptor.Clips.Length];
+            for (int index = 0; index < descriptor.Clips.Length; index++)
+            {
+                CafeClipDescriptor clip = descriptor.Clips[index];
+                clipBindings[index] = new MountainRoadCafeCastClipBinding(
+                    clip.Kind,
+                    LoadAnimationClip(
+                        clip.Name,
+                        clip.Duration,
+                        clip.Loop,
+                        animationManifest),
+                    clip.Loop);
+            }
+
             BuildPrefab(
                 descriptor,
                 modelAsset,
                 sharedMaterial,
-                idle,
-                beat,
+                clipBindings,
                 manifest);
         }
 
@@ -386,8 +455,7 @@ namespace BarPromenade.Editor
             CafeCastDescriptor descriptor,
             GameObject modelAsset,
             Material sharedMaterial,
-            AnimationClip idle,
-            AnimationClip beat,
+            MountainRoadCafeCastClipBinding[] clipBindings,
             CafeCastModelManifest manifest)
         {
             GameObject prefabRoot =
@@ -451,6 +519,15 @@ namespace BarPromenade.Editor
                             ParseColor(part.base_color)));
                 }
 
+                if (descriptor.Role ==
+                    MountainRoadCafeCastRole.Attendant)
+                {
+                    BuildCoffeePotSpoutAnchor(
+                        model,
+                        renderersByName,
+                        descriptor.DisplayName);
+                }
+
                 Animator[] animators =
                     model.GetComponentsInChildren<Animator>(true);
                 Animator animator;
@@ -494,8 +571,9 @@ namespace BarPromenade.Editor
                         MountainRoadCafeCastAssetRegistry>();
                 registry.Configure(
                     animator,
-                    idle,
-                    beat,
+                    descriptor.Role,
+                    descriptor.DefaultClipKind,
+                    clipBindings,
                     model.transform,
                     bindings.ToArray());
 
@@ -603,21 +681,42 @@ namespace BarPromenade.Editor
                     "prefab transform contract.");
             }
 
-            ValidateAnimationClip(
-                registry.IdleClip,
-                descriptor.IdleClipName,
-                descriptor.IdleDuration,
-                animationManifest);
-            ValidateAnimationClip(
-                registry.BeatClip,
-                descriptor.BeatClipName,
-                descriptor.BeatDuration,
-                animationManifest);
+            if (registry.Role != descriptor.Role ||
+                registry.DefaultClipKind != descriptor.DefaultClipKind ||
+                registry.ClipBindings.Count != descriptor.Clips.Length)
+            {
+                throw new InvalidOperationException(
+                    $"{descriptor.DisplayName} registry role/default/clip " +
+                    "count differs from its authored contract.");
+            }
+
+            for (int index = 0; index < descriptor.Clips.Length; index++)
+            {
+                CafeClipDescriptor expected = descriptor.Clips[index];
+                MountainRoadCafeCastClipBinding binding =
+                    registry.ClipBindings[index];
+                if (binding == null ||
+                    binding.Kind != expected.Kind ||
+                    binding.Loop != expected.Loop)
+                {
+                    throw new InvalidOperationException(
+                        $"{descriptor.DisplayName} clip binding {index} " +
+                        "differs from its authored kind/loop contract.");
+                }
+
+                ValidateAnimationClip(
+                    binding.Clip,
+                    expected.Name,
+                    expected.Duration,
+                    expected.Loop,
+                    animationManifest);
+            }
             ValidateRendererBindings(
                 descriptor,
                 prefab,
                 registry,
                 manifest);
+            ValidateCoffeePotSpoutAnchor(descriptor, prefab);
             ValidatePassivePrefab(descriptor, prefab, registry);
         }
 
@@ -849,17 +948,13 @@ namespace BarPromenade.Editor
                     AnimationPath,
                     StringComparison.Ordinal) ||
                 !manifest.shared_clips.SequenceEqual(
-                    new[]
-                    {
-                        descriptor.IdleClipName,
-                        descriptor.BeatClipName
-                    },
+                    descriptor.Clips.Select(clip => clip.Name),
                     StringComparer.Ordinal))
             {
                 throw new InvalidOperationException(
                     $"{descriptor.DisplayName} must be a non-emissive, " +
                     "collider-free, animation-free staged model using " +
-                    "Player3DLit and exactly its isolated Idle/Beat pair.");
+                    "Player3DLit and exactly its isolated cafe clip set.");
             }
 
             if (string.IsNullOrWhiteSpace(manifest.generator_version) ||
@@ -872,7 +967,59 @@ namespace BarPromenade.Editor
             }
 
             ValidateManifestHierarchy(descriptor, manifest);
+            ValidateManifestRigAnchors(descriptor, manifest);
             return manifest;
+        }
+
+        private static void ValidateManifestRigAnchors(
+            CafeCastDescriptor descriptor,
+            CafeCastModelManifest manifest)
+        {
+            CafeCastManifestRigAnchor[] anchors = manifest.rig_anchors ??
+                Array.Empty<CafeCastManifestRigAnchor>();
+            int expectedCount = descriptor.Role ==
+                                MountainRoadCafeCastRole.Attendant
+                ? 1
+                : 0;
+            if (anchors.Length != expectedCount)
+            {
+                throw new InvalidOperationException(
+                    $"{descriptor.DisplayName} manifest has the wrong " +
+                    "coffee-pot anchor count.");
+            }
+
+            if (expectedCount == 0)
+            {
+                return;
+            }
+
+            CafeCastManifestRigAnchor anchor = anchors[0];
+            if (anchor == null ||
+                !string.Equals(
+                    anchor.name,
+                    CoffeePotSpoutAnchorName,
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    anchor.bone,
+                    "hand.R",
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    anchor.kind,
+                    "anchor",
+                    StringComparison.Ordinal) ||
+                anchor.parts == null ||
+                !anchor.parts.SequenceEqual(
+                    new[] { "ACC_CoffeePotSpout" },
+                    StringComparer.Ordinal) ||
+                !string.Equals(
+                    anchor.axis_from,
+                    "ACC_CoffeePotBody",
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Cafe attendant manifest must declare the measured " +
+                    "coffee-pot spout anchor on hand.R.");
+            }
         }
 
         private static void ValidateManifestHierarchy(
@@ -935,8 +1082,8 @@ namespace BarPromenade.Editor
                 manifest.fps != ExpectedAnimationFps ||
                 manifest.bone_count != ExpectedBoneCount ||
                 manifest.mesh_count != 0 ||
-                manifest.clip_count != Descriptors.Length * 2 ||
-                manifest.clips.Length != Descriptors.Length * 2 ||
+                manifest.clip_count != ExpectedClipCount ||
+                manifest.clips.Length != ExpectedClipCount ||
                 manifest.root_motion ||
                 string.IsNullOrWhiteSpace(manifest.skeleton_source) ||
                 string.IsNullOrWhiteSpace(manifest.generator_version) ||
@@ -953,16 +1100,19 @@ namespace BarPromenade.Editor
             for (int index = 0; index < Descriptors.Length; index++)
             {
                 CafeCastDescriptor descriptor = Descriptors[index];
-                expected.Add(
-                    descriptor.IdleClipName,
-                    new ClipExpectation(
-                        descriptor.DesignId,
-                        descriptor.IdleDuration));
-                expected.Add(
-                    descriptor.BeatClipName,
-                    new ClipExpectation(
-                        descriptor.DesignId,
-                        descriptor.BeatDuration));
+                for (int clipIndex = 0;
+                     clipIndex < descriptor.Clips.Length;
+                     clipIndex++)
+                {
+                    CafeClipDescriptor clip =
+                        descriptor.Clips[clipIndex];
+                    expected.Add(
+                        clip.Name,
+                        new ClipExpectation(
+                            descriptor.DesignId,
+                            clip.Duration,
+                            clip.Loop));
+                }
             }
 
             var names = new HashSet<string>(StringComparer.Ordinal);
@@ -985,8 +1135,8 @@ namespace BarPromenade.Editor
                     clip.frame_start != 0 ||
                     clip.frame_end != Mathf.RoundToInt(
                         expectation.Duration * ExpectedAnimationFps) ||
-                    !clip.loop ||
-                    clip.one_shot ||
+                    clip.loop != expectation.Loop ||
+                    clip.one_shot == expectation.Loop ||
                     !clip.in_place ||
                     clip.keyed_bone_count != ExpectedBoneCount ||
                     string.IsNullOrWhiteSpace(clip.authored_posture) ||
@@ -999,7 +1149,8 @@ namespace BarPromenade.Editor
                 {
                     throw new InvalidOperationException(
                         $"Cafe animation manifest clip {index} violates " +
-                        "the approved looping, in-place Generic contract.");
+                        "the approved per-clip loop, in-place Generic " +
+                        "contract.");
                 }
             }
 
@@ -1008,7 +1159,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Cafe animation manifest must contain exactly the " +
-                    "approved four Idle/Beat pairs.");
+                    "approved ten cafe service clips.");
             }
 
             ValidateImportedAnimationAsset(manifest);
@@ -1037,11 +1188,11 @@ namespace BarPromenade.Editor
             }
 
             AnimationClip[] clips = GetImportedAnimationClips();
-            if (clips.Length != Descriptors.Length * 2)
+            if (clips.Length != ExpectedClipCount)
             {
                 throw new InvalidOperationException(
                     $"Unity imported {clips.Length} cafe clips; expected " +
-                    $"{Descriptors.Length * 2}.");
+                    $"{ExpectedClipCount}.");
             }
 
             for (int index = 0; index < manifest.clips.Length; index++)
@@ -1056,6 +1207,7 @@ namespace BarPromenade.Editor
                     clip,
                     expected.name,
                     expected.duration_seconds,
+                    expected.loop,
                     manifest);
             }
 
@@ -1150,13 +1302,17 @@ namespace BarPromenade.Editor
                 modelTransforms,
                 "root",
                 descriptor.DisplayName);
+            int expectedRigTransformCount = ExpectedBoneCount +
+                (descriptor.Role == MountainRoadCafeCastRole.Attendant
+                    ? 1
+                    : 0);
             if (boneRoot
                     .GetComponentsInChildren<Transform>(true).Length !=
-                ExpectedBoneCount)
+                expectedRigTransformCount)
             {
                 throw new InvalidOperationException(
                     $"{descriptor.DisplayName} has added or missing " +
-                    "Generic bones.");
+                    "Generic bones or authored rig anchors.");
             }
 
             Renderer[] renderers =
@@ -1204,6 +1360,7 @@ namespace BarPromenade.Editor
         private static AnimationClip LoadAnimationClip(
             string name,
             float duration,
+            bool loop,
             CafeCastAnimationManifest manifest)
         {
             AnimationClip clip = GetImportedAnimationClips()
@@ -1212,7 +1369,7 @@ namespace BarPromenade.Editor
                         NormalizeClipName(candidate.name),
                         name,
                         StringComparison.Ordinal));
-            ValidateAnimationClip(clip, name, duration, manifest);
+            ValidateAnimationClip(clip, name, duration, loop, manifest);
             return clip;
         }
 
@@ -1220,6 +1377,7 @@ namespace BarPromenade.Editor
             AnimationClip clip,
             string expectedName,
             float expectedDuration,
+            bool expectedLoop,
             CafeCastAnimationManifest manifest)
         {
             CafeCastAnimationClipManifest source = manifest.clips
@@ -1245,11 +1403,13 @@ namespace BarPromenade.Editor
 
             AnimationClipSettings settings =
                 AnimationUtility.GetAnimationClipSettings(clip);
-            if (!settings.loopTime || !settings.loopBlend)
+            if (settings.loopTime != expectedLoop ||
+                settings.loopBlend != expectedLoop ||
+                AnimationUtility.GetAnimationEvents(clip).Length != 0)
             {
                 throw new InvalidOperationException(
-                    $"Cafe cast clip '{expectedName}' did not import as " +
-                    "a looping pose clip.");
+                    $"Cafe cast clip '{expectedName}' did not import with " +
+                    "its authored loop flag or contains Animation Events.");
             }
         }
 
@@ -1355,6 +1515,78 @@ namespace BarPromenade.Editor
             return result;
         }
 
+        private static void BuildCoffeePotSpoutAnchor(
+            GameObject model,
+            IReadOnlyDictionary<string, Renderer> renderers,
+            string label)
+        {
+            Dictionary<string, Transform> transforms =
+                IndexUniqueTransforms(model, label);
+            Transform hand = RequireTransform(
+                transforms,
+                "hand.R",
+                label);
+            if (!renderers.TryGetValue(
+                    "ACC_CoffeePotBody",
+                    out Renderer body) ||
+                !renderers.TryGetValue(
+                    "ACC_CoffeePotSpout",
+                    out Renderer spout) ||
+                body == null ||
+                spout == null)
+            {
+                throw new InvalidOperationException(
+                    "Cafe attendant is missing authored coffee-pot parts.");
+            }
+
+            Transform authoredAnchor = RequireTransform(
+                transforms,
+                CoffeePotSpoutAnchorName,
+                label);
+            if (authoredAnchor.parent != hand)
+            {
+                throw new InvalidOperationException(
+                    "Cafe attendant coffee-pot spout anchor must be " +
+                    "exported directly below hand.R.");
+            }
+        }
+
+        private static void ValidateCoffeePotSpoutAnchor(
+            CafeCastDescriptor descriptor,
+            GameObject prefab)
+        {
+            Transform[] matches = prefab
+                .GetComponentsInChildren<Transform>(true)
+                .Where(transform => string.Equals(
+                    transform.name,
+                    CoffeePotSpoutAnchorName,
+                    StringComparison.Ordinal))
+                .ToArray();
+            if (descriptor.Role != MountainRoadCafeCastRole.Attendant)
+            {
+                if (matches.Length != 0)
+                {
+                    throw new InvalidOperationException(
+                        $"{descriptor.DisplayName} must not own a coffee-pot " +
+                        "spout anchor.");
+                }
+
+                return;
+            }
+
+            if (matches.Length != 1 ||
+                matches[0].parent == null ||
+                !string.Equals(
+                    matches[0].parent.name,
+                    "hand.R",
+                    StringComparison.Ordinal))
+            {
+                throw new InvalidOperationException(
+                    "Cafe attendant requires one measured " +
+                    $"'{CoffeePotSpoutAnchorName}' child of hand.R.");
+            }
+        }
+
         private static Transform RequireTransform(
             IReadOnlyDictionary<string, Transform> transforms,
             string name,
@@ -1456,10 +1688,8 @@ namespace BarPromenade.Editor
                 string modelPath,
                 string manifestPath,
                 string prefabPath,
-                string idleClipName,
-                float idleDuration,
-                string beatClipName,
-                float beatDuration,
+                MountainRoadCafeCastClipKind defaultClipKind,
+                CafeClipDescriptor[] clips,
                 int minimumTriangleCount,
                 int maximumTriangleCount)
             {
@@ -1470,10 +1700,9 @@ namespace BarPromenade.Editor
                 ModelPath = modelPath;
                 ManifestPath = manifestPath;
                 PrefabPath = prefabPath;
-                IdleClipName = idleClipName;
-                IdleDuration = idleDuration;
-                BeatClipName = beatClipName;
-                BeatDuration = beatDuration;
+                DefaultClipKind = defaultClipKind;
+                Clips = clips ??
+                    throw new ArgumentNullException(nameof(clips));
                 MinimumTriangleCount = minimumTriangleCount;
                 MaximumTriangleCount = maximumTriangleCount;
             }
@@ -1485,24 +1714,47 @@ namespace BarPromenade.Editor
             public string ModelPath { get; }
             public string ManifestPath { get; }
             public string PrefabPath { get; }
-            public string IdleClipName { get; }
-            public float IdleDuration { get; }
-            public string BeatClipName { get; }
-            public float BeatDuration { get; }
+            public MountainRoadCafeCastClipKind DefaultClipKind { get; }
+            public CafeClipDescriptor[] Clips { get; }
             public int MinimumTriangleCount { get; }
             public int MaximumTriangleCount { get; }
         }
 
+        private sealed class CafeClipDescriptor
+        {
+            public CafeClipDescriptor(
+                MountainRoadCafeCastClipKind kind,
+                string name,
+                float duration,
+                bool loop)
+            {
+                Kind = kind;
+                Name = name;
+                Duration = duration;
+                Loop = loop;
+            }
+
+            public MountainRoadCafeCastClipKind Kind { get; }
+            public string Name { get; }
+            public float Duration { get; }
+            public bool Loop { get; }
+        }
+
         private sealed class ClipExpectation
         {
-            public ClipExpectation(string designId, float duration)
+            public ClipExpectation(
+                string designId,
+                float duration,
+                bool loop)
             {
                 DesignId = designId;
                 Duration = duration;
+                Loop = loop;
             }
 
             public string DesignId { get; }
             public float Duration { get; }
+            public bool Loop { get; }
         }
 
         [Serializable]
@@ -1529,6 +1781,7 @@ namespace BarPromenade.Editor
             public string build_signature;
             public CafeCastManifestBone[] bones;
             public CafeCastManifestPart[] parts;
+            public CafeCastManifestRigAnchor[] rig_anchors;
         }
 
         [Serializable]
@@ -1546,6 +1799,16 @@ namespace BarPromenade.Editor
             public string bone;
             public string palette_name;
             public float[] base_color;
+        }
+
+        [Serializable]
+        private sealed class CafeCastManifestRigAnchor
+        {
+            public string name;
+            public string bone;
+            public string kind;
+            public string[] parts;
+            public string axis_from;
         }
 
         [Serializable]
@@ -1672,8 +1935,17 @@ namespace BarPromenade.Editor
             {
                 ModelImporterClipAnimation clip = clips[index];
                 clip.name = NormalizeClipName(clip.name);
-                clip.loopTime = true;
-                clip.loopPose = true;
+                if (!MountainRoadCafeCastAssetSetup.TryGetClipLoopFlag(
+                        clip.name,
+                        out bool loop))
+                {
+                    throw new InvalidOperationException(
+                        "Cafe animation FBX contains undeclared clip " +
+                        $"'{clip.name}'.");
+                }
+
+                clip.loopTime = loop;
+                clip.loopPose = loop;
                 clip.keepOriginalOrientation = true;
                 clip.keepOriginalPositionY = true;
                 clip.keepOriginalPositionXZ = true;

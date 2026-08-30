@@ -6,10 +6,9 @@ using UnityEngine.Playables;
 namespace BarPromenade
 {
     /// <summary>
-    /// Keeps one bespoke cafe figure in its authored idle and briefly blends
-    /// its one visible beat over that loop. Scheduling belongs to the shared
-    /// cast controller; this component owns only pose playback and graph
-    /// lifetime.
+    /// Manual Playables presentation for one cafe figure. The controller
+    /// supplies absolute phase time, so both members of the couple sample
+    /// their Drink clips from the same clock even after a frame hitch.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MountainRoadCafeCastPresentation : MonoBehaviour
@@ -21,25 +20,26 @@ namespace BarPromenade
         private MountainRoadCafeCastAssetRegistry registry;
         private PlayableGraph graph;
         private AnimationMixerPlayable mixer;
-        private AnimationClipPlayable idlePlayable;
-        private AnimationClipPlayable beatPlayable;
+        private AnimationClipPlayable defaultPlayable;
+        private AnimationClipPlayable actionPlayable;
+        private AnimationClip actionClip;
         private float initialIdlePhaseSeconds;
-        private float beatLengthSeconds;
-        private float beatElapsedSeconds;
-        private bool beatHeldAtEnd;
         private bool hasGraph;
+        private bool hasActionPlayable;
+        private MountainRoadCafeCastClipKind currentClipKind;
+        private float currentClipTimeSeconds;
 
         public bool IsInitialized { get; private set; }
         public MountainRoadCafeCastRole Role { get; private set; }
         public MountainRoadCafeCastAssetRegistry Registry => registry;
-
+        public MountainRoadCafeCastClipKind CurrentClipKind =>
+            currentClipKind;
+        public float CurrentClipTimeSeconds => currentClipTimeSeconds;
         public bool IsBeatPlaying =>
-            hasGraph &&
-            beatElapsedSeconds <
-            beatLengthSeconds + BeatBlendOutSeconds;
-
-        public bool CanBeginBeat =>
-            IsInitialized && hasGraph && !IsBeatPlaying;
+            currentClipKind != registry?.DefaultClipKind;
+        public bool CanBeginBeat => IsInitialized &&
+                                    currentClipKind ==
+                                    registry.DefaultClipKind;
 
         public void Initialize(
             MountainRoadCafeCastAssetRegistry assetRegistry,
@@ -58,25 +58,30 @@ namespace BarPromenade
             }
 
             if (assetRegistry.Animator == null ||
-                assetRegistry.ModelRoot == null)
+                assetRegistry.ModelRoot == null ||
+                assetRegistry.Role != role ||
+                assetRegistry.IdleClip == null)
             {
                 throw new InvalidOperationException(
-                    "A cafe cast prefab requires an Animator and model root.");
+                    "A cafe cast prefab has an incomplete or mismatched " +
+                    "animation registry.");
             }
 
-            if (assetRegistry.IdleClip == null ||
-                assetRegistry.BeatClip == null)
+            if (!assetRegistry.TryGetClip(
+                    assetRegistry.DefaultClipKind,
+                    out _,
+                    out bool defaultLoops) ||
+                !defaultLoops)
             {
                 throw new InvalidOperationException(
-                    "A cafe cast prefab requires its Idle and Beat clips.");
+                    "A cafe cast default presentation clip must loop.");
             }
 
             registry = assetRegistry;
             Role = role;
             initialIdlePhaseSeconds = Mathf.Max(0f, idlePhaseSeconds);
-            beatLengthSeconds = Mathf.Max(
-                0.0001f,
-                assetRegistry.BeatClip.length);
+            currentClipKind = registry.DefaultClipKind;
+            currentClipTimeSeconds = initialIdlePhaseSeconds;
             IsInitialized = true;
             if (Application.isPlaying)
             {
@@ -84,20 +89,78 @@ namespace BarPromenade
             }
         }
 
-        public bool TryBeginBeat()
+        public bool ApplyClip(
+            MountainRoadCafeCastClipKind kind,
+            float elapsedSeconds)
         {
-            if (!CanBeginBeat)
+            if (!IsInitialized ||
+                float.IsNaN(elapsedSeconds) ||
+                float.IsInfinity(elapsedSeconds) ||
+                elapsedSeconds < 0f ||
+                !registry.TryGetClip(kind, out AnimationClip clip, out bool loop))
             {
                 return false;
             }
 
-            beatElapsedSeconds = 0f;
-            beatHeldAtEnd = false;
-            beatPlayable.SetTime(0d);
-            beatPlayable.SetSpeed(1d);
+            currentClipKind = kind;
+            currentClipTimeSeconds = loop
+                ? Mathf.Repeat(elapsedSeconds, Mathf.Max(0.0001f, clip.length))
+                : Mathf.Min(elapsedSeconds, clip.length);
+            if (Role == MountainRoadCafeCastRole.Attendant)
+            {
+                registry.SetCoffeePotVisible(
+                    (kind == MountainRoadCafeCastClipKind.Walk ||
+                     kind == MountainRoadCafeCastClipKind.Pour));
+            }
+
+            if (!hasGraph)
+            {
+                return true;
+            }
+
+            if (kind == registry.DefaultClipKind)
+            {
+                mixer.SetInputWeight(0, 1f);
+                mixer.SetInputWeight(1, 0f);
+                return true;
+            }
+
+            EnsureActionPlayable(kind, clip);
+            actionPlayable.SetTime(currentClipTimeSeconds);
+            actionPlayable.SetSpeed(0d);
+            float actionWeight = ResolveAuthoredActionWeight(
+                elapsedSeconds,
+                clip.length);
+            mixer.SetInputWeight(0, 1f - actionWeight);
+            mixer.SetInputWeight(1, actionWeight);
+            graph.Evaluate(0f);
             return true;
         }
 
+        private static float ResolveAuthoredActionWeight(
+            float elapsedSeconds,
+            float clipLengthSeconds)
+        {
+            if (clipLengthSeconds <= 0f ||
+                elapsedSeconds < 0f ||
+                elapsedSeconds >= clipLengthSeconds)
+            {
+                return 0f;
+            }
+
+            float rise = Mathf.Clamp01(
+                elapsedSeconds / BeatBlendInSeconds);
+            float fall = Mathf.Clamp01(
+                (clipLengthSeconds - elapsedSeconds) /
+                BeatBlendOutSeconds);
+            return Mathf.Min(rise, fall);
+        }
+
+        /// <summary>
+        /// Kept as the public blend-envelope contract used by focused asset
+        /// tests and older callers. New service playback is phase-clocked and
+        /// its authored one-shots begin/end on their matching base poses.
+        /// </summary>
         public static float ResolveBeatWeight(
             float elapsedSeconds,
             float clipLengthSeconds)
@@ -114,8 +177,7 @@ namespace BarPromenade
             float rise = Mathf.Clamp01(
                 elapsedSeconds / BeatBlendInSeconds);
             float fall = Mathf.Clamp01(
-                (clipLengthSeconds + BeatBlendOutSeconds -
-                 elapsedSeconds) /
+                (clipLengthSeconds + BeatBlendOutSeconds - elapsedSeconds) /
                 BeatBlendOutSeconds);
             return Mathf.Min(rise, fall);
         }
@@ -135,27 +197,15 @@ namespace BarPromenade
                 return;
             }
 
-            float step = Mathf.Min(
-                Time.deltaTime,
-                MaximumStepSeconds);
-            if (IsBeatPlaying)
+            // Visual playback may take bounded substeps; scheduling and fill
+            // state are not clamped and remain hitch-safe in the pure model.
+            float remaining = Mathf.Max(0f, Time.deltaTime);
+            while (remaining > 0f)
             {
-                beatElapsedSeconds += step;
-                if (!beatHeldAtEnd &&
-                    beatElapsedSeconds >= beatLengthSeconds)
-                {
-                    beatHeldAtEnd = true;
-                    beatPlayable.SetTime(beatLengthSeconds);
-                    beatPlayable.SetSpeed(0d);
-                }
+                float step = Mathf.Min(remaining, MaximumStepSeconds);
+                graph.Evaluate(step);
+                remaining -= step;
             }
-
-            float beatWeight = ResolveBeatWeight(
-                beatElapsedSeconds,
-                beatLengthSeconds);
-            mixer.SetInputWeight(0, 1f - beatWeight);
-            mixer.SetInputWeight(1, beatWeight);
-            graph.Evaluate(step);
         }
 
         private void CreateGraph()
@@ -165,31 +215,21 @@ namespace BarPromenade
                 return;
             }
 
-            graph = PlayableGraph.Create(
-                "Mountain Cafe " + Role);
+            graph = PlayableGraph.Create("Mountain Cafe " + Role);
             try
             {
                 graph.SetTimeUpdateMode(DirectorUpdateMode.Manual);
-                idlePlayable = AnimationClipPlayable.Create(
+                defaultPlayable = AnimationClipPlayable.Create(
                     graph,
                     registry.IdleClip);
-                idlePlayable.SetApplyFootIK(false);
-                idlePlayable.SetApplyPlayableIK(false);
-                idlePlayable.SetTime(Mathf.Repeat(
+                defaultPlayable.SetApplyFootIK(false);
+                defaultPlayable.SetApplyPlayableIK(false);
+                defaultPlayable.SetTime(Mathf.Repeat(
                     initialIdlePhaseSeconds,
                     Mathf.Max(0.0001f, registry.IdleClip.length)));
 
-                beatPlayable = AnimationClipPlayable.Create(
-                    graph,
-                    registry.BeatClip);
-                beatPlayable.SetApplyFootIK(false);
-                beatPlayable.SetApplyPlayableIK(false);
-                beatPlayable.SetTime(beatLengthSeconds);
-                beatPlayable.SetSpeed(0d);
-
                 mixer = AnimationMixerPlayable.Create(graph, 2);
-                graph.Connect(idlePlayable, 0, mixer, 0);
-                graph.Connect(beatPlayable, 0, mixer, 1);
+                graph.Connect(defaultPlayable, 0, mixer, 0);
                 mixer.SetInputWeight(0, 1f);
                 mixer.SetInputWeight(1, 0f);
                 AnimationPlayableOutput.Create(
@@ -198,12 +238,10 @@ namespace BarPromenade
                         registry.Animator)
                     .SetSourcePlayable(mixer);
 
-                beatElapsedSeconds =
-                    beatLengthSeconds + BeatBlendOutSeconds;
-                beatHeldAtEnd = true;
                 graph.Play();
                 graph.Evaluate(0f);
                 hasGraph = true;
+                ApplyClip(currentClipKind, currentClipTimeSeconds);
             }
             catch
             {
@@ -213,8 +251,36 @@ namespace BarPromenade
                 }
 
                 hasGraph = false;
+                hasActionPlayable = false;
                 throw;
             }
+        }
+
+        private void EnsureActionPlayable(
+            MountainRoadCafeCastClipKind kind,
+            AnimationClip clip)
+        {
+            if (hasActionPlayable &&
+                actionClip == clip)
+            {
+                return;
+            }
+
+            if (hasActionPlayable)
+            {
+                graph.Disconnect(mixer, 1);
+                actionPlayable.Destroy();
+                hasActionPlayable = false;
+                actionClip = null;
+            }
+
+            actionPlayable = AnimationClipPlayable.Create(graph, clip);
+            actionPlayable.SetApplyFootIK(false);
+            actionPlayable.SetApplyPlayableIK(false);
+            actionPlayable.SetSpeed(0d);
+            graph.Connect(actionPlayable, 0, mixer, 1);
+            actionClip = clip;
+            hasActionPlayable = true;
         }
 
         private void OnDisable()
@@ -235,6 +301,9 @@ namespace BarPromenade
             }
 
             hasGraph = false;
+            hasActionPlayable = false;
+            actionClip = null;
+            registry?.SetCoffeePotVisible(false);
         }
     }
 }

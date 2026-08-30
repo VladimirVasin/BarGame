@@ -121,6 +121,8 @@ Assets/
         StairwellDirtyWoodAlbedo.png    wardrobe and debris planks
         StairwellDebrisAlbedo.png       paper, bottle, mattress and sacks
       StairwellCatProvider.asset      serialized link to the passive 3D cat prefab
+    Cemetery/
+      CemeteryRavenProvider.asset     serialized link to the passive 3D raven prefab
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
       CityMiscAssetProvider.asset   271 passive City role-mesh bindings / 48,926 triangles + v4.8.0 signature
@@ -144,6 +146,9 @@ Assets/
       ExteriorTextures/               nine dedicated stucco/brick/roof/wood/metal/frame/glass/concrete sheets
     MountainRoad/
       MountainRoadCafeCastProvider.asset  four isolated staged cafe prefab links
+      Cafe/
+        MountainRoadCafe3D.prefab         passive 51-mesh Nighthawks-inspired cafe + registry
+        Textures/                         six 512 px semantic detail sheets
     Church/
       ChurchExterior3D.prefab          passive Catholic exterior + typed semantic anchors
       ChurchInterior3D.prefab          passive furnished interior + typed semantic anchors
@@ -179,7 +184,7 @@ Assets/
     Animations/
       CityPedestrianLocomotion.fbx      shared 37-clip NpcHumanV2 locomotion/action library
       CityPedestrianLocomotion.json     gait/contact/clearance/apex + staged wheel-contact manifest
-      MountainRoadCafeCast.{fbx,json}   isolated eight-clip silent cafe cast library
+      MountainRoadCafeCast.{fbx,json}   isolated ten-clip drink/wipe/walk/pour cafe library
     Textures/
       KettleHatDetailAtlas.png          256 px grey detail atlas (seams, chips, grooves, laces) multiplied by the kettle walker's palette tint
     Staged/
@@ -233,6 +238,15 @@ Assets/
     Models/                             split Catholic exterior/interior FBX + shared manifest
     Textures/                           nine deterministic plaster/stone/wood/glass/art sheets
     Materials/                          shared URP bindings for the thirteen semantic slots
+  Cemetery/
+    Raven/
+      Models/
+        CemeteryRaven3D.fbx             armature-free pivot-empty cemetery raven
+        CemeteryRaven3D.json            deterministic parts/pivots/wing-fold manifest
+      Textures/
+        CemeteryRavenDetailAtlas.png    256 px darkening feather/beak/scale detail atlas
+      Prefabs/
+        CemeteryRaven.prefab            passive asset outside Resources
   Stairwell/
     Cat/
       Models/
@@ -288,6 +302,11 @@ Assets/
         DraughtsMatch.cs       lattice-native adapter, capture-compulsory flag
       Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home/supermarket plans and builders
+        MountainRoadCafe{AssetRegistry,ModelResources,SurfaceAppearance}.cs
+                                      passive authored cafe presentation bridge
+        MountainRoadCafeCollisionWorldBuilder.cs  exact 17-collider plan-owned shell
+        MountainRoadCafe{ServiceTimeline,ServicePresentation,CupView}.cs
+                                      three-cup drink/refill loop; hero excluded
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
         CityBlueprintCatalog.cs  default 13x12 river city with eastern Cemetery, six Yards + legacy blueprint
         CityRiverPlan.cs         10 m channel, dual core promenades, three typed bridges + four lower landings
@@ -325,7 +344,8 @@ Assets/
         MountainRoadTerminal{Plan,Planner,Validator}.cs vehicle/cafe/cableway terminal contract
         MountainRoad{Terrain,Surface,Scenery}*.cs 76 m terrain, gorge, road + colliderless terminal apron
         MountainRoadSurfaceAppearance.cs six printed + nine borrowed measured surface families
-        MountainRoadCafe{WorldBuilder,WorldResult,Geometry}.cs enterable glass cafe
+        MountainRoadCafe{WorldBuilder,WorldResult,Geometry}.cs current enterable glass cafe
+          [Planned] Blender shell/interior + seven-stool visual migration
         MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs four-role silent cast
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
         MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
@@ -373,7 +393,7 @@ Assets/
         CityCemeteryPitWorldBuilder.cs    collar, floor, spoil heap + the cap that keeps the hero out
         CityHandLampWorldBuilder.cs      the shared kerosene hand lamp: pier head and graveside, one fixture
         CityCemeteryCoffinWorldBuilder.cs  six-sided turned-board coffin, overhanging lid, cross
-        CityCemeterySealedGraveWorldBuilder.cs  turned mound courses + one planner monument, slab omitted
+        CityCemeterySealedGraveWorldBuilder.cs  turned mound courses + one planner monument, slab omitted; publishes the mound-crown perch point
         CityChurchPlan.cs        `4 x 2` precinct, west door/approach, cemetery clearance + return
         CityChurchCourtyardPlan.cs  stone forecourt, north garden furniture/planting + reserved routes
         CityChurchCemeteryPassagePlan.cs  one 3 m middle-alley opening + safe shared threshold
@@ -583,6 +603,19 @@ Assets/
         (World) CityGravediggerShovelWorldBuilder.cs  the spade, and where it stands between acts
         (World) CityCemeteryProgressivePitWorldBuilder.cs  the half-dug hole, one earth block per segment
         (World) CityCemeterySegmentFrameWorldBuilder.cs  the outline round the square the spade is aimed at
+        CemeteryRavenPlan.cs  the mound-crown perch and the vacant-ground perch, pure geometry
+        CemeteryRavenPoseRules.cs  pure pose -> pivot-delta mapping for body, head, wings, tail
+        CemeteryRavenIdleModel.cs  deterministic breathe/shift/ruffle/preen idle timeline
+        CemeteryRavenHeadModel.cs  hysteresis head tracking with an 18 m fog cutoff
+        CemeteryRavenFlightModel.cs  pure takeoff/return timelines: flare, touch-down, fold
+        CemeteryRavenActor.cs  adopts pivots, perches, flies and hides one raven
+        CemeteryRavenDirectorModel.cs  the pure pair state machine: arm, arrive, flush, return
+        CityCemeteryRavenController.cs  polls the ledger's first sealed grave, drives both birds
+        CemeteryRavenProvider.cs  the only serialized reference to the staged prefab
+        CemeteryRavenRigAnchors.cs  pivot/renderer/atlas bindings; asset metadata only
+        CemeteryRavenFactory.cs  instantiation + passive-presentation guard, warning degrade
+        (Audio) CemeteryRavenCallSynthesis.cs  three synthesized caw variants on the village one-shot contract
+        (Audio) CemeteryRavenVoice.cs  one bounded spatial voice per raven, seeded perched schedule
       Park/          the two old men's boards, once somebody sits down at one
         CityBoardGameController.cs  seat hookup, seated camera ownership, pointer/cursor input, opponent think clock + every board state as a spoken cue
       LastRoute/     the island's car, the one man waiting by it, and the journey out
@@ -716,7 +749,7 @@ Assets/
         SupermarketCashierBlinkState.cs    pure 6.5 s rare-blink cycle
         SupermarketCashierInteraction.cs   E talk stub on its own trigger
       UI/            shared soot/bone 640x360 IMGUI, pause/inventory, HUD, maps and F9 debug
-        RetroUiTheme.cs             flat nested frames, stable soot grain, semantic values + font fallback
+        RetroUiTheme.cs             flat frames, soot grain, semantic values + packaged Roboto/legacy fallback
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
         CityMapAreaController.cs    tabs + stable two-area point catalog/XYZ selection
         CityMapAreaView.cs          tabs, mountain markers and travel presentation
@@ -898,6 +931,8 @@ ArtSource/
   Home/                          apartment albedo contract, manifest and contact sheet
   PlayerHome/                    generated exterior .blend/preview + nine-sheet manifest/contact sheet
   MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
+    Cafe/Blender/                generated fixed-metre cafe `.blend`
+    Cafe/Preview/                deterministic Nighthawks-composition review PNG
   Village/Blender/               village kit `.blend` source and contact sheet (no sheet of its own)
   Church/Blender/                Catholic `.blend` source + accepted exterior/interior previews
 tools/
@@ -917,6 +952,7 @@ tools/
   build-church-3d-model.py       deterministic Catholic exterior/interior Blender build + validator
   build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
+  build-mountain-road-cafe-3d-model.py  51-mesh cafe, six sheets, anchors/props/collider/overlap validator
   build-village-3d-model.py      v2.1.1, 19 assemblies / 53 outward-validated meshes; no doors/panes/new sheet
   build-city-misc-3d-model.py    86 kinds / 126 assemblies / 271 citywide role meshes
   build-city-buildings-3d-model.py  four fixed-metre district prototypes / 28 semantic meshes + UV/exact/near-layer validation
@@ -934,6 +970,7 @@ tools/
   build-city-facade-textures.py     legacy special-shell/Home-clipped 4x4 wall albedos + validator
   build-city-poi-textures.py        deterministic district POI surface albedos + validator
   build-cemetery-textures.py        deterministic cemetery surface albedos (granite/stone/gravel/soil) + validator
+  build-cemetery-raven-3d-model.py  armature-free pivot-empty cemetery raven + wing-fold/atlas validator
   build-city-park-textures.py       deterministic park surface albedos (ground, objects and landmark materials) + validator
   build-city-mountain-textures.py   deterministic weathered-rock albedo + validator
   build-city-fringe-textures.py     four measured fringe albedos + validator
@@ -983,7 +1020,10 @@ MountainRoadRoot -> MountainRoadPlanner -> validated 620 m continuous climb
                                       -> joined ~42 x 27 m terminal
                                          -> visible colliderless R7.5 m apron on shared collision
                                          -> enterable five-sided glass cafe on left
-                                         -> 58 m relative-height cableway on right
+                                            -> current runtime shell / four silent roles
+                                            -> [Planned] Blender shell + 7 stools / 3 visitors
+                                            -> 2 visible practicals + technical wash
+                                         -> 230 m / 9-support / 8-cabin cableway on right
                                             -> boarding open; line brakes to a dock on request
                                             -> outboard platform: pedestal fills the track gap
                                             -> ride -> ridge fade -> AlpineVillage

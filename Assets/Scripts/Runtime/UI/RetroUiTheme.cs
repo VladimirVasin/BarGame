@@ -110,7 +110,6 @@ namespace BarPromenade
 
         private static Texture2D ditherTexture;
         private static Font interfaceFont;
-        private static bool ownsInterfaceFont;
 
         private const ulong SootPatternBits =
             (1UL << 0) |
@@ -126,25 +125,15 @@ namespace BarPromenade
             (1UL << 54) |
             (1UL << 59);
 
-        private static readonly string[] MonospaceFontCandidates =
-        {
-            "Cascadia Mono",
-            "Consolas",
-            "Menlo",
-            "Monaco",
-            "DejaVu Sans Mono",
-            "Liberation Mono",
-            "Courier New"
-        };
-
         private const string PackagedFontResourcePath =
             "Fonts/Roboto-Regular";
 
         /// <summary>
-        /// The platform monospace face used by every themed style. When no
-        /// known Cyrillic-capable monospace face is installed, the project's
-        /// packaged Roboto remains the deterministic RU/EN fallback before
-        /// Unity's legacy runtime face.
+        /// The imported project face used by every themed style. Legacy IMGUI
+        /// in the supported Unity version cannot reliably repaint fonts made
+        /// through CreateDynamicFontFromOSFont, so the UI never depends on an
+        /// installed system face. Unity's legacy font is emergency fallback
+        /// only when the packaged asset is missing.
         /// </summary>
         public static Font InterfaceFont => ResolveInterfaceFont();
 
@@ -532,60 +521,10 @@ namespace BarPromenade
                 return interfaceFont;
             }
 
-            string[] installedNames = null;
-            try
-            {
-                installedNames = Font.GetOSInstalledFontNames();
-            }
-            catch (System.Exception)
-            {
-                // Headless platforms can have no system font service.
-            }
-
-            if (installedNames != null)
-            {
-                for (int candidateIndex = 0;
-                     candidateIndex < MonospaceFontCandidates.Length;
-                     candidateIndex++)
-                {
-                    string candidate =
-                        MonospaceFontCandidates[candidateIndex];
-                    if (!ContainsFontName(installedNames, candidate))
-                    {
-                        continue;
-                    }
-
-                    try
-                    {
-                        interfaceFont =
-                            Font.CreateDynamicFontFromOSFont(candidate, 16);
-                    }
-                    catch (System.Exception)
-                    {
-                        interfaceFont = null;
-                    }
-
-                    if (interfaceFont != null)
-                    {
-                        if (SupportsRequiredGlyphs(interfaceFont))
-                        {
-                            interfaceFont.name = "RetroUiMonospace";
-                            interfaceFont.hideFlags = HideFlags.DontSave;
-                            ownsInterfaceFont = true;
-                            return interfaceFont;
-                        }
-
-                        DestroyFont(interfaceFont);
-                        interfaceFont = null;
-                    }
-                }
-            }
-
             interfaceFont =
                 Resources.Load<Font>(PackagedFontResourcePath);
             if (interfaceFont != null)
             {
-                ownsInterfaceFont = false;
                 return interfaceFont;
             }
 
@@ -595,52 +534,7 @@ namespace BarPromenade
                 interfaceFont = LoadBuiltInFont("Arial.ttf");
             }
 
-            ownsInterfaceFont = false;
             return interfaceFont;
-        }
-
-        private static bool ContainsFontName(
-            string[] installedNames,
-            string candidate)
-        {
-            for (int index = 0; index < installedNames.Length; index++)
-            {
-                if (string.Equals(
-                    installedNames[index],
-                    candidate,
-                    System.StringComparison.OrdinalIgnoreCase))
-                {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        private static bool SupportsRequiredGlyphs(Font font)
-        {
-            return font != null &&
-                   font.HasCharacter('A') &&
-                   font.HasCharacter('z') &&
-                   font.HasCharacter('Ж') &&
-                   font.HasCharacter('я');
-        }
-
-        private static void DestroyFont(Font font)
-        {
-            if (font == null)
-            {
-                return;
-            }
-
-            if (Application.isPlaying)
-            {
-                Object.Destroy(font);
-            }
-            else
-            {
-                Object.DestroyImmediate(font);
-            }
         }
 
         private static Font LoadBuiltInFont(string path)
@@ -714,14 +608,7 @@ namespace BarPromenade
             }
 
             ditherTexture = null;
-
-            if (ownsInterfaceFont && interfaceFont != null)
-            {
-                DestroyFont(interfaceFont);
-            }
-
             interfaceFont = null;
-            ownsInterfaceFont = false;
         }
     }
 }

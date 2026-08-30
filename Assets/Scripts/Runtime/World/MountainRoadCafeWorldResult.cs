@@ -17,7 +17,10 @@ namespace BarPromenade
             MountainRoadCafeSoundscape soundscape,
             IList<Light> sourceLights,
             IDictionary<string, Transform> sourceSemanticAnchors,
-            MountainRoadCafeCastController cast)
+            MountainRoadCafeCastController cast,
+            MountainRoadCafeAssetRegistry model,
+            MountainRoadCafeCollisionWorldResult collision,
+            MountainRoadCafeServicePresentation service)
         {
             Plan = plan ?? throw new ArgumentNullException(nameof(plan));
             Root = root ?? throw new ArgumentNullException(nameof(root));
@@ -37,7 +40,12 @@ namespace BarPromenade
                 new List<AudioSource>(soundscape.Sources));
             RuntimeClips = new ReadOnlyCollection<AudioClip>(
                 new List<AudioClip>(soundscape.RuntimeClips));
-            Cast = cast;
+            Cast = cast ?? throw new ArgumentNullException(nameof(cast));
+            Model = model ?? throw new ArgumentNullException(nameof(model));
+            Collision = collision ??
+                throw new ArgumentNullException(nameof(collision));
+            Service = service ??
+                throw new ArgumentNullException(nameof(service));
             SemanticAnchors =
                 new ReadOnlyDictionary<string, Transform>(
                     new Dictionary<string, Transform>(
@@ -54,6 +62,9 @@ namespace BarPromenade
         /// rather than a timer.
         /// </summary>
         public MountainRoadCafeCastController Cast { get; }
+        public MountainRoadCafeAssetRegistry Model { get; }
+        public MountainRoadCafeCollisionWorldResult Collision { get; }
+        public MountainRoadCafeServicePresentation Service { get; }
         public GameObject Root { get; }
         public GameObject PhysicalRoot { get; }
         public GameObject DressingRoot { get; }

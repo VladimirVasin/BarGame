@@ -947,6 +947,112 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void FirstSealed_IsTheFirstPlotToCrossSealedNotTheFirstTaken()
+        {
+            Job job = CreateJob();
+            CemeteryGravediggingRegister register =
+                CreateRegister(job, out _);
+
+            Assert.That(
+                GameSessionState.FirstSealedGravePlotId,
+                Is.Null,
+                "No grave has been closed with a stone yet.");
+            for (int index = 0;
+                 index < CemeteryGravediggingRegister.MaximumOpenJobs;
+                 index++)
+            {
+                Assert.That(register.TryAccept(), Is.True);
+            }
+
+            // Taking three plots seals nothing: the deed waits for a
+            // stone, not for chalk.
+            Assert.That(
+                GameSessionState.FirstSealedGravePlotId,
+                Is.Null);
+
+            // The record order is the order plots were TAKEN, and a
+            // man holding three holes seals them in whatever order he
+            // likes: closing the THIRD-taken grave first makes IT the
+            // first sealed, not the first record.
+            CemeteryGravediggingController third = register.Jobs[2];
+            for (int act = 0; act < 4; act++)
+            {
+                Assert.That(third.TryAdvance(), Is.True);
+            }
+
+            Assert.That(third.IsSealed, Is.True);
+            Assert.That(
+                GameSessionState.FirstSealedGravePlotId,
+                Is.EqualTo(third.PlotId));
+            Assert.That(
+                third.PlotId,
+                Is.Not.EqualTo(register.Jobs[0].PlotId),
+                "The watchman hands plots outward, so the third " +
+                "taken cannot be the first record.");
+
+            // Sealing another grave afterwards changes nothing: the
+            // deed is written once.
+            CemeteryGravediggingController firstTaken =
+                register.Jobs[0];
+            for (int act = 0; act < 4; act++)
+            {
+                Assert.That(firstTaken.TryAdvance(), Is.True);
+            }
+
+            Assert.That(
+                GameSessionState.FirstSealedGravePlotId,
+                Is.EqualTo(third.PlotId));
+
+            // And Paid is past Sealed on the same monotone ladder:
+            // settling up moves stages without touching the deed.
+            Assert.That(
+                register.CollectWages(),
+                Is.EqualTo(CemeteryGravediggingController.Wage * 2));
+            Assert.That(third.IsPaid, Is.True);
+            Assert.That(
+                GameSessionState.FirstSealedGravePlotId,
+                Is.EqualTo(third.PlotId));
+        }
+
+        [Test]
+        public void FirstSealed_SurvivesTheNextCityBuildAndClearsOnNewGame()
+        {
+            Job job = CreateJob();
+            CemeteryGravediggingRegister register =
+                CreateRegister(job, out _);
+            Assert.That(register.TryAccept(), Is.True);
+            CemeteryGravediggingController closed = register.Jobs[0];
+            for (int act = 0; act < 4; act++)
+            {
+                Assert.That(closed.TryAdvance(), Is.True);
+            }
+
+            string plotId = closed.PlotId;
+            Assert.That(
+                GameSessionState.FirstSealedGravePlotId,
+                Is.EqualTo(plotId));
+
+            // The city goes away and comes back. Restore only READS
+            // the ledger, so the deed neither re-fires nor drops: the
+            // raven pair keys off it on every later build.
+            CemeteryGravediggingRegister rebuilt =
+                CreateRegister(job, out _);
+            Assert.That(rebuilt.Jobs, Has.Count.EqualTo(1));
+            Assert.That(
+                rebuilt.Jobs[0].Stage,
+                Is.EqualTo(CemeteryGraveWorkStage.Sealed));
+            Assert.That(
+                GameSessionState.FirstSealedGravePlotId,
+                Is.EqualTo(plotId));
+
+            // Only a new game clears it, with the rest of the book.
+            GameSessionState.BeginNewGame();
+            Assert.That(
+                GameSessionState.FirstSealedGravePlotId,
+                Is.Null);
+        }
+
+        [Test]
         public void EveryGraveInTheYardIsWorkedThroughTheOneSession()
         {
             Job job = CreateJob();

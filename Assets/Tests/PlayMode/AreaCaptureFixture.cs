@@ -325,6 +325,180 @@ namespace BarPromenade.Tests.PlayMode
                 () => CityBuildingSurfaceShots(cityRoot));
         }
 
+        /// <summary>
+        /// The first sealed grave and the raven pair that holds to
+        /// it. The ledger is sealed BEFORE the load, so the city
+        /// builds the finished grave and the birds spawn already
+        /// perched on it. The frames land in Captures/City/ under the
+        /// cemetery- prefix — the folder is the SCENE name, and this
+        /// is a City series.
+        /// </summary>
+        [UnityTest]
+        [Explicit("Capture, not a test. Run one area at a time.")]
+        public IEnumerator CityCemetery()
+        {
+            GameSessionState.BeginNewGame();
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.CitySeed);
+            CityCemeteryPlan cemetery =
+                CityCemeteryPlanner.Create(layout);
+            Assert.That(cemetery, Is.Not.Null);
+            CemeteryWatchmanPlan watchman =
+                CemeteryWatchmanPlan.Create(cemetery);
+            CemeteryGravediggingPlan grave =
+                CemeteryGravediggingPlan.Create(cemetery, watchman);
+            Assert.That(grave.IsPresent, Is.True);
+            Assert.That(
+                GameSessionState.TryAdvanceGraveWork(
+                    grave.Plot.StableId,
+                    CemeteryGraveWorkStage.Sealed),
+                Is.True);
+
+            CityGameRoot cityRoot = null;
+            yield return Capture(
+                SceneIds.City,
+                () =>
+                {
+                    cityRoot = Object.FindAnyObjectByType<CityGameRoot>();
+                    return cityRoot;
+                },
+                () => CityCemeteryShots(cityRoot));
+        }
+
+        /// <summary>
+        /// Framing is computed from the same pure plans the raven
+        /// controller derives its perches from, NOT from its live
+        /// state: shots are resolved before the settle frames, and
+        /// the pair arms only on its first Update.
+        /// </summary>
+        private static Shot[] CityCemeteryShots(CityGameRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            Assert.That(
+                root.CemeteryRavens,
+                Is.Not.Null,
+                "A city with a cemetery must raise the raven " +
+                "controller.");
+            Assert.That(
+                CemeteryMournerPlan.TryGetAccess(
+                    root.Layout,
+                    out CityOpenAreaAccessDescriptor access),
+                Is.True);
+            //  Despite its name, OutwardNormal points from the street
+            //  INTO the grounds.
+            Vector3 inward = access.OutwardNormal.normalized;
+
+            CemeteryGravediggingPlan grave = FindSealedGravePlan(root);
+            Vector3 crown = CityCemeterySealedGraveWorldBuilder
+                .GetMoundCrownPoint(grave);
+            var taken = new System.Collections.Generic.List<string>();
+            foreach (CemeteryGraveWorkRecord record in
+                     GameSessionState.GraveWork)
+            {
+                taken.Add(record.PlotId);
+            }
+
+            CemeteryRavenPerch groundPerch =
+                CemeteryRavenPlan.SelectGroundPerch(
+                    root.World.CemeteryPlan,
+                    grave,
+                    taken,
+                    null);
+            Assert.That(groundPerch.IsPresent, Is.True);
+            Vector3 ground = groundPerch.Position;
+            Vector3 toGround = ground - crown;
+            toGround.y = 0f;
+            toGround = toGround.normalized;
+            Vector3 side =
+                Vector3.Cross(Vector3.up, toGround).normalized;
+            Vector3 mid = (crown + ground) * 0.5f;
+
+            bool heroSentIn = false;
+            return new[]
+            {
+                Shot.At(
+                    "cemetery-00-gate-view",
+                    access.Center - inward * 2.2f +
+                    Vector3.up * EyeHeight,
+                    access.Center + inward * 15f + Vector3.up * 1.1f,
+                    62f),
+                Shot.At(
+                    "cemetery-01-first-grave-with-ravens",
+                    crown + side * 4f + Vector3.up * 1.6f,
+                    mid + Vector3.up * 0.2f,
+                    52f),
+                Shot.At(
+                    "cemetery-02-ground-raven",
+                    ground + toGround * 3.6f + side * 0.9f +
+                    Vector3.up * 1.45f,
+                    crown + Vector3.up * 0.15f,
+                    50f),
+
+                //  The teleport is a side effect of this shot's OWN
+                //  readyWhen — the way the village storm frames wait
+                //  on the scene's wave. resolveShots runs once BEFORE
+                //  the loop, so a teleport in the factory would flush
+                //  the pair before frame 00 was ever taken. The
+                //  closure fires the teleport once, then polls the
+                //  phase until the flush actually runs, so the frame
+                //  catches the wings out over the grave.
+                Shot.At(
+                    "cemetery-03-approach-flush",
+                    crown + side * 5.5f + Vector3.up * 1.7f,
+                    crown + Vector3.up * 0.7f,
+                    58f,
+                    0,
+                    () =>
+                    {
+                        CityCemeteryRavenController ravens =
+                            root.CemeteryRavens;
+                        if (!heroSentIn && ravens.IsArmed)
+                        {
+                            root.Player.Motor.Teleport(
+                                crown - side * 2.6f +
+                                Vector3.up * 0.5f);
+                            heroSentIn = true;
+                        }
+
+                        return ravens.Phase ==
+                               CemeteryRavenPhase.Startled &&
+                               ravens.RavenA != null &&
+                               ravens.RavenA.HasFlight &&
+                               ravens.RavenB.HasFlight;
+                    })
+            };
+        }
+
+        private static CemeteryGravediggingPlan FindSealedGravePlan(
+            CityGameRoot root)
+        {
+            string plotId = GameSessionState.FirstSealedGravePlotId;
+            Assert.That(
+                plotId,
+                Is.Not.Null,
+                "CityCemetery seeds the ledger Sealed before the " +
+                "load.");
+            for (int index = 0;
+                 index < root.Gravedigging.Jobs.Count;
+                 index++)
+            {
+                CemeteryGravediggingController job =
+                    root.Gravedigging.Jobs[index];
+                if (job != null &&
+                    job.HasJob &&
+                    job.PlotId == plotId)
+                {
+                    return job.Plan;
+                }
+            }
+
+            return CemeteryGravediggingPlan.CreateFor(
+                root.World.CemeteryPlan,
+                plotId);
+        }
+
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator MountainRoad()

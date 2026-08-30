@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.1.0",
   "blender_version": "5.0.1",
   "design_id": "cafe_lone_patron_v1",
   "display_name": "Cafe Lone Patron",
@@ -46,7 +46,7 @@
   "shared_animation_source": "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx",
   "shared_clips": [
     "CafeLoneIdle",
-    "CafeLoneBeat"
+    "CafeLoneDrink"
   ],
   "rides_bus": false,
   "seated_clearance_m": null,
@@ -54,7 +54,7 @@
     0.43,
     0.5
   ],
-  "build_signature": "2a7329f47ba951e9dcf53c3e89e06bbe01b9df8ac7f094f34e0aa8a2b610cfbc",
+  "build_signature": "8197a846583c3c95b74da7851349326c3178bd862feafa2a009ddbf3b2d76117",
   "bones": [
     {
       "name": "root",

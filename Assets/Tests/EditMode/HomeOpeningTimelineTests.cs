@@ -1,10 +1,40 @@
 using System;
 using NUnit.Framework;
+using UnityEngine;
 
 namespace BarPromenade.Tests.EditMode
 {
     public sealed class HomeOpeningTimelineTests
     {
+        [Test]
+        public void MenuLayout_IsCompactVerticalCardInsideLogicalCanvas()
+        {
+            Rect panel = HomeOpeningController.MenuPanelRect;
+            Rect title = HomeOpeningController.MenuTitleRect;
+            Rect rule = HomeOpeningController.MenuRuleRect;
+            Rect wake = HomeOpeningController.MenuWakeRect;
+            Rect quit = HomeOpeningController.MenuQuitRect;
+
+            Assert.That(
+                panel.width,
+                Is.LessThanOrEqualTo(RetroUiTheme.LogicalWidth * 0.4f));
+            Assert.That(panel.xMin, Is.GreaterThan(
+                RetroUiTheme.LogicalWidth * 0.5f));
+            Assert.That(panel.xMax, Is.LessThanOrEqualTo(
+                RetroUiTheme.LogicalWidth));
+            Assert.That(panel.yMax, Is.LessThanOrEqualTo(
+                RetroUiTheme.LogicalHeight));
+
+            Assert.That(panel.Contains(title.center), Is.True);
+            Assert.That(panel.Contains(rule.center), Is.True);
+            Assert.That(panel.Contains(wake.center), Is.True);
+            Assert.That(panel.Contains(quit.center), Is.True);
+            Assert.That(rule.yMin, Is.GreaterThan(title.yMax));
+            Assert.That(wake.yMin, Is.GreaterThan(rule.yMax));
+            Assert.That(quit.yMin, Is.GreaterThan(wake.yMax));
+            Assert.That(wake.width, Is.EqualTo(quit.width));
+        }
+
         [Test]
         public void
             Timeline_Holds0559ForFiveSecondsThenEnablesSilentMenu()

@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.1.0",
   "blender_version": "5.0.1",
   "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
   "anatomy_standard": "NpcHumanV2",
@@ -9,7 +9,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 8,
+  "clip_count": 10,
   "clips": [
     {
       "name": "CafeLoneIdle",
@@ -40,18 +40,18 @@
       "seated_drop_m": 0.480853
     },
     {
-      "name": "CafeLoneBeat",
+      "name": "CafeLoneDrink",
       "archetype": "cafe_lone_patron_v1",
       "duration_seconds": 5.0,
       "frame_start": 0,
       "frame_end": 120,
-      "loop": true,
-      "one_shot": false,
+      "loop": false,
+      "one_shot": true,
       "in_place": true,
       "authored_posture": "seated alone with the face held beneath the fedora brim",
-      "gait": "one hand shifts a few centimetres toward the cup, pauses, and returns unfinished",
+      "gait": "right hand lifts the cup to one restrained sip and replaces it on the saucer",
       "keyed_bone_count": 31,
-      "loop_max_error": 0.0,
+      "loop_max_error": 1e-06,
       "root_translation_range_m": [
         0.0,
         0.0,
@@ -96,16 +96,16 @@
       "seated_drop_m": 0.482188
     },
     {
-      "name": "CafeManBeat",
+      "name": "CafeManDrink",
       "archetype": "cafe_couple_man_v1",
-      "duration_seconds": 4.0,
+      "duration_seconds": 4.75,
       "frame_start": 0,
-      "frame_end": 96,
-      "loop": true,
-      "one_shot": false,
+      "frame_end": 114,
+      "loop": false,
+      "one_shot": true,
       "in_place": true,
       "authored_posture": "seated toward the woman with the near forearm resting low",
-      "gait": "the near hand approaches hers, stops short of contact and retracts",
+      "gait": "right hand lifts the cup in the same normalized rhythm as the woman",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
@@ -152,16 +152,16 @@
       "seated_drop_m": 0.478593
     },
     {
-      "name": "CafeWomanBeat",
+      "name": "CafeWomanDrink",
       "archetype": "cafe_couple_woman_v1",
-      "duration_seconds": 4.5,
+      "duration_seconds": 4.75,
       "frame_start": 0,
-      "frame_end": 108,
-      "loop": true,
-      "one_shot": false,
+      "frame_end": 114,
+      "loop": false,
+      "one_shot": true,
       "in_place": true,
       "authored_posture": "seated in red with one elbow held near the counter",
-      "gait": "the paper turns slowly, the head lowers, and the motion resets before a bite",
+      "gait": "left hand lifts the cup while the folded paper stays in the right fingers",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
@@ -180,16 +180,16 @@
       "seated_drop_m": 0.478593
     },
     {
-      "name": "CafeAttendantIdle",
+      "name": "CafeAttendantWipe",
       "archetype": "cafe_attendant_v1",
-      "duration_seconds": 13.0,
+      "duration_seconds": 9.0,
       "frame_start": 0,
-      "frame_end": 312,
+      "frame_end": 216,
       "loop": true,
       "one_shot": false,
       "in_place": true,
-      "authored_posture": "standing behind the counter, pale uniform pitched toward the pair",
-      "gait": "three restrained breaths separated by a too-long mechanical stillness",
+      "authored_posture": "standing behind the counter with the towel in the left hand",
+      "gait": "three unhurried wiping passes over the counter between service calls",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
@@ -201,16 +201,16 @@
       "ground_max_contact_gap_m": 0.0
     },
     {
-      "name": "CafeAttendantBeat",
+      "name": "CafeAttendantWalk",
       "archetype": "cafe_attendant_v1",
-      "duration_seconds": 5.0,
+      "duration_seconds": 1.25,
       "frame_start": 0,
-      "frame_end": 120,
+      "frame_end": 30,
       "loop": true,
       "one_shot": false,
       "in_place": true,
-      "authored_posture": "standing behind the counter with a towel in the right hand",
-      "gait": "two identical short wiping strokes over one fixed patch, then the exact starting pose",
+      "authored_posture": "standing behind the counter with towel left and coffee pot right",
+      "gait": "one small in-place service step cycle without root translation",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
@@ -220,7 +220,49 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "CafeAttendantPour",
+      "archetype": "cafe_attendant_v1",
+      "duration_seconds": 3.5,
+      "frame_start": 0,
+      "frame_end": 84,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "standing at a patron cup with the coffee pot in the right hand",
+      "gait": "pot lifts, tips for one measured pour, rights itself and returns to base",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
+    },
+    {
+      "name": "CafeAttendantNotice",
+      "archetype": "cafe_attendant_v1",
+      "duration_seconds": 2.5,
+      "frame_start": 0,
+      "frame_end": 60,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "standing behind the counter with the towel held low",
+      "gait": "head and shoulders register the arrival, hold, then return without speech",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0
     }
   ],
-  "build_signature": "6dcf59a67576c03fbbb2ff242642e23a37b1b692c04722fd67ea3b5716bdf48b"
+  "build_signature": "719156acc69e5094ac07ddfbd61e85e1f92357f90c33bbdf6a56fc24c54a55d0"
 }

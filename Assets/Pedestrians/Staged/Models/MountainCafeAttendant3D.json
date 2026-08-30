@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.1.0",
   "blender_version": "5.0.1",
   "design_id": "cafe_attendant_v1",
   "display_name": "Cafe Attendant",
@@ -18,8 +18,8 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 35,
-  "triangle_count": 912,
+  "mesh_count": 41,
+  "triangle_count": 1064,
   "triangle_budget": [
     900,
     2000
@@ -29,12 +29,12 @@
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
-    -0.828841,
-    -0.210136,
+    -0.812718,
+    -0.230911,
     0.0
   ],
   "bounds_max": [
-    0.776638,
+    0.830841,
     0.12325,
     1.75
   ],
@@ -45,13 +45,15 @@
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx",
   "shared_clips": [
-    "CafeAttendantIdle",
-    "CafeAttendantBeat"
+    "CafeAttendantWipe",
+    "CafeAttendantWalk",
+    "CafeAttendantPour",
+    "CafeAttendantNotice"
   ],
   "rides_bus": false,
   "seated_clearance_m": null,
   "perch_seat_height_m": null,
-  "build_signature": "1ed1a6a6ef2e933c1d868d9917cb0982db2605f5197c01ca67985bfc3375fd70",
+  "build_signature": "4a02d59e32ec3b9a4a0e60a3252bfeafcca52cbbf1d7ac361ac449774a42c725",
   "bones": [
     {
       "name": "root",
@@ -521,6 +523,90 @@
   ],
   "parts": [
     {
+      "name": "ACC_CoffeePotBody",
+      "role": "held_prop",
+      "bone": "hand.R",
+      "palette_name": "cafe_pot",
+      "base_color": [
+        0.245,
+        0.275,
+        0.275,
+        1.0
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "ACC_CoffeePotHandleBottom",
+      "role": "held_prop",
+      "bone": "hand.R",
+      "palette_name": "cafe_pot_dark",
+      "base_color": [
+        0.085,
+        0.095,
+        0.095,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "ACC_CoffeePotHandleGrip",
+      "role": "held_prop",
+      "bone": "hand.R",
+      "palette_name": "cafe_pot_dark",
+      "base_color": [
+        0.085,
+        0.095,
+        0.095,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "ACC_CoffeePotHandleTop",
+      "role": "held_prop",
+      "bone": "hand.R",
+      "palette_name": "cafe_pot_dark",
+      "base_color": [
+        0.085,
+        0.095,
+        0.095,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "ACC_CoffeePotLid",
+      "role": "held_prop",
+      "bone": "hand.R",
+      "palette_name": "cafe_pot_dark",
+      "base_color": [
+        0.085,
+        0.095,
+        0.095,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "ACC_CoffeePotSpout",
+      "role": "held_prop",
+      "bone": "hand.R",
+      "palette_name": "cafe_pot",
+      "base_color": [
+        0.245,
+        0.275,
+        0.275,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
       "name": "ACC_Eye.L",
       "role": "face_detail",
       "bone": "head",
@@ -607,7 +693,7 @@
     {
       "name": "ACC_ServiceTowel",
       "role": "held_prop",
-      "bone": "hand.R",
+      "bone": "hand.L",
       "palette_name": "cafe_towel",
       "base_color": [
         0.445,
@@ -1009,6 +1095,20 @@
       ],
       "vertices": 8,
       "triangles": 12
+    }
+  ],
+  "anchor_names": [
+    "SOCKET_CafePotSpout"
+  ],
+  "rig_anchors": [
+    {
+      "name": "SOCKET_CafePotSpout",
+      "bone": "hand.R",
+      "kind": "anchor",
+      "parts": [
+        "ACC_CoffeePotSpout"
+      ],
+      "axis_from": "ACC_CoffeePotBody"
     }
   ]
 }

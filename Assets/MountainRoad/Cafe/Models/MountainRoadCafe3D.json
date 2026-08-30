@@ -1,0 +1,2997 @@
+{
+  "generator": "tools/build-mountain-road-cafe-3d-model.py",
+  "generator_version": "1.0.2",
+  "blender_version": "5.0.1",
+  "design_id": "mountain_road_cafe_nighthawks_v1",
+  "display_name": "Bar Promenade Mountain Road Nighthawks Cafe",
+  "reference_composition": "Nighthawks spatial translation; no copied branding or text",
+  "logical_footprint_unity_xz": [
+    [
+      -5.32,
+      -4.56
+    ],
+    [
+      1.68,
+      -4.56
+    ],
+    [
+      4.48,
+      -1.76
+    ],
+    [
+      4.48,
+      5.44
+    ],
+    [
+      -5.32,
+      5.44
+    ]
+  ],
+  "dimensions_m": {
+    "width": 9.8,
+    "depth": 10.0,
+    "height": 4.4
+  },
+  "door_opening_m": {
+    "width": 1.6,
+    "height": 2.28
+  },
+  "stool_count": 7,
+  "cup_assembly_count": 3,
+  "source_axes": {
+    "right": "+X",
+    "forward": "+Y",
+    "up": "+Z"
+  },
+  "unity_axes": {
+    "right": "+X",
+    "forward": "+Z",
+    "up": "+Y",
+    "fbx_axis_forward": "-Z",
+    "fbx_axis_up": "Y",
+    "bake_space_transform": false
+  },
+  "root_contract": {
+    "origin": "terminal_cafe_plan_center_ground",
+    "scale_mode": "fixed_meters",
+    "axis_conversion": "swap_y_z_and_reverse_winding",
+    "fbx_imported_root_scale": 100.0,
+    "reparent_world_position_stays": true
+  },
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "materials": false,
+  "animation_count": 0,
+  "surface_contract": {
+    "opaque_detail_min_clearance_m": 0.003,
+    "glass_layers_per_pane": 1,
+    "liquid_wall_clearance_m": 0.0015,
+    "liquid_rim_clearance_m": 0.002,
+    "detail_atlases_add_no_new_palette_family": true,
+    "broad_coplanar_overlap_count": 0,
+    "allowed_buried_seam_contact_count": 33,
+    "broad_overlap_min_area_m2": 0.002
+  },
+  "budgets": {
+    "maximum_renderers": 90,
+    "maximum_triangles": 45000,
+    "maximum_textures": 6,
+    "runtime_collider_descriptors": 17,
+    "imported_colliders": 0,
+    "imported_lights": 0,
+    "imported_cameras": 0
+  },
+  "bounds_min": [
+    -5.44,
+    -4.73,
+    0.0
+  ],
+  "bounds_max": [
+    4.65,
+    5.56,
+    4.4
+  ],
+  "mesh_count": 51,
+  "triangle_count": 4970,
+  "overlap_count": 0,
+  "allowed_seam_contact_count": 33,
+  "textures": [
+    {
+      "sheet": "CafeExteriorDetail",
+      "file": "Assets/Resources/MountainRoad/Cafe/Textures/MountainRoadCafeExteriorDetail.png",
+      "resource_path": "MountainRoad/Cafe/Textures/MountainRoadCafeExteriorDetail",
+      "width": 512,
+      "height": 512,
+      "wrap": "Repeat",
+      "sha256": "12b90f9d2d77e95477d50189979f539b708f637047668dab44fdb933463031f8",
+      "base_surface": "WallPaint"
+    },
+    {
+      "sheet": "CafeInteriorDetail",
+      "file": "Assets/Resources/MountainRoad/Cafe/Textures/MountainRoadCafeInteriorDetail.png",
+      "resource_path": "MountainRoad/Cafe/Textures/MountainRoadCafeInteriorDetail",
+      "width": 512,
+      "height": 512,
+      "wrap": "Repeat",
+      "sha256": "a4e697edb546e822f2f20a778c767ef5e2946afd8dcdf382a0ef284711097cc0",
+      "base_surface": "InteriorPaint"
+    },
+    {
+      "sheet": "CafeCounterDetail",
+      "file": "Assets/Resources/MountainRoad/Cafe/Textures/MountainRoadCafeCounterDetail.png",
+      "resource_path": "MountainRoad/Cafe/Textures/MountainRoadCafeCounterDetail",
+      "width": 512,
+      "height": 512,
+      "wrap": "Repeat",
+      "sha256": "19d96d69d50f5f701af32a3cb80becdd1d835d46120a6e02133474cf3f45ceca",
+      "base_surface": "Timber"
+    },
+    {
+      "sheet": "CafeMetalDetail",
+      "file": "Assets/Resources/MountainRoad/Cafe/Textures/MountainRoadCafeMetalDetail.png",
+      "resource_path": "MountainRoad/Cafe/Textures/MountainRoadCafeMetalDetail",
+      "width": 512,
+      "height": 512,
+      "wrap": "Repeat",
+      "sha256": "1a791a3dd658f0e943b74ff7c830e8703be6ed438ed21b2fa33890114d6f04b9",
+      "base_surface": "PaleEnamel"
+    },
+    {
+      "sheet": "CafePropsDetail",
+      "file": "Assets/Resources/MountainRoad/Cafe/Textures/MountainRoadCafePropsDetail.png",
+      "resource_path": "MountainRoad/Cafe/Textures/MountainRoadCafePropsDetail",
+      "width": 512,
+      "height": 512,
+      "wrap": "Clamp",
+      "sha256": "83da5c591377ba34e740809a02338047034e882e78ec1241ef6b2e2e3e79c24d",
+      "base_surface": "PaleEnamel"
+    },
+    {
+      "sheet": "CafeGlassDetail",
+      "file": "Assets/Resources/MountainRoad/Cafe/Textures/MountainRoadCafeGlassDetail.png",
+      "resource_path": "MountainRoad/Cafe/Textures/MountainRoadCafeGlassDetail",
+      "width": 512,
+      "height": 512,
+      "wrap": "Clamp",
+      "sha256": "f86058499b25c72b6d12c2e642241ea8f94dc44e35d4a248dc3ad96d2511b1a5",
+      "base_surface": "PaintedMetal"
+    }
+  ],
+  "collider_descriptors": [
+    {
+      "id": "boundary-west",
+      "shape": "box",
+      "center": [
+        -5.32,
+        2.08,
+        0.44
+      ],
+      "size": [
+        0.24,
+        4.16,
+        10.0
+      ],
+      "yaw": 0.0
+    },
+    {
+      "id": "boundary-rear",
+      "shape": "box",
+      "center": [
+        -0.42,
+        2.08,
+        5.44
+      ],
+      "size": [
+        9.8,
+        4.16,
+        0.24
+      ],
+      "yaw": 0.0
+    },
+    {
+      "id": "boundary-south-left",
+      "shape": "box",
+      "center": [
+        -4.82,
+        2.08,
+        -4.56
+      ],
+      "size": [
+        1.0,
+        4.16,
+        0.24
+      ],
+      "yaw": 0.0
+    },
+    {
+      "id": "boundary-south-right",
+      "shape": "box",
+      "center": [
+        -0.52,
+        2.08,
+        -4.56
+      ],
+      "size": [
+        4.4,
+        4.16,
+        0.12
+      ],
+      "yaw": 0.0
+    },
+    {
+      "id": "boundary-chamfer",
+      "shape": "box",
+      "center": [
+        3.08,
+        2.08,
+        -3.16
+      ],
+      "size": [
+        3.96,
+        4.16,
+        0.12
+      ],
+      "yaw": -45.0
+    },
+    {
+      "id": "boundary-east",
+      "shape": "box",
+      "center": [
+        4.48,
+        2.08,
+        1.84
+      ],
+      "size": [
+        0.12,
+        4.16,
+        7.2
+      ],
+      "yaw": 0.0
+    },
+    {
+      "id": "counter-main",
+      "shape": "box",
+      "center": [
+        0.62,
+        0.45,
+        -1.15
+      ],
+      "size": [
+        6.1,
+        0.9,
+        0.82
+      ],
+      "yaw": 0.0
+    },
+    {
+      "id": "counter-return",
+      "shape": "box",
+      "center": [
+        3.325,
+        0.447,
+        -0.3
+      ],
+      "size": [
+        1.718,
+        0.894,
+        0.62
+      ],
+      "yaw": -81.634
+    },
+    {
+      "id": "service-cabinet",
+      "shape": "box",
+      "center": [
+        2.15,
+        0.43,
+        3.9
+      ],
+      "size": [
+        3.65,
+        0.86,
+        0.78
+      ],
+      "yaw": 0.0
+    },
+    {
+      "id": "fridge",
+      "shape": "box",
+      "center": [
+        -3.82,
+        0.98,
+        4.72
+      ],
+      "size": [
+        1.12,
+        1.96,
+        0.72
+      ],
+      "yaw": 0.0
+    },
+    {
+      "id": "stool-00",
+      "shape": "capsule",
+      "center": [
+        -1.5,
+        0.25,
+        -2.18
+      ],
+      "radius": 0.25,
+      "height": 0.5,
+      "yaw": 0.0
+    },
+    {
+      "id": "stool-01",
+      "shape": "capsule",
+      "center": [
+        -0.38,
+        0.25,
+        -2.18
+      ],
+      "radius": 0.25,
+      "height": 0.5,
+      "yaw": 0.0
+    },
+    {
+      "id": "stool-02",
+      "shape": "capsule",
+      "center": [
+        0.75,
+        0.25,
+        -2.18
+      ],
+      "radius": 0.25,
+      "height": 0.5,
+      "yaw": 0.0
+    },
+    {
+      "id": "stool-03",
+      "shape": "capsule",
+      "center": [
+        1.8,
+        0.25,
+        -2.18
+      ],
+      "radius": 0.25,
+      "height": 0.5,
+      "yaw": 0.0
+    },
+    {
+      "id": "stool-04",
+      "shape": "capsule",
+      "center": [
+        3.0,
+        0.25,
+        -2.18
+      ],
+      "radius": 0.25,
+      "height": 0.5,
+      "yaw": 0.0
+    },
+    {
+      "id": "stool-05",
+      "shape": "capsule",
+      "center": [
+        4.08,
+        0.25,
+        -0.62
+      ],
+      "radius": 0.25,
+      "height": 0.5,
+      "yaw": -81.634
+    },
+    {
+      "id": "stool-06",
+      "shape": "capsule",
+      "center": [
+        4.16,
+        0.25,
+        0.1
+      ],
+      "radius": 0.25,
+      "height": 0.5,
+      "yaw": -81.634
+    }
+  ],
+  "anchors": [
+    {
+      "name": "Audio.Boiler",
+      "role": "audio_boiler",
+      "local_position": [
+        2.15,
+        3.84,
+        1.55
+      ],
+      "unity_local_position": [
+        2.15,
+        1.55,
+        3.84
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Audio.Fixture",
+      "role": "audio_fixture",
+      "local_position": [
+        0.6,
+        -0.65,
+        3.47
+      ],
+      "unity_local_position": [
+        0.6,
+        3.47,
+        -0.65
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Audio.Fridge",
+      "role": "audio_fridge",
+      "local_position": [
+        -3.82,
+        4.72,
+        1.0
+      ],
+      "unity_local_position": [
+        -3.82,
+        1.0,
+        4.72
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CanonicalCameraTarget",
+      "role": "camera_target",
+      "local_position": [
+        0.3,
+        -0.9,
+        1.65
+      ],
+      "unity_local_position": [
+        0.3,
+        1.65,
+        -0.9
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Cast.Attendant",
+      "role": "cast_mark",
+      "local_position": [
+        2.1,
+        -0.16,
+        0.0
+      ],
+      "unity_local_position": [
+        2.1,
+        0.0,
+        -0.16
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Cast.Lone",
+      "role": "cast_mark",
+      "local_position": [
+        -1.5,
+        -2.18,
+        0.0
+      ],
+      "unity_local_position": [
+        -1.5,
+        0.0,
+        -2.18
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Cast.PairMan",
+      "role": "cast_mark",
+      "local_position": [
+        0.75,
+        -2.18,
+        0.0
+      ],
+      "unity_local_position": [
+        0.75,
+        0.0,
+        -2.18
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Cast.PairWoman",
+      "role": "cast_mark",
+      "local_position": [
+        1.8,
+        -2.18,
+        0.0
+      ],
+      "unity_local_position": [
+        1.8,
+        0.0,
+        -2.18
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CounterCorner",
+      "role": "counter_corner",
+      "local_position": [
+        3.2,
+        -1.15,
+        1.02
+      ],
+      "unity_local_position": [
+        3.2,
+        1.02,
+        -1.15
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CounterEnd",
+      "role": "counter_end",
+      "local_position": [
+        3.45,
+        0.55,
+        1.02
+      ],
+      "unity_local_position": [
+        3.45,
+        1.02,
+        0.55
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "CounterStart",
+      "role": "counter_start",
+      "local_position": [
+        -2.56,
+        -1.15,
+        1.02
+      ],
+      "unity_local_position": [
+        -2.56,
+        1.02,
+        -1.15
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Cup.Lone",
+      "role": "cup_dock",
+      "local_position": [
+        -1.5,
+        -1.48,
+        1.035
+      ],
+      "unity_local_position": [
+        -1.5,
+        1.035,
+        -1.48
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Cup.PairMan",
+      "role": "cup_dock",
+      "local_position": [
+        0.75,
+        -1.48,
+        1.035
+      ],
+      "unity_local_position": [
+        0.75,
+        1.035,
+        -1.48
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Cup.PairWoman",
+      "role": "cup_dock",
+      "local_position": [
+        1.8,
+        -1.48,
+        1.035
+      ],
+      "unity_local_position": [
+        1.8,
+        1.035,
+        -1.48
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "DoorApproach",
+      "role": "door_approach",
+      "local_position": [
+        -3.52,
+        -5.81,
+        0.0
+      ],
+      "unity_local_position": [
+        -3.52,
+        0.0,
+        -5.81
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "DoorThreshold",
+      "role": "door_threshold",
+      "local_position": [
+        -3.52,
+        -4.56,
+        0.0
+      ],
+      "unity_local_position": [
+        -3.52,
+        0.0,
+        -4.56
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        -1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "GlassCorner",
+      "role": "glass_corner",
+      "local_position": [
+        3.08,
+        -3.16,
+        2.2
+      ],
+      "unity_local_position": [
+        3.08,
+        2.2,
+        -3.16
+      ],
+      "unity_local_forward": [
+        0.707107,
+        0.0,
+        -0.707107
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Grip.Lone",
+      "role": "cup_grip",
+      "local_position": [
+        0.092,
+        0.0,
+        0.062
+      ],
+      "unity_local_position": [
+        0.092,
+        0.062,
+        0.0
+      ],
+      "unity_local_forward": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Grip.PairMan",
+      "role": "cup_grip",
+      "local_position": [
+        0.092,
+        0.0,
+        0.062
+      ],
+      "unity_local_position": [
+        0.092,
+        0.062,
+        0.0
+      ],
+      "unity_local_forward": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Grip.PairWoman",
+      "role": "cup_grip",
+      "local_position": [
+        0.092,
+        0.0,
+        0.062
+      ],
+      "unity_local_position": [
+        0.092,
+        0.062,
+        0.0
+      ],
+      "unity_local_forward": [
+        1.0,
+        0.0,
+        0.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "HeroSeat",
+      "role": "hero_seat",
+      "local_position": [
+        -0.38,
+        -2.18,
+        0.4675
+      ],
+      "unity_local_position": [
+        -0.38,
+        0.4675,
+        -2.18
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "InteriorCenter",
+      "role": "interior_center",
+      "local_position": [
+        0.0,
+        0.3,
+        1.0
+      ],
+      "unity_local_position": [
+        0.0,
+        1.0,
+        0.3
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Light.ColdService",
+      "role": "light_cold_service",
+      "local_position": [
+        1.7,
+        3.3,
+        3.35
+      ],
+      "unity_local_position": [
+        1.7,
+        3.35,
+        3.3
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Light.ExteriorWash",
+      "role": "light_exterior_wash",
+      "local_position": [
+        3.6,
+        -3.6,
+        5.0
+      ],
+      "unity_local_position": [
+        3.6,
+        5.0,
+        -3.6
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Light.WarmCounter",
+      "role": "light_warm_counter",
+      "local_position": [
+        0.6,
+        -0.65,
+        3.47
+      ],
+      "unity_local_position": [
+        0.6,
+        3.47,
+        -0.65
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Origin",
+      "role": "model_origin",
+      "local_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "unity_local_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "PotDock",
+      "role": "pot_dock",
+      "local_position": [
+        2.55,
+        3.72,
+        1.02
+      ],
+      "unity_local_position": [
+        2.55,
+        1.02,
+        3.72
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "PotSpout",
+      "role": "pot_spout",
+      "local_position": [
+        0.34,
+        0.0,
+        0.27
+      ],
+      "unity_local_position": [
+        0.34,
+        0.27,
+        0.0
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "PourTarget.Lone",
+      "role": "pour_target",
+      "local_position": [
+        -1.5,
+        -1.48,
+        1.13
+      ],
+      "unity_local_position": [
+        -1.5,
+        1.13,
+        -1.48
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "PourTarget.PairMan",
+      "role": "pour_target",
+      "local_position": [
+        0.75,
+        -1.48,
+        1.13
+      ],
+      "unity_local_position": [
+        0.75,
+        1.13,
+        -1.48
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "PourTarget.PairWoman",
+      "role": "pour_target",
+      "local_position": [
+        1.8,
+        -1.48,
+        1.13
+      ],
+      "unity_local_position": [
+        1.8,
+        1.13,
+        -1.48
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ServiceRail.00",
+      "role": "service_rail",
+      "local_position": [
+        2.1,
+        -0.16,
+        0.0
+      ],
+      "unity_local_position": [
+        2.1,
+        0.0,
+        -0.16
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ServiceRail.01",
+      "role": "service_rail",
+      "local_position": [
+        -1.5,
+        -0.52,
+        0.0
+      ],
+      "unity_local_position": [
+        -1.5,
+        0.0,
+        -0.52
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ServiceRail.02",
+      "role": "service_rail",
+      "local_position": [
+        0.75,
+        -0.52,
+        0.0
+      ],
+      "unity_local_position": [
+        0.75,
+        0.0,
+        -0.52
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "ServiceRail.03",
+      "role": "service_rail",
+      "local_position": [
+        1.8,
+        -0.52,
+        0.0
+      ],
+      "unity_local_position": [
+        1.8,
+        0.0,
+        -0.52
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Stool.00",
+      "role": "stool",
+      "local_position": [
+        -1.5,
+        -2.18,
+        0.4675
+      ],
+      "unity_local_position": [
+        -1.5,
+        0.4675,
+        -2.18
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Stool.01",
+      "role": "stool",
+      "local_position": [
+        -0.38,
+        -2.18,
+        0.4675
+      ],
+      "unity_local_position": [
+        -0.38,
+        0.4675,
+        -2.18
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Stool.02",
+      "role": "stool",
+      "local_position": [
+        0.75,
+        -2.18,
+        0.4675
+      ],
+      "unity_local_position": [
+        0.75,
+        0.4675,
+        -2.18
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Stool.03",
+      "role": "stool",
+      "local_position": [
+        1.8,
+        -2.18,
+        0.4675
+      ],
+      "unity_local_position": [
+        1.8,
+        0.4675,
+        -2.18
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Stool.04",
+      "role": "stool",
+      "local_position": [
+        3.0,
+        -2.18,
+        0.4675
+      ],
+      "unity_local_position": [
+        3.0,
+        0.4675,
+        -2.18
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Stool.05",
+      "role": "stool",
+      "local_position": [
+        4.08,
+        -0.62,
+        0.4675
+      ],
+      "unity_local_position": [
+        4.08,
+        0.4675,
+        -0.62
+      ],
+      "unity_local_forward": [
+        -0.9894,
+        0.0,
+        0.1455
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "Stool.06",
+      "role": "stool",
+      "local_position": [
+        4.16,
+        0.1,
+        0.4675
+      ],
+      "unity_local_position": [
+        4.16,
+        0.4675,
+        0.1
+      ],
+      "unity_local_forward": [
+        -0.9894,
+        0.0,
+        0.1455
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "WipePatch.00",
+      "role": "wipe_patch",
+      "local_position": [
+        -1.5,
+        -1.2,
+        1.03
+      ],
+      "unity_local_position": [
+        -1.5,
+        1.03,
+        -1.2
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "WipePatch.01",
+      "role": "wipe_patch",
+      "local_position": [
+        0.75,
+        -1.2,
+        1.03
+      ],
+      "unity_local_position": [
+        0.75,
+        1.03,
+        -1.2
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    },
+    {
+      "name": "WipePatch.02",
+      "role": "wipe_patch",
+      "local_position": [
+        1.8,
+        -1.2,
+        1.03
+      ],
+      "unity_local_position": [
+        1.8,
+        1.03,
+        -1.2
+      ],
+      "unity_local_forward": [
+        0.0,
+        0.0,
+        1.0
+      ],
+      "unity_local_up": [
+        0.0,
+        1.0,
+        0.0
+      ]
+    }
+  ],
+  "dynamic_props": [
+    {
+      "name": "Cup.Lone",
+      "root_name": "PROP_Cup.Lone",
+      "lift_root_name": "LIFT_Cup_Lone",
+      "role": "cup_assembly",
+      "owner": "Lone",
+      "part_names": [
+        "Cup_Lone_Ceramic",
+        "Cup_Lone_Saucer",
+        "Cup_Lone_Liquid"
+      ],
+      "liquid_part": "Cup_Lone_Liquid",
+      "empty_local_y": 0.022,
+      "full_local_y": 0.101
+    },
+    {
+      "name": "Cup.PairMan",
+      "root_name": "PROP_Cup.PairMan",
+      "lift_root_name": "LIFT_Cup_PairMan",
+      "role": "cup_assembly",
+      "owner": "PairMan",
+      "part_names": [
+        "Cup_PairMan_Ceramic",
+        "Cup_PairMan_Saucer",
+        "Cup_PairMan_Liquid"
+      ],
+      "liquid_part": "Cup_PairMan_Liquid",
+      "empty_local_y": 0.022,
+      "full_local_y": 0.101
+    },
+    {
+      "name": "Cup.PairWoman",
+      "root_name": "PROP_Cup.PairWoman",
+      "lift_root_name": "LIFT_Cup_PairWoman",
+      "role": "cup_assembly",
+      "owner": "PairWoman",
+      "part_names": [
+        "Cup_PairWoman_Ceramic",
+        "Cup_PairWoman_Saucer",
+        "Cup_PairWoman_Liquid"
+      ],
+      "liquid_part": "Cup_PairWoman_Liquid",
+      "empty_local_y": 0.022,
+      "full_local_y": 0.101
+    },
+    {
+      "name": "PourStream",
+      "root_name": "PROP_PourStream",
+      "lift_root_name": "",
+      "role": "pour_stream",
+      "owner": "Attendant",
+      "part_names": [
+        "Service_PourStream"
+      ],
+      "liquid_part": "",
+      "empty_local_y": 0.0,
+      "full_local_y": 0.0
+    },
+    {
+      "name": "ServicePot",
+      "root_name": "PROP_ServicePot",
+      "lift_root_name": "",
+      "role": "service_pot",
+      "owner": "Attendant",
+      "part_names": [
+        "Service_Pot",
+        "Service_PotLid"
+      ],
+      "liquid_part": "",
+      "empty_local_y": 0.0,
+      "full_local_y": 0.0
+    },
+    {
+      "name": "ServiceTowel",
+      "root_name": "PROP_ServiceTowel",
+      "lift_root_name": "",
+      "role": "service_towel",
+      "owner": "Attendant",
+      "part_names": [
+        "Service_Towel"
+      ],
+      "liquid_part": "",
+      "empty_local_y": 0.0,
+      "full_local_y": 0.0
+    }
+  ],
+  "parts": [
+    {
+      "name": "Cafe_Floor",
+      "role": "floor",
+      "group": "shell",
+      "sheet": "CafeInteriorDetail",
+      "base_surface": "InteriorPaint",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 5.662272,
+        "offset_v": 6.219944
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 10,
+      "triangles": 16,
+      "bounds_min": [
+        -5.2402,
+        -4.4916,
+        0.018
+      ],
+      "bounds_max": [
+        4.4128,
+        5.3584,
+        0.075
+      ]
+    },
+    {
+      "name": "Cafe_Roof",
+      "role": "roof",
+      "group": "shell",
+      "sheet": "CafeExteriorDetail",
+      "base_surface": "WallPaint",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 5.326558,
+        "offset_v": 1.076783
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 10,
+      "triangles": 16,
+      "bounds_min": [
+        -5.32,
+        -4.56,
+        4.18
+      ],
+      "bounds_max": [
+        4.48,
+        5.44,
+        4.4
+      ]
+    },
+    {
+      "name": "Cafe_OpaqueWalls",
+      "role": "opaque_wall",
+      "group": "shell",
+      "sheet": "CafeExteriorDetail",
+      "base_surface": "WallPaint",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 4.646372,
+        "offset_v": 1.542702
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 28,
+      "triangles": 48,
+      "bounds_min": [
+        -5.44,
+        -4.68,
+        0.02
+      ],
+      "bounds_max": [
+        4.48,
+        5.56,
+        4.18
+      ]
+    },
+    {
+      "name": "Cafe_DoorHeaderWall",
+      "role": "door_header_wall",
+      "group": "shell",
+      "sheet": "CafeExteriorDetail",
+      "base_surface": "WallPaint",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 0.153811,
+        "offset_v": 6.062287
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -4.32,
+        -4.68,
+        2.37
+      ],
+      "bounds_max": [
+        -2.72,
+        -4.44,
+        3.78
+      ]
+    },
+    {
+      "name": "Cafe_GlazedPlinth",
+      "role": "facade_plinth",
+      "group": "frontage",
+      "sheet": "CafeExteriorDetail",
+      "base_surface": "WallPaint",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 6.768856,
+        "offset_v": 5.442023
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -5.32,
+        -4.7,
+        0.0
+      ],
+      "bounds_max": [
+        4.62,
+        5.44,
+        0.62
+      ]
+    },
+    {
+      "name": "Cafe_DeepFascia",
+      "role": "facade_fascia",
+      "group": "frontage",
+      "sheet": "CafeExteriorDetail",
+      "base_surface": "WallPaint",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 4.571817,
+        "offset_v": 1.131151
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -5.32,
+        -4.73,
+        3.78
+      ],
+      "bounds_max": [
+        4.65,
+        5.44,
+        4.16
+      ]
+    },
+    {
+      "name": "Cafe_Glass_00",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 6.76672,
+        "offset_v": 4.340246
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -2.72,
+        -4.574,
+        0.66
+      ],
+      "bounds_max": [
+        -1.253333,
+        -4.546,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Glass_01",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 2.011505,
+        "offset_v": 5.964233
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -1.253333,
+        -4.574,
+        0.66
+      ],
+      "bounds_max": [
+        0.213333,
+        -4.546,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Glass_02",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 4.656626,
+        "offset_v": 5.792584
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        0.213333,
+        -4.574,
+        0.66
+      ],
+      "bounds_max": [
+        1.68,
+        -4.546,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Glass_03",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 1.199939,
+        "offset_v": 2.873915
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        1.670808,
+        -4.569192,
+        0.66
+      ],
+      "bounds_max": [
+        2.249192,
+        -3.990808,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Glass_04",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 1.146853,
+        "offset_v": 4.353063
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        2.230808,
+        -4.009192,
+        0.66
+      ],
+      "bounds_max": [
+        2.809192,
+        -3.430808,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Glass_05",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 4.06125,
+        "offset_v": 4.833188
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        2.790808,
+        -3.449192,
+        0.66
+      ],
+      "bounds_max": [
+        3.369192,
+        -2.870808,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Glass_06",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 0.166415,
+        "offset_v": 5.952377
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        3.350808,
+        -2.889192,
+        0.66
+      ],
+      "bounds_max": [
+        3.929192,
+        -2.310808,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Glass_07",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 4.361501,
+        "offset_v": 6.601694
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        3.910808,
+        -2.329192,
+        0.66
+      ],
+      "bounds_max": [
+        4.489192,
+        -1.750808,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Glass_08",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 5.799527,
+        "offset_v": 1.42179
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        4.466,
+        -1.76,
+        0.66
+      ],
+      "bounds_max": [
+        4.494,
+        0.04,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Glass_09",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 2.77319,
+        "offset_v": 5.993393
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        4.466,
+        0.04,
+        0.66
+      ],
+      "bounds_max": [
+        4.494,
+        1.84,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Glass_10",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 2.728862,
+        "offset_v": 1.61854
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        4.466,
+        1.84,
+        0.66
+      ],
+      "bounds_max": [
+        4.494,
+        3.64,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Glass_11",
+      "role": "glass",
+      "group": "glazing",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 6.881331,
+        "offset_v": 3.892699
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        4.466,
+        3.64,
+        0.66
+      ],
+      "bounds_max": [
+        4.494,
+        5.44,
+        3.54
+      ]
+    },
+    {
+      "name": "Cafe_Mullions",
+      "role": "window_frame",
+      "group": "frontage",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 6.145174,
+        "offset_v": 4.83949
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 208,
+      "triangles": 364,
+      "bounds_min": [
+        -2.7675,
+        -4.6075,
+        0.71
+      ],
+      "bounds_max": [
+        4.5275,
+        5.4875,
+        3.49
+      ]
+    },
+    {
+      "name": "Cafe_WindowRails",
+      "role": "window_frame",
+      "group": "frontage",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 6.476936,
+        "offset_v": 6.452369
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        -5.32,
+        -4.625,
+        0.62
+      ],
+      "bounds_max": [
+        4.545,
+        5.44,
+        3.58
+      ]
+    },
+    {
+      "name": "Cafe_OpenDoorGlass",
+      "role": "door_glass",
+      "group": "door",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 4.967346,
+        "offset_v": 6.855268
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -4.27213,
+        -4.322505,
+        0.11
+      ],
+      "bounds_max": [
+        -3.773453,
+        -3.145263,
+        2.17
+      ]
+    },
+    {
+      "name": "Cafe_OpenDoorFrame",
+      "role": "door_frame",
+      "group": "door",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 3.217212,
+        "offset_v": 4.887984
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -4.335215,
+        -4.433111,
+        0.0
+      ],
+      "bounds_max": [
+        -3.710368,
+        -3.034657,
+        2.28
+      ]
+    },
+    {
+      "name": "Cafe_DoorJambs",
+      "role": "door_frame",
+      "group": "door",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 2.41857,
+        "offset_v": 4.922271
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -4.375,
+        -4.71,
+        0.0
+      ],
+      "bounds_max": [
+        -2.665,
+        -4.41,
+        2.37
+      ]
+    },
+    {
+      "name": "Cafe_LuminousBand",
+      "role": "practical_emission",
+      "group": "lighting",
+      "sheet": "CafeWarmEmission",
+      "base_surface": "InteriorPaint",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 4.529519,
+        "offset_v": 1.774701
+      },
+      "emissive": true,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -2.72,
+        -4.63,
+        3.577
+      ],
+      "bounds_max": [
+        4.55,
+        5.44,
+        3.783
+      ]
+    },
+    {
+      "name": "Cafe_InteriorLining",
+      "role": "interior_wall",
+      "group": "interior",
+      "sheet": "CafeInteriorDetail",
+      "base_surface": "InteriorPaint",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 1.140764,
+        "offset_v": 4.753079
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -5.1875,
+        -4.15,
+        0.51
+      ],
+      "bounds_max": [
+        4.225,
+        5.3075,
+        3.69
+      ]
+    },
+    {
+      "name": "Cafe_CounterBase",
+      "role": "counter_base",
+      "group": "counter",
+      "sheet": "CafeCounterDetail",
+      "base_surface": "Timber",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 6.899702,
+        "offset_v": 0.899153
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -2.43,
+        -1.56,
+        0.0
+      ],
+      "bounds_max": [
+        3.75321,
+        0.591611,
+        0.9
+      ]
+    },
+    {
+      "name": "Cafe_CounterTop",
+      "role": "counter_top",
+      "group": "counter",
+      "sheet": "CafeCounterDetail",
+      "base_surface": "Timber",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 6.433143,
+        "offset_v": 5.367895
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -2.56,
+        -1.66,
+        0.9
+      ],
+      "bounds_max": [
+        3.802532,
+        0.59874,
+        1.02
+      ]
+    },
+    {
+      "name": "Cafe_CounterApron",
+      "role": "counter_apron",
+      "group": "counter",
+      "sheet": "CafeCounterDetail",
+      "base_surface": "Timber",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 4.260883,
+        "offset_v": 6.204135
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -2.47,
+        -1.6075,
+        0.49
+      ],
+      "bounds_max": [
+        3.71,
+        -1.5625,
+        0.91
+      ]
+    },
+    {
+      "name": "Cafe_CounterFootRail",
+      "role": "counter_rail",
+      "group": "counter",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 2.448478,
+        "offset_v": 2.983612
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 64,
+      "triangles": 116,
+      "bounds_min": [
+        -2.41,
+        -1.787063,
+        0.0
+      ],
+      "bounds_max": [
+        3.65,
+        -1.672937,
+        0.5
+      ]
+    },
+    {
+      "name": "Cafe_StoolMetal",
+      "role": "stool_metal",
+      "group": "furniture",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 0.402365,
+        "offset_v": 5.932082
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 308,
+      "triangles": 560,
+      "bounds_min": [
+        -1.67,
+        -2.35,
+        0.0
+      ],
+      "bounds_max": [
+        4.33,
+        0.27,
+        0.43
+      ]
+    },
+    {
+      "name": "Cafe_StoolSeats",
+      "role": "stool_seat",
+      "group": "furniture",
+      "sheet": "CafeCounterDetail",
+      "base_surface": "Timber",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 3.714641,
+        "offset_v": 6.153185
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 196,
+      "triangles": 364,
+      "bounds_min": [
+        -1.74,
+        -2.413983,
+        0.4125
+      ],
+      "bounds_max": [
+        4.4,
+        0.333983,
+        0.4675
+      ]
+    },
+    {
+      "name": "Cafe_ServiceCabinet",
+      "role": "service_cabinet",
+      "group": "service",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 1.694377,
+        "offset_v": 6.61387
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        0.325,
+        3.51,
+        0.0
+      ],
+      "bounds_max": [
+        3.975,
+        4.29,
+        0.86
+      ]
+    },
+    {
+      "name": "Cafe_ServiceWorktop",
+      "role": "service_worktop",
+      "group": "service",
+      "sheet": "CafeCounterDetail",
+      "base_surface": "Timber",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 3.102068,
+        "offset_v": 2.885878
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        0.24,
+        3.45,
+        0.85
+      ],
+      "bounds_max": [
+        4.06,
+        4.35,
+        0.95
+      ]
+    },
+    {
+      "name": "Cafe_Refrigerator",
+      "role": "refrigerator",
+      "group": "appliance",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 5.891493,
+        "offset_v": 3.163592
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -4.38,
+        4.2625,
+        0.0
+      ],
+      "bounds_max": [
+        -3.26,
+        5.08,
+        1.96
+      ]
+    },
+    {
+      "name": "Cafe_RearDoor",
+      "role": "rear_door",
+      "group": "service",
+      "sheet": "CafeInteriorDetail",
+      "base_surface": "InteriorPaint",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 6.803998,
+        "offset_v": 0.365515
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        3.19,
+        5.1875,
+        0.05
+      ],
+      "bounds_max": [
+        4.31,
+        5.2775,
+        2.43
+      ]
+    },
+    {
+      "name": "Cafe_CoffeeUrns",
+      "role": "coffee_urn",
+      "group": "appliance",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 1.990356,
+        "offset_v": 3.527184
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 272,
+      "triangles": 496,
+      "bounds_min": [
+        1.24,
+        3.355,
+        0.95
+      ],
+      "bounds_max": [
+        3.06,
+        4.142228,
+        2.305
+      ]
+    },
+    {
+      "name": "Cafe_UrnSightGlass",
+      "role": "urn_sight_glass",
+      "group": "appliance",
+      "sheet": "CafeGlassDetail",
+      "base_surface": "PaintedMetal",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 3.00444,
+        "offset_v": 1.517708
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 40,
+      "triangles": 72,
+      "bounds_min": [
+        1.325,
+        3.466713,
+        1.26
+      ],
+      "bounds_max": [
+        2.595,
+        3.533287,
+        1.94
+      ]
+    },
+    {
+      "name": "Cafe_CounterDetails",
+      "role": "counter_details",
+      "group": "props",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 1.248646,
+        "offset_v": 4.011795
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 72,
+      "triangles": 128,
+      "bounds_min": [
+        -0.36,
+        -1.33,
+        0.99
+      ],
+      "bounds_max": [
+        2.64,
+        -1.03,
+        1.21
+      ]
+    },
+    {
+      "name": "Cup_Lone_Ceramic",
+      "role": "cup_ceramic",
+      "group": "dynamic_prop",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 0.377157,
+        "offset_v": 0.378012
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 108,
+      "triangles": 222,
+      "bounds_min": [
+        -1.567,
+        -1.547,
+        1.035
+      ],
+      "bounds_max": [
+        -1.395428,
+        -1.413,
+        1.153
+      ]
+    },
+    {
+      "name": "Cup_Lone_Saucer",
+      "role": "cup_saucer",
+      "group": "dynamic_prop",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 4.83212,
+        "offset_v": 5.282017
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 64,
+      "triangles": 120,
+      "bounds_min": [
+        -1.581,
+        -1.561,
+        1.035
+      ],
+      "bounds_max": [
+        -1.419,
+        -1.399,
+        1.05
+      ]
+    },
+    {
+      "name": "Cup_Lone_Liquid",
+      "role": "coffee_liquid",
+      "group": "dynamic_prop",
+      "sheet": "CafeCoffee",
+      "base_surface": "Timber",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 4.032624,
+        "offset_v": 0.51783
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 32,
+      "triangles": 60,
+      "bounds_min": [
+        -1.5575,
+        -1.5375,
+        1.132
+      ],
+      "bounds_max": [
+        -1.4425,
+        -1.4225,
+        1.14
+      ]
+    },
+    {
+      "name": "Cup_PairMan_Ceramic",
+      "role": "cup_ceramic",
+      "group": "dynamic_prop",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 4.247318,
+        "offset_v": 6.391272
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 108,
+      "triangles": 222,
+      "bounds_min": [
+        0.683,
+        -1.547,
+        1.035
+      ],
+      "bounds_max": [
+        0.854572,
+        -1.413,
+        1.153
+      ]
+    },
+    {
+      "name": "Cup_PairMan_Saucer",
+      "role": "cup_saucer",
+      "group": "dynamic_prop",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 4.111879,
+        "offset_v": 3.834699
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 64,
+      "triangles": 120,
+      "bounds_min": [
+        0.669,
+        -1.561,
+        1.035
+      ],
+      "bounds_max": [
+        0.831,
+        -1.399,
+        1.05
+      ]
+    },
+    {
+      "name": "Cup_PairMan_Liquid",
+      "role": "coffee_liquid",
+      "group": "dynamic_prop",
+      "sheet": "CafeCoffee",
+      "base_surface": "Timber",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 4.634516,
+        "offset_v": 2.651743
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 32,
+      "triangles": 60,
+      "bounds_min": [
+        0.6925,
+        -1.5375,
+        1.132
+      ],
+      "bounds_max": [
+        0.8075,
+        -1.4225,
+        1.14
+      ]
+    },
+    {
+      "name": "Cup_PairWoman_Ceramic",
+      "role": "cup_ceramic",
+      "group": "dynamic_prop",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 5.837446,
+        "offset_v": 3.576745
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 108,
+      "triangles": 222,
+      "bounds_min": [
+        1.733,
+        -1.547,
+        1.035
+      ],
+      "bounds_max": [
+        1.904572,
+        -1.413,
+        1.153
+      ]
+    },
+    {
+      "name": "Cup_PairWoman_Saucer",
+      "role": "cup_saucer",
+      "group": "dynamic_prop",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 0.306447,
+        "offset_v": 1.490471
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": true,
+      "vertices": 64,
+      "triangles": 120,
+      "bounds_min": [
+        1.719,
+        -1.561,
+        1.035
+      ],
+      "bounds_max": [
+        1.881,
+        -1.399,
+        1.05
+      ]
+    },
+    {
+      "name": "Cup_PairWoman_Liquid",
+      "role": "coffee_liquid",
+      "group": "dynamic_prop",
+      "sheet": "CafeCoffee",
+      "base_surface": "Timber",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 1,
+        "offset_u": 2.220752,
+        "offset_v": 5.88658
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": true,
+      "vertices": 32,
+      "triangles": 60,
+      "bounds_min": [
+        1.7425,
+        -1.5375,
+        1.132
+      ],
+      "bounds_max": [
+        1.8575,
+        -1.4225,
+        1.14
+      ]
+    },
+    {
+      "name": "Service_Pot",
+      "role": "service_pot",
+      "group": "dynamic_prop",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 4.654276,
+        "offset_v": 6.564523
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": false,
+      "vertices": 114,
+      "triangles": 216,
+      "bounds_min": [
+        2.4,
+        3.573761,
+        1.02
+      ],
+      "bounds_max": [
+        2.89,
+        3.866239,
+        1.334766
+      ]
+    },
+    {
+      "name": "Service_PotLid",
+      "role": "service_pot_lid",
+      "group": "dynamic_prop",
+      "sheet": "CafeMetalDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "semantic_sha256_quarter_turn_plus_offset_metres",
+      "uv_transform": {
+        "quarter_turns": 3,
+        "offset_u": 5.762249,
+        "offset_v": 4.930495
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": false,
+      "vertices": 28,
+      "triangles": 52,
+      "bounds_min": [
+        2.425,
+        3.598134,
+        1.32
+      ],
+      "bounds_max": [
+        2.675,
+        3.841866,
+        1.37
+      ]
+    },
+    {
+      "name": "Service_Towel",
+      "role": "service_towel",
+      "group": "dynamic_prop",
+      "sheet": "CafePropsDetail",
+      "base_surface": "PaleEnamel",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 0,
+        "offset_u": 4.037858,
+        "offset_v": 2.468238
+      },
+      "emissive": false,
+      "shadows": true,
+      "initially_visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        1.89,
+        -0.66,
+        1.035
+      ],
+      "bounds_max": [
+        2.31,
+        -0.38,
+        1.071
+      ]
+    },
+    {
+      "name": "Service_PourStream",
+      "role": "pour_stream",
+      "group": "dynamic_prop",
+      "sheet": "CafeCoffee",
+      "base_surface": "Timber",
+      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
+      "uv_transform": {
+        "quarter_turns": 2,
+        "offset_u": 3.253635,
+        "offset_v": 2.6934
+      },
+      "emissive": false,
+      "shadows": false,
+      "initially_visible": false,
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -0.01,
+        -0.01,
+        -10.24
+      ],
+      "bounds_max": [
+        0.01,
+        0.01,
+        -10.0
+      ]
+    }
+  ],
+  "build_signature": "7034eebefe669fc19b75dc2658e7f91e338347917a01003669f1900d1bc59d94"
+}
