@@ -6,6 +6,90 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-31 — Герой получил отдельный бег
+
+`PlayerMotor` сохранил tank controls, `6.5 m/s²` разгона и `11 m/s²`
+торможения, но теперь выбирает между ходьбой `2.6 m/s` и бегом `4.2 m/s`,
+пока вместе с положительным forward-input удерживается любой Shift или L3.
+Задний ход остаётся `1.4 m/s`, опьянение масштабирует обе скорости вперёд,
+усталость не стала новым debuff, а scripted approaches по-прежнему вызывают
+только обычный шаг. RunBlend вычисляется из фактического смещения после
+CharacterController и границы проходимости, поэтому упор в препятствие не
+проигрывает бег на месте. Дистанционный шаговый звук получил отдельную
+беговую длину шага.
+
+Production Hero V2 получил отдельный тяжёлый усталый `Run`: `0.75 s`, `18`
+кадров при `24 fps`, bone-only и in-place, с короткой фазой полёта. Manual
+PlayableGraph синхронизирует фазы Walk/Run, а Run-weight постепенно отпускает
+grounding вниз; на полном беге он только поднимает проникшую подошву и не
+прижимает обе стопы в полёте.
+V2-контракт вырос до `38` Actions; byte-frozen Hero V1 и независимый банк
+прохожих остались на `37`. Input Actions дополнен правым Shift; runtime
+поддерживает оба Shift и нажатие левого стика.
+
+Расширены узкие контракты motor, обычной 3D-презентации и V2 asset pipeline.
+Grounding теперь измеряет фактические деформированные вершины зарегистрированных
+мешей стоп, а не приблизительные углы renderer bounds: Walk/V1 остаются на своей
+нейтральной плоскости, а настоящий V2 Run сохраняет полёт без проникновения подошв.
+
+Blender `5.0.1` пересобрал и сам проверил Hero V2: `34` mesh parts, `1984`
+треугольника, `31` кость и `38` Actions; content signature
+`e035e5a7ad4291b35627de5012c94b070ad1881482b1f388eebd9e8ddbb051bf`.
+Unity `6000.5.10f1` успешно импортировал V2 и пересобрал production prefab,
+одновременно скомпилировав Runtime, Editor, EditMode и PlayMode assemblies.
+Финальные узкие PlayMode-контракты прошли совокупно `12/12`: `11/12` в
+групповом прогоне, после исправления абсолютного допущения frozen V1 — `1/1`
+на его конкретной регрессии. Более широкий первый фильтр также задел соседний
+`RiseClips_PassThroughGroundedAllFoursBeforeNeutral`: его старая проверка
+расстояния pivot-ов кистей/коленей дала `0.146 м` при пороге `0.140 м`, хотя
+полный visible-mesh floor sweep прошёл; контракт Rise вне задачи не менялся.
+`git diff --check` прошёл. Полные EditMode/PlayMode suites и player build в
+fast mode намеренно не запускались.
+
+## 2026-08-31 — The village bowl closed its hole and moved in
+
+The lead sent a frame of the village with a bright vertical band splitting
+the overhanging mountain and asked for it to be fixed, and for the
+mountains to stand closer in general.
+
+A temporary PlayMode diagnostic (ring of stands, silhouette profile by
+azimuth, and every stand shot three ways - as built, ground off, ground
+only) named it without guessing. The ground-only frame showed a bright
+band flanked by two razor-straight vertical seams: `IsRiseCellCentre`
+excluded every cell within `CablewayCutOuterHalfWidth` (`19 m`) of the
+cableway line from the rise submesh, so a `38 m` corridor of the wall wore
+the FLOOR material - bright snow on plain Exp2 - while the wall around it
+wore `Alpine Village Ridge` - dark, cold, with a visibility floor. On a
+`50 m` dark wall that band does not read as a valley; it reads as a hole.
+The exemption was there so the cabin would not meet the distant wall's fog
+floor at a few metres, but the ridge shader already puts everything inside
+`NativeFogNearDistance` on the same native fog the ground has, so the split
+was buying nothing the shader did not already give.
+
+- `IsRiseCellCentre` is one term now: rise iff the ridge term is non-zero.
+  The cut is carved into the wall and stays part of it.
+  `DistanceAcrossCablewayLine` had no other caller and went with it.
+- Closer and taller: `RidgeStandoff` `6 -> 3 m`, `RidgeRisePerMeter`
+  `1.6 -> 3.6` (`58° -> 74°`), `RidgeMaximumRise` `50 -> 60 m`,
+  `AlpineVillageRidgeAppearance.VisibilityFloor` `0.30 -> 0.40`. The mean
+  silhouette from mid-lane went `26.7° -> 34.1°`, the nearest bearings to
+  `43°`. Crests stay inside `HandoffNearDistance 96 m` on all three rays
+  the storm test measures, so the dither band still never crosses one.
+- Tests: the mesh-split test asserts the new rule from both sides (no floor
+  cell stands on the rise; every rise triangle is a rise cell), and
+  `Bowl_LoomsOverTheLaneOnEverySide` moved its bars with the geometry -
+  toes `62/36 -> 59/33 m`, elevations `26/34 -> 32/40 deg` - so a later
+  retune cannot quietly hand the distance back.
+
+Verification: all four assemblies build with 0 errors; the village and
+cableway EditMode suites passed 28/28; the full EditMode suite is
+1971/1975 with nothing from the village among the reds - the four are
+the neighbour's in-flight work (the wave-one census 83 vs 82, an
+ExteriorCloudField colour equality, the cafe's coffee-urn sheet, and a
+Player3D V2 atlas count 38 vs 37). Frames for the eye are in
+`Captures/AlpineVillage/ridge-fixed-*.png`. The diagnostic was deleted
+after use.
+
 ## 2026-08-31 — Из пяти рабочих сценок осталась пустая тележка
 
 По прямому решению автора отменена основная часть вчерашней окраинной

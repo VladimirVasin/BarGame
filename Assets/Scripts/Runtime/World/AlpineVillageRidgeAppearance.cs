@@ -38,7 +38,7 @@ namespace BarPromenade
         /// as a looming wall on a pale amber haze at `640x360`, through the
         /// crest of a gust as well as between them.
         /// </summary>
-        public const float VisibilityFloor = 0.30f;
+        public const float VisibilityFloor = 0.40f;
 
         /// <summary>Inside this the wall is on native Exp2, like the ground
         /// it meets; the floor blends in over the next three metres.</summary>

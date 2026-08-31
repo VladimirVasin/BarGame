@@ -173,7 +173,7 @@ Assets/
       Player3DLit.mat                   shared URP/Lit hero material
     V2/
       Models/PlayerCharacter3DV2.{fbx,json}  production 34-part model + deterministic metrics
-      Animations/PlayerCharacter3DV2Animations.fbx  production 37-action V2 rig
+      Animations/PlayerCharacter3DV2Animations.fbx  production 38-action V2 rig, including Run
       Textures/PlayerFaceAtlas.png       4x4 five-expression point-filtered atlas
       Textures/PlayerClothingAtlas.png   full-colour open-jacket/trouser/boot atlas
       Materials/Player3DV2Clothing.mat  shared white-tint atlas material
@@ -691,7 +691,7 @@ Assets/
         CityBusResources.cs        passive Resources prefab loading
         CityBusFactory.cs          physical slot/layer composition + validation
       Player/        motor, presentation contracts, chase/fixed cameras and contact shadow
-        PlayerMotor.cs             grounded guided approach + no-progress cancellation
+        PlayerMotor.cs             tank walk/back/run input + grounded guided walk approach
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
         PlayerFactory.cs           shared prefab spawn in all eight gameplay roots
         PlayerAttention.cs         Silent Hill head: notice cone rules, target picker + magnets
@@ -705,7 +705,7 @@ Assets/
       Player3D/
         Player3DAssetRegistry.cs        serialized meshes, parts, bones, sockets, Actions
         Player3DResources.cs            V2-default / explicit-V1 fallback instantiation
-        Player3DCharacterPresentation.cs clips + physics handoff + full-body Rise sampling
+        Player3DCharacterPresentation.cs Idle/Walk/Run gait + physics handoff + full-body Rise sampling
         Player3DFaceAtlasPresenter.cs    merge-safe MPB face-cell texture selection
         Player3DRagdollController.cs     bounded 13-body failed-balance physics + pose recovery
         Player3DFirstPersonSubset.cs     prefab-derived camera-local arm filtering
@@ -1293,15 +1293,20 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> below darker bone-toned player route; no live bus marker
 eight gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
                                       -> 34 mesh bindings + 16 core parts
-                                      -> 37 Generic in-place Actions
-                                         -> Idle/Walk/atlas-face/status/fall
+                                      -> 38 Generic in-place Actions
+                                         -> Idle/Walk/Run/atlas-face/status/fall
                                          -> 50-frame full-body Rise via all fours
                                          -> DoorUseEnter/DoorUseLoop/DoorUseExit
                                          -> BusBoardEnter/BusRideLoop/BusAlightExit
                                          -> ChessSeatEnter/ChessSeatPlayLoop/ChessSeatExit
                                       -> real URP mesh shadows
 explicit fallback -> Player3DVariant.ProductionV1
-                  -> Resources/Player/Player3D.prefab + V1 portrait
+                  -> Resources/Player/Player3D.prefab + V1 portrait + frozen 37 Actions
+player input -> W / left stick forward -> 2.6 m/s walk
+             -> either Shift or L3 held + positive forward -> 4.2 m/s run
+             -> S / left stick backward -> 1.4 m/s backpedal
+             -> intoxication multiplier -> actual constrained motion -> Walk/Run blend
+             -> scripted interaction approach -> walk speed only
 player -> PlayerContactShadow -> planted/fall-aware analytic patch
 player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact action
                          -> Route 01 front/rear door / fixed passenger seat

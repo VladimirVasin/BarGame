@@ -102,7 +102,8 @@ The vertical slice contains:
   side owns an operating `230 m` cableway with nine supports and eight cabins,
   with every cable height rebased from the raised terminal rather than old
   absolute world heights. At the normal `2.6 m/s`
-  walk speed the route takes about `238.5 s`, or `3 min 58 s`; the Ferryman's
+  walk speed the route takes about `238.5 s`, or `3 min 58 s`; continuous
+  `4.2 m/s` run input takes about `148 s`, or `2 min 28 s`. The Ferryman's
   Last Route car reads and drives the same route. Layered forest keeps its
   physical/mid/far budgets but now uses three deterministic crown silhouettes.
   It yields locally at three measured hairpins, the bridge and the terminal
@@ -1185,21 +1186,25 @@ The vertical slice contains:
   shared camera-facing pixel mug signs;
 - one production `Resources/Player/Player3DV2` prefab selected by all eight
   gameplay roots, prefab-derived first-person subsets and the inventory
-  portrait. It keeps the `1.75 m`, 31-bone, 37-action contract in 34 mesh parts and
-  1,984 triangles, but uses adult `7.4946`-head proportions, an atlas-driven
+  portrait. It keeps the `1.75 m`, 31-bone contract with 38 bone-only Actions
+  in 34 mesh parts and 1,984 triangles, but uses adult `7.4946`-head
+  proportions, an atlas-driven
   five-state face and a full-colour point-filtered clothing atlas. Its open
   olive field jacket has long sleeves and no strap; painted garment and boot
   construction replace protruding detail meshes;
 - one retained `Resources/Player/Player3D` Hero V1 prefab and its portrait.
   `Player3DVariant.ProductionV1` can still select that byte-frozen burgundy,
-  strapped model explicitly for fallback and legacy contract checks, but no
-  ordinary gameplay or inventory route selects it;
+  strapped model and its `37` Actions explicitly for fallback and legacy
+  contract checks, but no ordinary gameplay or inventory route selects it;
 - one manual PlayableGraph presentation that damp-blends the in-place
-  four-second `Idle` and one-second `Walk` actions from actual planar speed.
+  four-second `Idle`, one-second `Walk` and `0.75 s`/18-frame `Run` actions
+  from actual constrained planar speed.
   Idle alternates readable breathing and weight shifts; Walk uses full
   contact/down/passing/up phases with independently flexing elbows, knees and
-  ankles. Start and stop use `0.14 s`/`0.20 s` smooth envelopes, and visible
-  gait cadence follows the blended weight. Root motion stays disabled while
+  ankles. Run is a separate heavy, weary gait with a forward load, stronger
+  arm swing, deeper knee lift and short flight phase. Start and stop use
+  `0.14 s`/`0.20 s` smooth envelopes, and visible gait cadence follows the
+  blended weight. Root motion stays disabled while
   the face atlas drives neutral, half/closed blink, watchful and tense states;
   V1 retains its bone fallback. A failed balance check may temporarily suspend
   this graph while the
@@ -1207,10 +1212,13 @@ The vertical slice contains:
   arm spread, knee bend and balance lean are
   additive rotational/limb poses, preserve the authored pelvis position in
   the actor ground plane and reset through the same lifecycle cleanup. After
-  the ordinary and additive pose is sampled, a cached rigid boot-sole contour
-  offsets only the pelvis vertically so the lower visible sole stays at its
-  neutral grounded height; the physical player root, model root and contextual
-  clips remain untouched;
+  the ordinary and additive pose is sampled, reused CPU bake buffers measure
+  the actual deformed vertices of the registered foot meshes, then offset only
+  the pelvis vertically so the lower visible sole stays at its neutral grounded
+  height; the physical player root, model root and contextual clips remain
+  untouched. Run weight progressively releases downward grounding, and at full
+  Run it only lifts sole penetration instead of pulling both airborne boots
+  down to the floor;
 - one shared source-scene action for all eight ordinary bar, supermarket,
   home and stairwell location doors. After the existing interact command, the
   constrained motor guides the visible hero to an explicit grounded dock and
@@ -1222,12 +1230,16 @@ The vertical slice contains:
   to the grounded player root. The patch follows foot plant and expands,
   rotates and offsets for left/right falls without moving the physical root;
 - tank-control road-constrained movement: `W` walks along the hero's own
-  forward axis to a `2.6 m/s` maximum, `S` backs him up at `1.4 m/s` with a
+  forward axis to a `2.6 m/s` maximum; holding either Shift or gamepad L3 with
+  positive forward input raises that target to `4.2 m/s`. `S` backs him up at
+  `1.4 m/s` with a
   dedicated backpedal gait, `A`/`D` yaw him in place at `150°/s` with
-  step-turn clips (and steer the arc while walking), all through `6.5 m/s²`
+  step-turn clips (and steer the arc while moving), all through `6.5 m/s²`
   acceleration and `11 m/s²` braking; ordinary release coasts, hard
   modal/transition/teleport stops remain immediate, constrained displacement
-  cannot store hidden momentum, and the camera never steers locomotion;
+  cannot store hidden momentum, and the camera never steers locomotion.
+  Intoxication scales walk/run speed, fatigue adds no movement debuff, and
+  scripted interaction approaches remain at walking pace;
 - in City, BarInterior and ordinary Supermarket play, a very close freely
   orbiting perspective third-person chase camera with
   `2.6 m / 53°` exterior and `2.2 m / 57°` interior framing, deliberately

@@ -139,7 +139,8 @@ the other area unloads the source into `AreaLoading` and then loads the chosen
 destination. `MountainRoad` generates a pure City layout only for the City tab,
 never City GameObjects. Its hero starts `6 m` inside a `9 m` exit tunnel and
 follows a `620 m` continuous car-scale ascent (about `238.5 s`, or `3 min
-58 s`, at the normal `2.6 m/s`). The ribbon rises `26.1 m` at no more than an
+58 s`, at the normal `2.6 m/s` walk; about `148 s`, or `2 min 28 s`, under
+continuous `4.2 m/s` run input). The ribbon rises `26.1 m` at no more than an
 `8%` grade: ordinary stretches are `4.8 m` wide and ten `7.5 m`-radius
 hairpins widen to `6.4 m`; the final `5 m` are level. Midway, the route must
 cross one `50 m`-long high mountain bridge with a `5.8 m` structural deck around
@@ -285,14 +286,21 @@ supermarket, instantiates the same modular low-poly 3D hero in all eight gamepla
 roots, loads separate bar, supermarket, stairwell, home and church interiors, and
 restores the same seed and matching exterior return point. The hero keeps
 independent body meshes on one Generic rig, uses continuous in-place 3D clips
-for locomotion and contextual actions, including a grounded lean/right-hand
+for locomotion and contextual actions, including a separate heavy, weary
+`0.75 s` Run with a short flight phase and a grounded lean/right-hand
 press before every ordinary location-door transition, hands failed balance falls from a
 directional clip into a bounded runtime ragdoll and back into an authored rise,
 and derives first-person arms and the inventory portrait from the same
 production model. That live model is `Resources/Player/Player3DV2`: the
-adult-proportion, atlas-faced Hero V2 in the canonical olive field jacket.
-The former `Player3D` Hero V1 remains packaged only as an explicit technical
-fallback and is never selected by ordinary gameplay. Ordinary building masses use a separate `36-52 m` height
+adult-proportion, atlas-faced Hero V2 in the canonical olive field jacket,
+with `38` bone-only Actions. Holding either Shift or gamepad L3 while moving
+forward raises the `2.6 m/s` walk to a `4.2 m/s` run; backward movement stays
+at `1.4 m/s`, intoxication still scales movement, and scripted approaches stay
+at walking pace. The gait blend follows actual constrained speed rather than
+the input request. The former `Player3D` Hero V1 remains packaged with its
+frozen `37` Actions only as an explicit technical fallback and is never
+selected by ordinary gameplay; the pedestrian bank likewise remains at `37`.
+Ordinary building masses use a separate `36-52 m` height
 profile whose roofs fall below one-percent visibility in the fixed City fog;
 the bar, the supermarket and the player home retain their original low-rise
 heights. Every ordinary lot now instantiates one fixed-metre Blender prototype

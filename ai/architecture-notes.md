@@ -1706,7 +1706,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   at `595 m`; the final `25 m` are level, a `20 m` terrace run that carries the
   road clear of the switchback field plus the `5 m` plateau entry lead. They
   enter the unchanged irregular roughly `42 x 27 m` terminal plateau after
-  about `238.5 s` (`3 min 58 s`) at `PlayerMotor`'s `2.6 m/s` forward speed.
+  about `238.5 s` (`3 min 58 s`) at `PlayerMotor`'s `2.6 m/s` walk or `148 s`
+  (`2 min 28 s`) under continuous `4.2 m/s` run input.
   The terrace run exists because the pad is a raised terrace and the terrain
   sampler snaps everything inside it to the pad height: parked where the climb
   stopped, its rim reached back across the outer arc of hairpin `8` and buried
@@ -2734,20 +2735,39 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   A/D yaw the player root directly at `150°/s` (scaled by the intoxication
   speed multiplier); the root never rotates toward velocity during input
   locomotion. W walks along the hero's own forward axis, S backs him up at a
-  reduced `1.4 m/s`, and W±A/D walks an arc. The camera-relative steering
-  basis and its camera-cut latch are gone — the chase camera orbits
+  reduced `1.4 m/s`, and W±A/D follows an arc at the active walk/run speed.
+  Holding either Shift or gamepad L3 requests Run only while forward input is
+  positive; neither Shift alone nor a backward input becomes a sprint. The
+  camera-relative steering basis and its camera-cut latch are gone — the chase camera orbits
   independently and never writes player yaw. Scripted interaction approaches
   (`WalkPlanarStep`) still face along their travel. The motor reports a
   `PlayerMotionSample` (planar velocity, signed forward speed, turn input) so
-  the presentation can select `Walk`, `WalkBack` or the `TurnLeft`/
-  `TurnRight` in-place clips on its five-input locomotion mixer.
-- **Accepted — Bounded inertial locomotion:** Character-relative input targets
-  a `2.6 m/s` forward / `1.4 m/s` backward maximum through `6.5 m/s²`
+  the presentation can select `Walk`, `Run`, `WalkBack` or the `TurnLeft`/
+  `TurnRight` in-place clips on its six-input locomotion mixer.
+- **Accepted — Bounded inertial walk/run locomotion:** Character-relative
+  input targets a `2.6 m/s` forward walk, `4.2 m/s` forward run or `1.4 m/s`
+  backward maximum through the unchanged `6.5 m/s²`
   acceleration and `11 m/s²` braking. The motor feeds actual constrained
   displacement back into its next velocity step, so road edges and collisions
   cannot store a hidden impulse. Normal input release coasts, while modal
   ownership, scene transitions, input disable and teleport still stop planar
-  motion immediately.
+  motion immediately. The existing intoxication multiplier scales both
+  forward targets and the turn rate; fatigue has no movement debuff. Scripted
+  interaction approaches continue to call the walking step directly and never
+  inherit held sprint input. `PlayerMotionSample.RunBlend` is derived from the
+  signed speed that remains after collision and walkable-area constraints, not
+  from the key request, so a blocked hero cannot run in place.
+- **Accepted — Run is one production-only authored gait:** Hero V2 appends one
+  bone-only, in-place `Run` Action (`0.75 s`, `18` frames at `24 fps`) to reach
+  `38` production Actions. It is a heavy, weary forward-loaded cycle with
+  stronger opposing arms, deeper knees and one short two-foot flight phase,
+  blended against Walk by actual constrained Run weight. That weight
+  progressively releases downward grounding; at full Run the correction may
+  lift sole penetration but cannot drag both airborne boots onto the floor.
+  The byte-frozen Hero V1 and the independent
+  pedestrian locomotion bank remain at `37` Actions; neither receives this
+  production clip. This is an ordinary locomotion decision, not an exception
+  to the contextual-animation standard.
 - **Accepted — Bounded cinematic chase camera:** Exterior/interior framing uses
   `2.6 m / 53°` and `2.2 m / 57°` profiles with `1.4 m / 1.3 m` raised focus
   points that compose the hero below frame center. RMB mouse motion, the
@@ -3761,7 +3781,9 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted — Hero V2 is a parallel explicit variant, not a mutable player
   preference:** `Player3DResources` and `PlayerFactory` default their old APIs
   to `ProductionV1`; only a caller naming `ExperimentalV2` can instantiate the
-  candidate. V2 preserves the 31-bone/37-action contract, selects five facial
+  candidate. At that decision point V2 preserved the 31-bone/37-action
+  contract; the later production-only Run decision raises only live V2 to 38.
+  The variant selects five facial
   states from a merge-safe MPB atlas and binds one full-colour clothing atlas
   to a shared white-tint material. Gameplay roots and inventory remain V1, so
   there is no cross-scene toggle or half-promoted saved state. Direct resource

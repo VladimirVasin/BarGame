@@ -54,11 +54,13 @@ namespace BarPromenade
         public PlayerMotionSample(
             Vector3 planarVelocity,
             float signedForwardSpeed,
-            float turnInput)
+            float turnInput,
+            float runBlend = 0f)
         {
             PlanarVelocity = planarVelocity;
             SignedForwardSpeed = signedForwardSpeed;
             TurnInput = Mathf.Clamp(turnInput, -1f, 1f);
+            RunBlend = Mathf.Clamp01(runBlend);
         }
 
         /// <summary>Measured planar velocity in metres per second.</summary>
@@ -72,6 +74,13 @@ namespace BarPromenade
 
         /// <summary>Yaw input in [-1, 1]; positive turns right.</summary>
         public float TurnInput { get; }
+
+        /// <summary>
+        /// Measured forward gait blend: zero at or below the current walk
+        /// cap and one at the current run cap. It follows executed motion,
+        /// not the sprint button, so blocked movement cannot run in place.
+        /// </summary>
+        public float RunBlend { get; }
 
         public static PlayerMotionSample Stationary =>
             new PlayerMotionSample(Vector3.zero, 0f, 0f);

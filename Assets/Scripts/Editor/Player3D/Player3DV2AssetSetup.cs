@@ -37,7 +37,7 @@ namespace BarPromenade.Editor
         public const string PrefabPath =
             "Assets/Resources/Player/Player3DV2.prefab";
 
-        private const int BuildSchemaVersion = 2;
+        private const int BuildSchemaVersion = 3;
         private const string ExpectedDesignVersion = "HeroV2";
         private const string ExpectedAtlasRenderer = "GEO_FaceSurface";
         private const string ExpectedAtlasOrigin = "bottom_left";
@@ -60,6 +60,9 @@ namespace BarPromenade.Editor
         private const int ExpectedAtlasCellSize = 64;
         private const int ExpectedPortraitWidth = 192;
         private const int ExpectedPortraitHeight = 256;
+        private const float ExpectedRunDurationSeconds = 0.75f;
+        private const int ExpectedRunSourceFrameCount = 18;
+        private const float ExpectedRunSourceFps = 24f;
 
         private static readonly IReadOnlyDictionary<string, string>
             PaletteHex = new Dictionary<string, string>(StringComparer.Ordinal)
@@ -137,6 +140,15 @@ namespace BarPromenade.Editor
                 { "FallRight", new ActionContract("fall", false) },
                 { "Idle", new ActionContract("locomotion", true) },
                 { "Relaxed", new ActionContract("locomotion", false) },
+                {
+                    "Run",
+                    new ActionContract(
+                        "locomotion",
+                        true,
+                        ExpectedRunDurationSeconds,
+                        ExpectedRunSourceFrameCount,
+                        ExpectedRunSourceFps)
+                },
                 { "RiseLeft", new ActionContract("fall", false) },
                 { "RiseRight", new ActionContract("fall", false) },
                 { "SmokeEnter", new ActionContract("smoking", false) },
@@ -539,7 +551,11 @@ namespace BarPromenade.Editor
                 if (action == null ||
                     string.IsNullOrWhiteSpace(action.name) ||
                     string.IsNullOrWhiteSpace(action.category) ||
-                    action.duration_seconds <= 0f)
+                    action.duration_seconds <= 0f ||
+                    action.source_frame_count <= 0 ||
+                    action.source_fps <= 0f ||
+                    Mathf.Abs(action.frame_start) > 0.0001f ||
+                    action.frame_end <= action.frame_start)
                 {
                     throw new InvalidOperationException(
                         $"Hero V2 action {actionIndex} is incomplete.");
@@ -563,6 +579,43 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException(
                         $"Hero V2 action '{action.name}' does not match the " +
                         "production runtime name/category/loop contract.");
+                }
+
+                if (action.root_motion || action.event_count != 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Hero V2 action '{action.name}' must remain " +
+                        "in-place and free of Animation Events.");
+                }
+
+                if (expected.HasExactTiming &&
+                    (Mathf.Abs(
+                         action.duration_seconds -
+                         expected.DurationSeconds) > 0.0001f ||
+                     action.source_frame_count != expected.SourceFrameCount ||
+                     Mathf.Abs(action.source_fps - expected.SourceFps) >
+                         0.0001f ||
+                     Mathf.Abs(
+                         action.frame_end -
+                         expected.SourceFrameCount) > 0.0001f))
+                {
+                    throw new InvalidOperationException(
+                        $"Hero V2 action '{action.name}' must be authored as " +
+                        $"{expected.SourceFrameCount} source frames / " +
+                        $"{expected.DurationSeconds:F2} s at " +
+                        $"{expected.SourceFps:F0} FPS.");
+                }
+
+                if (action.name == "Run" &&
+                    (!action.bone_only ||
+                     !action.in_place ||
+                     action.gait_style != "heavy_weary" ||
+                     action.landmark_count != 8 ||
+                     !action.short_flight))
+                {
+                    throw new InvalidOperationException(
+                        "Hero V2 Run must keep its bone-only heavy-weary " +
+                        "eight-landmark gait and short flight phase.");
                 }
 
                 ValidateFaceKeys(action);
@@ -782,6 +835,13 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException(
                         $"Imported clip '{action.name}' loop flag differs " +
                         "from the Hero V2 manifest.");
+                }
+
+                if (AnimationUtility.GetAnimationEvents(clip).Length != 0)
+                {
+                    throw new InvalidOperationException(
+                        $"Imported Hero V2 clip '{action.name}' must not " +
+                        "contain Animation Events.");
                 }
 
                 if (Mathf.Abs(clip.length - action.duration_seconds) > 1f / 24f)
@@ -1359,14 +1419,26 @@ namespace BarPromenade.Editor
 
         private readonly struct ActionContract
         {
-            public ActionContract(string category, bool looping)
+            public ActionContract(
+                string category,
+                bool looping,
+                float durationSeconds = 0f,
+                int sourceFrameCount = 0,
+                float sourceFps = 0f)
             {
                 Category = category;
                 Looping = looping;
+                DurationSeconds = durationSeconds;
+                SourceFrameCount = sourceFrameCount;
+                SourceFps = sourceFps;
             }
 
             public string Category { get; }
             public bool Looping { get; }
+            public float DurationSeconds { get; }
+            public int SourceFrameCount { get; }
+            public float SourceFps { get; }
+            public bool HasExactTiming => SourceFrameCount > 0;
         }
 
         [Serializable]
@@ -1406,6 +1478,17 @@ namespace BarPromenade.Editor
             public string category;
             public float duration_seconds;
             public bool loop;
+            public int source_frame_count;
+            public float source_fps;
+            public float frame_start;
+            public float frame_end;
+            public bool root_motion;
+            public int event_count;
+            public bool bone_only;
+            public bool in_place;
+            public string gait_style;
+            public int landmark_count;
+            public bool short_flight;
             public Player3DV2ManifestFaceKey[] face_keys;
         }
 

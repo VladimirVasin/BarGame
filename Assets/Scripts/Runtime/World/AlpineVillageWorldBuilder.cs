@@ -264,11 +264,22 @@ namespace BarPromenade
         /// on the floor's plain Exp2 fog a wall `85 m` off is at `12 %`
         /// between gusts and gone at a gust crest, so the bowl that was
         /// moved in to loom would vanish exactly when the storm is fullest.
-        /// A cell is rise when the sampler's ridge term is non-zero there
-        /// AND it stands outside the cableway cut - the valley bed and its
-        /// walls keep the floor material, because the cabin passes them at
-        /// a few metres and a distant wall's fog floor and cold tint would
-        /// be wrong on them. The ring of floor cells touching the rise is
+        /// A cell is rise when the sampler's ridge term is non-zero there,
+        /// and that is the whole rule.
+        ///
+        /// The cableway cut used to be carved out of it and handed to the
+        /// FLOOR material, on the argument that the cabin passes those
+        /// slopes at a few metres and should not meet the distant wall's
+        /// fog floor and cold tint. What that produced, seen from the
+        /// village, was a bright band `38 m` wide running straight up a
+        /// `50 m` dark wall - and a pale vertical strip in a dark mountain
+        /// does not read as a valley, it reads as a HOLE. The lead saw it
+        /// as a gap in the overhang and was right. One material over the
+        /// whole rise leaves no seam to misread: the cut is a gorge cut
+        /// into the mountain, which is what it is. The ride keeps its
+        /// close-up honesty from the shader instead of from the split -
+        /// inside `NativeFogNearDistance` the wall is on the same native
+        /// Exp2 the floor is. The ring of floor cells touching the rise is
         /// also emitted into the rise submesh on duplicated vertices lowered
         /// by <see cref="SeamBurial"/>, so the unsnapped rise lies under the
         /// snapped floor edge and no hairline can open at the toe. The
@@ -464,8 +475,7 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Rise iff the sampler's ridge term is non-zero at the cell centre
-        /// and the cell stands outside the cableway cut's outer half-width.
+        /// Rise iff the sampler's ridge term is non-zero at the cell centre.
         /// Shared with the tests through <see cref="IsRiseCellCentre"/>.
         /// </summary>
         private static bool IsRiseCell(
@@ -484,18 +494,16 @@ namespace BarPromenade
 
         /// <summary>
         /// The classification rule at one point, pure, so the mesh test can
-        /// re-derive every cell from the plan.
+        /// re-derive every cell from the plan. One term: the cableway cut
+        /// is carved out of the wall and stays part of it.
         /// </summary>
         internal static bool IsRiseCellCentre(
             AlpineVillagePlan plan,
             Vector2 centre)
         {
-            return AlpineVillageTerrainSampler.SampleRidgeRise(plan, centre) >
-                   0f &&
-                   AlpineVillageTerrainSampler.DistanceAcrossCablewayLine(
-                       plan,
-                       centre) >=
-                   AlpineVillageTerrainSampler.CablewayCutOuterHalfWidth;
+            return AlpineVillageTerrainSampler.SampleRidgeRise(
+                plan,
+                centre) > 0f;
         }
 
         /// <summary>

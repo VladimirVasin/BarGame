@@ -144,7 +144,7 @@ namespace BarPromenade.Tests.EditMode
                 JsonUtility.FromJson<V2Manifest>(manifestAsset.text);
             AssertManifestContract(manifest);
             AssertModelImport();
-            AssertAnimationImport();
+            AssertAnimationImport(manifest);
             AssertTextureImport(V2AtlasPath, false);
             AssertTextureImport(V2ClothingAtlasPath, false);
             AssertTextureImport(V2PortraitPath, true);
@@ -248,6 +248,10 @@ namespace BarPromenade.Tests.EditMode
                 v1Prefab.GetComponent<Player3DAssetRegistry>();
             Assert.That(v1Registry, Is.Not.Null);
             Assert.That(v1Registry.HasFaceAtlas, Is.False);
+            Assert.That(
+                v1Registry.Animations.Count,
+                Is.EqualTo(37),
+                "The retained Hero V1 bank must stay frozen at 37 Actions.");
         }
 
         private static void RequireGeneratedSources()
@@ -277,6 +281,8 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(manifest, Is.Not.Null);
             Assert.That(manifest.design_version, Is.EqualTo("HeroV2"));
             Assert.That(manifest.runtime_integrated, Is.True);
+            Assert.That(manifest.action_count, Is.EqualTo(38));
+            Assert.That(manifest.actions, Has.Length.EqualTo(38));
             Assert.That(manifest.face_atlas, Is.Not.Null);
             Assert.That(
                 manifest.face_atlas.texture_asset,
@@ -300,6 +306,7 @@ namespace BarPromenade.Tests.EditMode
             AssertCell(manifest, "ClosedBlink", 2, 3);
             AssertCell(manifest, "Watchful", 0, 2);
             AssertCell(manifest, "Tense", 1, 2);
+            AssertRunManifestContract(manifest);
             AssertStaticTextureManifestContract(manifest);
 
             V2Part facePart = Array.Find(
@@ -308,6 +315,35 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(facePart, Is.Not.Null);
             Assert.That(facePart.bone, Is.EqualTo("head"));
             Assert.That(facePart.material, Is.EqualTo("MAT_FaceAtlas"));
+        }
+
+        private static void AssertRunManifestContract(V2Manifest manifest)
+        {
+            HashSet<string> names = new HashSet<string>(StringComparer.Ordinal);
+            for (int index = 0; index < manifest.actions.Length; index++)
+            {
+                Assert.That(names.Add(manifest.actions[index].name), Is.True);
+            }
+
+            Assert.That(names, Does.Contain("Run"));
+            V2Action run = Array.Find(
+                manifest.actions,
+                action => action.name == "Run");
+            Assert.That(run, Is.Not.Null);
+            Assert.That(run.category, Is.EqualTo("locomotion"));
+            Assert.That(run.duration_seconds, Is.EqualTo(0.75f).Within(0.0001f));
+            Assert.That(run.loop, Is.True);
+            Assert.That(run.source_frame_count, Is.EqualTo(18));
+            Assert.That(run.source_fps, Is.EqualTo(24f).Within(0.0001f));
+            Assert.That(run.frame_start, Is.EqualTo(0f).Within(0.0001f));
+            Assert.That(run.frame_end, Is.EqualTo(18f).Within(0.0001f));
+            Assert.That(run.root_motion, Is.False);
+            Assert.That(run.event_count, Is.Zero);
+            Assert.That(run.bone_only, Is.True);
+            Assert.That(run.in_place, Is.True);
+            Assert.That(run.gait_style, Is.EqualTo("heavy_weary"));
+            Assert.That(run.landmark_count, Is.EqualTo(8));
+            Assert.That(run.short_flight, Is.True);
         }
 
         private static void AssertCell(
@@ -627,7 +663,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(importer.generateSecondaryUV, Is.False);
         }
 
-        private static void AssertAnimationImport()
+        private static void AssertAnimationImport(V2Manifest manifest)
         {
             ModelImporter importer =
                 AssetImporter.GetAtPath(V2AnimationPath) as ModelImporter;
@@ -641,6 +677,38 @@ namespace BarPromenade.Tests.EditMode
                 AssetDatabase.GetAssetPath(importer.sourceAvatar),
                 Is.EqualTo(V2ModelPath),
                 "V2 animation must use the V2 Avatar, never retained V1.");
+
+            ModelImporterClipAnimation runSettings = Array.Find(
+                importer.clipAnimations,
+                clip => clip.name == "Run");
+            Assert.That(runSettings, Is.Not.Null);
+            Assert.That(runSettings.loopTime, Is.True);
+            Assert.That(runSettings.loopPose, Is.True);
+
+            AnimationClip runClip = null;
+            int clipCount = 0;
+            UnityEngine.Object[] assets =
+                AssetDatabase.LoadAllAssetsAtPath(V2AnimationPath);
+            for (int index = 0; index < assets.Length; index++)
+            {
+                if (!(assets[index] is AnimationClip clip) ||
+                    clip.name.StartsWith("__preview__", StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                clipCount++;
+                if (clip.name == "Run")
+                {
+                    runClip = clip;
+                }
+            }
+
+            Assert.That(clipCount, Is.EqualTo(manifest.action_count));
+            Assert.That(runClip, Is.Not.Null);
+            Assert.That(runClip.isLooping, Is.True);
+            Assert.That(runClip.length, Is.EqualTo(0.75f).Within(1f / 24f));
+            Assert.That(AnimationUtility.GetAnimationEvents(runClip), Is.Empty);
         }
 
         private static void AssertTextureImport(
@@ -819,6 +887,7 @@ namespace BarPromenade.Tests.EditMode
         {
             public string design_version;
             public bool runtime_integrated;
+            public int action_count;
             public V2Part[] parts;
             public V2Action[] actions;
             public V2FaceAtlas face_atlas;
@@ -845,6 +914,20 @@ namespace BarPromenade.Tests.EditMode
         private sealed class V2Action
         {
             public string name;
+            public string category;
+            public float duration_seconds;
+            public bool loop;
+            public int source_frame_count;
+            public float source_fps;
+            public float frame_start;
+            public float frame_end;
+            public bool root_motion;
+            public int event_count;
+            public bool bone_only;
+            public bool in_place;
+            public string gait_style;
+            public int landmark_count;
+            public bool short_flight;
             public V2FaceKey[] face_keys;
         }
 

@@ -106,7 +106,7 @@ A row never carries a status outside this table. Product-level scope cuts
 | Home alarm clock | One validated bed-relative clock and nightstand reusing a 28-segment display: flicker frozen `05:59`, switch to solid `06:00` only on Wake, then follow session time without rebuilding geometry. | `HomeAlarmClock{Plan,Builder,Synthesis}`, `HomeAlarmClock`, `GameSessionState`, `GameAudioMixer` | Current |
 | Road, park and ground navigation | Constrain player XZ motion to canonical roads/ground/bridges/river landings and the first `11 m` of the open south tunnel; cave water, the fenced south-west infill and ground behind every other toe stay excluded. Pedestrian navigation does not enter the tunnel. | `RoadWalkableArea`, `CityGroundTraversalPlan{,ner}`, `CityRoadGroundBoundaryPlan`, `CityVerticalTraversalPlan`, `CityRiverPlan`, `CityMountainBoundaryPlan`, `CityTerrainSurfacePlan`, `PlayerMotor` | Current |
 | City route planning | Deterministic ordered shortest paths over generated street and park-path edges with a binary min-heap. | `Runtime/Map`, `CityLayout` | Current |
-| Player motor | Tank controls: `W`/`S` walk the hero's own forward axis to `2.6`/`1.4 m/s` with acceleration and braking, `A`/`D` yaw at `150°/s` (in place or steering the arc), and the motor reports a `PlayerMotionSample` so the presentation picks Walk/WalkBack/turn clips; plus a bounded scripted approach that keeps the ordinary gait, settles at an exact authored pose and reports a stall instead of teleporting. | `PlayerMotor`, Input System, `CharacterController`, `IWalkableArea` | Current |
+| Player motor | Tank controls: forward is `2.6 m/s` walk or `4.2 m/s` run while either Shift/L3 is held; backpedal stays `1.4 m/s`, A/D yaw stays `150°/s`, and existing acceleration/braking plus intoxication feed actual constrained motion into the Idle/Walk/Run blend. Fatigue adds no debuff; scripted approaches always walk. | `PlayerMotor`, `Player3DCharacterPresentation`, Input System, `CharacterController`, `IWalkableArea` | Current |
 | Third-person chase camera | Close exterior/interior framing with damped yaw, bounded `-20°..55°` pitch and focus; RMB mouse, right-stick or arrow-key input orbits on both axes (walking is WASD-only; the seated board game keeps the arrows for its cursor), while idle motion, status reactions and obstacle shortening never rotate the player. | `PlayerCameraFollow`, `IntoxicationStageRules`, `BarMinigameModalLock` | Current |
 | Home fixed camera | Three authored MainRoom/Bathroom/Balcony poses hard-cut with hold hysteresis instead of following the player; only quarter-strength status rotation around the fixed base pose. | `HomeCameraShot{,Selector}`, `HomeFixedCameraController`, `PlayerCameraFollow` | Current |
 | Home player visibility | Explicitly registered furniture, door and rail renderer groups dither toward an authored alpha floor when they cross a camera ray to the hero, then restore; every collider and GameObject stays intact. | `HomeOcclusion{Registry,Resolver}`, `HomePlayerOcclusionController`, `HomeOccluderDither` material/shader | Current |
@@ -189,7 +189,9 @@ blueprint ID + seed -> immutable blueprint -> validated sparse layout
   -> fence plan -> rails with clearance openings
 
 eight gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
-  -> Idle / Walk blend + face atlas + additive status bones
+  -> 38 Actions: Idle / Walk / heavy Run blend + face atlas + additive status bones
+  -> Shift or L3 + forward -> 4.2 m/s run; backpedal and scripted approaches walk
+  -> actual constrained speed owns Run weight; intoxication scales it, fatigue does not
   -> contextual actions: bed, smoking, cat feeding, bus board/ride/exit
   -> failed balance -> Fall clip -> bounded ragdoll -> Rise -> Relaxed
   -> first-person subsets: bar bottles, refrigerator

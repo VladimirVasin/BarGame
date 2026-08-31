@@ -10,10 +10,11 @@ namespace BarPromenade
     public enum Player3DLocomotionState
     {
         Idle = 0,
-        Walk,
-        WalkBack,
-        TurnLeft,
-        TurnRight
+        Walk = 1,
+        WalkBack = 2,
+        TurnLeft = 3,
+        TurnRight = 4,
+        Run = 5
     }
 
     /// <summary>
@@ -28,6 +29,7 @@ namespace BarPromenade
         IPlayerClipPresentation
     {
         public const float FullWalkSpeed = 2.6f;
+        public const float FullRunSpeed = 4.2f;
         public const float FullWalkBackSpeed = 1.4f;
 
         // The Silent Hill head: how fast attention takes and releases
@@ -55,12 +57,18 @@ namespace BarPromenade
         private const float TurnInPlaceSpeedThreshold = 0.25f;
         private const float TurnInPlaceInputThreshold = 0.2f;
 
+        // The authored Run loop is 18 frames at 24 fps. Keeping this
+        // production cadence when V1 falls back to Walk makes the old rig
+        // visibly hurry instead of silently dropping the run request.
+        private const float FullRunCycleSeconds = 0.75f;
+
         // Locomotion mixer layout: input 0 is Idle, the gaits follow.
-        private const int GaitCount = 4;
+        private const int GaitCount = 5;
         private const int WalkGait = 0;
         private const int WalkBackGait = 1;
-        private const int TurnLeftGait = 2;
-        private const int TurnRightGait = 3;
+        private const int RunGait = 2;
+        private const int TurnLeftGait = 3;
+        private const int TurnRightGait = 4;
 
         private enum ClipOwner
         {
@@ -82,12 +90,14 @@ namespace BarPromenade
         private AnimationClipPlayable idlePlayable;
         private AnimationClipPlayable walkPlayable;
         private AnimationClipPlayable walkBackPlayable;
+        private AnimationClipPlayable runPlayable;
         private AnimationClipPlayable turnLeftPlayable;
         private AnimationClipPlayable turnRightPlayable;
         private AnimationClipPlayable activeClipPlayable;
         private Player3DAnimationBinding idleBinding;
         private Player3DAnimationBinding walkBinding;
         private Player3DAnimationBinding walkBackBinding;
+        private Player3DAnimationBinding runBinding;
         private Player3DAnimationBinding turnLeftBinding;
         private Player3DAnimationBinding turnRightBinding;
         private Player3DAnimationBinding activeClipBinding;
@@ -101,7 +111,10 @@ namespace BarPromenade
         private readonly float[] gaitWeights = new float[GaitCount];
         private readonly float[] gaitWeightVelocities = new float[GaitCount];
         private float locomotionBlend;
+        private float runBlend;
+        private float forwardGaitCyclesPerSecond;
         private float planarSpeed;
+        private bool hasAuthoredRunClip;
         private float intoxicationTarget;
         private float intoxicationAmount;
         private float balanceLeanTarget;
@@ -176,6 +189,10 @@ namespace BarPromenade
             interactionHandoffLocked;
         public Player3DLocomotionState CurrentLocomotionState { get; private set; }
         public float LocomotionBlend => locomotionBlend;
+        public float RunBlend => runBlend;
+        public float ForwardGaitCyclesPerSecond =>
+            forwardGaitCyclesPerSecond;
+        public bool HasAuthoredRunClip => hasAuthoredRunClip;
         public float PlanarSpeed => planarSpeed;
         public float IntoxicationAmount => intoxicationAmount;
         public float BalanceLean => balanceLean;
@@ -225,6 +242,17 @@ namespace BarPromenade
                     "WalkBack, TurnLeft and TurnRight clips.");
             }
 
+            hasAuthoredRunClip = TryResolveAnimation(
+                "Run",
+                out runBinding);
+            if (!hasAuthoredRunClip)
+            {
+                // Hero V1 is a byte-frozen fallback and deliberately keeps
+                // its original 37-action bank. Give it a separately timed
+                // Walk playable so the ordinary run state remains safe.
+                runBinding = walkBinding;
+            }
+
             animator.applyRootMotion = false;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             animator.runtimeAnimatorController = null;
@@ -270,10 +298,20 @@ namespace BarPromenade
                 }
                 else if (motion.SignedForwardSpeed >= 0f)
                 {
-                    float blend = Mathf.Clamp01(
+                    float forwardBlend = Mathf.Clamp01(
                         motion.SignedForwardSpeed / FullWalkSpeed);
-                    targetGaitWeights[WalkGait] = blend;
-                    if (blend >= MotionThreshold)
+                    float requestedRunBlend = Mathf.Clamp01(
+                        motion.RunBlend);
+                    float visibleRunTarget =
+                        forwardBlend * requestedRunBlend;
+                    targetGaitWeights[WalkGait] =
+                        forwardBlend - visibleRunTarget;
+                    targetGaitWeights[RunGait] = visibleRunTarget;
+                    if (visibleRunTarget >= MotionThreshold)
+                    {
+                        state = Player3DLocomotionState.Run;
+                    }
+                    else if (forwardBlend >= MotionThreshold)
                     {
                         state = Player3DLocomotionState.Walk;
                     }
@@ -549,10 +587,7 @@ namespace BarPromenade
             if (!IsClipActive)
             {
                 ApplyLocomotionWeights(immediate: false);
-                walkPlayable.SetSpeed((double)Mathf.Lerp(
-                    0.78f,
-                    1.12f,
-                    gaitWeights[WalkGait]));
+                UpdateForwardGaitCadence();
                 walkBackPlayable.SetSpeed((double)Mathf.Lerp(
                     0.70f,
                     0.90f,
@@ -641,6 +676,8 @@ namespace BarPromenade
 
         private void OnDestroy()
         {
+            footGroundingProbe?.Dispose();
+            footGroundingProbe = null;
             faceAtlasPresenter.Reset();
             DestroyGraph();
         }
@@ -708,12 +745,14 @@ namespace BarPromenade
             idlePlayable = CreateLocomotionPlayable(idleBinding);
             walkPlayable = CreateLocomotionPlayable(walkBinding);
             walkBackPlayable = CreateLocomotionPlayable(walkBackBinding);
+            runPlayable = CreateLocomotionPlayable(runBinding);
             turnLeftPlayable = CreateLocomotionPlayable(turnLeftBinding);
             turnRightPlayable = CreateLocomotionPlayable(turnRightBinding);
             graph.Connect(idlePlayable, 0, locomotionMixer, 0);
             graph.Connect(walkPlayable, 0, locomotionMixer, WalkGait + 1);
             graph.Connect(
                 walkBackPlayable, 0, locomotionMixer, WalkBackGait + 1);
+            graph.Connect(runPlayable, 0, locomotionMixer, RunGait + 1);
             graph.Connect(
                 turnLeftPlayable, 0, locomotionMixer, TurnLeftGait + 1);
             graph.Connect(
@@ -758,12 +797,15 @@ namespace BarPromenade
             }
 
             locomotionBlend = 0f;
+            runBlend = 0f;
+            forwardGaitCyclesPerSecond = 0f;
         }
 
         private void ApplyLocomotionWeights(bool immediate)
         {
             if (!locomotionMixer.IsValid())
             {
+                runBlend = 0f;
                 return;
             }
 
@@ -809,16 +851,95 @@ namespace BarPromenade
                 Mathf.Max(0f, 1f - (total * scale)));
             for (int gait = 0; gait < GaitCount; gait++)
             {
+                float appliedWeight = gaitWeights[gait] * scale;
                 locomotionMixer.SetInputWeight(
                     gait + 1,
-                    gaitWeights[gait] * scale);
+                    appliedWeight);
+                if (gait == RunGait)
+                {
+                    runBlend = appliedWeight;
+                }
             }
 
             locomotionBlend = Mathf.Min(1f, total);
         }
 
+        private void UpdateForwardGaitCadence()
+        {
+            if (!walkPlayable.IsValid() ||
+                !runPlayable.IsValid() ||
+                walkBinding == null ||
+                walkBinding.Clip == null ||
+                runBinding == null ||
+                runBinding.Clip == null)
+            {
+                forwardGaitCyclesPerSecond = 0f;
+                return;
+            }
+
+            float forwardWeight = Mathf.Clamp01(
+                gaitWeights[WalkGait] + gaitWeights[RunGait]);
+            float visibleRunRatio = forwardWeight > 0.0001f
+                ? Mathf.Clamp01(gaitWeights[RunGait] / forwardWeight)
+                : 0f;
+            float walkPlaybackSpeed = Mathf.Lerp(
+                0.78f,
+                1.12f,
+                forwardWeight);
+            float walkCyclesPerSecond = walkPlaybackSpeed /
+                                        Mathf.Max(
+                                            0.0001f,
+                                            walkBinding.Clip.length);
+            float runCyclesPerSecond =
+                (1f / FullRunCycleSeconds) *
+                Mathf.Clamp01(planarSpeed / FullRunSpeed);
+            float sharedCyclesPerSecond = Mathf.Lerp(
+                walkCyclesPerSecond,
+                runCyclesPerSecond,
+                visibleRunRatio);
+            forwardGaitCyclesPerSecond = sharedCyclesPerSecond;
+
+            // Both playables begin at normalized phase zero and receive the
+            // same normalized phase delta every graph evaluation. Their
+            // contact landmarks therefore stay aligned through Walk/Run
+            // crossfades despite the different clip lengths.
+            walkPlayable.SetSpeed((double)(
+                sharedCyclesPerSecond * walkBinding.Clip.length));
+            runPlayable.SetSpeed((double)(
+                sharedCyclesPerSecond * runBinding.Clip.length));
+        }
+
         private void UpdateFootPlant()
         {
+            float forwardWeight =
+                gaitWeights[WalkGait] + gaitWeights[RunGait];
+            float strongestOther = Mathf.Max(
+                gaitWeights[WalkBackGait],
+                Mathf.Max(
+                    gaitWeights[TurnLeftGait],
+                    gaitWeights[TurnRightGait]));
+            if (forwardWeight > 0.0001f &&
+                forwardWeight >= strongestOther)
+            {
+                float visibleRunRatio = Mathf.Clamp01(
+                    gaitWeights[RunGait] / forwardWeight);
+                float walkPlant = SampleFootPlant(
+                    walkPlayable,
+                    walkBinding,
+                    0.68f,
+                    false);
+                float runPlant = SampleFootPlant(
+                    runPlayable,
+                    runBinding,
+                    hasAuthoredRunClip ? 0.42f : 0.68f,
+                    hasAuthoredRunClip);
+                footPlantAmount = Mathf.Lerp(
+                    1f,
+                    Mathf.Lerp(walkPlant, runPlant, visibleRunRatio),
+                    locomotionBlend);
+                return;
+            }
+
             AnimationClipPlayable gaitPlayable = walkPlayable;
             Player3DAnimationBinding gaitBinding = walkBinding;
             float bestWeight = gaitWeights[WalkGait];
@@ -827,6 +948,13 @@ namespace BarPromenade
                 bestWeight = gaitWeights[WalkBackGait];
                 gaitPlayable = walkBackPlayable;
                 gaitBinding = walkBackBinding;
+            }
+
+            if (gaitWeights[RunGait] > bestWeight)
+            {
+                bestWeight = gaitWeights[RunGait];
+                gaitPlayable = runPlayable;
+                gaitBinding = runBinding;
             }
 
             if (gaitWeights[TurnLeftGait] > bestWeight)
@@ -842,21 +970,50 @@ namespace BarPromenade
                 gaitBinding = turnRightBinding;
             }
 
-            if (!gaitPlayable.IsValid() ||
-                gaitBinding == null ||
-                gaitBinding.Clip.length <= 0.0001f)
-            {
-                footPlantAmount = 1f;
-                return;
-            }
-
-            float cycle = (float)(gaitPlayable.GetTime() /
-                                  gaitBinding.Clip.length);
-            float planted = Mathf.Abs(Mathf.Cos(cycle * Mathf.PI * 2f));
             footPlantAmount = Mathf.Lerp(
                 1f,
-                Mathf.Lerp(0.68f, 1f, planted),
+                SampleFootPlant(
+                    gaitPlayable,
+                    gaitBinding,
+                    0.68f,
+                    false),
                 locomotionBlend);
+        }
+
+        private static float SampleFootPlant(
+            AnimationClipPlayable playable,
+            Player3DAnimationBinding binding,
+            float minimumPlant,
+            bool usesRunLandmarks)
+        {
+            if (!playable.IsValid() ||
+                binding == null ||
+                binding.Clip == null ||
+                binding.Clip.length <= 0.0001f)
+            {
+                return 1f;
+            }
+
+            float cycle = (float)(playable.GetTime() /
+                                  binding.Clip.length);
+            float planted;
+            if (usesRunLandmarks)
+            {
+                // Run contacts at 0/.5 and reaches its short flight near
+                // .375/.875. Express that asymmetrical half-cycle directly
+                // instead of reusing Walk's quarter-cycle cosine.
+                float halfCycle = Mathf.Repeat(cycle, 0.5f) * 2f;
+                planted = halfCycle <= 0.75f
+                    ? 1f - (halfCycle / 0.75f)
+                    : (halfCycle - 0.75f) / 0.25f;
+            }
+            else
+            {
+                planted = Mathf.Abs(
+                    Mathf.Cos(cycle * Mathf.PI * 2f));
+            }
+
+            return Mathf.Lerp(minimumPlant, 1f, planted);
         }
 
         /// <summary>
@@ -1064,6 +1221,7 @@ namespace BarPromenade
             rightShinBone = GetPartBone(
                 Player3DAnatomicalPart.RightShin);
             proceduralStatusPoseBaseCaptured = false;
+            footGroundingProbe?.Dispose();
             footGroundingProbe = null;
             groundedFootHeightOffsetCaptured = false;
         }
@@ -1131,13 +1289,19 @@ namespace BarPromenade
             }
 
             // The CharacterController owns the grounded actor root, while
-            // Walk, Idle and intoxication are bone-only presentation. Pin the
-            // lower registered foot to its neutral height so gait, sway and
-            // knee bend cannot push the visible rig through the floor.
+            // ordinary locomotion and intoxication are bone-only. Always
+            // lift sole penetration. Walk/Idle still pin the lower boot, but
+            // Run progressively releases downward correction so its brief
+            // authored flight phase survives the crossfade.
             float targetHeight = actorFacingTransform.position.y +
                                  groundedFootHeightOffset;
-            pelvisBone.position += Vector3.up *
-                (targetHeight - footHeight);
+            float correction = targetHeight - footHeight;
+            if (correction < 0f && hasAuthoredRunClip)
+            {
+                correction *= 1f - Mathf.Clamp01(runBlend);
+            }
+
+            pelvisBone.position += Vector3.up * correction;
         }
 
         private bool TryGetGroundingHeight(out float height)
@@ -1460,11 +1624,21 @@ namespace BarPromenade
 
         private sealed class FootGroundingProbe
         {
-            private readonly FootContactPoint[] contacts;
+            private readonly SkinnedMeshRenderer[] soleRenderers;
+            private readonly Mesh bakedSoleMesh;
+            private readonly List<Vector3> bakedSoleVertices =
+                new List<Vector3>(32);
 
-            private FootGroundingProbe(FootContactPoint[] contactPoints)
+            private FootGroundingProbe(
+                SkinnedMeshRenderer[] renderers)
             {
-                contacts = contactPoints;
+                soleRenderers = renderers;
+                bakedSoleMesh = new Mesh
+                {
+                    name = "Player3D Foot Grounding Probe",
+                    hideFlags = HideFlags.HideAndDontSave
+                };
+                bakedSoleMesh.MarkDynamic();
             }
 
             public static FootGroundingProbe Create(
@@ -1475,115 +1649,81 @@ namespace BarPromenade
                     return null;
                 }
 
-                var points = new List<FootContactPoint>();
+                var renderers = new List<SkinnedMeshRenderer>();
                 IReadOnlyList<Player3DMeshBinding> bindings =
                     assetRegistry.MeshBindings;
                 for (int index = 0; index < bindings.Count; index++)
                 {
                     Player3DMeshBinding binding = bindings[index];
                     if (binding == null ||
-                        binding.Renderer == null ||
+                        !(binding.Renderer is SkinnedMeshRenderer renderer) ||
                         binding.Bone == null ||
                         (binding.BoneName != "foot.L" &&
-                         binding.BoneName != "foot.R") ||
-                        binding.MeshName.IndexOf(
-                            "BootSole",
-                            StringComparison.Ordinal) < 0)
+                         binding.BoneName != "foot.R"))
                     {
                         continue;
                     }
 
-                    AddSoleBoundsContacts(
-                        points,
-                        binding.Bone,
-                        binding.Renderer.bounds);
+                    if (!renderers.Contains(renderer))
+                    {
+                        renderers.Add(renderer);
+                    }
                 }
 
-                return points.Count > 0
-                    ? new FootGroundingProbe(points.ToArray())
+                return renderers.Count > 0
+                    ? new FootGroundingProbe(renderers.ToArray())
                     : null;
             }
 
             public bool TryGetLowestHeight(out float height)
             {
                 height = float.PositiveInfinity;
-                for (int index = 0; index < contacts.Length; index++)
+                for (int index = 0;
+                     index < soleRenderers.Length;
+                     index++)
                 {
-                    FootContactPoint contact = contacts[index];
-                    if (!contact.TryGetWorldPosition(out Vector3 position))
+                    SkinnedMeshRenderer renderer = soleRenderers[index];
+                    if (renderer == null || renderer.sharedMesh == null)
                     {
                         continue;
                     }
 
-                    height = Mathf.Min(height, position.y);
+                    bakedSoleMesh.Clear(false);
+                    renderer.BakeMesh(bakedSoleMesh, true);
+                    bakedSoleVertices.Clear();
+                    bakedSoleMesh.GetVertices(bakedSoleVertices);
+                    for (int vertexIndex = 0;
+                         vertexIndex < bakedSoleVertices.Count;
+                         vertexIndex++)
+                    {
+                        Vector3 worldVertex =
+                            renderer.transform.TransformPoint(
+                                bakedSoleVertices[vertexIndex]);
+                        if (IsFinite(worldVertex))
+                        {
+                            height = Mathf.Min(height, worldVertex.y);
+                        }
+                    }
                 }
 
                 return !float.IsPositiveInfinity(height);
             }
 
-            private static void AddSoleBoundsContacts(
-                ICollection<FootContactPoint> points,
-                Transform bone,
-                Bounds bounds)
+            public void Dispose()
             {
-                AddBoundsFaceContacts(
-                    points,
-                    bone,
-                    bounds,
-                    bounds.min.y);
-                AddBoundsFaceContacts(
-                    points,
-                    bone,
-                    bounds,
-                    bounds.max.y);
-            }
-
-            private static void AddBoundsFaceContacts(
-                ICollection<FootContactPoint> points,
-                Transform bone,
-                Bounds bounds,
-                float y)
-            {
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.min.x, y, bounds.min.z)));
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.min.x, y, bounds.max.z)));
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.max.x, y, bounds.min.z)));
-                points.Add(new FootContactPoint(
-                    bone,
-                    new Vector3(bounds.max.x, y, bounds.max.z)));
-            }
-        }
-
-        private readonly struct FootContactPoint
-        {
-            private readonly Transform bone;
-            private readonly Vector3 boneLocalPosition;
-
-            public FootContactPoint(
-                Transform footBone,
-                Vector3 worldPosition)
-            {
-                bone = footBone;
-                boneLocalPosition = bone != null
-                    ? bone.InverseTransformPoint(worldPosition)
-                    : Vector3.zero;
-            }
-
-            public bool TryGetWorldPosition(out Vector3 position)
-            {
-                if (bone == null)
+                if (bakedSoleMesh == null)
                 {
-                    position = default;
-                    return false;
+                    return;
                 }
 
-                position = bone.TransformPoint(boneLocalPosition);
-                return IsFinite(position);
+                if (Application.isPlaying)
+                {
+                    UnityEngine.Object.Destroy(bakedSoleMesh);
+                }
+                else
+                {
+                    UnityEngine.Object.DestroyImmediate(bakedSoleMesh);
+                }
             }
         }
 

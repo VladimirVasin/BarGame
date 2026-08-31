@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-player-3d-model-v2.py",
-  "generator_version": "1.0.0",
+  "generator_version": "1.1.0",
   "blender_version": "5.0.1",
   "design_source": "ai/player-art-spec.md + ai/city-story-bible.md + ai/city-zones-art-bible.md",
   "runtime_integrated": true,
@@ -12,7 +12,7 @@
   "object_count": 36,
   "mesh_count": 34,
   "triangle_count": 1984,
-  "action_count": 37,
+  "action_count": 38,
   "socket_count": 6,
   "bounds_min": [
     -0.778674,
@@ -97,6 +97,7 @@
       "frame_start": 0.0,
       "frame_end": 90.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -122,6 +123,7 @@
       "frame_start": 0.0,
       "frame_end": 144.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -147,6 +149,7 @@
       "frame_start": 0.0,
       "frame_end": 96.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -163,7 +166,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 72.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "BusBoardEnter",
@@ -174,7 +178,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 72.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "BusRideLoop",
@@ -185,7 +190,8 @@
       "source_fps": 8,
       "frame_start": 0.0,
       "frame_end": 48.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "CarAlightExit",
@@ -196,7 +202,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 72.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "CarBoardEnter",
@@ -207,7 +214,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 72.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "CatFeedEnter",
@@ -218,7 +226,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 48.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "CatFeedExit",
@@ -229,7 +238,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 48.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "CatFeedLoop",
@@ -240,7 +250,8 @@
       "source_fps": 6,
       "frame_start": 0.0,
       "frame_end": 64.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "ChessSeatEnter",
@@ -251,7 +262,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 72.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "ChessSeatExit",
@@ -262,7 +274,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 72.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "ChessSeatPlayLoop",
@@ -273,7 +286,8 @@
       "source_fps": 8,
       "frame_start": 0.0,
       "frame_end": 96.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "DoorUseEnter",
@@ -284,7 +298,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 12.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "DoorUseExit",
@@ -295,7 +310,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 12.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "DoorUseLoop",
@@ -306,7 +322,8 @@
       "source_fps": 8,
       "frame_start": 0.0,
       "frame_end": 6.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "DownLeft",
@@ -318,6 +335,7 @@
       "frame_start": 0.0,
       "frame_end": 29.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -335,6 +353,7 @@
       "frame_start": 0.0,
       "frame_end": 29.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -352,6 +371,7 @@
       "frame_start": 0.0,
       "frame_end": 1.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -369,6 +389,7 @@
       "frame_start": 0.0,
       "frame_end": 1.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -386,6 +407,7 @@
       "frame_start": 0.0,
       "frame_end": 1.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -403,6 +425,7 @@
       "frame_start": 0.0,
       "frame_end": 1.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -420,6 +443,7 @@
       "frame_start": 0.0,
       "frame_end": 1.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -437,6 +461,7 @@
       "frame_start": 0.0,
       "frame_end": 11.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -454,6 +479,7 @@
       "frame_start": 0.0,
       "frame_end": 11.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -470,7 +496,8 @@
       "source_fps": 24,
       "frame_start": 0.0,
       "frame_end": 96.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "Relaxed",
@@ -481,7 +508,8 @@
       "source_fps": 24,
       "frame_start": 0.0,
       "frame_end": 1.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "RiseLeft",
@@ -493,6 +521,7 @@
       "frame_start": 0.0,
       "frame_end": 40.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -518,6 +547,7 @@
       "frame_start": 0.0,
       "frame_end": 40.0,
       "root_motion": false,
+      "event_count": 0,
       "face_keys": [
         {
           "normalized_time": 0.0,
@@ -534,6 +564,23 @@
       ]
     },
     {
+      "name": "Run",
+      "category": "locomotion",
+      "duration_seconds": 0.75,
+      "loop": true,
+      "source_frame_count": 18,
+      "source_fps": 24,
+      "frame_start": 0.0,
+      "frame_end": 18.0,
+      "root_motion": false,
+      "event_count": 0,
+      "bone_only": true,
+      "in_place": true,
+      "gait_style": "heavy_weary",
+      "landmark_count": 8,
+      "short_flight": true
+    },
+    {
       "name": "SmokeEnter",
       "category": "smoking",
       "duration_seconds": 4.0,
@@ -542,7 +589,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 96.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "SmokeExit",
@@ -553,7 +601,8 @@
       "source_fps": 12,
       "frame_start": 0.0,
       "frame_end": 48.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "SmokeLoop",
@@ -564,7 +613,8 @@
       "source_fps": 6,
       "frame_start": 0.0,
       "frame_end": 96.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "TurnLeft",
@@ -575,7 +625,8 @@
       "source_fps": 24,
       "frame_start": 0.0,
       "frame_end": 24.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "TurnRight",
@@ -586,7 +637,8 @@
       "source_fps": 24,
       "frame_start": 0.0,
       "frame_end": 24.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "Walk",
@@ -597,7 +649,8 @@
       "source_fps": 24,
       "frame_start": 0.0,
       "frame_end": 24.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     },
     {
       "name": "WalkBack",
@@ -608,7 +661,8 @@
       "source_fps": 24,
       "frame_start": 0.0,
       "frame_end": 24.0,
-      "root_motion": false
+      "root_motion": false,
+      "event_count": 0
     }
   ],
   "parts": [
@@ -955,7 +1009,7 @@
   ],
   "design_version": "HeroV2",
   "lineage_reference": "ArtSource/Player/PlayerDirectionalTurntable.png",
-  "content_signature_sha256": "43f800a209bd447f133a4c569de10cf5be4b2373636e3664663c75a3f47a7106",
+  "content_signature_sha256": "e035e5a7ad4291b35627de5012c94b070ad1881482b1f388eebd9e8ddbb051bf",
   "parallel_to": "HeroV1",
   "material_palette": {
     "MAT_FaceAtlas": "FFFFFF",

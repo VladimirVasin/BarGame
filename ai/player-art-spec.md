@@ -40,7 +40,7 @@ fallback and is not deleted.
   boots and one flush bandage shell. A full-colour `256 x 256` point-filtered
   clothing atlas paints the open jacket edges, pockets, seams, patch, bandage
   wraps, cuffs and boot construction. The result has `34` mesh parts and
-  `1,984` triangles, with the same `31` bones, six sockets and `37` bone-only
+  `1,984` triangles, with the same `31` bones, six sockets and `38` bone-only
   production actions.
 - One curved head surface uses a `4 x 4` face atlas. `Neutral`, `HalfBlink`,
   `ClosedBlink`, `Watchful` and `Tense` remain readable without separate 3D
@@ -84,18 +84,24 @@ fallback and is not deleted.
   `Assets/Resources/Player/Player3D.prefab` and `Player3DPortrait.png` remain
   intact. `Player3DVariant.ProductionV1` is the only runtime path that selects it.
 - V1 keeps its 73-part burgundy overshirt, diagonal strap and bone-driven face
-  solely for rollback and legacy contract checks. Ordinary gameplay,
-  first-person subsets and inventory never select it after the V2 promotion.
+  plus its frozen `37`-action bank solely for rollback and legacy contract
+  checks. Ordinary gameplay, first-person subsets and inventory never select
+  it after the V2 promotion. The separate pedestrian locomotion bank likewise
+  remains at `37` actions; the production hero's `Run` is not added to it.
 
 ## Animation contract
 
-- `Relaxed`, the four-second `Idle` and the one-second `Walk` own ordinary
-  in-place presentation. Idle returns to the exact Relaxed seam while two
+- `Relaxed`, the four-second `Idle`, the one-second `Walk` and the `0.75 s`
+  (`18` frames at `24 fps`) `Run` own ordinary in-place presentation. Idle
+  returns to the exact Relaxed seam while two
   asymmetric breath/weight-shift phrases move the pelvis, spine, chest, head,
   arms and softly loaded knees. Walk uses contact/down/passing/up phases for
   both sides with independent elbow, knee and ankle articulation, opposite arm
-  swing and a closed neutral-root loop. Both locomotion clips and the three bed
-  clips use auto-clamped Bezier interpolation; the remaining contextual and
+  swing and a closed neutral-root loop. Run is a separate heavy, weary gait:
+  forward torso load, stronger opposing arm swing, deeper knee lift and a
+  short two-foot flight phase, never an accelerated Walk. All three locomotion
+  clips and the three bed clips use auto-clamped Bezier interpolation; the
+  remaining contextual and
   fall timing stays linear. The bed clips additionally stagger their keys, so
   the pelvis and legs take a landmark first and the chest, head, arms and face
   reach it a few frames later. Both endpoints still key the whole rig.
@@ -150,9 +156,15 @@ fallback and is not deleted.
 - Intoxication sway, arm spread, knee bend and signed balance lean are additive
   bone presentation over ordinary locomotion and reset to neutral through the
   shared lifecycle cleanup.
-- Runtime blends Idle and Walk from actual planar speed with damped `0.14 s`
-  start and `0.20 s` stop envelopes. Walk cadence follows that visible blend,
-  so releasing movement cannot abruptly slow a still-visible gait.
+- Runtime blends Idle, Walk and Run from actual constrained planar speed with
+  damped `0.14 s` start and `0.20 s` stop envelopes. The Run blend begins above
+  the `2.6 m/s` walk ceiling and reaches full weight at `4.2 m/s`; collision,
+  walkable-area clamping and intoxication therefore affect the visible gait
+  before it is sampled. During the short flight phase ordinary grounding
+  progressively releases its downward correction with Run weight; at full Run
+  it may lift penetrated soles but must not pull both raised boots to the floor.
+  Walk and Run cadence follow their visible weights, so releasing Shift cannot
+  abruptly slow a still-visible gait.
 
 ## Derived player representations
 

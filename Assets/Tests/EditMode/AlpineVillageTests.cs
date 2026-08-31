@@ -284,6 +284,14 @@ namespace BarPromenade.Tests.EditMode
         /// the frame. The lateral bars are lower because the hull is a
         /// world-axis rectangle around a village turned `19.9°`: an oriented
         /// hull is the recorded follow-up, not a looser number.
+        ///
+        /// Raised 2026-08-31, on the lead's "make the mountains closer":
+        /// the wall stood at the old bars and read as far country. The toe
+        /// came in (`RidgeStandoff` `6 -> 3`), the face went from `58°` to
+        /// `74°` (`RidgeRisePerMeter` `1.6 -> 3.6`) and the crest from
+        /// `50 m` to `60 m`, which took the mean silhouette from mid-lane
+        /// from `26.7°` to `34.1°`. The bars move with it, or the next
+        /// retune could quietly give the distance back.
         /// </summary>
         [Test]
         [Category("AlpineVillage")]
@@ -297,11 +305,11 @@ namespace BarPromenade.Tests.EditMode
             (Vector3 origin, Vector3 direction, float toeLimit,
                 float elevationBar, string label)[] rays =
                 {
-                    (middle.Position, middle.Right, 62f, 26f,
+                    (middle.Position, middle.Right, 59f, 32f,
                         "mid-lane toward +Right"),
-                    (middle.Position, -middle.Right, 62f, 26f,
+                    (middle.Position, -middle.Right, 59f, 32f,
                         "mid-lane toward -Right"),
-                    (head.Position, plan.Uphill, 36f, 34f,
+                    (head.Position, plan.Uphill, 33f, 40f,
                         "lane head uphill")
                 };
             foreach ((Vector3 origin, Vector3 direction, float toeLimit,
@@ -721,8 +729,11 @@ namespace BarPromenade.Tests.EditMode
                 twins[VertexKey(vertices[index])] = index;
             }
 
-            // Every floor triangle is a floor cell; a floor cell with a
-            // non-zero ridge term is inside the cut.
+            // Every floor triangle is a floor cell, and no floor cell is on
+            // the rise at all: the cableway cut is carved INTO the wall and
+            // stays part of it. It used to be handed to the floor material,
+            // and a `38 m` bright band up a dark wall read as a hole in the
+            // mountain rather than as a valley in it.
             for (int index = 0; index < floor.Length; index += 3)
             {
                 (int row, int column) = TriangleCell(
@@ -742,22 +753,14 @@ namespace BarPromenade.Tests.EditMode
                     floor[index + 2] < gridVertexCount,
                     Is.True,
                     "A buried vertex is drawn in the floor submesh.");
-                if (AlpineVillageTerrainSampler.SampleRidgeRise(plan, centre) >
-                    0f)
-                {
-                    Assert.That(
-                        AlpineVillageTerrainSampler.DistanceAcrossCablewayLine(
-                            plan,
-                            centre),
-                        Is.LessThan(
-                            AlpineVillageTerrainSampler
-                                .CablewayCutOuterHalfWidth),
-                        $"A rising floor cell at {centre} is outside the cut.");
-                }
+                Assert.That(
+                    AlpineVillageTerrainSampler.SampleRidgeRise(plan, centre),
+                    Is.Zero,
+                    $"A floor cell at {centre} stands on the rise.");
             }
 
-            // Every rise triangle on grid vertices is a rise cell outside
-            // the cut; every rise triangle on buried vertices is a ring cell
+            // Every rise triangle on grid vertices is a rise cell - the cut
+            // included; every rise triangle on buried vertices is a ring cell
             // whose copies sit exactly SeamBurial under their floor twins.
             for (int index = 0; index < rise.Length; index += 3)
             {
@@ -782,14 +785,6 @@ namespace BarPromenade.Tests.EditMode
                             plan,
                             centre),
                         Is.GreaterThan(0f));
-                    Assert.That(
-                        AlpineVillageTerrainSampler.DistanceAcrossCablewayLine(
-                            plan,
-                            centre),
-                        Is.GreaterThanOrEqualTo(
-                            AlpineVillageTerrainSampler
-                                .CablewayCutOuterHalfWidth),
-                        $"The cut at {centre} wears the wall material.");
                     continue;
                 }
 

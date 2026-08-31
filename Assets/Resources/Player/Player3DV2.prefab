@@ -663,6 +663,12 @@ MonoBehaviour:
       expression: 3
     - normalizedTime: 1
       expression: 0
+  - clipName: Run
+    category: locomotion
+    clip: {fileID: 7315205767777509915, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
+    authoredDuration: 0.75
+    looping: 1
+    facialExpressionKeys: []
   - clipName: SmokeEnter
     category: smoking
     clip: {fileID: 8767132247779909543, guid: 3a54b89b52d57874aba9844b88ed6aff, type: 3}
@@ -721,10 +727,10 @@ MonoBehaviour:
       m_Center: {x: -0.0006814599, y: 0.8749999, z: 0.044000015}
       m_Extent: {x: 0.7793547, y: 0.8749999, z: 0.16800004}
     localForward: {x: 0, y: 0, z: 1}
-  sourceGeneratorVersion: 1.0.0
+  sourceGeneratorVersion: 1.1.0
   sourcePose: apose
   sourceTriangleCount: 1984
-  buildSignature: e5559f94a72cde83f7619655837a2824
+  buildSignature: cd22cb8efe9d61d5d3618456e4fdc224
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}

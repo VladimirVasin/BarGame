@@ -248,6 +248,320 @@ namespace BarPromenade.Tests.PlayMode
                 "Releasing the turn must settle back into Idle.");
         }
 
+        [UnityTest]
+        public IEnumerator RunMotion_UsesAuthoredClipAndCrossfadesWithWalk()
+        {
+            cameraObject = new GameObject("Player3D Run Blend Test Camera");
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+
+            PlayerRuntime player = PlayerFactory.Create(
+                null,
+                Vector3.zero,
+                camera,
+                null,
+                null);
+            playerObject = player.GameObject;
+            player.Motor.enabled = false;
+            yield return null;
+
+            var presentation =
+                (Player3DCharacterPresentation)player.Visual;
+            Assert.That(
+                presentation.HasAuthoredRunClip,
+                Is.True,
+                "The production V2 hero must use its authored Run clip.");
+
+            presentation.SetMotion(new PlayerMotionSample(
+                Vector3.forward *
+                Player3DCharacterPresentation.FullWalkSpeed,
+                Player3DCharacterPresentation.FullWalkSpeed,
+                0f,
+                0f));
+            yield return WaitForBlend(presentation, 0.95f);
+            Assert.That(presentation.RunBlend, Is.LessThan(0.01f));
+
+            presentation.SetMotion(new PlayerMotionSample(
+                Vector3.forward *
+                Player3DCharacterPresentation.FullRunSpeed,
+                Player3DCharacterPresentation.FullRunSpeed,
+                0f,
+                1f));
+            Assert.That(
+                presentation.CurrentLocomotionState,
+                Is.EqualTo(Player3DLocomotionState.Run));
+            Assert.That(
+                presentation.RunBlend,
+                Is.LessThan(0.01f),
+                "Selecting Run must not snap the visible gait mixer.");
+
+            float deadline = Time.realtimeSinceStartup + 1f;
+            float previousRunBlend = presentation.RunBlend;
+            bool sawWalkRunCrossfade = false;
+            while (presentation.RunBlend < 0.95f &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                float currentRunBlend = presentation.RunBlend;
+                Assert.That(
+                    currentRunBlend,
+                    Is.GreaterThanOrEqualTo(previousRunBlend - 0.002f),
+                    "Walk-to-Run blending must advance monotonically.");
+                sawWalkRunCrossfade |= currentRunBlend > 0.08f &&
+                                       currentRunBlend < 0.92f;
+                previousRunBlend = currentRunBlend;
+            }
+
+            Assert.That(presentation.RunBlend, Is.GreaterThan(0.9f));
+            Assert.That(
+                presentation.LocomotionBlend,
+                Is.GreaterThan(0.95f),
+                "Walk-to-Run must retain a fully visible forward gait.");
+            Assert.That(
+                sawWalkRunCrossfade,
+                Is.True,
+                "Walk and Run must overlap through an intermediate pose.");
+            Assert.That(
+                presentation.ForwardGaitCyclesPerSecond,
+                Is.EqualTo(1f / 0.75f).Within(0.03f));
+
+            const float intoxicationSpeedMultiplier = 0.7f;
+            float intoxicatedRunSpeed =
+                Player3DCharacterPresentation.FullRunSpeed *
+                intoxicationSpeedMultiplier;
+            presentation.SetMotion(new PlayerMotionSample(
+                Vector3.forward * intoxicatedRunSpeed,
+                intoxicatedRunSpeed,
+                0f,
+                1f));
+            yield return null;
+            Assert.That(
+                presentation.ForwardGaitCyclesPerSecond,
+                Is.EqualTo(
+                    (1f / 0.75f) * intoxicationSpeedMultiplier)
+                    .Within(0.03f),
+                "A status-limited run must slow its cadence with measured " +
+                "travel instead of sliding at the sober cycle rate.");
+
+            float visibleRunWeight = presentation.RunBlend;
+            presentation.SetMotion(new PlayerMotionSample(
+                Vector3.forward *
+                Player3DCharacterPresentation.FullWalkSpeed,
+                Player3DCharacterPresentation.FullWalkSpeed,
+                0f,
+                0f));
+            Assert.That(
+                presentation.CurrentLocomotionState,
+                Is.EqualTo(Player3DLocomotionState.Walk));
+            Assert.That(
+                presentation.RunBlend,
+                Is.EqualTo(visibleRunWeight).Within(0.0001f),
+                "Releasing Run must not snap the visible gait mixer.");
+
+            deadline = Time.realtimeSinceStartup + 1f;
+            previousRunBlend = presentation.RunBlend;
+            while (presentation.RunBlend > 0.05f &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                float currentRunBlend = presentation.RunBlend;
+                Assert.That(
+                    currentRunBlend,
+                    Is.LessThanOrEqualTo(previousRunBlend + 0.002f),
+                    "Run-to-Walk blending must recede monotonically.");
+                previousRunBlend = currentRunBlend;
+            }
+
+            Assert.That(presentation.RunBlend, Is.LessThan(0.1f));
+            Assert.That(presentation.LocomotionBlend, Is.GreaterThan(0.9f));
+        }
+
+        [UnityTest]
+        public IEnumerator FrozenV1_RunRequestFallsBackToTimedWalk()
+        {
+            cameraObject = new GameObject("Player3D V1 Run Test Camera");
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+
+            PlayerRuntime player = PlayerFactory.Create(
+                null,
+                Vector3.up * PlayerFactory.GroundedRootOffset,
+                camera,
+                null,
+                null,
+                Player3DVariant.ProductionV1);
+            playerObject = player.GameObject;
+            player.Motor.enabled = false;
+            yield return null;
+
+            var presentation =
+                (Player3DCharacterPresentation)player.Visual;
+            Assert.That(presentation.HasAuthoredRunClip, Is.False);
+            Assert.That(presentation.HasClip("Run"), Is.False);
+
+            Player3DAssetRegistry registry = presentation.Registry;
+            bakedFootMesh = new Mesh
+            {
+                name = "Player3D V1 Run Grounding Test Mesh"
+            };
+            presentation.ReapplyLatePresentationPose();
+            float neutralLowestSole = Mathf.Min(
+                GetLowestVisibleMeshY(registry, "foot.L"),
+                GetLowestVisibleMeshY(registry, "foot.R"));
+
+            presentation.SetMotion(new PlayerMotionSample(
+                Vector3.forward *
+                Player3DCharacterPresentation.FullRunSpeed,
+                Player3DCharacterPresentation.FullRunSpeed,
+                0f,
+                1f));
+            Assert.That(
+                presentation.CurrentLocomotionState,
+                Is.EqualTo(Player3DLocomotionState.Run),
+                "The frozen fallback still needs to honour the ordinary " +
+                "run state even though its visual reuses Walk.");
+
+            float deadline = Time.realtimeSinceStartup + 1f;
+            while (presentation.RunBlend < 0.9f &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(presentation.RunBlend, Is.GreaterThan(0.9f));
+            Assert.That(presentation.LocomotionBlend, Is.GreaterThan(0.9f));
+            Assert.That(presentation.IsClipActive, Is.False);
+
+            float lowestSole = float.PositiveInfinity;
+            float highestLowestSole = float.NegativeInfinity;
+            float sampleEnd = Time.realtimeSinceStartup + 0.45f;
+            while (Time.realtimeSinceStartup < sampleEnd)
+            {
+                yield return null;
+                presentation.ReapplyLatePresentationPose();
+                float lowerSole = Mathf.Min(
+                    GetLowestVisibleMeshY(registry, "foot.L"),
+                    GetLowestVisibleMeshY(registry, "foot.R"));
+                lowestSole = Mathf.Min(lowestSole, lowerSole);
+                highestLowestSole = Mathf.Max(
+                    highestLowestSole,
+                    lowerSole);
+            }
+
+            Assert.That(
+                lowestSole,
+                Is.GreaterThanOrEqualTo(neutralLowestSole - 0.005f));
+            Assert.That(
+                highestLowestSole,
+                Is.LessThanOrEqualTo(neutralLowestSole + 0.005f),
+                "The frozen V1 Walk fallback must stay grounded instead " +
+                "of inheriting V2's authored Run flight release.");
+        }
+
+        [UnityTest]
+        public IEnumerator AuthoredRun_PreservesFlightWithoutFloorPenetration()
+        {
+            cameraObject = new GameObject("Player3D Run Grounding Test Camera");
+            Camera camera = cameraObject.AddComponent<Camera>();
+            camera.enabled = false;
+
+            PlayerRuntime player = PlayerFactory.Create(
+                null,
+                Vector3.up * PlayerFactory.GroundedRootOffset,
+                camera,
+                null,
+                null);
+            playerObject = player.GameObject;
+            player.Motor.enabled = false;
+            yield return null;
+
+            var presentation =
+                (Player3DCharacterPresentation)player.Visual;
+            Player3DAssetRegistry registry = presentation.Registry;
+            bakedFootMesh = new Mesh
+            {
+                name = "Player3D Run Grounding Test Mesh"
+            };
+            Vector3 actorPosition = player.GameObject.transform.position;
+            Vector3 modelLocalPosition = registry.ModelRoot.localPosition;
+            Quaternion modelLocalRotation = registry.ModelRoot.localRotation;
+            Vector3 modelLocalScale = registry.ModelRoot.localScale;
+            float groundY = actorPosition.y -
+                            PlayerFactory.GroundedRootOffset;
+
+            presentation.SetMotion(new PlayerMotionSample(
+                Vector3.forward *
+                Player3DCharacterPresentation.FullRunSpeed,
+                Player3DCharacterPresentation.FullRunSpeed,
+                0f,
+                1f));
+            float deadline = Time.realtimeSinceStartup + 1f;
+            while (presentation.RunBlend < 0.99f &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+            }
+
+            Assert.That(presentation.RunBlend, Is.GreaterThanOrEqualTo(0.99f));
+
+            float lowestVisibleSole = float.PositiveInfinity;
+            float highestLowestSole = float.NegativeInfinity;
+            float minimumFootPlant = 1f;
+            float sampleEnd = Time.realtimeSinceStartup + 0.9f;
+            while (Time.realtimeSinceStartup < sampleEnd)
+            {
+                yield return null;
+                presentation.ReapplyLatePresentationPose();
+                float leftSole = GetLowestVisibleMeshY(
+                    registry,
+                    "foot.L");
+                float rightSole = GetLowestVisibleMeshY(
+                    registry,
+                    "foot.R");
+                float lowerSole = Mathf.Min(leftSole, rightSole);
+                lowestVisibleSole = Mathf.Min(
+                    lowestVisibleSole,
+                    lowerSole);
+                highestLowestSole = Mathf.Max(
+                    highestLowestSole,
+                    lowerSole);
+                minimumFootPlant = Mathf.Min(
+                    minimumFootPlant,
+                    presentation.Metrics.FootPlantAmount);
+            }
+
+            Assert.That(
+                lowestVisibleSole,
+                Is.GreaterThanOrEqualTo(groundY - 0.005f),
+                "Run grounding must lift every sole penetration.");
+            Assert.That(
+                highestLowestSole,
+                Is.GreaterThan(groundY + 0.002f),
+                "Run grounding must preserve at least one visible pose " +
+                "with both boots in the authored flight phase.");
+            Assert.That(
+                minimumFootPlant,
+                Is.LessThan(0.65f),
+                "The contact shadow contract must expose the Run flight " +
+                "phase instead of reporting a permanently planted gait.");
+            Assert.That(
+                player.GameObject.transform.position,
+                Is.EqualTo(actorPosition)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+            Assert.That(
+                registry.ModelRoot.localPosition,
+                Is.EqualTo(modelLocalPosition)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+            Assert.That(
+                registry.ModelRoot.localRotation,
+                Is.EqualTo(modelLocalRotation)
+                    .Using(QuaternionEqualityComparer.Instance));
+            Assert.That(
+                registry.ModelRoot.localScale,
+                Is.EqualTo(modelLocalScale)
+                    .Using(Vector3ComparerWithEqualsOperator.Instance));
+        }
+
         private static IEnumerator WaitForBlend(
             Player3DCharacterPresentation presentation,
             float minimumBlend)
@@ -1500,6 +1814,57 @@ namespace BarPromenade.Tests.PlayMode
                 Quaternion.Angle(relaxedRightShin, rightShin.localRotation),
                 Is.GreaterThan(35f),
                 "The reversed cycle must swing the right leg second.");
+            presentation.EndClip();
+
+            Assert.That(presentation.TryBeginClip("Run"), Is.True);
+            presentation.SampleActiveClip(0f);
+            Assert.That(
+                Quaternion.Angle(relaxedChest, chest.localRotation),
+                Is.GreaterThan(4f),
+                "Run must hold a readable forward torso commitment.");
+            Assert.That(
+                Mathf.Min(
+                    Quaternion.Angle(
+                        relaxedLeftForearm,
+                        leftForearm.localRotation),
+                    Quaternion.Angle(
+                        relaxedRightForearm,
+                        rightForearm.localRotation)),
+                Is.GreaterThan(35f),
+                "Run must keep both elbows bent instead of scaling Walk.");
+            Assert.That(
+                Mathf.Max(
+                    Quaternion.Angle(
+                        relaxedLeftFoot,
+                        leftFoot.localRotation),
+                    Quaternion.Angle(
+                        relaxedRightFoot,
+                        rightFoot.localRotation)),
+                Is.GreaterThan(10f),
+                "Run contacts must articulate a boot at the ankle.");
+
+            presentation.SampleActiveClip(0.375f);
+            Assert.That(
+                Mathf.Max(
+                    Quaternion.Angle(
+                        relaxedLeftShin,
+                        leftShin.localRotation),
+                    Quaternion.Angle(
+                        relaxedRightShin,
+                        rightShin.localRotation)),
+                Is.GreaterThan(45f),
+                "The first Run flight must visibly tuck a knee.");
+            presentation.SampleActiveClip(0.875f);
+            Assert.That(
+                Mathf.Max(
+                    Quaternion.Angle(
+                        relaxedLeftShin,
+                        leftShin.localRotation),
+                    Quaternion.Angle(
+                        relaxedRightShin,
+                        rightShin.localRotation)),
+                Is.GreaterThan(45f),
+                "The mirrored Run flight must visibly tuck a knee.");
             presentation.EndClip();
 
             Assert.That(presentation.TryBeginClip("TurnLeft"), Is.True);

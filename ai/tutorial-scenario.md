@@ -31,9 +31,14 @@ This is the first manual acceptance path for the vertical slice.
 8. Open the map and confirm that district labels, green park land, sand-colored
    park paths, the one Residential bar and the labeled house directly across
    its street are all visible.
-9. Move with `WASD` along streets (the arrows orbit the camera), enter any
-   park gate and cross the
-   lawn on foot to another side without leaving walkable space.
+9. Move with `WASD` along streets (the arrows orbit the camera). While moving
+   forward, hold either Shift key and confirm that the hero accelerates smoothly
+   from the ordinary walk into the separate Run gait; releasing it while `W`
+   remains held must brake smoothly back to Walk. Repeat with gamepad L3 if a
+   gamepad is connected. Confirm that Shift alone does not move the hero,
+   backward movement does not run, and a wall or walkable boundary cannot
+   leave him running in place. Enter any park gate and cross the lawn on foot
+   to another side without leaving walkable space.
 10. Confirm that the bar approach, the home approach and every park gate all
    have a clear break in the low ochre rails.
 11. Re-enter the home with `E`/`Enter` and confirm it opens normally without

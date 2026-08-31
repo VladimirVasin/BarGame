@@ -2,6 +2,7 @@ using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.InputSystem;
+using UnityEngine.InputSystem.LowLevel;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
@@ -28,16 +29,30 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        private sealed class RecordingMotionPresentation :
+            IPlayerMotionPresentation
+        {
+            public PlayerMotionSample LastMotion { get; private set; }
+
+            public void SetMotion(in PlayerMotionSample motion)
+            {
+                LastMotion = motion;
+            }
+        }
+
         private const float MovementTimeoutSeconds = 2f;
         private const float MinimumMovingSpeed = 0.25f;
         private const float MaximumMovingSpeed = 2.6f;
+        private const float MaximumRunningSpeed = 4.2f;
         private const float BackwardMaximumSpeed = 1.4f;
         private const float Deceleration = 11f;
 
         private GameObject playerObject;
         private PlayerMotor motor;
+        private RecordingMotionPresentation presentation;
         private InputTestFixture inputFixture;
         private Keyboard keyboard;
+        private Gamepad gamepad;
 
         [UnitySetUp]
         public IEnumerator SetUp()
@@ -49,9 +64,11 @@ namespace BarPromenade.Tests.PlayMode
             playerObject.transform.position = new Vector3(0f, 100f, 0f);
             playerObject.AddComponent<CharacterController>();
             motor = playerObject.AddComponent<PlayerMotor>();
-            motor.Initialize(null, null);
+            presentation = new RecordingMotionPresentation();
+            motor.Initialize(null, presentation);
 
             keyboard = InputSystem.AddDevice<Keyboard>();
+            gamepad = InputSystem.AddDevice<Gamepad>();
             yield return null;
         }
 
@@ -61,6 +78,11 @@ namespace BarPromenade.Tests.PlayMode
             if (keyboard != null && keyboard.added)
             {
                 InputSystem.RemoveDevice(keyboard);
+            }
+
+            if (gamepad != null && gamepad.added)
+            {
+                InputSystem.RemoveDevice(gamepad);
             }
 
             if (playerObject != null)
@@ -126,6 +148,222 @@ namespace BarPromenade.Tests.PlayMode
                 keyboard.wKey,
                 queueEventOnly: true);
             yield return null;
+        }
+
+        [UnityTest]
+        public IEnumerator LeftShift_RunsForwardAndReleaseReturnsToWalk()
+        {
+            QueueKeyboardState(Key.W, Key.LeftShift);
+            yield return WaitForSpeed(MaximumRunningSpeed - 0.1f);
+
+            Assert.That(
+                motor.PlanarVelocity.magnitude,
+                Is.InRange(
+                    MaximumRunningSpeed - 0.1f,
+                    MaximumRunningSpeed + 0.05f));
+            Assert.That(
+                presentation.LastMotion.RunBlend,
+                Is.GreaterThan(0.9f),
+                "The measured gait must reach its run clip at the run cap.");
+
+            float runningSpeed = motor.PlanarVelocity.magnitude;
+            float runningBlend = presentation.LastMotion.RunBlend;
+            QueueKeyboardState(Key.W);
+            yield return null;
+
+            float expectedFirstReleaseSpeed = Mathf.Max(
+                MaximumMovingSpeed,
+                runningSpeed - Deceleration * Time.deltaTime);
+            Assert.That(
+                motor.PlanarVelocity.magnitude,
+                Is.EqualTo(expectedFirstReleaseSpeed).Within(0.12f),
+                "Releasing Shift while W stays held must use ordinary " +
+                "deceleration instead of forcing a gait-speed snap.");
+            float expectedFirstReleaseBlend = Mathf.InverseLerp(
+                MaximumMovingSpeed,
+                MaximumRunningSpeed,
+                motor.PlanarVelocity.magnitude);
+            Assert.That(
+                presentation.LastMotion.RunBlend,
+                Is.EqualTo(expectedFirstReleaseBlend).Within(0.03f)
+                    .And.LessThan(runningBlend),
+                "The run gait must follow measured speed after Shift is " +
+                "released.");
+
+            float previousBlend = presentation.LastMotion.RunBlend;
+            float deadline =
+                Time.realtimeSinceStartup + MovementTimeoutSeconds;
+            while (motor.PlanarVelocity.magnitude >
+                       MaximumMovingSpeed + 0.02f &&
+                   Time.realtimeSinceStartup < deadline)
+            {
+                yield return null;
+                Assert.That(
+                    presentation.LastMotion.RunBlend,
+                    Is.LessThanOrEqualTo(previousBlend + 0.02f),
+                    "Run blend must decay monotonically with the actual " +
+                    "forward speed.");
+                previousBlend = presentation.LastMotion.RunBlend;
+            }
+
+            Assert.That(
+                motor.PlanarVelocity.magnitude,
+                Is.InRange(
+                    MaximumMovingSpeed - 0.05f,
+                    MaximumMovingSpeed + 0.05f));
+            Assert.That(
+                presentation.LastMotion.RunBlend,
+                Is.LessThanOrEqualTo(0.02f));
+
+            QueueKeyboardState();
+        }
+
+        [UnityTest]
+        public IEnumerator RightShift_RunsForwardToSameCap()
+        {
+            QueueKeyboardState(Key.W, Key.RightShift);
+            yield return WaitForSpeed(MaximumRunningSpeed - 0.1f);
+
+            Assert.That(
+                motor.PlanarVelocity.magnitude,
+                Is.InRange(
+                    MaximumRunningSpeed - 0.1f,
+                    MaximumRunningSpeed + 0.05f));
+            Assert.That(
+                presentation.LastMotion.RunBlend,
+                Is.GreaterThan(0.9f));
+
+            QueueKeyboardState();
+        }
+
+        [UnityTest]
+        public IEnumerator SprintAndTurn_ReachesRunCapWithoutSkidding()
+        {
+            float startYaw = playerObject.transform.eulerAngles.y;
+            QueueKeyboardState(Key.W, Key.D, Key.LeftShift);
+            yield return WaitForSpeed(MaximumRunningSpeed - 0.1f);
+
+            Assert.That(
+                motor.PlanarVelocity.magnitude,
+                Is.InRange(
+                    MaximumRunningSpeed - 0.1f,
+                    MaximumRunningSpeed + 0.05f),
+                "A running arc must retain the canonical run cap.");
+            Assert.That(
+                Vector3.Angle(
+                    motor.PlanarVelocity,
+                    playerObject.transform.forward),
+                Is.LessThan(0.5f),
+                "Tank steering must rotate earned momentum with the hero " +
+                "instead of producing a lateral skid.");
+            Assert.That(
+                presentation.LastMotion.RunBlend,
+                Is.GreaterThan(0.9f));
+            Assert.That(
+                Mathf.Abs(Mathf.DeltaAngle(
+                    startYaw,
+                    playerObject.transform.eulerAngles.y)),
+                Is.GreaterThan(20f));
+
+            QueueKeyboardState();
+        }
+
+        [UnityTest]
+        public IEnumerator GamepadLeftStickPress_RunsForwardToSameCap()
+        {
+            inputFixture.Set(
+                gamepad.leftStick,
+                Vector2.up,
+                queueEventOnly: true);
+            inputFixture.Press(
+                gamepad.leftStickButton,
+                queueEventOnly: true);
+            yield return WaitForSpeed(MaximumRunningSpeed - 0.1f);
+
+            Assert.That(
+                motor.PlanarVelocity.magnitude,
+                Is.InRange(
+                    MaximumRunningSpeed - 0.1f,
+                    MaximumRunningSpeed + 0.05f));
+            Assert.That(
+                presentation.LastMotion.RunBlend,
+                Is.GreaterThan(0.9f));
+
+            inputFixture.Release(
+                gamepad.leftStickButton,
+                queueEventOnly: true);
+            inputFixture.Set(
+                gamepad.leftStick,
+                Vector2.zero,
+                queueEventOnly: true);
+        }
+
+        [UnityTest]
+        public IEnumerator Sprint_DoesNotAccelerateBackwardOrYaw()
+        {
+            QueueKeyboardState(Key.S, Key.LeftShift);
+            yield return WaitForSpeed(BackwardMaximumSpeed - 0.1f);
+
+            float backwardDeadline = Time.realtimeSinceStartup + 0.25f;
+            while (Time.realtimeSinceStartup < backwardDeadline)
+            {
+                yield return null;
+                Assert.That(
+                    motor.PlanarVelocity.magnitude,
+                    Is.LessThanOrEqualTo(BackwardMaximumSpeed + 0.05f));
+                Assert.That(
+                    presentation.LastMotion.RunBlend,
+                    Is.Zero.Within(0.001f));
+            }
+
+            QueueKeyboardState(Key.LeftShift);
+            yield return WaitForStop();
+
+            float startYaw = playerObject.transform.eulerAngles.y;
+            float elapsed = 0f;
+            QueueKeyboardState(Key.D, Key.LeftShift);
+            while (elapsed < 0.25f)
+            {
+                yield return null;
+                elapsed += Time.deltaTime;
+            }
+
+            float yawDelta = Mathf.DeltaAngle(
+                startYaw,
+                playerObject.transform.eulerAngles.y);
+            Assert.That(
+                yawDelta,
+                Is.EqualTo(150f * elapsed).Within(1f),
+                "Shift must not multiply the ordinary yaw rate.");
+            Assert.That(
+                motor.PlanarVelocity.magnitude,
+                Is.LessThan(0.001f));
+
+            QueueKeyboardState();
+        }
+
+        [UnityTest]
+        public IEnumerator Intoxication_ScalesRunCapButKeepsFullRunBlend()
+        {
+            const float intoxicationSpeedMultiplier = 0.7f;
+            float expectedRunSpeed =
+                MaximumRunningSpeed * intoxicationSpeedMultiplier;
+            motor.SetSpeedMultiplier(intoxicationSpeedMultiplier);
+            QueueKeyboardState(Key.W, Key.LeftShift);
+            yield return WaitForSpeed(expectedRunSpeed - 0.08f);
+
+            Assert.That(
+                motor.PlanarVelocity.magnitude,
+                Is.InRange(
+                    expectedRunSpeed - 0.08f,
+                    expectedRunSpeed + 0.05f));
+            Assert.That(
+                presentation.LastMotion.RunBlend,
+                Is.GreaterThan(0.9f),
+                "The run blend must normalize against the intoxicated " +
+                "walk and run caps, not the sober constants.");
+
+            QueueKeyboardState();
         }
 
         [UnityTest]
@@ -496,18 +734,32 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
+        public IEnumerator ComponentDisable_StopsActiveRunImmediately()
+        {
+            QueueKeyboardState(Key.W, Key.LeftShift);
+            yield return WaitForSpeed(MaximumRunningSpeed - 0.1f);
+
+            motor.enabled = false;
+
+            Assert.That(motor.PlanarVelocity, Is.EqualTo(Vector3.zero));
+            Assert.That(
+                presentation.LastMotion.RunBlend,
+                Is.Zero.Within(0.001f));
+
+            QueueKeyboardState();
+        }
+
+        [UnityTest]
         public IEnumerator BlockedBoundary_DoesNotStoreHiddenMomentum()
         {
             var area = new ToggleWalkableArea
             {
                 Blocked = true
             };
-            motor.Initialize(area, null);
+            motor.Initialize(area, presentation);
             Vector3 blockedPosition = playerObject.transform.position;
 
-            inputFixture.Press(
-                keyboard.wKey,
-                queueEventOnly: true);
+            QueueKeyboardState(Key.W, Key.LeftShift);
             float blockedDeadline = Time.time + 0.5f;
             while (Time.time < blockedDeadline)
             {
@@ -515,6 +767,10 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     motor.PlanarVelocity,
                     Is.EqualTo(Vector3.zero));
+                Assert.That(
+                    presentation.LastMotion.RunBlend,
+                    Is.Zero.Within(0.001f),
+                    "Blocked sprint must be stationary in presentation too.");
                 AssertPlanarPositionUnchanged(blockedPosition);
             }
 
@@ -529,9 +785,7 @@ namespace BarPromenade.Tests.PlayMode
                 "Leaving a boundary must start from rest instead of " +
                 "releasing stored momentum.");
 
-            inputFixture.Release(
-                keyboard.wKey,
-                queueEventOnly: true);
+            QueueKeyboardState();
         }
 
         [Test]
@@ -677,6 +931,13 @@ namespace BarPromenade.Tests.PlayMode
         private IEnumerator WaitForMovement()
         {
             yield return WaitForSpeed(MinimumMovingSpeed);
+        }
+
+        private void QueueKeyboardState(params Key[] pressedKeys)
+        {
+            InputSystem.QueueStateEvent(
+                keyboard,
+                new KeyboardState(pressedKeys));
         }
 
         private IEnumerator WaitForSpeed(float minimumSpeed)

@@ -6,6 +6,7 @@ namespace BarPromenade
     public sealed class PlayerMotor : MonoBehaviour
     {
         private const float MoveSpeed = 2.6f;
+        private const float RunSpeed = 4.2f;
         private const float BackwardMoveSpeed = 1.4f;
         private const float TurnSpeedDegreesPerSecond = 150f;
         private const float InteractionTurnSpeedDegrees = 540f;
@@ -13,6 +14,7 @@ namespace BarPromenade
         private const float Deceleration = 11f;
         private const float Gravity = 24f;
         private const float FootstepStride = 1.35f;
+        private const float RunFootstepStride = 1.58f;
         private const float FootstepMinimumSpeedSquared = 0.36f;
         private const float FacingThresholdSquared = 0.0004f;
         private const float InteractionStallTimeoutSeconds = 1.5f;
@@ -308,23 +310,36 @@ namespace BarPromenade
             Vector2 input = InputEnabled && !isTransitioning
                 ? ReadMovement()
                 : Vector2.zero;
+            bool sprintRequested = InputEnabled &&
+                                   !isTransitioning &&
+                                   IsSprintRequested();
             float turnInput = input.x;
+            float yawDelta =
+                turnInput * TurnSpeedDegreesPerSecond *
+                speedMultiplier * Time.deltaTime;
             transform.Rotate(
                 0f,
-                turnInput * TurnSpeedDegreesPerSecond *
-                speedMultiplier * Time.deltaTime,
+                yawDelta,
                 0f);
 
             float desiredSpeed = input.y >= 0f
-                ? input.y * MoveSpeed
+                ? input.y * (sprintRequested ? RunSpeed : MoveSpeed)
                 : input.y * BackwardMoveSpeed;
             Vector3 desiredPlanarVelocity =
                 transform.forward * (desiredSpeed * speedMultiplier);
+            // Tank steering rotates the already-earned forward momentum with
+            // the actor. Otherwise changing the velocity direction would
+            // consume the same bounded acceleration that raises its speed;
+            // at the canonical yaw rate a running arc could never reach the
+            // run cap and would visibly skid out of its Run gait.
+            Vector3 steeredPlanarVelocity =
+                Quaternion.AngleAxis(yawDelta, Vector3.up) *
+                PlanarVelocity;
             float velocityChangeRate = GetVelocityChangeRate(
-                PlanarVelocity,
+                steeredPlanarVelocity,
                 desiredPlanarVelocity);
             Vector3 inertialPlanarVelocity = Vector3.MoveTowards(
-                PlanarVelocity,
+                steeredPlanarVelocity,
                 desiredPlanarVelocity,
                 velocityChangeRate * Time.deltaTime);
             Vector3 current = transform.position;
@@ -345,11 +360,15 @@ namespace BarPromenade
             Vector3 planarVelocity = transform.position - before;
             planarVelocity.y = 0f;
             PlanarVelocity = planarVelocity * inverseDelta;
+            float signedForwardSpeed =
+                Vector3.Dot(PlanarVelocity, transform.forward);
+            float runBlend = CalculateRunBlend(signedForwardSpeed);
             presentation?.SetMotion(new PlayerMotionSample(
                 PlanarVelocity,
-                Vector3.Dot(PlanarVelocity, transform.forward),
-                turnInput));
-            UpdateFootsteps(planarVelocity);
+                signedForwardSpeed,
+                turnInput,
+                runBlend));
+            UpdateFootsteps(planarVelocity, runBlend: runBlend);
         }
 
         private void UpdateVerticalMotion()
@@ -393,11 +412,38 @@ namespace BarPromenade
                 : Acceleration;
         }
 
+        private float CalculateRunBlend(float signedForwardSpeed)
+        {
+            if (signedForwardSpeed <= 0f)
+            {
+                return 0f;
+            }
+
+            float walkCap = MoveSpeed * speedMultiplier;
+            float runCap = RunSpeed * speedMultiplier;
+            if (runCap <= walkCap + Mathf.Epsilon)
+            {
+                return 0f;
+            }
+
+            return Mathf.InverseLerp(
+                walkCap,
+                runCap,
+                signedForwardSpeed);
+        }
+
         private void StopPlanarMotion()
         {
             PlanarVelocity = Vector3.zero;
             footstepDistance = 0f;
             presentation?.SetMotion(PlayerMotionSample.Stationary);
+        }
+
+        private void OnDisable()
+        {
+            verticalSpeed = 0f;
+            ResetInteractionPoseMove();
+            StopPlanarMotion();
         }
 
         private void RecordInteractionPoseProgress(float deltaTime)
@@ -436,8 +482,13 @@ namespace BarPromenade
 
         private void UpdateFootsteps(
             Vector3 planarDisplacement,
-            bool allowWhenInputDisabled = false)
+            bool allowWhenInputDisabled = false,
+            float runBlend = 0f)
         {
+            float stride = Mathf.Lerp(
+                FootstepStride,
+                RunFootstepStride,
+                Mathf.Clamp01(runBlend));
             if ((!InputEnabled && !allowWhenInputDisabled) ||
                 SceneTransitionService.IsTransitioning ||
                 PlanarVelocity.sqrMagnitude <
@@ -445,17 +496,17 @@ namespace BarPromenade
             {
                 footstepDistance = Mathf.Min(
                     footstepDistance,
-                    FootstepStride * 0.35f);
+                    stride * 0.35f);
                 return;
             }
 
             footstepDistance += planarDisplacement.magnitude;
-            if (footstepDistance < FootstepStride)
+            if (footstepDistance < stride)
             {
                 return;
             }
 
-            footstepDistance %= FootstepStride;
+            footstepDistance %= stride;
             RetroAudio.PlayAt(
                 RetroSfxId.Footstep,
                 transform.position);
@@ -581,6 +632,21 @@ namespace BarPromenade
             movement.x = Mathf.Clamp(movement.x, -1f, 1f);
             movement.y = Mathf.Clamp(movement.y, -1f, 1f);
             return movement;
+        }
+
+        private static bool IsSprintRequested()
+        {
+            Keyboard keyboard = Keyboard.current;
+            if (keyboard != null &&
+                (keyboard.leftShiftKey.isPressed ||
+                 keyboard.rightShiftKey.isPressed))
+            {
+                return true;
+            }
+
+            Gamepad gamepad = Gamepad.current;
+            return gamepad != null &&
+                   gamepad.leftStickButton.isPressed;
         }
     }
 }

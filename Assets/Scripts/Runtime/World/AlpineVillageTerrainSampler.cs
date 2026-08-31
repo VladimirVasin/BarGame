@@ -62,7 +62,7 @@ namespace BarPromenade
         /// Where the enclosing ridge starts to climb, as a distance outside
         /// the walkable extent.
         /// </summary>
-        internal const float RidgeStandoff = 6f;
+        internal const float RidgeStandoff = 3f;
 
         /// <summary>
         /// Steeper than the hero's `45°` slope limit, and that is the floor
@@ -76,7 +76,7 @@ namespace BarPromenade
         /// `39°` from the lane head, `36°` from the platform toward the
         /// open side and `28-31°` sideways from mid-lane.
         /// </summary>
-        internal const float RidgeRisePerMeter = 1.6f;
+        internal const float RidgeRisePerMeter = 3.6f;
 
         /// <summary>
         /// Full height of the wall over the bowl floor. `34` with the old
@@ -84,7 +84,7 @@ namespace BarPromenade
         /// `50` over the `12 m` margin is what makes the bowl press in over
         /// the roofs. The plan's world-bounds ceiling follows it.
         /// </summary>
-        internal const float RidgeMaximumRise = 50f;
+        internal const float RidgeMaximumRise = 60f;
 
         /// <summary>
         /// Ground carried past the full rise. The visible mesh must not end on
@@ -381,31 +381,6 @@ namespace BarPromenade
             }
 
             return enclosedHeight;
-        }
-
-        /// <summary>
-        /// How far the point stands to either side of the cableway line, in
-        /// the same frame the cut is measured in. The ground mesh reads it to
-        /// keep the valley bed and its walls on the floor material: the rise
-        /// term is non-zero all the way down the cut, but the cabin passes
-        /// those slopes at a few metres and they must not wear the distant
-        /// wall's fog floor and cold tint.
-        /// </summary>
-        internal static float DistanceAcrossCablewayLine(
-            AlpineVillagePlan plan,
-            Vector2 point)
-        {
-            if (plan == null)
-            {
-                throw new ArgumentNullException(nameof(plan));
-            }
-
-            ProjectOntoCablewayLine(
-                plan.Station.Cableway,
-                point,
-                out _,
-                out float across);
-            return across;
         }
 
         private static void ProjectOntoCablewayLine(
