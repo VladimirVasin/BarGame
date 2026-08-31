@@ -13,7 +13,8 @@ namespace BarPromenade
             IList<Transform> propRoots,
             IList<Transform> residentRoots,
             Collider platformCollider,
-            IList<Collider> rainShelterColliders)
+            IList<Collider> rainShelterColliders,
+            CityArchShelterSurfaceApplyResult surfaceAppearance)
         {
             Root = root ?? throw new ArgumentNullException(nameof(root));
             StructureRoot = structureRoot;
@@ -25,6 +26,7 @@ namespace BarPromenade
             UpperLandingCollider = platformCollider;
             RainShelterColliders = new ReadOnlyCollection<Collider>(
                 new List<Collider>(rainShelterColliders));
+            SurfaceAppearance = surfaceAppearance;
         }
 
         public GameObject Root { get; }
@@ -36,6 +38,7 @@ namespace BarPromenade
         // platform collider, avoiding overlapping coplanar colliders.
         public Collider UpperLandingCollider { get; }
         public IReadOnlyList<Collider> RainShelterColliders { get; }
+        public CityArchShelterSurfaceApplyResult SurfaceAppearance { get; }
     }
 
     public static class CityArchShelterWorldBuilder
@@ -91,6 +94,9 @@ namespace BarPromenade
                 plan,
                 plan != null && plan.IsEnabled
                     ? CityMiscAssetProvider.LoadOrThrow()
+                    : null,
+                plan != null && plan.IsEnabled
+                    ? CityArchShelterResidentProvider.LoadOrThrow()
                     : null);
         }
 
@@ -100,12 +106,49 @@ namespace BarPromenade
             CityArchShelterPlan plan,
             CityMiscAssetProvider provider)
         {
+            return Build(
+                parent,
+                layout,
+                plan,
+                provider,
+                plan != null && plan.IsEnabled
+                    ? CityArchShelterResidentProvider.LoadOrThrow()
+                    : null);
+        }
+
+        public static CityArchShelterWorldResult Build(
+            Transform parent,
+            CityLayout layout,
+            CityArchShelterPlan plan,
+            CityMiscAssetProvider provider,
+            CityArchShelterResidentProvider residentProvider)
+        {
             if (parent == null)
             {
                 throw new ArgumentNullException(nameof(parent));
             }
 
             CityArchShelterValidator.ValidateOrThrow(layout, plan);
+            if (plan.IsEnabled && provider == null)
+            {
+                throw new InvalidOperationException(
+                    "An enabled City arch shelter requires the imported " +
+                    "City misc asset provider.");
+            }
+
+            if (plan.IsEnabled && residentProvider == null)
+            {
+                throw new InvalidOperationException(
+                    "An enabled City arch shelter requires its three " +
+                    "rigged resident prefabs.");
+            }
+
+            if (plan.IsEnabled)
+            {
+                provider.ValidateOrThrow();
+                residentProvider.ValidateOrThrow();
+            }
+
             Transform root = new GameObject(RootName).transform;
             root.SetParent(parent, false);
             if (!plan.IsEnabled)
@@ -116,85 +159,101 @@ namespace BarPromenade
                     Array.Empty<Transform>(),
                     Array.Empty<Transform>(),
                     null,
-                    Array.Empty<Collider>());
+                    Array.Empty<Collider>(),
+                    default);
             }
 
-            if (provider == null)
+            try
             {
-                throw new InvalidOperationException(
-                    "An enabled City arch shelter requires the imported " +
-                    "City misc asset provider.");
-            }
-
-            provider.ValidateOrThrow();
-            Transform structure = CreateAssemblyRoot(
-                root,
-                StructureRootName,
-                plan.Placement.StructurePosition,
-                plan.Placement.StructureRotation);
-            BuildImportedAssembly(
-                structure,
-                provider,
-                CityMiscKind.NightlifeArchBridgeShell,
-                0);
-
-            var propRoots = new List<Transform>(plan.Props.Count);
-            for (int index = 0; index < plan.Props.Count; index++)
-            {
-                CityArchShelterPropDescriptor descriptor =
-                    plan.Props[index];
-                Transform propRoot = CreateAssemblyRoot(
+                Transform structure = CreateAssemblyRoot(
                     root,
-                    descriptor.StableId,
-                    descriptor.Position,
-                    descriptor.Rotation);
+                    StructureRootName,
+                    plan.Placement.StructurePosition,
+                    plan.Placement.StructureRotation);
                 BuildImportedAssembly(
-                    propRoot,
+                    structure,
                     provider,
-                    ResolveMiscKind(descriptor.Kind),
-                    descriptor.Variant);
-                propRoots.Add(propRoot);
-            }
-
-            var residentRoots = new List<Transform>(
-                plan.NpcAnchors.Count);
-            for (int index = 0; index < plan.NpcAnchors.Count; index++)
-            {
-                CityArchShelterNpcAnchorDescriptor anchor =
-                    plan.NpcAnchors[index];
-                Quaternion rotation = Quaternion.LookRotation(
-                    anchor.Facing,
-                    Vector3.up);
-                Transform residentRoot = CreateAssemblyRoot(
-                    root,
-                    anchor.StableId,
-                    anchor.Position,
-                    rotation);
-                BuildImportedAssembly(
-                    residentRoot,
-                    provider,
-                    ResolveMiscKind(anchor.Stage),
+                    CityMiscKind.NightlifeArchBridgeShell,
                     0);
-                residentRoots.Add(residentRoot);
-            }
 
-            Transform collisionRoot = BuildObstacleColliders(
-                root,
-                plan.Obstacles);
-            BuildStepColliders(collisionRoot, plan.Steps);
-            BoxCollider platformCollider = BuildPlatformCollider(
-                collisionRoot,
-                plan.Platform);
-            List<Collider> rainShelters = BuildRainShelterColliders(
-                root,
-                plan.RainOccluders);
-            return new CityArchShelterWorldResult(
-                root.gameObject,
-                structure,
-                propRoots,
-                residentRoots,
-                platformCollider,
-                rainShelters);
+                var propRoots = new List<Transform>(plan.Props.Count);
+                for (int index = 0; index < plan.Props.Count; index++)
+                {
+                    CityArchShelterPropDescriptor descriptor =
+                        plan.Props[index];
+                    Transform propRoot = CreateAssemblyRoot(
+                        root,
+                        descriptor.StableId,
+                        descriptor.Position,
+                        descriptor.Rotation);
+                    BuildImportedAssembly(
+                        propRoot,
+                        provider,
+                        ResolveMiscKind(descriptor.Kind),
+                        descriptor.Variant);
+                    propRoots.Add(propRoot);
+                }
+
+                CityArchShelterSurfaceApplyResult surfaceAppearance =
+                    CityArchShelterSurfaceAppearance.Apply(root);
+                if (!surfaceAppearance.IsComplete)
+                {
+                    throw new InvalidOperationException(
+                        "The City arch shelter surface contract is " +
+                        "incomplete: missing=" +
+                        $"{surfaceAppearance.MissingComponentCount}, " +
+                        "duplicates=" +
+                        $"{surfaceAppearance.DuplicateComponentCount}.");
+                }
+
+                var residentRoots = new List<Transform>(
+                    plan.NpcAnchors.Count);
+                for (int index = 0;
+                     index < plan.NpcAnchors.Count;
+                     index++)
+                {
+                    CityArchShelterNpcAnchorDescriptor anchor =
+                        plan.NpcAnchors[index];
+                    Quaternion rotation = Quaternion.LookRotation(
+                        anchor.Facing,
+                        Vector3.up);
+                    Transform residentRoot = CreateAssemblyRoot(
+                        root,
+                        anchor.StableId,
+                        anchor.Position,
+                        rotation);
+                    BuildResident(
+                        residentRoot,
+                        residentProvider,
+                        anchor.Stage,
+                        layout.Seed + index * 104729);
+                    residentRoots.Add(residentRoot);
+                }
+
+                Transform collisionRoot = BuildObstacleColliders(
+                    root,
+                    plan.Obstacles);
+                BuildStepColliders(collisionRoot, plan.Steps);
+                BoxCollider platformCollider = BuildPlatformCollider(
+                    collisionRoot,
+                    plan.Platform);
+                List<Collider> rainShelters = BuildRainShelterColliders(
+                    root,
+                    plan.RainOccluders);
+                return new CityArchShelterWorldResult(
+                    root.gameObject,
+                    structure,
+                    propRoots,
+                    residentRoots,
+                    platformCollider,
+                    rainShelters,
+                    surfaceAppearance);
+            }
+            catch
+            {
+                DestroyPartialRoot(root.gameObject);
+                throw;
+            }
         }
 
         private static Transform CreateAssemblyRoot(
@@ -244,6 +303,17 @@ namespace BarPromenade
                                 Quaternion.identity)
                         },
                         ResolveColor(part));
+                if (kind == CityMiscKind.NightlifeShelterBedding &&
+                    variant == 0 &&
+                    part.Component == CityArchShelterSurfaceAppearance
+                        .BlanketComponentName)
+                {
+                    // The rigged sleeper owns the visible, breathing blanket.
+                    // Keep the legacy component addressable for the surface
+                    // completeness contract, but do not double-render it.
+                    partObject.GetComponent<Renderer>().enabled = false;
+                }
+
                 if (IsFlame(part.Component))
                 {
                     Renderer renderer = partObject.GetComponent<Renderer>();
@@ -274,6 +344,111 @@ namespace BarPromenade
                     properties.SetFloat(SoftParticleDistanceId, 0.2f);
                     renderer.SetPropertyBlock(properties);
                 }
+            }
+        }
+
+        private static void BuildResident(
+            Transform parent,
+            CityArchShelterResidentProvider provider,
+            CityArchShelterNpcStageKind stage,
+            int seed)
+        {
+            CityArchShelterResidentRole role = ResolveResidentRole(stage);
+            GameObject prefab = provider.GetPrefab(role);
+            GameObject instance = UnityEngine.Object.Instantiate(
+                prefab,
+                parent,
+                false);
+            instance.name = role.ToString();
+            instance.transform.localPosition = Vector3.zero;
+            instance.transform.localRotation = Quaternion.identity;
+            instance.transform.localScale = Vector3.one;
+
+            CityArchShelterResidentAssetRegistry registry = instance
+                .GetComponentInChildren<
+                    CityArchShelterResidentAssetRegistry>(true);
+            if (registry == null || registry.Role != role)
+            {
+                DestroyResident(instance);
+                throw new InvalidOperationException(
+                    $"The {role} prefab has the wrong resident registry.");
+            }
+
+            // MaterialPropertyBlocks are runtime state and are not serialized
+            // into prefab assets. Reapply the authored atlas/palette after
+            // every instantiation, independently of OnEnable ordering.
+            registry.ApplyAppearance();
+            ValidatePassiveResident(instance, role);
+            var presentation = instance
+                .AddComponent<CityArchShelterResidentPresentation>();
+            try
+            {
+                presentation.Initialize(registry, seed);
+            }
+            catch
+            {
+                DestroyResident(instance);
+                throw;
+            }
+        }
+
+        private static void ValidatePassiveResident(
+            GameObject instance,
+            CityArchShelterResidentRole role)
+        {
+            if (instance.GetComponentInChildren<Collider>(true) != null ||
+                instance.GetComponentInChildren<Collider2D>(true) != null ||
+                instance.GetComponentInChildren<Rigidbody>(true) != null ||
+                instance.GetComponentInChildren<Rigidbody2D>(true) != null ||
+                instance.GetComponentInChildren<AudioSource>(true) != null ||
+                instance.GetComponentInChildren<Light>(true) != null ||
+                instance.GetComponentInChildren<Camera>(true) != null ||
+                instance.GetComponentInChildren<PlayerAttentionMagnet>(
+                    true) != null)
+            {
+                DestroyResident(instance);
+                throw new InvalidOperationException(
+                    $"The {role} shelter resident must remain passive, " +
+                    "colliderless and non-reactive.");
+            }
+
+            MonoBehaviour[] behaviours =
+                instance.GetComponentsInChildren<MonoBehaviour>(true);
+            for (int index = 0; index < behaviours.Length; index++)
+            {
+                if (!(behaviours[index] is
+                        CityArchShelterResidentAssetRegistry))
+                {
+                    DestroyResident(instance);
+                    throw new InvalidOperationException(
+                        $"The {role} shelter resident contains an " +
+                        "unexpected runtime behaviour.");
+                }
+            }
+        }
+
+        private static void DestroyResident(GameObject instance)
+        {
+            if (Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(instance);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(instance);
+            }
+        }
+
+        private static void DestroyPartialRoot(GameObject root)
+        {
+            root.SetActive(false);
+            if (Application.isPlaying)
+            {
+                UnityEngine.Object.Destroy(root);
+            }
+            else
+            {
+                UnityEngine.Object.DestroyImmediate(root);
             }
         }
 
@@ -391,17 +566,17 @@ namespace BarPromenade
             }
         }
 
-        private static CityMiscKind ResolveMiscKind(
+        private static CityArchShelterResidentRole ResolveResidentRole(
             CityArchShelterNpcStageKind stage)
         {
             switch (stage)
             {
                 case CityArchShelterNpcStageKind.StandingWarmer:
-                    return CityMiscKind.NightlifeShelterStandingPerson;
+                    return CityArchShelterResidentRole.StandingWarmer;
                 case CityArchShelterNpcStageKind.SeatedWarmer:
-                    return CityMiscKind.NightlifeShelterSeatedPerson;
+                    return CityArchShelterResidentRole.SeatedWarmer;
                 case CityArchShelterNpcStageKind.Sleeper:
-                    return CityMiscKind.NightlifeShelterSleepingPerson;
+                    return CityArchShelterResidentRole.Sleeper;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(stage),

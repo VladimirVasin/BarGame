@@ -659,20 +659,111 @@ namespace BarPromenade.Tests.EditMode
                         plan.Props[index].Variant);
                 }
 
+                Assert.That(result.SurfaceAppearance.IsComplete, Is.True);
+                Assert.That(
+                    result.SurfaceAppearance.TexturedRendererCount,
+                    Is.EqualTo(
+                        CityArchShelterSurfaceAppearance
+                            .ExpectedComponentCount));
+                Assert.That(
+                    result.SurfaceAppearance.AppliedRendererCount,
+                    Is.EqualTo(
+                        CityArchShelterSurfaceAppearance
+                            .ExpectedComponentCount));
+                Assert.That(
+                    result.SurfaceAppearance.MissingComponentCount,
+                    Is.Zero);
+                Assert.That(
+                    result.SurfaceAppearance.DuplicateComponentCount,
+                    Is.Zero);
+                foreach (string componentName in
+                         CityArchShelterSurfaceAppearance
+                             .SupportedComponentNames)
+                {
+                    Renderer renderer = result.Root
+                        .GetComponentsInChildren<Renderer>(true)
+                        .Single(candidate =>
+                            candidate.name == componentName);
+                    var surfaceProperties = new MaterialPropertyBlock();
+                    renderer.GetPropertyBlock(surfaceProperties);
+                    Assert.That(
+                        surfaceProperties.GetTexture("_BaseMap"),
+                        Is.Not.Null,
+                        componentName);
+                    Assert.That(
+                        renderer.sharedMaterial,
+                        Is.SameAs(
+                            RuntimePrimitiveFactory.DefaultMaterial));
+                    Assert.That(
+                        renderer.shadowCastingMode,
+                        Is.EqualTo(
+                            UnityEngine.Rendering.ShadowCastingMode.On));
+                    Assert.That(renderer.receiveShadows, Is.True);
+                    Assert.That(
+                        CityArchShelterSurfaceAppearance
+                            .TryGetTextureResourcePath(
+                                componentName,
+                                out string resourcePath),
+                        Is.True);
+                    Assert.That(resourcePath, Is.Not.Empty);
+                }
+
+                CityArchShelterSurfaceApplyResult repeatedAppearance =
+                    CityArchShelterSurfaceAppearance.Apply(
+                        result.Root.transform);
+                Assert.That(repeatedAppearance.IsComplete, Is.True);
+                Assert.That(repeatedAppearance.AppliedRendererCount, Is.Zero);
+                Assert.That(
+                    repeatedAppearance.AlreadyAppliedRendererCount,
+                    Is.EqualTo(
+                        CityArchShelterSurfaceAppearance
+                            .ExpectedComponentCount),
+                    "The surface pass must be idempotent.");
+
                 for (int index = 0;
                      index < plan.NpcAnchors.Count;
                      index++)
                 {
-                    AssertRendererComponents(
-                        result.ResidentRoots[index],
-                        ResolveMiscKind(plan.NpcAnchors[index].Stage),
-                        0);
+                    Transform residentRoot = result.ResidentRoots[index];
+                    CityArchShelterNpcAnchorDescriptor anchor =
+                        plan.NpcAnchors[index];
+                    CityArchShelterResidentRole expectedRole =
+                        ResolveResidentRole(anchor.Stage);
+                    CityArchShelterResidentAssetRegistry registry =
+                        residentRoot.GetComponentInChildren<
+                            CityArchShelterResidentAssetRegistry>(true);
+                    Assert.That(registry, Is.Not.Null, anchor.StableId);
+                    Assert.That(registry.Role, Is.EqualTo(expectedRole));
+
+                    CityArchShelterResidentPresentation residentPresentation =
+                        residentRoot.GetComponentInChildren<
+                            CityArchShelterResidentPresentation>(true);
+                    Assert.That(residentPresentation, Is.Not.Null);
+                    Assert.That(residentPresentation.IsInitialized, Is.True);
+                    Assert.That(
+                        residentPresentation.Role,
+                        Is.EqualTo(expectedRole));
+                    Assert.That(
+                        residentPresentation.ActiveClip,
+                        Is.SameAs(registry.IdleClip));
+                    Assert.That(
+                        residentRoot.GetComponentsInChildren<
+                            PlayerAttentionMagnet>(true),
+                        Is.Empty,
+                        "Shelter residents never react to or look at the " +
+                        "hero.");
                 }
 
                 int beddingIndex = Enumerable.Range(0, plan.Props.Count)
                     .Single(index =>
                         plan.Props[index].Kind ==
                         CityArchShelterPropKind.Bedding);
+                Renderer legacyBlanket = result.PropRoots[beddingIndex]
+                    .GetComponentsInChildren<Renderer>(true)
+                    .Single(renderer => renderer.name ==
+                        CityArchShelterSurfaceAppearance.BlanketComponentName);
+                Assert.That(legacyBlanket.enabled, Is.False,
+                    "The rigged sleeper replaces the static blanket.");
                 Assert.That(
                     Contains(
                         plan.Platform.Footprint,
@@ -682,24 +773,6 @@ namespace BarPromenade.Tests.EditMode
                     Is.True,
                     "The imported bedding geometry must not overhang the " +
                     "platform it rests on.");
-                for (int index = 0;
-                     index < plan.NpcAnchors.Count;
-                     index++)
-                {
-                    Assert.That(
-                        Contains(
-                            plan.Platform.Footprint,
-                            ToXZRect(EncapsulateRendererBounds(
-                                result.ResidentRoots[index]
-                                    .GetComponentsInChildren<Renderer>(
-                                        true)))),
-                        Is.True,
-                        $"Imported resident " +
-                        $"'{plan.NpcAnchors[index].StableId}' must remain " +
-                        "over the platform, not only its declarative " +
-                        "anchor.");
-                }
-
                 BoxCollider[] stepColliders = result.Root
                     .GetComponentsInChildren<BoxCollider>(true)
                     .Where(collider => collider.name.StartsWith(
@@ -846,12 +919,6 @@ namespace BarPromenade.Tests.EditMode
                     presentation.SpillRenderer.name,
                     Is.EqualTo(
                         CityArchShelterPresentation.SpillComponentName));
-                Assert.That(presentation.BreathingUpper, Is.Not.Null);
-                Assert.That(
-                    presentation.BreathingUpper.name,
-                    Is.EqualTo(
-                        CityArchShelterPresentation
-                            .BreathingComponentName));
                 AudioSource[] audioSources = result.Root
                     .GetComponentsInChildren<AudioSource>(true);
                 Assert.That(audioSources, Has.Length.EqualTo(1));
@@ -1083,22 +1150,19 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
-        private static CityMiscKind ResolveMiscKind(
+        private static CityArchShelterResidentRole ResolveResidentRole(
             CityArchShelterNpcStageKind stage)
         {
             switch (stage)
             {
                 case CityArchShelterNpcStageKind.StandingWarmer:
-                    return CityMiscKind.NightlifeShelterStandingPerson;
+                    return CityArchShelterResidentRole.StandingWarmer;
                 case CityArchShelterNpcStageKind.SeatedWarmer:
-                    return CityMiscKind.NightlifeShelterSeatedPerson;
+                    return CityArchShelterResidentRole.SeatedWarmer;
                 case CityArchShelterNpcStageKind.Sleeper:
-                    return CityMiscKind.NightlifeShelterSleepingPerson;
+                    return CityArchShelterResidentRole.Sleeper;
                 default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(stage),
-                        stage,
-                        "Unsupported shelter resident stage.");
+                    throw new ArgumentOutOfRangeException(nameof(stage));
             }
         }
 

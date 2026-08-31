@@ -82,7 +82,12 @@ namespace BarPromenade
         public const float HopSeconds = 0.15f;
         public const float HopHeightMeters = 0.12f;
 
-        public const float WingDeploySeconds = 0.25f;
+        /// <summary>Folded to full span. A quarter second was over
+        /// before the hop ended and the deploy read as a cut rather
+        /// than a motion; 0.4 s keeps the unfolding on screen through
+        /// the first metres of climb and still completes long before
+        /// the fog takes the bird.</summary>
+        public const float WingDeploySeconds = 0.4f;
         public const float ClimbSpeedMetersPerSecond = 7f;
         public const float ClimbRampSeconds = 1.5f;
         public const float FlapFrequencyHz = 5.5f;
@@ -104,6 +109,31 @@ namespace BarPromenade
         /// </summary>
         public const float ArcMaximumDegrees = 20f;
 
+        /// <summary>
+        /// The fraction of the takeoff's planar travel by which the
+        /// bird has gained ALL of its altitude. The climb used to be
+        /// spread across the whole path, which read fine over the
+        /// cemetery's open lattice and failed anywhere buildings
+        /// stand: a bird 20 m out had earned only a fraction of its
+        /// climb and flew below every roofline, straight into the
+        /// first facade. Front-loading the climb into the first
+        /// third puts the bird at cruise altitude while the street
+        /// can still see it; the roost controller's clearance fan
+        /// samples this same curve, so the line it ray-tests is the
+        /// line the bird actually flies.
+        /// </summary>
+        public const float TakeoffClimbCompletePlanarFraction = 0.35f;
+
+        /// <summary>
+        /// The descent occupies only this last fraction of a
+        /// return's planar approach; before it the bird HOLDS its
+        /// spawn altitude. A return that sank from its first metre
+        /// came in under the rooftops long before the perch; holding
+        /// high and dropping late clears them on the way in the same
+        /// way the early climb does on the way out.
+        /// </summary>
+        public const float ReturnDescentPlanarFraction = 0.4f;
+
         public const float GlideSpeedMetersPerSecond = 6.5f;
         public const float TouchdownSpeedMetersPerSecond = 1.8f;
         public const float DecelerationDistanceMeters = 4f;
@@ -118,6 +148,19 @@ namespace BarPromenade
         private readonly Vector3 end;
         private readonly float endYawDegrees;
         private readonly CemeteryRavenFlightKind kind;
+
+        /// <summary>The travel contract this instance flies under.
+        /// Defaults are the cemetery consts above; roost flights on
+        /// the mountain scenes hand in their own fog-plane distances
+        /// and faster airspeeds. Everything below reads these fields,
+        /// never the consts, because the constructor derives the whole
+        /// return timeline from them — a timeline computed at one
+        /// speed and integrated at another would clamp its distance
+        /// early and leave the bird hovering at the perch.</summary>
+        private readonly float doneDistanceMeters;
+        private readonly float takeoffTimeoutSeconds;
+        private readonly float climbSpeedMetersPerSecond;
+        private readonly float glideSpeedMetersPerSecond;
 
         private readonly Vector3 planarDirection;
         private readonly Vector3 planarRight;
@@ -139,13 +182,28 @@ namespace BarPromenade
             Vector3 end,
             float endYawDegrees,
             CemeteryRavenFlightKind kind,
-            int seed)
+            int seed,
+            float doneDistanceMeters = DoneDistanceMeters,
+            float takeoffTimeoutSeconds = TakeoffTimeoutSeconds,
+            float climbSpeedMetersPerSecond =
+                ClimbSpeedMetersPerSecond,
+            float glideSpeedMetersPerSecond =
+                GlideSpeedMetersPerSecond)
         {
             this.start = start;
             this.startYawDegrees = startYawDegrees;
             this.end = end;
             this.endYawDegrees = endYawDegrees;
             this.kind = kind;
+
+            // Assigned before ANY derivation below: the takeoff arc
+            // and the return's phase boundaries all hang off these
+            // values, and boundaries derived from the defaults under
+            // a parameterized flight would sit in the wrong seconds.
+            this.doneDistanceMeters = doneDistanceMeters;
+            this.takeoffTimeoutSeconds = takeoffTimeoutSeconds;
+            this.climbSpeedMetersPerSecond = climbSpeedMetersPerSecond;
+            this.glideSpeedMetersPerSecond = glideSpeedMetersPerSecond;
 
             var planarDelta = new Vector3(
                 end.x - start.x,
@@ -176,17 +234,17 @@ namespace BarPromenade
                 ArcMaximumDegrees;
             arcLateralMeters =
                 Mathf.Tan(arcDegrees * Mathf.Deg2Rad) *
-                DoneDistanceMeters * 0.25f;
+                this.doneDistanceMeters * 0.25f;
 
             float decelerationLength = Mathf.Min(
                 DecelerationDistanceMeters,
                 planarDistance);
             cruiseLengthMeters = planarDistance - decelerationLength;
             cruiseSeconds =
-                cruiseLengthMeters / GlideSpeedMetersPerSecond;
+                cruiseLengthMeters / this.glideSpeedMetersPerSecond;
             decelerationSeconds =
                 decelerationLength * 2f /
-                (GlideSpeedMetersPerSecond +
+                (this.glideSpeedMetersPerSecond +
                  TouchdownSpeedMetersPerSecond);
             touchSeconds = cruiseSeconds + decelerationSeconds;
             flareStartSeconds = Mathf.Max(
@@ -219,7 +277,7 @@ namespace BarPromenade
         {
             float t = (float)Math.Min(
                 timeSeconds,
-                TakeoffTimeoutSeconds);
+                takeoffTimeoutSeconds);
             float fold01 = Mathf.Clamp01(t / WingDeploySeconds);
             float flapPhase =
                 Mathf.PI * 2f * FlapFrequencyHz * t;
@@ -240,14 +298,14 @@ namespace BarPromenade
 
             float climbTime = t - HopSeconds;
             float distance = climbTime < ClimbRampSeconds
-                ? 0.5f * ClimbSpeedMetersPerSecond *
+                ? 0.5f * climbSpeedMetersPerSecond *
                   climbTime * climbTime / ClimbRampSeconds
-                : 0.5f * ClimbSpeedMetersPerSecond *
+                : 0.5f * climbSpeedMetersPerSecond *
                   ClimbRampSeconds +
-                  ClimbSpeedMetersPerSecond *
+                  climbSpeedMetersPerSecond *
                   (climbTime - ClimbRampSeconds);
             float progress01 = Mathf.Clamp01(
-                distance / DoneDistanceMeters);
+                distance / doneDistanceMeters);
             float lateral =
                 arcLateralMeters *
                 Mathf.Sin(Mathf.PI * progress01);
@@ -255,12 +313,17 @@ namespace BarPromenade
                 planarDirection * distance +
                 planarRight * lateral;
             float hopTopY = start.y + HopHeightMeters;
+            // The whole climb happens early (see
+            // TakeoffClimbCompletePlanarFraction): by 35% of the
+            // planar travel the altitude is exactly end.y and stays
+            // there, instead of grinding the height out across the
+            // whole path below the rooflines.
             var position = new Vector3(
                 planar.x,
                 Mathf.Lerp(
                     hopTopY,
                     end.y,
-                    SmoothStep01(progress01)),
+                    TakeoffClimb01(progress01)),
                 planar.z);
             float yaw = Mathf.LerpAngle(
                 startYawDegrees,
@@ -272,8 +335,8 @@ namespace BarPromenade
                 position.x - start.x,
                 position.z - start.z).magnitude;
             bool done =
-                displacement >= DoneDistanceMeters ||
-                timeSeconds >= TakeoffTimeoutSeconds;
+                displacement >= doneDistanceMeters ||
+                timeSeconds >= takeoffTimeoutSeconds;
             return new CemeteryRavenFlightSample(
                 position,
                 yaw,
@@ -326,15 +389,15 @@ namespace BarPromenade
             float distance;
             if (t <= cruiseSeconds)
             {
-                distance = GlideSpeedMetersPerSecond * t;
+                distance = glideSpeedMetersPerSecond * t;
             }
             else if (decelerationSeconds > 0.0001f)
             {
                 float braking = t - cruiseSeconds;
                 distance = cruiseLengthMeters +
-                    GlideSpeedMetersPerSecond * braking -
+                    glideSpeedMetersPerSecond * braking -
                     0.5f *
-                    (GlideSpeedMetersPerSecond -
+                    (glideSpeedMetersPerSecond -
                      TouchdownSpeedMetersPerSecond) *
                     braking * braking / decelerationSeconds;
             }
@@ -352,10 +415,16 @@ namespace BarPromenade
             float remaining01 = Mathf.Clamp01(
                 remaining / planarDistance);
             Vector3 planar = end - planarDirection * remaining;
+            // The spawn altitude is HELD until only the last
+            // ReturnDescentPlanarFraction of the approach remains
+            // (any larger remaining01 smoothsteps to 1), then the
+            // bird sinks into the flare — a late descent over the
+            // rooftops instead of a shallow dive through them.
             var position = new Vector3(
                 planar.x,
                 end.y + (start.y - end.y) *
-                SmoothStep01(remaining01),
+                SmoothStep01(
+                    remaining01 / ReturnDescentPlanarFraction),
                 planar.z);
 
             if (t < flareStartSeconds)
@@ -416,6 +485,21 @@ namespace BarPromenade
             }
 
             return Mathf.PI * 2f * phaseTurns;
+        }
+
+        /// <summary>
+        /// The takeoff's altitude gain as a pure function of planar
+        /// progress: a smoothstep that completes at
+        /// <see cref="TakeoffClimbCompletePlanarFraction"/> of the
+        /// travel and holds flat after. Public because the roost
+        /// controller's takeoff clearance fan must ray-test the very
+        /// curve the bird will fly, not an approximation of it.
+        /// </summary>
+        public static float TakeoffClimb01(float planarProgress01)
+        {
+            return SmoothStep01(
+                planarProgress01 /
+                TakeoffClimbCompletePlanarFraction);
         }
 
         private static float SmoothStep01(float value)

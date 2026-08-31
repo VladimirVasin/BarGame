@@ -111,17 +111,41 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   emitted only by designs that declare them, so the other thirteen city
   signatures are byte-identical.
 - **Accepted — NpcHumanV2 is the common adult anatomical substrate:** all
-  `21` rigged humanoid NPC models (five pooled street archetypes, thirteen
+  `24` rigged humanoid NPC models (five pooled street archetypes, sixteen
   staged roles and bartender/cashier/bus-driver) copy the production Hero V2
   31-bone A-pose Avatar and use its `0.835 m` rest pelvis. Ordinary silhouettes
   target roughly `7–7.5` heads and `2.3–2.5` head-width shoulders without
   increasing polygon density. Canon-required deformations — six bartender
   arms, the cashier's long neck, the Long-Arm figure, kettle head and hopper
   feet — remain authored overlays on that substrate, not anatomy regressions.
-  The three unrigged arch-shelter residents use the same proportions as static
-  meshes. `NpcHumanV2AssetSetup.RunBatch` is the single asset-authoring entry
-  point that rebuilds and validates all six pipelines. This decision supersedes
-  older notes that kept ambient passengers on a `0.70 m` rig.
+  Amended 2026-08-31 by explicit user request: the three arch-shelter residents
+  are no longer unrigged exceptions. They are staged Hero-Avatar prefabs with
+  separate `256 px` detail atlases and three long, autonomous, bone-only loops
+  in an isolated animation bank. The bank records deformed all-frame planar
+  envelopes; the generator and Unity importer independently reject a sleeper
+  that leaves the imported mattress's measured `1.89618 × 0.83633 m`
+  surface. Its resident-local yaw is zero because the sleeper root inherits
+  the bedding assembly's authored `-5°` world yaw. The legacy static blanket
+  stays addressable for surface validation but is not rendered; the rigged,
+  breathing blanket replaces it. The
+  legacy static residents remain in the City-misc catalog only for
+  compatibility and are never instantiated.
+  `NpcHumanV2AssetSetup.RunBatch` is the single asset-authoring entry point
+  that rebuilds and validates all seven pipelines. This decision supersedes
+  both the former static-shelter exception and older notes that kept ambient
+  passengers on a `0.70 m` rig.
+- **Accepted — The Nightlife arch reuses measured City surface families:**
+  fifteen exact imported component names map shell, stairs, terrace, cladding,
+  roof, barrel, fuel, bedding and sparse clutter to existing masonry,
+  concrete, paving, metal, timber, cloth, paper, enamel and roof albedos.
+  The visible underside of the vault belongs to `Shell_Masonry`; the raised
+  surface and its vertical mass remain separate `PlatformSlab_Street` and
+  `PlatformSupport_Masonry` renderers, so ceiling, top and elevation all
+  receive their intended texture family rather than a flat fallback.
+  `CityArchShelterSurfaceAppearance` applies metre-scale tiling and compensated
+  tints through `MaterialPropertyBlock`, keeps the shared primitive material,
+  and deliberately ignores the six fire/spill renderers and all resident rigs.
+  The pass is idempotent and adds no material instance or new surface family.
 
 ## MVP decisions
 
@@ -295,6 +319,36 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   reading in canon, while the companion «весь документ» row regularising
   «свежие раскопанные могилы» for the hero's grave work records a
   contradiction the shipped gravedigging feature had already created.
+- **Accepted architecture exception — 2026-08-31, explicit user request — the
+  roost ravens multiply the species, not the sign:** sparse pairs of the same
+  ordinary wintering ravens across the three outdoor areas STRENGTHEN the
+  fauna reading above rather than stress it — a bird that lives at one grave
+  and nowhere else is a sign by scarcity; a bird that lives all over a
+  coastal town is a species. The selection rule is bird logic, never
+  significance: parapet copings, a bridge rail, open gravel, a barge
+  gunwale, a road shoulder, a lane-fence perch, with gravel, stone, decking
+  or sky behind the bird per §10c's own «не крон» rule — and one third of
+  the sites (`5` of `15`: two City dumpster kerbs, the road culvert
+  shoulder, the village firewood cart and lane fence) are deliberately
+  unremarkable, so «ворон ⇒ важно» cannot be derived from the world. §16
+  law 1 is re-checked by name at BOTH ends of the pipe: the водоразбор yard
+  AND the часовня над истоком — the place the poison was poured — are
+  excluded together with their whole audible radius, so no roost stands on
+  anything the crime touches; law 2 stays whole — no citizen, pedestrian,
+  bus, cat or system reacts to any of them. §19 stays a refusal: the ravens
+  remain outside the closed словарь следов, they carry no trace, and
+  removing every raven in the game changes nothing about what the player
+  concludes — a roost that failed that test would be «вещь, которая нужна
+  только сюжету» and would be cut. One recorded contract hole is accepted
+  with this: the AlpineVillage warmth grade quiets only the soundscape's own
+  six local voices, so the village roost voices sit outside that grade's
+  contract — the grade is pinned at `0` until the prologue exists, and the
+  exception is recorded rather than wired. §16's sound test also holds by
+  measure: the same synthesized caw now sounds in three areas, but its
+  `14 m` audible radius on a `16-44 s` schedule keeps its contribution to
+  district distinctness negligible. The cemetery pair keeps its own §6 row,
+  its own trigger and its uniqueness: у первой закрытой могилы всегда ровно
+  две птицы.
 - **Accepted architecture exception — 2026-08-27, explicit user request — one
   maintained Cemetery–Church connection:** The earlier art-bible rule that the
   two precincts have no direct connection is lifted only for one internal
@@ -488,7 +542,22 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   to no puddle at all under `Blend Off`. The rectangle is hidden by
   `_EdgeNoiseParams`: a world-XZ value noise eats the rim first (rim
   mask arrives as a UV pyramid on the builder's 3×3 patch grid), so a
-  drying puddle shrinks to its middle instead of fading as a box. All
+  drying puddle shrinks to its middle instead of fading as a box. The
+  erosion bites `sqrt(wetness)`, not the wetness (2026-08-31): at the
+  city's `0.18` drizzle floor the raw form left a quarter-width sliver;
+  the root keeps about half the patch, fills it in a downpour and still
+  dissolves at zero. Geometry rules (2026-08-31, from a capture): the
+  sheet stands `SurfaceOffset 5 mm` over its road and the wave is
+  `0.8 mm`, because the trough must clear both the asphalt and the foam
+  band (`WaveHeight × 1.73 < SurfaceOffset − FoamDistance`, pinned); a
+  gutter patch is rejected when any other street, pavement or marking
+  surface samples within 2 mm under its plane (intersection squares run
+  the full right of way, so the old inset put half the puddles under the
+  kerb slab); open-ground pools ask `CityTerrainSurfacePlan.SampleTop`
+  for a level skin (±3 mm at centre and corners) and skip the fringe
+  yards, which are terrain without a readable height model; and
+  `DepthFadeDistance` is `12 mm`, so the 5 mm body reads a third to a
+  half dark instead of 98% road. All
   patches share one combined mesh, one material and one
   `CityFountainReflectionController` cubemap hung over the road-network
   centre — an envmap has no parallax, so one probe serves every puddle
@@ -1760,19 +1829,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   outside this wave: the first already owns bespoke batched geometry and the
   other three have terrain, span or dynamic-renderer coupling.
 - **Accepted — City misc is one citywide role-mesh library, not world
-  prefabs:** current design `city_misc_citywide_v4` at generator `4.8.0`
-  contains `86` semantic kinds, `126` assemblies and `271` role meshes
-  (`48,926` triangles) under build
+  prefabs:** current design `city_misc_citywide_v4` at generator `4.9.0`
+  contains `82` semantic kinds, `122` assemblies and `259` role meshes
+  (`46,542` triangles) under build
   signature
-  `45026a9b34c7d7390f5c70fdced3090cd27527a7d2c4f2bd09a4832461b256e1`.
+  `85a8abea90e03d189d069dca36ed5a6f401b1b3fbf08d313dc51ff77ee3a4e21`.
   The provider resolves kind, stable variant and semantic role; the affected
   builders then place or combine those meshes from their existing plans. The
   catalog spans the 24-family decoration layer and parks, street lamps and
   traffic housings, Route 01 shelters/poles, the eastern yard, cemetery,
   seacoast, fringe service belt and the static shells of all four district
   points of interest, plus the compatibility bar, supermarket and player-home
-  shells, six shallow Residential courtyard-pocket variants, five typed-fringe
-  work scenes and the
+  shells, six shallow Residential courtyard-pocket variants, one unoccupied
+  typed-fringe mason-cart scene and the
   church-yard surface/planting kit and the modified cemetery north-fence
   posts/rails. `BarBuildingShell`, `SupermarketBuildingShell` and
   `PlayerHomeBuildingShell` remain addressable but unused, preserving their v4
@@ -1786,6 +1855,19 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   dynamics, interactions, realtime lights and halos, cloth and NPCs. Tilted
   cemetery monuments deliberately stay on the legacy builder because their
   non-rigid tilt is outside the rigid assembly-placement contract.
+
+- **Accepted architecture exception, 2026-08-31 — only the empty mason cart
+  remains from the fringe work-vignette pass:** by explicit user decision, the
+  hard positive contracts in art bible §10e, §15, §16 and §18.25 no longer put
+  one human-scale scene in every typed Yard. `yard-west-north` alone keeps the
+  Blender-authored `MasonCart`, always without an NPC. `WinchServiceSet`,
+  `TunnelServiceSet`, `FloodMaintenanceSet`, `OpenHoodCar` and every fringe
+  resident pose are deleted from their planners, catalogs and generated
+  assets. This exception does not remove or redesign the older service-belt
+  infrastructure: the west-industrial repair frame and winch, tunnel
+  forecourt, floodworks and east utility edge remain their Yards' macro
+  anchors. The art bible records the narrowed rule directly; no story-bible
+  registry row is needed because the change adds no forbidden detail.
 
   The old player-home and supermarket three-role assemblies remain catalogued
   for v4 compatibility but are superseded by the complete exterior decisions
@@ -2946,6 +3028,25 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   the fog is cleared and refilled by the same call that gives the snow its dry
   core. The City keeps `CityTunnelShelterController` and passes no fog to the
   weather owner, because there the same event must also hide the ridge shell.
+- **Accepted — One camera-relative cloud ceiling for every true exterior:**
+  a deterministic Blender build owns one passive `220`-triangle unit
+  hemisphere and one packed linear RGB density texture; runtime owns three
+  profiles through `MaterialPropertyBlock`, never cloned materials. The field
+  follows camera translation but retains a canonical compass rotation. Its
+  `47 / 119 / 109 m` radii sit just inside City, MountainRoad and
+  AlpineVillage far planes (`48 / 120 / 110 m`), but are rendering distance,
+  not a physical cloud base: translation produces no parallax, so the layer
+  cannot read as clouds hanging tens of metres above roofs. City and the Home
+  balcony use the same seed, profile, compass frame and phase from absolute
+  session time; the road and village only change density, scale and colour,
+  while all three integrate the existing `GameWeatherRules` wind schedule.
+  The horizon is mixed into the haze already owned by each area; the village
+  passes its live haze/storm/warmth values into that same property block. The
+  cloud system creates no Light, shadow, collider, fog, grade or visibility
+  rule. It exists in City, MountainRoad and AlpineVillage, is enabled in Home
+  only for the active Balcony shot, and is absent from true interiors and
+  technical transition scenes. The fountain reflection camera opts in with a
+  marker; unrelated preview/UI cameras do not inherit the world shell.
 - **Accepted — The city never dries (city-scene decree):**
   `CityEternalRainShaper` is the city's own `ICityWeatherShaper` - the seam
   the mountain and village already shape the shared schedule through. It
@@ -2960,6 +3061,13 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   tunnel mouth stays genuinely dry. The shared wet film consequently never
   reads drier than the drizzle in city scenes, and puddles never dissolve;
   the drying machinery stays for the slopes between heavy and drizzle.
+  Amended 2026-08-31: the film's target is the shaper's own third axis,
+  `ShapeSurfaceWetness(schedule)`. The controller had been handing the
+  registry the raw schedule so the village blizzard could not soak the
+  shared film - which also cut the city's floor out of the film path, and
+  a `Clear` slot dried every puddle away while the drizzle kept falling.
+  The city floors that axis at the drizzle; the snow areas pass the
+  schedule through untouched.
 - **Accepted — Deterministic slot weather, presentation-only:**
   `GameWeatherRules` is a pure function of the city seed and the absolute
   session minutes: `90`-game-minute slots hash into Clear (`55%`), LightRain

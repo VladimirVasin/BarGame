@@ -10,11 +10,7 @@ namespace BarPromenade
         NardiPlayer = 0,
         BicycleRepair = 1,
         ChairRepair = 2,
-        Sweeping = 3,
-        Masonry = 4,
-        WinchService = 5,
-        FloodMaintenance = 6,
-        OpenHoodMechanic = 7
+        Sweeping = 3
     }
 
     /// <summary>
@@ -99,14 +95,13 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Selects a deliberately small fixed cast from the static courtyard
-    /// scenes. One occurrence of each active residential variant is enough;
-    /// the four non-tunnel fringe maintenance scenes are reserved first, then
-    /// residential groups are admitted atomically under the eight-body cap.
+    /// Selects a deliberately small fixed cast from the static residential
+    /// courtyard scenes. One occurrence of each active variant is enough;
+    /// groups are admitted atomically under the five-body cap.
     /// </summary>
     public sealed class CityCourtyardResidentPlan
     {
-        public const int MaximumResidentCount = 8;
+        public const int MaximumResidentCount = 5;
 
         // Public aliases keep callers on the resident vocabulary while the
         // shared geometry contract remains the single owner of variant IDs.
@@ -148,23 +143,6 @@ namespace BarPromenade
         private static readonly Vector3 SweepingTargetLocal =
             new Vector3(-0.55f, 0f, -0.08f);
 
-        private static readonly Vector3 MasonDockLocal =
-            new Vector3(0f, 0f, 1.25f);
-        private static readonly Vector3 MasonTargetLocal =
-            new Vector3(-0.18f, 0f, 0f);
-        private static readonly Vector3 WinchDockLocal =
-            new Vector3(1.35f, 0f, 0.82f);
-        private static readonly Vector3 WinchTargetLocal =
-            Vector3.zero;
-        private static readonly Vector3 FloodDockLocal =
-            new Vector3(1.35f, 0f, 0.88f);
-        private static readonly Vector3 FloodTargetLocal =
-            new Vector3(-0.30f, 0f, 0f);
-        private static readonly Vector3 MechanicDockLocal =
-            new Vector3(2.48f, 0f, -1.48f);
-        private static readonly Vector3 MechanicTargetLocal =
-            new Vector3(1.30f, 0f, -0.35f);
-
         private readonly ReadOnlyCollection<
             CityCourtyardResidentDescriptor> residents;
 
@@ -188,8 +166,7 @@ namespace BarPromenade
 
         public static CityCourtyardResidentPlan Create(
             CityLayout layout,
-            CityDecorationPlan decorations,
-            CityFringeYardPlan fringeYards)
+            CityDecorationPlan decorations)
         {
             if (layout == null)
             {
@@ -201,14 +178,8 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(decorations));
             }
 
-            if (fringeYards == null)
-            {
-                throw new ArgumentNullException(nameof(fringeYards));
-            }
-
             var selected = new List<CityCourtyardResidentDescriptor>(
                 MaximumResidentCount);
-            AppendFringeResidents(layout, fringeYards, selected);
             AppendResidentialResidents(layout, decorations, selected);
             return new CityCourtyardResidentPlan(layout.Seed, selected);
         }
@@ -227,39 +198,6 @@ namespace BarPromenade
                        designId,
                        CityPedestrianResources.ChairCarrierDesignId,
                        StringComparison.Ordinal);
-        }
-
-        private static void AppendFringeResidents(
-            CityLayout layout,
-            CityFringeYardPlan fringeYards,
-            ICollection<CityCourtyardResidentDescriptor> selected)
-        {
-            CityFringeYardPartKind[] activeKinds =
-            {
-                CityFringeYardPartKind.MasonCart,
-                CityFringeYardPartKind.WinchServiceSet,
-                CityFringeYardPartKind.FloodMaintenanceSet,
-                CityFringeYardPartKind.OpenHoodCar
-            };
-            for (int kindIndex = 0;
-                 kindIndex < activeKinds.Length;
-                 kindIndex++)
-            {
-                if (!TryFindFringePart(
-                        fringeYards,
-                        activeKinds[kindIndex],
-                        out CityFringeYardPartDescriptor part,
-                        out string ownerAreaId))
-                {
-                    continue;
-                }
-
-                ResidentGroup group = CreateFringeGroup(
-                    layout,
-                    part,
-                    ownerAreaId);
-                TryAppendGroup(selected, group);
-            }
         }
 
         private static void AppendResidentialResidents(
@@ -398,75 +336,6 @@ namespace BarPromenade
             }
         }
 
-        private static ResidentGroup CreateFringeGroup(
-            CityLayout layout,
-            CityFringeYardPartDescriptor part,
-            string ownerAreaId)
-        {
-            Vector3 origin = part.Center -
-                             Vector3.up * (part.Size.y * 0.5f);
-            switch (part.Kind)
-            {
-                case CityFringeYardPartKind.MasonCart:
-                    return CreateStandingGroup(
-                        layout,
-                        part.StableId,
-                        origin,
-                        part.Rotation,
-                        MasonDockLocal,
-                        MasonTargetLocal,
-                        "mason",
-                        CityCourtyardResidentActivity.Masonry,
-                        CityPedestrianResources.LampshadeDesignId,
-                        ownerAreaId,
-                        0);
-                case CityFringeYardPartKind.WinchServiceSet:
-                    return CreateStandingGroup(
-                        layout,
-                        part.StableId,
-                        origin,
-                        part.Rotation,
-                        WinchDockLocal,
-                        WinchTargetLocal,
-                        "winch-service",
-                        CityCourtyardResidentActivity.WinchService,
-                        CityPedestrianResources.LongArmDesignId,
-                        ownerAreaId,
-                        1);
-                case CityFringeYardPartKind.FloodMaintenanceSet:
-                    return CreateStandingGroup(
-                        layout,
-                        part.StableId,
-                        origin,
-                        part.Rotation,
-                        FloodDockLocal,
-                        FloodTargetLocal,
-                        "flood-maintenance",
-                        CityCourtyardResidentActivity.FloodMaintenance,
-                        CityPedestrianResources.LampshadeDesignId,
-                        ownerAreaId,
-                        2);
-                case CityFringeYardPartKind.OpenHoodCar:
-                    return CreateStandingGroup(
-                        layout,
-                        part.StableId,
-                        origin,
-                        part.Rotation,
-                        MechanicDockLocal,
-                        MechanicTargetLocal,
-                        "open-hood-mechanic",
-                        CityCourtyardResidentActivity.OpenHoodMechanic,
-                        CityPedestrianResources.LongArmDesignId,
-                        ownerAreaId,
-                        3);
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(part),
-                        part.Kind,
-                        "The tunnel service set deliberately has no actor.");
-            }
-        }
-
         private static ResidentGroup CreateStandingGroup(
             CityLayout layout,
             string sourceStableId,
@@ -599,37 +468,6 @@ namespace BarPromenade
             }
 
             result = default;
-            return false;
-        }
-
-        private static bool TryFindFringePart(
-            CityFringeYardPlan plan,
-            CityFringeYardPartKind kind,
-            out CityFringeYardPartDescriptor result,
-            out string ownerAreaId)
-        {
-            for (int yardIndex = 0;
-                 yardIndex < plan.Yards.Count;
-                 yardIndex++)
-            {
-                CityFringeYardDescriptor yard = plan.Yards[yardIndex];
-                for (int partIndex = 0;
-                     partIndex < yard.Parts.Count;
-                     partIndex++)
-                {
-                    CityFringeYardPartDescriptor candidate =
-                        yard.Parts[partIndex];
-                    if (candidate.Kind == kind)
-                    {
-                        result = candidate;
-                        ownerAreaId = yard.AreaId;
-                        return true;
-                    }
-                }
-            }
-
-            result = default;
-            ownerAreaId = string.Empty;
             return false;
         }
 

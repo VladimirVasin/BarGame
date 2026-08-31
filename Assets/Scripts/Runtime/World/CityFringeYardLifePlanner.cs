@@ -5,9 +5,9 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Adds one small, grounded scene to each already-authored fringe Yard.
-    /// The landmark pass owns the civil works; this pass only selects a clear
-    /// place beside them for the human-scale evidence of maintenance.
+    /// Adds one small, grounded mason cart to the already-authored west stone
+    /// terraces. The landmark pass owns the civil works; the other typed Yards
+    /// deliberately receive no separate human-scale vignette.
     /// </summary>
     internal static class CityFringeYardLifePlanner
     {
@@ -50,7 +50,10 @@ namespace BarPromenade
                     parts.Add(yard.Parts[partIndex]);
                 }
 
-                parts.Add(CreateScene(layout, source, yard, parts));
+                if (yard.Kind == CityFringeYardKind.WestStoneTerraces)
+                {
+                    parts.Add(CreateMasonCart(layout, yard, parts));
+                }
                 yards.Add(new CityFringeYardDescriptor(
                     yard.StableId,
                     yard.AreaId,
@@ -79,17 +82,12 @@ namespace BarPromenade
             return result;
         }
 
-        private static CityFringeYardPartDescriptor CreateScene(
+        private static CityFringeYardPartDescriptor CreateMasonCart(
             CityLayout layout,
-            CityFringeYardPlan plan,
             CityFringeYardDescriptor yard,
             IReadOnlyList<CityFringeYardPartDescriptor> parts)
         {
-            ResolveSceneContract(
-                yard.Kind,
-                out CityFringeYardPartKind partKind,
-                out CityFringeYardStyle style,
-                out Vector3 size);
+            var size = new Vector3(3.0f, 1.65f, 2.2f);
 
             Vector3 outward = yard.Access.OutwardNormal;
             outward.y = 0f;
@@ -98,11 +96,8 @@ namespace BarPromenade
             Quaternion rotation = Quaternion.LookRotation(
                 -outward,
                 Vector3.up);
-            Vector3 anchor = ResolveSemanticAnchor(plan, yard, parts);
-            List<Vector2> offsets = CreateCandidateOffsets(
-                plan,
-                yard,
-                size);
+            Vector3 anchor = ResolveSemanticAnchor(yard, parts);
+            List<Vector2> offsets = CreateCandidateOffsets();
 
             for (int index = 0; index < offsets.Count; index++)
             {
@@ -114,8 +109,8 @@ namespace BarPromenade
                         layout,
                         yard,
                         parts,
-                        partKind,
-                        style,
+                        CityFringeYardPartKind.MasonCart,
+                        CityFringeYardStyle.Timber,
                         candidate,
                         rotation,
                         size,
@@ -128,9 +123,7 @@ namespace BarPromenade
             // A semantic anchor can occasionally fall beside an unusually
             // dense seed-specific pile. Fall back to a sparse grid measured
             // from the declared street opening, never to a magic world point.
-            float[] depths = yard.Kind == CityFringeYardKind.EastUtilityEdge
-                ? new[] { 18f, 24f, 30f, 38f }
-                : new[] { 7f, 10f, 13f, 16f, 19f };
+            float[] depths = { 7f, 10f, 13f, 16f, 19f };
             float[] lateral = { 8f, -8f, 13f, -13f, 19f, -19f, 27f, -27f };
             for (int depthIndex = 0;
                  depthIndex < depths.Length;
@@ -147,8 +140,8 @@ namespace BarPromenade
                             layout,
                             yard,
                             parts,
-                            partKind,
-                            style,
+                            CityFringeYardPartKind.MasonCart,
+                            CityFringeYardStyle.Timber,
                             candidate,
                             rotation,
                             size,
@@ -161,84 +154,17 @@ namespace BarPromenade
 
             throw new InvalidOperationException(
                 $"Fringe Yard '{yard.AreaId}' has no clear grounded place " +
-                $"for its '{partKind}' life scene.");
-        }
-
-        private static void ResolveSceneContract(
-            CityFringeYardKind yardKind,
-            out CityFringeYardPartKind partKind,
-            out CityFringeYardStyle style,
-            out Vector3 size)
-        {
-            switch (yardKind)
-            {
-                case CityFringeYardKind.WestStoneTerraces:
-                    partKind = CityFringeYardPartKind.MasonCart;
-                    style = CityFringeYardStyle.Timber;
-                    size = new Vector3(3.0f, 1.65f, 2.2f);
-                    return;
-                case CityFringeYardKind.WestIndustrialBelt:
-                    partKind = CityFringeYardPartKind.WinchServiceSet;
-                    style = CityFringeYardStyle.Iron;
-                    size = new Vector3(2.8f, 1.55f, 2.2f);
-                    return;
-                case CityFringeYardKind.SouthTunnelForecourt:
-                    partKind = CityFringeYardPartKind.TunnelServiceSet;
-                    style = CityFringeYardStyle.Timber;
-                    size = new Vector3(3.4f, 1.70f, 2.4f);
-                    return;
-                case CityFringeYardKind.SouthFloodWorks:
-                    partKind = CityFringeYardPartKind.FloodMaintenanceSet;
-                    style = CityFringeYardStyle.Iron;
-                    size = new Vector3(3.0f, 1.60f, 2.2f);
-                    return;
-                case CityFringeYardKind.EastUtilityEdge:
-                    partKind = CityFringeYardPartKind.OpenHoodCar;
-                    style = CityFringeYardStyle.DomesticPaint;
-                    size = new Vector3(5.8f, 2.05f, 4.2f);
-                    return;
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(yardKind),
-                        yardKind,
-                        null);
-            }
+                "for its mason cart.");
         }
 
         private static Vector3 ResolveSemanticAnchor(
-            CityFringeYardPlan plan,
             CityFringeYardDescriptor yard,
             IReadOnlyList<CityFringeYardPartDescriptor> parts)
         {
-            string token;
-            switch (yard.Kind)
-            {
-                case CityFringeYardKind.WestStoneTerraces:
-                    token = "landmark-culvert-mouth";
-                    break;
-                case CityFringeYardKind.WestIndustrialBelt:
-                    token = "landmark-repair-winch";
-                    break;
-                case CityFringeYardKind.SouthFloodWorks:
-                    token = "landmark-flood-gauge";
-                    break;
-                case CityFringeYardKind.EastUtilityEdge:
-                    token = "utility-shed-01";
-                    break;
-                case CityFringeYardKind.SouthTunnelForecourt:
-                    return Vector3.Lerp(
-                        plan.TunnelForecourt.StreetAnchor,
-                        plan.TunnelForecourt.PortalAnchor,
-                        0.62f);
-                default:
-                    return yard.Access.Center +
-                        yard.Access.OutwardNormal * 10f;
-            }
-
             for (int index = 0; index < parts.Count; index++)
             {
                 if (parts[index].StableId.IndexOf(
-                        token,
+                        "landmark-culvert-mouth",
                         StringComparison.Ordinal) >= 0)
                 {
                     return parts[index].Center;
@@ -248,36 +174,9 @@ namespace BarPromenade
             return yard.Access.Center + yard.Access.OutwardNormal * 10f;
         }
 
-        private static List<Vector2> CreateCandidateOffsets(
-            CityFringeYardPlan plan,
-            CityFringeYardDescriptor yard,
-            Vector3 size)
+        private static List<Vector2> CreateCandidateOffsets()
         {
-            var result = new List<Vector2>(16);
-            if (yard.Kind == CityFringeYardKind.SouthTunnelForecourt)
-            {
-                float side = plan.TunnelForecourt.DriveClearWidth * 0.5f +
-                    size.x * 0.5f + RouteClearance + 0.45f;
-                result.Add(new Vector2(side, 0f));
-                result.Add(new Vector2(-side, 0f));
-                result.Add(new Vector2(side + 2.2f, -2.0f));
-                result.Add(new Vector2(-side - 2.2f, -2.0f));
-                result.Add(new Vector2(side + 3.8f, 2.4f));
-                result.Add(new Vector2(-side - 3.8f, 2.4f));
-                return result;
-            }
-
-            if (yard.Kind == CityFringeYardKind.EastUtilityEdge)
-            {
-                result.Add(new Vector2(0f, -10f));
-                result.Add(new Vector2(9f, -9f));
-                result.Add(new Vector2(-9f, -9f));
-                result.Add(new Vector2(15f, -12f));
-                result.Add(new Vector2(-15f, -12f));
-                result.Add(new Vector2(0f, -17f));
-                return result;
-            }
-
+            var result = new List<Vector2>(8);
             result.Add(new Vector2(4.8f, -2.6f));
             result.Add(new Vector2(-4.8f, -2.6f));
             result.Add(new Vector2(7.2f, 0f));
@@ -376,7 +275,7 @@ namespace BarPromenade
                 maximum + GroundLift + size.y * 0.5f,
                 position.z);
             result = new CityFringeYardPartDescriptor(
-                $"{yard.AreaId}-courtyard-life-{KindSlug(kind)}",
+                $"{yard.AreaId}-courtyard-life-mason-cart",
                 yard.AreaId,
                 kind,
                 style,
@@ -471,32 +370,11 @@ namespace BarPromenade
                    left.yMax > right.yMin + epsilon;
         }
 
-        private static string KindSlug(CityFringeYardPartKind kind)
-        {
-            switch (kind)
-            {
-                case CityFringeYardPartKind.MasonCart:
-                    return "mason-cart";
-                case CityFringeYardPartKind.WinchServiceSet:
-                    return "winch-service";
-                case CityFringeYardPartKind.TunnelServiceSet:
-                    return "tunnel-service";
-                case CityFringeYardPartKind.FloodMaintenanceSet:
-                    return "flood-maintenance";
-                case CityFringeYardPartKind.OpenHoodCar:
-                    return "open-hood-car";
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(kind),
-                        kind,
-                        null);
-            }
-        }
     }
 
     internal static class CityFringeYardLifeValidator
     {
-        public const int ExpectedSceneCount = 5;
+        public const int ExpectedSceneCount = 1;
         private const float GroundTolerance = 0.22f;
 
         public static void ValidateOrThrow(
@@ -520,7 +398,8 @@ namespace BarPromenade
                  yardIndex++)
             {
                 CityFringeYardDescriptor yard = plan.Yards[yardIndex];
-                CityFringeYardPartKind expected = ExpectedKind(yard.Kind);
+                bool expectsCart =
+                    yard.Kind == CityFringeYardKind.WestStoneTerraces;
                 int yardCount = 0;
                 for (int partIndex = 0;
                      partIndex < yard.Parts.Count;
@@ -535,7 +414,8 @@ namespace BarPromenade
 
                     count++;
                     yardCount++;
-                    if (part.Kind != expected ||
+                    if (!expectsCart ||
+                        part.Kind != CityFringeYardPartKind.MasonCart ||
                         !part.BlocksMovement ||
                         !ids.Add(part.StableId) ||
                         part.Footprint.Overlaps(yard.Access.ApproachBounds) ||
@@ -564,52 +444,25 @@ namespace BarPromenade
                     }
                 }
 
-                if (yardCount != 1)
+                int expectedYardCount = expectsCart ? 1 : 0;
+                if (yardCount != expectedYardCount)
                 {
                     throw new InvalidOperationException(
-                        $"Fringe Yard '{yard.AreaId}' requires exactly one " +
-                        "human-scale life scene.");
+                        $"Fringe Yard '{yard.AreaId}' requires exactly " +
+                        $"{expectedYardCount} mason-cart scenes.");
                 }
             }
 
             if (count != ExpectedSceneCount)
             {
                 throw new InvalidOperationException(
-                    $"The default fringe requires exactly " +
-                    $"{ExpectedSceneCount} life scenes.");
+                    "The default fringe requires exactly one mason cart.");
             }
         }
 
         public static bool IsLifeKind(CityFringeYardPartKind kind)
         {
-            return kind == CityFringeYardPartKind.MasonCart ||
-                   kind == CityFringeYardPartKind.WinchServiceSet ||
-                   kind == CityFringeYardPartKind.TunnelServiceSet ||
-                   kind == CityFringeYardPartKind.FloodMaintenanceSet ||
-                   kind == CityFringeYardPartKind.OpenHoodCar;
-        }
-
-        private static CityFringeYardPartKind ExpectedKind(
-            CityFringeYardKind kind)
-        {
-            switch (kind)
-            {
-                case CityFringeYardKind.WestStoneTerraces:
-                    return CityFringeYardPartKind.MasonCart;
-                case CityFringeYardKind.WestIndustrialBelt:
-                    return CityFringeYardPartKind.WinchServiceSet;
-                case CityFringeYardKind.SouthTunnelForecourt:
-                    return CityFringeYardPartKind.TunnelServiceSet;
-                case CityFringeYardKind.SouthFloodWorks:
-                    return CityFringeYardPartKind.FloodMaintenanceSet;
-                case CityFringeYardKind.EastUtilityEdge:
-                    return CityFringeYardPartKind.OpenHoodCar;
-                default:
-                    throw new ArgumentOutOfRangeException(
-                        nameof(kind),
-                        kind,
-                        null);
-            }
+            return kind == CityFringeYardPartKind.MasonCart;
         }
 
         private static bool TrySampleOwnerGround(

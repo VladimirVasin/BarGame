@@ -81,6 +81,7 @@ namespace BarPromenade
         public CityNightAtmosphere ExteriorLighting { get; private set; }
         public CityPedestrianDirector Pedestrians { get; private set; }
         public Volume CityPostProcessVolume { get; private set; }
+        public ExteriorCloudField Clouds { get; private set; }
         public VolumeProfile RuntimeCityProfile => runtimeCityProfile;
 
         public void Initialize(
@@ -139,6 +140,7 @@ namespace BarPromenade
                 exteriorNight,
                 exteriorContext,
                 lightingFocus);
+            BuildExteriorClouds(citySeed);
             BuildCityPostProcessVolume();
             CityWetSurfaceRegistry.InitializeOrResume(
                 CityEternalRainShaper.FloorIntensity(
@@ -356,6 +358,24 @@ namespace BarPromenade
             RainField.SetLocalShelters(new[] { RainShelter });
         }
 
+        private void BuildExteriorClouds(int citySeed)
+        {
+            Vector3 cityForwardInHome =
+                PlayerHomeBalconyGeometry.ToHomeLocalDirection(
+                    homeLot,
+                    Vector3.forward);
+            Quaternion canonicalFrame = Quaternion.LookRotation(
+                cityForwardInHome.normalized,
+                Vector3.up);
+            Clouds = ExteriorCloudField.Create(
+                transform,
+                targetCamera,
+                ExteriorCloudProfiles.City,
+                citySeed,
+                canonicalFrame);
+            Clouds.SetVisible(false);
+        }
+
         /// <summary>
         /// The hero's own building, as a volume rain dies in. The field is
         /// born on the facade plane, but the wind carries live streaks
@@ -480,6 +500,7 @@ namespace BarPromenade
                 }
                 FogField.FogRenderer.enabled = true;
                 RainField.RainRenderer.enabled = true;
+                Clouds.SetVisible(true);
                 CityPostProcessVolume.weight = 1f;
                 IsBalconyVisibilityActive = true;
                 SetPedestriansActive(true);
@@ -489,6 +510,7 @@ namespace BarPromenade
             SetPedestriansActive(false);
             FogField.FogRenderer.enabled = false;
             RainField.RainRenderer.enabled = false;
+            Clouds.SetVisible(false);
             ThunderSound.StopAll();
             SetExteriorLightingEnabled(false);
             CityPostProcessVolume.weight = 0f;
@@ -530,6 +552,10 @@ namespace BarPromenade
                 RainField.RainRenderer != null)
             {
                 RainField.RainRenderer.enabled = false;
+            }
+            if (Clouds != null)
+            {
+                Clouds.SetVisible(false);
             }
             if (RainSound != null)
             {

@@ -1,0 +1,87 @@
+{
+  "generator": "tools/build-exterior-cloud-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "design_id": "exterior_cloud_dome_v1",
+  "display_name": "Exterior Cloud Dome",
+  "seed": 790741,
+  "mesh_name": "GEO_ExteriorCloudDome",
+  "mesh_count": 1,
+  "vertex_count": 121,
+  "triangle_count": 220,
+  "triangle_budget": [
+    180,
+    260
+  ],
+  "unit_radius_m": 1.0,
+  "azimuth_segments": 20,
+  "ring_count": 6,
+  "bounds_source_min": [
+    -1.0,
+    -1.0,
+    0.0
+  ],
+  "bounds_source_max": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "bounds_unity_min": [
+    -1.0,
+    0.0,
+    -1.0
+  ],
+  "bounds_unity_max": [
+    1.0,
+    1.0,
+    1.0
+  ],
+  "uv_contract": "planar_disk_source_xy",
+  "source_axes": {
+    "right": "+X",
+    "forward": "+Y",
+    "up": "+Z"
+  },
+  "unity_axes": {
+    "right": "+X",
+    "forward": "+Z",
+    "up": "+Y",
+    "fbx_axis_forward": "-Z",
+    "fbx_axis_up": "Y",
+    "bake_space_transform": true
+  },
+  "texture_file": "ExteriorCloudDensity.png",
+  "texture_size": 256,
+  "texture_sha256": "cfbcb79a376c2d3985e43bf1251991cb8892d04600e09919bd419e1959ebda1b",
+  "texture_linear_data": true,
+  "texture_channels": [
+    {
+      "name": "broad",
+      "minimum": 28,
+      "maximum": 234,
+      "mean": 136.566895,
+      "seam_ratio": 0.035937
+    },
+    {
+      "name": "detail",
+      "minimum": 10,
+      "maximum": 238,
+      "mean": 133.910782,
+      "seam_ratio": 0.092622
+    },
+    {
+      "name": "erosion",
+      "minimum": 23,
+      "maximum": 255,
+      "mean": 104.126099,
+      "seam_ratio": 0.090722
+    }
+  ],
+  "colliders": false,
+  "rigidbodies": false,
+  "lights": false,
+  "cameras": false,
+  "animation_count": 0,
+  "imported_materials": false,
+  "build_signature": "5df1fb602ff051022ae109421a6cdcb1024434e89e3b3510290af0ecc3c28683"
+}

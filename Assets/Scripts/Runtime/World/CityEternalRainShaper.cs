@@ -50,6 +50,21 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// The decree reaches the asphalt too. The street film is the one
+        /// simulation the city and the home balcony share, and in the city
+        /// it must never read drier than the drizzle: fed the raw schedule
+        /// a "Clear" slot dried it to nothing in half a minute, and a
+        /// puddle at zero wetness is pixel-equal to the road it lies on -
+        /// the whole city lost its puddles for 55% of its slots. The
+        /// slopes between drizzle and downpour still wet and dry at the
+        /// registry's own rates.
+        /// </summary>
+        public float ShapeSurfaceWetness(WeatherVisualSample sample)
+        {
+            return FloorIntensity(sample.RainIntensity);
+        }
+
+        /// <summary>
         /// The wind is not decreed. A drizzle in near-calm air is a real
         /// state of this sky; the heavier slots bring their own wind with
         /// them, exactly as before.

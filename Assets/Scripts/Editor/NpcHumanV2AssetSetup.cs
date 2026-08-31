@@ -18,6 +18,7 @@ namespace BarPromenade.Editor
         public static bool IsAnyPipelineBuilding =>
             isBuilding ||
             CityPedestrianAssetSetup.IsBuilding ||
+            CityArchShelterResidentAssetSetup.IsBuilding ||
             MountainRoadCafeCastAssetSetup.IsBuilding ||
             BarBartenderAssetSetup.IsBuilding ||
             SupermarketCashierAssetSetup.IsBuilding ||
@@ -36,6 +37,7 @@ namespace BarPromenade.Editor
             try
             {
                 CityPedestrianAssetSetup.BuildOrThrow();
+                CityArchShelterResidentAssetSetup.BuildOrThrow();
                 MountainRoadCafeCastAssetSetup.BuildOrThrow();
                 BarBartenderAssetSetup.BuildOrThrow();
                 SupermarketCashierAssetSetup.BuildOrThrow();
@@ -43,6 +45,7 @@ namespace BarPromenade.Editor
                 CityMiscAssetSetup.BuildOrThrow();
 
                 CityPedestrianAssetSetup.ValidateOrThrow();
+                CityArchShelterResidentAssetSetup.ValidateOrThrow();
                 MountainRoadCafeCastAssetSetup.ValidateOrThrow();
                 BarBartenderAssetSetup.ValidateOrThrow();
                 SupermarketCashierAssetSetup.ValidateOrThrow();
@@ -51,8 +54,8 @@ namespace BarPromenade.Editor
 
                 AssetDatabase.SaveAssets();
                 Debug.Log(
-                    "NPC Human V2: all rigged NPC prefabs and static " +
-                    "shelter resident assets were rebuilt and validated.");
+                    "NPC Human V2: all rigged NPC prefabs, including the " +
+                    "arch-shelter residents, were rebuilt and validated.");
             }
             finally
             {

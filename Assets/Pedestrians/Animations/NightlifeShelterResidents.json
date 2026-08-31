@@ -1,0 +1,148 @@
+{
+  "generator": "tools/build-city-pedestrian-3d-model.py",
+  "generator_version": "4.2.0",
+  "blender_version": "5.0.1",
+  "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
+  "anatomy_standard": "NpcHumanV2",
+  "rest_pelvis_height_m": 0.835,
+  "bone_count": 31,
+  "fps": 24,
+  "root_motion": false,
+  "mesh_count": 0,
+  "clip_count": 3,
+  "clips": [
+    {
+      "name": "ShelterStandingWarm",
+      "archetype": "nightlife_shelter_standing_resident_v2",
+      "duration_seconds": 8.0,
+      "frame_start": 0,
+      "frame_end": 192,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary adult standing close to the barrel, shoulders rounded and palms held toward the heat",
+      "gait": "slow asymmetric weight transfer, two hand-warming corrections and a quiet breath",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.402127,
+        -0.203799
+      ],
+      "animated_local_xz_max_m": [
+        0.427057,
+        0.312813
+      ],
+      "animated_local_xz_size_m": [
+        0.829184,
+        0.516612
+      ]
+    },
+    {
+      "name": "ShelterSeatedWarm",
+      "archetype": "nightlife_shelter_seated_resident_v2",
+      "duration_seconds": 9.0,
+      "frame_start": 0,
+      "frame_end": 216,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary adult sitting low beside the barrel with knees drawn and forearms over them",
+      "gait": "uneven breathing, a small shoulder settle and one closer reach toward the heat",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "floor_seated": true,
+      "floor_support_min_m": 0.006437,
+      "floor_seated_hip_contact_min_m": 0.017474,
+      "floor_seated_hip_contact_max_m": 0.020315,
+      "floor_seated_boot_contact_min_m": 0.006437,
+      "floor_seated_boot_contact_max_m": 0.012376,
+      "floor_seated_min_boot_separation_m": 0.221363,
+      "seated_drop_m": 0.045757,
+      "animated_local_xz_min_m": [
+        -0.415959,
+        -0.180269
+      ],
+      "animated_local_xz_max_m": [
+        0.414694,
+        0.470754
+      ],
+      "animated_local_xz_size_m": [
+        0.830653,
+        0.651023
+      ]
+    },
+    {
+      "name": "ShelterSleeperBreath",
+      "archetype": "nightlife_shelter_sleeping_resident_v2",
+      "duration_seconds": 10.0,
+      "frame_start": 0,
+      "frame_end": 240,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary adult curled on the mattress under a heavy patched blanket",
+      "gait": "barely visible chest and shoulder breathing with one small sleeping hand settle",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "lying": true,
+      "mattress_min_m": 0.004946,
+      "mattress_max_contact_gap_m": 0.008227,
+      "lying_height_min_m": 0.576041,
+      "lying_height_max_m": 0.595058,
+      "lying_pelvis_height_min_m": 0.295578,
+      "lying_pelvis_height_max_m": 0.295578,
+      "animated_local_xz_min_m": [
+        -0.638202,
+        -0.332335
+      ],
+      "animated_local_xz_max_m": [
+        0.609617,
+        0.332117
+      ],
+      "animated_local_xz_size_m": [
+        1.247819,
+        0.664452
+      ],
+      "mattress_footprint_m": [
+        1.89618,
+        0.83633
+      ],
+      "mattress_yaw_degrees": 0.0,
+      "animated_mattress_xz_min_m": [
+        -0.638202,
+        -0.332335
+      ],
+      "animated_mattress_xz_max_m": [
+        0.609617,
+        0.332117
+      ],
+      "mattress_used_half_extents_m": [
+        0.638202,
+        0.332335
+      ],
+      "mattress_clearance_m": [
+        0.309888,
+        0.08583
+      ]
+    }
+  ],
+  "build_signature": "bb6d02e6f65839272e0ab825570deb5993fc3317ac69dcb1fd9bb8f56cc888f9"
+}

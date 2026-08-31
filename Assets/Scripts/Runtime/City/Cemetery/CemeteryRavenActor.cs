@@ -434,36 +434,68 @@ namespace BarPromenade
                     ravenRight);
             head.localRotation = headDelta * headRest.Rotation;
 
-            // Wings: the folded slabs point tail-ward, and a deploy
-            // yaws each tip outward about the vertical through its
-            // shoulder — from "behind" toward "that wing's side" is
+            // Wings: the fold yaws each slab outward about the
+            // vertical — from "behind" toward "that wing's side" is
             // +up for the left wing and -up for the right, whatever
-            // the bird faces, because both directions turn with it.
-            // The flap beats the rigid plane about the bird's long
-            // axis; lifting a tip means -forward for the left wing
-            // and +forward for the right, by the same argument.
+            // the bird faces — and the flap beats the DEPLOYED plane
+            // about the bird's long axis (-forward lifts the left
+            // tip, +forward the right). Two truths of the authored
+            // geometry shape the writes below, and both were playtest
+            // findings rather than style:
+            //
+            // ORDER — the flap composes OUTSIDE the fold. Composed
+            // inside it, the beat turned the still-folded slab about
+            // its own length (the slab lies along the flank, parallel
+            // to the flap axis), an invisible roll of millimetres:
+            // the shipped birds flew away with wings that never beat.
+            //
+            // HINGE — the authored empty sits at the slab's
+            // mid-length, so a bare rotation about it pinwheels the
+            // wing in place and the silhouette never widens. The
+            // anatomical hinge is the slab's LEADING end, one
+            // shoulder-lead ahead of the empty; each write is that
+            // shoulder rotation re-expressed about the empty — the
+            // rotation part unchanged, plus the translation it
+            // induces on the empty (delta * d - d, d running
+            // shoulder-to-empty), so the wing root stays planted on
+            // the flank while the tip actually travels.
+            Vector3 shoulderToPivot =
+                -ravenForward *
+                CemeteryRavenPoseRules.WingShoulderLeadMeters;
             Transform wingLeft = anchors.WingLeftPivot;
-            wingLeft.localRotation =
-                ParentSpaceRotation(
-                    wingLeft,
-                    pose.WingFoldLeftDegrees,
-                    Vector3.up) *
-                ParentSpaceRotation(
-                    wingLeft,
+            Quaternion wingLeftDelta =
+                Quaternion.AngleAxis(
                     -pose.WingFlapLeftDegrees,
                     ravenForward) *
+                Quaternion.AngleAxis(
+                    pose.WingFoldLeftDegrees,
+                    Vector3.up);
+            wingLeft.localRotation =
+                ParentSpaceDelta(wingLeft, wingLeftDelta) *
                 wingLeftRest.Rotation;
+            wingLeft.localPosition =
+                wingLeftRest.Position +
+                ParentSpaceVector(
+                    wingLeft,
+                    wingLeftDelta * shoulderToPivot -
+                    shoulderToPivot);
             Transform wingRight = anchors.WingRightPivot;
-            wingRight.localRotation =
-                ParentSpaceRotation(
-                    wingRight,
-                    -pose.WingFoldRightDegrees,
-                    Vector3.up) *
-                ParentSpaceRotation(
-                    wingRight,
+            Quaternion wingRightDelta =
+                Quaternion.AngleAxis(
                     pose.WingFlapRightDegrees,
                     ravenForward) *
+                Quaternion.AngleAxis(
+                    -pose.WingFoldRightDegrees,
+                    Vector3.up);
+            wingRight.localRotation =
+                ParentSpaceDelta(wingRight, wingRightDelta) *
                 wingRightRest.Rotation;
+            wingRight.localPosition =
+                wingRightRest.Position +
+                ParentSpaceVector(
+                    wingRight,
+                    wingRightDelta * shoulderToPivot -
+                    shoulderToPivot);
 
             // Tail: it extends tail-ward, so a positive turn about
             // the bird's right axis carries the tip UP — which is
@@ -491,6 +523,28 @@ namespace BarPromenade
                 ? target.parent.InverseTransformDirection(worldAxis)
                 : worldAxis;
             return Quaternion.AngleAxis(degrees, axis);
+        }
+
+        /// <summary>
+        /// A world-space delta rotation re-expressed in the target's
+        /// parent space so it can pre-multiply a cached rest rotation
+        /// — the sibling of <see cref="ParentSpaceRotation"/> for
+        /// deltas already composed of several axes, where converting
+        /// each axis separately would re-order the product.
+        /// </summary>
+        private static Quaternion ParentSpaceDelta(
+            Transform target,
+            Quaternion worldDelta)
+        {
+            if (target.parent == null)
+            {
+                return worldDelta;
+            }
+
+            Quaternion parentRotation = target.parent.rotation;
+            return Quaternion.Inverse(parentRotation) *
+                worldDelta *
+                parentRotation;
         }
 
         private static Vector3 ParentSpaceVector(

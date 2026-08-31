@@ -34,7 +34,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "4.1.0"
+GENERATOR_VERSION = "4.2.0"
 CANONICAL_HEIGHT = 1.75
 NPC_ANATOMY_STANDARD = "NpcHumanV2"
 NPC_PELVIS_HEIGHT = 0.835
@@ -45,6 +45,9 @@ SHARED_MATERIAL_NAME = "MAT_Player3DLit"
 ANIMATION_FPS = 24
 ANIMATION_SOURCE = "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx"
 CAFE_ANIMATION_SOURCE = "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx"
+SHELTER_ANIMATION_SOURCE = (
+    "Assets/Pedestrians/Animations/NightlifeShelterResidents.fbx"
+)
 PIPEBACK_PIVOT_NAMES = (
     "PIVOT_Wheel.L",
     "PIVOT_Wheel.R",
@@ -89,6 +92,15 @@ DETAIL_ATLAS_GROOVE = (165, 165, 165, 255)
 DETAIL_ATLAS_LACE = (120, 120, 120, 255)
 DETAIL_ATLAS_CHIP = (80, 80, 80, 255)
 KETTLE_DETAIL_ATLAS_NAME = "KettleHatDetailAtlas.png"
+SHELTER_STANDING_DETAIL_ATLAS_NAME = (
+    "NightlifeShelterStandingResident3DDetailAtlas.png"
+)
+SHELTER_SEATED_DETAIL_ATLAS_NAME = (
+    "NightlifeShelterSeatedResident3DDetailAtlas.png"
+)
+SHELTER_SLEEPING_DETAIL_ATLAS_NAME = (
+    "NightlifeShelterSleepingResident3DDetailAtlas.png"
+)
 # Lightweight-part gate for every design that goes through validate_result.
 # The ceiling rose from 52 to 60 for the Kettle Hat Walker's hands, boots
 # and cloth details; the floor keeps a design from being one blob.
@@ -177,6 +189,88 @@ KETTLE_RIG_ANCHORS = (
         axis_from="ACC_KettleSpout",
     ),
 )
+
+
+def shelter_atlas_regions(
+    *,
+    chest: str,
+    waist: str,
+    hem_left: str,
+    hem_right: str,
+    cuff_left: str,
+    cuff_right: str,
+    boot_left: str,
+    boot_right: str,
+    hand_left: str,
+    hand_right: str,
+    head: str,
+    headwear: str,
+) -> tuple[AtlasRegion, ...]:
+    """Return the common 12-cell garment/face atlas layout.
+
+    The three residents share a texel density and import contract, not a
+    texture.  Each role paints its own sheet and names its own renderers; the
+    repeated layout only keeps all three equally detailed and easy to audit.
+    """
+
+    return (
+        AtlasRegion("CoatChest", chest, 0, 192, 64, 64, "box"),
+        AtlasRegion("CoatWaist", waist, 64, 192, 64, 64, "box"),
+        AtlasRegion("Cuff.L", cuff_left, 128, 192, 64, 64, "ring", 10, 2),
+        AtlasRegion("Cuff.R", cuff_right, 192, 192, 64, 64, "ring", 10, 2),
+        AtlasRegion("CoatHem.L", hem_left, 0, 128, 64, 64, "box"),
+        AtlasRegion("CoatHem.R", hem_right, 64, 128, 64, 64, "box"),
+        AtlasRegion("Headwear", headwear, 128, 128, 64, 64, "box"),
+        AtlasRegion("Face", head, 192, 128, 64, 64, "ellipsoid", 14, 7),
+        AtlasRegion("Boot.L", boot_left, 0, 64, 64, 64, "box"),
+        AtlasRegion("Boot.R", boot_right, 64, 64, 64, 64, "box"),
+        AtlasRegion("Hand.L", hand_left, 128, 64, 64, 64, "ellipsoid", 10, 5),
+        AtlasRegion("Hand.R", hand_right, 192, 64, 64, 64, "ellipsoid", 10, 5),
+    )
+
+
+SHELTER_STANDING_ATLAS_REGIONS = shelter_atlas_regions(
+    chest="CLO_Chest",
+    waist="CLO_Waist",
+    hem_left="CLO_CoatSkirt.L",
+    hem_right="CLO_CoatSkirt.R",
+    cuff_left="CLO_Cuff.L",
+    cuff_right="CLO_Cuff.R",
+    boot_left="GEO_Boot.L",
+    boot_right="GEO_Boot.R",
+    hand_left="GEO_Glove.L",
+    hand_right="GEO_Glove.R",
+    head="GEO_Head",
+    headwear="ACC_KnitCapCrown",
+)
+SHELTER_SEATED_ATLAS_REGIONS = shelter_atlas_regions(
+    chest="CLO_QuiltedChest",
+    waist="CLO_QuiltedWaist",
+    hem_left="CLO_JacketTail.L",
+    hem_right="CLO_JacketTail.R",
+    cuff_left="CLO_Cuff.L",
+    cuff_right="CLO_Cuff.R",
+    boot_left="GEO_Boot.L",
+    boot_right="GEO_Boot.R",
+    hand_left="GEO_Glove.L",
+    hand_right="GEO_Glove.R",
+    head="GEO_Head",
+    headwear="ACC_HoodCrown",
+)
+SHELTER_SLEEPING_ATLAS_REGIONS = shelter_atlas_regions(
+    chest="CLO_BlanketChest",
+    waist="CLO_BlanketWaist",
+    hem_left="CLO_BlanketHip.L",
+    hem_right="CLO_BlanketHip.R",
+    cuff_left="CLO_Cuff.L",
+    cuff_right="CLO_Cuff.R",
+    boot_left="GEO_Boot.L",
+    boot_right="GEO_Boot.R",
+    hand_left="GEO_Glove.L",
+    hand_right="GEO_Glove.R",
+    head="GEO_Head",
+    headwear="ACC_WoolCapCrown",
+)
 CAFE_ATTENDANT_RIG_ANCHORS = (
     RigAnchorSpec(
         "SOCKET_CafePotSpout",
@@ -234,6 +328,12 @@ class ArchetypeSpec:
     # every seated clip is still proved against exactly one band, and a
     # clip that cannot name its band is still an error.
     perch_seat_height_m: tuple[float, float] | None = None
+    # A third, deliberately separate support case: a person seated directly
+    # on the world floor.  The band is the allowed all-frame height of the
+    # lowest pelvis-bound coat/hip mesh above that plane.  It is not a zero-
+    # height perch: both the hips and both boots must independently touch the
+    # same floor, and no deformed part may pass through it.
+    floor_seated_contact_m: tuple[float, float] | None = None
     # How far anything may hang below a seated pelvis before it is through
     # the floor. This is a property of the VEHICLE, not of the sitter, and
     # the two vehicles in the game do not agree: Route 01 seats a passenger
@@ -266,6 +366,19 @@ class ArchetypeSpec:
     # ensemble may own a smaller animation-only FBX instead, keeping its
     # highly specific poses out of the ambient pedestrian import contract.
     animation_source: str = ANIMATION_SOURCE
+    # A resident sleeping on a world mattress is neither grounded on footwear
+    # nor seated on a cushion.  This band describes the permitted vertical
+    # thickness of the fully deformed figure above the mattress plane; the
+    # lying validator separately proves that its lowest mesh stays on that
+    # plane throughout the loop.
+    lying_height_m: tuple[float, float] | None = None
+    # Optional mattress footprint contract as (width_x_m, length_z_m,
+    # yaw_degrees).  The sleeper is placed at the mattress centre by the City
+    # plan, so every evaluated vertex must remain inside this rotated XZ
+    # rectangle.  This is deliberately a deformed-animation check rather than
+    # a rest-pose manifest bound: the City test evaluates each resident at a
+    # seed-derived phase.
+    lying_footprint_m: tuple[float, float, float] | None = None
     # Visible departures from the believable shared human substrate. These
     # are canon overlays, not validation failures: the story and art bibles
     # require the named silhouettes to remain abnormal in exactly these ways.
@@ -512,6 +625,71 @@ ARCHETYPES = {
         perch_seat_height_m=(0.53, 0.55),
         action_clip="CheckersJeer",
     ),
+    # The three ordinary adults living in the dry service pocket beneath the
+    # Nightlife inter-building arch. They are one silent fixed tableau, not
+    # ambient pedestrians. Each owns one long bone-driven loop in a dedicated
+    # library and one independent 256 px cloth-detail atlas. The repeated clip
+    # name in both slots is deliberate: this staged one-clip contract does not
+    # invent locomotion the residents never perform.
+    "shelter_standing_resident": ArchetypeSpec(
+        "shelter_standing_resident",
+        "nightlife_shelter_standing_resident_v2",
+        "Nightlife Shelter Standing Resident",
+        1549037,
+        "NightlifeShelterStandingResident3D.blend",
+        "NightlifeShelterStandingResident3D",
+        "NightlifeShelterStandingResident3D.png",
+        "ShelterStandingWarm",
+        "ShelterStandingWarm",
+        (1500, 2200),
+        staged=True,
+        pool_eligible=False,
+        animation_source=SHELTER_ANIMATION_SOURCE,
+        texture_atlas=SHELTER_STANDING_DETAIL_ATLAS_NAME,
+        texture_regions=SHELTER_STANDING_ATLAS_REGIONS,
+    ),
+    "shelter_seated_resident": ArchetypeSpec(
+        "shelter_seated_resident",
+        "nightlife_shelter_seated_resident_v2",
+        "Nightlife Shelter Seated Resident",
+        1601741,
+        "NightlifeShelterSeatedResident3D.blend",
+        "NightlifeShelterSeatedResident3D",
+        "NightlifeShelterSeatedResident3D.png",
+        "ShelterSeatedWarm",
+        "ShelterSeatedWarm",
+        (1500, 2200),
+        staged=True,
+        pool_eligible=False,
+        animation_source=SHELTER_ANIMATION_SOURCE,
+        floor_seated_contact_m=(-0.005, 0.025),
+        texture_atlas=SHELTER_SEATED_DETAIL_ATLAS_NAME,
+        texture_regions=SHELTER_SEATED_ATLAS_REGIONS,
+    ),
+    "shelter_sleeping_resident": ArchetypeSpec(
+        "shelter_sleeping_resident",
+        "nightlife_shelter_sleeping_resident_v2",
+        "Nightlife Shelter Sleeping Resident",
+        1662863,
+        "NightlifeShelterSleepingResident3D.blend",
+        "NightlifeShelterSleepingResident3D",
+        "NightlifeShelterSleepingResident3D.png",
+        "ShelterSleeperBreath",
+        "ShelterSleeperBreath",
+        (1500, 2200),
+        staged=True,
+        pool_eligible=False,
+        animation_source=SHELTER_ANIMATION_SOURCE,
+        lying_height_m=(0.28, 0.60),
+        # The imported bedding's actual upper mattress surface is long on
+        # prefab-local X.  Its generated source measures 1.89618 x 0.83633 m;
+        # the resident root is aligned to that local frame by the City setup.
+        # Validate the deformed rig against the visible support, not against
+        # the older declarative 1.20 x 2.15 obstacle proxy.
+        lying_footprint_m=(1.89618, 0.83633, 0.0),
+        texture_atlas=SHELTER_SLEEPING_DETAIL_ATLAS_NAME,
+        texture_regions=SHELTER_SLEEPING_ATLAS_REGIONS,
+    ),
     # The four figures inside the Mountain Road terminal cafe are one silent
     # authored tableau rather than an ambient pedestrian population. Each
     # design stays outside Resources and owns only its long idle plus one
@@ -570,6 +748,12 @@ CAFE_CAST_KEYS = (
     "cafe_couple_man",
     "cafe_couple_woman",
     "cafe_attendant",
+)
+
+SHELTER_RESIDENT_KEYS = (
+    "shelter_standing_resident",
+    "shelter_seated_resident",
+    "shelter_sleeping_resident",
 )
 
 
@@ -643,6 +827,10 @@ class ActionSpec:
     # cross in and out of it without a seam - which the key grid states
     # by reusing those pose functions rather than re-typing numbers.
     one_shot: bool = False
+    # A mattress-supported loop is sampled against the mattress plane and its
+    # declared deformed-height band. It must not be footwear-baked or passed
+    # through the seated/cabin contracts.
+    lying: bool = False
 
 
 @dataclass(frozen=True)
@@ -878,6 +1066,29 @@ PALETTE = {
     "checkers_skin": (0.352, 0.248, 0.192, 1.0),
     "checkers_grey": (0.372, 0.368, 0.352, 1.0),
     "checkers_boot": (0.046, 0.043, 0.038, 1.0),
+    # Nightlife arch shelter residents. Firelight supplies the warmth; their
+    # clothing stays in quiet worn municipal browns, blue-grey and charcoal.
+    # No colour is a marker, uniform, logo or copied player signature.
+    "shelter_brown": (0.125, 0.092, 0.070, 1.0),
+    "shelter_brown_light": (0.190, 0.142, 0.104, 1.0),
+    "shelter_brown_dark": (0.058, 0.045, 0.038, 1.0),
+    "shelter_bluegrey": (0.102, 0.122, 0.130, 1.0),
+    "shelter_bluegrey_light": (0.162, 0.185, 0.190, 1.0),
+    "shelter_bluegrey_dark": (0.046, 0.057, 0.062, 1.0),
+    "shelter_blanket": (0.150, 0.125, 0.105, 1.0),
+    "shelter_blanket_light": (0.205, 0.176, 0.145, 1.0),
+    "shelter_blanket_dark": (0.078, 0.066, 0.058, 1.0),
+    "shelter_trousers": (0.060, 0.064, 0.064, 1.0),
+    "shelter_wool": (0.118, 0.104, 0.090, 1.0),
+    "shelter_wool_light": (0.190, 0.165, 0.135, 1.0),
+    "shelter_skin_a": (0.395, 0.278, 0.205, 1.0),
+    "shelter_skin_b": (0.335, 0.235, 0.180, 1.0),
+    "shelter_skin_c": (0.430, 0.315, 0.245, 1.0),
+    "shelter_skin_shadow": (0.165, 0.108, 0.080, 1.0),
+    "shelter_beard": (0.118, 0.108, 0.100, 1.0),
+    "shelter_boot": (0.040, 0.036, 0.032, 1.0),
+    "shelter_boot_wear": (0.095, 0.078, 0.060, 1.0),
+    "shelter_patch": (0.225, 0.172, 0.118, 1.0),
     # Mountain Road cafe cast. The glass room is lit in sulphur yellow and
     # dead cyan, so the figures separate by value before hue: three patrons
     # remain dark, the woman carries the sole red mass and the attendant is
@@ -1148,6 +1359,14 @@ def parse_args() -> argparse.Namespace:
         help=(
             "Build only the four Mountain Road cafe models plus their "
             "dedicated eight-clip animation library."
+        ),
+    )
+    parser.add_argument(
+        "--shelter-residents",
+        action="store_true",
+        help=(
+            "Build only the three Nightlife arch shelter residents plus "
+            "their dedicated three-clip animation library."
         ),
     )
     parser.add_argument("--no-preview", action="store_true")
@@ -1449,6 +1668,18 @@ class PedestrianBuilder:
             "park_checkers_player": (
                 self.build_park_checkers_player_body,
                 self.build_park_checkers_player_details,
+            ),
+            "shelter_standing_resident": (
+                self.build_shelter_standing_body,
+                self.build_shelter_standing_details,
+            ),
+            "shelter_seated_resident": (
+                self.build_shelter_seated_body,
+                self.build_shelter_seated_details,
+            ),
+            "shelter_sleeping_resident": (
+                self.build_shelter_sleeping_body,
+                self.build_shelter_sleeping_details,
             ),
             "cafe_lone_patron": (
                 self.build_cafe_lone_patron_body,
@@ -5868,6 +6099,470 @@ class PedestrianBuilder:
             "hand.R", "held_prop", "cafe_pot_dark",
         )
 
+    def build_shelter_adult_base(
+        self,
+        *,
+        chest_name: str,
+        waist_name: str,
+        hem_left_name: str,
+        hem_right_name: str,
+        headwear_name: str,
+        cloth: str,
+        cloth_light: str,
+        cloth_dark: str,
+        skin: str,
+        shoulder_width: float,
+        waist_width: float,
+        hand_scale: float,
+        include_thigh_hems: bool = True,
+    ) -> None:
+        """Hero-density ordinary adult shared only by the shelter trio.
+
+        The common measured body is intentionally unremarkable. Distinction
+        comes from layered, worn clothing and each role's authored posture,
+        never from abnormal anatomy or a copied hero signature.
+        """
+
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.038, 1.565), (0.102, 0.090, 0.137), 14, 7),
+            "head", "body", skin,
+        )
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between(
+                (0, -0.006, 1.322), (0, -0.024, 1.466), 0.066, 0.056, 12
+            ),
+            "neck", "body", skin,
+        )
+        self.add_part(
+            chest_name,
+            make_tapered_box(
+                (0, 0.010, 1.045), (0, -0.004, 1.340),
+                (waist_width, 0.225, 0), (shoulder_width, 0.250, 0),
+            ),
+            "chest", "clothing", cloth,
+        )
+        self.add_part(
+            waist_name,
+            make_tapered_box(
+                (0, 0.014, 0.825), (0, 0.010, 1.060),
+                (waist_width * 1.02, 0.230, 0),
+                (waist_width, 0.225, 0),
+            ),
+            "spine", "clothing", cloth_dark,
+        )
+        self.add_part(
+            "CLO_CoatSeat",
+            make_tapered_box(
+                (0, 0.016, 0.675), (0, 0.014, 0.840),
+                (waist_width * 1.04, 0.240, 0),
+                (waist_width * 1.02, 0.230, 0),
+            ),
+            "pelvis", "clothing", cloth_dark,
+        )
+
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            shoulder = (sign * shoulder_width * 0.49, 0.0, 1.305)
+            elbow = (sign * 0.470, -0.010, 1.178)
+            wrist = (sign * 0.682, -0.018, 1.075)
+            hand = (sign * 0.755, -0.022, 1.038)
+            self.add_part(
+                f"CLO_SleeveUpper.{side}",
+                make_frustum_between(shoulder, elbow, 0.078, 0.062, 12),
+                f"upper_arm.{side}", "clothing", cloth,
+            )
+            self.add_part(
+                f"CLO_SleeveLower.{side}",
+                make_frustum_between(elbow, wrist, 0.064, 0.046, 12),
+                f"forearm.{side}", "clothing", cloth_light,
+            )
+            self.add_part(
+                f"CLO_Cuff.{side}",
+                make_frustum_between(
+                    (sign * 0.615, -0.017, 1.112),
+                    (sign * 0.688, -0.020, 1.070),
+                    0.055, 0.048, 10,
+                ),
+                f"forearm.{side}", "clothing_detail", cloth_dark,
+            )
+            self.add_part(
+                f"GEO_Glove.{side}",
+                make_ellipsoid(
+                    tuple((v(wrist) + v(hand)) * 0.5),
+                    (0.047 * hand_scale, 0.036 * hand_scale, 0.061 * hand_scale),
+                    10, 5,
+                ),
+                f"hand.{side}", "body", "shelter_wool",
+            )
+            hip = (sign * 0.086, 0.008, 0.738)
+            knee = (sign * 0.103, -0.010, 0.356)
+            ankle = (sign * 0.111, -0.023, 0.105)
+            self.add_part(
+                f"CLO_Thigh.{side}",
+                make_frustum_between(hip, knee, 0.091, 0.070, 12),
+                f"thigh.{side}", "clothing", "shelter_trousers",
+            )
+            self.add_part(
+                f"CLO_Shin.{side}",
+                make_frustum_between(knee, ankle, 0.070, 0.054, 12),
+                f"shin.{side}", "clothing", "shelter_trousers",
+            )
+            self.add_part(
+                f"GEO_Boot.{side}",
+                make_tapered_box(
+                    (sign * 0.111, -0.088, 0.018),
+                    (sign * 0.111, -0.052, 0.155),
+                    (0.132, 0.258, 0), (0.112, 0.182, 0),
+                ),
+                f"foot.{side}", "body", "shelter_boot",
+            )
+            self.add_part(
+                f"GEO_Sole.{side}",
+                make_box((sign * 0.111, -0.090, 0.012), (0.138, 0.268, 0.024)),
+                f"foot.{side}", "footwear_detail", "sole",
+            )
+            if include_thigh_hems:
+                self.add_part(
+                    hem_left_name if side == "L" else hem_right_name,
+                    make_tapered_box(
+                        (sign * waist_width * 0.24, 0.012, 0.455),
+                        (sign * waist_width * 0.23, 0.012, 0.825),
+                        (waist_width * 0.58, 0.255, 0),
+                        (waist_width * 0.52, 0.232, 0),
+                    ),
+                    f"thigh.{side}", "clothing", cloth if side == "L" else cloth_dark,
+                )
+
+        # The atlas owns this crown. Each details pass adds a different brim,
+        # hood or fold around the same ordinary 1.75 m silhouette cap.
+        self.add_part(
+            headwear_name,
+            make_tapered_box(
+                (0, -0.004, 1.675), (0, -0.004, 1.750),
+                (0.206, 0.190, 0), (0.150, 0.144, 0),
+            ),
+            "head", "clothing", cloth_light,
+        )
+
+    def build_shelter_face(self, skin: str, shadow: str, beard: bool) -> None:
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"ACC_Eye.{side}",
+                make_box((sign * 0.041, -0.128, 1.585), (0.038, 0.014, 0.018)),
+                "head", "face_detail", shadow,
+            )
+            self.add_part(
+                f"ACC_Brow.{side}",
+                make_tapered_box(
+                    (sign * 0.046, -0.130, 1.618),
+                    (sign * 0.042, -0.130, 1.628),
+                    (0.072, 0.013, 0), (0.060, 0.012, 0),
+                ),
+                "head", "face_detail", shadow,
+            )
+            self.add_part(
+                f"GEO_Ear.{side}",
+                make_ellipsoid((sign * 0.104, -0.040, 1.575), (0.025, 0.017, 0.040), 8, 4),
+                "head", "body", skin,
+            )
+        self.add_part(
+            "ACC_Nose",
+            make_tapered_box(
+                (0, -0.146, 1.520), (0, -0.128, 1.570),
+                (0.043, 0.046, 0), (0.030, 0.036, 0),
+            ),
+            "head", "face_detail", skin,
+        )
+        self.add_part(
+            "ACC_Mouth",
+            make_box((0, -0.130, 1.486), (0.065, 0.014, 0.012)),
+            "head", "face_detail", shadow,
+        )
+        if beard:
+            self.add_part(
+                "ACC_BeardJaw",
+                make_ellipsoid((0, -0.094, 1.505), (0.096, 0.038, 0.088), 12, 6),
+                "head", "face_detail", "shelter_beard",
+            )
+            self.add_part(
+                "ACC_BeardChin",
+                make_tapered_box(
+                    (0, -0.111, 1.445), (0, -0.108, 1.500),
+                    (0.098, 0.035, 0), (0.078, 0.032, 0),
+                ),
+                "head", "face_detail", "shelter_beard",
+            )
+
+    def build_shelter_boot_details(self) -> None:
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"ACC_BootWelt.{side}",
+                make_frustum_between(
+                    (sign * 0.111, -0.198, 0.038),
+                    (sign * 0.111, -0.205, 0.080),
+                    0.060, 0.054, 10, 0.72,
+                ),
+                f"foot.{side}", "footwear_detail", "shelter_boot_wear",
+            )
+
+    def build_shelter_standing_body(self) -> None:
+        self.build_shelter_adult_base(
+            chest_name="CLO_Chest",
+            waist_name="CLO_Waist",
+            hem_left_name="CLO_CoatSkirt.L",
+            hem_right_name="CLO_CoatSkirt.R",
+            headwear_name="ACC_KnitCapCrown",
+            cloth="shelter_brown",
+            cloth_light="shelter_brown_light",
+            cloth_dark="shelter_brown_dark",
+            skin="shelter_skin_a",
+            shoulder_width=0.390,
+            waist_width=0.320,
+            hand_scale=1.00,
+        )
+
+    def build_shelter_standing_details(self) -> None:
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_Collar.{side}",
+                make_tapered_box(
+                    (sign * 0.073, -0.143, 1.280),
+                    (sign * 0.038, -0.149, 1.405),
+                    (0.105, 0.025, 0), (0.050, 0.022, 0),
+                ),
+                "chest", "clothing_detail", "shelter_brown_light",
+            )
+            self.add_part(
+                f"ACC_CoatPocket.{side}",
+                make_tapered_box(
+                    (sign * 0.102, -0.130, 0.845),
+                    (sign * 0.094, -0.134, 0.975),
+                    (0.142, 0.022, 0), (0.132, 0.020, 0),
+                ),
+                "spine", "surface_detail", "shelter_brown_light",
+            )
+            self.add_part(
+                f"ACC_ElbowPatch.{side}",
+                make_ellipsoid((sign * 0.472, -0.070, 1.176), (0.050, 0.020, 0.067), 8, 4),
+                f"forearm.{side}", "surface_detail", "shelter_patch",
+            )
+            self.add_part(
+                f"ACC_ScarfTail.{side}",
+                make_tapered_box(
+                    (sign * 0.045, -0.142, 1.175),
+                    (sign * 0.030, -0.145, 1.360),
+                    (0.075, 0.025, 0), (0.050, 0.023, 0),
+                ),
+                "chest", "clothing_detail", "shelter_wool_light",
+            )
+        self.add_part(
+            "ACC_ScarfWrap",
+            make_frustum_between((0, -0.010, 1.382), (0, -0.020, 1.455), 0.104, 0.086, 10),
+            "neck", "clothing_detail", "shelter_wool",
+        )
+        self.add_part(
+            "ACC_KnitCapBrim",
+            make_frustum_between((0, -0.004, 1.646), (0, -0.004, 1.682), 0.118, 0.108, 12),
+            "head", "clothing_detail", "shelter_brown_dark",
+        )
+        self.build_shelter_face("shelter_skin_a", "shelter_skin_shadow", True)
+        self.build_shelter_boot_details()
+        self.add_part(
+            "ACC_CoatPatch",
+            make_box((-0.118, -0.139, 1.080), (0.100, 0.018, 0.095)),
+            "chest", "surface_detail", "shelter_patch",
+        )
+        for index, height in enumerate((1.210, 1.090, 0.970, 0.850), start=1):
+            self.add_part(
+                f"ACC_CoatButton.{index:02d}",
+                make_ellipsoid((0.025, -0.145, height), (0.013, 0.008, 0.013), 8, 4),
+                "chest" if height > 1.06 else "spine", "surface_detail", "button",
+            )
+        self.assign_atlas_uvs()
+
+    def build_shelter_seated_body(self) -> None:
+        self.build_shelter_adult_base(
+            chest_name="CLO_QuiltedChest",
+            waist_name="CLO_QuiltedWaist",
+            hem_left_name="CLO_JacketTail.L",
+            hem_right_name="CLO_JacketTail.R",
+            headwear_name="ACC_HoodCrown",
+            cloth="shelter_bluegrey",
+            cloth_light="shelter_bluegrey_light",
+            cloth_dark="shelter_bluegrey_dark",
+            skin="shelter_skin_b",
+            shoulder_width=0.425,
+            waist_width=0.365,
+            hand_scale=1.08,
+            # A floor sitter's coat seat is the pelvis-bound central panel.
+            # Long thigh-bound tails swing through the slab when both knees
+            # are raised and also read as a spurious third leg in silhouette.
+            include_thigh_hems=False,
+        )
+        # Preserve the named/atlased coat hems as two short pelvis-bound seat
+        # folds.  They spread beside the central coat seat on the slab rather
+        # than following raised thighs down through it.
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_JacketTail.{side}",
+                make_tapered_box(
+                    (sign * 0.100, 0.028, 0.680),
+                    (sign * 0.090, 0.018, 0.835),
+                    (0.190, 0.240, 0),
+                    (0.175, 0.225, 0),
+                ),
+                "pelvis",
+                "clothing",
+                "shelter_bluegrey" if side == "L" else "shelter_bluegrey_dark",
+            )
+
+    def build_shelter_seated_details(self) -> None:
+        self.add_part(
+            "ACC_HoodShell",
+            make_ellipsoid((0, 0.005, 1.605), (0.132, 0.125, 0.145), 12, 6),
+            "head", "clothing_detail", "shelter_bluegrey",
+        )
+        self.add_part(
+            "ACC_HoodOpening",
+            make_frustum_between((0, -0.112, 1.505), (0, -0.126, 1.655), 0.101, 0.092, 12, 0.78),
+            "head", "clothing_detail", "shelter_bluegrey_dark",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"ACC_QuiltPanel.{side}",
+                make_tapered_box(
+                    (sign * 0.092, -0.142, 0.900),
+                    (sign * 0.086, -0.148, 1.300),
+                    (0.175, 0.024, 0), (0.185, 0.026, 0),
+                ),
+                "chest", "surface_detail", "shelter_bluegrey_light" if side == "L" else "shelter_bluegrey",
+            )
+            self.add_part(
+                f"ACC_JacketPocket.{side}",
+                make_tapered_box(
+                    (sign * 0.118, -0.147, 0.825),
+                    (sign * 0.108, -0.150, 0.950),
+                    (0.150, 0.020, 0), (0.136, 0.019, 0),
+                ),
+                "spine", "surface_detail", "shelter_bluegrey_dark",
+            )
+            self.add_part(
+                f"ACC_KneePatch.{side}",
+                make_ellipsoid((sign * 0.103, -0.060, 0.365), (0.070, 0.022, 0.085), 8, 4),
+                f"shin.{side}", "surface_detail", "shelter_patch",
+            )
+        self.add_part(
+            "ACC_HoodTie",
+            make_frustum_between((0, -0.140, 1.450), (0, -0.148, 1.350), 0.020, 0.012, 8),
+            "head", "clothing_detail", "shelter_wool_light",
+        )
+        self.build_shelter_face("shelter_skin_b", "shelter_skin_shadow", True)
+        self.build_shelter_boot_details()
+        for index, height in enumerate((1.215, 1.080, 0.945, 0.815), start=1):
+            self.add_part(
+                f"ACC_Toggle.{index:02d}",
+                make_frustum_between(
+                    (-0.020, -0.154, height), (0.040, -0.154, height),
+                    0.011, 0.011, 8, 0.75,
+                ),
+                "chest" if height > 1.04 else "spine", "surface_detail", "shelter_wool_light",
+            )
+        self.assign_atlas_uvs()
+
+    def build_shelter_sleeping_body(self) -> None:
+        self.build_shelter_adult_base(
+            chest_name="CLO_BlanketChest",
+            waist_name="CLO_BlanketWaist",
+            hem_left_name="CLO_BlanketHip.L",
+            hem_right_name="CLO_BlanketHip.R",
+            headwear_name="ACC_WoolCapCrown",
+            cloth="shelter_blanket",
+            cloth_light="shelter_blanket_light",
+            cloth_dark="shelter_blanket_dark",
+            skin="shelter_skin_c",
+            shoulder_width=0.400,
+            waist_width=0.345,
+            hand_scale=1.02,
+        )
+
+    def build_shelter_sleeping_details(self) -> None:
+        # Overlapping rigid panels follow chest, pelvis and thighs into the
+        # curled pose. They read as one heavy blanket while remaining fully
+        # deterministic and bone-driven; the world mattress supplies support.
+        # Two low soft volumes break the rigid-panel read across shoulder and
+        # hip. The near forearm, not a newly invented world prop, carries the
+        # cheek; that keeps the support visibly attached to the living pose.
+        self.add_part(
+            "CLO_BlanketShoulderVolume",
+            make_ellipsoid(
+                (0.080, -0.090, 1.205),
+                (0.160, 0.050, 0.115),
+                8,
+                4,
+            ),
+            "chest", "clothing_detail", "shelter_blanket_light",
+        )
+        self.add_part(
+            "CLO_BlanketHipVolume",
+            make_ellipsoid(
+                (-0.045, -0.070, 0.755),
+                (0.170, 0.052, 0.105),
+                8,
+                4,
+            ),
+            "pelvis", "clothing_detail", "shelter_blanket",
+        )
+        self.add_part(
+            "CLO_BlanketFoldChest",
+            make_tapered_box(
+                (0, -0.130, 1.030), (0, -0.138, 1.330),
+                (0.350, 0.040, 0), (0.390, 0.042, 0),
+            ),
+            "chest", "clothing_detail", "shelter_blanket_light",
+        )
+        self.add_part(
+            "CLO_BlanketFoldWaist",
+            make_tapered_box(
+                (0, -0.132, 0.790), (0, -0.134, 1.055),
+                (0.370, 0.042, 0), (0.355, 0.040, 0),
+            ),
+            "spine", "clothing_detail", "shelter_blanket",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_BlanketFoldLeg.{side}",
+                make_tapered_box(
+                    (sign * 0.095, -0.128, 0.405),
+                    (sign * 0.086, -0.132, 0.805),
+                    (0.215, 0.043, 0), (0.195, 0.041, 0),
+                ),
+                f"thigh.{side}", "clothing_detail", "shelter_blanket_dark" if side == "R" else "shelter_blanket",
+            )
+            # Both lower corners are tucked beneath the hips in the final
+            # side curl. Their volume is already carried by the overlapping
+            # thigh panels; separate rigid corner bulbs would pass through
+            # the mattress under body weight.
+        self.add_part(
+            "ACC_WoolCapBand",
+            make_frustum_between((0, -0.004, 1.646), (0, -0.004, 1.682), 0.117, 0.108, 12),
+            "head", "clothing_detail", "shelter_wool",
+        )
+        self.build_shelter_face("shelter_skin_c", "shelter_skin_shadow", False)
+        self.build_shelter_boot_details()
+        self.add_part(
+            "ACC_CheekStubble",
+            make_ellipsoid((0, -0.100, 1.505), (0.092, 0.030, 0.075), 12, 6),
+            "head", "face_detail", "shelter_beard",
+        )
+        for index, height in enumerate((1.215, 1.080, 0.945), start=1):
+            self.add_part(
+                f"ACC_BlanketMend.{index:02d}",
+                make_box((0.090 if index % 2 else -0.090, -0.158, height), (0.095, 0.016, 0.070)),
+                "chest" if height > 1.04 else "spine", "surface_detail", "shelter_patch",
+            )
+        self.assign_atlas_uvs()
+
     def configure_scene_metadata(self) -> None:
         scene = bpy.context.scene
         scene["bp_generator"] = "tools/build-city-pedestrian-3d-model.py"
@@ -6017,8 +6712,154 @@ def paint_kettle_hat_detail_atlas() -> atlas_kit.PixelCanvas:
     return canvas
 
 
+def paint_shelter_detail_atlas(
+    regions: tuple[AtlasRegion, ...],
+    variant: int,
+) -> atlas_kit.PixelCanvas:
+    """Paint one resident's colour-neutral garment and face detail sheet."""
+
+    canvas = atlas_kit.PixelCanvas(DETAIL_ATLAS_SIZE, DETAIL_ATLAS_SIZE)
+    canvas.rect(0, 0, canvas.width, canvas.height, DETAIL_ATLAS_WHITE)
+    by_name = {region.name: region for region in regions}
+    rect = atlas_kit.atlas_rect_bottom_left
+    line = atlas_kit.atlas_line_bottom_left
+
+    # Every mapped garment carries an edge stitch and one restrained wear
+    # field. The offset differs by resident, so the sheets remain independent
+    # even before the role-specific patterns below are painted.
+    for index, region in enumerate(regions):
+        inset = 5 + ((index + variant) % 3)
+        line(
+            canvas,
+            region.x + inset,
+            region.y + 7,
+            region.x + region.width - 6,
+            region.y + 7,
+            DETAIL_ATLAS_SEAM,
+            2,
+        )
+        if index % 2 == variant % 2:
+            line(
+                canvas,
+                region.x + 8,
+                region.y + 15 + variant * 2,
+                region.x + region.width - 8,
+                region.y + 25 + variant * 2,
+                DETAIL_ATLAS_WEAR,
+                2,
+            )
+
+    # Front closure, two pocket mouths and stress folds. The seated coat uses
+    # a diamond quilt, while the sleeping blanket uses broad repaired checks.
+    for name in ("CoatChest", "CoatWaist"):
+        region = by_name[name]
+        front = region.x + region.width * 3 // 4
+        line(canvas, front, region.y + 7, front, region.y + 59, DETAIL_ATLAS_SEAM, 2)
+        if variant == 1:
+            for offset in (0, 12, 24):
+                line(
+                    canvas,
+                    region.x + 5,
+                    region.y + 10 + offset,
+                    region.x + region.width - 5,
+                    region.y + 34 + offset,
+                    DETAIL_ATLAS_WEAR,
+                    1,
+                )
+                line(
+                    canvas,
+                    region.x + 5,
+                    region.y + 34 + offset,
+                    region.x + region.width - 5,
+                    region.y + 10 + offset,
+                    DETAIL_ATLAS_WEAR,
+                    1,
+                )
+        elif variant == 2:
+            for x in range(region.x + 12, region.x + 60, 16):
+                line(canvas, x, region.y + 8, x, region.y + 60, DETAIL_ATLAS_WEAR, 2)
+            for y in range(region.y + 20, region.y + 60, 16):
+                line(canvas, region.x + 6, y, region.x + 60, y, DETAIL_ATLAS_WEAR, 2)
+        else:
+            for y in (24, 39, 52):
+                line(canvas, front - 2, region.y + y, front - 15, region.y + y - 5, DETAIL_ATLAS_WEAR, 2)
+                line(canvas, front + 2, region.y + y, front + 10, region.y + y - 4, DETAIL_ATLAS_WEAR, 2)
+
+    for name in ("CoatHem.L", "CoatHem.R"):
+        region = by_name[name]
+        for stitch_x in range(region.x + 7, region.x + region.width - 5, 5):
+            rect(canvas, stitch_x, region.y + 53, stitch_x + 2, region.y + 55, DETAIL_ATLAS_SEAM)
+        line(canvas, region.x + 8, region.y + 30, region.x + 56, region.y + 30, DETAIL_ATLAS_WEAR, 2)
+        if variant == 2:
+            patch_x = region.x + (12 if name.endswith("L") else 34)
+            rect(canvas, patch_x, region.y + 15, patch_x + 15, region.y + 28, DETAIL_ATLAS_GROOVE)
+            rect(canvas, patch_x + 2, region.y + 17, patch_x + 13, region.y + 26, DETAIL_ATLAS_WEAR)
+
+    for name in ("Cuff.L", "Cuff.R"):
+        region = by_name[name]
+        line(canvas, region.x + 7, region.y + 22, region.x + 58, region.y + 22, DETAIL_ATLAS_GROOVE, 2)
+        for stitch_x in range(region.x + 8, region.x + 58, 5):
+            rect(canvas, stitch_x, region.y + 50, stitch_x + 2, region.y + 53, DETAIL_ATLAS_SEAM)
+
+    # Worn boot construction: heel seam, sole welt, eyelets, crossing laces
+    # and a muted toe scuff. All three models use real separate boot meshes.
+    for name in ("Boot.L", "Boot.R"):
+        region = by_name[name]
+        side_x = region.x
+        top_x = region.x + region.width // 2
+        line(canvas, side_x + 8, region.y + 6, side_x + 8, region.y + 56, DETAIL_ATLAS_SEAM, 2)
+        line(canvas, side_x + 3, region.y + 45, side_x + 30, region.y + 45, DETAIL_ATLAS_GROOVE, 2)
+        for lace_y in range(region.y + 21, region.y + 50, 7):
+            rect(canvas, top_x + 8, lace_y, top_x + 11, lace_y + 3, DETAIL_ATLAS_LACE)
+            rect(canvas, top_x + 21, lace_y, top_x + 24, lace_y + 3, DETAIL_ATLAS_LACE)
+            line(canvas, top_x + 10, lace_y + 1, top_x + 22, lace_y + 5, DETAIL_ATLAS_LACE)
+            line(canvas, top_x + 22, lace_y + 1, top_x + 10, lace_y + 5, DETAIL_ATLAS_LACE)
+        rect(canvas, top_x + 4, region.y + 54, top_x + 29, region.y + 60, DETAIL_ATLAS_WEAR)
+
+    # Knit gloves and headwear use dotted ribs; the face gets only subtle
+    # under-eye and cheek wear, never a readable mark or symbol.
+    for name in ("Hand.L", "Hand.R", "Headwear"):
+        region = by_name[name]
+        for x in range(region.x + 9 + variant, region.x + 59, 7):
+            line(canvas, x, region.y + 10, x, region.y + 58, DETAIL_ATLAS_GROOVE, 1)
+        for y in range(region.y + 14, region.y + 58, 12):
+            for x in range(region.x + 10, region.x + 58, 8):
+                rect(canvas, x, y, x + 2, y + 2, DETAIL_ATLAS_SEAM)
+
+    face = by_name["Face"]
+    line(canvas, face.x + 15, face.y + 39, face.x + 29, face.y + 37, DETAIL_ATLAS_WEAR, 2)
+    line(canvas, face.x + 35, face.y + 37, face.x + 49, face.y + 39, DETAIL_ATLAS_WEAR, 2)
+    line(canvas, face.x + 25, face.y + 24, face.x + 40, face.y + 23, DETAIL_ATLAS_SEAM, 2)
+    if variant == 0:
+        for y in range(face.y + 10, face.y + 26, 5):
+            for x in range(face.x + 13 + (y % 3), face.x + 53, 8):
+                rect(canvas, x, y, x + 2, y + 2, DETAIL_ATLAS_GROOVE)
+    elif variant == 1:
+        line(canvas, face.x + 11, face.y + 31, face.x + 21, face.y + 28, DETAIL_ATLAS_WEAR, 2)
+        line(canvas, face.x + 43, face.y + 28, face.x + 53, face.y + 31, DETAIL_ATLAS_WEAR, 2)
+    else:
+        for x in range(face.x + 17, face.x + 50, 6):
+            rect(canvas, x, face.y + 15 + ((x // 6) % 3), x + 2, face.y + 17 + ((x // 6) % 3), DETAIL_ATLAS_GROOVE)
+    return canvas
+
+
+def paint_shelter_standing_detail_atlas() -> atlas_kit.PixelCanvas:
+    return paint_shelter_detail_atlas(SHELTER_STANDING_ATLAS_REGIONS, 0)
+
+
+def paint_shelter_seated_detail_atlas() -> atlas_kit.PixelCanvas:
+    return paint_shelter_detail_atlas(SHELTER_SEATED_ATLAS_REGIONS, 1)
+
+
+def paint_shelter_sleeping_detail_atlas() -> atlas_kit.PixelCanvas:
+    return paint_shelter_detail_atlas(SHELTER_SLEEPING_ATLAS_REGIONS, 2)
+
+
 DETAIL_ATLAS_PAINTERS = {
     KETTLE_DETAIL_ATLAS_NAME: paint_kettle_hat_detail_atlas,
+    SHELTER_STANDING_DETAIL_ATLAS_NAME: paint_shelter_standing_detail_atlas,
+    SHELTER_SEATED_DETAIL_ATLAS_NAME: paint_shelter_seated_detail_atlas,
+    SHELTER_SLEEPING_DETAIL_ATLAS_NAME: paint_shelter_sleeping_detail_atlas,
 }
 
 
@@ -6166,6 +7007,26 @@ def validate_detail_atlas(
         for name in ("Boot.L", "Boot.R"):
             if painted(name, DETAIL_ATLAS_LACE) < 40:
                 errors.append(f"{name} region needs painted laces and eyelets")
+    if archetype.texture_atlas in {
+        SHELTER_STANDING_DETAIL_ATLAS_NAME,
+        SHELTER_SEATED_DETAIL_ATLAS_NAME,
+        SHELTER_SLEEPING_DETAIL_ATLAS_NAME,
+    }:
+        whole = (0, 0, DETAIL_ATLAS_SIZE, DETAIL_ATLAS_SIZE)
+
+        def count(color: tuple[int, int, int, int]) -> int:
+            return atlas_kit.count_rect_color(
+                atlas.pixels, atlas.width, atlas.height, whole, {color},
+            )
+
+        if count(DETAIL_ATLAS_SEAM) < 450:
+            errors.append("Shelter resident atlas needs visible seams and stitches")
+        if count(DETAIL_ATLAS_WEAR) < 350:
+            errors.append("Shelter resident atlas needs visible cloth wear and folds")
+        if count(DETAIL_ATLAS_LACE) < 80:
+            errors.append("Shelter resident atlas needs two detailed laced boots")
+        if count(DETAIL_ATLAS_GROOVE) < 300:
+            errors.append("Shelter resident atlas needs knit, cuff and face grooves")
 
 
 def validate_result(
@@ -6531,12 +7392,17 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
         )()
     elif spec.key == "cafe_attendant":
         preview_pose = cafe_attendant_base_pose()
+    elif spec.key in SHELTER_PREVIEW_POSES:
+        preview_pose = SHELTER_PREVIEW_POSES[spec.key]()
     posed_preview = preview_pose is not None
     perch_drop = 0.0
     if posed_preview:
         apply_pose(result.rig, preview_pose)
         bpy.context.view_layer.update()
-    if spec.perch_seat_height_m is not None:
+    if (
+        spec.perch_seat_height_m is not None
+        or spec.key in SHELTER_PREVIEW_POSES
+    ):
         # A perched design's boots stop above the plane the preview
         # ground is on, because in the world it is the seat that carries
         # him and not the lawn. Setting him down on the review floor is
@@ -6572,8 +7438,16 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
         # judged beside the chess player impossible to compare with him.
         # Same side, same height, same lens: the pair is the subject.
         "park_checkers_player": (2.40, -3.88, 1.58),
+        "shelter_standing_resident": (2.45, -4.05, 1.85),
+        "shelter_seated_resident": (2.15, -3.55, 1.30),
+        # Broadside to the real mattress's long prefab-local X axis.  A small
+        # right bias preserves depth without foreshortening the fetal pose.
+        "shelter_sleeping_resident": (0.60, -4.00, 1.12),
     }.get(spec.key, (2.65, -4.40, 2.10))
-    target = Vector((0, 0, 0.84 if posed_preview else 0.88))
+    target = {
+        "shelter_seated_resident": Vector((0, 0, 0.62)),
+        "shelter_sleeping_resident": Vector((0.08, -0.12, 0.23)),
+    }.get(spec.key, Vector((0, 0, 0.84 if posed_preview else 0.88)))
     camera.rotation_euler = (target - camera.location).to_track_quat("-Z", "Y").to_euler()
     camera_data.lens = 56
     scene.camera = camera
@@ -6682,12 +7556,12 @@ def write_manifest(
         "animation_count": 0,
         "animations": [],
         "shared_animation_source": spec.animation_source,
-        "shared_clips": (
+        "shared_clips": list(dict.fromkeys(
             [spec.idle_clip, spec.walk_clip]
             + ([spec.sit_clip] if spec.sit_clip is not None else [])
             + ([spec.action_clip] if spec.action_clip is not None else [])
             + ([spec.dismount_clip] if spec.dismount_clip is not None else [])
-        ),
+        )),
         "rides_bus": spec.sit_clip is not None,
         "seated_clearance_m": (
             list(spec.seated_clearance_m)
@@ -6697,6 +7571,16 @@ def write_manifest(
         "perch_seat_height_m": (
             list(spec.perch_seat_height_m)
             if spec.perch_seat_height_m is not None
+            else None
+        ),
+        "floor_seated_contact_m": (
+            list(spec.floor_seated_contact_m)
+            if spec.floor_seated_contact_m is not None
+            else None
+        ),
+        "lying_height_m": (
+            list(spec.lying_height_m)
+            if spec.lying_height_m is not None
             else None
         ),
         "build_signature": report.build_signature,
@@ -7088,6 +7972,36 @@ ACTION_SPECS = (
         "left-arm throw, the accusation held, and a collapse back into "
         "the palms slower than the throw was",
         seated=True,
+    ),
+    # Three deliberately unsynchronised shelter loops. The two people by the
+    # barrel keep their attention on warmth, never on the player; the third
+    # remains clearly alive through a barely visible mattress-supported
+    # breath. These are the complete dedicated animation bank.
+    ActionSpec(
+        "ShelterStandingWarm",
+        "nightlife_shelter_standing_resident_v2",
+        8.0,
+        192,
+        "ordinary adult standing close to the barrel, shoulders rounded and palms held toward the heat",
+        "slow asymmetric weight transfer, two hand-warming corrections and a quiet breath",
+    ),
+    ActionSpec(
+        "ShelterSeatedWarm",
+        "nightlife_shelter_seated_resident_v2",
+        9.0,
+        216,
+        "ordinary adult sitting low beside the barrel with knees drawn and forearms over them",
+        "uneven breathing, a small shoulder settle and one closer reach toward the heat",
+        seated=True,
+    ),
+    ActionSpec(
+        "ShelterSleeperBreath",
+        "nightlife_shelter_sleeping_resident_v2",
+        10.0,
+        240,
+        "ordinary adult curled on the mattress under a heavy patched blanket",
+        "barely visible chest and shoulder breathing with one small sleeping hand settle",
+        lying=True,
     ),
     # Mountain Road cafe tableau. The patrons own quiet idles and authored
     # drink one-shots. The attendant owns an in-place wipe loop, an in-place
@@ -8074,6 +8988,118 @@ def cafe_attendant_base_pose() -> dict[str, BonePose]:
     }
 
 
+def shelter_standing_base_pose() -> dict[str, BonePose]:
+    """Planted, rounded stance with both palms held toward the barrel."""
+
+    return {
+        "pelvis": BonePose(rotation_degrees=(5.0, 0.0, -1.0), location_m=(0, 0.010, -0.038)),
+        "spine": BonePose(rotation_degrees=(12.0, 0.0, 1.0)),
+        "chest": BonePose(rotation_degrees=(8.0, 0.0, -1.0)),
+        "neck": BonePose(rotation_degrees=(-9.0, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(4.0, -5.0, 7.0)),
+        "clavicle.R": BonePose(rotation_degrees=(4.0, 5.0, -7.0)),
+        # Elbows stay visibly apart while both palms occupy one small heat
+        # target in front of the sternum.  The old near-A-pose read as a
+        # broken horizontal bar in silhouette and, worse, put the hands
+        # behind the body rather than toward the barrel.
+        "upper_arm.L": BonePose(rotation_degrees=(-30.0, 4.0, 10.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-33.0, -4.0, -13.0)),
+        "forearm.L": BonePose(rotation_degrees=(-90.0, 0.0, -12.0)),
+        "forearm.R": BonePose(rotation_degrees=(-88.0, 0.0, 14.0)),
+        "hand.L": BonePose(rotation_degrees=(7.0, -4.0, 4.0)),
+        "hand.R": BonePose(rotation_degrees=(5.0, 4.0, -4.0)),
+        "thigh.L": BonePose(rotation_degrees=(-6.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(12.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-3.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
+    }
+
+
+def shelter_seated_base_pose() -> dict[str, BonePose]:
+    """Floor-seated on the coat seat, raised knees and both boots distinct."""
+
+    return merge_pose(
+        {
+            # The pelvis drop is authored, not sole-baked: the central coat
+            # seat rests directly on the slab while both knees rise in front.
+            "pelvis": BonePose(
+                rotation_degrees=(5.0, 0.0, 0.0),
+                location_m=(0.0, -0.781, 0.0),
+            ),
+            "spine": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+            "chest": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
+            "neck": BonePose(rotation_degrees=(-5.0, 5.0, 0.0)),
+            "head": BonePose(rotation_degrees=(-3.0, 8.0, 1.0)),
+            "clavicle.L": BonePose(rotation_degrees=(6.0, -5.0, 9.0)),
+            "clavicle.R": BonePose(rotation_degrees=(6.0, 5.0, -9.0)),
+            "upper_arm.L": BonePose(rotation_degrees=(-30.0, 4.0, 10.0)),
+            "upper_arm.R": BonePose(rotation_degrees=(-28.0, -4.0, -12.0)),
+            "forearm.L": BonePose(rotation_degrees=(-78.0, 0.0, -12.0)),
+            "forearm.R": BonePose(rotation_degrees=(-76.0, 0.0, 14.0)),
+            "hand.L": BonePose(rotation_degrees=(6.0, -4.0, 4.0)),
+            "hand.R": BonePose(rotation_degrees=(5.0, 4.0, -4.0)),
+        },
+        {
+            # Both knees are raised and spread laterally. Both shins fold
+            # back to the floor, where differently rolled boots rest on
+            # separate heel/outer-side contacts rather than joining into one
+            # black horizontal sole. This is a seated triangle, not a squat.
+            "thigh.L": BonePose(rotation_degrees=(-165.0, 0.0, 16.0)),
+            "shin.L": BonePose(rotation_degrees=(150.0, 0.0, 0.0)),
+            "foot.L": BonePose(rotation_degrees=(-80.0, 0.0, 8.0)),
+            "thigh.R": BonePose(rotation_degrees=(-160.0, 0.0, -18.0)),
+            "shin.R": BonePose(rotation_degrees=(145.0, 0.0, 0.0)),
+            "foot.R": BonePose(rotation_degrees=(-74.0, 0.0, -10.0)),
+        },
+    )
+
+
+def shelter_sleeping_base_pose() -> dict[str, BonePose]:
+    """Mattress-supported side curl along the bedding's real long X axis."""
+
+    return {
+        # Local Z roll turns the ordinary upright substrate onto its side and
+        # sends spine -> head along Blender/Unity X, matching the actual
+        # imported mattress.  The root remains in-place; the local Y drop
+        # settles the lower shoulder and folded legs onto its top plane.
+        "pelvis": BonePose(
+            rotation_degrees=(0.0, 0.0, 88.0),
+            # The third local channel recentres the curled body across the
+            # narrow 0.83633 m mattress without changing its support height.
+            location_m=(0.300, -0.543, -0.155),
+        ),
+        "spine": BonePose(rotation_degrees=(0.0, 0.0, 1.5)),
+        "chest": BonePose(rotation_degrees=(0.0, 1.5, 1.5)),
+        "neck": BonePose(rotation_degrees=(-1.5, 2.0, -2.0)),
+        "head": BonePose(rotation_degrees=(2.0, 5.0, 1.5)),
+        "clavicle.L": BonePose(rotation_degrees=(0.0, -2.0, 1.0)),
+        "clavicle.R": BonePose(rotation_degrees=(0.0, 2.0, -1.0)),
+        # The lower arm is a real attached head support: shoulder -> elbow
+        # reaches forward, the forearm returns under the cheek, and its glove
+        # finishes beneath the temple.  The upper arm crosses the chest with
+        # a separately readable palm instead of forming a second straight
+        # rod or an ambiguous detached pillow shape.
+        "upper_arm.L": BonePose(rotation_degrees=(-81.79, -4.16, -4.55)),
+        "forearm.L": BonePose(rotation_degrees=(-75.24, 47.47, -164.97)),
+        "upper_arm.R": BonePose(rotation_degrees=(-110.43, -3.76, -121.54)),
+        "forearm.R": BonePose(rotation_degrees=(-15.37, 36.96, -131.59)),
+        "hand.L": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
+        "hand.R": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
+        # Both knees come forward while both shins return toward the hips.
+        # Slightly different angles keep two boots and the back-to-hip-to-knee
+        # line legible as a living fetal pose rather than one compact bundle.
+        "thigh.L": BonePose(rotation_degrees=(-35.0, 0.0, 2.0)),
+        "shin.L": BonePose(rotation_degrees=(-120.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(8.0, 0.0, 2.0)),
+        "thigh.R": BonePose(rotation_degrees=(-45.0, 0.0, -2.0)),
+        "shin.R": BonePose(rotation_degrees=(-112.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(4.0, 0.0, -2.0)),
+    }
+
+
 # Which posture a perched design is previewed in. `perch_seat_height_m`
 # says a model is seated on world timber; it does not say how, and two
 # designs now declare it.
@@ -8084,6 +9110,12 @@ PERCH_PREVIEW_POSES = {
     "cafe_lone_patron": cafe_lone_base_pose,
     "cafe_couple_man": cafe_man_base_pose,
     "cafe_couple_woman": cafe_woman_base_pose,
+}
+
+SHELTER_PREVIEW_POSES = {
+    "shelter_standing_resident": shelter_standing_base_pose,
+    "shelter_seated_resident": shelter_seated_base_pose,
+    "shelter_sleeping_resident": shelter_sleeping_base_pose,
 }
 
 
@@ -9579,6 +10611,88 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     checkers_step_r = merge_pose(checkers_stand, chess_trudge_legs(-1.0, 1.0))
     checkers_step_pl = merge_pose(checkers_stand, chess_trudge_legs(0.0, -0.4))
 
+    # ------------------------------------------ Nightlife shelter residents
+    shelter_standing = shelter_standing_base_pose()
+    shelter_standing_inhale = merge_pose(shelter_standing, {
+        "spine": BonePose(rotation_degrees=(10.8, 0.0, 1.0)),
+        "chest": BonePose(rotation_degrees=(6.4, 0.0, -1.0)),
+        "clavicle.L": BonePose(rotation_degrees=(5.2, -5.0, 7.0)),
+        "clavicle.R": BonePose(rotation_degrees=(5.2, 5.0, -7.0)),
+    })
+    shelter_standing_left = merge_pose(shelter_standing, {
+        "pelvis": BonePose(rotation_degrees=(5.0, 1.2, -2.8), location_m=(-0.012, 0.010, -0.038)),
+        "spine": BonePose(rotation_degrees=(12.0, -1.0, 2.4)),
+        "head": BonePose(rotation_degrees=(8.5, -1.5, 0.8)),
+        "thigh.L": BonePose(rotation_degrees=(-7.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(13.0, 0.0, 0.0)),
+    })
+    shelter_standing_reach = merge_pose(shelter_standing, {
+        "chest": BonePose(rotation_degrees=(9.5, 0.0, -1.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-45.0, 5.0, 25.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-47.0, -5.0, -28.0)),
+        "forearm.L": BonePose(rotation_degrees=(-96.0, 2.0, -10.0)),
+        "forearm.R": BonePose(rotation_degrees=(-94.0, -2.0, 12.0)),
+        "hand.L": BonePose(rotation_degrees=(9.0, -5.0, 4.0)),
+        "hand.R": BonePose(rotation_degrees=(7.0, 5.0, -4.0)),
+    })
+    shelter_standing_right = merge_pose(shelter_standing, {
+        "pelvis": BonePose(rotation_degrees=(4.5, -1.0, 1.6), location_m=(0.009, 0.010, -0.038)),
+        "spine": BonePose(rotation_degrees=(11.6, 1.0, -0.6)),
+        "head": BonePose(rotation_degrees=(7.5, 1.0, -0.5)),
+        "thigh.R": BonePose(rotation_degrees=(-4.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
+    })
+
+    shelter_seated = shelter_seated_base_pose()
+    shelter_seated_inhale = merge_pose(shelter_seated, {
+        "spine": BonePose(rotation_degrees=(17.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(7.2, -5.0, 9.0)),
+        "clavicle.R": BonePose(rotation_degrees=(7.2, 5.0, -9.0)),
+    })
+    shelter_seated_sink = merge_pose(shelter_seated, {
+        "pelvis": BonePose(
+            rotation_degrees=(5.4, 0.0, 0.0),
+            location_m=(0.0, -0.783, 0.0),
+        ),
+        "spine": BonePose(rotation_degrees=(20.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(11.5, 0.0, 0.0)),
+        "head": BonePose(rotation_degrees=(-2.0, 7.0, 1.0)),
+    })
+    shelter_seated_reach = merge_pose(shelter_seated, {
+        "chest": BonePose(rotation_degrees=(12.0, -2.0, 0.0)),
+        # Left forearm stays on its knee. Only the right palm makes the one
+        # quiet reach, keeping the silhouette asymmetric and legible.
+        "upper_arm.R": BonePose(rotation_degrees=(-39.0, -5.0, -18.0)),
+        "forearm.R": BonePose(rotation_degrees=(-88.0, -2.0, 12.0)),
+        "hand.R": BonePose(rotation_degrees=(8.0, 5.0, -4.0)),
+    })
+
+    shelter_sleeping = shelter_sleeping_base_pose()
+    shelter_sleeping_inhale = merge_pose(shelter_sleeping, {
+        "spine": BonePose(rotation_degrees=(0.0, 0.0, 1.0)),
+        "chest": BonePose(
+            rotation_degrees=(0.0, 1.8, 1.0),
+            scale=(1.025, 1.040, 1.030),
+        ),
+        "clavicle.L": BonePose(rotation_degrees=(0.7, -2.0, 1.4)),
+        "clavicle.R": BonePose(rotation_degrees=(0.5, 2.0, -1.2)),
+    })
+    shelter_sleeping_exhale = merge_pose(shelter_sleeping, {
+        "spine": BonePose(rotation_degrees=(0.0, 0.0, 2.1)),
+        "chest": BonePose(
+            rotation_degrees=(0.0, 1.2, 2.0),
+            scale=(0.992, 0.982, 0.985),
+        ),
+    })
+    shelter_sleeping_hand_settle = merge_pose(shelter_sleeping, {
+        # The lower right forearm remains a stable pillow.  Only the visible
+        # upper hand loosens a fraction, accompanied by a sleeping head settle.
+        "forearm.L": BonePose(rotation_degrees=(-77.0, 48.0, -162.5)),
+        "hand.L": BonePose(rotation_degrees=(4.0, -3.0, 2.0)),
+        "head": BonePose(rotation_degrees=(2.7, 5.8, 1.0)),
+    })
+
     # ------------------------------------------------ mountain cafe cast
     cafe_lone = cafe_lone_base_pose()
     cafe_lone_breath = merge_pose(cafe_lone, {
@@ -9728,6 +10842,38 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     })
 
     return {
+        "ShelterStandingWarm": (
+            (0.0, shelter_standing),
+            (0.14, shelter_standing_inhale),
+            (0.28, shelter_standing),
+            (0.38, shelter_standing_left),
+            # The review contract samples 0.50 exactly: this is the shared
+            # barrel-rim heat point, not an in-between waist pose.
+            (0.50, shelter_standing_reach),
+            (0.70, shelter_standing),
+            (0.87, shelter_standing_right),
+            (1.0, shelter_standing),
+        ),
+        "ShelterSeatedWarm": (
+            (0.0, shelter_seated),
+            (0.16, shelter_seated_inhale),
+            (0.32, shelter_seated),
+            (0.38, shelter_seated_sink),
+            # At the middle review phase one palm visibly leaves its knee,
+            # while the coat seat and both boots keep their floor contacts.
+            (0.50, shelter_seated_reach),
+            (0.76, shelter_seated_inhale),
+            (1.0, shelter_seated),
+        ),
+        "ShelterSleeperBreath": (
+            (0.0, shelter_sleeping),
+            (0.18, shelter_sleeping_inhale),
+            (0.36, shelter_sleeping),
+            (0.52, shelter_sleeping_exhale),
+            (0.68, shelter_sleeping_inhale),
+            (0.82, shelter_sleeping_hand_settle),
+            (1.0, shelter_sleeping),
+        ),
         # The Ferryman's wait. A quarter-loop breath grid, exactly the
         # fisherman's contract, plus the one thing he does. The coin
         # leaves his palm at 0.0625 and lands back in it at 0.3125; the
@@ -10272,6 +11418,134 @@ def evaluated_part_world_vertices(part: PartRecord, depsgraph) -> list[Vector]:
         evaluated.to_mesh_clear()
 
 
+def validate_animated_footprints(
+    result: BuildResult,
+    actions: dict[str, bpy.types.Action],
+    archetype: ArchetypeSpec,
+) -> dict[str, dict[str, object]]:
+    """Sample every deformed XZ footprint, including the rotated mattress.
+
+    Blender is Z-up/forward -Y while Unity is Y-up/forward +Z, so a Blender
+    point `(x, y, z)` is reported here as Unity-local `(x, -y)`.  The City
+    shelter builder places every prefab at the declarative anchor and evaluates
+    its loop at a seed-derived phase.  Sampling every exported frame therefore
+    proves more than a rest-pose FBX bound can: no keyed limb can become the
+    frame that overhangs its support.
+    """
+
+    scene = bpy.context.scene
+    rig = result.rig
+    animation_data = rig.animation_data_create()
+    reports: dict[str, dict[str, object]] = {}
+    for action_name, action in actions.items():
+        animation_data.action = action
+        min_x = math.inf
+        max_x = -math.inf
+        min_z = math.inf
+        max_z = -math.inf
+        mattress_max_x = 0.0
+        mattress_max_z = 0.0
+        mattress_min_x = math.inf
+        mattress_max_signed_x = -math.inf
+        mattress_min_z = math.inf
+        mattress_max_signed_z = -math.inf
+        footprint = archetype.lying_footprint_m
+        if footprint is not None:
+            width, length, yaw_degrees = footprint
+            # World-to-mattress is the inverse of the authored Unity yaw.
+            inverse_yaw = math.radians(-yaw_degrees)
+            yaw_cos = math.cos(inverse_yaw)
+            yaw_sin = math.sin(inverse_yaw)
+
+        for frame in range(round(action.frame_start), round(action.frame_end) + 1):
+            scene.frame_set(frame)
+            bpy.context.view_layer.update()
+            depsgraph = bpy.context.evaluated_depsgraph_get()
+            for part in result.parts:
+                for vertex in evaluated_part_world_vertices(part, depsgraph):
+                    unity_x = vertex.x
+                    unity_z = -vertex.y
+                    min_x = min(min_x, unity_x)
+                    max_x = max(max_x, unity_x)
+                    min_z = min(min_z, unity_z)
+                    max_z = max(max_z, unity_z)
+                    if footprint is not None:
+                        mattress_x = (
+                            yaw_cos * unity_x + yaw_sin * unity_z
+                        )
+                        mattress_z = (
+                            -yaw_sin * unity_x + yaw_cos * unity_z
+                        )
+                        mattress_min_x = min(mattress_min_x, mattress_x)
+                        mattress_max_signed_x = max(
+                            mattress_max_signed_x, mattress_x
+                        )
+                        mattress_min_z = min(mattress_min_z, mattress_z)
+                        mattress_max_signed_z = max(
+                            mattress_max_signed_z, mattress_z
+                        )
+                        mattress_max_x = max(mattress_max_x, abs(mattress_x))
+                        mattress_max_z = max(mattress_max_z, abs(mattress_z))
+
+        report: dict[str, object] = {
+            "animated_local_xz_min_m": [
+                stable_float(min_x), stable_float(min_z)
+            ],
+            "animated_local_xz_max_m": [
+                stable_float(max_x), stable_float(max_z)
+            ],
+            "animated_local_xz_size_m": [
+                stable_float(max_x - min_x),
+                stable_float(max_z - min_z),
+            ],
+        }
+        if footprint is not None:
+            half_width = width * 0.5
+            half_length = length * 0.5
+            if mattress_max_x > half_width + 0.0005:
+                raise RuntimeError(
+                    f"{action_name} exceeds its {width:.2f} m mattress width: "
+                    f"half-extent {mattress_max_x:.4f} m > {half_width:.4f} m; "
+                    f"resident local XZ is ({min_x:.4f}, {min_z:.4f}) to "
+                    f"({max_x:.4f}, {max_z:.4f})"
+                )
+            if mattress_max_z > half_length + 0.0005:
+                raise RuntimeError(
+                    f"{action_name} exceeds its {length:.2f} m mattress length: "
+                    f"half-extent {mattress_max_z:.4f} m > {half_length:.4f} m; "
+                    f"resident local XZ is ({min_x:.4f}, {min_z:.4f}) to "
+                    f"({max_x:.4f}, {max_z:.4f})"
+                )
+            report.update({
+                "mattress_footprint_m": [
+                    stable_float(width), stable_float(length)
+                ],
+                "mattress_yaw_degrees": stable_float(yaw_degrees),
+                "animated_mattress_xz_min_m": [
+                    stable_float(mattress_min_x),
+                    stable_float(mattress_min_z),
+                ],
+                "animated_mattress_xz_max_m": [
+                    stable_float(mattress_max_signed_x),
+                    stable_float(mattress_max_signed_z),
+                ],
+                "mattress_used_half_extents_m": [
+                    stable_float(mattress_max_x),
+                    stable_float(mattress_max_z),
+                ],
+                "mattress_clearance_m": [
+                    stable_float(half_width - mattress_max_x),
+                    stable_float(half_length - mattress_max_z),
+                ],
+            })
+        reports[action_name] = report
+
+    animation_data.action = None
+    scene.frame_set(0)
+    reset_pose(rig)
+    return reports
+
+
 def point_segment_distance(point: Vector, start: Vector, end: Vector) -> float:
     segment = end - start
     length_squared = segment.length_squared
@@ -10478,12 +11752,23 @@ def validate_animated_grounding(
         )
     seated_band = archetype.seated_clearance_m if archetype is not None else None
     perch_band = archetype.perch_seat_height_m if archetype is not None else None
+    floor_seated_band = (
+        archetype.floor_seated_contact_m if archetype is not None else None
+    )
     floor_drop = (
         archetype.seated_floor_drop_m if archetype is not None else 0.41
     )
     reports: dict[str, dict[str, object]] = {}
     for action_name, action in actions.items():
         animation_data.action = action
+        if is_lying_action(action_name):
+            reports[action_name] = validate_lying_clip(
+                result,
+                action,
+                action_name,
+                archetype.lying_height_m if archetype is not None else None,
+            )
+            continue
         if is_seated_action(action_name):
             if leaves_seat_action(action_name):
                 continue
@@ -10495,6 +11780,7 @@ def validate_animated_grounding(
                 seated_band,
                 perch_band,
                 floor_drop,
+                floor_seated_band,
             )
             continue
 
@@ -10567,6 +11853,74 @@ def validate_animated_grounding(
     return reports
 
 
+def validate_lying_clip(
+    result: BuildResult,
+    action: bpy.types.Action,
+    action_name: str,
+    height_band: tuple[float, float] | None,
+) -> dict[str, object]:
+    """Prove a sleeping loop rests on, and stays compact above, a mattress."""
+
+    if height_band is None:
+        raise RuntimeError(
+            f"{action_name} is lying but its archetype declares no lying_height_m"
+        )
+    scene = bpy.context.scene
+    rig = result.rig
+    bottoms: list[float] = []
+    bottom_details: list[tuple[float, int, str]] = []
+    heights: list[float] = []
+    pelvis_heights: list[float] = []
+    for frame in range(round(action.frame_start), round(action.frame_end) + 1):
+        scene.frame_set(frame)
+        bpy.context.view_layer.update()
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        part_bottoms = [
+            (evaluated_part_min_z(part, depsgraph), part.obj.name)
+            for part in result.parts
+        ]
+        bottom, bottom_part = min(part_bottoms)
+        bottom_details.append((bottom, frame, bottom_part))
+        top = max(
+            evaluated_part_max_z(part, depsgraph) for part in result.parts
+        )
+        bottoms.append(bottom)
+        heights.append(top - bottom)
+        pelvis_heights.append(
+            (rig.matrix_world @ rig.pose.bones["pelvis"].head).z
+        )
+
+    lowest = min(bottoms)
+    highest_gap = max(bottoms)
+    min_height = min(heights)
+    max_height = max(heights)
+    floor, ceiling = height_band
+    if lowest < -0.005:
+        _, worst_frame, worst_part = min(bottom_details)
+        raise RuntimeError(
+            f"{action_name} penetrates the mattress plane at {lowest:.4f} m "
+            f"({worst_part}, frame {worst_frame})"
+        )
+    if highest_gap > 0.050:
+        raise RuntimeError(
+            f"{action_name} floats {highest_gap:.4f} m above the mattress plane"
+        )
+    if min_height < floor or max_height > ceiling:
+        raise RuntimeError(
+            f"{action_name} is {min_height:.4f}-{max_height:.4f} m thick above "
+            f"the mattress; expected {floor:.3f}-{ceiling:.3f} m"
+        )
+    return {
+        "lying": True,
+        "mattress_min_m": stable_float(lowest),
+        "mattress_max_contact_gap_m": stable_float(highest_gap),
+        "lying_height_min_m": stable_float(min_height),
+        "lying_height_max_m": stable_float(max_height),
+        "lying_pelvis_height_min_m": stable_float(min(pelvis_heights)),
+        "lying_pelvis_height_max_m": stable_float(max(pelvis_heights)),
+    }
+
+
 def evaluated_part_max_z(part: PartRecord, depsgraph) -> float:
     evaluated = part.obj.evaluated_get(depsgraph)
     mesh = evaluated.to_mesh()
@@ -10586,6 +11940,7 @@ def validate_seated_clip(
     seated_band: tuple[float, float] | None,
     perch_band: tuple[float, float] | None = None,
     floor_drop: float = 0.41,
+    floor_seated_band: tuple[float, float] | None = None,
 ) -> dict[str, object]:
     """Prove a seated clip against whatever is actually carrying it.
 
@@ -10604,18 +11959,29 @@ def validate_seated_clip(
     the real deformed meshes.
     """
 
-    if seated_band is None and perch_band is None:
+    if (
+        seated_band is None
+        and perch_band is None
+        and floor_seated_band is None
+    ):
         raise RuntimeError(
             f"{action_name} is seated but its archetype declares neither a "
-            "seated_clearance_m nor a perch_seat_height_m band"
+            "seated_clearance_m, perch_seat_height_m nor "
+            "floor_seated_contact_m band"
         )
-    if seated_band is not None and perch_band is not None:
+    if sum(
+        band is not None
+        for band in (seated_band, perch_band, floor_seated_band)
+    ) > 1:
         # A design with two seats: the clip has to name the one it is on.
         # Whichever it names, exactly one band survives to be proved
         # against below, so a clip is never measured twice or loosely.
         if perched_action(action_name):
             seated_band = None
         else:
+            perch_band = None
+        if floor_seated_band is not None:
+            seated_band = None
             perch_band = None
 
     scene = bpy.context.scene
@@ -10631,6 +11997,14 @@ def validate_seated_clip(
     perch_heights: list[float] = []
     perch_lifts: list[float] = []
     perch_contacts: list[str] = []
+    floor_bottoms: list[float] = []
+    floor_hip_contacts: list[float] = []
+    floor_foot_contacts: dict[str, list[float]] = {"L": [], "R": []}
+    floor_boot_separations: list[float] = []
+    footwear = {
+        side: [part for part in result.parts if part.bone == f"foot.{side}"]
+        for side in ("L", "R")
+    }
     for frame in range(round(action.frame_start), round(action.frame_end) + 1):
         scene.frame_set(frame)
         bpy.context.view_layer.update()
@@ -10648,6 +12022,33 @@ def validate_seated_clip(
             seat_contacts.append(
                 pelvis_z
                 - min(evaluated_part_min_z(part, depsgraph) for part in seat_parts)
+            )
+        if floor_seated_band is not None:
+            if not hip_parts or any(not parts for parts in footwear.values()):
+                raise RuntimeError(
+                    "Floor-seated validation needs pelvis geometry and both boots"
+                )
+            hip_bottom = min(
+                evaluated_part_min_z(part, depsgraph) for part in hip_parts
+            )
+            floor_bottoms.append(bottom)
+            floor_hip_contacts.append(hip_bottom)
+            boot_centers: dict[str, float] = {}
+            for side, parts in footwear.items():
+                floor_foot_contacts[side].append(
+                    min(evaluated_part_min_z(part, depsgraph) for part in parts)
+                )
+                vertices = [
+                    vertex
+                    for part in parts
+                    for vertex in evaluated_part_world_vertices(part, depsgraph)
+                ]
+                boot_centers[side] = 0.5 * (
+                    min(vertex.x for vertex in vertices)
+                    + max(vertex.x for vertex in vertices)
+                )
+            floor_boot_separations.append(
+                abs(boot_centers["L"] - boot_centers["R"])
             )
         if perch_band is not None:
             if not hip_parts:
@@ -10676,6 +12077,56 @@ def validate_seated_clip(
         drops.append(pelvis_z - bottom)
 
     drop = max(drops)
+    if floor_seated_band is not None:
+        floor, ceiling = floor_seated_band
+        lowest = min(floor_bottoms)
+        hip_min = min(floor_hip_contacts)
+        hip_max = max(floor_hip_contacts)
+        foot_min = min(
+            value for values in floor_foot_contacts.values() for value in values
+        )
+        foot_max = max(
+            value for values in floor_foot_contacts.values() for value in values
+        )
+        boot_separation = min(floor_boot_separations)
+        if lowest < floor:
+            raise RuntimeError(
+                f"{action_name} penetrates its floor support at {lowest:.4f} m"
+            )
+        if hip_min < floor or hip_max > ceiling:
+            raise RuntimeError(
+                f"{action_name} keeps its coat seat {hip_min:.4f}-{hip_max:.4f} m "
+                f"above the slab; expected {floor:.3f}-{ceiling:.3f} m"
+            )
+        foot_ceiling = max(0.040, ceiling + 0.015)
+        if foot_min < floor or foot_max > foot_ceiling:
+            raise RuntimeError(
+                f"{action_name} keeps its two boot contacts "
+                f"{foot_min:.4f}-{foot_max:.4f} m above the slab; expected "
+                f"{floor:.3f}-{foot_ceiling:.3f} m"
+            )
+        if boot_separation < 0.100:
+            raise RuntimeError(
+                f"{action_name} merges its boots to {boot_separation:.4f} m "
+                "centre separation; floor-seated silhouette requires 0.100 m"
+            )
+        print(
+            f"    floor-seated {action_name}: coat seat "
+            f"{hip_min:.4f}-{hip_max:.4f} m, boots "
+            f"{foot_min:.4f}-{foot_max:.4f} m, separation "
+            f"{boot_separation:.4f} m"
+        )
+        return {
+            "seated": True,
+            "floor_seated": True,
+            "floor_support_min_m": stable_float(lowest),
+            "floor_seated_hip_contact_min_m": stable_float(hip_min),
+            "floor_seated_hip_contact_max_m": stable_float(hip_max),
+            "floor_seated_boot_contact_min_m": stable_float(foot_min),
+            "floor_seated_boot_contact_max_m": stable_float(foot_max),
+            "floor_seated_min_boot_separation_m": stable_float(boot_separation),
+            "seated_drop_m": stable_float(drop),
+        }
     if perch_band is not None:
         floor, ceiling = perch_band
         lowest = min(perch_heights)
@@ -10868,6 +12319,11 @@ def leaves_seat_action(name: str) -> bool:
     return spec is not None and spec.leaves_seat
 
 
+def is_lying_action(name: str) -> bool:
+    spec = ACTION_BY_NAME.get(name)
+    return spec is not None and spec.lying
+
+
 def capture_pelvis_track(action: bpy.types.Action) -> list[tuple[int, tuple[float, float, float]]]:
     """Read the baked pelvis location channel as plain per-frame data.
 
@@ -10955,7 +12411,7 @@ def ground_actions_per_archetype(
         # the cushion, so baking it against the pavement would fold the pose.
         grounded_actions = {
             name: action for name, action in actions.items()
-            if not is_seated_action(name)
+            if not is_seated_action(name) and not is_lying_action(name)
         }
         if spec.wheel_radius_m is not None:
             pass
@@ -10964,6 +12420,9 @@ def ground_actions_per_archetype(
         else:
             bake_constant_pelvis_offset(result, grounded_actions)
         reports = validate_animated_grounding(result, actions, spec)
+        footprint_reports = validate_animated_footprints(result, actions, spec)
+        for action_name, footprint_report in footprint_reports.items():
+            reports[action_name].update(footprint_report)
         grounding.update(reports)
         if spec.airborne_lift_m is not None:
             floor, ceiling = spec.airborne_lift_m
@@ -10978,7 +12437,14 @@ def ground_actions_per_archetype(
             print(f"  airborne {spec.design_id}: {apex:.3f} m apex lift")
         for name, action in actions.items():
             pelvis_tracks[name] = capture_pelvis_track(action)
-        support = "its own tyres" if spec.wheel_radius_m is not None else "its own footwear"
+        if spec.wheel_radius_m is not None:
+            support = "its own tyres"
+        elif spec.lying_height_m is not None:
+            support = "its mattress plane"
+        elif spec.floor_seated_contact_m is not None:
+            support = "its floor-seated coat/boot contacts"
+        else:
+            support = "its own footwear"
         print(
             f"  grounded {spec.design_id}: "
             f"{', '.join(sorted(actions))} against {support}"
@@ -11079,7 +12545,7 @@ SHEET_COLUMNS = 3
 def contact_sheet_samples(
     archetypes: Sequence[ArchetypeSpec] | None = None,
 ) -> tuple[tuple[str, str, int], ...]:
-    """One row per archetype: idle plus two opposite walk phases."""
+    """One row per archetype: three useful phases of its authored motion."""
 
     samples: list[tuple[str, str, int]] = []
     selected = tuple(archetypes or ARCHETYPES.values())
@@ -11087,9 +12553,19 @@ def contact_sheet_samples(
         walk = next(
             item for item in ACTION_SPECS if item.name == spec.walk_clip
         )
-        samples.append((spec.key, spec.idle_clip, 0))
-        samples.append((spec.key, spec.walk_clip, 0))
-        samples.append((spec.key, spec.walk_clip, round(walk.frame_end * 0.5)))
+        if spec.idle_clip == spec.walk_clip:
+            # Fixed tableau roles own one long loop rather than a fake walk.
+            # Review three separated, non-seam phases so quiet motion remains
+            # visible and a bad middle pose cannot hide behind duplicate frame
+            # zero tiles.
+            for phase in (0.12, 0.50, 0.88):
+                samples.append(
+                    (spec.key, spec.idle_clip, round(walk.frame_end * phase))
+                )
+        else:
+            samples.append((spec.key, spec.idle_clip, 0))
+            samples.append((spec.key, spec.walk_clip, 0))
+            samples.append((spec.key, spec.walk_clip, round(walk.frame_end * 0.5)))
     return tuple(samples)
 
 
@@ -11117,7 +12593,7 @@ def render_animation_contact_sheet(
         }
         grounded_actions = {
             name: action for name, action in local_actions.items()
-            if not is_seated_action(name)
+            if not is_seated_action(name) and not is_lying_action(name)
         }
         if spec.wheel_radius_m is not None:
             pass
@@ -11125,7 +12601,17 @@ def render_animation_contact_sheet(
             bake_grounded_pelvis(result, grounded_actions)
         else:
             bake_constant_pelvis_offset(result, grounded_actions)
-        setup_review_stage(result)
+        camera, _ = setup_review_stage(result)
+        if archetype_key == "shelter_seated_resident":
+            camera.location = (2.15, -3.55, 1.30)
+            camera.rotation_euler = (
+                Vector((0, 0, 0.62)) - camera.location
+            ).to_track_quat("-Z", "Y").to_euler()
+        elif archetype_key == "shelter_sleeping_resident":
+            camera.location = (0.60, -4.00, 1.12)
+            camera.rotation_euler = (
+                Vector((0.08, -0.12, 0.23)) - camera.location
+            ).to_track_quat("-Z", "Y").to_euler()
         result.rig.animation_data_create().action = local_actions[action_name]
         bpy.context.scene.frame_set(frame)
         bpy.context.view_layer.update()
@@ -11255,12 +12741,32 @@ def build_cafe_animation_library(config: argparse.Namespace) -> None:
     )
 
 
+def build_shelter_animation_library(config: argparse.Namespace) -> None:
+    shelter_archetypes = tuple(ARCHETYPES[key] for key in SHELTER_RESIDENT_KEYS)
+    build_named_animation_library(
+        config,
+        shelter_archetypes,
+        "NightlifeShelterResidents",
+        "nightlife_shelter_residents_v2",
+        "NightlifeShelterResidentsContactSheet.png",
+    )
+
+
 def main() -> None:
     config = parse_args()
-    if config.cafe_cast and config.archetype != "all":
-        raise SystemExit("--cafe-cast cannot be combined with --archetype")
+    if config.cafe_cast and config.shelter_residents:
+        raise SystemExit("--cafe-cast cannot be combined with --shelter-residents")
+    if (
+        (config.cafe_cast or config.shelter_residents)
+        and config.archetype != "all"
+    ):
+        raise SystemExit(
+            "Dedicated cast selectors cannot be combined with --archetype"
+        )
     if config.cafe_cast:
         selected = tuple(ARCHETYPES[key] for key in CAFE_CAST_KEYS)
+    elif config.shelter_residents:
+        selected = tuple(ARCHETYPES[key] for key in SHELTER_RESIDENT_KEYS)
     elif config.archetype == "all":
         # Preserve the established meaning of `all`: the ambient/staged City
         # library and its exact CityPedestrianLocomotion clip contract. The
@@ -11305,9 +12811,11 @@ def main() -> None:
         print(f"    FBX: {fbx_path}")
     if config.cafe_cast:
         build_cafe_animation_library(config)
+    elif config.shelter_residents:
+        build_shelter_animation_library(config)
     elif config.archetype == "all":
         build_animation_library(config)
-    if config.cafe_cast or config.archetype == "all":
+    if config.cafe_cast or config.shelter_residents or config.archetype == "all":
         first_signatures = {
             spec.design_id: report.build_signature for spec, report in reports
         }

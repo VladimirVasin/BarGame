@@ -16,8 +16,15 @@ namespace BarPromenade
             new Vector3(0.82f, 1.05f, 0.82f);
         private static readonly Vector3 FireVisualSize =
             new Vector3(0.68f, 1.45f, 0.68f);
+        public const float BeddingMattressLength = 1.89618f;
+        public const float BeddingMattressWidth = 0.83633f;
+        public const float BeddingMattressTop = 0.2725f;
+
+        // Conservative world-axis envelope of the imported 2.079462 x
+        // 0.951008 m cardboard/mattress assembly after its five-degree yaw.
+        // The old values described the footprint with its axes swapped.
         private static readonly Vector3 BeddingSize =
-            new Vector3(1.20f, 0.24f, 2.15f);
+            new Vector3(2.193f, BeddingMattressTop, 1.153f);
         private static readonly Vector3 ClutterSize =
             new Vector3(1.35f, 0.90f, 1.10f);
 
@@ -268,7 +275,7 @@ namespace BarPromenade
                     barrel.Position.z + 0.82f));
             Vector3 sleeping = new Vector3(
                 bedding.Position.x,
-                bedding.Bounds.max.y,
+                bedding.Position.y + BeddingMattressTop,
                 bedding.Position.z);
             return new List<CityArchShelterNpcAnchorDescriptor>(3)
             {
@@ -286,7 +293,7 @@ namespace BarPromenade
                     "npc-sleeper",
                     CityArchShelterNpcStageKind.Sleeper,
                     sleeping,
-                    Vector3.forward)
+                    bedding.Rotation * Vector3.forward)
             };
         }
 

@@ -69,32 +69,12 @@ namespace BarPromenade
         ForefieldAnchor = 28,
 
         /// <summary>
-        /// A handcart, reused masonry and hand tools beside the old stone
-        /// terraces. The complete visible assembly is Blender-authored;
-        /// this descriptor owns only its pose and coarse collision.
+        /// An unoccupied handcart, reused masonry and hand tools beside the
+        /// old stone terraces. The complete visible assembly is
+        /// Blender-authored; this descriptor owns only its pose and coarse
+        /// collision.
         /// </summary>
-        MasonCart = 29,
-
-        /// <summary>
-        /// Hose, pump and toolbox set beside the west service winch.
-        /// </summary>
-        WinchServiceSet = 30,
-
-        /// <summary>
-        /// Tied canvas, handcart and loose service hardware beside the open
-        /// tunnel drive, always outside its reserved vehicle corridor.
-        /// </summary>
-        TunnelServiceSet = 31,
-
-        /// <summary>
-        /// Grate hook, branch debris and maintenance tools at the floodworks.
-        /// </summary>
-        FloodMaintenanceSet = 32,
-
-        /// <summary>
-        /// An old compact car under repair at the low eastern utility edge.
-        /// </summary>
-        OpenHoodCar = 33
+        MasonCart = 29
     }
 
     /// <summary>
@@ -115,10 +95,7 @@ namespace BarPromenade
         ServiceTrack = 8,
 
         /// <summary>Weathered household and service-yard wood.</summary>
-        Timber = 9,
-
-        /// <summary>Faded domestic paint and small coloured details.</summary>
-        DomesticPaint = 10
+        Timber = 9
     }
 
     public readonly struct CityFringeYardPartDescriptor :

@@ -80,14 +80,6 @@ namespace BarPromenade.Tests.EditMode
                 CityFringeYardKind.SouthFloodWorks,
                 CityFringeYardKind.EastUtilityEdge
             };
-            CityFringeYardPartKind[] expectedLifeKinds =
-            {
-                CityFringeYardPartKind.MasonCart,
-                CityFringeYardPartKind.WinchServiceSet,
-                CityFringeYardPartKind.TunnelServiceSet,
-                CityFringeYardPartKind.FloodMaintenanceSet,
-                CityFringeYardPartKind.OpenHoodCar
-            };
             Assert.That(
                 first.Yards.Select(item => item.AreaId),
                 Is.EqualTo(expectedAreas));
@@ -123,13 +115,20 @@ namespace BarPromenade.Tests.EditMode
                     .Where(part =>
                         CityFringeYardLifeValidator.IsLifeKind(part.Kind))
                     .ToArray();
+                int expectedLifeCount = left.Kind ==
+                    CityFringeYardKind.WestStoneTerraces
+                    ? 1
+                    : 0;
                 Assert.That(
                     lifeScenes,
-                    Has.Length.EqualTo(1),
-                    $"{left.AreaId} must carry one human-scale life scene.");
-                Assert.That(
-                    lifeScenes[0].Kind,
-                    Is.EqualTo(expectedLifeKinds[yardIndex]));
+                    Has.Length.EqualTo(expectedLifeCount),
+                    $"{left.AreaId} has the wrong mason-cart count.");
+                if (expectedLifeCount == 1)
+                {
+                    Assert.That(
+                        lifeScenes[0].Kind,
+                        Is.EqualTo(CityFringeYardPartKind.MasonCart));
+                }
                 foreach (CityFringeYardPartDescriptor part in left.Parts)
                 {
                     Assert.That(

@@ -15,7 +15,27 @@ namespace BarPromenade
     {
         public const int MaximumPuddleCount = 42;
         public const float Thickness = 0.006f;
-        public const float SurfaceOffset = 0.003f;
+
+        /// <summary>How far the sheet's plane stands over its road.
+        /// The water shader heaves the sheet by
+        /// <see cref="CityPuddleWaterResources.WaveHeight"/> (times
+        /// 1.73 for the three summed trains), and the trough has to
+        /// stay clear of the asphalt, or the depth test buries the
+        /// middle of every patch: at 3 mm over a 4 mm wave the city's
+        /// puddles drew as two slivers with a hole walking between
+        /// them. Five millimetres over a sub-millimetre wave keeps the
+        /// whole sheet above the road and its foam band below it.
+        /// </summary>
+        public const float SurfaceOffset = 0.005f;
+
+        /// <summary>How much air the sheet needs under it. Any other
+        /// surface whose top comes closer than this to the plane -
+        /// or rises through it - covers the puddle: the pavement
+        /// slab 60 mm up at the kerb, a crossing's stripes, or the
+        /// flat intersection square a graded block's slab passes
+        /// under. Coincident slabs of the same height pass, being a
+        /// full <see cref="SurfaceOffset"/> below.</summary>
+        private const float CoverClearance = 0.002f;
 
         /// <summary>How many puddles the flat open precincts may carry
         /// between them. Deliberately small: standing water in a yard
@@ -33,6 +53,15 @@ namespace BarPromenade
         private const float OpenGroundEdgeInset = 4f;
 
         private const float MinimumOpenGroundSpan = 3f;
+
+        /// <summary>How far the terrain skin may stray from a cell's
+        /// datum under a pool before the cell is not level. The skin
+        /// is a bilinear sheet between the cell's four corner
+        /// elevations, so a yard whose corners disagree is a ramp
+        /// from edge to edge, not a plateau with ramped edges - a
+        /// slab planned on its datum hung 1.8 m over one such yard.
+        /// </summary>
+        private const float LevelSkinTolerance = 0.003f;
 
         public static IReadOnlyList<RuntimeOrientedBox> Create(
             CityStreetSurfacePlan streetPlan,
@@ -64,22 +93,26 @@ namespace BarPromenade
                     continue;
                 }
 
-                candidates.Add(
-                    new Candidate(
-                        hash,
-                        index * 2,
-                        CreatePatch(surface, hash)));
+                TryAddCandidate(
+                    candidates,
+                    hash,
+                    index * 2,
+                    CreatePatch(surface, hash),
+                    index,
+                    streetPlan);
                 if (longest >= 16f &&
                     ((hash >> 8) & 1u) != 0u)
                 {
                     uint secondHash = CityExteriorAppearance.Mix(
                         hash,
                         0x6D2B79F5u);
-                    candidates.Add(
-                        new Candidate(
-                            secondHash,
-                            (index * 2) + 1,
-                            CreatePatch(surface, secondHash)));
+                    TryAddCandidate(
+                        candidates,
+                        secondHash,
+                        (index * 2) + 1,
+                        CreatePatch(surface, secondHash),
+                        index,
+                        streetPlan);
                 }
             }
 
@@ -108,6 +141,24 @@ namespace BarPromenade
             CityLayout layout,
             int citySeed)
         {
+            return CreateOpenGround(layout, citySeed, null);
+        }
+
+        /// <summary>
+        /// As above, minus the fringe yards. Since the landscape pass they
+        /// are terrain - stone terraces, the forefield's compacted fill -
+        /// and their <c>PhysicalTopY</c> is a datum the skin no longer lies
+        /// on: a slab planned on it hung 1.8 m in the air over one yard
+        /// and lay 1.5 m under another. Until a yard carries a height
+        /// model this planner can read, its ground pools nothing; the
+        /// cemetery terrace and the church ground stay. The world builder
+        /// hands the plan in; <c>null</c> keeps the old behaviour.
+        /// </summary>
+        public static IReadOnlyList<RuntimeOrientedBox> CreateOpenGround(
+            CityLayout layout,
+            int citySeed,
+            CityFringeYardPlan terrainYards)
+        {
             if (layout == null)
             {
                 throw new ArgumentNullException(nameof(layout));
@@ -119,6 +170,14 @@ namespace BarPromenade
                  index++)
             {
                 flatAreas.Add(layout.OpenAreaAccesses[index].AreaId);
+            }
+
+            if (terrainYards != null)
+            {
+                for (int index = 0; index < terrainYards.Yards.Count; index++)
+                {
+                    flatAreas.Remove(terrainYards.Yards[index].AreaId);
+                }
             }
 
             var candidates = new List<Candidate>();
@@ -148,14 +207,17 @@ namespace BarPromenade
                     continue;
                 }
 
-                candidates.Add(
-                    new Candidate(
-                        hash,
-                        index,
-                        CreateGroundPatch(
-                            interior,
-                            surface.PhysicalTopY,
-                            hash)));
+                RuntimeOrientedBox patch = CreateGroundPatch(
+                    interior,
+                    surface.PhysicalTopY,
+                    hash);
+                if (surface.Kind == CitySurfaceKind.OpenGround &&
+                    !SkinIsLevelUnder(layout, surface, patch))
+                {
+                    continue;
+                }
+
+                candidates.Add(new Candidate(hash, index, patch));
             }
 
             candidates.Sort(CompareCandidates);
@@ -169,6 +231,42 @@ namespace BarPromenade
             }
 
             return new ReadOnlyCollection<RuntimeOrientedBox>(result);
+        }
+
+        /// <summary>
+        /// The open ground is a terrain skin, not a slab: the world
+        /// builder lays it through <see cref="CityTerrainSurfacePlan.SampleTop"/>,
+        /// so the pool asks the same function whether the skin lies on
+        /// the datum at its centre and its four corners. The cemetery
+        /// terrace and the church ground are solid slabs at their datum
+        /// and are not asked.
+        /// </summary>
+        private static bool SkinIsLevelUnder(
+            CityLayout layout,
+            CitySurfaceDescriptor surface,
+            RuntimeOrientedBox patch)
+        {
+            float datumTop = surface.PhysicalTopY;
+            for (int corner = 0; corner < 5; corner++)
+            {
+                Vector2 sample = new Vector2(patch.Center.x, patch.Center.z);
+                if (corner > 0)
+                {
+                    sample.x += ((corner & 1) == 0 ? -0.5f : 0.5f) * patch.Size.x;
+                    sample.y += ((corner & 2) == 0 ? -0.5f : 0.5f) * patch.Size.z;
+                }
+
+                float skinTop = CityTerrainSurfacePlan.SampleTop(
+                    layout,
+                    surface,
+                    sample);
+                if (Mathf.Abs(skinTop - datumTop) > LevelSkinTolerance)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         private static bool IsLevelOpenGround(
@@ -275,6 +373,91 @@ namespace BarPromenade
                 surface.Center + surface.Rotation * localOffset,
                 surface.Rotation,
                 size);
+        }
+
+        private static void TryAddCandidate(
+            List<Candidate> candidates,
+            uint rank,
+            int stableOrder,
+            RuntimeOrientedBox patch,
+            int sourceIndex,
+            CityStreetSurfacePlan streetPlan)
+        {
+            if (IsCovered(patch, sourceIndex, streetPlan))
+            {
+                return;
+            }
+
+            candidates.Add(new Candidate(rank, stableOrder, patch));
+        }
+
+        // The sheet's plane, in half-size units: the centre and the
+        // four corners. A 3x3 grid has nothing between them that the
+        // corners and centre do not bound.
+        private static readonly Vector3[] SheetSamplePoints =
+        {
+            Vector3.zero,
+            new Vector3(-0.5f, 0f, -0.5f),
+            new Vector3(0.5f, 0f, -0.5f),
+            new Vector3(-0.5f, 0f, 0.5f),
+            new Vector3(0.5f, 0f, 0.5f)
+        };
+
+        /// <summary>
+        /// True when some other surface stands over the sheet or
+        /// within <see cref="CoverClearance"/> under it. The gutter
+        /// inset is measured from the STREET box, and at an
+        /// intersection square that box runs the full right of way -
+        /// its edge is under the pavement slab, 60 mm up. Half the
+        /// city's puddles lay there, in the dark under the kerb.
+        /// </summary>
+        private static bool IsCovered(
+            RuntimeOrientedBox patch,
+            int sourceIndex,
+            CityStreetSurfacePlan streetPlan)
+        {
+            for (int sample = 0; sample < SheetSamplePoints.Length; sample++)
+            {
+                Vector3 point = patch.Center + patch.Rotation *
+                    Vector3.Scale(SheetSamplePoints[sample], patch.Size);
+                float ceiling = point.y - CoverClearance;
+                if (AnyTopAbove(
+                        streetPlan.StreetGeometry, point, ceiling, sourceIndex) ||
+                    AnyTopAbove(
+                        streetPlan.SidewalkGeometry, point, ceiling, -1) ||
+                    AnyTopAbove(
+                        streetPlan.CrosswalkMarkingGeometry, point, ceiling, -1) ||
+                    AnyTopAbove(
+                        streetPlan.CenterMarkingGeometry, point, ceiling, -1))
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
+        private static bool AnyTopAbove(
+            IReadOnlyList<RuntimeOrientedBox> surfaces,
+            Vector3 point,
+            float ceiling,
+            int skipIndex)
+        {
+            for (int index = 0; index < surfaces.Count; index++)
+            {
+                if (index == skipIndex)
+                {
+                    continue;
+                }
+
+                if (surfaces[index].TrySampleTop(point, out float top) &&
+                    top > ceiling)
+                {
+                    return true;
+                }
+            }
+
+            return false;
         }
 
         private static float Unit(uint hash, int shift)

@@ -35,6 +35,7 @@ namespace BarPromenade
         public MountainRoadWindDriver Wind { get; private set; }
         public MountainRoadWeatherShaper WeatherShaper { get; private set; }
         public CityWeatherController Weather { get; private set; }
+        public ExteriorCloudField Clouds { get; private set; }
         public InteractionPromptView InteractionPrompt { get; private set; }
         public IntoxicationHudView IntoxicationHud { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
@@ -81,6 +82,14 @@ namespace BarPromenade
             get;
             private set;
         }
+
+        /// <summary>
+        /// The road's raven roost pairs — bridge rail, portal
+        /// shoulder, summit parapet, culvert kerb — or <c>null</c>
+        /// when the plan yields no legal roost. Part of the air up
+        /// here, not of any machine on the road.
+        /// </summary>
+        public RavenRoostController RavenRoosts { get; private set; }
 
         private void Awake()
         {
@@ -378,6 +387,36 @@ namespace BarPromenade
             World.Cafe.Cast?.TryRequestHeroNotice();
         }
 
+        /// <summary>
+        /// Whether the brink bench or the counter stool currently
+        /// holds the hero. Both seats drop the camera into a composed
+        /// shot, so the roost pairs freeze their manners while one is
+        /// taken — the mountain's equivalent of the city's grave-work
+        /// gate. The Seats property is read on EVERY call because the
+        /// roost controller is wired in BuildAtmosphere, before
+        /// BuildSeats has run: only a per-poll read ever sees the
+        /// real list.
+        /// </summary>
+        private bool IsAnySeatSeated()
+        {
+            IReadOnlyList<CityBenchSitInteraction> seats = Seats;
+            if (seats == null)
+            {
+                return false;
+            }
+
+            for (int index = 0; index < seats.Count; index++)
+            {
+                CityBenchSitInteraction seat = seats[index];
+                if (seat != null && seat.IsSeated)
+                {
+                    return true;
+                }
+            }
+
+            return false;
+        }
+
         private void BuildAtmosphere(Camera camera)
         {
             GameObject atmosphereObject = new GameObject(
@@ -440,6 +479,11 @@ namespace BarPromenade
                 IsSheltered,
                 WeatherShaper,
                 Fog);
+            Clouds = ExteriorCloudField.Create(
+                transform,
+                camera,
+                ExteriorCloudProfiles.MountainRoad,
+                Plan.Seed);
 
             GameObject windObject = new GameObject("Mountain Wind Driver");
             windObject.transform.SetParent(transform, false);
@@ -465,6 +509,26 @@ namespace BarPromenade
                 carRoot.GetComponent<LastRouteCarAudio>()
                     ?.BindWindBed(WindSound);
             }
+
+            // The raven pairs come last: they belong to the air up here,
+            // not to any machine, and the player transform their far gate
+            // measures against exists by now. The session closure must
+            // read the seats LAZILY per poll — BuildAtmosphere runs
+            // before BuildSeats, so at this moment the Seats list is
+            // still null, and a closure that captured its value here
+            // would gate the birds on nothing for the whole scene.
+            RavenRoosts = RavenRoostController.Create(
+                transform,
+                MountainRoadRavenRoostPlanner.Create(
+                    Plan,
+                    new CityMapMountainRoadTeleportGround(
+                        World.WalkableArea),
+                    Plan.Seed),
+                RavenRoostSettings.MountainRoad,
+                Player.GameObject.transform,
+                () => GameSessionState.IsRidingAVehicle ||
+                      IsAnySeatSeated(),
+                Plan.Seed);
         }
 
         private void BuildCommonUi(GameObject ui)

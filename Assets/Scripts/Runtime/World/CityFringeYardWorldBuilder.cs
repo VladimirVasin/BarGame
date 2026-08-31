@@ -34,8 +34,6 @@ namespace BarPromenade
             new Color(0.235f, 0.26f, 0.235f, 1f);
         private static readonly Color Timber =
             new Color(0.34f, 0.21f, 0.105f, 1f);
-        private static readonly Color DomesticPaint =
-            new Color(0.19f, 0.31f, 0.30f, 1f);
 
         internal static CityFringeYardWorldResult Build(
             Transform parent,
@@ -233,38 +231,6 @@ namespace BarPromenade
                 yard,
                 CityFringeYardPartKind.MasonCart,
                 CityMiscKind.FringeMasonCart,
-                ResolveFixedVariant,
-                provider,
-                batches,
-                importedIds);
-            TryAppendImportedSingleParts(
-                yard,
-                CityFringeYardPartKind.WinchServiceSet,
-                CityMiscKind.FringeWinchServiceSet,
-                ResolveFixedVariant,
-                provider,
-                batches,
-                importedIds);
-            TryAppendImportedSingleParts(
-                yard,
-                CityFringeYardPartKind.TunnelServiceSet,
-                CityMiscKind.FringeTunnelServiceSet,
-                ResolveFixedVariant,
-                provider,
-                batches,
-                importedIds);
-            TryAppendImportedSingleParts(
-                yard,
-                CityFringeYardPartKind.FloodMaintenanceSet,
-                CityMiscKind.FringeFloodMaintenanceSet,
-                ResolveFixedVariant,
-                provider,
-                batches,
-                importedIds);
-            TryAppendImportedSingleParts(
-                yard,
-                CityFringeYardPartKind.OpenHoodCar,
-                CityMiscKind.FringeOpenHoodCar,
                 ResolveFixedVariant,
                 provider,
                 batches,
@@ -637,18 +603,9 @@ namespace BarPromenade
                         ? CityFringeYardStyle.Iron
                         : CityFringeYardStyle.UtilityPaint;
                 case CityMiscKind.FringeMasonCart:
-                case CityMiscKind.FringeWinchServiceSet:
-                case CityMiscKind.FringeTunnelServiceSet:
-                case CityMiscKind.FringeFloodMaintenanceSet:
-                case CityMiscKind.FringeOpenHoodCar:
                     if (surface == CityMiscSurfaceKind.Timber)
                     {
                         return CityFringeYardStyle.Timber;
-                    }
-
-                    if (surface == CityMiscSurfaceKind.PaintedMetal)
-                    {
-                        return CityFringeYardStyle.DomesticPaint;
                     }
 
                     if (surface == CityMiscSurfaceKind.Stone)
@@ -660,10 +617,9 @@ namespace BarPromenade
                     {
                         case CityMiscMeshRole.Timber:
                             return CityFringeYardStyle.Timber;
-                        case CityMiscMeshRole.Residential:
-                            return CityFringeYardStyle.DomesticPaint;
                         case CityMiscMeshRole.Masonry:
                             return CityFringeYardStyle.OldMasonry;
+                        case CityMiscMeshRole.Residential:
                         case CityMiscMeshRole.Street:
                         case CityMiscMeshRole.Industrial:
                         case CityMiscMeshRole.Fixture:
@@ -833,12 +789,6 @@ namespace BarPromenade
                         CityParkSurfaceKind.Timber,
                         color);
                     break;
-                case CityFringeYardStyle.DomesticPaint:
-                    CityParkSurfaceAppearance.ApplyCombined(
-                        renderer,
-                        CityParkSurfaceKind.PaintedMetal,
-                        color);
-                    break;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(style),
@@ -876,9 +826,6 @@ namespace BarPromenade
                 case CityFringeYardStyle.Timber:
                     return CityParkSurfaceAppearance.GetRecipe(
                         CityParkSurfaceKind.Timber).MetersPerTile;
-                case CityFringeYardStyle.DomesticPaint:
-                    return CityParkSurfaceAppearance.GetRecipe(
-                        CityParkSurfaceKind.PaintedMetal).MetersPerTile;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(style),
@@ -920,8 +867,6 @@ namespace BarPromenade
                     return Rock;
                 case CityFringeYardStyle.Timber:
                     return Timber;
-                case CityFringeYardStyle.DomesticPaint:
-                    return DomesticPaint;
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(style),

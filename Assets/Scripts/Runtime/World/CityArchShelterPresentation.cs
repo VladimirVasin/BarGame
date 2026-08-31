@@ -9,9 +9,10 @@ namespace BarPromenade
     /// <summary>
     /// Gives the otherwise passive arch tableau its proofs of life: a layered
     /// deterministic barrel flame, one causally synchronized pool of warm
-    /// light, sparse sparks, crackle, breathing and small body shifts. The
-    /// fire is always burning and therefore stays outside the night-fixture
-    /// registry; daylight may overpower it, but never switches it off.
+    /// light, sparse sparks and crackle. Resident motion lives in authored
+    /// rig clips on CityArchShelterResidentPresentation. The fire is always
+    /// burning and therefore stays outside the night-fixture registry;
+    /// daylight may overpower it, but never switches it off.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class CityArchShelterPresentation : MonoBehaviour
@@ -25,8 +26,6 @@ namespace BarPromenade
         public const string EmberComponentName = "EmberBed_Neon";
         public const string SpillComponentName =
             "GroundSpill_BacklitSign";
-        public const string BreathingComponentName =
-            "BreathingUpper_Residential";
         public const string FireLightObjectName =
             "Barrel Fire Dynamic Light";
         public const string FireSparkObjectName = "Barrel Fire Sparks";
@@ -63,17 +62,10 @@ namespace BarPromenade
         private Renderer flameRenderer;
         private Renderer[] flameRenderers = Array.Empty<Renderer>();
         private Renderer spillRenderer;
-        private Transform breathingUpper;
-        private Transform standingRoot;
-        private Transform seatedRoot;
         private Vector3[] flameBaseScales = Array.Empty<Vector3>();
         private Vector3[] flameBasePositions = Array.Empty<Vector3>();
         private Quaternion[] flameBaseRotations =
             Array.Empty<Quaternion>();
-        private Vector3 breathingBasePosition;
-        private Vector3 breathingBaseScale;
-        private Quaternion standingBaseRotation;
-        private Quaternion seatedBaseRotation;
         private float phase;
         private AudioClip crackleClip;
         private Vector3 fireLightBasePosition;
@@ -82,7 +74,6 @@ namespace BarPromenade
         public Renderer FlameRenderer => flameRenderer;
         public IReadOnlyList<Renderer> FlameRenderers => flameRenderers;
         public Renderer SpillRenderer => spillRenderer;
-        public Transform BreathingUpper => breathingUpper;
         public AudioSource CrackleSource { get; private set; }
         public Light FireLight { get; private set; }
         public CityLightHalo FireHalo { get; private set; }
@@ -97,11 +88,6 @@ namespace BarPromenade
                 ? flameRenderers[0]
                 : null;
             Transform spill = FindDescendant(SpillComponentName);
-            breathingUpper = FindDescendant(BreathingComponentName);
-            standingRoot = FindDescendantContaining(
-                "npc-standing-warmer");
-            seatedRoot = FindDescendantContaining(
-                "npc-seated-warmer");
             spillRenderer = spill != null
                 ? spill.GetComponent<Renderer>()
                 : null;
@@ -115,22 +101,6 @@ namespace BarPromenade
                 flameBaseScales[index] = flame.localScale;
                 flameBasePositions[index] = flame.localPosition;
                 flameBaseRotations[index] = flame.localRotation;
-            }
-
-            if (breathingUpper != null)
-            {
-                breathingBasePosition = breathingUpper.localPosition;
-                breathingBaseScale = breathingUpper.localScale;
-            }
-
-            if (standingRoot != null)
-            {
-                standingBaseRotation = standingRoot.localRotation;
-            }
-
-            if (seatedRoot != null)
-            {
-                seatedBaseRotation = seatedRoot.localRotation;
             }
 
             phase = HashToUnit(seed) * Mathf.PI * 2f;
@@ -178,7 +148,6 @@ namespace BarPromenade
                     0f,
                     Mathf.Sin(time * 0.41f + phase * 0.73f)),
                 18f);
-            float breath = Mathf.Sin(time * 1.75f + phase * 0.23f);
             AppliedFireFactor = Mathf.Max(
                 FireLightMinimumFactor,
                 1f + quick * 0.10f + slow * 0.055f +
@@ -281,29 +250,6 @@ namespace BarPromenade
                         AppliedFireFactor));
             }
 
-            if (breathingUpper != null)
-            {
-                float lift = (breath + 1f) * 0.0025f;
-                breathingUpper.localPosition =
-                    breathingBasePosition + Vector3.up * lift;
-                breathingUpper.localScale = Vector3.Scale(
-                    breathingBaseScale,
-                    new Vector3(1f, 1f + breath * 0.006f, 1f));
-            }
-
-            if (standingRoot != null)
-            {
-                standingRoot.localRotation =
-                    standingBaseRotation *
-                    Quaternion.Euler(0f, 0f, breath * 0.32f);
-            }
-
-            if (seatedRoot != null)
-            {
-                seatedRoot.localRotation =
-                    seatedBaseRotation *
-                    Quaternion.Euler(breath * 0.22f, 0f, 0f);
-            }
         }
 
         private void SetTint(Renderer target, Color tint, float intensity)
@@ -605,23 +551,6 @@ namespace BarPromenade
                         descendants[index].name,
                         exactName,
                         StringComparison.Ordinal))
-                {
-                    return descendants[index];
-                }
-            }
-
-            return null;
-        }
-
-        private Transform FindDescendantContaining(string fragment)
-        {
-            Transform[] descendants =
-                GetComponentsInChildren<Transform>(true);
-            for (int index = 0; index < descendants.Length; index++)
-            {
-                if (descendants[index].name.IndexOf(
-                        fragment,
-                        StringComparison.OrdinalIgnoreCase) >= 0)
                 {
                     return descendants[index];
                 }

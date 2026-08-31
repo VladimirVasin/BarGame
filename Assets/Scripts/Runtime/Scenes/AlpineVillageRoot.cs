@@ -41,6 +41,7 @@ namespace BarPromenade
 
         public AlpineVillageWeatherShaper WeatherShaper { get; private set; }
         public CityWeatherController Weather { get; private set; }
+        public ExteriorCloudField Clouds { get; private set; }
         public InteractionPromptView InteractionPrompt { get; private set; }
         public IntoxicationHudView IntoxicationHud { get; private set; }
         public IntoxicationStatusController IntoxicationStatus
@@ -67,6 +68,12 @@ namespace BarPromenade
             get;
             private set;
         }
+
+        /// <summary>
+        /// The village's raven roost pairs, hunched against the gale —
+        /// or <c>null</c> when the plan yields no legal roost.
+        /// </summary>
+        public RavenRoostController RavenRoosts { get; private set; }
 
         /// <summary>
         /// How far the village has gone out, `0` warm and `1` an ordinary
@@ -301,6 +308,10 @@ namespace BarPromenade
             AlpineVillageRidgeAppearance.SetHaze(
                 RenderSettings.fogColor,
                 RenderSettings.fogDensity);
+            Clouds?.SetVisibility(
+                RenderSettings.fogColor,
+                StormWave,
+                WarmthGrade);
         }
 
         /// <summary>
@@ -614,6 +625,11 @@ namespace BarPromenade
                 IsSheltered,
                 WeatherShaper,
                 Fog);
+            Clouds = ExteriorCloudField.Create(
+                transform,
+                areaCamera,
+                ExteriorCloudProfiles.AlpineVillage,
+                Plan.Seed);
 
             // The garland meshes were built before the player and weather.
             // Bind them now to the one shaped wind sample already driving
@@ -642,6 +658,25 @@ namespace BarPromenade
                 Plan.Seed,
                 IsSheltered,
                 WindSound);
+
+            // The raven pairs, hunched against the gale. The session
+            // closure must read CabinSeat LAZILY per poll —
+            // BuildAtmosphere runs before BuildCableway, so the seat
+            // is still null at this moment, and a captured value would
+            // gate the birds on nothing for the whole scene;
+            // IsRidingAVehicle covers the ride itself either way.
+            RavenRoosts = RavenRoostController.Create(
+                transform,
+                AlpineVillageRavenRoostPlanner.Create(
+                    Plan,
+                    new CityMapAlpineVillageTeleportGround(
+                        World.WalkableArea),
+                    Plan.Seed),
+                RavenRoostSettings.AlpineVillage,
+                Player.GameObject.transform,
+                () => GameSessionState.IsRidingAVehicle ||
+                      (CabinSeat != null && CabinSeat.IsSeated),
+                Plan.Seed);
         }
 
         private void BuildCommonUi(GameObject ui)

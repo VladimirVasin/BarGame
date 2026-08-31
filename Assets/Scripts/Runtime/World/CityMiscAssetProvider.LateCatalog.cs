@@ -151,40 +151,5 @@ namespace BarPromenade
             P("WheelAndHardware_Fixture", CityMiscMeshRole.Fixture)
         };
 
-        private static readonly ExpectedPartSpec[] FringeWinchServiceParts =
-        {
-            P("Winch_Industrial", CityMiscMeshRole.Industrial),
-            P("TimberCrib_Residential_Timber",
-                CityMiscMeshRole.Residential,
-                CityMiscSurfaceKind.Timber),
-            P("CableAndTools_Fixture", CityMiscMeshRole.Fixture)
-        };
-
-        private static readonly ExpectedPartSpec[] FringeTunnelServiceParts =
-        {
-            P("BarrierAndRail_Industrial", CityMiscMeshRole.Industrial),
-            P("RepairBlocks_Masonry_Stone", CityMiscMeshRole.Masonry,
-                CityMiscSurfaceKind.Stone),
-            P("Tools_Fixture", CityMiscMeshRole.Fixture)
-        };
-
-        private static readonly ExpectedPartSpec[]
-            FringeFloodMaintenanceParts =
-        {
-            P("PumpAndPipe_Industrial", CityMiscMeshRole.Industrial),
-            P("Planks_Residential_Timber", CityMiscMeshRole.Residential,
-                CityMiscSurfaceKind.Timber),
-            P("DryHoseAndTools_Fixture", CityMiscMeshRole.Fixture)
-        };
-
-        private static readonly ExpectedPartSpec[] FringeOpenHoodCarParts =
-        {
-            P("BodyAndOpenHood_Street_PaintedMetal",
-                CityMiscMeshRole.Street,
-                CityMiscSurfaceKind.PaintedMetal),
-            P("TyresCabinAndEngine_Street", CityMiscMeshRole.Street),
-            P("JackRemovedWheelAndTools_Fixture",
-                CityMiscMeshRole.Fixture)
-        };
     }
 }

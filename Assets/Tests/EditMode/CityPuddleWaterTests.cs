@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.IO;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -38,6 +39,18 @@ namespace BarPromenade.Tests.EditMode
                 puddle.GetFloat("_WaveHeight") * 1.73f,
                 Is.LessThan(CityWaterSurfaceFactory.CrestAllowance));
 
+            // And the puddle's own: the sheet stands SurfaceOffset over
+            // the road, so the summed trough must stay clear of the
+            // asphalt AND of the foam band under it. At 3 mm over a
+            // 4 mm wave the depth test cut every patch into two
+            // slivers with a hole between them.
+            Assert.That(
+                puddle.GetFloat("_WaveHeight") * 1.73f,
+                Is.LessThan(
+                    CityPuddlePlanner.SurfaceOffset -
+                    CityPuddleWaterResources.FoamDistance),
+                "The wave trough reaches the road or the foam band.");
+
             // What the user asked of a puddle: the environment mirror
             // and the street lamps' glints.
             Assert.That(
@@ -75,6 +88,31 @@ namespace BarPromenade.Tests.EditMode
                 puddle.GetFloat("_SurfaceWetness"),
                 Is.Zero,
                 "A dry street means an invisible puddle.");
+        }
+
+        /// <summary>
+        /// The puddle's shore stands on the square root of the wetness:
+        /// the city's drizzle floor (0.18) measured against the wetness
+        /// itself left a quarter-width sliver, which at 640x360 is no
+        /// puddle at all. Pinned in the exact HLSL form so a retune of
+        /// the shader fails here first.
+        /// </summary>
+        [Test]
+        public void Shader_PuddleShoreStandsOnTheSquareRootOfWetness()
+        {
+            string source = File.ReadAllText(
+                Path.Combine(
+                    Application.dataPath,
+                    "Resources/Shaders/CityRiverWater.shader"));
+            Assert.That(
+                source,
+                Does.Contain(
+                    "float shore = sqrt(saturate(_SurfaceWetness));"),
+                "The drizzle would shrink every puddle to a sliver again.");
+            Assert.That(
+                source,
+                Does.Contain("shore - erosion"),
+                "The rim erosion must bite the shore, not the raw wetness.");
         }
 
         [Test]

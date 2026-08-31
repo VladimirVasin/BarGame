@@ -1,0 +1,17 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: d0a75de8a852de24099b751c5a9a7fb6, type: 3}
+  m_Name: CityArchShelterResidentProvider
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CityArchShelterResidentProvider
+  standingPrefab: {fileID: 6518494279610833712, guid: f1967a5784a83c74c8300d2b80fe0cd2, type: 3}
+  seatedPrefab: {fileID: 208803434872481120, guid: 7f043dad924fd274a845f98a5fb6bbc0, type: 3}
+  sleeperPrefab: {fileID: 5005938014827456627, guid: 5c47299c303d00c46834d1eba90e1ed3, type: 3}

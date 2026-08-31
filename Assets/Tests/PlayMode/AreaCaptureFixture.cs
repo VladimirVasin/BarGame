@@ -499,6 +499,162 @@ namespace BarPromenade.Tests.PlayMode
                 plotId);
         }
 
+        /// <summary>
+        /// The outdoor roost pairs across the city, one short series
+        /// per roost plus the park flush. The ledger needs no seeding
+        /// — the pairs are triggerless — but the ACTIVATION radius
+        /// keeps a far roost frozen with its renderers off, so each
+        /// roost's establishing frame owns a readyWhen closure that
+        /// teleports the hidden hero near that roost once and then
+        /// polls the controller until the pair is awake and perched.
+        /// Without the teleports the series would photograph empty
+        /// coping.
+        /// </summary>
+        [UnityTest]
+        [Explicit("Capture, not a test. Run one area at a time.")]
+        public IEnumerator CityRavenRoosts()
+        {
+            IgnoreUnlessRavenArtBuilt();
+            GameSessionState.BeginNewGame();
+
+            CityGameRoot cityRoot = null;
+            yield return Capture(
+                SceneIds.City,
+                () =>
+                {
+                    cityRoot = Object.FindAnyObjectByType<CityGameRoot>();
+                    return cityRoot;
+                },
+                () => CityRavenRoostShots(cityRoot));
+        }
+
+        /// <summary>
+        /// Framing is computed from the same pure planner run the
+        /// root wires — root.Layout/World through the city teleport
+        /// ground — NOT from the controller's live state: shots are
+        /// resolved before the settle frames, and the planner is
+        /// deterministic over the layout, so descriptor i here IS
+        /// controller roost i.
+        /// </summary>
+        private static Shot[] CityRavenRoostShots(CityGameRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            RavenRoostController controller = root.CityRavenRoosts;
+            Assert.That(
+                controller,
+                Is.Not.Null,
+                "The default city must raise the roost controller.");
+            var ground = new CityMapCityTeleportGround(root.Layout);
+            System.Collections.Generic.IReadOnlyList<
+                RavenRoostDescriptor> descriptors =
+                CityRavenRoostPlanner.Create(
+                    root.Layout,
+                    root.World,
+                    ground,
+                    GameSessionState.CitySeed);
+            Assert.That(
+                controller.RoostCount,
+                Is.EqualTo(descriptors.Count),
+                "An inert controller (missing raven art) cannot be " +
+                "photographed.");
+
+            var shots = new System.Collections.Generic.List<Shot>();
+            int parkIndex = -1;
+            for (int index = 0; index < descriptors.Count; index++)
+            {
+                RavenRoostDescriptor roost = descriptors[index];
+                if (string.Equals(
+                        roost.StableId,
+                        "city-roost-park-fountain",
+                        StringComparison.Ordinal))
+                {
+                    parkIndex = index;
+                }
+
+                string shortName = ShortRoostName(roost.StableId);
+                AddRoostPairShot(
+                    shots,
+                    root.Player,
+                    controller,
+                    ground,
+                    RavenRoostSettings.City,
+                    index,
+                    roost,
+                    $"roost-{shots.Count:00}-{shortName}");
+
+                //  The close frame: down the pair's own axis from
+                //  just past the companion bird, so beak and eye can
+                //  be judged in grayscale against the perch ground.
+                Vector3 a = roost.PerchA.Position;
+                Vector3 toB = roost.PerchB.Position - a;
+                toB.y = 0f;
+                toB = toB.sqrMagnitude > 0.0001f
+                    ? toB.normalized
+                    : Vector3.forward;
+                Vector3 side =
+                    Vector3.Cross(Vector3.up, toB).normalized;
+                shots.Add(Shot.At(
+                    $"roost-{shots.Count:00}-{shortName}",
+                    roost.PerchB.Position + toB * 2.2f +
+                    side * 0.9f + Vector3.up * 1.45f,
+                    a + Vector3.up * 0.15f,
+                    50f));
+            }
+
+            if (parkIndex >= 0)
+            {
+                RavenRoostDescriptor park = descriptors[parkIndex];
+                Vector3 a = park.PerchA.Position;
+                Vector3 toB = park.PerchB.Position - a;
+                toB.y = 0f;
+                toB = toB.sqrMagnitude > 0.0001f
+                    ? toB.normalized
+                    : Vector3.forward;
+                Vector3 side =
+                    Vector3.Cross(Vector3.up, toB).normalized;
+                int index = parkIndex;
+                bool heroSentIn = false;
+                //  The teleport is a side effect of this shot's OWN
+                //  readyWhen — the cemetery flush frame's idiom: fire
+                //  once into the flush circle (the reactivation band
+                //  wakes a frozen roost on the same poll), then wait
+                //  until the flush actually runs, so the frame
+                //  catches the wings out over the plaza gravel.
+                shots.Add(Shot.At(
+                    $"roost-{shots.Count:00}-park-fountain-flush",
+                    a + side * 5.5f + Vector3.up * 1.7f,
+                    a + Vector3.up * 0.7f,
+                    58f,
+                    0,
+                    () =>
+                    {
+                        if (!heroSentIn)
+                        {
+                            root.Player.Motor.Teleport(
+                                a - side * 2.6f + Vector3.up * 0.5f);
+                            heroSentIn = true;
+                        }
+
+                        if (controller.GetRoostPhase(index) !=
+                            CemeteryRavenPhase.Startled)
+                        {
+                            return false;
+                        }
+
+                        CemeteryRavenActor[] birds =
+                            controller.GetRoostHost(index)
+                                .GetComponentsInChildren<
+                                    CemeteryRavenActor>(true);
+                        return birds.Length == 2 &&
+                               birds[0].HasFlight &&
+                               birds[1].HasFlight;
+                    }));
+            }
+
+            Assert.That(shots, Is.Not.Empty);
+            return shots.ToArray();
+        }
+
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator MountainRoad()
@@ -1165,7 +1321,7 @@ namespace BarPromenade.Tests.PlayMode
             MountainRoadBridgeDescriptor bridge = plan.Bridge;
             MountainRoadPlateauDescriptor plateau = plan.Plateau;
             MountainRoadBrinkDescriptor brink = plateau.Brink;
-            return new[]
+            Shot[] baseShots =
             {
                 FrameMountainRoad(
                     "00-tunnel-threshold",
@@ -1256,6 +1412,10 @@ namespace BarPromenade.Tests.PlayMode
                     Vector3.down * 1.4f,
                     58f)
             };
+            var shots =
+                new System.Collections.Generic.List<Shot>(baseShots);
+            AppendMountainRoadRoostShots(root, shots);
+            return shots.ToArray();
         }
 
         /// <summary>
@@ -1307,7 +1467,7 @@ namespace BarPromenade.Tests.PlayMode
                 Mathf.Min(plan.Lane.Length * 0.62f, 52f));
             AlpineVillageLaneSample midLane = plan.Lane.Sample(
                 plan.Lane.Length * 0.5f);
-            return new[]
+            Shot[] baseShots =
             {
                 Shot.At(
                     "00-lower-uphill-axis",
@@ -1392,6 +1552,441 @@ namespace BarPromenade.Tests.PlayMode
                     0,
                     () => root.StormWave <= GustTroughWave)
             };
+            var shots =
+                new System.Collections.Generic.List<Shot>(baseShots);
+            AppendAlpineVillageRoostShots(root, shots);
+            return shots.ToArray();
+        }
+
+        /// <summary>
+        /// The road's three named roost pairs — bridge rail from the
+        /// deck approach, portal shoulder from the carriageway, brink
+        /// coping from the terrace — and then the §10f mandatory
+        /// grayscale series re-run with the brink pair present: the
+        /// 35 m frontal approach in day light and the 20 m oblique.
+        /// The zone's Проверка pins the terrace as one horizontal
+        /// with sky over it, and these frames decide whether the
+        /// silhouetted pair breaks that read — if it does, the roost
+        /// falls to the culvert fallback chain; it does not slide
+        /// along the parapet. Skipped wholesale when the raven art is
+        /// not built (the controller is then absent or inert): the
+        /// road contact sheet still photographs the road.
+        /// </summary>
+        private static void AppendMountainRoadRoostShots(
+            MountainRoadRoot root,
+            System.Collections.Generic.List<Shot> shots)
+        {
+            RavenRoostController controller = root.RavenRoosts;
+            if (controller == null || controller.RoostCount == 0)
+            {
+                return;
+            }
+
+            System.Collections.Generic.IReadOnlyList<
+                RavenRoostDescriptor> descriptors =
+                MountainRoadRavenRoostPlanner.Create(
+                    root.Plan,
+                    new CityMapMountainRoadTeleportGround(
+                        root.World.WalkableArea),
+                    root.Plan.Seed);
+            if (controller.RoostCount != descriptors.Count)
+            {
+                return;
+            }
+
+            int gorge = IndexOfRoost(
+                descriptors,
+                "road-roost-gorge-bridge");
+            if (gorge >= 0)
+            {
+                //  From the deck approach, down the centreline at the
+                //  abutment: the rail bird near, the deck bird five
+                //  metres beyond, the gorge behind both.
+                MountainRoadBridgeDescriptor bridge = root.Plan.Bridge;
+                Vector3 eye = bridge.Start - bridge.Forward * 4.5f;
+                eye.y = bridge.Start.y + 1.7f;
+                shots.Add(Shot.At(
+                    "10-roost-gorge-bridge",
+                    eye,
+                    Midpoint(descriptors[gorge]) + Vector3.up * 0.1f,
+                    55f,
+                    0,
+                    WakeRoostWhenPerched(
+                        root.Player,
+                        controller,
+                        gorge,
+                        bridge.Start - bridge.Forward * 8f +
+                        Vector3.up * 0.5f)));
+            }
+
+            int portal = IndexOfRoost(
+                descriptors,
+                "road-roost-exit-portal");
+            if (portal >= 0)
+            {
+                //  From the carriageway, the walk-out view: the pair
+                //  on the shoulder as the hero leaving the tunnel
+                //  actually meets it on minute one.
+                MountainRoadTunnelDescriptor tunnel = root.Plan.Tunnel;
+                Vector3 axis = tunnel.OutwardAxis;
+                axis.y = 0f;
+                axis = axis.sqrMagnitude > 0.0001f
+                    ? axis.normalized
+                    : Vector3.forward;
+                Vector3 eye = tunnel.PortalGroundCenter + axis * 11f;
+                eye.y = tunnel.PortalGroundCenter.y + 1.7f;
+                shots.Add(Shot.At(
+                    "11-roost-exit-portal",
+                    eye,
+                    Midpoint(descriptors[portal]) +
+                    Vector3.up * 0.15f,
+                    55f,
+                    0,
+                    WakeRoostWhenPerched(
+                        root.Player,
+                        controller,
+                        portal,
+                        tunnel.PortalGroundCenter + axis * 12f +
+                        Vector3.up * 0.5f)));
+            }
+
+            int summit = IndexOfRoost(
+                descriptors,
+                "road-roost-summit-brink");
+            if (summit < 0)
+            {
+                return;
+            }
+
+            RavenRoostDescriptor brinkRoost = descriptors[summit];
+            Vector3 coping = brinkRoost.PerchA.Position;
+            Vector3 terrace = brinkRoost.PerchB.Position;
+            Vector3 inward = -root.Plan.Plateau.Brink.Outward;
+            inward.y = 0f;
+            inward = inward.sqrMagnitude > 0.0001f
+                ? inward.normalized
+                : Vector3.forward;
+            Vector3 along =
+                Vector3.Cross(Vector3.up, inward).normalized;
+            Vector3 heroStand = terrace + inward * 8f +
+                                Vector3.up * 0.5f;
+            Vector3 fromTerrace = terrace + inward * 5f +
+                                  along * 2.5f;
+            fromTerrace.y = terrace.y + 1.72f;
+            shots.Add(Shot.At(
+                "12-roost-summit-brink",
+                fromTerrace,
+                coping + Vector3.up * 0.1f,
+                50f,
+                0,
+                WakeRoostWhenPerched(
+                    root.Player,
+                    controller,
+                    summit,
+                    heroStand)));
+
+            //  §10f's mandatory reading of the terrace, pair present:
+            //  a standing eye on the terrace floor, the coping line
+            //  one horizontal with sky over it, the birds punctuating
+            //  it. Day light comes from the fixture's own clock
+            //  setup; the frames are judged by looking.
+            Vector3 approach = coping + inward * 35f;
+            approach.y = terrace.y + EyeHeight;
+            shots.Add(Shot.At(
+                "13-roost-brink-approach-35m",
+                approach,
+                coping + Vector3.up * 0.2f,
+                58f,
+                0,
+                WakeRoostWhenPerched(
+                    root.Player,
+                    controller,
+                    summit,
+                    heroStand)));
+            Vector3 oblique = coping +
+                              (inward * 0.8f + along * 0.6f)
+                              .normalized * 20f;
+            oblique.y = terrace.y + EyeHeight;
+            shots.Add(Shot.At(
+                "14-roost-brink-oblique-20m",
+                oblique,
+                coping + Vector3.up * 0.15f,
+                54f,
+                0,
+                WakeRoostWhenPerched(
+                    root.Player,
+                    controller,
+                    summit,
+                    heroStand)));
+        }
+
+        /// <summary>
+        /// The village's roost pairs: the adit-mouth pair first, then
+        /// whatever second roost the greedy pass kept — the woodpile
+        /// cart stands inside the adit's spacing circle on the
+        /// default village, so its authored row usually yields to the
+        /// lane fence, and the frames follow the plan rather than a
+        /// wish. Skipped wholesale when the raven art is not built.
+        /// </summary>
+        private static void AppendAlpineVillageRoostShots(
+            AlpineVillageRoot root,
+            System.Collections.Generic.List<Shot> shots)
+        {
+            RavenRoostController controller = root.RavenRoosts;
+            if (controller == null || controller.RoostCount == 0)
+            {
+                return;
+            }
+
+            var villageGround =
+                new CityMapAlpineVillageTeleportGround(
+                    root.World.WalkableArea);
+            System.Collections.Generic.IReadOnlyList<
+                RavenRoostDescriptor> descriptors =
+                AlpineVillageRavenRoostPlanner.Create(
+                    root.Plan,
+                    villageGround,
+                    root.Plan.Seed);
+            if (controller.RoostCount != descriptors.Count)
+            {
+                return;
+            }
+
+            int count = Mathf.Min(2, descriptors.Count);
+            for (int index = 0; index < count; index++)
+            {
+                AddRoostPairShot(
+                    shots,
+                    root.Player,
+                    controller,
+                    villageGround,
+                    RavenRoostSettings.AlpineVillage,
+                    index,
+                    descriptors[index],
+                    $"{8 + index:00}-roost-" +
+                    ShortRoostName(descriptors[index].StableId));
+            }
+        }
+
+        /// <summary>
+        /// One establishing frame of a roost pair, owning the
+        /// wake-the-roost teleport: the hero lands nine metres to the
+        /// side of the pair — outside the 3.5 m flush circle of both
+        /// perches, far inside the reactivation band, hidden from the
+        /// lens by the fixture — and the frame waits until the
+        /// controller reports the pair awake and perched. Without the
+        /// teleport, the activation radius would leave a far roost
+        /// frozen and the frame would photograph empty stone.
+        /// </summary>
+        private static void AddRoostPairShot(
+            System.Collections.Generic.List<Shot> shots,
+            PlayerRuntime player,
+            RavenRoostController controller,
+            ICityMapTeleportGround ground,
+            RavenRoostSettings settings,
+            int roostIndex,
+            in RavenRoostDescriptor roost,
+            string name)
+        {
+            Vector3 a = roost.PerchA.Position;
+            Vector3 b = roost.PerchB.Position;
+            Vector3 toB = b - a;
+            toB.y = 0f;
+            toB = toB.sqrMagnitude > 0.0001f
+                ? toB.normalized
+                : Vector3.forward;
+            Vector3 side = Vector3.Cross(Vector3.up, toB).normalized;
+            Vector3 mid = (a + b) * 0.5f;
+            shots.Add(Shot.At(
+                name,
+                mid + side * 6f + Vector3.up * 1.6f,
+                mid + Vector3.up * 0.2f,
+                52f,
+                0,
+                WakeRoostWhenPerched(
+                    player,
+                    controller,
+                    roostIndex,
+                    ResolveRoostStand(
+                        ground, settings, roost, mid, side, toB))));
+        }
+
+        /// <summary>
+        /// A stand point the hero can actually HOLD near a roost.
+        /// A raw offset beside a deck roost lands over water, and the
+        /// motor's walkable clamp then drags the hero onto the deck
+        /// itself — inside the flush circle, where the pair startles
+        /// and, with the hero parked well inside the return gate,
+        /// never comes back: the mol frame waited its 900 frames on
+        /// exactly that. So the stand is resolved through the same
+        /// mask-validated ground the planner used, trying both
+        /// flanks and both ends of the pair's axis, and accepting
+        /// only a point at least 6 m from BOTH perches (outside the
+        /// 3.5 m flush with margin) and comfortably inside the
+        /// activation radius. When nothing resolves — no walkable
+        /// ground anywhere near — the raw flank point stands, and
+        /// the frame's own timeout tells the reviewer the roost is
+        /// unphotographable rather than silently skipping it.
+        /// </summary>
+        private static Vector3 ResolveRoostStand(
+            ICityMapTeleportGround ground,
+            RavenRoostSettings settings,
+            in RavenRoostDescriptor roost,
+            Vector3 mid,
+            Vector3 side,
+            Vector3 toB)
+        {
+            Vector3[] candidates =
+            {
+                mid + side * 9f,
+                mid - side * 9f,
+                mid + toB * 9f,
+                mid - toB * 9f,
+                mid + side * 12f,
+                mid - side * 12f
+            };
+            float ceiling =
+                settings.ActivationRadiusMeters -
+                RavenRoostSettings.ReactivationHysteresisMeters - 1f;
+            for (int index = 0; index < candidates.Length; index++)
+            {
+                if (!ground.TryResolveStandingPosition(
+                        new Vector2(
+                            candidates[index].x,
+                            candidates[index].z),
+                        out Vector3 standing))
+                {
+                    continue;
+                }
+
+                if (PlanarDistanceXZ(
+                        standing, roost.PerchA.Position) >= 6f &&
+                    PlanarDistanceXZ(
+                        standing, roost.PerchB.Position) >= 6f &&
+                    PlanarDistanceXZ(
+                        standing, roost.HomeReference) <= ceiling)
+                {
+                    return standing + Vector3.up * 0.25f;
+                }
+            }
+
+            // Deck roosts (mol, barge, bridge, landing) sit on
+            // surfaces the teleport ground cannot HEIGHT-resolve —
+            // the mask knows the footprint but not the deck top, so
+            // every probe above failed. Walk the pair's own axis
+            // instead: past B, away from A, at B's own authored deck
+            // level. The deck footprint IS in the walkable mask, so
+            // the motor's clamp holds the hero there — seven metres
+            // from the nearer bird, outside the flush circle.
+            for (float reach = 7f; reach <= 10f; reach += 3f)
+            {
+                Vector3 stand =
+                    roost.PerchB.Position + toB * reach;
+                if (PlanarDistanceXZ(
+                        stand, roost.PerchA.Position) >= 6f &&
+                    PlanarDistanceXZ(
+                        stand, roost.HomeReference) <= ceiling)
+                {
+                    return stand + Vector3.up * 0.5f;
+                }
+            }
+
+            return mid + side * 9f + Vector3.up * 0.5f;
+        }
+
+        private static float PlanarDistanceXZ(
+            Vector3 first,
+            Vector3 second)
+        {
+            float dx = first.x - second.x;
+            float dz = first.z - second.z;
+            return Mathf.Sqrt(dx * dx + dz * dz);
+        }
+
+        /// <summary>
+        /// The teleport-then-poll closure the roost frames share: it
+        /// fires the hero to the stand point exactly once, then
+        /// reports whether the roost is awake and perched. Idempotent
+        /// across frames of the same roost — once the condition
+        /// holds, later closures return true without moving anybody.
+        /// </summary>
+        private static Func<bool> WakeRoostWhenPerched(
+            PlayerRuntime player,
+            RavenRoostController controller,
+            int roostIndex,
+            Vector3 heroStand)
+        {
+            bool heroSent = false;
+            return () =>
+            {
+                if (!heroSent)
+                {
+                    player.Motor.Teleport(heroStand);
+                    heroSent = true;
+                }
+
+                return controller.IsRoostActive(roostIndex) &&
+                       controller.GetRoostPhase(roostIndex) ==
+                       CemeteryRavenPhase.PerchedIdle;
+            };
+        }
+
+        private static Vector3 Midpoint(
+            in RavenRoostDescriptor roost)
+        {
+            return (roost.PerchA.Position + roost.PerchB.Position) *
+                   0.5f;
+        }
+
+        private static int IndexOfRoost(
+            System.Collections.Generic.IReadOnlyList<
+                RavenRoostDescriptor> descriptors,
+            string stableId)
+        {
+            for (int index = 0; index < descriptors.Count; index++)
+            {
+                if (string.Equals(
+                        descriptors[index].StableId,
+                        stableId,
+                        StringComparison.Ordinal))
+                {
+                    return index;
+                }
+            }
+
+            return -1;
+        }
+
+        /// <summary>"city-roost-park-fountain" -> "park-fountain":
+        /// the area prefix is the folder's business, not the file
+        /// name's.</summary>
+        private static string ShortRoostName(string stableId)
+        {
+            const string marker = "roost-";
+            int cut = stableId.IndexOf(
+                marker,
+                StringComparison.Ordinal);
+            return cut >= 0
+                ? stableId.Substring(cut + marker.Length)
+                : stableId;
+        }
+
+        /// <summary>
+        /// The roost series has nothing to photograph until the raven
+        /// prefab is built by the editor pipeline: the controller
+        /// then degrades to inert and every perch stands empty. An
+        /// Ignore says so honestly where a hung readyWhen would fail
+        /// the run late and loudly.
+        /// </summary>
+        private static void IgnoreUnlessRavenArtBuilt()
+        {
+            CemeteryRavenProvider provider =
+                CemeteryRavenProvider.Load();
+            if (provider == null || provider.RavenPrefab == null)
+            {
+                Assert.Ignore(
+                    "The cemetery raven prefab is not built yet.");
+            }
         }
 
         private static Shot FrameVillageBuilding(

@@ -197,6 +197,16 @@ namespace BarPromenade
                     Climb01));
         }
 
+        /// <summary>
+        /// Snow is area-only. The persistent street film reads the raw
+        /// schedule, so a whiteout up here does not soak the city's asphalt
+        /// when the hero comes back down.
+        /// </summary>
+        public float ShapeSurfaceWetness(WeatherVisualSample sample)
+        {
+            return sample.RainIntensity;
+        }
+
         public WindSample ShapeWind(WindSample wind)
         {
             RefreshClimb();

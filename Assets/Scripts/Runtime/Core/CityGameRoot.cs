@@ -20,6 +20,7 @@ namespace BarPromenade
         public CityLightningFlashLight Lightning { get; private set; }
         public CityThunderSoundPlayer Thunder { get; private set; }
         public CityWeatherController Weather { get; private set; }
+        public ExteriorCloudField Clouds { get; private set; }
         public RetroAudioService Audio { get; private set; }
         public CityMusicPlayer Music { get; private set; }
         public CityLocationMusicDirector LocationMusic
@@ -97,6 +98,19 @@ namespace BarPromenade
         /// no cemetery.
         /// </summary>
         public CityCemeteryRavenController CemeteryRavens
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>
+        /// The rest of the species: sparse triggerless raven pairs on
+        /// the city's planned outdoor roosts, always already perched —
+        /// or <c>null</c> when the blueprint yields no legal roost.
+        /// Kept apart from <see cref="CemeteryRavens"/> on purpose:
+        /// the grave pair is an event, these are fauna.
+        /// </summary>
+        public RavenRoostController CityRavenRoosts
         {
             get;
             private set;
@@ -596,16 +610,15 @@ namespace BarPromenade
             DryingYardBabushkas = DryingYardBabushkaFactory.Create(
                 transform,
                 DryingYardBabushkaPlan.Create(Layout));
-            // Small silent tableaux at the new residential pockets and old
-            // municipal fringe works. Their bodies reuse only unlimited
-            // generic pedestrian archetypes and remain outside both the
-            // roaming pool and the unique staged-NPC providers.
+            // Small silent tableaux at selected residential pockets. Their
+            // bodies reuse only unlimited generic pedestrian archetypes and
+            // remain outside both the roaming pool and the unique staged-NPC
+            // providers; the fringe yards carry no resident layer.
             CourtyardResidents = CityCourtyardResidentFactory.Create(
                 transform,
                 CityCourtyardResidentPlan.Create(
                     Layout,
-                    World.DecorationPlan,
-                    World.FringeYardPlan));
+                    World.DecorationPlan));
             if (World.ArchShelterPlan.IsEnabled)
             {
                 ArchShelterPresentation = World.ArchShelter.Root
@@ -969,6 +982,11 @@ namespace BarPromenade
                     (BusRide != null && BusRide.IsPassengerAboard) ||
                     (TunnelShelter != null && TunnelShelter.IsSheltered),
                 new CityEternalRainShaper());
+            Clouds = ExteriorCloudField.Create(
+                transform,
+                camera,
+                ExteriorCloudProfiles.City,
+                GameSessionState.CitySeed);
             BalanceCheckView balanceView =
                 ui.AddComponent<BalanceCheckView>();
             balanceView.Initialize(
@@ -1011,6 +1029,26 @@ namespace BarPromenade
                 GraveWork,
                 Player.GameObject.transform,
                 camera,
+                GameSessionState.CitySeed);
+            // And the rest of the species: up to eight triggerless
+            // pairs on the open city's planned roosts, always already
+            // perched — nothing about them is an event. Raised right
+            // after the grave pair because they share its session
+            // gate: while a grave-work act owns the camera, no bird
+            // may do anything observable inside that shot. The
+            // closure reads GraveWork lazily per poll, the same
+            // null-guarded idiom the cemetery pair applies to a yard
+            // with no work controller at all.
+            CityRavenRoosts = RavenRoostController.Create(
+                transform,
+                CityRavenRoostPlanner.Create(
+                    Layout,
+                    World,
+                    new CityMapCityTeleportGround(Layout),
+                    GameSessionState.CitySeed),
+                RavenRoostSettings.City,
+                Player.GameObject.transform,
+                () => GraveWork != null && GraveWork.IsActive,
                 GameSessionState.CitySeed);
             // The argument at the chess set. Null when the layout grew
             // no park: there is then nobody to have it with.

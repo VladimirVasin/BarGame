@@ -198,6 +198,13 @@ namespace BarPromenade.Tests.EditMode
                 return new WeatherVisualSample(sample.Kind, 1f);
             }
 
+            // Area-only, like the real snow shapers: the shared film
+            // reads the schedule.
+            public float ShapeSurfaceWetness(WeatherVisualSample sample)
+            {
+                return sample.RainIntensity;
+            }
+
             public WindSample ShapeWind(WindSample wind)
             {
                 return wind;

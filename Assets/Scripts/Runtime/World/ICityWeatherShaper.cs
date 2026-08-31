@@ -11,7 +11,7 @@ namespace BarPromenade
     /// a second component beside it, and the reason is ordering: the
     /// controller already writes <c>CityClothWindRegistry</c> and the
     /// precipitation drift every frame, so anything that also wrote them
-    /// would be a race decided by execution order. One writer, one hook, two
+    /// would be a race decided by execution order. One writer, one hook, three
     /// named axes.
     ///
     /// The bearing is deliberately not shapeable. Cloth, snow and the swaying
@@ -23,5 +23,18 @@ namespace BarPromenade
         WeatherVisualSample ShapePrecipitation(WeatherVisualSample sample);
 
         WindSample ShapeWind(WindSample wind);
+
+        /// <summary>
+        /// The target the persistent street film is driven toward, read
+        /// from the raw schedule sample. A third axis, and apart from
+        /// precipitation on purpose: what falls through an area's air is
+        /// that area's alone, while <c>CityWetSurfaceRegistry</c> is one
+        /// shared simulation the hero carries between scenes. The snow
+        /// areas hand the schedule through untouched - a blizzard on the
+        /// terrace must not soak the city's asphalt when he comes back
+        /// down - and the city floors it at its drizzle, because the
+        /// asphalt of this city never dries.
+        /// </summary>
+        float ShapeSurfaceWetness(WeatherVisualSample sample);
     }
 }

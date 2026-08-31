@@ -834,186 +834,223 @@ MonoBehaviour:
     clip: {fileID: -6617112425389331939, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 3.75
     looping: 0
+    facialExpressionKeys: []
   - clipName: BedExit
     category: bed
     clip: {fileID: 6206997764505020634, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 6
     looping: 0
+    facialExpressionKeys: []
   - clipName: BedSleepLoop
     category: bed
     clip: {fileID: 6400762376244492153, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 4
     looping: 1
+    facialExpressionKeys: []
   - clipName: BusAlightExit
     category: bus_ride
     clip: {fileID: 1408742402421887124, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 3
     looping: 0
+    facialExpressionKeys: []
   - clipName: BusBoardEnter
     category: bus_ride
     clip: {fileID: -4609525377536076492, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 3
     looping: 0
+    facialExpressionKeys: []
   - clipName: BusRideLoop
     category: bus_ride
     clip: {fileID: 7783172126181339155, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 2
     looping: 1
+    facialExpressionKeys: []
   - clipName: CarAlightExit
     category: car_ride
     clip: {fileID: -4781757418146699472, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 3
     looping: 0
+    facialExpressionKeys: []
   - clipName: CarBoardEnter
     category: car_ride
     clip: {fileID: -8803463652883169735, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 3
     looping: 0
+    facialExpressionKeys: []
   - clipName: CatFeedEnter
     category: cat_feeding
     clip: {fileID: -3362603890314664099, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 2
     looping: 0
+    facialExpressionKeys: []
   - clipName: CatFeedExit
     category: cat_feeding
     clip: {fileID: 5523990541729722063, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 2
     looping: 0
+    facialExpressionKeys: []
   - clipName: CatFeedLoop
     category: cat_feeding
     clip: {fileID: 6198089451450497641, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 2.6666667
     looping: 1
+    facialExpressionKeys: []
   - clipName: ChessSeatEnter
     category: chess_seat
     clip: {fileID: 7508453432089489800, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 3
     looping: 0
+    facialExpressionKeys: []
   - clipName: ChessSeatExit
     category: chess_seat
     clip: {fileID: 3381358482616283584, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 3
     looping: 0
+    facialExpressionKeys: []
   - clipName: ChessSeatPlayLoop
     category: chess_seat
     clip: {fileID: -8500666027495548268, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 4
     looping: 1
+    facialExpressionKeys: []
   - clipName: DoorUseEnter
     category: door_use
     clip: {fileID: -3819571249170146038, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 0.5
     looping: 0
+    facialExpressionKeys: []
   - clipName: DoorUseExit
     category: door_use
     clip: {fileID: -1934260736794440486, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 0.5
     looping: 0
+    facialExpressionKeys: []
   - clipName: DoorUseLoop
     category: door_use
     clip: {fileID: 231342779716977159, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 0.25
     looping: 1
+    facialExpressionKeys: []
   - clipName: DownLeft
     category: fall
     clip: {fileID: -5620793988590711360, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 1.2
     looping: 0
+    facialExpressionKeys: []
   - clipName: DownRight
     category: fall
     clip: {fileID: -1863791753024796318, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 1.2
     looping: 0
+    facialExpressionKeys: []
   - clipName: Face_ClosedBlink
     category: facial
     clip: {fileID: 8599569728987019019, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 0.041666668
     looping: 0
+    facialExpressionKeys: []
   - clipName: Face_HalfBlink
     category: facial
     clip: {fileID: 2911621112262932611, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 0.041666668
     looping: 0
+    facialExpressionKeys: []
   - clipName: Face_Neutral
     category: facial
     clip: {fileID: -7189254954648759245, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 0.041666668
     looping: 0
+    facialExpressionKeys: []
   - clipName: Face_Tense
     category: facial
     clip: {fileID: 884906239785987298, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 0.041666668
     looping: 0
+    facialExpressionKeys: []
   - clipName: Face_Watchful
     category: facial
     clip: {fileID: 2085703646086948716, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 0.041666668
     looping: 0
+    facialExpressionKeys: []
   - clipName: FallLeft
     category: fall
     clip: {fileID: 8059775702162799950, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 0.45
     looping: 0
+    facialExpressionKeys: []
   - clipName: FallRight
     category: fall
     clip: {fileID: 4679807724962848077, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 0.45
     looping: 0
+    facialExpressionKeys: []
   - clipName: Idle
     category: locomotion
     clip: {fileID: 4149236839903290795, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 4
     looping: 1
+    facialExpressionKeys: []
   - clipName: Relaxed
     category: locomotion
     clip: {fileID: 2552026672911820320, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 0.041666668
     looping: 0
+    facialExpressionKeys: []
   - clipName: RiseLeft
     category: fall
     clip: {fileID: -8043127386897731888, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 1.6666666
     looping: 0
+    facialExpressionKeys: []
   - clipName: RiseRight
     category: fall
     clip: {fileID: 8573074114696719335, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 1.6666666
     looping: 0
+    facialExpressionKeys: []
   - clipName: SmokeEnter
     category: smoking
     clip: {fileID: 8767132247779909543, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 4
     looping: 0
+    facialExpressionKeys: []
   - clipName: SmokeExit
     category: smoking
     clip: {fileID: 457225962732220971, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 2
     looping: 0
+    facialExpressionKeys: []
   - clipName: SmokeLoop
     category: smoking
     clip: {fileID: -5214764653953503558, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 4
     looping: 1
+    facialExpressionKeys: []
   - clipName: TurnLeft
     category: locomotion
     clip: {fileID: 5150705899159750486, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 1
     looping: 1
+    facialExpressionKeys: []
   - clipName: TurnRight
     category: locomotion
     clip: {fileID: -3977427891364104068, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 1
     looping: 1
+    facialExpressionKeys: []
   - clipName: Walk
     category: locomotion
     clip: {fileID: -227416529858450933, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 1
     looping: 1
+    facialExpressionKeys: []
   - clipName: WalkBack
     category: locomotion
     clip: {fileID: 7782575537884476560, guid: d422d4befc223294aabace05eb97a274, type: 3}
     authoredDuration: 1
     looping: 1
+    facialExpressionKeys: []
   anchors:
     head: {fileID: 7321311710282039475}
     chest: {fileID: 7343277775070546520}
@@ -1033,7 +1070,13 @@ MonoBehaviour:
   sourceGeneratorVersion: 2.8.0
   sourcePose: apose
   sourceTriangleCount: 1534
-  buildSignature: 4b1975d20bc32bccd0c0b8894609744b
+  buildSignature: d8d393a7855dc29bf987cf668989c4ed
+  faceAtlas:
+    renderer: {fileID: 0}
+    texture: {fileID: 0}
+    columns: 0
+    rows: 0
+    cells: []
   applyPaletteOnEnable: 1
 --- !u!1001 &6417608413615941791
 PrefabInstance:

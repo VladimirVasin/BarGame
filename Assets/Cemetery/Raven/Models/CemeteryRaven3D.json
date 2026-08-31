@@ -37,7 +37,7 @@
   "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
   "detail_atlas_file": "CemeteryRavenDetailAtlas.png",
   "detail_atlas_size": 256,
-  "detail_atlas_sha256": "a6322bdbf010c386eaa1ff09a852ef77253b2db3cae31ed8beb16ea5fd24191e",
+  "detail_atlas_sha256": "1cbe764160ab613072a48ce43e91e58ec18b3b87eeebb67665154e50e897b3f3",
   "atlas_regions": [
     {
       "name": "BeakDetail",
@@ -135,7 +135,7 @@
   "rigidbodies": false,
   "animation_count": 0,
   "animations": [],
-  "build_signature": "1f0c65334410d2633c11797dcb46eb3b93ed2df6429e36080f81b844b0b11db1",
+  "build_signature": "75a14e107d43b673110e73bdc437b2ef066ba8e718502aed73cad198cc073ed1",
   "parts": [
     {
       "name": "GEO_Beak",
@@ -157,9 +157,9 @@
       "role": "raven_body",
       "palette_name": "body_black",
       "base_color": [
-        0.105,
-        0.105,
-        0.12,
+        0.15,
+        0.15,
+        0.168,
         1.0
       ],
       "vertices": 62,
@@ -199,9 +199,9 @@
       "role": "raven_head",
       "palette_name": "head_black",
       "base_color": [
-        0.115,
-        0.115,
-        0.13,
+        0.162,
+        0.162,
+        0.18,
         1.0
       ],
       "vertices": 42,
@@ -241,9 +241,9 @@
       "role": "raven_tail",
       "palette_name": "tail_black",
       "base_color": [
-        0.095,
-        0.095,
-        0.11,
+        0.136,
+        0.136,
+        0.154,
         1.0
       ],
       "vertices": 22,
@@ -255,9 +255,9 @@
       "role": "raven_wing",
       "palette_name": "wing_black",
       "base_color": [
-        0.09,
-        0.09,
-        0.105,
+        0.128,
+        0.128,
+        0.146,
         1.0
       ],
       "vertices": 38,
@@ -269,9 +269,9 @@
       "role": "raven_wing",
       "palette_name": "wing_black",
       "base_color": [
-        0.09,
-        0.09,
-        0.105,
+        0.128,
+        0.128,
+        0.146,
         1.0
       ],
       "vertices": 38,

@@ -43,7 +43,7 @@ MonoBehaviour:
   m_Enabled: 1
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 08ee5a9aaa86b664ebde47b3ec169fd0, type: 3}
-  m_Name:
+  m_Name: 
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.CemeteryRavenRigAnchors
   modelRoot: {fileID: 8407679238934804461}
   renderers:
@@ -70,7 +70,7 @@ MonoBehaviour:
     role: raven_body
     paletteName: body_black
     renderer: {fileID: 2879931785251873273}
-    baseColor: {r: 0.105, g: 0.105, b: 0.12, a: 1}
+    baseColor: {r: 0.15, g: 0.15, b: 0.168, a: 1}
     usesDetailAtlas: 1
   - rendererName: GEO_Eye.L
     pivotName: PIVOT_Head
@@ -91,7 +91,7 @@ MonoBehaviour:
     role: raven_head
     paletteName: head_black
     renderer: {fileID: 2176185242964028352}
-    baseColor: {r: 0.115, g: 0.115, b: 0.13, a: 1}
+    baseColor: {r: 0.162, g: 0.162, b: 0.18, a: 1}
     usesDetailAtlas: 1
   - rendererName: GEO_Leg.L
     pivotName: PIVOT_BodyRoot
@@ -112,21 +112,21 @@ MonoBehaviour:
     role: raven_tail
     paletteName: tail_black
     renderer: {fileID: 247158807948102650}
-    baseColor: {r: 0.095, g: 0.095, b: 0.11, a: 1}
+    baseColor: {r: 0.136, g: 0.136, b: 0.154, a: 1}
     usesDetailAtlas: 1
   - rendererName: GEO_Wing.L
     pivotName: PIVOT_Wing.L
     role: raven_wing
     paletteName: wing_black
     renderer: {fileID: 1796364228119262379}
-    baseColor: {r: 0.09, g: 0.09, b: 0.105, a: 1}
+    baseColor: {r: 0.128, g: 0.128, b: 0.146, a: 1}
     usesDetailAtlas: 1
   - rendererName: GEO_Wing.R
     pivotName: PIVOT_Wing.R
     role: raven_wing
     paletteName: wing_black
     renderer: {fileID: 2061613315227569052}
-    baseColor: {r: 0.09, g: 0.09, b: 0.105, a: 1}
+    baseColor: {r: 0.128, g: 0.128, b: 0.146, a: 1}
     usesDetailAtlas: 1
   bodyRootPivot: {fileID: 3742763049426323766}
   headPivot: {fileID: 2546342478589629584}
@@ -141,7 +141,7 @@ MonoBehaviour:
   sourceTriangleCount: 496
   sourceGeneratorVersion: 1.0.0
   designId: cemetery_raven_v1
-  buildSignature: 1f0c65334410d2633c11797dcb46eb3b93ed2df6429e36080f81b844b0b11db1
+  buildSignature: 75a14e107d43b673110e73bdc437b2ef066ba8e718502aed73cad198cc073ed1
 --- !u!1001 &8296944179437621254
 PrefabInstance:
   m_ObjectHideFlags: 0
@@ -208,7 +208,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -5327705717579741588, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -4297774506240885677, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: m_CastShadows
@@ -228,7 +228,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -4297774506240885677, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -3111080835611840001, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: m_CastShadows
@@ -248,7 +248,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -3111080835611840001, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -1456530222406196051, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: m_CastShadows
@@ -268,7 +268,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -1456530222406196051, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: -1172914308686472294, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: m_CastShadows
@@ -288,7 +288,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: -1172914308686472294, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 503618589180786301, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: m_CastShadows
@@ -308,7 +308,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 503618589180786301, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 919132149155446097, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: m_Name
@@ -332,7 +332,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 4005377174237463387, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 7861022392776047558, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: m_CastShadows
@@ -352,7 +352,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 7861022392776047558, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 8091490125303045116, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: m_CastShadows
@@ -372,7 +372,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8091490125303045116, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     - target: {fileID: 8588135476254944747, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: m_CastShadows
@@ -392,7 +392,7 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 8588135476254944747, guid: 756164ec255ef4e419944600470fbd53, type: 3}
       propertyPath: 'm_Materials.Array.data[0]'
-      value:
+      value: 
       objectReference: {fileID: 2100000, guid: 061295ebafe2b8d44a0f09e69404f2ae, type: 2}
     m_RemovedComponents: []
     m_RemovedGameObjects: []

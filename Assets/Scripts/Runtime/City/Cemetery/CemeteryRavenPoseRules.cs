@@ -74,11 +74,33 @@ namespace BarPromenade
         /// </summary>
         public const float WingFoldMaximumDegrees = 70f;
 
+        /// <summary>
+        /// How far the wing's true hinge sits AHEAD of the authored
+        /// shoulder empty, along the bird's forward axis. The
+        /// generator parks each folded slab on the flank with the
+        /// empty near its mid-length (source y -0.015 on a slab
+        /// running -0.160..+0.150), so a bare rotation about the
+        /// empty pinwheels the slab in place — the trailing half
+        /// sweeps out while the leading half sweeps through the neck,
+        /// and the silhouette never widens; that is how the shipped
+        /// birds flew with no visible wings. The anatomical hinge is
+        /// the slab's LEADING end, and the actor re-expresses every
+        /// wing write about that point. Mirrors the generator's pivot
+        /// and wing-slab constants the same way
+        /// <see cref="WingFoldMaximumDegrees"/> mirrors its fold
+        /// limit: the two must agree or the wing root drifts off the
+        /// body.
+        /// </summary>
+        public const float WingShoulderLeadMeters = 0.145f;
+
         /// <summary>Flap swing at full deployment. A folded wing does
         /// not beat, so the amplitude scales with the fold — that one
-        /// rule makes deploy, flight and refold a single motion.
+        /// rule makes deploy, flight and refold a single motion. The
+        /// original 40 read as a shiver at the fog line in playtests;
+        /// 55 keeps the beat legible on a 0.3 m wing at the city's
+        /// far plane, and a heavy corvid honestly swings that far.
         /// </summary>
-        public const float FlightFlapAmplitudeDegrees = 40f;
+        public const float FlightFlapAmplitudeDegrees = 55f;
 
         /// <summary>Breathing is millimetres: visible on a bird this
         /// small only as a faint rise, which is exactly the point.

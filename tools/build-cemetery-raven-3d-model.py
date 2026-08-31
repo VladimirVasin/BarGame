@@ -27,7 +27,7 @@ pivot scale.
 Unlike the cat, the raven carries a 256 px detail atlas (the Kettle
 Hat precedent through tools/atlas_kit.py). The atlas MULTIPLIES under
 the flat palette colours, so every painted mark is a darkening stroke
-in the 165-235 sRGB grey band; the pale accents that anchor the bird
+in the 100-185 sRGB grey band; the pale accents that anchor the bird
 in grayscale - beak and eye - are palette parts and stay untextured,
 sampling the reserved pure-white cell at (0, 0).
 
@@ -110,11 +110,15 @@ STANDING_HEIGHT_MAX = 0.28
 
 # Flat colours a step above pure black, so the multiplied atlas still reads;
 # the pale beak and eye are the grayscale anchors the art bible names.
+# Playtesting proved the first pass too dark: multiplying pale greys under
+# ~0.1 linear produced differences below what the eye resolves, and the bird
+# read untextured. These tones are lifted one honest step - still «оперение
+# почти чёрное» - so the darker stroke band below has room to register.
 PALETTE = {
-    "body_black": (0.105, 0.105, 0.120, 1.0),
-    "wing_black": (0.090, 0.090, 0.105, 1.0),
-    "head_black": (0.115, 0.115, 0.130, 1.0),
-    "tail_black": (0.095, 0.095, 0.110, 1.0),
+    "body_black": (0.150, 0.150, 0.168, 1.0),
+    "wing_black": (0.128, 0.128, 0.146, 1.0),
+    "head_black": (0.162, 0.162, 0.180, 1.0),
+    "tail_black": (0.136, 0.136, 0.154, 1.0),
     "beak_grey": (0.34, 0.33, 0.31, 1.0),
     "leg_grey": (0.30, 0.29, 0.27, 1.0),
     "eye_pale": (0.66, 0.64, 0.58, 1.0),
@@ -131,8 +135,11 @@ DETAIL_ATLAS_RESERVED_CELL = (0, 0, 64, 64)
 DETAIL_ATLAS_WHITE = (255, 255, 255, 255)
 # The atlas multiplies under near-black palette tones, so every mark must
 # darken and stay legible: this closed grey band is the whole vocabulary.
-DETAIL_ATLAS_GREY_MIN = 165
-DETAIL_ATLAS_GREY_MAX = 235
+# The band sits deliberately low (100-185): over the lifted plumage tones a
+# grey above ~185 multiplies to a difference the eye cannot separate from
+# the flat colour, which is exactly the "untextured" read playtesting hit.
+DETAIL_ATLAS_GREY_MIN = 100
+DETAIL_ATLAS_GREY_MAX = 185
 
 
 def load_character_build_base():
@@ -311,7 +318,7 @@ def paint_covert_rows(
     """
 
     rect = atlas_kit.atlas_rect_bottom_left
-    for row_y, tone in ((14, 225), (28, 215), (42, 205)):
+    for row_y, tone in ((14, 160), (28, 150), (42, 140)):
         for dash_start in range(4, 54, 10):
             if mirrored:
                 dash_x = region.x + region.width - 1 - dash_start - 7
@@ -327,7 +334,7 @@ def paint_covert_rows(
             rect(
                 canvas,
                 tip_x, region.y + row_y + 2,
-                tip_x + 2, region.y + row_y + 3,
+                tip_x + 2, region.y + row_y + 4,
                 neutral_grey(tone),
             )
 
@@ -336,7 +343,7 @@ def paint_raven_detail_atlas() -> atlas_kit.PixelCanvas:
     """Paint the raven's detail atlas into a canvas.
 
     Pure white ground, alpha 255 everywhere, and only darkening greys in
-    the 165-235 band - the atlas multiplies under near-black palette
+    the 100-185 band - the atlas multiplies under near-black palette
     tones, so a light accent painted here would simply vanish; the pale
     anchors are palette parts. Every coordinate is a bottom-left pixel
     and every value is a literal, so the painter is a pure function and
@@ -354,7 +361,7 @@ def paint_raven_detail_atlas() -> atlas_kit.PixelCanvas:
     # rows sit in the upper half of the cell - the visible saddle.
     region = regions["BodyFeathers"]
     for row_y, tone, phase in (
-        (22, 225, 0), (32, 215, 5), (42, 225, 2), (52, 210, 7),
+        (22, 175, 0), (32, 165, 5), (42, 175, 2), (52, 160, 7),
     ):
         for dash_x in range(
             region.x + 4 + phase, region.x + region.width - 12, 12
@@ -375,26 +382,26 @@ def paint_raven_detail_atlas() -> atlas_kit.PixelCanvas:
         canvas,
         region.x + 6, region.y + 44,
         region.x + 14, region.y + 42,
-        neutral_grey(165),
-        1,
+        neutral_grey(110),
+        2,
     )
     rect(
         canvas,
         region.x + 24, region.y + 2,
         region.x + 31, region.y + 62,
-        neutral_grey(190),
+        neutral_grey(145),
     )
     rect(
         canvas,
         region.x + 28, region.y + 2,
         region.x + 31, region.y + 62,
-        neutral_grey(180),
+        neutral_grey(130),
     )
     rect(
         canvas,
         region.x + 33, region.y + 52,
         region.x + 63, region.y + 62,
-        neutral_grey(190),
+        neutral_grey(145),
     )
 
     # Wing coverts: three lap rows per wing, the right cell a mirror of
@@ -409,14 +416,14 @@ def paint_raven_detail_atlas() -> atlas_kit.PixelCanvas:
         rect(
             canvas,
             dash_x, region.y + 44,
-            dash_x + 1, region.y + 48,
-            neutral_grey(225),
+            dash_x + 2, region.y + 48,
+            neutral_grey(170),
         )
         rect(
             canvas,
             dash_x + 3, region.y + 34,
-            dash_x + 4, region.y + 38,
-            neutral_grey(230),
+            dash_x + 5, region.y + 38,
+            neutral_grey(180),
         )
 
     # Tail: two shaft bands across the fan.
@@ -426,7 +433,7 @@ def paint_raven_detail_atlas() -> atlas_kit.PixelCanvas:
             canvas,
             region.x + 3, region.y + band_y,
             region.x + 61, region.y + band_y + 2,
-            neutral_grey(210),
+            neutral_grey(140),
         )
 
     # Leg scales: horizontal scute rings up the tarsus. The rings are
@@ -437,8 +444,8 @@ def paint_raven_detail_atlas() -> atlas_kit.PixelCanvas:
             rect(
                 canvas,
                 region.x + 2, region.y + ring_y,
-                region.x + 62, region.y + ring_y + 1,
-                neutral_grey(210),
+                region.x + 62, region.y + ring_y + 2,
+                neutral_grey(150),
             )
 
     return canvas

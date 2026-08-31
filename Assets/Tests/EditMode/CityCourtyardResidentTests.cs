@@ -10,22 +10,19 @@ namespace BarPromenade.Tests.EditMode
         private const int Seed = GameSessionState.DefaultCitySeed;
 
         [Test]
-        public void Plan_MapsOnlyActiveCourtyardAndFringeScenesUnderCap()
+        public void Plan_MapsOnlyActiveResidentialCourtyardsUnderCap()
         {
             CityLayout layout = CreateLayout();
             CityDecorationPlan decorations = CreateDecorations(layout);
-            CityFringeYardPlan fringe = CreateFringe(layout);
 
             CityCourtyardResidentPlan first =
                 CityCourtyardResidentPlan.Create(
                     layout,
-                    decorations,
-                    fringe);
+                    decorations);
             CityCourtyardResidentPlan second =
                 CityCourtyardResidentPlan.Create(
                     layout,
-                    decorations,
-                    fringe);
+                    decorations);
 
             Assert.That(first.IsPresent, Is.True);
             Assert.That(
@@ -36,27 +33,12 @@ namespace BarPromenade.Tests.EditMode
                 first.Residents.Select(item => item.StableId),
                 second.Residents.Select(item => item.StableId));
 
-            CityCourtyardResidentActivity[] fringeActivities =
-            {
-                CityCourtyardResidentActivity.Masonry,
-                CityCourtyardResidentActivity.WinchService,
-                CityCourtyardResidentActivity.FloodMaintenance,
-                CityCourtyardResidentActivity.OpenHoodMechanic
-            };
-            foreach (CityCourtyardResidentActivity activity in
-                     fringeActivities)
-            {
-                Assert.That(
-                    first.Residents.Count(item =>
-                        item.Activity == activity),
-                    Is.EqualTo(1),
-                    $"Fringe activity '{activity}' needs one resident.");
-            }
-
-            foreach (CityDecorationDescriptor pocket in
-                     decorations.Descriptors.Where(item =>
-                         item.Kind ==
-                             CityDecorationKind.ResidentialCourtyardPocket))
+            CityDecorationDescriptor[] pockets = decorations.Descriptors
+                .Where(item =>
+                    item.Kind ==
+                        CityDecorationKind.ResidentialCourtyardPocket)
+                .ToArray();
+            foreach (CityDecorationDescriptor pocket in pockets)
             {
                 int expected;
                 switch (pocket.Variant)
@@ -81,14 +63,13 @@ namespace BarPromenade.Tests.EditMode
                     $"Pocket variant {pocket.Variant} has the wrong cast.");
             }
 
+            var pocketIds = new HashSet<string>(
+                pockets.Select(item => item.StableId));
             Assert.That(
-                first.Residents.Any(item =>
-                    SourceIsFringeKind(
-                        fringe,
-                        item.SourceStableId,
-                        CityFringeYardPartKind.TunnelServiceSet)),
-                Is.False,
-                "The tunnel service set stays an empty still life.");
+                first.Residents.All(item =>
+                    pocketIds.Contains(item.SourceStableId)),
+                Is.True,
+                "Fringe-yard props must not receive courtyard residents.");
 
             var stableIds = new HashSet<string>();
             foreach (CityCourtyardResidentDescriptor resident in
@@ -152,8 +133,7 @@ namespace BarPromenade.Tests.EditMode
             CityCourtyardResidentPlan plan =
                 CityCourtyardResidentPlan.Create(
                     layout,
-                    decorations,
-                    CityFringeYardPlan.Empty);
+                    decorations);
             var parent = new GameObject("Courtyard Resident Factory Test");
             try
             {
@@ -222,33 +202,5 @@ namespace BarPromenade.Tests.EditMode
             return CityDecorationPlanner.CreatePlan(layout, fence, night);
         }
 
-        private static CityFringeYardPlan CreateFringe(CityLayout layout)
-        {
-            CityMountainBoundaryPlan mountains =
-                CityMountainBoundaryPlanner.Create(layout);
-            return CityFringeYardPlanner.Create(layout, mountains);
-        }
-
-        private static bool SourceIsFringeKind(
-            CityFringeYardPlan fringe,
-            string stableId,
-            CityFringeYardPartKind kind)
-        {
-            for (int yardIndex = 0;
-                 yardIndex < fringe.Yards.Count;
-                 yardIndex++)
-            {
-                foreach (CityFringeYardPartDescriptor part in
-                         fringe.Yards[yardIndex].Parts)
-                {
-                    if (part.Kind == kind && part.StableId == stableId)
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
     }
 }

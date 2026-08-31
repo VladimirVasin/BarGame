@@ -21,7 +21,14 @@ church precinct immediately north of it, and the residual plain `4 x 4`
 north-east yard (the drained former lake block). Once the hero has sealed
 his first grave, two ordinary procedural ravens hold to the cemetery — one
 on that grave's mound, one on open ground nearby — flushing from a close
-approach and returning when he withdraws. The church owns a large
+approach and returning when he withdraws. Sparse pairs of the same
+wintering ravens also hold up to fourteen open city spots from the first
+day — on the default city ten: the fountain plaza gravel, the bandstand,
+a river landing, the mol head, the east-shore barge gunwale, a bridge
+kerb and four dumpster kerbs — always already perched,
+flushing at arm's length and never at the church, the district POIs, the
+cemetery or the boat-station tableau. The
+church owns a large
 Blender-authored exterior and a west-facing street entrance into its separate
 runtime-composed interior;
 the north edge carries the dressed seacoast precinct — mol, beacon,
@@ -87,15 +94,13 @@ pattern and owns a mono ballast buzz audible only within `5.6 m`. Its floor
 overlaps the terrain edge, and offset/overlapping lining joints remove the
 former ground gap, coplanar wall flicker and ceiling slits.
 The eastern Yard uses a separate low,
-unlit utility-edge composition and creates no eastern ridge. Each typed fringe
-Yard also carries one grounded human-scale work scene: a mason's cart at the
-west stone terraces, a service set around the west-industrial winch, a quiet
-barrier/repair set at the tunnel, a dry pump and planks at the floodworks, and
-an old compact car with its hood open, one wheel removed, a jack and tools at
-the eastern utility edge. Generic colliderless residents occupy only selected
-active scenes, never the tunnel set; the north-east `4 x 4` former-lake Yard
-remains deliberately empty. These scenes add no text, interaction, light,
-audio, story reaction, water, cats, children, fire, flags, logos or landmarks.
+unlit utility-edge composition and creates no eastern ridge. The only separate
+human-scale vignette in the typed fringe Yards is an unoccupied mason's cart at
+the west stone terraces. The former winch-service, tunnel-repair,
+flood-maintenance and open-hood-car sets are absent, and no fringe vignette
+receives a resident. The north-east `4 x 4` former-lake Yard also remains
+deliberately empty. The cart adds no text, interaction, light, audio, story
+reaction, water, cats, children, fire, flags, logos or landmarks.
 The gate-free
 `8 x 5.5 m` portal now leads into a `72 m` faceted rock shell: the first `12 m`
 are straight and physical, the first `11 m` are walkable, and the later
@@ -187,7 +192,11 @@ their semantic roots, placement and collision proxies remain plan-owned.
 Boulders, the culvert, utility cable and tunnel lamp remain the explicit
 later migration wave. Nine causal sound
 anchors remain, five on the road including the loose bridge rail and four on
-the summit, and one tunnel lamp visibly flickers.
+the summit, and one tunnel lamp visibly flickers. Up to four raven pairs
+hold the road the same way the cemetery pair holds its graves — the
+gorge-bridge rail, the exit-portal shoulder, the summit parapet clear of
+the bench and a culvert roadside — always already perched, never arriving
+in frame.
 The rest of that pad is a dressed transfer yard: ploughed snow and a grit bin
 left of the arrival, the last road board and a seized barrier right of it, the
 cafe's winter furniture on its threshold, a freight dock with one abandoned
@@ -242,7 +251,11 @@ snow, a distinct top house, facade repairs and shutters,
 garland posts, cable gate, rail bridge and a plain catch basin join the original
 houses, chapel, mine cart, adit, grave markers and firewood without adding a
 surface family. Two garland cords and three windows own the five real village
-lights. Six bounded synthesized spatial voices stay on visible causes. A
+lights. Six bounded synthesized spatial voices stay on visible causes. Two
+or three raven pairs sit hunched against the gale at the adit mouth, the
+firewood mine cart and a lane fence — never at the chapel over the spring,
+the graves, the top house or the station — their voices an accepted
+exception outside the warmth grade's six-voice contract. A
 village-only blizzard profile keeps snowfall at `.88–1` and wind at `.82–1`,
 adds terrain-sampled ground spindrift and drives one continuous synthesized
 wind bed from the same deterministic bearing and gust rhythm. All nine
@@ -342,12 +355,12 @@ district points of interest, collision proxies and existing laundry remain
 clear; the pocket proxies participate in the same wind-dressing clearance, so
 a wash line is moved or omitted rather than crossing the new furniture.
 Selected active pockets may borrow generic colliderless residents, but the
-balcony-basket and quiet variants stay unoccupied. The complete courtyard and
-fringe resident pass is capped at eight actors and adds no speech, interaction,
-light, sound or story state.
+balcony-basket and quiet variants stay unoccupied. The residential courtyard
+resident pass is capped at five actors and adds no speech, interaction, light,
+sound or story state; fringe Yards receive none.
 The broad passive City misc layer now resolves through the deterministic
-`city_misc_citywide_v4` Blender library at generator version `4.8.0`: `86`
-semantic kinds, `126` assemblies, `271` role meshes and `48,926` triangles
+`city_misc_citywide_v4` Blender library at generator version `4.9.0`: `82`
+semantic kinds, `122` assemblies, `259` role meshes and `46,542` triangles
 cover ordinary decoration and park
 landmarks, night fixtures, Route 01 stops, the eastern yard, cemetery,
 seacoast, fringe service belt, the static shells of all four district points of
@@ -356,10 +369,13 @@ service terrace joined to the east wall and south facade end. Its former bar,
 supermarket and player-home shells remain catalogued only for v4
 compatibility and are not instantiated. Unity
 plans still own placement, terrain, collision, dynamics, interactions, lights,
-halos, cloth and NPCs. Its standing, seated and sleeping Nightlife shelter
-residents are the three non-rigged humanoid exceptions: their baked meshes use
-the equivalent `static_humanoid_anatomy_v2` adult-proportion standard. Tilted
-cemetery monuments deliberately remain on their legacy geometry. Road v2 gives
+halos, cloth and NPCs. The catalog's old standing, seated and sleeping shelter
+meshes remain compatibility-only and are no longer instantiated. Their live
+replacements are three staged `NpcHumanV2` adults on the Hero V2 Avatar, each
+with a `256 px` detail atlas and a dedicated quiet rig loop. Fifteen structure,
+barrel, bedding and clutter components reuse measured City surface albedos
+through material property blocks. Tilted cemetery monuments deliberately
+remain on their legacy geometry. Road v2 gives
 ordinary City streets an `8 m` footprint
 with a `6 m` carriageway and two raised `1 m` sidewalks. At selected eligible
 perpendicular two-way corners and three- or four-way nodes, Road v2.1 moves the
@@ -405,15 +421,16 @@ returns. They spawn at randomly
   walker per event, uses much longer random delays throughout and retains
   authored simulation pace; walkers already active at dusk are not culled
   early.
-  The production humanoid-NPC asset set contains `21` rigged designs: the five
-  pooled walkers, `13` staged residents and the dedicated bartender, Watcher
+  The production humanoid-NPC asset set contains `24` rigged designs: the five
+  pooled walkers, `16` staged residents and the dedicated bartender, Watcher
   Cashier and bus driver. Every one uses `NpcHumanV2`: the exact Hero V2
   31-bone A-pose hierarchy and Avatar copied from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a shared
-  `0.835 m` rest pelvis. Pedestrian and staged manifests are generator version
-  `4.1.0`, the three special manifests are `2.0.0`, and the
-  `CityPedestrianLocomotion` bank now contains `37` clips; the four Mountain
-  Road cafe roles retain their separate `10`-clip bank. Their FBXs were
+  `0.835 m` rest pelvis. The five pooled and nine ordinary staged model
+  manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
+  The four Mountain Road cafe models and their separate `10`-clip bank use
+  `4.1.0`; the shelter trio and isolated three-loop bank use `4.2.0`; the
+  three special manifests use `2.0.0`. Their FBXs were
   reimported and the production prefabs/provider assets rebuilt, so runtime uses
   these models rather than retaining the former bodies behind new plans.
   The special models measure `50` meshes/`1,436` triangles for the
@@ -679,8 +696,19 @@ absolute session time (`GameWeatherRules`): `90`-game-minute slots draw clear
 a seeded hash, and the continuous rain intensity smoothsteps between the slot
 targets (`0`, `0.45`, `1.0`, `1.0`) over the first `5` game minutes of a
 slot, so City and the Home balcony always agree and scene loads cannot
-desynchronize the sky. Rain renders as a player-following field of stretched
-streak particles on the shared atmosphere shader (`CityRainField`, up to
+desynchronize the sky. One shared `ExteriorCloudField` now makes that sky
+visible in City, MountainRoad, AlpineVillage and the active Home balcony shot.
+Its generated 220-triangle hemisphere follows camera translation while
+retaining a canonical compass frame, so the `47 / 119 / 109 m` render radii
+inside the areas' `48 / 120 / 110 m` far planes never read as physical cloud
+altitude or produce low-cloud parallax. City and Home share the exact City
+profile, seed and absolute-time phase; the road and village only reshape
+coverage, scale and colour. All profiles advect from the existing deterministic
+wind schedule, blend their horizon into the area's current haze through one
+property block and add no light, shadow, fog or grade owner. The field is
+absent from true interiors and disabled in Home outside the Balcony shot.
+Rain renders as a player-following field of stretched streak particles on the
+shared atmosphere shader (`CityRainField`, up to
 `420` particles over a `26 m` box): light rain is sparser, thinner and
 slower-reading, heavy rain denser with longer brighter streaks. A
 deterministic synthesized rain bed tracks the same intensity in loudness and

@@ -9,8 +9,8 @@ namespace BarPromenade
         // The narrow-trace plan has a formal 638-part ceiling. Replacing its
         // tunnel slivers/light stock with six supported caps and a two-post
         // service frame adds at most seven descriptors. Runtime still batches
-        // the fine strokes by 48 m chunk/style/collision. Five grounded life
-        // assemblies are appended after the landmark pass.
+        // the fine strokes by 48 m chunk/style/collision. One grounded mason
+        // cart is appended after the landmark pass.
         public const int MaximumPartCount = 656;
         public const float MinimumTunnelDriveClearWidth = 6f;
 

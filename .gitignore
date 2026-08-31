@@ -53,6 +53,8 @@ Desktop.ini
 # Test and coverage output
 /TestResults/
 /CodeCoverage/
+# A batch run given -testResults at the repo root leaves its XML here.
+/TestResults-*.xml
 
 # Unity Test Framework leaves one of these in Assets/ for every PlayMode run
 # that does not exit cleanly. They are never source.

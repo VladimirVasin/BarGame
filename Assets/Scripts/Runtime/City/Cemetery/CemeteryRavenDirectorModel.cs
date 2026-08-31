@@ -126,10 +126,29 @@ namespace BarPromenade
         private readonly float[] takeoffStaggerSeconds;
         private readonly float[] returnStaggerSeconds;
 
+        /// <summary>The gates <see cref="Advance"/> actually polls.
+        /// They default to the cemetery consts above; an outdoor
+        /// roost on another scene's fog plane hands in its own.</summary>
+        private readonly float flushDistanceMeters;
+        private readonly float returnDistanceMeters;
+
+        /// <summary>
+        /// The distances are optional because the machine now serves
+        /// two callers: the cemetery pair keeps the 2-arg call and the
+        /// compile-time defaults (the consts stay, pinned by tests),
+        /// while the outdoor roost pairs live under other far planes —
+        /// a 33.6 m return gate that is honest in the city's 48 m fog
+        /// would pop birds into plain sight at the road's 120 m — and
+        /// so must hand in gates derived from their own scene.
+        /// </summary>
         public CemeteryRavenDirectorModel(
             int ravenSeedA,
-            int ravenSeedB)
+            int ravenSeedB,
+            float flushDistanceMeters = FlushDistanceMeters,
+            float returnDistanceMeters = ReturnDistanceMeters)
         {
+            this.flushDistanceMeters = flushDistanceMeters;
+            this.returnDistanceMeters = returnDistanceMeters;
             takeoffStaggerSeconds = new[]
             {
                 DeriveStagger(
@@ -230,9 +249,9 @@ namespace BarPromenade
                     // never into a session's owned camera.
                     if (!input.SessionActive &&
                         input.HeroDistanceToPerchAMeters >
-                        FlushDistanceMeters &&
+                        flushDistanceMeters &&
                         input.HeroDistanceToPerchBMeters >
-                        FlushDistanceMeters)
+                        flushDistanceMeters)
                     {
                         TransitionTo(
                             CemeteryRavenPhase.ArrivalFlight);
@@ -261,9 +280,9 @@ namespace BarPromenade
                     // flush nobody can see is an off-screen event.
                     if (!input.SessionActive &&
                         (input.HeroDistanceToPerchAMeters <=
-                         FlushDistanceMeters ||
+                         flushDistanceMeters ||
                          input.HeroDistanceToPerchBMeters <=
-                         FlushDistanceMeters))
+                         flushDistanceMeters))
                     {
                         TransitionTo(CemeteryRavenPhase.Startled);
                     }
@@ -290,7 +309,7 @@ namespace BarPromenade
                 {
                     if (!input.SessionActive &&
                         input.HeroDistanceToCrownMeters >=
-                        ReturnDistanceMeters)
+                        returnDistanceMeters)
                     {
                         TransitionTo(CemeteryRavenPhase.ReturnFlight);
                     }

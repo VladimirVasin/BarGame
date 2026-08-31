@@ -276,12 +276,11 @@ The vertical slice contains:
   faulty ballast owns a positional `5.6 m` buzz and crackles only on visible
   power dips. The
   eastern variant stays a separate low, unlit road/drain/pole/shed/berm utility
-  edge and creates no ridge. A late life pass adds exactly one grounded,
-  human-scale composition to every typed Yard: mason cart at the west stone
-  terraces, service tools at the west-industrial winch, a barrier/repair set at
-  the tunnel, dry pump and planks at the floodworks, and an old compact car with
-  its hood open, one wheel removed, jack and tools at the eastern utility edge.
-  The residual north-east former-lake Yard stays empty. Large masses are
+  edge and creates no ridge. A late life pass adds only one grounded,
+  unoccupied mason cart at the west stone terraces. The former winch-service,
+  tunnel-repair, flood-maintenance and open-hood-car sets are absent; the other
+  typed Yards and the residual north-east former-lake Yard receive no separate
+  vignette. Large masses are
   physical, small traces and cables are visual only. Every physical ridge
   overlaps beneath its sampled terrain
   toe and extends the near-toe collider across that join; only the open
@@ -385,6 +384,15 @@ The vertical slice contains:
   material. Scene handoffs advance the film from absolute game time and a new
   session resets it. City roads add at most `42` deterministic top-only puddle
   quads, batched into one collider-free mesh `3 mm` above their source roads;
+- one shared generated exterior cloud ceiling in City, Mountain Road, Alpine
+  Village and the active Home balcony shot. A passive `220`-triangle hemisphere
+  and one packed linear density texture feed three property-block profiles;
+  City/Home reuse the same seed, canonical frame and absolute-time phase, while
+  the road and village only change density, scale and colour. The shell follows
+  camera translation, so its `47 / 119 / 109 m` radii inside the current
+  `48 / 120 / 110 m` far planes are render distance rather than low physical
+  altitude. It owns no fog, grade, Light, shadow or collider, and Home disables
+  it everywhere except the balcony;
 - a default `640x360` PS1 world composite with four-tap footprint averaging,
   exact 2x/3x scaling at 720p/1080p, a 35% perceptual-space RGB555 blend
   without a screen-space dither grid, point upscaling and percentage-driven
@@ -517,15 +525,16 @@ The vertical slice contains:
   A slot's `CharacterController` is enabled only after a unique, obstacle-safe
   spawn and disabled before pooling. The dedicated layer collides with the player,
   ignores other pedestrians and is excluded from camera/interaction queries.
-  The live humanoid-NPC asset set comprises `21` rigged designs: five pooled
-  walkers, `13` staged residents and the dedicated bartender, Watcher Cashier
+  The live humanoid-NPC asset set comprises `24` rigged designs: five pooled
+  walkers, `16` staged residents and the dedicated bartender, Watcher Cashier
   and bus driver. Every rigged design uses `NpcHumanV2`, the exact Hero V2
   31-bone A-pose hierarchy and Avatar copied from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
-  `0.835 m` rest pelvis. Pedestrian and staged manifests are generator version
-  `4.1.0`, the three special manifests are `2.0.0`, and
-  `CityPedestrianLocomotion` contains `37` clips; the four Mountain Road
-  cafe roles retain their separate `10`-clip bank. The generated FBXs were
+  `0.835 m` rest pelvis. The five pooled and nine ordinary staged model
+  manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
+  The four Mountain Road cafe models and their separate `10`-clip bank use
+  `4.1.0`; the shelter trio and dedicated three-loop bank use `4.2.0`; the
+  three special manifests use `2.0.0`. The generated FBXs were
   reimported and every production prefab/provider output rebuilt; runtime
   therefore consumes the replaced models, not legacy prefabs behind revised
   authoring data. The special models measure `50` meshes/`1,436` triangles
@@ -814,9 +823,14 @@ The vertical slice contains:
   facade support and south to the raw wall end, so it is not a detached central
   plinth. It contains the visible `1.50 m` upper landing, barrel, standing and
   seated warmers, bedding and sleeper; its masonry mass reaches the lower datum,
-  while sparse mundane clutter remains on the lower ground. One full-depth
-  west `2.2 m` route remains on that lower ground. The terrace is a stair-only
-  dead end: `1.09 m` north/south guards plus a west guard south of the stair
+  while sparse mundane clutter remains on the lower ground.
+  Fifteen exact-name renderers reuse measured masonry, concrete, paving,
+  metal, timber, cloth, paper, enamel and roof albedos through MPBs. The three
+  residents are detailed Hero-Avatar `NpcHumanV2` prefabs with separate
+  `256 px` garment/face atlases and independent standing-warm, seated-warm and
+  sleeping-breath loops; they stay colliderless and never read the player. One
+  full-depth west `2.2 m` route remains on that lower ground. The terrace is a
+  stair-only dead end: `1.09 m` north/south guards plus a west guard south of the stair
   close every sampled `0.41-1.562 m` drop instead of pretending the east side
   is a seamless second route. The only opening is the stair band. Five
   independently moving emissive flame/ember parts, a transparent ground spill,
@@ -880,7 +894,10 @@ The vertical slice contains:
   dry synthesized caw, follow a passer-by with their heads, flush into the
   fog when the hero closes within arm's reach and settle back on the same
   two points once he is nearly out of sight; while a grave-work session
-  runs they neither startle nor call;
+  runs they neither startle nor call. Sparse pairs of the same wintering
+  ravens also hold open bird-logic spots across all three outdoor areas
+  from the first day — always already perched, never arriving in frame and
+  never anywhere the story touches;
 - one deterministic Church precinct on the `4 x 2` open area immediately
   north of that cemetery. Its sole street frontage and exterior entrance face
   west; the altar end faces east. City loads the `44 x 23 x 32 m`
@@ -926,14 +943,14 @@ The vertical slice contains:
   proxies clear of doors, accesses, district POIs, existing blocking geometry
   and drying lines; because those proxies enter the shared static-collision
   plan before wind dressing, laundry moves or is omitted instead of intersecting
-  a pocket. Selected active pockets and fringe work scenes may receive generic,
-  colliderless residents, capped at eight across the complete pass; balcony,
-  quiet and tunnel compositions remain unoccupied. They add no text,
-  interaction, light, audio or story reaction;
+  a pocket. Selected active pockets may receive generic, colliderless
+  residents, capped at five; balcony and quiet compositions remain unoccupied,
+  and fringe Yards receive no residents. They add no text, interaction, light,
+  audio or story reaction;
 - one deterministic `city_misc_citywide_v4` mesh library at generator version
-  `4.8.0` supplies the passive visuals for the broad City misc pass: `86`
-  semantic kinds resolve to `126` assemblies, `271` role meshes and
-  `48,926` triangles. It covers the 24-family
+  `4.9.0` supplies the passive visuals for the broad City misc pass: `82`
+  semantic kinds resolve to `122` assemblies, `259` role meshes and
+  `46,542` triangles. It covers the 24-family
   decoration layer and park landmarks, street lamps and signal housings,
   Route 01 shelters/poles, the eastern yard, cemetery graves and vegetation,
     the church-yard surfaces and planting plus the modified cemetery
@@ -946,10 +963,12 @@ The vertical slice contains:
   world prefabs:
   validated plans still own placement, terrain, collision,
   dynamics, interactions, realtime lights/halos, cloth and NPCs. The standing,
-  seated and sleeping Nightlife shelter residents are the three non-rigged
-  humanoids; their baked meshes use the equivalent
-  `static_humanoid_anatomy_v2` adult-proportion standard. Tilted cemetery
-  monuments intentionally retain their legacy visual builder;
+  seated and sleeping Nightlife shelter meshes remain compatibility-only and
+  are not instantiated. The live trio are staged `NpcHumanV2` adults on the
+  Hero V2 Avatar, with three separate `256 px` detail atlases and an isolated
+  three-loop idle bank. Fifteen shell, terrace, barrel, bedding and clutter
+  renderers reuse measured City surface albedos through property blocks.
+  Tilted cemetery monuments intentionally retain their legacy visual builder;
 - four first-class open district points of interest on their own full-block
   land-use lots: Old Town's waterworks court, Residential's drying yard,
   Industrial's weighbridge and Nightlife's last-route island. Their canonical

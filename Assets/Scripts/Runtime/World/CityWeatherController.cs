@@ -94,11 +94,19 @@ namespace BarPromenade
                 nextSample = shaper.ShapePrecipitation(nextSample);
             }
 
-            // Area shapers own what falls through that area's air, not the
-            // persistent street-film simulation. Otherwise the village's
-            // permanent blizzard would report almost full rain to the shared
-            // wet-surface registry and carry it back into a clear City slot.
-            ApplyWetSurfaces(scheduleSample, force);
+            // The street film is the shaper's third axis, apart from what
+            // falls through the air: the village's permanent blizzard must
+            // not report full rain to the shared wet-surface registry and
+            // carry it back into a clear City slot, while the city's own
+            // decree floors the film at its drizzle. Handing the registry
+            // the raw schedule did the first and lost the second - a
+            // "Clear" slot dried the asphalt to nothing and took every
+            // puddle with it.
+            ApplyWetSurfaces(
+                shaper != null
+                    ? shaper.ShapeSurfaceWetness(scheduleSample)
+                    : scheduleSample.RainIntensity,
+                force);
             bool kindChanged =
                 !hasAppliedSample ||
                 CurrentSample.Kind != nextSample.Kind;
@@ -205,7 +213,7 @@ namespace BarPromenade
         }
 
         private static void ApplyWetSurfaces(
-            WeatherVisualSample sample,
+            float filmTarget,
             bool force)
         {
             double absoluteGameMinutes =
@@ -215,13 +223,13 @@ namespace BarPromenade
             if (force)
             {
                 CityWetSurfaceRegistry.InitializeOrResume(
-                    sample.RainIntensity,
+                    filmTarget,
                     absoluteGameMinutes);
                 return;
             }
 
             CityWetSurfaceRegistry.Advance(
-                sample.RainIntensity,
+                filmTarget,
                 GameSessionState.IsGameTimeRunning
                     ? Time.deltaTime
                     : 0f,

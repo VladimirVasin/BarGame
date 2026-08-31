@@ -7,11 +7,16 @@ namespace BarPromenade
     /// The gutter puddles' one shared water material.
     ///
     /// A puddle is the city's water shader told the smallest truth of
-    /// all: three millimetres of standing film. No current, no facets
+    /// all: five millimetres of standing film. No current, no facets
     /// (a two-triangle patch would hand the Morrowind mirror a single
     /// flat jump), no refraction, and the edge foam pushed below the
     /// film's own thickness — at 3 mm of measured depth any honest
-    /// foam distance would whitewash the whole patch. What remains is
+    /// foam distance would whitewash the whole patch. The geometric
+    /// wave is under a millimetre: the sheet stands only
+    /// <see cref="CityPuddlePlanner.SurfaceOffset"/> over the road,
+    /// and a trough that reached the asphalt would be depth-tested
+    /// away - at 4 mm it cut every patch into two slivers with a
+    /// hole walking between them. What remains is
     /// exactly what the user asked of a puddle: the environment
     /// mirror, the street lamps' banded glints, the breathing ripple,
     /// and the rain chop the weather already drives.
@@ -27,20 +32,31 @@ namespace BarPromenade
         private const string ShaderName =
             "Bar Promenade/City River Water";
 
-        // Film-calm numbers. The geometric wave is next to nothing —
-        // the ripple normal sheet is what sells the surface.
-        public const float WaveHeight = 0.004f;
+        // Film-calm numbers. The geometric wave is next to nothing -
+        // the ripple normal sheet is what sells the surface - and it
+        // must be: times 1.73 for the summed trains it has to stay
+        // inside SurfaceOffset - FoamDistance (5 - 2 mm), or the
+        // trough dips into the road and the depth test eats the
+        // patch. A test pins the budget.
+        public const float WaveHeight = 0.0008f;
         private const float WaveLength = 1.4f;
         private const float FlowSpeed = 0.14f;
         private const float SlopeGain = 1.4f;
         private const float FacetStrength = 0f;
         private const float CrestShading = 0.15f;
         private const float CrestFoamStrength = 0f;
-        private const float DepthFadeDistance = 0.30f;
+        // Absorption over 12 mm, not the river's 300: at the sheet's 4-6 mm
+        // of measured depth the body reaches a third to a half. Over
+        // 300 mm the film was 98% the road it lay on and only the mirror
+        // told it apart - at a walker's eye, against a dark horizon, that
+        // was nothing. A puddle IS darker than the damp asphalt around
+        // it: clear water over rough asphalt trades the diffuse for the
+        // mirror, and at 640x360 it is the value step that carries.
+        private const float DepthFadeDistance = 0.012f;
 
-        // Below the 6 mm planner thickness: the measured water depth
-        // of the film sits around 3 mm, and edge foam keyed off it
-        // must never reach the visible range.
+        // Below the planner's 5 mm stand-off: the measured water depth
+        // of the film sits between 4 and 6 mm under the wave, and
+        // edge foam keyed off it must never reach the visible range.
         public const float FoamDistance = 0.002f;
 
         private const float FresnelStrength = 0.35f;

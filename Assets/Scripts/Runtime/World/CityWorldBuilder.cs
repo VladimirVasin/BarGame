@@ -125,7 +125,7 @@ namespace BarPromenade
                 mountainBoundaryPlan.IsEnabled
                     ? CityMountainBackdropWorldBuilder.Build(world)
                     : null;
-            BuildRoads(world, layout);
+            BuildRoads(world, layout, fringeYardPlan);
             GameObject riverRoot = CityRiverWorldBuilder.Build(
                 world,
                 layout,
@@ -534,7 +534,8 @@ namespace BarPromenade
 
         private static void BuildRoads(
             Transform parent,
-            CityLayout layout)
+            CityLayout layout,
+            CityFringeYardPlan fringeYardPlan)
         {
             Transform roads = new GameObject("Road Network").transform;
             roads.SetParent(parent, false);
@@ -586,13 +587,18 @@ namespace BarPromenade
                 CityExteriorAppearance.RoadMarkingTextureTileSize,
                 CityExteriorAppearance.ApplyRoadMarkingSurface);
             // Gutters and the flat open precincts pool separately but
-            // draw as one sheet: the yards, the cemetery terrace and
-            // the church ground are the only ground level enough for a
-            // six-millimetre slab to lie true on.
+            // draw as one sheet: the cemetery terrace and the church
+            // ground are the only ground level enough for a
+            // six-millimetre slab to lie true on - the fringe yards are
+            // terrain since the landscape pass and pool nothing until
+            // they carry a height model the planner can read.
             var puddles = new List<RuntimeOrientedBox>(
                 CityPuddlePlanner.Create(plan, layout.Seed));
             puddles.AddRange(
-                CityPuddlePlanner.CreateOpenGround(layout, layout.Seed));
+                CityPuddlePlanner.CreateOpenGround(
+                    layout,
+                    layout.Seed,
+                    fringeYardPlan));
             CityPuddleWorldBuilder.Build(roads, puddles);
         }
 

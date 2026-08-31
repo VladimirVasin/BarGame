@@ -21,7 +21,14 @@ Assets/
     PCPresentationBaselineVolumeProfile.asset  project-owned Neutral/Bloom/Vignette baseline
     PC_RPAsset.asset              active PC pipeline + baseline volume reference
     PC_Renderer.asset             active PC PS1 renderer feature
+  Environment/
+    Clouds/
+      Models/ExteriorCloudDome3D.{fbx,json}  generated unit hemisphere + deterministic manifest
+      Textures/ExteriorCloudDensity.png      256 px linear broad/detail/erosion channels
+      Materials/ExteriorCloud.mat            one shared instanced runtime material
   Resources/
+    Environment/
+      ExteriorCloudDome.prefab     passive 220-triangle cloud shell + asset metadata
     Materials/
       CityNoirEmission.mat
       HomeOccluderDither.mat       shared opaque Home foreground cutaway
@@ -52,6 +59,7 @@ Assets/
       Ps1PresentationProfile.asset  default 640x360, lower legacy presets
     Shaders/
       CityAtmosphereParticle.shader
+      ExteriorCloud.shader        camera-relative density ceiling with manual haze horizon
       CityLighthouseBeam.shader   additive no-fog lantern beam/lens, distance self-fade
       CityLighthouseIsland.shader fixed-haze island silhouette, distance self-fade before the far plane
       CityMountainBackdrop.shader camera-relative west/south silhouette inside the 48 m cap
@@ -125,7 +133,7 @@ Assets/
       CemeteryRavenProvider.asset     serialized link to the passive 3D raven prefab
     City/
       YardWheelchairProvider.asset  serialized link to the staged yard rider prefab
-      CityMiscAssetProvider.asset   271 passive City role-mesh bindings / 48,926 triangles + v4.8.0 signature
+      CityMiscAssetProvider.asset   259 passive City role-mesh bindings / 46,542 triangles + v4.9.0 signature
       CityBuildingAssetProvider.asset  four district prototype-prefab bindings + signature
       Buildings/
         OldTownPrototype01.prefab      passive fixed-metre wrapper + semantic registry
@@ -185,18 +193,22 @@ Assets/
       CityPedestrianLocomotion.fbx      shared 37-clip NpcHumanV2 locomotion/action library
       CityPedestrianLocomotion.json     gait/contact/clearance/apex + staged wheel-contact manifest
       MountainRoadCafeCast.{fbx,json}   isolated ten-clip drink/wipe/walk/pour cafe library
+      NightlifeShelterResidents.{fbx,json} isolated three-loop warmer/seated/sleeper library
     Textures/
       KettleHatDetailAtlas.png          256 px grey detail atlas (seams, chips, grooves, laces) multiplied by the kettle walker's palette tint
+      NightlifeShelter*DetailAtlas.png  three 256 px garment/face atlases for the fixed arch residents
     Staged/
       Models/
         PipebackRoller3D.fbx            passive 31-bone wheelchair NPC model
         PipebackRoller3D.json           staged geometry/rig/passive-anchor manifest
         MountainCafe*3D.{fbx,json}      four distinct passive cafe role models/manifests
+        NightlifeShelter*Resident3D.{fbx,json} three detailed passive Hero-Avatar resident models/manifests
         {YardBabushka,WeighbridgeAttendant,Cemetery*,LakeFisherman,Park*,LastRouteFerryman}3D.{fbx,json}
                                           eight further NpcHumanV2 staged roles/manifests
       Prefabs/
         PipebackRoller3D.prefab         passive asset outside Resources and the runtime pool
         MountainCafe*3D.prefab          four cafe roles outside Resources/pedestrian pool
+        NightlifeShelter*Resident3D.prefab three fixed textured shelter roles outside Resources/pedestrian pool
   Vehicles/
     Models/
       CityBus3D.fbx                     real-scale exterior + modeled passenger cabin
@@ -210,7 +222,7 @@ Assets/
     Models/
       CityChessSet3D.fbx                six turned chessmen and a draught, board-scaled
       CityChessSet3D.json               deterministic heights/footprints manifest
-      CityMisc3D.fbx                   126 citywide misc assemblies / 271 role meshes
+      CityMisc3D.fbx                   122 citywide misc assemblies / 259 role meshes
       CityMisc3D.json                   roots, roles, bounds, compatibility + build signature
       CityBuildings3D.fbx               four fixed-metre district prototypes / 28 semantic meshes
       CityBuildings3D.json              surface/UV contract, envelopes, attachments, window slots + v2 signature
@@ -290,6 +302,13 @@ Assets/
         HomeAlarmClockSynthesis.cs         generated 22050 Hz mechanical ring
         InteriorSoundscapeSynthesis.cs    quantized PCM, fridge hum + lamp crackle
         InteriorSoundscapeAnchorPlanner.cs layout-derived spatial emitter anchors
+      Ambient/       scene-neutral outdoor raven roosts over the cemetery raven family
+        RavenRoostPlan.cs  roost descriptors, per-scene settings and the ground perch-B ring resolver
+        CityRavenRoostPlanner.cs  authored City candidates, 70 m spacing + hard exclusions
+        MountainRoadRavenRoostPlanner.cs  planar-spaced road roosts + culvert fallback chain
+        AlpineVillageRavenRoostPlanner.cs  village roosts clear of chapel, graves, house and station
+        RavenRoostController.cs  one per scene: spawn-perched pairs, activation radius, shared clips
+        (Audio) RavenCallClipCache.cs  static refcounted lease over the three shared caw clips
       Rendering/     PC RenderGraph PS1 composite and settings
         IntoxicationRenderState.cs  world-effect parameters shared with the pass
       Games/         pure rules and engines for the two park boards, no Unity
@@ -331,7 +350,7 @@ Assets/
         CityFringeYardGroundWorldBuilder.cs exact generic/forefield terrain split with one collider per source area
         CityFringeYardRetainingPlanner.cs precise retaining cuts around rock-access corridors
         CityFringeYardLandmarkPlanner.cs four macro anchors incl. tunnel service frame + crown floodlight
-        CityFringeYardLifePlanner.cs one grounded work scene per typed Yard; former lake excluded
+        CityFringeYardLifePlanner.cs one grounded unoccupied mason cart; every other Yard vignette absent
         CityFringeYard{PracticalPlan,PracticalValidator}.cs four clear, deterministic practicals
         CityFringeYardSurfaceAppearance.cs four measured shared surface families
         CityFringeYardValidator.cs bands/gaps/all-safe-seams/corridors/vocabulary/budget invariants
@@ -367,8 +386,9 @@ Assets/
         CityRoadGroundBoundaryPlan.cs endpoint-sampled safe-connector/protected-drop classification
         CityTerrainSafetyWorldBuilder.cs segmented physical guards along dangerous sampled drops
         CityArchShelter{Plan,Placement,Planner,Validator}.cs fixed Nightlife gap, wall-attached terrace, steps, clear routes, props + rain volume
-        CityArchShelterWorldBuilder.cs imported closed bridge/tableau + plan-owned collision and rain trigger
-        CityArchShelterPresentation.cs layered flame, synced warm Point Light/sparks, breath + crackle
+        CityArchShelterWorldBuilder.cs imported closed bridge/tableau, rigged residents + plan-owned collision/rain trigger
+        CityArchShelterSurfaceAppearance.cs 15 exact-name measured-albedo MPB recipes
+        CityArchShelterPresentation.cs layered flame, synced warm Point Light/sparks + crackle
         CityVerticalTraversalPlan.cs deterministic seam/frontage audit + spawn-road reachability
         CitySurfacePlan.cs       typed ground/water cells (incl. Yard OpenGround), datum and open-area access
         CityStreetIntersectionSelector.cs  shared stable zebra/signal node selection
@@ -431,7 +451,7 @@ Assets/
         CityDecorationPlanner.cs     primary landmarks, lot visuals, tiers, clear clusters + spaced booth/dumpster coverage incl. bar-side yard pair
         CityCourtyardPocket{Planner,Geometry}.cs up to four shallow Residential facade-side life pockets
         CityDecorationValidator.cs   landmark/core quotas, IDs and clearances
-        CityMiscAssetProvider.cs     86 kinds / 126 assemblies / 271 passive role meshes with roots and bounds
+        CityMiscAssetProvider.cs     82 kinds / 122 assemblies / 259 passive role meshes with roots and bounds
         CityMiscAssetProvider.LateCatalog.cs exact courtyard/fringe late-wave part contracts
         CityBuildingAssetRegistry.cs fixed envelope, frontage, seven semantic roles, surface UV + window-slot contract
         CityBuildingAssetProvider.cs four passive Resources prefab bindings used by City/Home builders
@@ -469,6 +489,8 @@ Assets/
         CityNightWorldBuilder.cs imported street-lamp/signal shells + Unity bulbs, halos, controllers and Lights
         CityDayNightController.cs   session lighting + exterior night factor
         CityWeatherController.cs    per-frame weather sample -> rain, wet film, flash, thunder
+        ExteriorCloud{Profile,MotionRules,Resources,Field}.cs  three profiles, absolute-time wind advection + camera shell
+        ExteriorCloudCaptureCamera.cs  opt-in reflection/capture camera marker
         CityRainField.cs            seeded player-following streaks + local roof kill triggers
         CityTunnelLightingController.cs five path fixtures, pooled faulty Spot + local sound
         CityTunnelShelterController.cs  portal hysteresis -> fog/backdrop state + shelter provider
@@ -535,6 +557,9 @@ Assets/
         CityKettleHatBoilEffect.cs     factory-attached always-on boil: pivot write on Advanced, code-built steam
         CityPedestrianAssetRegistry.cs prefab anchors, clips and MPB palettes
         CityWheelchairNpcAssetRegistry.cs passive future mechanism-pivot bindings; metadata only
+        CityArchShelterResidentAssetRegistry.cs one textured Hero-Avatar model + quiet loop contract
+        CityArchShelterResidentProvider.cs build-safe references to the three staged prefabs
+        CityArchShelterResidentPresentation.cs independent manual PlayableGraph, no player input
       Yard/          staged yard roles plus bounded colliderless courtyard-life residents
         YardWheelchairMotion.cs      pure drift pose; computes the reserved wheel differential
         YardWheelchairPlan.cs        circuit read back from the authored ring and dead tree
@@ -546,7 +571,7 @@ Assets/
         DryingYardBabushkaPresentation.cs  one-clip manual PlayableGraph + role prop enabling
         DryingYardBabushkaFactory.cs three instances, passivity re-checked at instantiation
         DryingYardBabushkaProvider.cs  the only serialized reference to the staged prefab
-        CityCourtyardResidentPlan.cs deterministic active-pocket/fringe stances, global cap eight
+        CityCourtyardResidentPlan.cs deterministic active residential-pocket stances, cap five; no fringe NPCs
         CityCourtyardResidentPresentation.cs borrowed generic idle/sit presentation, no new clips
         CityCourtyardResidentFactory.cs colliderless passive instances outside the roaming pool
       Weighbridge/   the authored pair on the Industrial cold weighbridge + the answering needle
@@ -768,6 +793,7 @@ Assets/
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
+      Environment/ExteriorCloud{AssetSetup,ModelImporter,TextureImporter}.cs  deterministic import/prefab validation
       City/CityMiscAssetSetup.cs  FBX import/provider binding + strict manifest/root/bounds validation
       Village/VillageAssetSetup.cs  village FBX import/binding; expectation derived from the runtime catalog
       City/CityBuilding{AssetSetup,ModelImporter}.cs passive v2 FBX import + four wrappers/provider
@@ -778,7 +804,8 @@ Assets/
       PlayerHome/PlayerHomeExterior{AssetSetup,ModelImporter}.cs passive import, prefab authoring + exact lit-window validation
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       MountainRoadCafeCastAssetSetup.cs  isolated model/clip import, validation + provider setup
-      NpcHumanV2AssetSetup.cs       one batch rebuild/validation entry point for all 21+3 humanoid NPC assets
+      NpcHumanV2AssetSetup.cs       one batch rebuild/validation entry point for all 24 rigged humanoid NPC assets
+      City/NPC/CityArchShelterResidentAssetSetup.cs isolated three-model/atlas/loop prefab + provider pipeline
       City/NPC/CityPedestrianTextureImporter.cs  routes pedestrian detail atlases to the Hero V2 atlas import contract (Point/Clamp/sRGB/256/no mip)
       Player3D/       production V2 atlas/import/prefab pipeline + retained V1 setup
       City/NPC/       production/staged NpcHumanV2 import, Hero V2 Avatar copy + prefab setup
@@ -787,7 +814,8 @@ Assets/
     Infrastructure/  shared run callback: mute listener output, then restore it
     EditMode/        layout plans, mixer DSP contract, sound synthesis and gameplay rules
       CityMiscAssetTests.cs       238-entry catalog/signature/provider + affected-builder smoke contract
-      CityArchShelterTests.cs     fixed-gap geometry, lanes, datum, imported world, fire and rain contracts
+      CityArchShelterTests.cs     fixed-gap geometry, 15 textured surfaces, resident integration, fire and rain contracts
+      CityArchShelterResidentAssetTests.cs  Hero rig/atlas/loop and all-frame mattress-envelope contracts
       CityBuildingAssetTests.cs   4 prototypes / 28 semantic meshes, UV, importer, wrapper + provider contract
       CityBuildingSurfaceAppearanceTests.cs 24-sheet resource/import/shared-material + MPB contract
       CityBuildingPrototypeRuntimeTests.cs City/Home placement, six opaque bindings, inset foundation, slot shader + half-space policy
@@ -861,6 +889,7 @@ Assets/
       GameTimeStateTests.cs                 freeze/start/day setter/announcement/midnight/reset
       GameTimeDayNightRulesTests.cs         phase boundaries and smooth transitions
       GameWeatherRulesTests.cs              slot determinism, targets and boundary ramps
+      ExteriorCloud{Asset,Field}Tests.cs    imported-art, profiles, motion, camera and visibility contracts
       CityWetSurfaceTests.cs                film timing/tint persistence + bounded grounded puddles
       CityDistrictPresentationPlannerTests.cs profiles, transitions + row-balanced window shares
       CityWindowAppearanceTests.cs          warm families, stable per-row selection + fixture factor
@@ -874,6 +903,10 @@ Assets/
       HomeOcclusion{Registry,Resolver}Tests.cs  group and ray contracts
       InteractionPromptViewTests.cs          prompt callback lifecycle
       InteriorSoundscapeSynthesisTests.cs   deterministic distinct loop contracts
+      RavenRoostPlanTests.cs               per-area determinism, spacing, counts, exclusions + perch Y sanity
+      RavenRoostDirectorParameterTests.cs  pinned cemetery defaults + parameterized return/done timelines
+      RavenRoostControllerTests.cs         0 Lights, 2 AudioSources per roost host, spawn-perched directors
+      RavenCallClipCacheTests.cs           refcount honesty, edit-branch destruction and regeneration
       Audio/HomeAlarmClockSynthesisTests.cs generated ring contract
       Audio/CitySound*.cs                   causal plan/schedule/rewind/synthesis/occlusion contracts
     PlayMode/        audio routing/lifecycle, presentation, traversal and scene flow
@@ -882,6 +915,8 @@ Assets/
       CityKettleHatBoilPlayModeTests.cs    lid rides the head in idle/walk/seated, steam on the spout, pool release, cabin clamp
       CityKettleHatVisualCapturePlayModeTests.cs  [Explicit] 3/6/12 m boil strips into Captures/KettleHat
       AlpineVillageStormVisibilityPlayModeTests.cs  600 running frames: far plane 110, fog == pure wave function, ridge density == fog, trough + crest reached; run alone
+      ExteriorCloudIntegrationPlayModeTests.cs  City -> road -> village -> Home balcony ownership/gating + opt-in review frames
+      RavenRoostPlayModeTests.cs           per-scene spawn-perched, activation radius and flush/return smoke
       InventoryPlayModeTests.cs            I/Escape, day/time/needs freeze and exact restoration
       SupermarketPurchasePersistencePlayModeTests.cs  music bootstrap + buy/remove/re-enter contract
       StairwellInteriorPresentationPlayModeTests.cs  Talk/missing/feed GPU lifecycle
@@ -903,6 +938,7 @@ Assets/
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  prefab subsets + visibility restoration
 ArtSource/
+  Environment/Clouds/Blender/    generated cloud-dome `.blend` and deterministic density preview
   Vehicles/
     Blender/                    generated bus .blend and deterministic preview
     Drivers/Blender/            generated driver .blend and deterministic preview
@@ -936,6 +972,7 @@ ArtSource/
   Village/Blender/               village kit `.blend` source and contact sheet (no sheet of its own)
   Church/Blender/                Catholic `.blend` source + accepted exterior/interior previews
 tools/
+  build-exterior-cloud-3d-model.py  deterministic hemisphere, packed density texture and export validator
   build-city-bus-3d-model.py         real-scale bus model/export validator
   build-city-bus-driver-3d-model.py  driver model/rig/export validator
   build-city-pedestrian-3d-model.py  compatible rig/model/export validator
@@ -954,7 +991,7 @@ tools/
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
   build-mountain-road-cafe-3d-model.py  51-mesh cafe, six sheets, anchors/props/collider/overlap validator
   build-village-3d-model.py      v2.1.1, 19 assemblies / 53 outward-validated meshes; no doors/panes/new sheet
-  build-city-misc-3d-model.py    86 kinds / 126 assemblies / 271 citywide role meshes
+  build-city-misc-3d-model.py    82 kinds / 122 assemblies / 259 citywide role meshes
   build-city-buildings-3d-model.py  four fixed-metre district prototypes / 28 semantic meshes + UV/exact/near-layer validation
   build-city-building-surface-textures.py  24 deterministic district/semantic albedos + validator
   city_building_parts.py         pure deterministic building geometry + surface/UV/attachment/window metadata

@@ -6,6 +6,312 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-31 — Из пяти рабочих сценок осталась пустая тележка
+
+По прямому решению автора отменена основная часть вчерашней окраинной
+постановки. `CityFringeYardLifePlanner` теперь создаёт только одну сцену —
+тележку каменщика в `yard-west-north`; у неё нет актёра. Рабочие композиции с
+лебёдкой, обслуживанием туннеля, насосом у водоотвода и машиной с открытым
+капотом удалены из плана, runtime-builder, enum-контрактов, тестов, Blender-
+генератора, FBX, manifest и Unity provider. Удалён и весь отдельный слой
+окраинных рабочих NPC; обычные жители жилых дворов остались как были.
+
+Большая инфраструктура самих мест — ремонтная рама и основная лебёдка,
+туннельная площадка, водоотвод и восточный технический край — не относится к
+этим пяти бытовым сценкам и сохранена. Изменение зафиксировано как принятое
+архитектурное исключение к прежнему обязательному перечню art bible.
+
+Blender 5.0.1 пересобрал `CityMisc3D` версии `4.9.0`: `82` типа, `122`
+сборки, `259` мешей, `46 542` треугольника, build signature
+`85a8abea90e03d189d069dca36ed5a6f401b1b3fbf08d313dc51ff77ee3a4e21`.
+Unity-перепривязка завершилась сообщением `CITY MISC UNITY ASSET BUILD OK`.
+Узкий EditMode-запуск дал `11/12`: все контракты удаления, пустой тележки,
+отсутствия окраинных NPC, manifest и provider прошли; единственный сбой —
+соседний census декораций `DefaultCity_MigratesWaveOneWithoutMovingRuntimeContracts`
+(`expected 83`, `actual 82`) из текущей параллельной композиции города и не
+зависит от окраинных сценок. Полные suites и player build в fast mode не
+запускались.
+
+## 2026-08-31 — A trailer operator: six moving shots to the city theme
+
+The lead asked for an Instagram Reels trailer - moving walkthroughs of the
+best places, a cut every five seconds, thirty seconds, the city theme
+underneath. `CityTrailerCapturePlayModeTests.SixMovingShots` (Explicit) is
+the operator: it loads `SceneIds.City`, borrows the scene's own camera
+into a 1080x1920 target (so the frames carry the real PS1 composite and
+grade), pins `Time.captureDeltaTime = 1/30`, takes the weather from
+`CityWeatherController` for the run and sets rain, street film and water
+rain per shot, walks the clock forward with `TryStartGameTimeFromWake` +
+`AdvanceGameTime` (shots sorted by hour), teleports the hidden hero along
+so rain, fog and clouds follow, and writes 900 JPEG frames. ffmpeg cuts
+them with fades and `city_theme.mp3` from 0:00 (afade, `loudnorm` to
+-14 LUFS) into `Captures/Trailer/city-trailer-30s-9x16.mp4` (gitignored)
+and a 6x5 contact sheet; a run is about two and a half minutes.
+
+Shots, in cut order: cemetery cross at dawn (06:45, drizzle) - church west
+front crane-up (08:30) - fountain half-orbit at dusk (19:15) - the gutter
+puddle nearest a street lamp, walked toward the lamp (19:45, rain 0.6) -
+the quay from a boat's eye two metres off the wall (20:15) - the sand
+opposite the lighthouse island with the lantern turning (20:45).
+
+What the frames taught: anything after 21:00 under fog and rain is
+near-black, so every evening shot moved to 19:15-20:45 with rain at or
+under 0.6; `Park Fountain Water` is a container at the origin and the
+basin is its children's renderer bounds; the quay lanterns hang on the
+wall face under the promenade railing and are invisible from the
+pavement; the lighthouse anchors 39 m past the waterline against a 48 m
+far plane, so it is a shot from the sand, never from the mol 80 m west;
+and a puddle with a lamp behind it mirrors the lamp as a bright,
+sparkling rectangle - the puddles' strongest moment.
+
+Verification: five PlayMode runs under 6000.5.10f1; the final one passed
+1/1 with 900 frames and the contact sheet reviewed shot by shot. The
+first two runs could not build the city at all: the neighbour's in-flight
+arch-shelter residents demanded `Resources/City/CityArchShelterResidentProvider`
+before their pipeline had produced it (`ShelterStandingWarm has no sampled
+footprint`) - resolved on their side at 17:53. Not yet watched as video by
+anyone; the lead judges on the phone.
+
+## 2026-08-31 — The arch-shelter trio became authored residents
+
+Replaced the three whole-body primitives around the Nightlife arch barrel
+with deterministic Hero V2-compatible residents: a standing warmer, an
+honestly floor-seated warmer and a clearly living side-curled sleeper aligned
+to the real mattress. Each prefab has the shared 31-bone rig, a dedicated
+`256 px` detail atlas and an isolated passive loop (`8 / 9 / 10 s`) driven by
+a controller-free manual PlayableGraph with seeded phase and slight speed
+variation. The models add readable clothing construction, wear, footwear,
+faces and headwear without adding dialogue, gaze, reaction, interaction,
+light, smoke or clutter. The former whole-body wobble and duplicate static
+blanket were removed; the barrel fire, light, sparks and crackle were left on
+their existing presentation path.
+
+The same pass gives every authored shelter renderer a measured shared-texture
+recipe through property blocks. In particular, the vault underside in
+`Shell_Masonry` now reads as masonry, the raised `PlatformSlab_Street` as
+paving, and its support and stairs as concrete; the remaining metal, timber,
+bedding and small props receive their matching existing surface families.
+
+Verification: the isolated Blender build completed with byte-stable model,
+animation and atlas signatures; Unity rebuilt all three imported prefabs and
+the Resources provider successfully. The three focused EditMode contracts
+passed, including all-frame seated/sleeper support envelopes, passive prefab
+contents, Hero-avatar compatibility, atlas binding and failure cleanup. The
+explicit `AreaCaptureFixture.CityArchShelter` PlayMode capture passed `1/1` and
+five final `1280 x 720` frames were inspected for the trio, mattress contact,
+legacy-art removal, vault masonry and platform paving/support. Full suites and
+a player build were not run in fast mode.
+
+## 2026-08-31 — The puddles came back
+
+The lead reported no puddles anywhere in the city - not "damp road", the
+standing-water patches themselves. Static trace of the water shader: a
+puddle pixel is `lerp(background, water, film)` and at `film = 0` it IS
+the road, so "invisible" (rather than a dark patch) meant the puddle
+material's `_SurfaceWetness` was zero. It was: `f6dc86d` had switched
+`CityWeatherController.ApplyWetSurfaces` to the RAW schedule sample so
+the village blizzard could not soak the shared film - which also cut the
+city's `CityEternalRainShaper` floor out of the film path. In a `Clear`
+slot (`55%` of slots) `CityWetSurfaceRegistry` dried to `0` at `0.028/s`
+while the drizzle kept falling. `Decree_KeepsTheStreetsWet` did not catch
+it: it depended on the session's slot and never reset the registry.
+
+- `ICityWeatherShaper` gained a third axis, `ShapeSurfaceWetness(schedule)`:
+  the city floors it at `DrizzleIntensity 0.18`; the mountain and village
+  shapers hand the raw schedule through (snow is area-only). The controller
+  drives the registry through it; with no shaper the raw schedule applies,
+  as before.
+- `CityRiverWater.shader`: the rim erosion now bites `sqrt(wetness)`
+  instead of the wetness. At the `0.18` floor the old form left a sliver a
+  quarter of the patch wide; the new one keeps about half the patch under
+  the noise, nearly fills it in light rain, fills it in a downpour, and
+  still dissolves fully at zero.
+- Tests: `Decree_KeepsTheStreetsWet` pins the session to a seed whose slot
+  (and the one before it) is Clear, resets the registry and asserts the
+  film reads exactly the `0.18` drizzle - the case the old code failed;
+  `Decree_FloorsTheStreetFilmWhereSnowAreasDoNot` pins the axis on all
+  three shapers; `Shader_PuddleShoreStandsOnTheSquareRootOfWetness` pins
+  the HLSL form. The fog-shelter test's shaper follows the interface.
+
+Second pass, after the lead still saw nothing at film `0.45-1.0` (the
+session log showed a LightRain slot): a temporary EditMode capture test
+built the default city, framed the largest gutter patch from a walker's
+eye and from above, rendered with the sheet on, off, wave-flattened and
+lifted 3 cm, and raycast every patch onto the colliders. Three geometry
+faults, none visible to the pure tests:
+
+- The sheet stood `3 mm` over the road under a `4 mm` wave (x1.73 for
+  the summed trains): the trough dipped under the asphalt and the depth
+  test cut every patch into two slivers with a hole walking between
+  them. `SurfaceOffset` is `5 mm`, `WaveHeight` `0.8 mm`; a contract
+  test pins `WaveHeight * 1.73 < SurfaceOffset - FoamDistance`.
+- Half the gutter patches lay `57 mm` under the pavement: intersection
+  squares in `StreetGeometry` run the full right of way, so a gutter
+  inset from the street box is under the kerb slab.
+  `CityPuddlePlanner.IsCovered` rejects a patch whose plane has any other
+  street, sidewalk or marking surface (`TrySampleTop`) within `2 mm`
+  below it or through it; `42` gutter puddles still fill the cap.
+  `PuddlePlanner_KeepsEveryGutterPatchClearOfCover`.
+- Open-ground pools floated `1.8 m` over one yard and drowned `1.5 m` in
+  another: the yard skin is `CityTerrainSurfacePlan.SampleTop`'s
+  bilinear sheet between corner elevations, not a plateau, and the typed
+  fringe yards are terraces and forefield with no readable height model.
+  The world builder hands the fringe-yard plan to `CreateOpenGround`,
+  which drops those areas, and `OpenGround` pools require the skin on
+  the datum within `3 mm` at centre and corners. Cemetery terrace and
+  church ground are slabs and unchanged.
+  `PuddlePlanner_LeavesTheTerrainYardsDry`.
+- Legibility: `DepthFadeDistance` `0.30 -> 0.012`, so `4-6 mm` of water
+  shows a third to a half of the dark body; over `300 mm` the film was
+  98% the road under it and only the mirror told it apart.
+
+Verification: `BarPromenade.EditModeTests.csproj` builds with 0 errors
+(system SDK 10.0). Under 6000.5.10f1 the capture run reports all `53`
+patches (`42` gutter, `11` open ground) between `+4` and `+6 mm` over
+their own collider, `0` buried, and the eye-level pixel diff shows one
+whole sheet; focused EditMode runs passed 27/27, 7/7, 18/18 and 25/25
+across the passes (`CityEternalRainTests`,
+`CityWeatherControllerFogShelterTests`, `CityPuddleWaterTests`,
+`CityWetSurfaceTests`, `CityWaterWaveModelTests`). Full EditMode suite:
+1969/1972 - the three reds are the neighbour's in-flight work (the wave-one
+decoration census at 83 vs 82, `ExteriorCloudFieldTests` colour equality,
+`Cafe_CoffeeUrns` on the mountain road), none of them touching puddles or
+weather. The Unity logs carry no shader or script errors. The
+diagnostic test was deleted after use.
+
+## 2026-08-31 — Every exterior received one distant cloud ceiling
+
+Implemented a shared deterministic cloud field for City, MountainRoad,
+AlpineVillage and the Home balcony. The source build exports one passive
+`220`-triangle hemisphere plus a `256 px` packed linear broad/detail/erosion
+texture; Unity binds them once through a generated Resources prefab and one
+instanced material. Three property-block profiles keep City permanently low
+and overcast, make the road colder and looser, and make the village denser
+without inventing another weather clock. Motion integrates the existing
+seeded wind schedule against absolute session time, so City and Home retain
+the same compass frame and phase across scene loads. The shell follows camera
+translation at `47 / 119 / 109 m`, immediately inside the existing
+`48 / 120 / 110 m` far planes: it reads as distant sky rather than a physical
+cloud base, adds no parallax, Light, shadow, collider, fog or grade, and blends
+its horizon into the haze each area already owns. True interiors and technical
+scenes remain cloud-free; Home enables the field only for the Balcony shot.
+The fountain reflection camera is explicitly marked to share the shell while
+unrelated preview cameras remain excluded.
+
+Verification: the Blender generator completed with byte-stable geometry and
+texture signatures (`121` vertices / `220` triangles); Unity asset setup exited
+`0` with `EXTERIOR CLOUD UNITY ASSET BUILD OK`; the EditMode test project build
+reported zero errors; focused PlayMode scene integration passed `1/1` across
+City -> MountainRoad -> AlpineVillage -> Home, including balcony gating. Four
+`Captures/ExteriorClouds` frames were generated and looked at for horizon,
+scale, haze handoff and low-altitude read. Full suites and a player build were
+not run in fast mode.
+
+## 2026-08-31 — The roost ravens answered their first playtest
+
+Five findings from the lead's playtest, all fixed in one pass. (1) Too few
+city birds: the spacing step came down 70 → 45 m, the cap rose to
+fourteen (§6 row amended), and three candidates joined the fan (bandstand,
+second landing, clock plaza) plus two more dumpster kerbs — the measured
+default city now fields `10` pairs (fountain, bandstand, landing, mol,
+barge, bridge, four kerbs; the second landing and clock plaza fall to
+spacing on this seed, the forecourt to its own gates). (2) Flushed birds
+flew with no visible wings: the suspected fold SIGN was correct — the
+real defects were the flap composed inside the fold (an invisible roll of
+a folded slab) and the authored wing pivot sitting at mid-slab (pure
+rotation pinwheels in place). The actor now composes the flap outermost
+and re-expresses wing writes about a virtual shoulder at the slab's
+leading end (`WingShoulderLeadMeters 0.145`); a new prefab-measuring
+EditMode test (`RavenFlightReadabilityTests`) proves deployment moves each
+wing's real bounds `+0.086 m` laterally and flap separates heights by
+`0.24 m`. Flap amplitude 40 → 55°, deploy 0.25 → 0.4 s. (3) The bird read
+untextured: the atlas multiplied 165–235 greys under a ~0.1 linear
+palette — below visible contrast; the plumage palette lifted one honest
+step (body 0.150, still «почти чёрное») and the stroke grammar darkened
+to 100–185 with 2 px lines. (4) The caws were inaudible in practice:
+volume 0.16 → 0.30, radius 12 → 14 m, schedule 26–70 → 16–44 s
+(architecture note updated). (5) Flushes flew one low line through
+buildings: takeoff now climbs to full height by 35 % of the planar travel
+and returns hold altitude until 60 %; per-scene climb heights (City 16 m
+above the rooflines, road 12, village 10); the takeoff azimuth walks a
+seeded Fisher–Yates fan (0/±25/±50/±75/±105°) and takes the first
+direction whose climb-profile chords pass a physics raycast — PS1-honest
+do-not-fly-through-the-first-wall, no pathfinding. The cemetery pair is
+untouched throughout.
+
+Verification: generator determinism byte-identical across two Blender
+runs; both previews and the atlas LOOKED AT (strokes now read on the
+lifted palette); asset rebuild exit `0`; raven-family EditMode selection
+`60/60` with the City roster re-pinned to the measured ten;
+PlayMode City `1/1`; the City capture re-shot — `21` `roost-*` frames,
+all LOOKED AT (the close frames carry the eye/beak read; the flush frame
+catches only the first takeoff instant because batch frames are ~0.5 ms
+of game time — wing deployment is proven by the bounds-measuring test and
+reads at real-time pacing). Full EditMode suite `1,955/1,957`; the two
+reds are the concurrent session's same in-flight files, zero raven.
+
+## 2026-08-31 — Ravens settled the three outdoor scenes as sparse roosts
+
+Canon and documentation for the outdoor raven roosts are in place ahead of
+the runtime slice. Sparse pairs of the same wintering ravens hold authored
+bird-logic spots on City (up to eight), MountainRoad (up to four) and
+AlpineVillage (up to three), always already perched; the cemetery pair stays
+unique and untouched. Story bible §6: the level-`2` raven row's closing
+sentence now scopes «не множатся» to the grave pair itself, and one new
+level-`0` registry row frees the species for the three outdoor areas with
+the per-area caps, the bird-logic siting rule, the one-third-unremarkable
+defence and the hard exclusions — the church and everything it reads over,
+both ends of the pipe (the водоразбор yard AND the chapel over the spring)
+with their audible radius, the cemetery fence and the finished tableaux. The
+art bible generalizes §10c's backdrop rule into a siting rule and adds one
+zone-voiced paragraph each to §10, §10b, §10d (mol in the dead port west of
+the mouth, barge on the wild east shore), §10e, §10f (including the road
+ribbon that has no section of its own) and §10g (no chapel). A dated
+accepted-exception paragraph in `ai/architecture-notes.md` records the
+species-not-sign argument, §16 laws 1-2 and the §19 refusal, the
+AlpineVillage warmth-grade voice hole (roost voices sit outside the grade's
+six-voice contract; grade pinned at `0` — accepted) and the §16 sound-test
+note (`12 m` radius, `26-70 s` interval). Systems map, system tree, project
+overview, README, release notes and the debug-log category table (now
+naming `mountain_road` and `alpine_village`, plus `raven_roost_spawned` /
+`raven_roost_provider_missing`) carry the same decisions.
+
+Verification: all four csproj built with `0` errors. The measured default
+rosters, pinned by `DefaultSeeds_KeepTheMeasuredRoostRosters` after the
+first real planner run: City `7` of the authored `8` (fountain, river
+landing, mol head, east barge, road bridge, two dumpster kerbs — the
+tunnel-forecourt candidate is vetoed on the default city even after the
+street-side widening, so the §10e sentence reads "может держаться"),
+MountainRoad `3` (gorge bridge, exit portal, summit brink; the culvert
+falls to the 70 m step), AlpineVillage `2` (adit, lane fence; the woodpile
+falls to the adit's circle, as predicted). Minimum measured spacing
+93.0 / 70.5 / 58.8 m. Headless EditMode selection
+(`RavenRoost|RavenCallClipCache`): `19/19`. PlayMode one scene per
+invocation: City `1/1` (spawn-perched sweep, flush at the nearest land
+roost, return past 33.6 m), MountainRoad `1/1` (portal pair awake at the
+tunnel spawn PLUS the freeze/thaw cycle — moved here from the village
+test because the motor clamps every step to the walkable mask and the
+village bowl holds no standable point beyond the 110 m radius; the road's
+620 m ribbon does), AlpineVillage `1/1` (all roosts awake, perched,
+never-an-arrival). Captures, every frame LOOKED AT: City `15`
+`roost-*` frames (the deck roosts' wake teleport needed two retunes —
+raw side offsets land over water and the mask clamp drags the hero into
+the flush circle, so stands resolve through the teleport ground with
+deck-axis fallbacks at the perch's own authored level), MountainRoad `+5`
+(the bridge-rail bird is the showcase; the §10f series keeps its one
+horizontal with the pair as punctuation), AlpineVillage `+2` (birds read
+against the pale snow). The barge pair is the grayscale limit by design —
+a black bird on a near-black hull — and reads on approach. Full EditMode
+suite: `1,950/1,952`; the `2` reds are the concurrent session's in-flight
+mountain-road/cafe files (`CityMiscAssetTests` wave migration,
+`MountainRoadSurfaceAppearanceTests`), zero of them touch this work —
+every raven-family test is green in the full run (`55/55`).
+
+Files: `ai/city-story-bible.md`, `ai/city-zones-art-bible.md`,
+`ai/architecture-notes.md`, `AI.md`, `ai/systems-map.md`,
+`ai/system-tree.md`, `ai/project-overview.md`, `README.md`,
+`ai/release-notes.md`, `ai/debug-log.md`, `ai/work-log.md`.
+
 ## 2026-08-31 — The Home opening stopped borrowing the Editor toolbar
 
 The interface overhaul had framed the old full-width Home opening composition

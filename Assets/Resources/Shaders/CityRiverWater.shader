@@ -785,6 +785,15 @@ Shader "Bar Promenade/City River Water"
                 // dissolving here is exact: at zero wetness the pixel
                 // IS the road. The rim erodes first, carved by world
                 // noise, so a drying puddle pulls toward its middle.
+                //
+                // The shore stands on the SQUARE ROOT of the wetness.
+                // The city never dries below its drizzle (0.18), and
+                // measured against the wetness itself that floor left
+                // a sliver a quarter of the patch wide - at 640x360 no
+                // puddle at all. Against sqrt(0.18) = 0.42 the drizzle
+                // keeps about half the patch (the noise varies it from
+                // a third to the whole), light rain nearly fills it, a
+                // downpour fills it, and zero still dissolves it.
                 half film = _SurfaceWetness;
                 if (_EdgeNoiseParams.z > 0.5)
                 {
@@ -792,10 +801,11 @@ Shader "Bar Promenade/City River Water"
                         (1.0 - input.edgeMask) *
                         (0.4 + 0.6 * EdgeNoise(input.positionWS.xz)) *
                         max(0.05, _EdgeNoiseParams.y);
+                    float shore = sqrt(saturate(_SurfaceWetness));
                     film = (half)smoothstep(
                         0.0,
                         0.12,
-                        _SurfaceWetness - erosion);
+                        shore - erosion);
                 }
 
                 color = lerp((half3)background, color, saturate(film));

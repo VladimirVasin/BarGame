@@ -219,6 +219,88 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// The fringe yards are terrain since the landscape pass, and a slab
+        /// planned on their datum floated 1.8 m over one and drowned 1.5 m
+        /// under another. Handed the yard plan, the planner leaves them dry
+        /// and keeps pooling on the cemetery terrace and the church ground.
+        /// </summary>
+        [Test]
+        public void PuddlePlanner_LeavesTheTerrainYardsDry()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityFringeYardPlan yards = CityFringeYardPlanner.Create(
+                layout,
+                CityMountainBoundaryPlanner.Create(layout));
+            Assert.That(
+                yards.IsEnabled,
+                Is.True,
+                "The default city has fringe yards.");
+
+            IReadOnlyList<RuntimeOrientedBox> pools =
+                CityPuddlePlanner.CreateOpenGround(
+                    layout,
+                    layout.Seed,
+                    yards);
+            Assert.That(
+                pools,
+                Is.Not.Empty,
+                "The cemetery terrace and the church ground still pool.");
+            for (int index = 0; index < pools.Count; index++)
+            {
+                Vector3 center = pools[index].Center;
+                for (int yard = 0; yard < yards.Yards.Count; yard++)
+                {
+                    Assert.That(
+                        yards.Yards[yard].AreaBounds.Contains(
+                            new Vector2(center.x, center.z)),
+                        Is.False,
+                        $"Pool {index} lies on terrain yard " +
+                        $"{yards.Yards[yard].StableId}.");
+                }
+
+                // And the plain yards: their skin is the terrain
+                // model's bilinear sheet, and a pool may only lie
+                // where that sheet lies on the datum. Sampled the way
+                // the world builder lays the ground.
+                Assert.That(
+                    CityTerrainSurfacePlan.TrySampleGroundTop(
+                        layout,
+                        new Vector2(center.x, center.z),
+                        out float skinTop,
+                        out CitySurfaceDescriptor ground),
+                    Is.True,
+                    $"Pool {index} stands over no ground surface.");
+                if (ground.Kind == CitySurfaceKind.OpenGround)
+                {
+                    for (int corner = 0; corner < 5; corner++)
+                    {
+                        Vector2 sample = new Vector2(center.x, center.z);
+                        if (corner > 0)
+                        {
+                            sample.x += ((corner & 1) == 0 ? -0.5f : 0.5f) *
+                                pools[index].Size.x;
+                            sample.y += ((corner & 2) == 0 ? -0.5f : 0.5f) *
+                                pools[index].Size.z;
+                        }
+
+                        skinTop = CityTerrainSurfacePlan.SampleTop(
+                            layout,
+                            ground,
+                            sample);
+                        Assert.That(
+                            center.y - skinTop,
+                            Is.EqualTo(CityPuddlePlanner.SurfaceOffset)
+                                .Within(0.0035f),
+                            $"Pool {index} floats or drowns at {sample}.");
+                    }
+                }
+            }
+        }
+
         [Test]
         public void PuddlePlanner_IsDeterministicAndKeepsPatchesBounded()
         {
@@ -440,6 +522,65 @@ namespace BarPromenade.Tests.EditMode
             finally
             {
                 Object.DestroyImmediate(owner);
+            }
+        }
+
+        /// <summary>
+        /// Nothing may stand over a gutter puddle. The planner insets its
+        /// patches from the STREET box, and at an intersection square that
+        /// box runs the full right of way - its edge is under the pavement
+        /// slab, 60 mm up - so half the city's puddles lay buried under
+        /// the kerb; a graded block's slab can likewise pass under a flat
+        /// intersection square. Every surviving patch must have clear air
+        /// over its sheet at its centre and its four corners.
+        /// </summary>
+        [Test]
+        public void PuddlePlanner_KeepsEveryGutterPatchClearOfCover()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityStreetSurfacePlan streets =
+                CityStreetSurfacePlanner.Create(layout);
+            IReadOnlyList<RuntimeOrientedBox> puddles =
+                CityPuddlePlanner.Create(streets, layout.Seed);
+            Assert.That(
+                puddles.Count,
+                Is.GreaterThanOrEqualTo(20),
+                "The cover rule must not starve the city of puddles.");
+
+            var surfaces = new List<RuntimeOrientedBox>();
+            surfaces.AddRange(streets.StreetGeometry);
+            surfaces.AddRange(streets.SidewalkGeometry);
+            surfaces.AddRange(streets.CrosswalkMarkingGeometry);
+            surfaces.AddRange(streets.CenterMarkingGeometry);
+            for (int index = 0; index < puddles.Count; index++)
+            {
+                RuntimeOrientedBox puddle = puddles[index];
+                for (int corner = 0; corner < 5; corner++)
+                {
+                    Vector3 local = corner == 0
+                        ? Vector3.zero
+                        : new Vector3(
+                            ((corner & 1) == 0 ? -0.5f : 0.5f) * puddle.Size.x,
+                            0f,
+                            ((corner & 2) == 0 ? -0.5f : 0.5f) * puddle.Size.z);
+                    Vector3 point = puddle.Center + puddle.Rotation * local;
+                    for (int surface = 0; surface < surfaces.Count; surface++)
+                    {
+                        if (surfaces[surface].TrySampleTop(point, out float top))
+                        {
+                            // Its own road passes at SurfaceOffset below;
+                            // anything nearer than that would cut or
+                            // cover the sheet.
+                            Assert.That(
+                                top,
+                                Is.LessThan(point.y - 0.0015f),
+                                $"Puddle {index} is covered or cut at {point}.");
+                        }
+                    }
+                }
             }
         }
 

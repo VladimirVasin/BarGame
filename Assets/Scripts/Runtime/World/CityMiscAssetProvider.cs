@@ -91,11 +91,7 @@ namespace BarPromenade
         NightlifeShelterSeatedPerson = 78,
         NightlifeShelterSleepingPerson = 79,
         ResidentialCourtyardPocket = 80,
-        FringeMasonCart = 81,
-        FringeWinchServiceSet = 82,
-        FringeTunnelServiceSet = 83,
-        FringeFloodMaintenanceSet = 84,
-        FringeOpenHoodCar = 85
+        FringeMasonCart = 81
     }
 
     /// <summary>
@@ -186,11 +182,11 @@ namespace BarPromenade
     public sealed partial class CityMiscAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "City/CityMiscAssetProvider";
-        public const string GeneratorVersion = "4.8.0";
+        public const string GeneratorVersion = "4.9.0";
         public const string DesignId = "city_misc_citywide_v4";
-        public const int ExpectedAssemblyCount = 126;
-        public const int ExpectedMeshCount = 271;
-        public const int SupportedKindCount = 86;
+        public const int ExpectedAssemblyCount = 122;
+        public const int ExpectedMeshCount = 259;
+        public const int SupportedKindCount = 82;
 
         private const float GroundTolerance = 0.003f;
 
@@ -277,11 +273,7 @@ namespace BarPromenade
             CityMiscKind.NightlifeShelterSeatedPerson,
             CityMiscKind.NightlifeShelterSleepingPerson,
             CityMiscKind.ResidentialCourtyardPocket,
-            CityMiscKind.FringeMasonCart,
-            CityMiscKind.FringeWinchServiceSet,
-            CityMiscKind.FringeTunnelServiceSet,
-            CityMiscKind.FringeFloodMaintenanceSet,
-            CityMiscKind.FringeOpenHoodCar
+            CityMiscKind.FringeMasonCart
         };
 
         private static readonly ExpectedPartSpec[] IndustrialStreetParts =
@@ -1293,14 +1285,6 @@ namespace BarPromenade
                     }
                 case CityMiscKind.FringeMasonCart:
                     return FringeMasonCartParts;
-                case CityMiscKind.FringeWinchServiceSet:
-                    return FringeWinchServiceParts;
-                case CityMiscKind.FringeTunnelServiceSet:
-                    return FringeTunnelServiceParts;
-                case CityMiscKind.FringeFloodMaintenanceSet:
-                    return FringeFloodMaintenanceParts;
-                case CityMiscKind.FringeOpenHoodCar:
-                    return FringeOpenHoodCarParts;
                 default:
                     throw UnsupportedKind(kind);
             }
