@@ -11,6 +11,8 @@ Shader "Bar Promenade/City Mountain Physical"
         _NativeFogFar("Native Fog Far", Float) = 12
         _HandoffNear("Opaque Handoff Near", Float) = 31
         _HandoffFar("Opaque Handoff Far", Float) = 43
+        _StableHazeHandoff("Stable Opaque Haze Handoff", Range(0, 1)) = 0
+        _Ps1VertexSnap("PS1 Vertex Snap", Range(0, 1)) = 0
     }
 
     SubShader
@@ -55,7 +57,11 @@ Shader "Bar Promenade/City Mountain Physical"
                 half _NativeFogFar;
                 half _HandoffNear;
                 half _HandoffFar;
+                half _StableHazeHandoff;
+                half _Ps1VertexSnap;
             CBUFFER_END
+
+            #include "Ps1VertexJitter.hlsl"
 
             struct Attributes
             {
@@ -84,6 +90,11 @@ Shader "Bar Promenade/City Mountain Physical"
                 VertexPositionInputs positionInputs =
                     GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = positionInputs.positionCS;
+                if (_Ps1VertexSnap >= 0.5h)
+                {
+                    output.positionCS = Ps1SnapClipPosition(
+                        output.positionCS);
+                }
                 output.positionWS = positionInputs.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(
                     input.normalOS);
@@ -116,9 +127,12 @@ Shader "Bar Promenade/City Mountain Physical"
                     _HandoffNear,
                     _HandoffFar,
                     horizontalDistance);
-                half dither = QuantizedInterleavedNoise(
-                    input.positionCS.xy);
-                clip(physicalCoverage - dither);
+                if (_StableHazeHandoff < 0.5h)
+                {
+                    half dither = QuantizedInterleavedNoise(
+                        input.positionCS.xy);
+                    clip(physicalCoverage - dither);
+                }
 
                 half4 sample = SAMPLE_TEXTURE2D(
                     _BaseMap,
@@ -156,6 +170,17 @@ Shader "Bar Promenade/City Mountain Physical"
                     _HazeColor.rgb,
                     litColor,
                     visibility);
+                if (_StableHazeHandoff >= 0.5h)
+                {
+                    half hazeHandoff = smoothstep(
+                        _HandoffNear,
+                        _HandoffFar,
+                        horizontalDistance);
+                    color = lerp(
+                        color,
+                        _HazeColor.rgb,
+                        hazeHandoff);
+                }
                 return half4(color, 1.0h);
             }
             ENDHLSL
@@ -188,7 +213,11 @@ Shader "Bar Promenade/City Mountain Physical"
                 half _NativeFogFar;
                 half _HandoffNear;
                 half _HandoffFar;
+                half _StableHazeHandoff;
+                half _Ps1VertexSnap;
             CBUFFER_END
+
+            #include "Ps1VertexJitter.hlsl"
 
             struct MountainDepthAttributes
             {
@@ -213,6 +242,11 @@ Shader "Bar Promenade/City Mountain Physical"
                 VertexPositionInputs positionInputs =
                     GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = positionInputs.positionCS;
+                if (_Ps1VertexSnap >= 0.5h)
+                {
+                    output.positionCS = Ps1SnapClipPosition(
+                        output.positionCS);
+                }
                 output.positionWS = positionInputs.positionWS;
                 return output;
             }
@@ -234,13 +268,16 @@ Shader "Bar Promenade/City Mountain Physical"
                 float horizontalDistance = distance(
                     GetCameraPositionWS().xz,
                     input.positionWS.xz);
-                half physicalCoverage = 1.0h - smoothstep(
-                    _HandoffNear,
-                    _HandoffFar,
-                    horizontalDistance);
-                clip(
-                    physicalCoverage -
-                    MountainDepthNoise(input.positionCS.xy));
+                if (_StableHazeHandoff < 0.5h)
+                {
+                    half physicalCoverage = 1.0h - smoothstep(
+                        _HandoffNear,
+                        _HandoffFar,
+                        horizontalDistance);
+                    clip(
+                        physicalCoverage -
+                        MountainDepthNoise(input.positionCS.xy));
+                }
                 return input.positionCS.z;
             }
             ENDHLSL
@@ -273,7 +310,11 @@ Shader "Bar Promenade/City Mountain Physical"
                 half _NativeFogFar;
                 half _HandoffNear;
                 half _HandoffFar;
+                half _StableHazeHandoff;
+                half _Ps1VertexSnap;
             CBUFFER_END
+
+            #include "Ps1VertexJitter.hlsl"
 
             struct MountainDepthNormalsAttributes
             {
@@ -300,6 +341,11 @@ Shader "Bar Promenade/City Mountain Physical"
                 VertexPositionInputs positionInputs =
                     GetVertexPositionInputs(input.positionOS.xyz);
                 output.positionCS = positionInputs.positionCS;
+                if (_Ps1VertexSnap >= 0.5h)
+                {
+                    output.positionCS = Ps1SnapClipPosition(
+                        output.positionCS);
+                }
                 output.positionWS = positionInputs.positionWS;
                 output.normalWS = TransformObjectToWorldNormal(
                     input.normalOS);
@@ -323,13 +369,16 @@ Shader "Bar Promenade/City Mountain Physical"
                 float horizontalDistance = distance(
                     GetCameraPositionWS().xz,
                     input.positionWS.xz);
-                half physicalCoverage = 1.0h - smoothstep(
-                    _HandoffNear,
-                    _HandoffFar,
-                    horizontalDistance);
-                clip(
-                    physicalCoverage -
-                    MountainDepthNormalsNoise(input.positionCS.xy));
+                if (_StableHazeHandoff < 0.5h)
+                {
+                    half physicalCoverage = 1.0h - smoothstep(
+                        _HandoffNear,
+                        _HandoffFar,
+                        horizontalDistance);
+                    clip(
+                        physicalCoverage -
+                        MountainDepthNormalsNoise(input.positionCS.xy));
+                }
 
                 float3 normalWS = normalize(input.normalWS);
                 #if defined(_GBUFFER_NORMALS_OCT)

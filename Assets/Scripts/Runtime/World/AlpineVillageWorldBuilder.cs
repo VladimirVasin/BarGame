@@ -75,19 +75,6 @@ namespace BarPromenade
         public const int TerrainRiseMaterialIndex = 1;
 
         /// <summary>
-        /// How far the rise's copy of the boundary ring sits under the floor
-        /// - the City's `ToeGroundOverlap`. The floor snaps its vertices to
-        /// the composite grid (`Ps1Lit`) and the rise does not, so the SAME
-        /// vertex lands up to half a pixel apart on the two sides of the
-        /// toe and a hairline opens around the whole bowl. The ring of floor
-        /// cells touching the rise is drawn twice: once as floor, once as
-        /// rise on duplicated vertices lowered by this, so the unsnapped
-        /// side is always under the snapped edge. Buried, it never
-        /// z-fights; it only closes the crack.
-        /// </summary>
-        internal const float SeamBurial = 0.08f;
-
-        /// <summary>
         /// The one object holding the lying snow. Named here because the
         /// contract that keeps it visual - that it carries no collider - is
         /// asserted against this name.
@@ -97,9 +84,6 @@ namespace BarPromenade
         /// <summary>Buried inner toe, crest, tail knee, buried outer toe.
         /// </summary>
         private const int DriftCrossSectionVertices = 4;
-
-        private static readonly int BaseMapTransformId =
-            Shader.PropertyToID("_BaseMap_ST");
 
         private static readonly Color SnowColor =
             new Color(0.695f, 0.685f, 0.655f, 1f);
@@ -290,12 +274,10 @@ namespace BarPromenade
         /// into the mountain, which is what it is. The ride keeps its
         /// close-up honesty from the shader instead of from the split -
         /// inside `NativeFogNearDistance` the wall is on the same native
-        /// Exp2 the floor is. The ring of floor cells touching the rise is
-        /// also emitted into the rise submesh on duplicated vertices lowered
-        /// by <see cref="SeamBurial"/>, so the unsnapped rise lies under the
-        /// snapped floor edge and no hairline can open at the toe. The
-        /// collider takes the whole mesh; the buried ring is under the
-        /// floor and never the first thing a ray hits.
+        /// Exp2 the floor is. Both materials now apply the same projected PS1
+        /// vertex snap, so adjacent floor and rise cells share the grid's
+        /// exact toe indices. No duplicated coplanar ring is needed, and the
+        /// collider remains the one unsplit grid mesh.
         ///
         /// IT CARRIES NO VERTEX COLOURS, and it never usefully did. Every
         /// vertex used to be tinted snow-to-soil by its distance from the
@@ -341,7 +323,7 @@ namespace BarPromenade
                         plan,
                         point);
                     vertices.Add(new Vector3(x, height, z));
-                    uvs.Add(new Vector2(x, z) * 0.25f);
+                    uvs.Add(AlpineVillageRidgeAppearance.CreateWorldUv(point));
                 }
             }
 
@@ -363,7 +345,6 @@ namespace BarPromenade
 
             var floorTriangles = new List<int>(columns * rows * 6);
             var riseTriangles = new List<int>();
-            var buriedTwins = new Dictionary<int, int>();
             for (int row = 0; row < rows; row++)
             {
                 for (int column = 0; column < columns; column++)
@@ -376,27 +357,6 @@ namespace BarPromenade
                     }
 
                     AppendCell(floorTriangles, origin, columns);
-                    if (!TouchesRise(riseCells, rows, columns, row, column))
-                    {
-                        continue;
-                    }
-
-                    // The seam ring: the same cell again, on buried copies
-                    // of its four corners, in the rise submesh.
-                    AppendCell(
-                        riseTriangles,
-                        BuriedVertex(origin, buriedTwins, vertices, uvs),
-                        BuriedVertex(origin + 1, buriedTwins, vertices, uvs),
-                        BuriedVertex(
-                            origin + columns + 1,
-                            buriedTwins,
-                            vertices,
-                            uvs),
-                        BuriedVertex(
-                            origin + columns + 2,
-                            buriedTwins,
-                            vertices,
-                            uvs));
                 }
             }
 
@@ -435,23 +395,15 @@ namespace BarPromenade
                 AlpineVillageRidgeAppearance.RidgeMaterial
             };
             renderer.sharedMaterials = materials;
-            MountainRoadSurfaceAppearance.Apply(
+            MountainRoadSurfaceAppearance.ApplyCombined(
                 renderer,
                 AlpineVillageRidgeAppearance.Surface,
                 SnowColor,
                 TerrainFloorMaterialIndex);
 
-            // The rise takes the floor's own `_BaseMap_ST`, read back rather
-            // than re-derived, so the one sheet runs across the toe at the
-            // pitch the shipped ground already has.
-            var floorProperties = new MaterialPropertyBlock();
-            renderer.GetPropertyBlock(
-                floorProperties,
-                TerrainFloorMaterialIndex);
             AlpineVillageRidgeAppearance.Apply(
                 renderer,
-                TerrainRiseMaterialIndex,
-                floorProperties.GetVector(BaseMapTransformId));
+                TerrainRiseMaterialIndex);
             renderer.sharedMaterials = materials;
 
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
@@ -490,91 +442,20 @@ namespace BarPromenade
                 centre) > 0f;
         }
 
-        /// <summary>
-        /// Whether a floor cell has a rise cell among its eight neighbours
-        /// - the ring rule, corners included, so a diagonal contact is
-        /// buried too.
-        /// </summary>
-        internal static bool TouchesRise(
-            bool[,] riseCells,
-            int rows,
-            int columns,
-            int row,
-            int column)
-        {
-            for (int dRow = -1; dRow <= 1; dRow++)
-            {
-                for (int dColumn = -1; dColumn <= 1; dColumn++)
-                {
-                    int neighbourRow = row + dRow;
-                    int neighbourColumn = column + dColumn;
-                    if ((dRow == 0 && dColumn == 0) ||
-                        neighbourRow < 0 ||
-                        neighbourRow >= rows ||
-                        neighbourColumn < 0 ||
-                        neighbourColumn >= columns)
-                    {
-                        continue;
-                    }
-
-                    if (riseCells[neighbourRow, neighbourColumn])
-                    {
-                        return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
         private static void AppendCell(
             List<int> triangles,
             int origin,
             int columns)
         {
-            AppendCell(
-                triangles,
-                origin,
-                origin + 1,
-                origin + columns + 1,
-                origin + columns + 2);
-        }
-
-        private static void AppendCell(
-            List<int> triangles,
-            int nearLeft,
-            int nearRight,
-            int farLeft,
-            int farRight)
-        {
-            triangles.Add(nearLeft);
+            int nearRight = origin + 1;
+            int farLeft = origin + columns + 1;
+            int farRight = farLeft + 1;
+            triangles.Add(origin);
             triangles.Add(farLeft);
             triangles.Add(nearRight);
             triangles.Add(nearRight);
             triangles.Add(farLeft);
             triangles.Add(farRight);
-        }
-
-        /// <summary>
-        /// The buried copy of one grid vertex, made once and shared by every
-        /// ring cell that touches it.
-        /// </summary>
-        private static int BuriedVertex(
-            int source,
-            Dictionary<int, int> buriedTwins,
-            List<Vector3> vertices,
-            List<Vector2> uvs)
-        {
-            if (buriedTwins.TryGetValue(source, out int buried))
-            {
-                return buried;
-            }
-
-            buried = vertices.Count;
-            vertices.Add(vertices[source] - Vector3.up * SeamBurial);
-            uvs.Add(uvs[source]);
-            buriedTwins.Add(source, buried);
-            return buried;
         }
 
         /// <summary>
@@ -696,6 +577,8 @@ namespace BarPromenade
                     triangles);
             }
 
+            AppendSnowField(plan, paths, vertices, uvs, triangles);
+
             if (triangles.Count == 0)
             {
                 return;
@@ -725,10 +608,104 @@ namespace BarPromenade
             renderer.receiveShadows = true;
             // The floor's own sheet and tint, so the drift is the ground
             // getting deeper rather than a second material lying on it.
-            MountainRoadSurfaceAppearance.Apply(
+            MountainRoadSurfaceAppearance.ApplyCombined(
                 renderer,
                 AlpineVillageRidgeAppearance.Surface,
-                SnowColor);
+                SnowColor,
+                0);
+        }
+
+        /// <summary>
+        /// The lying snow everywhere the routes do not reach.
+        ///
+        /// The fitted ribbons carry everything that BENDS - the rise out of
+        /// each trodden edge, which has to follow its route exactly - and
+        /// this carries the flat remainder, where the depth has already
+        /// saturated and only the world-space undulation moves it. So the
+        /// pitch is set by that undulation's `15 m` waves rather than by
+        /// anything near a route, and a cell whose centre the ribbons already
+        /// cover is never emitted at all.
+        ///
+        /// The one cell of deliberate overlap is what closes the join: both
+        /// surfaces are at full depth there, so the sheet is drawn
+        /// <see cref="AlpineVillageSnowDrift.FieldBurial"/> under its own
+        /// height and the fitted ribbon always wins.
+        /// </summary>
+        private static void AppendSnowField(
+            AlpineVillagePlan plan,
+            IReadOnlyList<AlpineVillagePathDescriptor> paths,
+            List<Vector3> vertices,
+            List<Vector2> uvs,
+            List<int> triangles)
+        {
+            Rect bowl = plan.TerrainBounds;
+            float outset = AlpineVillageTerrainSampler.RidgeStandoff;
+            float cell = AlpineVillageSnowDrift.FieldCellSize;
+            var bounds = Rect.MinMaxRect(
+                bowl.xMin - outset,
+                bowl.yMin - outset,
+                bowl.xMax + outset,
+                bowl.yMax + outset);
+            int columns = Mathf.Max(1, Mathf.CeilToInt(bounds.width / cell));
+            int rows = Mathf.Max(1, Mathf.CeilToInt(bounds.height / cell));
+
+            // One grid of vertices, then only the cells the ribbons leave.
+            // The unused ones cost a vertex each and no triangle, which is
+            // far cheaper than re-indexing a sparse grid.
+            int origin = vertices.Count;
+            for (int row = 0; row <= rows; row++)
+            {
+                for (int column = 0; column <= columns; column++)
+                {
+                    var point = new Vector2(
+                        bounds.xMin + bounds.width * (column / (float)columns),
+                        bounds.yMin + bounds.height * (row / (float)rows));
+                    float depth = AlpineVillageSnowDrift.SampleDepth(
+                        plan,
+                        paths,
+                        point);
+                    float ground = AlpineVillageTerrainSampler.SampleHeight(
+                        plan,
+                        point);
+                    vertices.Add(new Vector3(
+                        point.x,
+                        ground + depth - AlpineVillageSnowDrift.FieldBurial,
+                        point.y));
+                    uvs.Add(
+                        AlpineVillageRidgeAppearance.CreateWorldUv(point));
+                }
+            }
+
+            for (int row = 0; row < rows; row++)
+            {
+                for (int column = 0; column < columns; column++)
+                {
+                    var centre = new Vector2(
+                        bounds.xMin +
+                        bounds.width * ((column + 0.5f) / columns),
+                        bounds.yMin +
+                        bounds.height * ((row + 0.5f) / rows));
+                    float outside = AlpineVillagePathPlanner
+                        .MeasureDistanceOutsideTrodden(
+                            plan,
+                            paths,
+                            centre,
+                            out _);
+                    if (outside <
+                        AlpineVillageSnowDrift.RibbonReach - cell)
+                    {
+                        continue;
+                    }
+
+                    int corner = origin + row * (columns + 1) + column;
+                    triangles.Add(corner);
+                    triangles.Add(corner + columns + 1);
+                    triangles.Add(corner + 1);
+                    triangles.Add(corner + 1);
+                    triangles.Add(corner + columns + 1);
+                    triangles.Add(corner + columns + 2);
+                }
+            }
         }
 
         /// <summary>
@@ -851,13 +828,21 @@ namespace BarPromenade
                 AlpineVillageSnowDrift.CrossSection(
                     exposure,
                     out float toe,
-                    out float crest,
-                    out float knee,
-                    out float tail);
-                AppendDriftVertex(plan, paths, station, toe, vertices, uvs);
-                AppendDriftVertex(plan, paths, station, crest, vertices, uvs);
-                AppendDriftVertex(plan, paths, station, knee, vertices, uvs);
-                AppendDriftVertex(plan, paths, station, tail, vertices, uvs);
+                    out float near,
+                    out float far,
+                    out float edge);
+                AppendDriftVertex(
+                    plan, paths, station, toe, false, vertices, uvs);
+                AppendDriftVertex(
+                    plan, paths, station, near, false, vertices, uvs);
+                AppendDriftVertex(
+                    plan, paths, station, far, false, vertices, uvs);
+                // The outer edge meets the field sheet, which is drawn under
+                // its own height so the ribbon wins their overlap. Sink this
+                // one with it, or the ribbon ends in a step the height of
+                // that burial, ringing every route in the village.
+                AppendDriftVertex(
+                    plan, paths, station, edge, true, vertices, uvs);
             }
 
             for (int index = 0; index < stations.Count - 1; index++)
@@ -901,6 +886,7 @@ namespace BarPromenade
             IReadOnlyList<AlpineVillagePathDescriptor> paths,
             DriftStation station,
             float offset,
+            bool meetsTheField,
             List<Vector3> vertices,
             List<Vector2> uvs)
         {
@@ -915,10 +901,15 @@ namespace BarPromenade
             float height = depth <= 0.0005f
                 ? ground - AlpineVillageSnowDrift.ToeBurial
                 : ground + depth;
+            if (meetsTheField)
+            {
+                height -= AlpineVillageSnowDrift.FieldBurial;
+            }
+
             vertices.Add(new Vector3(point.x, height, point.y));
             // The ground's own planar UV, so the one sheet runs across the
             // toe at the pitch the snow beside it already has.
-            uvs.Add(new Vector2(point.x, point.y) * 0.25f);
+            uvs.Add(AlpineVillageRidgeAppearance.CreateWorldUv(point));
         }
 
         private readonly struct DriftStation

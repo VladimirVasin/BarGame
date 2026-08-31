@@ -236,16 +236,18 @@ bounded symmetric local correction around those beats.
 The chapel, closed adit and ordinary burial ground remain side finds, and every
 permitted threshold/spur consumes one visible compacted-path descriptor in both
 rendering and traversal. `TerrainMeshBounds` extends the inhabited bowl into a
-fully physical `58°` enclosing rise, hidden crest and sampled cableway brink,
-and the bowl looms: the toe stands `18 m` outside the top house's envelope
-and the `50 m` crest `31 m` past it — `39°` from the lane head, `36°` from
-the platform toward the open side, `28-31°` sideways from mid-lane. The rise
-is the second submesh of the one ground mesh on its own `CityMountainPhysical`
-material (`AlpineVillageRidgeAppearance`: village haze, the breathing density,
-a `0.30` visibility floor, a `96-108 m` handoff inside the `110 m` plane, the
-floor's own snow sheet, a cold snow-shadow tint, no shadow because the shader
-has no caster pass), its toe ring buried `0.08 m` under the floor and the
-cableway valley kept on the floor material.
+fully physical `74°` enclosing rise, hidden crest and sampled cableway brink,
+and the bowl looms: the toe stands `15 m` outside the top house's envelope
+and the `60 m` crest `16.7 m` past it — a mean `34.1°` from mid-lane and
+`43°` on the nearest bearings. The rise is the second submesh of the one
+ground mesh on its own `CityMountainPhysical` material
+(`AlpineVillageRidgeAppearance`: village haze, the breathing density, a `0.40`
+visibility floor and a stable opaque colour handoff over `96-108 m` inside the
+`110 m` plane). Village floor, rise and lying snow bake the same world-planar
+UV scale once and retain identity material transforms; floor and rise share
+their toe indices and the same PS1 vertex snap, so neither a buried overlap
+ring nor moving screen-space coverage can make the lower wall crawl. The
+shared shader's City defaults keep their existing clip-dither handoff.
 The deterministic passive village kit now carries `19` assemblies / `53`
 role meshes: correctly outward-wound closed wall shells and roof solids, roof
 snow, a distinct top house, facade repairs and shutters,
@@ -259,7 +261,12 @@ the graves, the top house or the station — their voices an accepted
 exception outside the warmth grade's six-voice contract. A
 village-only blizzard profile keeps snowfall at `.88–1` and wind at `.82–1`,
 adds terrain-sampled ground spindrift and drives one continuous synthesized
-wind bed from the same deterministic bearing and gust rhythm. All nine
+wind bed from the same deterministic bearing and gust rhythm. A second,
+presentation-only peripheral field places strong soft snow curtains outside
+the complete trodden-route network and behind the mother's house. Its spatial
+plan preserves a widening station-to-house aperture around the whole building,
+and it changes no collider, damage, speed or walkable mask: leaving the path is
+still physically allowed, but the weather makes it feel exposed. All nine
 garland spans read that shaped wind too: their batched render meshes deform
 with both anchors fixed, while bulbs and the two real lights follow each free
 midpoint. The station

@@ -13,18 +13,17 @@ namespace BarPromenade
     /// the bowl that was built to loom would vanish exactly when the storm
     /// is at its strongest. `Shaders/CityMountainPhysical` is the game's
     /// answer to that already - native Exp2 close in, a visibility floor
-    /// beyond `NativeFogFar`, an ordered dither handing the mass to the haze
+    /// beyond `NativeFogFar`, and a material-selected handoff to the haze
     /// just inside the far plane - and the City hard-codes its haze into
     /// `CityMountainSurfaceAppearance`, so the village needs its own owner
     /// with its own colour, its own breathing density and its own band.
     ///
-    /// Two things follow from the shader and are recorded here rather than
-    /// "fixed". It has no ShadowCaster pass, so the rise casts no shadow
-    /// while the floor next to it still does; a `50 m` wall can therefore
-    /// never shade the lane at low sun. And it does not snap vertices to the
-    /// composite grid the way `Ps1Lit` does, so the toe seam is buried by
-    /// the mesh builder instead of relying on the two sides landing on the
-    /// same pixel.
+    /// It still has no ShadowCaster pass, so the rise casts no shadow while
+    /// the floor next to it does; a `60 m` wall can therefore never shade the
+    /// lane at low sun. The village material does opt into the same composite
+    /// vertex snap as `Ps1Lit`, however. Floor and rise are submeshes of one
+    /// grid and can therefore share their exact toe vertices without a broad
+    /// overlapping ring.
     /// </summary>
     internal static class AlpineVillageRidgeAppearance
     {
@@ -47,18 +46,28 @@ namespace BarPromenade
         public const float NativeFogFarDistance = 12f;
 
         /// <summary>
-        /// The dither band, in horizontal metres, that hands the wall to the
-        /// haze before the `110 m` plane can cut it. It starts beyond every
-        /// crest the plan produces (the farthest, mid-lane toward the far
+        /// The stable opaque blend band, in horizontal metres, that hands the
+        /// wall's colour to the haze before the `110 m` plane can cut it. It
+        /// starts beyond every crest the plan produces (the farthest,
+        /// mid-lane toward the far
         /// side, stands at `88 m`; the platform's sideways crest at `99 m`),
         /// so the silhouette edge that makes the bowl loom is never inside
-        /// the dither - the City learned that a band across the crest
-        /// dissolves it mid-air. At `96 m` and beyond the wall is at its
-        /// floor, so the dots are haze-coloured and read as haze.
+        /// the blend. Unlike the City's screen-space dither, the village mode
+        /// keeps writing an opaque surface and reaches the exact haze colour
+        /// at the far side; camera motion can no longer make the lower wall
+        /// sparkle while its visual handoff remains hidden in the storm.
         /// </summary>
         public const float HandoffNearDistance = 96f;
 
         public const float HandoffFarDistance = 108f;
+
+        /// <summary>The shared shader keeps City's dither as its zero-default.
+        /// Only this material selects the stable opaque village path.</summary>
+        internal const float StableHazeHandoff = 1f;
+
+        /// <summary>The floor uses `Ps1Lit`; selecting the same projected
+        /// snap here keeps shared toe vertices coincident in every pass.</summary>
+        internal const float Ps1VertexSnap = 1f;
 
         /// <summary>
         /// The one sheet the whole village ground wears, on both submeshes:
@@ -68,6 +77,21 @@ namespace BarPromenade
         /// </summary>
         public const MountainRoadSurfaceKind Surface =
             MountainRoadSurfaceKind.WindSnow;
+
+        /// <summary>Village terrain and lying snow bake world-planar UVs at
+        /// the recipe's metre pitch. Their material transform is identity;
+        /// applying the primitive transform again would scale the sheet
+        /// twice and make it crawl over the distant wall.</summary>
+        internal static float UvUnitsPerMeter =>
+            1f / MountainRoadSurfaceAppearance.GetRecipe(Surface).MetersPerTile;
+
+        internal static readonly Vector4 BakedUvTransform =
+            new Vector4(1f, 1f, 0f, 0f);
+
+        internal static Vector2 CreateWorldUv(Vector2 point)
+        {
+            return point * UvUnitsPerMeter;
+        }
 
         /// <summary>
         /// Snow in its own shadow: colder and darker than the amber haze
@@ -107,6 +131,10 @@ namespace BarPromenade
             Shader.PropertyToID("_HandoffNear");
         private static readonly int HandoffFarId =
             Shader.PropertyToID("_HandoffFar");
+        private static readonly int StableHazeHandoffId =
+            Shader.PropertyToID("_StableHazeHandoff");
+        private static readonly int Ps1VertexSnapId =
+            Shader.PropertyToID("_Ps1VertexSnap");
 
         private static Material ridgeMaterial;
 
@@ -162,6 +190,12 @@ namespace BarPromenade
                     ridgeMaterial.SetFloat(
                         HandoffFarId,
                         HandoffFarDistance);
+                    ridgeMaterial.SetFloat(
+                        StableHazeHandoffId,
+                        StableHazeHandoff);
+                    ridgeMaterial.SetFloat(
+                        Ps1VertexSnapId,
+                        Ps1VertexSnap);
                 }
 
                 return ridgeMaterial;
@@ -170,17 +204,13 @@ namespace BarPromenade
 
         /// <summary>
         /// Writes the wall's sheet, tint and response into the property
-        /// block of one submesh. <paramref name="baseMapTransform"/> is the
-        /// SAME `_BaseMap_ST` the floor received from its own apply - read
-        /// back from the floor's block by the caller - so the sheet is
-        /// continuous across the toe. The wall never invents its own pitch:
-        /// the floor's is what the shipped ground looks like, and a second
-        /// pitch at the seam would be the seam.
+        /// block of one submesh. Both submeshes own world-planar UVs baked at
+        /// the recipe pitch, so `_BaseMap_ST` is the same identity transform
+        /// on both sides of the toe.
         /// </summary>
         public static void Apply(
             Renderer renderer,
-            int materialIndex,
-            Vector4 baseMapTransform)
+            int materialIndex)
         {
             if (renderer == null)
             {
@@ -204,7 +234,7 @@ namespace BarPromenade
             properties.SetTexture(
                 BaseMapId,
                 MountainRoadSurfaceAppearance.GetTexture(Surface));
-            properties.SetVector(BaseMapTransformId, baseMapTransform);
+            properties.SetVector(BaseMapTransformId, BakedUvTransform);
             properties.SetColor(BaseColorId, displayTint);
             properties.SetColor(ColorId, displayTint);
             properties.SetFloat(SmoothnessId, recipe.Smoothness);

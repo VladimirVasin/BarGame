@@ -102,6 +102,12 @@ namespace BarPromenade.Tests.PlayMode
             yield return null;
 
             Assert.That(village.IsInitialized, Is.True);
+            Assert.That(village.PeripheralBlizzard, Is.Not.Null);
+            Assert.That(village.PeripheralBlizzard.IsInitialized, Is.True);
+            Assert.That(village.PeripheralBlizzard.SpatialPlan, Is.Not.Null);
+            Assert.That(
+                village.PeripheralBlizzard.ParticleRenderer.sharedMaterial,
+                Is.SameAs(CityNightResources.AtmosphereMaterial));
             Assert.That(
                 village.WarmthGrade,
                 Is.EqualTo(0f),
@@ -151,6 +157,11 @@ namespace BarPromenade.Tests.PlayMode
                     Is.EqualTo(RenderSettings.fogColor),
                     $"Frame {frame}: pixels past the plane must resolve " +
                     "to the haze, not to a dark world edge.");
+                Assert.That(
+                    village.PeripheralBlizzard.AppliedStormWave,
+                    Is.EqualTo(village.StormWave).Within(0.000001f),
+                    $"Frame {frame}: the side whiteout is not reading the " +
+                    "same gust wave as the landmark haze.");
 
                 minimumDensity = Mathf.Min(
                     minimumDensity,

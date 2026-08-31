@@ -369,6 +369,40 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// The indexed form for a submesh whose UVs are already baked at the
+        /// recipe pitch. The caller owns the renderer's material array; this
+        /// writes only that slot's property block.
+        /// </summary>
+        public static void ApplyCombined(
+            Renderer renderer,
+            MountainRoadSurfaceKind kind,
+            Color sourceTint,
+            int materialIndex)
+        {
+            if (renderer == null)
+            {
+                return;
+            }
+
+            if (materialIndex < 0)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(materialIndex),
+                    materialIndex,
+                    "An indexed combined surface needs a material slot.");
+            }
+
+            ApplySharedProperties(
+                renderer,
+                kind,
+                sourceTint,
+                GetRecipe(kind),
+                RuntimePrimitiveFactory.DefaultMaterial,
+                materialIndex);
+            SetBakedUvTransform(renderer, materialIndex);
+        }
+
+        /// <summary>
         /// The same combined path on a caller-chosen shared material. It
         /// exists for one renderer family — the conifer crowns, which wear
         /// <see cref="FoliageMaterial"/> so they can bend — and it takes the
@@ -464,6 +498,18 @@ namespace BarPromenade
             {
                 renderer.SetPropertyBlock(properties, materialIndex);
             }
+        }
+
+        private static void SetBakedUvTransform(
+            Renderer renderer,
+            int materialIndex)
+        {
+            var properties = new MaterialPropertyBlock();
+            GetPropertyBlock(renderer, properties, materialIndex);
+            properties.SetVector(
+                BaseMapTransformId,
+                new Vector4(1f, 1f, 0f, 0f));
+            SetPropertyBlock(renderer, properties, materialIndex);
         }
 
         private static int ValidateKind(MountainRoadSurfaceKind kind)

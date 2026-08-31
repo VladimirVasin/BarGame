@@ -293,39 +293,53 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   free of World. The far plane drops `140 -> 110 m`: past the house's back
   wall from the platform (`100 m`) with margin, so the landmark is only ever
   cut by haze, never by the plane; the cableway's hidden-run bounds still
-  hold (`157 m` and `233 m` against `120`). **The walls loom:**
-  `TerrainMargin 30 -> 12` puts the ridge toe `18 m` outside the top house's
-  envelope, `RidgeRisePerMeter 1.15 -> 1.6` (`58°`) and `RidgeMaximumRise 34
-  -> 50` make the crest stand `31 m` past the toe — `39°` from the lane head,
-  `36°` from the platform toward the open side, `28-31°` sideways from
-  mid-lane. The lateral figure is limited by the hull being a world-axis AABB
-  around a village turned `19.9°`; an oriented (uphill/right) hull is the
-  recorded follow-up, not a looser number. The rise is the second submesh of
-  the one ground mesh (one `MeshCollider`, two materials): cells whose ridge
-  term is non-zero AND that stand outside the cableway cut's `19 m` outer
-  half-width wear `AlpineVillageRidgeAppearance`'s own material on
-  `Shaders/CityMountainPhysical` — the village's haze colour, the breathing
-  density, visibility floor `0.30` (the City's `0.10` has a painted shell
-  behind its rock; here the wall is the mass, and `0.12` photographed as a
-  shade on the haze), native fog `9/12 m`, dither handoff
-  `96/108 m` (beyond every crest the plan produces and inside the `110 m`
-  plane), the SAME `WindSnow` sheet as the floor at the SAME `_BaseMap_ST`
-  read back from the floor's block, tinted snow-shadow `(0.31, 0.35, 0.41)`
-  — while the valley bed and walls under the cable keep the floor material,
-  because the cabin passes them at a few metres. That shader has no
-  `ShadowCaster` pass: the rise casts no shadow while the floor still does,
-  recorded rather than "fixed" (a `50 m` wall can therefore never shade the
-  lane). The toe seam is buried the City's way: the ring of floor cells
-  touching the rise is emitted again into the rise submesh on duplicated
-  vertices lowered by `SeamBurial 0.08 m`, so the unsnapped rise lies under
-  the `Ps1Lit`-snapped floor edge and no hairline can open. Spindrift refuses
-  to be born where the ridge rise exceeds `2 m`. **What is NOT lifted:** no
-  silhouette layer, no panorama, no peaks in frame, no lightning or thunder,
+  hold (`157 m` and `233 m` against `120`). **The walls loom:** the current
+  oriented bowl puts the ridge toe `15 m` outside the top house's envelope
+  (`TerrainMargin 12` + `RidgeStandoff 3`), then climbs at
+  `RidgeRisePerMeter 3.6` (`74°`) to `RidgeMaximumRise 60 m`; the crest stands
+  `16.7 m` past the toe, closes a mean `34.1°` from mid-lane and reaches `43°`
+  on the nearest bearings. The rise is the second submesh of the one ground
+  mesh (one `MeshCollider`, two materials), and the cableway valley remains
+  rise material rather than a bright floor-material stripe. Its village-owned
+  `Shaders/CityMountainPhysical` material carries the breathing haze,
+  visibility floor `0.40`, native fog `9/12 m`, tinted snow-shadow
+  `(0.31, 0.35, 0.41)` and a stable opaque colour handoff over `96/108 m`.
+  `_StableHazeHandoff = 1` replaces moving screen-space clip coverage only on
+  this material; the shared shader defaults it to zero, so City keeps its
+  existing ordered-dither, depth and depth-normal behaviour. The village
+  also selects `_Ps1VertexSnap = 1`, matching the floor's `Ps1Lit` projected
+  snap in every ridge pass. Floor and rise therefore share exact toe indices
+  instead of duplicating and burying a broad overlap ring. Terrain, rise and
+  lying snow all bake the `WindSnow` metre pitch once into world-planar UVs
+  and use identity `_BaseMap_ST`; applying the renderer-size transform on top
+  was the second source of distant crawl. The shader still has no
+  `ShadowCaster` pass, so the `60 m` wall cannot shade the lane. Spindrift
+  refuses to be born where the ridge rise exceeds `2 m`.
+  **What is NOT lifted:** no silhouette layer, no panorama, no peaks in frame,
+  no lightning or thunder,
   no danger beat, no supernatural sign; the uphill axis and the nearest
   houses' walls read at every point of the wave, and the house always comes
   back. This stays inside the bounded-fog decision below (`Accepted — Bounded
   local fog`): it is the per-area Exp2 haze behind the shared field that
   breathes, not a second fog of the zone's own.
+- **Accepted — 2026-09-01 implementation follow-up, not an architecture
+  exception — the path advises through weather and never commands:**
+  `AlpineVillagePeripheralStormPlan` is a pure spatial read over the complete
+  lane/path snapshot. It composes distance outside the nearest trodden route,
+  a widening station-to-landmark aperture fitted around all four corners of
+  the mother's house, and a rear band whose strength grows after the actual
+  back wall. `AlpineVillagePeripheralStormField` consumes that sample only to
+  place and fade world-space soft particle sheets; it follows the existing
+  wind bearing and gust wave but never writes `RenderSettings`, camera range,
+  collision, `PlayerMotor`, damage or a walkable mask. After the player steps
+  into untouched snow, the field raises its overall visual pressure and also
+  biases new sheets toward the player's vicinity; speed and route permission
+  stay identical. The aperture keeps the whole
+  house clear of this secondary layer from the station, so the accepted
+  `0.017–0.045` global fog cycle remains solely responsible for hiding the
+  landmark at a gust crest and revealing it again. This adds form already
+  allowed by art-bible §10g and changes no story meaning, so the story bible
+  and exception registry do not change.
 - **Accepted architecture exception — 2026-08-31, explicit user request — the
   cemetery ravens are fauna, not a second Cat:** Story bible §10 reserves
   significant-event animal presence for the Cat, bans «второй кот», and states

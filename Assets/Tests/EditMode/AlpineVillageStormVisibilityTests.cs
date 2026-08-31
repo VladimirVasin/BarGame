@@ -352,8 +352,8 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            // The dither band starts beyond every crest the plan produces
-            // from the lane, and ends inside the plane.
+            // The stable opaque haze blend starts beyond every crest the
+            // plan produces from the lane, and ends inside the plane.
             AlpineVillagePlan plan = CreatePlan();
             AlpineVillageLaneSample middle =
                 plan.Lane.Sample(plan.Lane.Length * 0.5f);
@@ -374,7 +374,7 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     AlpineVillageRidgeAppearance.HandoffNearDistance,
                     Is.GreaterThanOrEqualTo(crest),
-                    $"The dither band crosses the crest {label} at {crest} m.");
+                    $"The haze blend crosses the crest {label} at {crest} m.");
             }
 
             Assert.That(
@@ -393,6 +393,24 @@ namespace BarPromenade.Tests.EditMode
                 material.GetFloat("_VisibilityFloor"),
                 Is.EqualTo(AlpineVillageRidgeAppearance.VisibilityFloor)
                     .Within(0.0001f));
+            Assert.That(
+                material.GetFloat("_StableHazeHandoff"),
+                Is.EqualTo(AlpineVillageRidgeAppearance.StableHazeHandoff));
+            Assert.That(
+                material.GetFloat("_Ps1VertexSnap"),
+                Is.EqualTo(AlpineVillageRidgeAppearance.Ps1VertexSnap));
+
+            // Both switches are zero-default shader properties. The City
+            // material never writes them, so its existing screen-space
+            // dither and unsnapped vertex paths remain selected.
+            Material cityMaterial =
+                CityMountainSurfaceAppearance.PhysicalRidgeMaterial;
+            Assert.That(
+                cityMaterial.GetFloat("_StableHazeHandoff"),
+                Is.Zero);
+            Assert.That(
+                cityMaterial.GetFloat("_Ps1VertexSnap"),
+                Is.Zero);
             Assert.That(
                 ColorDifference(
                     material.GetColor("_HazeColor"),

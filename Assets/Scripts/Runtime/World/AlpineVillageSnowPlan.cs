@@ -5,20 +5,24 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// The snow lying beside the trodden routes, as one pure depth field.
+    /// The lying snow of the whole bowl, as one pure depth field.
     ///
     /// The village stands under a permanent gale and the ground under it was
     /// flat: the lane and the paths read only by material, so a route worn by
-    /// feet looked exactly like untouched field except in colour. This gives
-    /// the snow a thickness, and it gives it where snow actually collects -
-    /// against the one discontinuity the place has.
+    /// feet looked exactly like untouched field except in colour.
     ///
-    /// IT IS A DRIFT AND NOT A BANK, and that distinction is canon rather
-    /// than taste: the art bible's «Следы жизни» says the snow here is not
-    /// raked into a wall the way it is on the terminal plateau - it is
-    /// trodden. So the profile rises over a metre and takes THREE to die
-    /// away. A crest without that tail is a kerb, and a kerb is the thing
-    /// the bible refuses.
+    /// THE FIELD IS THE DEEP THING AND THE ROUTES ARE THE HOLES IN IT. Depth
+    /// is zero on trodden ground and rises with distance from it until it
+    /// reaches <see cref="UntouchedDepth"/>, and from there it stays - so the
+    /// street and every path read as trenches worn down into knee-deep snow
+    /// rather than as ribbons with banks laid along them. That direction is
+    /// also what keeps it canon: the art bible's «Следы жизни» says the snow
+    /// here is not raked into a wall the way it is on the terminal plateau,
+    /// it is TRODDEN, and a field with holes worn in it is exactly that
+    /// sentence in geometry. The gale still writes itself into the shape, but
+    /// as the RUN each face takes to reach full depth rather than as two
+    /// different depths - the far field is one depth because that is what a
+    /// field is.
     ///
     /// The field is visual only. Nothing here is read by
     /// <see cref="AlpineVillageTerrainSampler.SampleHeight"/>, by the walkable
@@ -29,27 +33,62 @@ namespace BarPromenade
     /// </summary>
     internal static class AlpineVillageSnowDrift
     {
-        /// <summary>Full depth where the gale unloads. Knee-high on the
-        /// hero, which is as deep as wading can look right without him
-        /// needing to swim.</summary>
-        internal const float LeeCrestHeight = 0.45f;
-
-        /// <summary>And what is left where it scours. Never zero: the
-        /// windward lip of a trodden trough still carries a lip.</summary>
-        internal const float WindwardCrestHeight = 0.18f;
-
-        internal const float LeeCrestOffset = 1.3f;
-        internal const float WindwardCrestOffset = 1f;
+        /// <summary>
+        /// How deep the lying snow is where nothing has walked. Knee-high on
+        /// the hero, which is as deep as wading can look right without him
+        /// needing to swim.
+        ///
+        /// IT IS A FLOOR THE FIELD RISES TO AND STAYS AT, not a crest it
+        /// passes through. The first cut of this had the profile rise to a
+        /// lip and die back to nothing over three metres, because the snow
+        /// only existed beside the routes; that reads as a drift laid along a
+        /// kerb rather than as a village standing in deep snow. Depth now
+        /// only ever increases with distance from trodden ground, so the
+        /// street and every path read as what they are - trenches worn down
+        /// into a field that is knee-deep everywhere else.
+        /// </summary>
+        internal const float UntouchedDepth = 0.45f;
 
         /// <summary>
-        /// How far the drift takes to die back into the field. It is roughly
-        /// three times the rise on purpose - that ratio IS the difference
-        /// between a drift and a shovelled bank, and shortening it is how
-        /// this becomes a kerb along every path.
+        /// How far from the trodden edge the snow reaches full depth on the
+        /// face the gale unloads into - it packs right up against the worn
+        /// ground - and on the face it scours, where it is pushed back.
+        ///
+        /// This is where the asymmetry lives now. It used to be two crest
+        /// HEIGHTS, which cannot survive a profile that has to keep rising:
+        /// a windward face that tops out lower than the field would need to
+        /// come back DOWN somewhere, and there is nothing for it to come down
+        /// to. Two rise RUNS say the same thing about the same wind and leave
+        /// the far field one depth, which is what it physically is.
         /// </summary>
-        internal const float LeeTailRun = 3.5f;
+        internal const float LeeRiseRun = 1.3f;
 
-        internal const float WindwardTailRun = 2f;
+        internal const float WindwardRiseRun = 3.2f;
+
+        /// <summary>
+        /// How far out the fitted ribbon along each route carries before the
+        /// coarse field sheet takes over. Comfortably past the longest rise,
+        /// so everything that VARIES is on the ribbon - which follows the
+        /// route exactly - and the sheet only ever carries flat full depth.
+        /// </summary>
+        internal const float RibbonReach = 4.5f;
+
+        /// <summary>
+        /// Grid pitch of the field sheet. It carries no detail - the depth is
+        /// already saturated out there and only <see cref="Variation"/> moves
+        /// it, on `15 m` waves - so this is as coarse as the undulation can
+        /// afford rather than as fine as a footprint would want.
+        /// </summary>
+        internal const float FieldCellSize = 1f;
+
+        /// <summary>
+        /// How far the sheet is drawn under its own true depth. The ribbons
+        /// overlap it by a cell, and both are at full depth there, so without
+        /// this the two surfaces z-fight along every route. Buried, the
+        /// fitted ribbon always wins the overlap and the sheet is never the
+        /// visible one where it matters.
+        /// </summary>
+        internal const float FieldBurial = 0.05f;
 
         /// <summary>Longitudinal pitch the path ribbons are re-sampled at.
         /// The lane uses its own `1 m` plan samples, which already carry a
@@ -59,10 +98,11 @@ namespace BarPromenade
         /// <summary>
         /// How far a zero-depth edge is sunk under the ground it meets.
         ///
-        /// The same reason the ground mesh buries its own toe ring by
-        /// <c>SeamBurial</c>: `Ps1Lit` snaps clip position, two meshes snap
-        /// differently, and a coplanar edge opens a crawling hairline along
-        /// every path. Buried, the ground always wins the seam.
+        /// Unlike the ground's two submeshes, this is an independently
+        /// sampled mesh and cannot share exact boundary vertices with the
+        /// terrain. A coplanar edge can therefore open a crawling hairline
+        /// along a path even though both materials use `Ps1Lit`. Buried, the
+        /// ground always wins that narrow seam.
         /// </summary>
         internal const float ToeBurial = 0.06f;
 
@@ -122,29 +162,36 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// How far out the snow takes to reach full depth on a face of this
+        /// exposure.
+        /// </summary>
+        internal static float RiseRun(float exposure)
+        {
+            return Mathf.Lerp(
+                WindwardRiseRun,
+                LeeRiseRun,
+                Mathf.Clamp01(exposure));
+        }
+
+        /// <summary>
         /// The four cross-section offsets, measured outward from the trodden
-        /// edge: buried inner toe, crest, tail knee, buried outer toe.
+        /// edge: buried inner toe, two along the rise, and the outer edge
+        /// where the field sheet takes over. Both of the middle two sit
+        /// inside the rise, because that is the only part of the profile that
+        /// bends - past it the depth is flat and a vertex there buys nothing.
         /// </summary>
         internal static void CrossSection(
             float exposure,
             out float toe,
-            out float crest,
-            out float knee,
-            out float tail)
+            out float near,
+            out float far,
+            out float edge)
         {
-            float clamped = Mathf.Clamp01(exposure);
-            float crestOffset = Mathf.Lerp(
-                WindwardCrestOffset,
-                LeeCrestOffset,
-                clamped);
-            float tailRun = Mathf.Lerp(
-                WindwardTailRun,
-                LeeTailRun,
-                clamped);
+            float rise = RiseRun(exposure);
             toe = AlpineVillagePathPlanner.BareSkirtHalfWidth;
-            crest = toe + crestOffset;
-            knee = crest + tailRun * 0.45f;
-            tail = crest + tailRun;
+            near = toe + rise * 0.35f;
+            far = toe + rise;
+            edge = Mathf.Max(RibbonReach, far + FieldCellSize);
         }
 
         /// <summary>
@@ -181,21 +228,7 @@ namespace BarPromenade
             }
 
             float exposure = MeasureExposure(plan, outward);
-            float crestOffset = Mathf.Lerp(
-                WindwardCrestOffset,
-                LeeCrestOffset,
-                exposure);
-            float tailRun = Mathf.Lerp(
-                WindwardTailRun,
-                LeeTailRun,
-                exposure);
-            float crestHeight = Mathf.Lerp(
-                WindwardCrestHeight,
-                LeeCrestHeight,
-                exposure);
-            float profile = past <= crestOffset
-                ? SmoothRange(0f, crestOffset, past)
-                : 1f - SmoothRange(crestOffset, crestOffset + tailRun, past);
+            float profile = SmoothRange(0f, RiseRun(exposure), past);
             if (profile <= 0f)
             {
                 return 0f;
@@ -207,7 +240,7 @@ namespace BarPromenade
                 return 0f;
             }
 
-            return crestHeight * profile * Variation(point) * suppression;
+            return UntouchedDepth * profile * Variation(point) * suppression;
         }
 
         /// <summary>
@@ -218,15 +251,22 @@ namespace BarPromenade
             AlpineVillagePlan plan,
             Vector2 point)
         {
-            // Past the standoff the mountain starts. There is no route out
-            // there and nothing to drift against, and snow drawn on a `74°`
-            // wall is a sheet hanging in the air.
-            if (AlpineVillageTerrainSampler.SampleRidgeRise(plan, point) > 0f)
+            // The bowl's rim. Snow drawn on a `74°` wall is a sheet hanging
+            // in the air, so it stops before the rise - but it has to FADE
+            // there now rather than stop dead. When the profile died back to
+            // nothing on its own a hard cut at the standoff was invisible;
+            // a field that is knee-deep right up to the rim would end in a
+            // `0.45 m` cliff ringing the whole village.
+            float rimWeight = 1f - SmoothRange(
+                0f,
+                AlpineVillageTerrainSampler.RidgeStandoff,
+                DistanceOutsideRect(plan.TerrainBounds, point));
+            if (rimWeight <= 0f)
             {
                 return 0f;
             }
 
-            float weight = SmoothRange(
+            float weight = rimWeight * SmoothRange(
                 0f,
                 ApronClearance,
                 AlpineVillageTerrainSampler.DistanceOutsideStation(
@@ -272,6 +312,19 @@ namespace BarPromenade
         /// blends at a tenth of their named width until it was found - see
         /// <see cref="AlpineVillageTerrainSampler.ShelfBlendDistance"/>.
         /// </summary>
+        /// <summary>How far the point lies outside the rectangle, on the
+        /// ground plane. Zero anywhere inside it.</summary>
+        private static float DistanceOutsideRect(Rect rect, Vector2 point)
+        {
+            float x = Mathf.Max(
+                0f,
+                Mathf.Max(rect.xMin - point.x, point.x - rect.xMax));
+            float y = Mathf.Max(
+                0f,
+                Mathf.Max(rect.yMin - point.y, point.y - rect.yMax));
+            return Mathf.Sqrt(x * x + y * y);
+        }
+
         private static float SmoothRange(float start, float end, float value)
         {
             return Mathf.SmoothStep(

@@ -6,6 +6,115 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-01 — The snow became a field with trenches worn into it
+
+The lead asked for one thing: the drift should keep getting deeper as you
+leave a path. The first cut could not do that, and the reason is worth
+keeping. Its profile rose to a lip at `1.3 m` and died back to bare ground
+over `3.5 m`, because the agreed scope was "lane and paths only" - snow
+existed only where there was a route to lay it against. A profile that has to
+keep rising has nowhere to come back down TO, so the shape and the scope fall
+together.
+
+So the model is inverted, the same way the walkable mask was: the FIELD is the
+deep thing and the routes are the holes in it. `UntouchedDepth 0.45 m`
+everywhere nothing has walked, zero on trodden ground, monotonic between - and
+the gale now writes itself into the RUN rather than the height, `LeeRiseRun
+1.3` against `WindwardRiseRun 3.2`. Two crest heights cannot survive a
+saturating profile; two runs say the same thing about the same wind and leave
+the far field one depth, which is what a field physically is.
+
+Two consequences that are not optional:
+
+- The rim has to FADE. While the profile died back on its own, cutting the
+  snow dead where `SampleRidgeRise` becomes non-zero was invisible. A field
+  that is knee-deep to the rim would end in a `0.45 m` cliff ringing the whole
+  village, so suppression now eases out across `RidgeStandoff`.
+- Saturated depth needs ground everywhere. `AppendSnowField` lays a `1 m`
+  sheet over the bowl plus its standoff, emitting only the cells the fitted
+  ribbons do not already cover, overlapping them by one cell and drawn
+  `FieldBurial 0.05 m` under its own height so the ribbon wins the join. The
+  ribbon's own outer vertex sinks by the same amount - without that it ends in
+  a step exactly that tall, ringing every route in the village. That one is a
+  defect no test would have caught; it came out of reading the two heights
+  against each other.
+
+**Coordination, since two sessions shared one checkout for this.** The split
+held where it was declared - the neighbour on `CityMountainPhysical.shader`,
+the ridge appearance and the new peripheral storm curtains, this session on
+the snow - and it still cost twice. A run at `01:16` caught
+`AlpineVillageWorldBuilder.cs` mid-edit while the seam-burial ring and the
+five-argument `AppendCell` were being removed, and failed on a foreign error.
+Then this session did the same thing back: queued a run and kept typing, so it
+snapshotted a half-finished rename of its own. The rule `AI.md` records is
+symmetric and neither of us was applying it to ourselves: while a run is in
+flight, nobody edits.
+
+What went RIGHT is the more useful half. The peripheral curtains read
+`AlpineVillagePathPlanner.MeasureDistanceOutsideTrodden` - the shared minimum
+over the lane and every path this session added for the snow - so weather and
+depth cannot drift apart about where a route is. The neighbour also lifted the
+world UV into `AlpineVillageRidgeAppearance.CreateWorldUv` and updated this
+session's call sites; the field sheet uses it too, so the one sheet runs across
+snow and ground at a single pitch.
+
+Verification: EditMode `-testCategory AlpineVillage` **54/54**, `0` errors and
+`0` warnings. Two of this session's own tests were wrong before the field was,
+and both taught something: the first walked its probe ray into a house apron,
+where snow is suppressed by design, so it now scans for a ray with nine metres
+clear of every apron; the second demanded monotonicity every `25 cm`, which
+the deliberate world-space wander breaks by `3.5 mm` - the claim is about the
+envelope, and what actually kills the old shape is that the snow must still be
+knee-deep nine metres out. A third measured the lee/windward asymmetry ON THE
+LANE, where it does not exist and never will: the gale runs down the bowl,
+therefore along the street, so both shoulders face it at the same angle. That
+measurement belongs on the branches that cross the wind, and moved there.
+`AreaCaptureFixture.AlpineVillage` re-shot and compared against the frames from
+before the change: the street reads as a trench in a snowfield, and no seam
+ring appears around the routes.
+
+## 2026-09-01 — Тропа в деревне стала тихим коридором внутри метели
+
+Две видимые проблемы оказались независимыми. Нижняя часть горной стены
+мельтешила при удалении не из-за общей дымки: деревенский склон наследовал
+экранный clip-dither городского дальнего перехода, его мировые UV затем
+масштабировались второй раз по размеру renderer, а широкий заглублённый toe-ring
+накладывал ещё один рисунок на границу пола. Для деревни общий
+`CityMountainPhysical` теперь выбирает стабильный непрозрачный переход в цвет
+дымки на `96–108 м` и тот же PS1 vertex snap, что у пола. Пол и склон делят
+точные крайние индексы без перекрывающего кольца, а terrain/ridge/lying snow
+запекают мировой масштаб `WindSnow` один раз и получают identity
+`_BaseMap_ST`. Нулевые значения новых shader-переключателей оставляют прежний
+City clip-dither без изменений.
+
+Ощущение «с тропы лучше не сходить» сделано погодой, а не новым правилом
+движения. Чистый `AlpineVillagePeripheralStormPlan` меряет точку до ближайшего
+участка **всей** сети протоптанных маршрутов, отдельно держит расширяющийся
+коридор от центра станции вокруг четырёх углов дома матери и быстро набирает
+силу за его настоящей задней стеной. `AlpineVillagePeripheralStormField`
+раскладывает по этому плану крупные мягкие мировые снежные завесы и читает тот
+же ветер/порыв, что остальная деревня. Он не пишет глобальный fog, не создаёт
+коллайдеров, не меняет скорость, урон или walkable mask; положение героя вне
+тропы усиливает общее визуальное давление поля и дополнительно собирает новые
+завесы рядом с ним.
+
+Поэтому существующий ориентир сохранён буквально: между порывами весь дом
+остаётся виден со станции внутри чистого коридора, на гребне прежней общей
+дымки ненадолго пропадает и затем возвращается. Боковые поля и пространство за
+домом при этом закрываются заметно сильнее. Story bible не менялась: это форма
+§10g без нового сюжетного смысла и без architecture exception.
+
+Focused Unity EditMode `-testCategory AlpineVillageStorm` прошёл `15/15`
+после финальных правок поля, масок footprint и склона. Последний успешный
+AlpineVillage capture подтвердил чистый коридор к дому и боковое закрытие;
+последующее усиление плотности и новые ракурсы компилируются тем же focused
+запуском, но свежий recapture остановлен состоянием Unity Library: временный
+запуск через `P:` оставил в кэше старый source root, и импортёр читает
+существующий `VillageAssetProvider` как unknown script ещё до capture-теста.
+Пять затронутых этим запуском registry-prefab восстановлены без сохранения
+побочных изменений. `git diff --check` проходит; полные suite и player build
+в fast mode намеренно не запускались.
+
 ## 2026-08-31 — "The walk animation stopped working in the village"
 
 It had not. The hero was standing against a wall, and the gait is weighted by

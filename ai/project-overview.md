@@ -142,11 +142,14 @@ The vertical slice contains:
   longer decides where a person may stand. Beside each of them the snow has a
   depth: `AlpineVillageSnowDrift` is a pure field over the shared "distance
   outside the nearest trodden route", laid as one colliderless mesh rather
-  than as a term in the height contract, because a `2 m` terrain cell cannot
-  hold a `1 m` drift and `TerrainCell` carries the station apron and the
-  cableway cut's own entrance. `0.45 m` where the plan's downhill gale
-  unloads and `0.18 m` where it scours, crest at `1.3 m` with a `3.5 m` tail —
-  a drift and not the raked bank the art bible refuses.
+  than as a term in the height contract; `TerrainCell` still owns the station
+  apron and the cableway cut's entrance. The field is `0.45 m` deep wherever
+  nothing has walked and zero on trodden ground, rising
+  to that depth over `1.3 m` on the face the gale loads and `3.2 m` on the face
+  it scours — a field with trenches worn into it, not the raked bank the art
+  bible refuses. Fitted ribbons carry the rise along each route and a `1 m`
+  sheet carries the saturated remainder, overlapping by a cell and drawn under
+  it so the ribbon wins the join.
   Authored distance/side/yaw beats form frontage clusters and pauses; exact OBB
   validation, three `7.2-7.5 m` rear-row depth beats and a bounded symmetric
   local correction keep every seeded rotated footprint out of its neighbours
@@ -169,12 +172,16 @@ The vertical slice contains:
   mountain and not only by a mask. The ground is one mesh, one collider, two
   submeshes: the floor on the ordinary primitive material, the rise on
   `AlpineVillageRidgeAppearance`'s `CityMountainPhysical` material (village
-  haze colour, breathing density, `0.40` visibility floor, `96-108 m`
-  handoff, the floor's own `WindSnow` sheet and `_BaseMap_ST`, a cold
-  snow-shadow tint, no shadow because the shader has no caster pass), with
-  the toe ring buried `0.08 m` under the floor and the cableway valley carved
-  into the rise rather than split out onto the floor material — a pale strip
-  in a dark wall reads as a hole, not a gorge. Warm fog and warm key light are the zone's whole
+  haze colour, breathing density, `0.40` visibility floor and a stable opaque
+  colour handoff over `96-108 m`, a cold snow-shadow tint, no shadow because
+  the shader has no caster pass). The village opts into the floor's PS1 vertex
+  snap, floor and rise share exact edge indices instead of a buried overlap
+  ring, and floor/rise/lying-snow world UVs bake the `WindSnow` metre pitch
+  once under an identity `_BaseMap_ST`; neither screen-space coverage nor a
+  second renderer-size scale can make the distant lower wall crawl. The
+  shared shader's zero-default City path retains its existing clip dither.
+  The cableway valley remains part of the rise rather than a floor-material
+  stripe — a pale strip in a dark wall reads as a hole, not a gorge. Warm fog and warm key light are the zone's whole
   signature, and the fog breathes: `RuntimeSceneSetup.EvaluateAlpineVillageFogDensity`
   runs `0.017` between gusts (`9 %` of the mother's door at `91 m` from the
   platform) to `0.045` at a crest (`41 m` left at `3 %` — the far half of
@@ -188,7 +195,15 @@ The vertical slice contains:
   stretched `Blizzard` profile keeps snow in `.88–1`, the shaped shared wind
   stays in `.82–1`, and a second terrain-sampled layer carries low spindrift
   with a continuous wind bed on the same deterministic bearing and gust
-  rhythm. The nine batched garland spans read that shaped wind through bounded
+  rhythm. `AlpineVillagePeripheralStormPlan` measures every point against the
+  complete lane/path network and a widening station-to-house aperture that
+  encloses the mother's whole footprint; its presentation field lays large
+  soft curtains over the exposed side fields and closes rapidly behind the
+  house. It never writes global fog and never changes collision, damage,
+  speed or the walkable mask. Walking off a route raises the field's overall
+  visual pressure and additionally gathers new sheets near the player, so
+  free traversal remains the contract and the existing
+  crest/trough visibility cycle of the house is unchanged. The nine batched garland spans read that shaped wind through bounded
   vertex deformation: both anchors remain fixed while bulbs and the two real
   lights follow each moving midpoint. The enclosing ridge closes sight and traversal rather than sheltering
   the bowl; only the station canopy and moving cabin are locally dry.

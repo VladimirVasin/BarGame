@@ -29,6 +29,17 @@ namespace BarPromenade
         /// against the lane instead of only against the sky.</summary>
         public AlpineVillageStormField BlowingSnow { get; private set; }
 
+        /// <summary>
+        /// Soft whiteout sheets outside the trodden network and behind the
+        /// mother's house. They preserve the direct landmark aperture and
+        /// provide presentation-only pressure when the hero leaves a route.
+        /// </summary>
+        public AlpineVillagePeripheralStormField PeripheralBlizzard
+        {
+            get;
+            private set;
+        }
+
         /// <summary>The shared mountain-air bed, driven from the village's
         /// already-normalized gale rather than the road's tree sway.</summary>
         public MountainRoadWindSoundPlayer WindSound { get; private set; }
@@ -329,6 +340,9 @@ namespace BarPromenade
                 RenderSettings.fogColor,
                 StormWave,
                 WarmthGrade);
+            PeripheralBlizzard?.SetVisibility(
+                RenderSettings.fogColor,
+                StormWave);
         }
 
         /// <summary>
@@ -675,6 +689,23 @@ namespace BarPromenade
                 Plan.Seed,
                 IsSheltered,
                 WindSound);
+
+            // Large, soft sheets close the untouched snow at the sides and
+            // the ridge behind the top house. Their pure spatial plan keeps
+            // every trodden route and the station-to-house sightline open;
+            // unlike global fog this layer can therefore say "stay on the
+            // path" without changing what the hero is allowed to traverse.
+            var peripheralObject = new GameObject(
+                "Village Peripheral Blizzard");
+            peripheralObject.transform.SetParent(transform, false);
+            PeripheralBlizzard = peripheralObject
+                .AddComponent<AlpineVillagePeripheralStormField>();
+            PeripheralBlizzard.Initialize(
+                Player.GameObject.transform,
+                Plan,
+                Weather,
+                CityNightResources.AtmosphereMaterial,
+                Plan.Seed);
 
             // The raven pairs, hunched against the gale. The session
             // closure must read CabinSeat LAZILY per poll —

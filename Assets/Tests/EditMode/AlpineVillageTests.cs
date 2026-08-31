@@ -648,9 +648,8 @@ namespace BarPromenade.Tests.EditMode
 
         /// <summary>
         /// The two-submesh split of the ground: floor and rise on their own
-        /// materials, the cableway cut kept on the floor, the boundary ring
-        /// buried under the floor into the rise submesh, one collider on
-        /// the one mesh, and one sheet across the toe.
+        /// materials, the cableway cut carved into the rise, one collider on
+        /// the one mesh, shared toe vertices and one baked sheet across it.
         /// </summary>
         private static void AssertTerrainSubmeshes(
             AlpineVillagePlan plan,
@@ -680,7 +679,6 @@ namespace BarPromenade.Tests.EditMode
             int rows = Mathf.Max(1, Mathf.CeilToInt(bounds.height / cell));
             int gridVertexCount = (columns + 1) * (rows + 1);
             var riseCells = new bool[rows, columns];
-            int ringCells = 0;
             for (int row = 0; row < rows; row++)
             {
                 for (int column = 0; column < columns; column++)
@@ -692,42 +690,29 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
 
-            for (int row = 0; row < rows; row++)
-            {
-                for (int column = 0; column < columns; column++)
-                {
-                    if (!riseCells[row, column] &&
-                        AlpineVillageWorldBuilder.TouchesRise(
-                            riseCells,
-                            rows,
-                            columns,
-                            row,
-                            column))
-                    {
-                        ringCells++;
-                    }
-                }
-            }
-
-            Assert.That(ringCells, Is.GreaterThan(0), "No toe ring at all.");
-
             int[] floor = mesh.GetTriangles(
                 AlpineVillageWorldBuilder.TerrainFloorMaterialIndex);
             int[] rise = mesh.GetTriangles(
                 AlpineVillageWorldBuilder.TerrainRiseMaterialIndex);
             Assert.That(
                 floor.Length + rise.Length,
-                Is.EqualTo(columns * rows * 6 + ringCells * 6),
-                "The submeshes do not add up to the grid plus its ring.");
-            Assert.That(rise.Length, Is.GreaterThan(ringCells * 6));
+                Is.EqualTo(columns * rows * 6),
+                "A terrain cell is missing or drawn in both submeshes.");
+            Assert.That(floor, Is.Not.Empty);
+            Assert.That(rise, Is.Not.Empty);
 
             Vector3[] vertices = mesh.vertices;
-            Assert.That(vertices.Length, Is.GreaterThan(gridVertexCount));
-            var twins = new Dictionary<(int, int), int>();
-            for (int index = 0; index < gridVertexCount; index++)
-            {
-                twins[VertexKey(vertices[index])] = index;
-            }
+            Assert.That(
+                vertices.Length,
+                Is.EqualTo(gridVertexCount),
+                "The old duplicated toe ring returned.");
+
+            var sharedToeVertices = new HashSet<int>(floor);
+            sharedToeVertices.IntersectWith(rise);
+            Assert.That(
+                sharedToeVertices,
+                Is.Not.Empty,
+                "Floor and rise do not share exact indices at their toe.");
 
             // Every floor triangle is a floor cell, and no floor cell is on
             // the rise at all: the cableway cut is carved INTO the wall and
@@ -752,16 +737,14 @@ namespace BarPromenade.Tests.EditMode
                     floor[index + 1] < gridVertexCount &&
                     floor[index + 2] < gridVertexCount,
                     Is.True,
-                    "A buried vertex is drawn in the floor submesh.");
+                    "A floor triangle leaves the one terrain grid.");
                 Assert.That(
                     AlpineVillageTerrainSampler.SampleRidgeRise(plan, centre),
                     Is.Zero,
                     $"A floor cell at {centre} stands on the rise.");
             }
 
-            // Every rise triangle on grid vertices is a rise cell - the cut
-            // included; every rise triangle on buried vertices is a ring cell
-            // whose copies sit exactly SeamBurial under their floor twins.
+            // Every rise triangle is a rise cell - the cableway cut included.
             for (int index = 0; index < rise.Length; index += 3)
             {
                 (int row, int column) = TriangleCell(
@@ -771,58 +754,45 @@ namespace BarPromenade.Tests.EditMode
                     bounds,
                     cell);
                 Vector2 centre = CellCentre(bounds, columns, rows, row, column);
-                bool buried = rise[index] >= gridVertexCount ||
-                              rise[index + 1] >= gridVertexCount ||
-                              rise[index + 2] >= gridVertexCount;
-                if (!buried)
-                {
-                    Assert.That(
-                        riseCells[row, column],
-                        Is.True,
-                        $"Rise triangle at {centre} is not a rise cell.");
-                    Assert.That(
-                        AlpineVillageTerrainSampler.SampleRidgeRise(
-                            plan,
-                            centre),
-                        Is.GreaterThan(0f));
-                    continue;
-                }
-
+                Assert.That(
+                    rise[index] < gridVertexCount &&
+                    rise[index + 1] < gridVertexCount &&
+                    rise[index + 2] < gridVertexCount,
+                    Is.True,
+                    "A rise triangle leaves the one terrain grid.");
                 Assert.That(
                     riseCells[row, column],
-                    Is.False,
-                    $"A buried triangle at {centre} is on a rise cell.");
-                Assert.That(
-                    AlpineVillageWorldBuilder.TouchesRise(
-                        riseCells,
-                        rows,
-                        columns,
-                        row,
-                        column),
                     Is.True,
-                    $"A buried triangle at {centre} touches no rise.");
-                for (int corner = 0; corner < 3; corner++)
-                {
-                    int vertex = rise[index + corner];
-                    Assert.That(
-                        vertex,
-                        Is.GreaterThanOrEqualTo(gridVertexCount),
-                        "A ring triangle mixes grid and buried vertices.");
-                    Assert.That(
-                        twins.TryGetValue(
-                            VertexKey(vertices[vertex]),
-                            out int twin),
-                        Is.True,
-                        "A buried vertex has no floor twin above it.");
-                    Assert.That(
-                        vertices[twin].y - vertices[vertex].y,
-                        Is.EqualTo(AlpineVillageWorldBuilder.SeamBurial)
-                            .Within(0.0005f),
-                        "The ring is not buried by SeamBurial.");
-                }
+                    $"Rise triangle at {centre} is not a rise cell.");
+                Assert.That(
+                    AlpineVillageTerrainSampler.SampleRidgeRise(plan, centre),
+                    Is.GreaterThan(0f));
             }
 
-            // One sheet across the toe: the rise's tiling is the floor's.
+            // The UVs already encode the recipe's metre pitch. The indexed
+            // material blocks must therefore stay identity; applying the
+            // primitive transform here scales the texture twice.
+            Vector2[] uv = mesh.uv;
+            Assert.That(uv.Length, Is.EqualTo(vertices.Length));
+            float expectedUvScale = 1f /
+                MountainRoadSurfaceAppearance
+                    .GetRecipe(AlpineVillageRidgeAppearance.Surface)
+                    .MetersPerTile;
+            Assert.That(
+                AlpineVillageRidgeAppearance.UvUnitsPerMeter,
+                Is.EqualTo(expectedUvScale).Within(0.000001f));
+            for (int index = 0; index < vertices.Length; index++)
+            {
+                Assert.That(
+                    uv[index].x,
+                    Is.EqualTo(vertices[index].x * expectedUvScale)
+                        .Within(0.0001f));
+                Assert.That(
+                    uv[index].y,
+                    Is.EqualTo(vertices[index].z * expectedUvScale)
+                        .Within(0.0001f));
+            }
+
             var floorProperties = new MaterialPropertyBlock();
             var riseProperties = new MaterialPropertyBlock();
             renderer.GetPropertyBlock(
@@ -833,8 +803,12 @@ namespace BarPromenade.Tests.EditMode
                 AlpineVillageWorldBuilder.TerrainRiseMaterialIndex);
             Vector4 floorTransform = floorProperties.GetVector("_BaseMap_ST");
             Vector4 riseTransform = riseProperties.GetVector("_BaseMap_ST");
-            Assert.That(floorTransform, Is.Not.EqualTo(Vector4.zero));
-            Assert.That(riseTransform, Is.EqualTo(floorTransform));
+            Assert.That(
+                floorTransform,
+                Is.EqualTo(AlpineVillageRidgeAppearance.BakedUvTransform));
+            Assert.That(
+                riseTransform,
+                Is.EqualTo(AlpineVillageRidgeAppearance.BakedUvTransform));
             Assert.That(
                 riseProperties.GetTexture("_BaseMap"),
                 Is.SameAs(floorProperties.GetTexture("_BaseMap")));
@@ -853,9 +827,7 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
-        /// The grid cell a triangle belongs to, from its centroid - which
-        /// works for the buried copies too, since they share their twins'
-        /// ground-plane position.
+        /// The grid cell a triangle belongs to, from its centroid.
         /// </summary>
         private static (int row, int column) TriangleCell(
             Vector3[] vertices,
@@ -874,13 +846,6 @@ namespace BarPromenade.Tests.EditMode
             return (
                 Mathf.FloorToInt((centroid.z - bounds.yMin) / (bounds.height / rows)),
                 Mathf.FloorToInt((centroid.x - bounds.xMin) / (bounds.width / columns)));
-        }
-
-        private static (int, int) VertexKey(Vector3 vertex)
-        {
-            return (
-                Mathf.RoundToInt(vertex.x * 1000f),
-                Mathf.RoundToInt(vertex.z * 1000f));
         }
 
         [Test]
@@ -1854,7 +1819,7 @@ namespace BarPromenade.Tests.EditMode
                                     (path.SurfaceHalfWidth +
                                      AlpineVillagePathPlanner
                                          .BareSkirtHalfWidth +
-                                     AlpineVillageSnowDrift.LeeCrestOffset);
+                                     AlpineVillageSnowDrift.LeeRiseRun);
                     if (AlpineVillageSnowDrift.SampleDepth(
                             plan,
                             paths,
@@ -1894,31 +1859,213 @@ namespace BarPromenade.Tests.EditMode
             AlpineVillageSnowDrift.CrossSection(
                 1f,
                 out float leeToe,
-                out float leeCrest,
                 out _,
-                out float leeTail);
+                out float leeFull,
+                out _);
             AlpineVillageSnowDrift.CrossSection(
                 0f,
                 out _,
-                out float windwardCrest,
                 out _,
+                out float windwardFull,
                 out _);
 
+            // The asymmetry lives in the RUN now, not in two crest heights:
+            // the gale packs the snow against the trodden edge on the face it
+            // unloads into and pushes it back on the face it scours, and the
+            // far field is one depth on both because that is what it is.
             Assert.That(
-                AlpineVillageSnowDrift.LeeCrestHeight,
-                Is.GreaterThan(AlpineVillageSnowDrift.WindwardCrestHeight * 2f),
-                "The two faces of a trodden route carry the same snow.");
-            Assert.That(leeCrest, Is.GreaterThan(windwardCrest));
+                AlpineVillageSnowDrift.WindwardRiseRun,
+                Is.GreaterThan(AlpineVillageSnowDrift.LeeRiseRun * 2f),
+                "The two faces of a trodden route deepen at the same rate.");
+            Assert.That(leeFull, Is.LessThan(windwardFull));
             Assert.That(leeToe, Is.EqualTo(
                 AlpineVillagePathPlanner.BareSkirtHalfWidth).Within(0.0001f),
                 "The snow does not start where the bare soil ends.");
 
-            // A drift, not a bank: the tail is what keeps it from reading as
-            // something a person shovelled, which the art bible refuses.
+            // And it is there in the built field, not only in the constants.
+            //
+            // Measured on a BRANCH and never on the street: the gale runs
+            // down the bowl, so it runs ALONG the lane, and the lane's two
+            // shoulders face across it at the same angle. The street is
+            // symmetric by construction and always will be; the asymmetry
+            // belongs to the routes that cross the wind.
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
+            bool measured = false;
+            for (int index = 0; index < paths.Count && !measured; index++)
+            {
+                AlpineVillagePathDescriptor path = paths[index];
+                Vector3 direction = path.End - path.Start;
+                direction.y = 0f;
+                if (direction.sqrMagnitude <= 0.000001f)
+                {
+                    continue;
+                }
+
+                Vector3 across = Vector3.Cross(
+                    Vector3.up,
+                    direction.normalized).normalized;
+                var acrossXZ = new Vector2(across.x, across.z);
+                if (AlpineVillageSnowDrift.MeasureExposure(
+                        plan,
+                        acrossXZ) < 0.9f)
+                {
+                    continue;
+                }
+
+                Vector3 middle = Vector3.Lerp(path.Start, path.End, 0.5f);
+                float offset = path.SurfaceHalfWidth + leeFull;
+                Vector3 leeProbe = middle + across * offset;
+                Vector3 windwardProbe = middle - across * offset;
+                float lee = AlpineVillageSnowDrift.SampleDepth(
+                    plan,
+                    paths,
+                    new Vector2(leeProbe.x, leeProbe.z));
+                float windward = AlpineVillageSnowDrift.SampleDepth(
+                    plan,
+                    paths,
+                    new Vector2(windwardProbe.x, windwardProbe.z));
+                if (lee <= 0f && windward <= 0f)
+                {
+                    continue;
+                }
+
+                Assert.That(
+                    lee,
+                    Is.GreaterThan(windward),
+                    $"'{path.StableId}' carries the same snow on the face " +
+                    "the gale loads and the face it scours.");
+                measured = true;
+            }
+
             Assert.That(
-                leeTail - leeCrest,
-                Is.GreaterThan((leeCrest - leeToe) * 2.5f),
-                "The crest has no tail; this is a kerb.");
+                measured,
+                Is.True,
+                "No branch in the village crosses the prevailing wind, so " +
+                "the asymmetry was never actually measured.");
+        }
+
+        /// <summary>
+        /// THE SNOW ONLY EVER GETS DEEPER AS YOU LEAVE A ROUTE.
+        ///
+        /// The first cut rose to a lip and died back to bare ground over
+        /// three metres, because the snow existed only beside the routes.
+        /// That reads as a drift laid along a kerb; a village standing in
+        /// deep snow needs the street to be the low place. Monotonic, and
+        /// saturating at one field depth on both faces - anything else means
+        /// the field has a shape, and a field does not.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void SnowDepth_RisesWithDistanceAndNeverFallsBack()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
+
+            // A ray out of the lane that meets no apron: a door keeps its own
+            // ground clear of snow, so a probe that walks into one measures
+            // the threshold rule rather than the field.
+            const float Reach = 9f;
+            AlpineVillageLaneSample open = default;
+            Vector3 outward = Vector3.zero;
+            bool found = false;
+            for (float distance = 4f;
+                 distance <= plan.Lane.Length - 4f && !found;
+                 distance += 1f)
+            {
+                AlpineVillageLaneSample sample = plan.Lane.Sample(distance);
+                for (int side = -1; side <= 1 && !found; side += 2)
+                {
+                    Vector3 candidate = sample.Right * side;
+                    if (!IsClearOfEveryApron(
+                            plan,
+                            sample.Position,
+                            candidate,
+                            Reach))
+                    {
+                        continue;
+                    }
+
+                    open = sample;
+                    outward = candidate;
+                    found = true;
+                }
+            }
+
+            Assert.That(
+                found,
+                Is.True,
+                "No stretch of the lane has nine metres of open snow beside " +
+                "it, so this proves nothing about the field.");
+
+            // The field wanders by design - `Variation` is what keeps it from
+            // reading as extruded moulding - so "never falls back" is a claim
+            // about the ENVELOPE and not about every quarter metre. One step
+            // of that wander is the tolerance here; what actually kills the
+            // old shape is the last assertion, because a profile that dies
+            // back to bare ground cannot be knee-deep nine metres out.
+            float wander = AlpineVillageSnowDrift.UntouchedDepth *
+                           AlpineVillageSnowDrift.CrestVariation * 0.2f;
+            float previous = -1f;
+            float last = 0f;
+            for (float step = 0f; step <= Reach; step += 0.25f)
+            {
+                Vector3 probe = open.Position + outward * step;
+                float depth = AlpineVillageSnowDrift.SampleDepth(
+                    plan,
+                    paths,
+                    new Vector2(probe.x, probe.z));
+
+                Assert.That(
+                    depth,
+                    Is.GreaterThanOrEqualTo(previous - wander),
+                    $"The snow falls away {step:0.00} m out from the lane " +
+                    "by more than its own wander can explain.");
+                previous = depth;
+                last = depth;
+            }
+
+            Assert.That(
+                last,
+                Is.GreaterThan(AlpineVillageSnowDrift.UntouchedDepth * 0.6f),
+                $"Nine metres out from the lane the snow is {last:0.00} m " +
+                "deep - it dies back to nothing, so this is a bank beside a " +
+                "kerb rather than a field with a trench worn in it.");
+
+        }
+
+        private static bool IsClearOfEveryApron(
+            AlpineVillagePlan plan,
+            Vector3 origin,
+            Vector3 outward,
+            float reach)
+        {
+            for (float step = 0f; step <= reach; step += 0.25f)
+            {
+                Vector3 world = origin + outward * step;
+                var point = new Vector2(world.x, world.z);
+                if (AlpineVillageTerrainSampler.DistanceOutsideStation(
+                        plan.Station,
+                        point) <
+                    AlpineVillageSnowDrift.ApronClearance)
+                {
+                    return false;
+                }
+
+                for (int index = 0; index < plan.Plots.Count; index++)
+                {
+                    if (AlpineVillageTerrainSampler.DistanceOutsidePlot(
+                            plan.Plots[index],
+                            point) <
+                        AlpineVillageSnowDrift.ApronClearance)
+                    {
+                        return false;
+                    }
+                }
+            }
+
+            return true;
         }
 
         /// <summary>
@@ -2074,6 +2221,35 @@ namespace BarPromenade.Tests.EditMode
                     filter.sharedMesh.vertexCount,
                     Is.GreaterThan(500),
                     "The drift mesh is too coarse to hold a profile.");
+
+                Mesh mesh = filter.sharedMesh;
+                Vector3[] vertices = mesh.vertices;
+                Vector2[] uv = mesh.uv;
+                Assert.That(uv.Length, Is.EqualTo(vertices.Length));
+                float expectedUvScale = 1f /
+                    MountainRoadSurfaceAppearance
+                        .GetRecipe(AlpineVillageRidgeAppearance.Surface)
+                        .MetersPerTile;
+                for (int index = 0; index < vertices.Length; index++)
+                {
+                    Assert.That(
+                        uv[index].x,
+                        Is.EqualTo(vertices[index].x * expectedUvScale)
+                            .Within(0.0001f));
+                    Assert.That(
+                        uv[index].y,
+                        Is.EqualTo(vertices[index].z * expectedUvScale)
+                            .Within(0.0001f));
+                }
+
+                var properties = new MaterialPropertyBlock();
+                drifts.GetComponent<MeshRenderer>().GetPropertyBlock(
+                    properties,
+                    0);
+                Assert.That(
+                    properties.GetVector("_BaseMap_ST"),
+                    Is.EqualTo(
+                        AlpineVillageRidgeAppearance.BakedUvTransform));
             }
             finally
             {

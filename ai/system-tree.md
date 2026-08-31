@@ -368,11 +368,12 @@ Assets/
         MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs four-role silent cast
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
         MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
-        AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane, OBB-safe plots + looming 58° / 50 m ridge, 12 m margin, brink mesh
+        AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane, OBB-safe plots + looming 74° / 60 m ridge, 12 m margin, brink mesh
         AlpineVillagePathPlan.cs visible path/traversal segments + shared dressing anchors
-        AlpineVillage{WalkableArea,WorldBuilder,WeatherShaper}.cs shared path mask, two-submesh ground (floor + buried-seam rise), wave-2 kit, warmth targets + permanent blizzard
-        AlpineVillageRidgeAppearance.cs  the rise's CityMountainPhysical material: village haze, breathing density, 0.12 floor, 96-108 m handoff
+        AlpineVillage{WalkableArea,WorldBuilder,WeatherShaper}.cs free bowl mask, two-submesh ground with one shared snapped edge, wave-2 kit, warmth targets + permanent blizzard
+        AlpineVillageRidgeAppearance.cs  village-only stable opaque 96-108 m haze handoff, 0.40 floor + floor-matched PS1 snap/world UV
         AlpineVillageStormField.cs       terrain-sampled ground spindrift + shared wind bed + gust-keyed storm wave rules
+        AlpineVillagePeripheralStorm{Plan,Field}.cs route-distance side/rear curtains + protected full-house landmark aperture; presentation only
         AlpineVillageGarlandWind.cs      fixed-anchor wire deformation from shaped village wind
         Audio/AlpineVillageSoundscape*.cs six deterministic causal spatial voices
         AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}.cs boarding, first-person ride, ridge fade
@@ -860,8 +861,9 @@ Assets/
       MountainRoadCafeCastTests.cs       roles/gaps/passive assets/clip blend/world ownership
       MountainCablewayTests.cs            loop continuity, world ownership and causal audio
       MountainCablewayRideTests.cs        exact docking, boarding step, treads, return station
-      AlpineVillageTests.cs               lane grade, OBB seed sweep, looming bowl, two-submesh ground/brink, weather + teleport ground
+      AlpineVillageTests.cs               lane grade, OBB seed sweep, looming bowl, shared-edge two-submesh ground/brink, weather + teleport ground
       AlpineVillageStormVisibilityTests.cs breathing haze: base/peak/far plane, gust extraction guard, wave simulation, ridge floor
+      AlpineVillagePeripheralStormTests.cs route mask, full-house aperture, rear closure + presentation-only field rules
       AlpineVillagePathTests.cs           visible-route coverage, full-agent corridor + frontage clusters
       Audio/AlpineVillageSoundscapeTests.cs causal owners, synthesis, schedules + warmth grade
       VillageAssetTests.cs                kit catalog, plan-owned collision, garland light budget
@@ -1075,15 +1077,18 @@ AlpineVillageRoot -> AlpineVillagePlanner -> validated village above the rope
                                         -> house at the head, highest thing in the village
                                         -> 12 houses either side, 4 authored variants
                                         -> chapel / adit / graves on side spurs
-                                        -> ridge at 1.6 (58 deg), 50 m, toe 18 m out: the bowl looms
+                                        -> ridge at 3.6 (74 deg), 60 m, toe 15 m out: the bowl looms
                                            -> steeper than the hero's own slope limit
-                                           -> rise submesh on CityMountainPhysical, no shadow, seam buried 0.08 m
+                                           -> stable opaque haze handoff, same PS1 snap, exact shared floor/rise edge
                                         -> haze breathes on the raw gust: 0.017 between gusts, 0.045 at a crest
                                            -> one writer per frame, 110 m plane, house back at every trough
                                         -> return station: tension weight, no motor
                                         -> garlands: emissive bulbs, 5 real lamps
                                         -> permanent blizzard: snow .88-1, wind .82-1
                                            -> stretched upper flakes + terrain-low spindrift
+                                           -> soft side/rear curtains outside every trodden route
+                                              -> station-to-whole-house aperture stays clear
+                                              -> no wall, damage, slowdown or fog ownership
                                            -> one bearing/gust rhythm + continuous wind bed
                                            -> canopy/cabin dry; uphill axis remains readable
                   -> pure City + mountain plans for the other two map tabs

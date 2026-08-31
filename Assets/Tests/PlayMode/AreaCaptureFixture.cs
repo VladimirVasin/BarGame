@@ -1433,6 +1433,9 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(CityPrecipitationKind.Blizzard));
             Assert.That(root.BlowingSnow, Is.Not.Null);
             Assert.That(root.BlowingSnow.IsInitialized, Is.True);
+            Assert.That(root.PeripheralBlizzard, Is.Not.Null);
+            Assert.That(root.PeripheralBlizzard.IsInitialized, Is.True);
+            Assert.That(root.PeripheralBlizzard.SpatialPlan, Is.Not.Null);
             Assert.That(root.WindSound, Is.Not.Null);
             Assert.That(
                 root.Weather.CurrentSample.RainIntensity,
@@ -1467,6 +1470,18 @@ namespace BarPromenade.Tests.PlayMode
                 Mathf.Min(plan.Lane.Length * 0.62f, 52f));
             AlpineVillageLaneSample midLane = plan.Lane.Sample(
                 plan.Lane.Length * 0.5f);
+            Vector3 houseFacing = plan.MothersHouse.Facing;
+            Vector3 houseRight = Vector3.Cross(
+                Vector3.up,
+                houseFacing).normalized;
+            Vector3 rearWall = plan.MothersHouse.GroundCenter -
+                               houseFacing *
+                               (plan.MothersHouse.FootprintSize.y * 0.5f);
+            Vector3 exposedCamera = FindExposedVillageCamera(
+                root,
+                midLane);
+            float houseHalfWidth =
+                plan.MothersHouse.FootprintSize.x * 0.5f;
             Shot[] baseShots =
             {
                 Shot.At(
@@ -1550,12 +1565,106 @@ namespace BarPromenade.Tests.PlayMode
                     reveal.Position + Vector3.up * 2.2f,
                     58f,
                     0,
-                    () => root.StormWave <= GustTroughWave)
+                    () => root.StormWave <= GustTroughWave),
+
+                // The direct landmark cone stays open, but the untouched
+                // snow immediately beside it should close into a readable
+                // wall even in the trough.
+                Shot.At(
+                    "08-platform-side-whiteout",
+                    foot.Position - foot.Forward * PlatformApronSetback +
+                    Vector3.up * EyeHeight,
+                    foot.Position + foot.Right * 28f +
+                    Vector3.up * 3.2f,
+                    58f,
+                    0,
+                    () => root.StormWave <= GustTroughWave),
+
+                // From untouched snow the path must read as the only calm
+                // cut through the frame. This moves only the capture camera;
+                // the field itself remains world-anchored and deterministic.
+                Shot.At(
+                    "09-off-route-looking-to-lane",
+                    exposedCamera,
+                    midLane.Position + midLane.Forward * 15f +
+                    Vector3.up * 1.8f,
+                    62f,
+                    30),
+
+                // The house is still a landmark from below; behind its rear
+                // wall the world closes before the enclosing ridge.
+                Shot.At(
+                    "10-top-house-rear-closure",
+                    plan.MothersHouse.GroundCenter +
+                    houseFacing * 7f +
+                    houseRight * (houseHalfWidth + 5f) +
+                    Vector3.up * EyeHeight,
+                    rearWall - houseFacing * 12f +
+                    houseRight * (houseHalfWidth + 4f) +
+                    Vector3.up * 3.4f,
+                    58f,
+                    30)
             };
             var shots =
                 new System.Collections.Generic.List<Shot>(baseShots);
             AppendAlpineVillageRoostShots(root, shots);
             return shots.ToArray();
+        }
+
+        private static Vector3 FindExposedVillageCamera(
+            AlpineVillageRoot root,
+            AlpineVillageLaneSample lane)
+        {
+            AlpineVillagePlan plan = root.Plan;
+            foreach (int side in new[] { -1, 1 })
+            {
+                for (float distance = 7f; distance <= 16f; distance += 1f)
+                {
+                    Vector3 candidate = lane.Position +
+                                        lane.Right * (side * distance);
+                    var point = new Vector2(candidate.x, candidate.z);
+                    if (!plan.TerrainBounds.Contains(point) ||
+                        !IsVillageCaptureClear(plan, point, 2f) ||
+                        AlpineVillageTerrainSampler.SampleRidgeRise(
+                            plan,
+                            point) > 0.001f ||
+                        root.PeripheralBlizzard.SpatialPlan.Evaluate(point)
+                            .StormStrength01 < 0.85f)
+                    {
+                        continue;
+                    }
+
+                    candidate.y = AlpineVillageTerrainSampler.SampleHeight(
+                        plan,
+                        point) + EyeHeight;
+                    return candidate;
+                }
+            }
+
+            Assert.Fail(
+                "The village capture found no exposed, building-clear " +
+                "camera beside the middle of the lane.");
+            return lane.Position + Vector3.up * EyeHeight;
+        }
+
+        private static bool IsVillageCaptureClear(
+            AlpineVillagePlan plan,
+            Vector2 point,
+            float padding)
+        {
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                Rect bounds = plan.Plots[index].BoundsXZ;
+                if (point.x >= bounds.xMin - padding &&
+                    point.x <= bounds.xMax + padding &&
+                    point.y >= bounds.yMin - padding &&
+                    point.y <= bounds.yMax + padding)
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         /// <summary>

@@ -36,6 +36,20 @@ namespace BarPromenade.Editor
         public const string PrefabPath =
             "Assets/Resources/Environment/ExteriorCloudDome.prefab";
 
+        /// <summary>
+        /// The shared material's object name, DERIVED from its own path.
+        ///
+        /// Unity requires a single-asset file's main object to carry the file
+        /// name, and this one was authored as `Exterior Cloud` against a file
+        /// called `ExteriorCloud.mat`. Nothing noticed while the material was
+        /// never re-imported; the moment anything invalidated the dependency
+        /// stamp and this build actually ran, every rebuild failed with
+        /// "Main Object Name 'Exterior Cloud' does not match filename". Taken
+        /// from the path so the two cannot drift again.
+        /// </summary>
+        private static string MaterialName =>
+            Path.GetFileNameWithoutExtension(MaterialPath);
+
         public const string ShaderName =
             "Bar Promenade/Exterior Cloud";
         public const int RenderQueue = 2800;
@@ -506,14 +520,14 @@ namespace BarPromenade.Editor
             {
                 material = new Material(shader)
                 {
-                    name = "Exterior Cloud"
+                    name = MaterialName
                 };
                 AssetDatabase.CreateAsset(material, MaterialPath);
             }
             else
             {
                 material.shader = shader;
-                material.name = "Exterior Cloud";
+                material.name = MaterialName;
             }
 
             material.SetTexture("_CloudTex", texture);

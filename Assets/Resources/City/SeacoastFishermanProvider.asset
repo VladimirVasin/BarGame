@@ -11,5 +11,5 @@ MonoBehaviour:
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: be784b2f0b2bbd445b8370daa94fd230, type: 3}
   m_Name: SeacoastFishermanProvider
-  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.LakeFishermanProvider
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.SeacoastFishermanProvider
   stagedPrefab: {fileID: 321163864594238114, guid: a79da3fedf20342449d285dbc2e3281b, type: 3}
