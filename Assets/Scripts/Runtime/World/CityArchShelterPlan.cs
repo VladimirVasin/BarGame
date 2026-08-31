@@ -30,7 +30,8 @@ namespace BarPromenade
         Clutter = 5,
         PlatformNorthGuardRail = 6,
         PlatformSouthGuardRail = 7,
-        PlatformWestGuardRail = 8
+        PlatformWestGuardRail = 8,
+        VaultCrown = 9
     }
 
     public readonly struct CityArchShelterClearLaneDescriptor

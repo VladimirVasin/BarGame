@@ -6,6 +6,340 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-08-31 — "The walk animation stopped working in the village"
+
+It had not. The hero was standing against a wall, and the gait is weighted by
+ACHIEVED speed - `forwardBlend = SignedForwardSpeed / FullWalkSpeed`, off a
+`PlanarVelocity` the motor reads back from the movement `controller.Move`
+actually delivered. Blocked means zero means `Idle`, with the player holding
+forward the whole time. Anything that takes his displacement looks exactly
+like a broken animation, which is worth knowing before the next report of one.
+
+Found with a throwaway PlayMode diagnostic rather than by reading, in four
+passes, each of which killed a theory:
+
+1. Real world, real player, real input at the lane foot: `state=Walk`,
+   accelerating to `2.39 m/s`. Not the mask, not the terrain, not the drifts.
+2. The real scene through `AlpineVillageRoot`, same result. Not the storm, the
+   intoxication controller, the seat or the map.
+3. Teleport onto every landmark: he lands INSIDE `Physical Overgrown Spoil`
+   (by `1.10 m`), the chapel's catch basin and the burial-ground slab - the
+   controller shoves him out and he still walks. Wrong, but not this.
+4. Arrival at the charted places, which is what the lead actually did. The
+   house at the top of the lane: `1.26 m` of walkable ground ahead on the
+   arrival's own heading, against `8 m` at every other place.
+
+The chart carries each plot's `DoorDockPosition` ([CityMapAreaController]) and
+`AlpineVillageRoot` faced every map arrival up the lane. A dock is an
+interaction pose - `1.1 m` off the threshold, facing it - and at the head of
+the lane "up the lane" IS the house: `dot(SpawnForward, house.Facing) = -1.00`,
+nose to the door. Hold W, get a metre, stop.
+
+NOT a regression from opening the walkable bowl, and worth saying plainly: the
+old corridor mask gave him less, not more. Its door apron ran `2.2 m` from the
+threshold and the dock sits at `1.1`, so by construction he had `1.1 - 0.32 =
+0.78 m` there; the open bowl measured `1.26`. The lead simply reached the
+place for the first time.
+
+Two changes:
+
+- `CityMapAlpineVillageTeleportGround` stands a CHARTED arrival back
+  `ChartedArrivalStandoff 2.5 m` along the route that place is reached by,
+  clamped to that route's own length - the summit's path is only `0.9 m` long
+  and overshooting it would land him on ground with nothing to do with the
+  house. Only a request within `0.02 m` of a dock is read as a place; a bare
+  coordinate is untouched, which is what keeps the roost planner and the
+  pinned height test measuring the point they asked about. That tolerance is
+  set by its nearest neighbour rather than by precision: the adit's raven
+  anchor sits `1.2 m` off the mouth against the dock's `1.1`, so anything
+  near `0.1` would quietly move a bird.
+- The arrival looks at the place it asked for instead of up the lane.
+
+Because the standoff lands him on a path, it also closes the hazard pass 3
+found: paths are trodden ground whose envelope is already validated clear of
+every rotated footprint, so a charted arrival can no longer be put down inside
+the spoil heap or the source bowl - something the mask has permitted since the
+bowl was opened, and which nothing but a chart point reaches in practice.
+
+Verification: EditMode `-testCategory AlpineVillage` **47/47** with the new
+`ChartedArrivals_StandBackFarEnoughToWalkOut`, which requires more than
+`1.6 m` of walkable ground on the arrival heading at every plot; and the
+pinned `RavenRoostPlanTests.DefaultSeeds_KeepTheMeasuredRoostRosters` green,
+because that tolerance is the one thing this could have moved. `0` compile
+errors and `0` warnings. The station-exit PlayMode test builds its world
+without `AlpineVillageRoot` and is untouched by either change, so it was not
+re-run. The diagnostic was deleted after use.
+
+## 2026-08-31 — Трое у бочки получили читаемые тихие циклы
+
+Три жителя под аркой сохранили отдельные длинные пассивные петли, но в каждой
+теперь читается законченная бытовая последовательность. Стоящий сначала греет
+раскрытые ладони, несколько раз растирает их и снова подаёт к огню. Сидящий
+зябко вздрагивает, наклоняется к бочке с обеими ладонями и затем складывает руки
+на груди. Спящий глубоко вдыхает, плотнее сворачивается и медленно устраивается
+заново, не просыпаясь.
+
+Спящий исправлен и по силуэту: оба колена вынесены вперёд, а голени естественно
+подогнуты к бёдрам, как у человека, лежащего на боку. Округлые привязанные к
+костям объёмы одеяла над тазом и бёдрами больше не читаются поперечным
+прямоугольным блоком. После проверки в игровой сцене исправлена и опора:
+прежний валидатор принимал касание единственной вершиной правого рукава за
+контакт всего тела, хотя грудь и таз висели над матрасом. Теперь поза опущена
+на широкую поверхность матраса, нижний рукав переложен без погружения, а
+генератор независимо проверяет опорные семейства груди и таза относительно
+поверхности `0,2500 м`, а не верхушек трёх узких швов `0,2725 м`.
+
+Генератор персонажей поднят до `4.3.1`; в manifest каждого клипа добавлены именованные
+контрольные фазы, а focused EditMode-контракт требует их точную
+последовательность и время.
+
+Смысл сцены не менялся: жители не следят за героем, не реагируют на него, не
+получили диалог, интеракцию, root motion или новый игровой сигнал. Поэтому
+story bible и contextual-animation-standard не менялись. В этом
+проходе Blender `5.0.1` пересобрал три модели и общий банк клипов командой
+`--shelter-residents`: `1740/1736/2164` треугольника, повторные сигнатуры
+совпали. На полном цикле ближайшая поверхность тела остаётся в
+`0,003320–0,005488 м` над широким верхом матраса; максимум для груди —
+`0,019665 м`, для таза — `0,005488 м`, а по двум осям сохраняется запас
+`0,111669/0,047567 м`. Focused EditMode
+`AnimationManifest_DeclaresDistinctActiveMotionBeats` и новый PlayMode
+`BuiltSleeper_TorsoAndHipsRestOnVisibleMattress` прошли по `1/1` в Unity
+`6000.5.10f1`; `git diff --check` не нашёл ошибок. Полные suites и player build
+в fast mode не запускались.
+
+## 2026-08-31 — Lying snow beside the village routes
+
+The lead asked whether Unity has a standard deformable-snow solution and, on
+being told it does not — no built-in snow anywhere in the engine, and every
+Asset Store package is the same top-down RT displacement pattern rolled by
+hand — asked for drifts along the paths instead. Three decisions, all his:
+visual only, knee-deep and exposure-driven, lane and paths only.
+
+**It is not a term in the height contract, and that is the whole design.** The
+ground is sampled on a `2 m` grid and a two-metre quad cannot hold a `1 m`
+drift; reducing `TerrainCell` would have moved `StationApron`, the cableway
+cut's entrance and therefore the brink obstacle in the walkable mask, for a
+`16x` vertex bill. So the snow is its own skin over the ground:
+`AlpineVillageSnowDrift` is a pure depth field and
+`AlpineVillageWorldBuilder.BuildSnowDrifts` lays one mesh of a few thousand
+vertices from it — four per station per shoulder, stations every `0.8 m` along
+a path and at the lane's own metre samples.
+`AlpineVillageTerrainSampler`, `AlpineVillageWalkableArea`, `PlayerMotor`
+and every collider in the scene are untouched.
+
+**No collider, deliberately.** The hero walks the flat ground he always did and
+the snow closes over his shins — the cheapest and the most honest read of deep
+snow, and the only safe one here: planar velocity is read back from achieved
+movement, so ground he could catch a boot on would read as a crawl.
+`SnowDrifts_CarryNoCollision` is what keeps that decision from eroding.
+
+The profile is a DRIFT and not a bank, which is canon rather than taste — the
+art bible's «Следы жизни» says the snow here is trodden, not raked into a wall
+the way it is on the terminal plateau. So the crest stands `1.3 m` out from the
+trodden edge and takes `3.5 m` to die away; that `1:3` ratio is the difference,
+and a test asserts it. Depth runs `0.45 m` on the face the gale unloads into
+and `0.18 m` on the face it scours, with the crest wandering `±30 %` on two
+world-space waves so neighbouring shoulders agree where they meet and nothing
+reads as extruded moulding.
+
+The wind is the plan's own downhill, NOT `GameWeatherRules`: that direction is
+hashed per weather slot and swings the full circle across a session, while a
+drift is weeks old. The bowl's air runs down the slope and out over the
+cableway brink, which is the one opening it has.
+
+One new shared measure earns the correctness:
+`AlpineVillagePathPlanner.MeasureDistanceOutsideTrodden` is a MINIMUM over the
+lane and every path, so a drift beside one route pinches shut where another
+crosses it. A per-segment field cannot see the crossing and lays a bank across
+the path it joins; `SnowDrifts_VanishWhereRoutesCross` proves it by measuring
+the same point against the lane alone and finding it under snow.
+
+Suppression reuses predicates that already existed — `DistanceOutsidePlot`,
+`DistanceOutsideStation`, `SampleRidgeRise` — so nothing lies on a threshold
+(a dock is refused silently past `2 cm` of vertical tolerance), on the station,
+or on the `74°` wall. Zero-depth edges are sunk `0.06 m` under the ground for
+the same reason the floor buries its toe ring by `SeamBurial`: `Ps1Lit` snaps
+clip position, two meshes snap differently, and a coplanar edge crawls.
+
+Verification: EditMode `-testCategory AlpineVillage` **46/46** with `0`
+compile errors and `0` warnings, five of them new. Then the eye, which is the
+only instrument that can tell a drift from a kerb:
+`AreaCaptureFixture.AlpineVillage`. Frame `09-roost-lane-fence` shows it — a
+lit shoulder crest on the lee side of the lane thinning back into the field,
+the windward side scoured flat. Full suites, PlayMode and a player build were
+deliberately not run: geometry with no collider cannot break a behavioural
+contract.
+
+Two findings came out of building it, both since fixed - see the next entry.
+
+## 2026-08-31 — The village ground's two silent defects
+
+Both were found while laying the drifts and both were confirmed before being
+touched.
+
+**The ground's vertex colours never reached a shader.** Every terrain vertex
+was tinted snow-to-soil by its distance from the lane and the paths, and
+`RuntimePrimitiveLit` is `Ps1Lit`, a VERBATIM copy of URP Lit - whose
+`Attributes` in `LitForwardPass.hlsl` carries `POSITION`, `NORMAL`, `TANGENT`
+and three `TEXCOORD`s and no `COLOR` semantic at all, in any pass. Of the four
+meshes in the project that write vertex colours the other three go to shaders
+that read them (`CityLighthouseIsland`, `CityMountainBackdrop` and the
+mountain vista); the village was the only one talking to nobody.
+
+Reviving it would mean hand-editing a clone the architecture notes require to
+stay verbatim and re-copyable on a URP bump, on the shared default material,
+for one mesh in one scene - and the compacted ground a player actually sees is
+the path ribbons' own `ForestFloor` sheet, which is a different mesh with a
+different texture. So the dead field is deleted: `mesh.SetColors`, the
+`bare` computation, the colour list carried through `BuriedVertex`, and with
+them the `paths` list `BuildTerrain` only needed in order to compute it.
+
+**And the shelf blends were running at a tenth of their named width.** All
+three of them read `Mathf.SmoothStep(0f, ShelfBlendDistance, distance)`, and
+Unity's third argument is a `0-1` FRACTION, not a distance: the call returns
+metres and saturates at one metre of input, so `1 - that` went negative past
+`0.347 m` and only survived because `Mathf.Lerp` clamps. Measured curve:
+
+| distance | old weight | fixed |
+| --- | --- | --- |
+| `0.20 m` | `0.626` | `0.991` |
+| `0.36 m` | `0.000` | `0.972` |
+| `1.80 m` | `0.000` | `0.500` |
+| `3.60 m` | `0.000` | `0.000` |
+
+A factor of `10.4` between the constant and its effect, while the guards a few
+lines away (`outside >= ShelfBlendDistance`) went on believing the number. A
+project-wide sweep found every other `Mathf.SmoothStep` in the codebase using
+the correct `(0f, 1f, fraction)` form; the misuse was five calls, all in the
+village, and two of them died with the vertex colours above. The three live
+ones now use the same file's own `SmoothRange`.
+
+Kept at `3.6 m` rather than retuned to `0.35`, on the lead's call, because the
+constant should mean what it says and the rest of the plan already assumed it:
+`AlpineVillagePlanner`'s `TerrainMargin 12` is justified in comment against
+`PlotApron 1.1 + ShelfBlendDistance 3.6`, so the fix moves the ground TOWARDS
+what the margin was sized for. Door docks are unaffected - the weight is `1`
+inside every apron both before and after - and in fact safer: the ground used
+to start falling within `35 cm` of an apron rim, which is exactly where a dock
+sits and where `2 cm` of vertical tolerance decides whether a door works at
+all.
+
+What it changed on screen is the street. The lane's `0.18 m` bed now eases out
+over `6.8 m` from the centreline instead of `3.55`, and the shelves round every
+plot ease out over `4.7 m` instead of `1.45`, so the lane reads as a worn
+HOLLOW between snow that rises on both sides rather than as a brown ribbon
+painted on a flat field - and the new drifts, whose toes stand `1.95 m` from
+the centreline, sit inside that fall and read far better for it. Frames
+`04-platform-landmark`, `07-lower-uphill-axis-gust-trough` and
+`09-roost-lane-fence` are the before/after pair worth looking at.
+
+Verification: EditMode `-testCategory AlpineVillage` **46/46**, `0` errors and
+`0` warnings; `AreaCaptureFixture.AlpineVillage` re-shot and compared frame by
+frame against the set from before the change; PlayMode
+`AlpineVillageStationExit` **1/1**, because the station's own shelf rim moved
+and that test is the one that walks a real controller off the platform. Full
+suites and a player build were not run.
+
+## 2026-08-31 — The village mask was inverted
+
+The lead reported a heap of invisible walls in the Alpine village and that
+stepping off the path was all but impossible, and asked for the whole village
+territory to be walkable.
+
+`AlpineVillageWalkableArea` was the cause, and it was not a bug - it was the
+design, working. The mask was a capsule chain over the lane centreline plus one
+capsule per `AlpineVillagePathDescriptor`, on the recorded argument that "an
+invisible twenty-metre branch through pristine snow is not a route, even when a
+capsule says the hero may walk there". Measured against the plan at the shipped
+seed: the lane gives `2.38 m` of usable half-width (`LaneWidth 3.6 / 2 +
+LaneShoulder 0.9` less the hero's `0.32`), a household branch gives `0.78 m`
+(`BranchWalkableHalfWidth 1.1` less the same), and `TerrainBounds` is
+`93.4 x 125.2 m` - `11 703 m²`. A grid sweep of the old mask at the motor's own
+radius puts the walkable share at **`6.4 %`**. The cemetery could be faced and
+never entered; no house could be walked round; the flat between the last houses
+and the mountain was unreachable in every direction.
+
+So the rule is inverted rather than widened. Ground is walkable and three
+things refuse it:
+
+- **The mountain.** The bowl is `TerrainBounds` grown by the sampler's own
+  `RidgeStandoff` (`3 m`), which is the exact line where `SampleRidgeRise`
+  becomes non-zero. Past it the ground climbs at `3.6` per metre - `74°`
+  against the hero's `45°` slope limit - so the perimeter is held by the
+  terrain and the mask only agrees with it. Sharing the constant is the point:
+  no part of the boundary can drift inward onto flat ground.
+- **Buildings**, on the rotated footprint their own `Physical Shell` box
+  collider already stands on. The mask duplicating the collider is deliberate:
+  planar velocity is read back from achieved movement, so a graze against a
+  wall reads as a crawl, and sliding in the mask keeps the hero's speed.
+  `ClosestPoint` pushes out along the shallowest axis, which is what makes a
+  run at a facade a slide along it.
+- **The cableway brink**, which is the one boundary the mask has to hold
+  alone. The cut falls at `7.1°` out of the apron, steepens to `28.2°` over
+  its middle spans and settles back to `4°` for the rest of the `230 m`
+  descent - every metre of it under the hero's `45°` limit - so with an open
+  bowl he would simply walk down the gorge and out of the scene. The obstacle
+  is the sampler's own cut: entrance at `padDepth/2 + StationApron -
+  TerrainCell/2` (`4.10 m` from the pad centre) and `CablewayCutOuterHalfWidth`
+  (`19 m`) either side of the line. The boarding side survives it by
+  `0.27 m` - the platform's far end sits at `3.63 m` - so not a centimetre of
+  concrete is lost.
+
+The same sweep now reads **`87.7 %`** of the bowl walkable.
+
+Two things the world had to grow to match. The **adit** had no shell at all -
+its mouth is a `0.3 m` black slab and behind it the timber frame is hollow, so
+an open bowl would have walked the hero into a void; it gets the same
+plan-derived `Physical Shell` every building has, because a mine is a hole in
+solid rock. The **cemetery** is the one plot deliberately NOT an obstacle - a
+burial ground is ground - so its `0.12 m` soil slab and its seventeen markers
+now carry collision instead of letting him through; the markers take theirs on
+the unscaled pivot, never on the imported mesh.
+
+`AlpineVillagePathDescriptor.WalkableHalfWidth` stops being the mask's capsule
+and stays what the validator already used it as: the route's clearance envelope
+against every rotated footprint, so a visible track still cannot be drawn into
+a wall.
+
+Verification: EditMode `-testCategory AlpineVillage` **41/41**, including three
+new contracts - the bowl is over `80 %` walkable and every plot can be walked
+behind, every building centre and the brink and the ridge are refused while the
+boarding platform's far end is not, and a run at a facade slides along it. The
+real end-to-end proof is PlayMode `AlpineVillageStationExit` **1/1**: the hero
+still walks out of the cabin, off the platform and to the foot of the lane
+through the real world, the new colliders included. Full suites, a player build
+and the capture fixtures were deliberately not run.
+
+Adjacent correction, not part of the request: the art bible's and systems map's
+village mass paragraphs still carried the pre-`b9bf053` ridge (`18 m` toe,
+`58°`, `50 m`, `39/36/28-31°`) and the cableway valley "kept on the floor
+material", both of which that commit changed. Both are now the built numbers.
+
+## 2026-08-31 — Камера перестала проваливаться в свод у бочки
+
+Обычный `PlayerCameraFollow` уже сокращал плечо камеры sphere-cast'ом, но
+физика арки начинала считать потолок только с `4.962 m` над нижней отметкой.
+Видимая кладка центрального свода опускается до `4.049 m`, поэтому при
+вертикальном orbit камера успевала войти в меш раньше первого Physics-hit.
+
+`CityArchShelterPlanner` теперь добавляет десятый plan-owned blocker
+`VaultCrown`: он заполняет только измеренную центральную полосу реальной
+кладки между нижним сводом и прежним `OverheadGallery`, остаётся выше
+`2.4 m` прохода верхней площадки и не пересекает западный нижний коридор.
+Существующий builder материализует его обычным `BoxCollider`, поэтому общая
+логика камеры немедленно приближает ракурс к герою и по-прежнему плавно
+восстанавливает дистанцию после выхода.
+
+Focused PlayMode regression
+`PlayerCameraPresentationPlayModeTests
+.ExteriorCamera_DefaultArchVaultShortensCameraArm` ставит обычную follow-
+камеру у бочки, поднимает pitch до предела и требует, чтобы полное плечо
+`2.6 m` сократилось до безопасного расстояния под кладкой.
+
+Verification: focused PlayMode regression
+`ExteriorCamera_DefaultArchVaultShortensCameraArm` passed `1/1` under Unity
+`6000.5.10f1`. Полные suites и player build в fast mode не запускались.
+
 ## 2026-08-31 — Герой получил отдельный бег
 
 `PlayerMotor` сохранил tank controls, `6.5 m/s²` разгона и `11 m/s²`

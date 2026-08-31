@@ -53,8 +53,15 @@ namespace BarPromenade
         public float SurfaceHalfWidth { get; }
 
         /// <summary>
-        /// The slightly more forgiving traversal corridor around that strip.
-        /// It remains close enough that permitted ground never looks untouched.
+        /// The traversal corridor around that strip: how much room a person
+        /// walking this route actually needs.
+        ///
+        /// It stopped being the walkable mask's own capsule when the mask was
+        /// opened to the whole bowl - ground is walkable by default now and a
+        /// path is a route rather than a permission. What it still is, and
+        /// what the validator reads it as, is the route's CLEARANCE ENVELOPE:
+        /// no part of it may enter a rotated plot footprint, so a visible
+        /// track can never be drawn into a wall.
         /// </summary>
         public float WalkableHalfWidth { get; }
 
@@ -79,10 +86,16 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Derives every visible track from the validated village plan. This is
-    /// deliberately the same data consumed by the walkable mask and terrain
-    /// dressing: an invisible twenty-metre branch through pristine snow is
-    /// not a route, even when a capsule says the hero may walk there.
+    /// Derives every visible track from the validated village plan.
+    ///
+    /// These were once the walkable mask itself - a capsule per path, and
+    /// nothing else in the village standable - on the argument that an
+    /// invisible twenty-metre branch through pristine snow is not a route.
+    /// The cost of that was six per cent of the bowl walkable and an
+    /// invisible wall a step off the lane in every direction, so the mask is
+    /// the bowl now and these are what they look like: the compacted routes
+    /// between the places worth going, showing where people habitually walk
+    /// rather than where they are permitted to.
     /// </summary>
     public static class AlpineVillagePathPlanner
     {
@@ -104,6 +117,77 @@ namespace BarPromenade
         /// read one constant, or the mask and the paint drift apart again.
         /// </summary>
         public const float BareSkirtHalfWidth = 0.15f;
+
+        /// <summary>
+        /// How far the point lies outside the nearest trodden surface - the
+        /// lane skin or any path ribbon - and which way is out of it.
+        /// Negative on trodden ground.
+        ///
+        /// It is a MINIMUM over every route, and that is the entire reason it
+        /// lives in one place rather than inside a per-segment loop: lying
+        /// snow beside one path has to disappear where another crosses it,
+        /// and a measure that only knows its own segment cannot see the
+        /// crossing. Every reader of "how far from trodden ground is this"
+        /// asks here.
+        /// </summary>
+        public static float MeasureDistanceOutsideTrodden(
+            AlpineVillagePlan plan,
+            IReadOnlyList<AlpineVillagePathDescriptor> paths,
+            Vector2 point,
+            out Vector2 outward)
+        {
+            if (plan == null)
+            {
+                throw new ArgumentNullException(nameof(plan));
+            }
+
+            if (paths == null)
+            {
+                throw new ArgumentNullException(nameof(paths));
+            }
+
+            float along = plan.Lane.FindNearest(point, out float lateral);
+            AlpineVillageLaneSample sample = plan.Lane.Sample(along);
+            var nearest = new Vector2(
+                sample.Position.x,
+                sample.Position.z);
+            float best = lateral - sample.Width * 0.5f;
+
+            for (int index = 0; index < paths.Count; index++)
+            {
+                AlpineVillagePathDescriptor path = paths[index];
+                Vector2 closest = ClosestPointOnPath(path, point);
+                float outside = Vector2.Distance(point, closest) -
+                                path.SurfaceHalfWidth;
+                if (outside >= best)
+                {
+                    continue;
+                }
+
+                best = outside;
+                nearest = closest;
+            }
+
+            Vector2 delta = point - nearest;
+            outward = delta.sqrMagnitude <= 0.000001f
+                ? Vector2.up
+                : delta.normalized;
+            return best;
+        }
+
+        private static Vector2 ClosestPointOnPath(
+            AlpineVillagePathDescriptor path,
+            Vector2 point)
+        {
+            var start = new Vector2(path.Start.x, path.Start.z);
+            Vector2 segment = new Vector2(path.End.x, path.End.z) - start;
+            float lengthSquared = segment.sqrMagnitude;
+            float amount = lengthSquared <= 0.000001f
+                ? 0f
+                : Mathf.Clamp01(
+                    Vector2.Dot(point - start, segment) / lengthSquared);
+            return start + segment * amount;
+        }
 
         // The adit sits behind the rear-row house at beat 08. Its path enters
         // from above house 10, follows the outside of both houses, then turns

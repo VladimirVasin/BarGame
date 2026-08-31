@@ -5,69 +5,89 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// A capsule-chain traversal mask over the real lane centreline, plus one
-    /// oriented rectangle per level shelf.
+    /// The whole inhabited bowl, minus the things that actually stand in it.
     ///
-    /// Deliberately not a union of axis-aligned rectangles like the City's:
-    /// there, a point with a non-zero radius has to fit inside ONE rectangle,
-    /// abutting rectangles do not merge, and every junction needs an explicit
-    /// seam strip. A chain of capsules along the road that is actually there
-    /// has no seams to forget.
+    /// IT USED TO BE THE OPPOSITE, and that is the defect this replaces. The
+    /// mask was a capsule chain over the lane centreline plus one corridor per
+    /// visible path: `2.38 m` of usable half-width on the street and `0.78 m`
+    /// on a household branch, inside a bowl `93 x 125 m` across. Six per cent
+    /// of the village was walkable and the other ninety-four were an invisible
+    /// wall standing on ground the player can see, walk towards and never
+    /// reach - the cemetery he could face but not enter, the snow between two
+    /// houses, the ground behind the house at the top. Stepping off the path
+    /// was impossible everywhere, which is exactly how it read.
+    ///
+    /// So the rule is inverted. Ground is walkable, and the only things that
+    /// refuse it are things the eye already sees refusing it:
+    ///
+    /// - THE MOUNTAIN. The bowl's flat ends where
+    ///   <see cref="AlpineVillageTerrainSampler.RidgeStandoff"/> ends and the
+    ///   rise begins, and the rise is `74°` against the hero's `45°` slope
+    ///   limit. The mask's outer boundary is drawn on that line and never
+    ///   inside the flat, so the perimeter is held by the ground itself and
+    ///   the mask is only agreeing with it.
+    /// - EVERY BUILDING, at exactly the footprint its own `Physical Shell`
+    ///   box collider stands on. The mask agrees with the collider rather than
+    ///   leaving the work to it: contact is read back as achieved movement, so
+    ///   a graze against a wall reads as a crawl, and sliding in the mask
+    ///   keeps the hero's speed. The burial ground is the one plot with no
+    ///   shell and is deliberately not here - a graveyard is ground.
+    /// - THE CABLEWAY BRINK, the one hole in the bowl. The cut falls at
+    ///   `7-28°`, well under the slope limit, so it is the only place a hero
+    ///   could actually walk out of the village; the mask closes it at the
+    ///   sampler's own entrance line and over the sampler's own width.
+    ///
+    /// The visible paths stay exactly what they were - the compacted routes
+    /// between the places worth going. They are simply no longer the only
+    /// ground a person is allowed to stand on.
     /// </summary>
     public sealed class AlpineVillageWalkableArea : IWalkableArea
     {
         /// <summary>
-        /// Walkable ground either side of the carriageway. Wide enough that
-        /// the hero can stand out of the middle of the street and reach a
-        /// door, narrow enough that he cannot wander onto the slope.
+        /// How far the walkable flat continues past the inhabited extent.
+        ///
+        /// It is the sampler's own ridge standoff, and sharing it is the whole
+        /// point: the mask ends on the exact line where the ground starts to
+        /// climb, so nothing about the boundary is invisible. Past it the
+        /// slope holds the hero without any help from here.
         /// </summary>
-        public const float LaneShoulder = 0.9f;
+        public const float GroundOutset =
+            AlpineVillageTerrainSampler.RidgeStandoff;
 
-        /// <summary>Half-width of a branch out to a spur.</summary>
-        public const float SpurHalfWidth =
-            AlpineVillagePathPlanner.BranchWalkableHalfWidth;
-
-        /// <summary>Depth of the level apron kept in front of a threshold.
+        /// <summary>
+        /// How many times <see cref="ClosestPoint"/> may push a point out of
+        /// an obstacle before giving up. Two neighbouring footprints can only
+        /// trap a query in a corner; the caller re-tests the result and keeps
+        /// the hero where he was rather than trusting it.
         /// </summary>
-        public const float DoorApronDepth = 2.2f;
+        private const int ObstacleResolutionPasses = 4;
+
+        private const float BoundaryEpsilon = 0.001f;
 
         private readonly AlpineVillagePlan plan;
-        private readonly List<Capsule> capsules = new List<Capsule>();
-        private readonly List<OrientedRect> rects = new List<OrientedRect>();
+        private readonly Rect ground;
+        private readonly List<OrientedRect> obstacles =
+            new List<OrientedRect>();
 
         public AlpineVillageWalkableArea(AlpineVillagePlan plan)
         {
             this.plan = plan ?? throw new ArgumentNullException(nameof(plan));
             AlpineVillageValidator.ValidateOrThrow(plan);
-            BuildLane();
-            BuildStation();
-            BuildPaths();
-            BuildPlots();
+            ground = BuildGround(plan);
+            BuildBuildings();
+            BuildCablewayBrink();
         }
 
         public AlpineVillagePlan Plan => plan;
 
+        /// <summary>The walkable flat, before the obstacles are cut out of it.
+        /// </summary>
+        public Rect GroundBounds => ground;
+
         public bool Contains(Vector3 position, float radius = 0f)
         {
             ValidateRadius(radius);
-            Vector2 point = ToXZ(position);
-            for (int index = 0; index < capsules.Count; index++)
-            {
-                if (capsules[index].Contains(point, radius))
-                {
-                    return true;
-                }
-            }
-
-            for (int index = 0; index < rects.Count; index++)
-            {
-                if (rects[index].Contains(point, radius))
-                {
-                    return true;
-                }
-            }
-
-            return false;
+            return ContainsXZ(ToXZ(position), radius);
         }
 
         public Vector3 Constrain(
@@ -102,148 +122,168 @@ namespace BarPromenade
                 : plan.SpawnPosition;
         }
 
+        /// <summary>
+        /// The nearest standable point. Clamped into the bowl first, then
+        /// pushed out of whatever it landed inside along that obstacle's
+        /// shallowest axis - which is what makes a run into a house wall a
+        /// slide along it rather than a stop against it.
+        /// </summary>
         public Vector3 ClosestPoint(Vector3 position, float radius = 0f)
         {
             ValidateRadius(radius);
-            Vector2 point = ToXZ(position);
-            bool found = false;
-            float bestSqr = float.PositiveInfinity;
-            Vector2 best = default;
-
-            for (int index = 0; index < capsules.Count; index++)
-            {
-                Vector2 candidate = capsules[index].ClosestPoint(
-                    point,
-                    radius);
-                Consider(point, candidate, ref found, ref bestSqr, ref best);
-            }
-
-            for (int index = 0; index < rects.Count; index++)
-            {
-                Vector2 candidate = rects[index].ClosestPoint(point, radius);
-                Consider(point, candidate, ref found, ref bestSqr, ref best);
-            }
-
-            if (!found)
+            if (!IsFinite(position))
             {
                 return plan.SpawnPosition;
             }
 
-            return new Vector3(best.x, position.y, best.y);
-        }
-
-        private static void Consider(
-            Vector2 point,
-            Vector2 candidate,
-            ref bool found,
-            ref float bestSqr,
-            ref Vector2 best)
-        {
-            float distance = (candidate - point).sqrMagnitude;
-            if (found && distance >= bestSqr)
+            Vector2 point = ClampToGround(ToXZ(position), radius);
+            for (int pass = 0; pass < ObstacleResolutionPasses; pass++)
             {
-                return;
+                int index = FindOverlapping(point, radius);
+                if (index < 0)
+                {
+                    break;
+                }
+
+                point = ClampToGround(
+                    obstacles[index].PushOut(point, radius),
+                    radius);
             }
 
-            found = true;
-            bestSqr = distance;
-            best = candidate;
+            return new Vector3(point.x, position.y, point.y);
         }
 
-        private void BuildLane()
+        private bool ContainsXZ(Vector2 point, float radius)
         {
-            IReadOnlyList<AlpineVillageLaneSample> samples = plan.Lane.Samples;
-            for (int index = 0; index < samples.Count - 1; index++)
+            if (point.x < ground.xMin + radius ||
+                point.x > ground.xMax - radius ||
+                point.y < ground.yMin + radius ||
+                point.y > ground.yMax - radius)
             {
-                AlpineVillageLaneSample first = samples[index];
-                AlpineVillageLaneSample second = samples[index + 1];
-                capsules.Add(new Capsule(
-                    ToXZ(first.Position),
-                    ToXZ(second.Position),
-                    Mathf.Max(first.Width, second.Width) * 0.5f +
-                    LaneShoulder));
+                return false;
             }
+
+            return FindOverlapping(point, radius) < 0;
         }
 
-        private void BuildStation()
+        private int FindOverlapping(Vector2 point, float radius)
         {
-            AlpineVillageStationPlan station = plan.Station;
-            MountainRoadTerminalRect pad = station.PadArea;
-            rects.Add(new OrientedRect(
-                ToXZ(pad.Center),
-                ToXZ(pad.Right),
-                ToXZ(pad.Forward),
-                pad.Size * 0.5f));
+            for (int index = 0; index < obstacles.Count; index++)
+            {
+                if (obstacles[index].Overlaps(point, radius))
+                {
+                    return index;
+                }
+            }
 
-            // The boarding strip runs off the FRONT of the pad and stands on
-            // its own apron, so the mask has to follow it out there. Without
-            // this the far half metre of the platform - and the whole apron -
-            // is a wall the hero walks into while standing on concrete.
-            MountainRoadTerminalRect apron =
-                station.Cableway.BoardingApronArea;
-            rects.Add(new OrientedRect(
-                ToXZ(apron.Center),
-                ToXZ(apron.Right),
-                ToXZ(apron.Forward),
-                apron.Size * 0.5f));
+            return -1;
+        }
 
-            // The pad sits behind the lane foot; join the two so the step off
-            // the platform is not a hole in the mask.
-            capsules.Add(new Capsule(
-                ToXZ(pad.Center),
-                ToXZ(plan.Lane.Start),
-                2.2f));
-            capsules.Add(new Capsule(
-                ToXZ(pad.Center),
-                ToXZ(station.BoardingDockPosition),
-                1.6f));
+        private Vector2 ClampToGround(Vector2 point, float radius)
+        {
+            return new Vector2(
+                ClampAxis(point.x, ground.xMin, ground.xMax, radius),
+                ClampAxis(point.y, ground.yMin, ground.yMax, radius));
+        }
 
-            // The route from the foot of the steps to the lane is part of the
-            // visible path plan below. It used to be a second, invisible
-            // capsule authored independently of the ground that depicts it.
+        private static float ClampAxis(
+            float value,
+            float min,
+            float max,
+            float radius)
+        {
+            float low = min + radius;
+            float high = max - radius;
+            return low >= high
+                ? (min + max) * 0.5f
+                : Mathf.Clamp(value, low, high);
         }
 
         /// <summary>
-        /// Every permitted branch is also a visible compacted track. Both
-        /// systems consume these exact endpoints and widths, so navigation
-        /// cannot silently grow a shortcut across untouched snow.
+        /// The bowl itself: the inhabited extent, carried out to the toe of
+        /// the enclosing rise. Nothing narrower would be honest - the flat
+        /// between the last house and the mountain is ground a person can see
+        /// and walk on.
         /// </summary>
-        private void BuildPaths()
+        private static Rect BuildGround(AlpineVillagePlan plan)
         {
-            IReadOnlyList<AlpineVillagePathDescriptor> paths =
-                AlpineVillagePathPlanner.Create(plan);
-            for (int index = 0; index < paths.Count; index++)
-            {
-                AlpineVillagePathDescriptor path = paths[index];
-                capsules.Add(new Capsule(
-                    ToXZ(path.Start),
-                    ToXZ(path.End),
-                    path.WalkableHalfWidth));
-            }
+            Rect bounds = plan.TerrainBounds;
+            return Rect.MinMaxRect(
+                bounds.xMin - GroundOutset,
+                bounds.yMin - GroundOutset,
+                bounds.xMax + GroundOutset,
+                bounds.yMax + GroundOutset);
         }
 
         /// <summary>
-        /// Every plot gets an apron in front of its door. Its route back to
-        /// the lane belongs to <see cref="BuildPaths"/>.
+        /// One obstacle per solid plot, on the plot's own rotated footprint -
+        /// the same rectangle <c>AlpineVillageWorldBuilder</c> gives its
+        /// `Physical Shell` collider, so the mask and the physics cannot
+        /// disagree about where a wall is.
         /// </summary>
-        private void BuildPlots()
+        private void BuildBuildings()
         {
             for (int index = 0; index < plan.Plots.Count; index++)
             {
                 AlpineVillagePlotDescriptor plot = plan.Plots[index];
+                if (plot.Kind == AlpineVillagePlotKind.Cemetery)
+                {
+                    // The burial ground is the one plot that is ground. It
+                    // carries no shell, its markers carry their own small
+                    // colliders, and being able to walk in among them is the
+                    // entire reason it is on the hill.
+                    continue;
+                }
+
                 Vector2 facing = ToXZ(plot.Facing).normalized;
                 Vector2 across = new Vector2(facing.y, -facing.x);
-                Vector2 apronCenter = ToXZ(plot.DoorGroundPosition) +
-                                      facing * (DoorApronDepth * 0.5f);
-                rects.Add(new OrientedRect(
-                    apronCenter,
+                obstacles.Add(new OrientedRect(
+                    ToXZ(plot.GroundCenter),
                     across,
                     facing,
-                    new Vector2(
-                        Mathf.Max(2.4f, plot.FootprintSize.x * 0.5f),
-                        DoorApronDepth * 0.5f)));
-
+                    plot.FootprintSize * 0.5f));
             }
+        }
+
+        /// <summary>
+        /// The one hole in the bowl, closed.
+        ///
+        /// The enclosing ridge is unclimbable and needs nothing from the mask,
+        /// but the cableway cut is a gorge that FALLS - `7°` out of the
+        /// station apron and never worse than `28°` for two hundred metres
+        /// down the mountainside. A hero who may leave the lane may also walk
+        /// straight down it and out of the scene, so this is the one boundary
+        /// the mask has to hold by itself.
+        ///
+        /// Both numbers are the sampler's, read rather than re-derived: the
+        /// rectangle starts on the cut's own entrance line and is exactly as
+        /// wide as the ground the cut takes down. `along` is measured from the
+        /// PAD CENTRE and the line's own length from the CABLE, which starts
+        /// `1.9 m` further forward - the same two frames the sampler has to
+        /// convert between.
+        /// </summary>
+        private void BuildCablewayBrink()
+        {
+            MountainRoadCablewayPlan cableway = plan.Station.Cableway;
+            float entrance = cableway.StationArea.Size.y * 0.5f +
+                             AlpineVillageTerrainSampler.StationApron -
+                             AlpineVillageTerrainSampler.TerrainCell * 0.5f;
+            float cableOrigin = Vector3.Dot(
+                cableway.LowerCableCenter - cableway.StationArea.Center,
+                cableway.LineForward);
+            float far = cableOrigin +
+                        cableway.LineLength +
+                        AlpineVillageTerrainSampler.RidgeCrestDepth;
+            Vector3 center = cableway.StationArea.Center +
+                             cableway.LineForward *
+                             ((entrance + far) * 0.5f);
+            obstacles.Add(new OrientedRect(
+                ToXZ(center),
+                ToXZ(cableway.LineRight),
+                ToXZ(cableway.LineForward),
+                new Vector2(
+                    AlpineVillageTerrainSampler.CablewayCutOuterHalfWidth,
+                    (far - entrance) * 0.5f)));
         }
 
         private static Vector2 ToXZ(Vector3 value)
@@ -266,60 +306,6 @@ namespace BarPromenade
                    !float.IsNaN(value.z) && !float.IsInfinity(value.z);
         }
 
-        private readonly struct Capsule
-        {
-            private readonly Vector2 start;
-            private readonly Vector2 end;
-            private readonly float halfWidth;
-
-            internal Capsule(Vector2 start, Vector2 end, float halfWidth)
-            {
-                this.start = start;
-                this.end = end;
-                this.halfWidth = halfWidth;
-            }
-
-            internal bool Contains(Vector2 point, float radius)
-            {
-                float allowed = halfWidth - radius;
-                if (allowed <= 0f)
-                {
-                    return false;
-                }
-
-                return (point - Project(point)).sqrMagnitude <=
-                       allowed * allowed;
-            }
-
-            internal Vector2 ClosestPoint(Vector2 point, float radius)
-            {
-                float allowed = Mathf.Max(0f, halfWidth - radius);
-                Vector2 axisPoint = Project(point);
-                Vector2 offset = point - axisPoint;
-                float distance = offset.magnitude;
-                if (distance <= allowed || distance <= 0.000001f)
-                {
-                    return point;
-                }
-
-                return axisPoint + offset / distance * allowed;
-            }
-
-            private Vector2 Project(Vector2 point)
-            {
-                Vector2 segment = end - start;
-                float lengthSquared = segment.sqrMagnitude;
-                if (lengthSquared <= 0.000001f)
-                {
-                    return start;
-                }
-
-                float amount = Mathf.Clamp01(
-                    Vector2.Dot(point - start, segment) / lengthSquared);
-                return start + segment * amount;
-            }
-        }
-
         private readonly struct OrientedRect
         {
             private readonly Vector2 center;
@@ -339,20 +325,40 @@ namespace BarPromenade
                 this.halfSize = halfSize;
             }
 
-            internal bool Contains(Vector2 point, float radius)
+            /// <summary>
+            /// Whether a body of this radius intersects the rectangle. The
+            /// body is treated as a square rather than a circle, which is the
+            /// conservative reading at a corner and the one the whole mask
+            /// family uses.
+            /// </summary>
+            internal bool Overlaps(Vector2 point, float radius)
             {
                 Vector2 local = ToLocal(point);
-                return Mathf.Abs(local.x) <= halfSize.x - radius &&
-                       Mathf.Abs(local.y) <= halfSize.y - radius;
+                return Mathf.Abs(local.x) < halfSize.x + radius &&
+                       Mathf.Abs(local.y) < halfSize.y + radius;
             }
 
-            internal Vector2 ClosestPoint(Vector2 point, float radius)
+            /// <summary>
+            /// Moves a point that is inside the expanded rectangle onto its
+            /// nearest face. The shallowest axis is chosen, so a body walking
+            /// at a long wall leaves along the wall rather than round the end
+            /// of it.
+            /// </summary>
+            internal Vector2 PushOut(Vector2 point, float radius)
             {
-                float allowedX = Mathf.Max(0f, halfSize.x - radius);
-                float allowedY = Mathf.Max(0f, halfSize.y - radius);
                 Vector2 local = ToLocal(point);
-                local.x = Mathf.Clamp(local.x, -allowedX, allowedX);
-                local.y = Mathf.Clamp(local.y, -allowedY, allowedY);
+                float limitX = halfSize.x + radius + BoundaryEpsilon;
+                float limitY = halfSize.y + radius + BoundaryEpsilon;
+                if (limitX - Mathf.Abs(local.x) <=
+                    limitY - Mathf.Abs(local.y))
+                {
+                    local.x = local.x < 0f ? -limitX : limitX;
+                }
+                else
+                {
+                    local.y = local.y < 0f ? -limitY : limitY;
+                }
+
                 return center + axisX * local.x + axisY * local.y;
             }
 

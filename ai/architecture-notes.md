@@ -44,19 +44,56 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   from the layout plan, so a model can be re-cut without risking traversal.
 - **Accepted:** Alpine Village separates inhabited `TerrainBounds` from the
   larger physical `TerrainMeshBounds`; only the latter may prove the enclosing
-  ridge and cable brink. Every permitted off-lane movement segment is an
-  `AlpineVillagePathDescriptor` consumed by both surface rendering and the
-  walkable mask. Its larger visible/traversal half-width is also a pure
-  collision envelope: every segment must clear every rotated plot OBB, with
+  ridge and cable brink.
+- **Corrected — the village walkable mask is ground minus obstacles, not a
+  corridor:** it was a capsule chain over the lane plus one capsule per
+  `AlpineVillagePathDescriptor`, on the argument that an invisible branch
+  through pristine snow is not a route. Measured, that left `6.4 %` of an
+  `11 703 m²` bowl standable and an invisible wall a step off the lane in every
+  direction. The mask is now `TerrainBounds` grown by the sampler's own
+  `RidgeStandoff` — the exact line where the `74°` rise begins, so the terrain
+  holds the perimeter — minus each plot's rotated footprint (the same rectangle
+  its `Physical Shell` collider stands on, so the mask prevents wall contact
+  rather than surviving it) and minus the cableway cut, whose `7-28°` descent
+  is the only walkable way out of the village and the one boundary the mask
+  holds alone. The burial ground is deliberately not an obstacle and the adit
+  gained the shell it never had. Path descriptors keep their traversal
+  half-width as a pure collision envelope: every segment must clear every
+  rotated plot OBB, with
   the adit using an authored outer hook around the rear-row houses rather than
   a shortcut through them; its turn is selected from the seeded expanded OBB
   of house 08. Rotated plot collision is OBB/SAT, never an
   unrotated AABB;
   explicit rear-row depth beats own the frontage layers and the seeded solver
   may only make a bounded symmetric correction around them.
-  Small causal props use `AlpineVillageDressingPlanner` for form-owned semantic
-  IDs and anchors; the world and soundscape are readers, so rendering never
-  depends on audio to decide where an object exists.
+- **Accepted — a dock is an interaction pose, never an arrival:** a chart
+  point carries a place's `DoorDockPosition`, which stands `1.1 m` off a
+  threshold facing it. Landing a player there puts him against a wall, and the
+  gait is weighted by ACHIEVED speed, so a blocked hero stands in `Idle` while
+  the input says walk - it reads as a broken animation, not as a wall. Village
+  arrivals stand back along the route the place is reached by and look at it.
+  The same rule keeps arrivals on trodden ground, whose envelope is already
+  validated clear of every plot footprint.
+- **Corrected — `Mathf.SmoothStep`'s third argument is a `0-1` fraction, not a
+  distance:** `Mathf.SmoothStep(0f, blend, metres)` returns METRES and
+  saturates at one metre of input, so `1 - that` goes negative and survives
+  only because `Mathf.Lerp` clamps. The village's three shelf blends ran at
+  `0.347 m` against a constant naming `3.6` — a factor of `10.4` — while the
+  guards beside them believed the constant. Distance-driven easing uses
+  `SmoothStep(0f, 1f, InverseLerp(start, end, value))`, which the same file
+  already had as `SmoothRange`. A sweep found every other call in the project
+  correct.
+- **Corrected — the village ground carried vertex colours no shader reads:**
+  `RuntimePrimitiveLit` is `Ps1Lit`, a verbatim URP Lit copy, and URP Lit's
+  `Attributes` has no `COLOR` semantic in any pass. Ground tint belongs to the
+  surface sheet and to the path ribbons that already carry it; a mesh writing
+  colours into the shared default material is writing into nothing. The dead
+  field was deleted rather than revived, because reviving it means hand-editing
+  a clone that must stay re-copyable on a URP bump.
+- **Accepted:** Small causal props in the village use
+  `AlpineVillageDressingPlanner` for form-owned semantic IDs and anchors; the
+  world and soundscape are readers, so rendering never depends on audio to
+  decide where an object exists.
 - **Accepted:** Gameplay and transition presentation are composed at runtime
   in eleven explicit build scenes; `MountainRoad`, `AreaLoading`,
   `ChurchInterior` and `AlpineVillage` are appended at build indices `7`, `8`,

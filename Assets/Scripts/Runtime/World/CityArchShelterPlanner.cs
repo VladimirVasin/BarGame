@@ -18,6 +18,9 @@ namespace BarPromenade
             new Vector3(0.68f, 1.45f, 0.68f);
         public const float BeddingMattressLength = 1.89618f;
         public const float BeddingMattressWidth = 0.83633f;
+        // The broad upholstered face carries the sleeper. Three narrow seam
+        // ridges reach BeddingMattressTop and remain part of the prop bounds.
+        public const float BeddingMattressSupportTop = 0.2500f;
         public const float BeddingMattressTop = 0.2725f;
 
         // Conservative world-axis envelope of the imported 2.079462 x
@@ -344,7 +347,27 @@ namespace BarPromenade
                     structure.size.x,
                     structure.max.y - roofBottom,
                     sheltered.height));
-            var result = new List<CityArchShelterObstacleDescriptor>(9)
+            float lowerSurface = Mathf.Min(
+                placement.WestSurfaceY,
+                placement.EastSurfaceY);
+            float vaultBottom =
+                lowerSurface +
+                CityArchShelterPlacementResolver
+                    .VaultCrownClearanceAboveLowerSurface;
+            float vaultDepth =
+                sheltered.height -
+                CityArchShelterPlacementResolver.VaultDepthInset * 2f;
+            var vaultCrown = new Bounds(
+                new Vector3(
+                    placement.StructurePosition.x,
+                    (vaultBottom + roofBottom) * 0.5f,
+                    sheltered.center.y),
+                new Vector3(
+                    CityArchShelterPlacementResolver.VaultCrownHalfWidth *
+                    2f,
+                    roofBottom - vaultBottom,
+                    vaultDepth));
+            var result = new List<CityArchShelterObstacleDescriptor>(10)
             {
                 new CityArchShelterObstacleDescriptor(
                     $"{StableId}-obstacle-west-attachment",
@@ -357,7 +380,11 @@ namespace BarPromenade
                 new CityArchShelterObstacleDescriptor(
                     $"{StableId}-obstacle-overhead-gallery",
                     CityArchShelterObstacleKind.OverheadGallery,
-                    overhead)
+                    overhead),
+                new CityArchShelterObstacleDescriptor(
+                    $"{StableId}-obstacle-vault-crown",
+                    CityArchShelterObstacleKind.VaultCrown,
+                    vaultCrown)
             };
 
             result.Add(new CityArchShelterObstacleDescriptor(

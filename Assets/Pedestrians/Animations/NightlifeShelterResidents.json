@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.2.0",
+  "generator_version": "4.3.1",
   "blender_version": "5.0.1",
   "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
   "anatomy_standard": "NpcHumanV2",
@@ -21,7 +21,7 @@
       "one_shot": false,
       "in_place": true,
       "authored_posture": "ordinary adult standing close to the barrel, shoulders rounded and palms held toward the heat",
-      "gait": "slow asymmetric weight transfer, two hand-warming corrections and a quiet breath",
+      "gait": "hands held to the heat, several brisk palm-rubbing strokes, then both hands returned to the barrel",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
@@ -29,19 +29,45 @@
         0.0,
         0.0
       ],
+      "motion_beats": [
+        {
+          "name": "hands_at_heat",
+          "normalized_time": 0.125
+        },
+        {
+          "name": "rub_palms_left",
+          "normalized_time": 0.375
+        },
+        {
+          "name": "rub_palms_right",
+          "normalized_time": 0.4375
+        },
+        {
+          "name": "rub_palms_left",
+          "normalized_time": 0.5
+        },
+        {
+          "name": "rub_palms_right",
+          "normalized_time": 0.5625
+        },
+        {
+          "name": "hands_at_heat",
+          "normalized_time": 0.875
+        }
+      ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
       "animated_local_xz_min_m": [
-        -0.402127,
+        -0.40007,
         -0.203799
       ],
       "animated_local_xz_max_m": [
-        0.427057,
-        0.312813
+        0.423328,
+        0.376701
       ],
       "animated_local_xz_size_m": [
-        0.829184,
-        0.516612
+        0.823397,
+        0.5805
       ]
     },
     {
@@ -54,13 +80,31 @@
       "one_shot": false,
       "in_place": true,
       "authored_posture": "ordinary adult sitting low beside the barrel with knees drawn and forearms over them",
-      "gait": "uneven breathing, a small shoulder settle and one closer reach toward the heat",
+      "gait": "a cold shoulder shiver, a two-handed lean into the heat and a firm fold of both arms back against the chest",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
         0.0,
         0.0,
         0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "cold_shiver",
+          "normalized_time": 0.125
+        },
+        {
+          "name": "both_hands_to_heat",
+          "normalized_time": 0.5
+        },
+        {
+          "name": "arms_fold_for_warmth",
+          "normalized_time": 0.75
+        },
+        {
+          "name": "both_hands_to_heat",
+          "normalized_time": 0.875
+        }
       ],
       "seated": true,
       "floor_seated": true,
@@ -72,16 +116,16 @@
       "floor_seated_min_boot_separation_m": 0.221363,
       "seated_drop_m": 0.045757,
       "animated_local_xz_min_m": [
-        -0.415959,
+        -0.431047,
         -0.180269
       ],
       "animated_local_xz_max_m": [
-        0.414694,
-        0.470754
+        0.418658,
+        0.509004
       ],
       "animated_local_xz_size_m": [
-        0.830653,
-        0.651023
+        0.849705,
+        0.689273
       ]
     },
     {
@@ -94,7 +138,7 @@
       "one_shot": false,
       "in_place": true,
       "authored_posture": "ordinary adult curled on the mattress under a heavy patched blanket",
-      "gait": "barely visible chest and shoulder breathing with one small sleeping hand settle",
+      "gait": "deep visible breathing, a tighter whole-body curl and one slow shoulder-and-hand resettle without waking",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
@@ -102,24 +146,68 @@
         0.0,
         0.0
       ],
+      "motion_beats": [
+        {
+          "name": "deep_inhale",
+          "normalized_time": 0.125
+        },
+        {
+          "name": "deep_exhale",
+          "normalized_time": 0.25
+        },
+        {
+          "name": "curl_tighter",
+          "normalized_time": 0.5
+        },
+        {
+          "name": "shoulder_resettle",
+          "normalized_time": 0.75
+        },
+        {
+          "name": "deep_inhale",
+          "normalized_time": 0.875
+        }
+      ],
       "lying": true,
-      "mattress_min_m": 0.004946,
-      "mattress_max_contact_gap_m": 0.008227,
-      "lying_height_min_m": 0.576041,
-      "lying_height_max_m": 0.595058,
-      "lying_pelvis_height_min_m": 0.295578,
-      "lying_pelvis_height_max_m": 0.295578,
+      "mattress_min_m": 0.00332,
+      "mattress_max_contact_gap_m": 0.005488,
+      "lying_height_min_m": 0.500795,
+      "lying_height_max_m": 0.539974,
+      "lying_pelvis_height_min_m": 0.233099,
+      "lying_pelvis_height_max_m": 0.233099,
+      "mattress_support_zones": [
+        {
+          "name": "torso",
+          "parts": [
+            "CLO_BlanketChest",
+            "CLO_BlanketWaist"
+          ],
+          "maximum_gap_m": 0.035,
+          "measured_max_gap_m": 0.019665
+        },
+        {
+          "name": "hips",
+          "parts": [
+            "CLO_CoatSeat",
+            "CLO_BlanketHipVolume",
+            "CLO_BlanketHip.L",
+            "CLO_BlanketHip.R"
+          ],
+          "maximum_gap_m": 0.035,
+          "measured_max_gap_m": 0.005488
+        }
+      ],
       "animated_local_xz_min_m": [
-        -0.638202,
-        -0.332335
+        -0.824022,
+        -0.370598
       ],
       "animated_local_xz_max_m": [
-        0.609617,
-        0.332117
+        0.836421,
+        0.280976
       ],
       "animated_local_xz_size_m": [
-        1.247819,
-        0.664452
+        1.660443,
+        0.651574
       ],
       "mattress_footprint_m": [
         1.89618,
@@ -127,22 +215,22 @@
       ],
       "mattress_yaw_degrees": 0.0,
       "animated_mattress_xz_min_m": [
-        -0.638202,
-        -0.332335
+        -0.824022,
+        -0.370598
       ],
       "animated_mattress_xz_max_m": [
-        0.609617,
-        0.332117
+        0.836421,
+        0.280976
       ],
       "mattress_used_half_extents_m": [
-        0.638202,
-        0.332335
+        0.836421,
+        0.370598
       ],
       "mattress_clearance_m": [
-        0.309888,
-        0.08583
+        0.111669,
+        0.047567
       ]
     }
   ],
-  "build_signature": "bb6d02e6f65839272e0ab825570deb5993fc3317ac69dcb1fd9bb8f56cc888f9"
+  "build_signature": "90e6fbf184cedc51387bc23794a15193c7444a029e5e22eecf9a0c9d7f2d99f6"
 }

@@ -34,7 +34,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "4.2.0"
+GENERATOR_VERSION = "4.3.1"
 CANONICAL_HEIGHT = 1.75
 NPC_ANATOMY_STANDARD = "NpcHumanV2"
 NPC_PELVIS_HEIGHT = 0.835
@@ -283,6 +283,13 @@ CAFE_ATTENDANT_RIG_ANCHORS = (
 
 
 @dataclass(frozen=True)
+class LyingSupportZoneSpec:
+    name: str
+    parts: tuple[str, ...]
+    maximum_gap_m: float
+
+
+@dataclass(frozen=True)
 class ArchetypeSpec:
     key: str
     design_id: str
@@ -372,6 +379,10 @@ class ArchetypeSpec:
     # lying validator separately proves that its lowest mesh stays on that
     # plane throughout the loop.
     lying_height_m: tuple[float, float] | None = None
+    # The City anchor uses the highest bedding seam, while the broad visible
+    # mattress surface can sit slightly below it. This local Z offset names
+    # the actual support plane so grounding is measured against visible art.
+    lying_support_plane_offset_m: float = 0.0
     # Optional mattress footprint contract as (width_x_m, length_z_m,
     # yaw_degrees).  The sleeper is placed at the mattress centre by the City
     # plan, so every evaluated vertex must remain inside this rotated XZ
@@ -379,6 +390,10 @@ class ArchetypeSpec:
     # a rest-pose manifest bound: the City test evaluates each resident at a
     # seed-derived phase.
     lying_footprint_m: tuple[float, float, float] | None = None
+    # Broad mesh families that must independently reach the support plane.
+    # This prevents a cuff or sleeve tip from making a floating torso appear
+    # grounded to the global-minimum check.
+    lying_support_zones: tuple[LyingSupportZoneSpec, ...] = ()
     # Visible departures from the believable shared human substrate. These
     # are canon overlays, not validation failures: the story and art bibles
     # require the named silhouettes to remain abnormal in exactly these ways.
@@ -681,12 +696,30 @@ ARCHETYPES = {
         pool_eligible=False,
         animation_source=SHELTER_ANIMATION_SOURCE,
         lying_height_m=(0.28, 0.60),
+        lying_support_plane_offset_m=-0.0225,
         # The imported bedding's actual upper mattress surface is long on
         # prefab-local X.  Its generated source measures 1.89618 x 0.83633 m;
         # the resident root is aligned to that local frame by the City setup.
         # Validate the deformed rig against the visible support, not against
         # the older declarative 1.20 x 2.15 obstacle proxy.
         lying_footprint_m=(1.89618, 0.83633, 0.0),
+        lying_support_zones=(
+            LyingSupportZoneSpec(
+                "torso",
+                ("CLO_BlanketChest", "CLO_BlanketWaist"),
+                0.035,
+            ),
+            LyingSupportZoneSpec(
+                "hips",
+                (
+                    "CLO_CoatSeat",
+                    "CLO_BlanketHipVolume",
+                    "CLO_BlanketHip.L",
+                    "CLO_BlanketHip.R",
+                ),
+                0.035,
+            ),
+        ),
         texture_atlas=SHELTER_SLEEPING_DETAIL_ATLAS_NAME,
         texture_regions=SHELTER_SLEEPING_ATLAS_REGIONS,
     ),
@@ -831,6 +864,11 @@ class ActionSpec:
     # declared deformed-height band. It must not be footwear-baked or passed
     # through the seated/cabin contracts.
     lying: bool = False
+    # Named review beats make the intended read of an authored loop explicit
+    # in its generated manifest. They do not drive runtime playback; they are
+    # evidence that the exported clip contains the promised action rather than
+    # only a differently worded idle description.
+    motion_beats: tuple[tuple[str, float], ...] = ()
 
 
 @dataclass(frozen=True)
@@ -6115,6 +6153,15 @@ class PedestrianBuilder:
         waist_width: float,
         hand_scale: float,
         include_thigh_hems: bool = True,
+        include_coat_seat: bool = True,
+        rounded_torso: bool = False,
+        rounded_thighs: bool = False,
+        rounded_boots: bool = False,
+        supporting_upper_sleeve_offset_m: tuple[float, float, float] = (
+            0.0,
+            0.0,
+            0.0,
+        ),
     ) -> None:
         """Hero-density ordinary adult shared only by the shelter trio.
 
@@ -6135,41 +6182,71 @@ class PedestrianBuilder:
             ),
             "neck", "body", skin,
         )
-        self.add_part(
-            chest_name,
+        chest_mesh = (
+            make_ellipsoid(
+                (0.0, 0.004, 1.195),
+                (shoulder_width * 0.54, 0.142, 0.205),
+                10,
+                5,
+            )
+            if rounded_torso else
             make_tapered_box(
                 (0, 0.010, 1.045), (0, -0.004, 1.340),
                 (waist_width, 0.225, 0), (shoulder_width, 0.250, 0),
-            ),
-            "chest", "clothing", cloth,
+            )
         )
-        self.add_part(
-            waist_name,
+        self.add_part(chest_name, chest_mesh, "chest", "clothing", cloth)
+        waist_mesh = (
+            make_ellipsoid(
+                (0.0, 0.012, 0.940),
+                (waist_width * 0.57, 0.132, 0.165),
+                10,
+                5,
+            )
+            if rounded_torso else
             make_tapered_box(
                 (0, 0.014, 0.825), (0, 0.010, 1.060),
                 (waist_width * 1.02, 0.230, 0),
                 (waist_width, 0.225, 0),
-            ),
-            "spine", "clothing", cloth_dark,
+            )
         )
         self.add_part(
-            "CLO_CoatSeat",
-            make_tapered_box(
-                (0, 0.016, 0.675), (0, 0.014, 0.840),
-                (waist_width * 1.04, 0.240, 0),
-                (waist_width * 1.02, 0.230, 0),
-            ),
-            "pelvis", "clothing", cloth_dark,
+            waist_name, waist_mesh, "spine", "clothing", cloth_dark
         )
+        if include_coat_seat:
+            self.add_part(
+                "CLO_CoatSeat",
+                make_tapered_box(
+                    (0, 0.016, 0.675), (0, 0.014, 0.840),
+                    (waist_width * 1.04, 0.240, 0),
+                    (waist_width * 1.02, 0.230, 0),
+                ),
+                "pelvis", "clothing", cloth_dark,
+            )
 
         for side, sign in (("L", 1.0), ("R", -1.0)):
             shoulder = (sign * shoulder_width * 0.49, 0.0, 1.305)
             elbow = (sign * 0.470, -0.010, 1.178)
             wrist = (sign * 0.682, -0.018, 1.075)
             hand = (sign * 0.755, -0.022, 1.038)
+            upper_sleeve_offset = (
+                supporting_upper_sleeve_offset_m
+                if side == "R" else
+                (0.0, 0.0, 0.0)
+            )
+            sleeve_shoulder = tuple(
+                shoulder[axis] + upper_sleeve_offset[axis]
+                for axis in range(3)
+            )
+            sleeve_elbow = tuple(
+                elbow[axis] + upper_sleeve_offset[axis]
+                for axis in range(3)
+            )
             self.add_part(
                 f"CLO_SleeveUpper.{side}",
-                make_frustum_between(shoulder, elbow, 0.078, 0.062, 12),
+                make_frustum_between(
+                    sleeve_shoulder, sleeve_elbow, 0.078, 0.062, 12
+                ),
                 f"upper_arm.{side}", "clothing", cloth,
             )
             self.add_part(
@@ -6198,9 +6275,19 @@ class PedestrianBuilder:
             hip = (sign * 0.086, 0.008, 0.738)
             knee = (sign * 0.103, -0.010, 0.356)
             ankle = (sign * 0.111, -0.023, 0.105)
+            thigh_mesh = (
+                make_ellipsoid(
+                    tuple((v(hip) + v(knee)) * 0.5),
+                    (0.090, 0.082, 0.205),
+                    10,
+                    5,
+                )
+                if rounded_thighs else
+                make_frustum_between(hip, knee, 0.091, 0.070, 12)
+            )
             self.add_part(
                 f"CLO_Thigh.{side}",
-                make_frustum_between(hip, knee, 0.091, 0.070, 12),
+                thigh_mesh,
                 f"thigh.{side}", "clothing", "shelter_trousers",
             )
             self.add_part(
@@ -6208,18 +6295,41 @@ class PedestrianBuilder:
                 make_frustum_between(knee, ankle, 0.070, 0.054, 12),
                 f"shin.{side}", "clothing", "shelter_trousers",
             )
-            self.add_part(
-                f"GEO_Boot.{side}",
+            boot_mesh = (
+                make_ellipsoid(
+                    (sign * 0.111, -0.095, 0.082),
+                    (0.070, 0.140, 0.075),
+                    10,
+                    5,
+                )
+                if rounded_boots else
                 make_tapered_box(
                     (sign * 0.111, -0.088, 0.018),
                     (sign * 0.111, -0.052, 0.155),
                     (0.132, 0.258, 0), (0.112, 0.182, 0),
-                ),
+                )
+            )
+            self.add_part(
+                f"GEO_Boot.{side}",
+                boot_mesh,
                 f"foot.{side}", "body", "shelter_boot",
+            )
+            sole_mesh = (
+                make_ellipsoid(
+                    (sign * 0.111, -0.105, 0.018),
+                    (0.073, 0.145, 0.018),
+                    8,
+                    4,
+                )
+                if rounded_boots else
+                make_box(
+                    (sign * 0.111, -0.090, 0.012),
+                    (0.138, 0.268, 0.024),
+                )
             )
             self.add_part(
                 f"GEO_Sole.{side}",
-                make_box((sign * 0.111, -0.090, 0.012), (0.138, 0.268, 0.024)),
+                sole_mesh,
                 f"foot.{side}", "footwear_detail", "sole",
             )
             if include_thigh_hems:
@@ -6484,15 +6594,50 @@ class PedestrianBuilder:
             shoulder_width=0.400,
             waist_width=0.345,
             hand_scale=1.02,
+            # Upright coat boxes become a literal square when the whole rig
+            # rolls onto the mattress. The sleeper gets rounded, bone-bound
+            # blanket volumes over the pelvis and folded thighs instead.
+            include_thigh_hems=False,
+            include_coat_seat=False,
+            rounded_torso=True,
+            rounded_thighs=True,
+            rounded_boots=True,
+            # Once the body's broad masses settle onto the mattress, keep
+            # the lower-side sleeve wrapped around the shoulder instead of
+            # burying its rigid cloth volume inside the support surface.
+            supporting_upper_sleeve_offset_m=(0.0, 0.085, 0.0),
         )
+        self.add_part(
+            "CLO_CoatSeat",
+            make_ellipsoid(
+                (0.0, 0.012, 0.755),
+                (0.190, 0.128, 0.145),
+                10,
+                5,
+            ),
+            "pelvis", "clothing", "shelter_blanket_dark",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_BlanketHip.{side}",
+                make_ellipsoid(
+                    (sign * 0.086, -0.010, 0.600),
+                    (0.122, 0.105, 0.205),
+                    8,
+                    4,
+                ),
+                f"thigh.{side}",
+                "clothing",
+                "shelter_blanket" if side == "L" else
+                "shelter_blanket_dark",
+            )
 
     def build_shelter_sleeping_details(self) -> None:
-        # Overlapping rigid panels follow chest, pelvis and thighs into the
+        # Overlapping low-poly volumes follow chest, pelvis and thighs into the
         # curled pose. They read as one heavy blanket while remaining fully
         # deterministic and bone-driven; the world mattress supplies support.
-        # Two low soft volumes break the rigid-panel read across shoulder and
-        # hip. The near forearm, not a newly invented world prop, carries the
-        # cheek; that keeps the support visibly attached to the living pose.
+        # The near forearm, not a newly invented world prop, carries the cheek;
+        # that keeps the support visibly attached to the living pose.
         self.add_part(
             "CLO_BlanketShoulderVolume",
             make_ellipsoid(
@@ -6507,7 +6652,7 @@ class PedestrianBuilder:
             "CLO_BlanketHipVolume",
             make_ellipsoid(
                 (-0.045, -0.070, 0.755),
-                (0.170, 0.052, 0.105),
+                (0.150, 0.060, 0.090),
                 8,
                 4,
             ),
@@ -6523,19 +6668,26 @@ class PedestrianBuilder:
         )
         self.add_part(
             "CLO_BlanketFoldWaist",
-            make_tapered_box(
-                (0, -0.132, 0.790), (0, -0.134, 1.055),
-                (0.370, 0.042, 0), (0.355, 0.040, 0),
+            make_ellipsoid(
+                (0.0, -0.108, 0.920),
+                (0.190, 0.060, 0.145),
+                8,
+                4,
             ),
             "spine", "clothing_detail", "shelter_blanket",
         )
         for side, sign in (("L", 1.0), ("R", -1.0)):
             self.add_part(
                 f"CLO_BlanketFoldLeg.{side}",
-                make_tapered_box(
-                    (sign * 0.095, -0.128, 0.405),
-                    (sign * 0.086, -0.132, 0.805),
-                    (0.215, 0.043, 0), (0.195, 0.041, 0),
+                make_ellipsoid(
+                    (
+                        sign * 0.090 + (0.020 if side == "R" else 0.0),
+                        -0.105,
+                        0.565,
+                    ),
+                    (0.132, 0.060, 0.210),
+                    8,
+                    4,
                 ),
                 f"thigh.{side}", "clothing_detail", "shelter_blanket_dark" if side == "R" else "shelter_blanket",
             )
@@ -7583,6 +7735,9 @@ def write_manifest(
             if spec.lying_height_m is not None
             else None
         ),
+        "lying_support_plane_offset_m": stable_float(
+            spec.lying_support_plane_offset_m
+        ),
         "build_signature": report.build_signature,
         "bones": [
             {
@@ -7975,15 +8130,23 @@ ACTION_SPECS = (
     ),
     # Three deliberately unsynchronised shelter loops. The two people by the
     # barrel keep their attention on warmth, never on the player; the third
-    # remains clearly alive through a barely visible mattress-supported
-    # breath. These are the complete dedicated animation bank.
+    # remains clearly alive through ordinary sleeping movement. These are the
+    # complete dedicated animation bank.
     ActionSpec(
         "ShelterStandingWarm",
         "nightlife_shelter_standing_resident_v2",
         8.0,
         192,
         "ordinary adult standing close to the barrel, shoulders rounded and palms held toward the heat",
-        "slow asymmetric weight transfer, two hand-warming corrections and a quiet breath",
+        "hands held to the heat, several brisk palm-rubbing strokes, then both hands returned to the barrel",
+        motion_beats=(
+            ("hands_at_heat", 0.125),
+            ("rub_palms_left", 0.375),
+            ("rub_palms_right", 0.4375),
+            ("rub_palms_left", 0.50),
+            ("rub_palms_right", 0.5625),
+            ("hands_at_heat", 0.875),
+        ),
     ),
     ActionSpec(
         "ShelterSeatedWarm",
@@ -7991,8 +8154,14 @@ ACTION_SPECS = (
         9.0,
         216,
         "ordinary adult sitting low beside the barrel with knees drawn and forearms over them",
-        "uneven breathing, a small shoulder settle and one closer reach toward the heat",
+        "a cold shoulder shiver, a two-handed lean into the heat and a firm fold of both arms back against the chest",
         seated=True,
+        motion_beats=(
+            ("cold_shiver", 0.125),
+            ("both_hands_to_heat", 0.50),
+            ("arms_fold_for_warmth", 0.75),
+            ("both_hands_to_heat", 0.875),
+        ),
     ),
     ActionSpec(
         "ShelterSleeperBreath",
@@ -8000,8 +8169,15 @@ ACTION_SPECS = (
         10.0,
         240,
         "ordinary adult curled on the mattress under a heavy patched blanket",
-        "barely visible chest and shoulder breathing with one small sleeping hand settle",
+        "deep visible breathing, a tighter whole-body curl and one slow shoulder-and-hand resettle without waking",
         lying=True,
+        motion_beats=(
+            ("deep_inhale", 0.125),
+            ("deep_exhale", 0.25),
+            ("curl_tighter", 0.50),
+            ("shoulder_resettle", 0.75),
+            ("deep_inhale", 0.875),
+        ),
     ),
     # Mountain Road cafe tableau. The patrons own quiet idles and authored
     # drink one-shots. The attendant owns an in-place wipe loop, an in-place
@@ -9069,7 +9245,13 @@ def shelter_sleeping_base_pose() -> dict[str, BonePose]:
             rotation_degrees=(0.0, 0.0, 88.0),
             # The third local channel recentres the curled body across the
             # narrow 0.83633 m mattress without changing its support height.
-            location_m=(0.300, -0.543, -0.155),
+            # Natural forward knee flexion lengthens the readable leg chain,
+            # so centre the whole curled silhouette along the mattress rather
+            # than leaving the right boot beyond its end.
+            # Settle the chest and hips, rather than only a sleeve tip, onto
+            # the support plane. The visible broad mattress is 22.5 mm below
+            # the narrow seam crests used by the deterministic world anchor.
+            location_m=(0.120, -0.628, -0.155),
         ),
         "spine": BonePose(rotation_degrees=(0.0, 0.0, 1.5)),
         "chest": BonePose(rotation_degrees=(0.0, 1.5, 1.5)),
@@ -9091,12 +9273,16 @@ def shelter_sleeping_base_pose() -> dict[str, BonePose]:
         # Both knees come forward while both shins return toward the hips.
         # Slightly different angles keep two boots and the back-to-hip-to-knee
         # line legible as a living fetal pose rather than one compact bundle.
-        "thigh.L": BonePose(rotation_degrees=(-35.0, 0.0, 2.0)),
-        "shin.L": BonePose(rotation_degrees=(-120.0, 0.0, 0.0)),
-        "foot.L": BonePose(rotation_degrees=(8.0, 0.0, 2.0)),
-        "thigh.R": BonePose(rotation_degrees=(-45.0, 0.0, -2.0)),
-        "shin.R": BonePose(rotation_degrees=(-112.0, 0.0, 0.0)),
-        "foot.R": BonePose(rotation_degrees=(4.0, 0.0, -2.0)),
+        # Positive shin flexion is intentional: on this rig it folds each
+        # lower leg naturally behind its knee.  The previous negative values
+        # hyperextended both knees and parked the boot ends beneath the hips,
+        # where one of them read as a square pelvis block.
+        "thigh.L": BonePose(rotation_degrees=(-35.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(100.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-8.0, -6.0, 5.0)),
+        "thigh.R": BonePose(rotation_degrees=(-45.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(95.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-6.0, 7.0, -6.0)),
     }
 
 
@@ -10613,12 +10799,6 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
 
     # ------------------------------------------ Nightlife shelter residents
     shelter_standing = shelter_standing_base_pose()
-    shelter_standing_inhale = merge_pose(shelter_standing, {
-        "spine": BonePose(rotation_degrees=(10.8, 0.0, 1.0)),
-        "chest": BonePose(rotation_degrees=(6.4, 0.0, -1.0)),
-        "clavicle.L": BonePose(rotation_degrees=(5.2, -5.0, 7.0)),
-        "clavicle.R": BonePose(rotation_degrees=(5.2, 5.0, -7.0)),
-    })
     shelter_standing_left = merge_pose(shelter_standing, {
         "pelvis": BonePose(rotation_degrees=(5.0, 1.2, -2.8), location_m=(-0.012, 0.010, -0.038)),
         "spine": BonePose(rotation_degrees=(12.0, -1.0, 2.4)),
@@ -10627,13 +10807,49 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "shin.L": BonePose(rotation_degrees=(13.0, 0.0, 0.0)),
     })
     shelter_standing_reach = merge_pose(shelter_standing, {
-        "chest": BonePose(rotation_degrees=(9.5, 0.0, -1.0)),
-        "upper_arm.L": BonePose(rotation_degrees=(-45.0, 5.0, 25.0)),
-        "upper_arm.R": BonePose(rotation_degrees=(-47.0, -5.0, -28.0)),
-        "forearm.L": BonePose(rotation_degrees=(-96.0, 2.0, -10.0)),
-        "forearm.R": BonePose(rotation_degrees=(-94.0, -2.0, 12.0)),
-        "hand.L": BonePose(rotation_degrees=(9.0, -5.0, 4.0)),
-        "hand.R": BonePose(rotation_degrees=(7.0, 5.0, -4.0)),
+        "spine": BonePose(rotation_degrees=(15.0, 0.0, 1.0)),
+        "chest": BonePose(rotation_degrees=(12.5, 0.0, -1.0)),
+        "head": BonePose(rotation_degrees=(10.5, 0.0, 0.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-52.0, 5.0, 27.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-54.0, -5.0, -30.0)),
+        "forearm.L": BonePose(rotation_degrees=(-104.0, 2.0, -12.0)),
+        "forearm.R": BonePose(rotation_degrees=(-102.0, -2.0, 14.0)),
+        "hand.L": BonePose(rotation_degrees=(12.0, -7.0, 6.0)),
+        "hand.R": BonePose(rotation_degrees=(10.0, 7.0, -6.0)),
+    })
+    shelter_standing_inhale = merge_pose(shelter_standing_reach, {
+        "spine": BonePose(rotation_degrees=(13.8, 0.0, 1.0)),
+        "chest": BonePose(rotation_degrees=(11.4, 0.0, -1.0)),
+        "clavicle.L": BonePose(rotation_degrees=(5.2, -5.0, 7.0)),
+        "clavicle.R": BonePose(rotation_degrees=(5.2, 5.0, -7.0)),
+    })
+    shelter_standing_withdraw = merge_pose(shelter_standing, {
+        "spine": BonePose(rotation_degrees=(10.0, 0.0, 0.5)),
+        "chest": BonePose(rotation_degrees=(6.0, 0.0, -0.5)),
+        "clavicle.L": BonePose(rotation_degrees=(9.0, -5.0, 10.0)),
+        "clavicle.R": BonePose(rotation_degrees=(9.0, 5.0, -10.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-37.0, 8.0, 22.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-39.0, -8.0, -24.0)),
+        "forearm.L": BonePose(rotation_degrees=(-112.0, 8.0, -28.0)),
+        "forearm.R": BonePose(rotation_degrees=(-110.0, -8.0, 30.0)),
+    })
+    shelter_standing_rub_left = merge_pose(shelter_standing_withdraw, {
+        "chest": BonePose(rotation_degrees=(6.5, -1.5, 1.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-41.0, 10.0, 25.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-35.0, -7.0, -22.0)),
+        "forearm.L": BonePose(rotation_degrees=(-119.0, 13.0, -34.0)),
+        "forearm.R": BonePose(rotation_degrees=(-108.0, -7.0, 31.0)),
+        "hand.L": BonePose(rotation_degrees=(20.0, -16.0, 15.0)),
+        "hand.R": BonePose(rotation_degrees=(12.0, 13.0, -13.0)),
+    })
+    shelter_standing_rub_right = merge_pose(shelter_standing_withdraw, {
+        "chest": BonePose(rotation_degrees=(6.5, 1.5, -2.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-35.0, 7.0, 22.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-41.0, -10.0, -25.0)),
+        "forearm.L": BonePose(rotation_degrees=(-108.0, 7.0, -31.0)),
+        "forearm.R": BonePose(rotation_degrees=(-119.0, -13.0, 34.0)),
+        "hand.L": BonePose(rotation_degrees=(12.0, -13.0, 13.0)),
+        "hand.R": BonePose(rotation_degrees=(20.0, 16.0, -15.0)),
     })
     shelter_standing_right = merge_pose(shelter_standing, {
         "pelvis": BonePose(rotation_degrees=(4.5, -1.0, 1.6), location_m=(0.009, 0.010, -0.038)),
@@ -10660,37 +10876,81 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "head": BonePose(rotation_degrees=(-2.0, 7.0, 1.0)),
     })
     shelter_seated_reach = merge_pose(shelter_seated, {
-        "chest": BonePose(rotation_degrees=(12.0, -2.0, 0.0)),
-        # Left forearm stays on its knee. Only the right palm makes the one
-        # quiet reach, keeping the silhouette asymmetric and legible.
-        "upper_arm.R": BonePose(rotation_degrees=(-39.0, -5.0, -18.0)),
-        "forearm.R": BonePose(rotation_degrees=(-88.0, -2.0, 12.0)),
-        "hand.R": BonePose(rotation_degrees=(8.0, 5.0, -4.0)),
+        "spine": BonePose(rotation_degrees=(23.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(15.0, -2.0, 0.0)),
+        "head": BonePose(rotation_degrees=(1.0, 8.0, 1.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-47.0, 5.0, 24.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-49.0, -5.0, -26.0)),
+        "forearm.L": BonePose(rotation_degrees=(-101.0, 2.0, -17.0)),
+        "forearm.R": BonePose(rotation_degrees=(-99.0, -2.0, 19.0)),
+        "hand.L": BonePose(rotation_degrees=(11.0, -7.0, 6.0)),
+        "hand.R": BonePose(rotation_degrees=(10.0, 7.0, -6.0)),
+    })
+    shelter_seated_shiver_left = merge_pose(shelter_seated, {
+        "spine": BonePose(rotation_degrees=(19.0, -2.0, 2.5)),
+        "chest": BonePose(rotation_degrees=(11.0, -3.0, 2.0)),
+        "clavicle.L": BonePose(rotation_degrees=(11.0, -5.0, 12.0)),
+        "clavicle.R": BonePose(rotation_degrees=(9.0, 5.0, -11.0)),
+        "head": BonePose(rotation_degrees=(-1.0, 7.0, 2.0)),
+    })
+    shelter_seated_fold = merge_pose(shelter_seated, {
+        "spine": BonePose(rotation_degrees=(16.0, 0.0, 0.0)),
+        "chest": BonePose(rotation_degrees=(7.0, 0.0, 0.0)),
+        "clavicle.L": BonePose(rotation_degrees=(10.0, -5.0, 12.0)),
+        "clavicle.R": BonePose(rotation_degrees=(10.0, 5.0, -12.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-58.0, 12.0, 48.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-58.0, -12.0, -48.0)),
+        "forearm.L": BonePose(rotation_degrees=(-118.0, 30.0, -35.0)),
+        "forearm.R": BonePose(rotation_degrees=(-118.0, -30.0, 35.0)),
+        "hand.L": BonePose(rotation_degrees=(18.0, -14.0, 12.0)),
+        "hand.R": BonePose(rotation_degrees=(18.0, 14.0, -12.0)),
+        "head": BonePose(rotation_degrees=(2.0, 8.0, 0.0)),
     })
 
     shelter_sleeping = shelter_sleeping_base_pose()
     shelter_sleeping_inhale = merge_pose(shelter_sleeping, {
-        "spine": BonePose(rotation_degrees=(0.0, 0.0, 1.0)),
+        "spine": BonePose(rotation_degrees=(0.0, 0.0, 0.4)),
         "chest": BonePose(
-            rotation_degrees=(0.0, 1.8, 1.0),
-            scale=(1.025, 1.040, 1.030),
+            rotation_degrees=(0.0, 2.4, 0.5),
+            # Still a deep, readable breath against the 0.975/0.960/0.970
+            # exhale, with enough compactness to keep both sleeves inside the
+            # authored lying-height band.
+            scale=(1.030, 1.050, 1.040),
         ),
-        "clavicle.L": BonePose(rotation_degrees=(0.7, -2.0, 1.4)),
-        "clavicle.R": BonePose(rotation_degrees=(0.5, 2.0, -1.2)),
+        "clavicle.L": BonePose(rotation_degrees=(1.4, -2.0, 2.4)),
+        "clavicle.R": BonePose(rotation_degrees=(1.1, 2.0, -2.0)),
     })
     shelter_sleeping_exhale = merge_pose(shelter_sleeping, {
-        "spine": BonePose(rotation_degrees=(0.0, 0.0, 2.1)),
+        "spine": BonePose(rotation_degrees=(0.0, 0.0, 2.8)),
         "chest": BonePose(
-            rotation_degrees=(0.0, 1.2, 2.0),
-            scale=(0.992, 0.982, 0.985),
+            rotation_degrees=(0.0, 0.8, 2.8),
+            scale=(0.975, 0.960, 0.970),
         ),
+    })
+    shelter_sleeping_curl = merge_pose(shelter_sleeping_exhale, {
+        # The legs carry the readable curl.  Keeping the rib-cage roll modest
+        # preserves the supporting arm above the mattress instead of driving
+        # its upper sleeve through the bedding at the middle key.
+        "spine": BonePose(rotation_degrees=(0.0, 0.0, 2.5)),
+        "chest": BonePose(
+            rotation_degrees=(0.0, 0.5, 2.5),
+            scale=(0.982, 0.970, 0.978),
+        ),
+        "head": BonePose(rotation_degrees=(4.5, 7.0, 2.5)),
+        "thigh.L": BonePose(rotation_degrees=(-55.0, 0.0, 3.0)),
+        "shin.L": BonePose(rotation_degrees=(130.0, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-18.0, -8.0, 7.0)),
+        "thigh.R": BonePose(rotation_degrees=(-65.0, 0.0, -3.0)),
+        "shin.R": BonePose(rotation_degrees=(120.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(-15.0, 10.0, -8.0)),
     })
     shelter_sleeping_hand_settle = merge_pose(shelter_sleeping, {
         # The lower right forearm remains a stable pillow.  Only the visible
-        # upper hand loosens a fraction, accompanied by a sleeping head settle.
-        "forearm.L": BonePose(rotation_degrees=(-77.0, 48.0, -162.5)),
-        "hand.L": BonePose(rotation_degrees=(4.0, -3.0, 2.0)),
-        "head": BonePose(rotation_degrees=(2.7, 5.8, 1.0)),
+        # upper shoulder and hand resettle, accompanied by the sleeping head.
+        "upper_arm.L": BonePose(rotation_degrees=(-86.0, -2.0, -8.0)),
+        "forearm.L": BonePose(rotation_degrees=(-82.0, 50.0, -158.0)),
+        "hand.L": BonePose(rotation_degrees=(9.0, -7.0, 5.0)),
+        "head": BonePose(rotation_degrees=(5.5, 8.0, 2.5)),
     })
 
     # ------------------------------------------------ mountain cafe cast
@@ -10844,34 +11104,45 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     return {
         "ShelterStandingWarm": (
             (0.0, shelter_standing),
-            (0.14, shelter_standing_inhale),
-            (0.28, shelter_standing),
-            (0.38, shelter_standing_left),
-            # The review contract samples 0.50 exactly: this is the shared
-            # barrel-rim heat point, not an in-between waist pose.
-            (0.50, shelter_standing_reach),
-            (0.70, shelter_standing),
-            (0.87, shelter_standing_right),
+            # Heat first, then hands pulled back to the chest for four clear
+            # alternating rub strokes, then both palms return to the barrel.
+            (0.125, shelter_standing_reach),
+            (0.25, shelter_standing_inhale),
+            (0.3125, shelter_standing_withdraw),
+            (0.375, shelter_standing_rub_left),
+            (0.4375, shelter_standing_rub_right),
+            (0.50, shelter_standing_rub_left),
+            (0.5625, shelter_standing_rub_right),
+            (0.625, shelter_standing_rub_left),
+            (0.6875, shelter_standing_withdraw),
+            (0.75, shelter_standing_right),
+            (0.875, shelter_standing_reach),
             (1.0, shelter_standing),
         ),
         "ShelterSeatedWarm": (
             (0.0, shelter_seated),
-            (0.16, shelter_seated_inhale),
-            (0.32, shelter_seated),
-            (0.38, shelter_seated_sink),
-            # At the middle review phase one palm visibly leaves its knee,
-            # while the coat seat and both boots keep their floor contacts.
+            (0.125, shelter_seated_shiver_left),
+            (0.25, shelter_seated_inhale),
+            (0.375, shelter_seated_sink),
+            # Both hands now leave the knees and the whole torso leans into
+            # the heat before the arms fold firmly back against the chest.
             (0.50, shelter_seated_reach),
-            (0.76, shelter_seated_inhale),
+            (0.625, shelter_seated),
+            (0.75, shelter_seated_fold),
+            (0.8125, shelter_seated_shiver_left),
+            (0.875, shelter_seated_reach),
             (1.0, shelter_seated),
         ),
         "ShelterSleeperBreath": (
             (0.0, shelter_sleeping),
-            (0.18, shelter_sleeping_inhale),
-            (0.36, shelter_sleeping),
-            (0.52, shelter_sleeping_exhale),
-            (0.68, shelter_sleeping_inhale),
-            (0.82, shelter_sleeping_hand_settle),
+            (0.125, shelter_sleeping_inhale),
+            (0.25, shelter_sleeping_exhale),
+            (0.375, shelter_sleeping),
+            (0.50, shelter_sleeping_curl),
+            (0.625, shelter_sleeping_inhale),
+            (0.75, shelter_sleeping_hand_settle),
+            (0.8125, shelter_sleeping_exhale),
+            (0.875, shelter_sleeping_inhale),
             (1.0, shelter_sleeping),
         ),
         # The Ferryman's wait. A quarter-loop breath grid, exactly the
@@ -11364,6 +11635,25 @@ def validate_animation_library(
             errors.append(f"{spec.name} root translation is not in-place: {root_ranges}")
         if bool(action.get("bp_root_motion", True)):
             errors.append(f"{spec.name} does not disable root motion")
+        motion_beats: list[dict[str, object]] = []
+        previous_phase = -1.0
+        for beat_name, normalized_time in spec.motion_beats:
+            if not beat_name.strip():
+                errors.append(f"{spec.name} has an unnamed motion beat")
+            if not 0.0 <= normalized_time <= 1.0:
+                errors.append(
+                    f"{spec.name} motion beat {beat_name} lies outside its "
+                    f"loop at {normalized_time:.4f}"
+                )
+            if normalized_time <= previous_phase:
+                errors.append(
+                    f"{spec.name} motion beats are not strictly ordered"
+                )
+            previous_phase = normalized_time
+            motion_beats.append({
+                "name": beat_name,
+                "normalized_time": stable_float(normalized_time),
+            })
         clip_payload = {
             "name": spec.name,
             "archetype": spec.archetype,
@@ -11381,6 +11671,8 @@ def validate_animation_library(
             "loop_max_error": stable_float(loop_error),
             "root_translation_range_m": root_ranges,
         }
+        if motion_beats:
+            clip_payload["motion_beats"] = motion_beats
         clip_payload.update(grounding.get(spec.name, {}))
         manifest_clips.append(clip_payload)
     if errors:
@@ -11767,6 +12059,12 @@ def validate_animated_grounding(
                 action,
                 action_name,
                 archetype.lying_height_m if archetype is not None else None,
+                (
+                    archetype.lying_support_plane_offset_m
+                    if archetype is not None else
+                    0.0
+                ),
+                archetype.lying_support_zones if archetype is not None else (),
             )
             continue
         if is_seated_action(action_name):
@@ -11858,6 +12156,8 @@ def validate_lying_clip(
     action: bpy.types.Action,
     action_name: str,
     height_band: tuple[float, float] | None,
+    support_plane_offset_m: float,
+    support_zones: tuple[LyingSupportZoneSpec, ...],
 ) -> dict[str, object]:
     """Prove a sleeping loop rests on, and stays compact above, a mattress."""
 
@@ -11871,23 +12171,45 @@ def validate_lying_clip(
     bottom_details: list[tuple[float, int, str]] = []
     heights: list[float] = []
     pelvis_heights: list[float] = []
+    support_gaps: dict[str, list[float]] = {
+        zone.name: [] for zone in support_zones
+    }
+    part_names = {part.obj.name for part in result.parts}
+    for zone in support_zones:
+        missing = sorted(set(zone.parts) - part_names)
+        if missing:
+            raise RuntimeError(
+                f"{action_name} support zone {zone.name!r} is missing parts: "
+                f"{', '.join(missing)}"
+            )
     for frame in range(round(action.frame_start), round(action.frame_end) + 1):
         scene.frame_set(frame)
         bpy.context.view_layer.update()
         depsgraph = bpy.context.evaluated_depsgraph_get()
-        part_bottoms = [
+        absolute_part_bottoms = [
             (evaluated_part_min_z(part, depsgraph), part.obj.name)
             for part in result.parts
         ]
+        part_bottoms = [
+            (value - support_plane_offset_m, name)
+            for value, name in absolute_part_bottoms
+        ]
+        absolute_bottom, _ = min(absolute_part_bottoms)
+        bottoms_by_name = {name: value for value, name in part_bottoms}
+        for zone in support_zones:
+            support_gaps[zone.name].append(
+                min(bottoms_by_name[name] for name in zone.parts)
+            )
         bottom, bottom_part = min(part_bottoms)
         bottom_details.append((bottom, frame, bottom_part))
         top = max(
             evaluated_part_max_z(part, depsgraph) for part in result.parts
         )
         bottoms.append(bottom)
-        heights.append(top - bottom)
+        heights.append(top - absolute_bottom)
         pelvis_heights.append(
             (rig.matrix_world @ rig.pose.bones["pelvis"].head).z
+            - support_plane_offset_m
         )
 
     lowest = min(bottoms)
@@ -11905,6 +12227,23 @@ def validate_lying_clip(
         raise RuntimeError(
             f"{action_name} floats {highest_gap:.4f} m above the mattress plane"
         )
+    support_reports: list[dict[str, object]] = []
+    for zone in support_zones:
+        measured_gap = max(support_gaps[zone.name])
+        if measured_gap > zone.maximum_gap_m:
+            raise RuntimeError(
+                f"{action_name} support zone {zone.name!r} floats "
+                f"{measured_gap:.4f} m above the mattress plane; expected at "
+                f"most {zone.maximum_gap_m:.4f} m"
+            )
+        support_reports.append(
+            {
+                "name": zone.name,
+                "parts": list(zone.parts),
+                "maximum_gap_m": stable_float(zone.maximum_gap_m),
+                "measured_max_gap_m": stable_float(measured_gap),
+            }
+        )
     if min_height < floor or max_height > ceiling:
         raise RuntimeError(
             f"{action_name} is {min_height:.4f}-{max_height:.4f} m thick above "
@@ -11918,6 +12257,7 @@ def validate_lying_clip(
         "lying_height_max_m": stable_float(max_height),
         "lying_pelvis_height_min_m": stable_float(min(pelvis_heights)),
         "lying_pelvis_height_max_m": stable_float(max(pelvis_heights)),
+        "mattress_support_zones": support_reports,
     }
 
 

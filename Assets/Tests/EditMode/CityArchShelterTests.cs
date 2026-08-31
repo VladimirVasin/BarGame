@@ -297,12 +297,12 @@ namespace BarPromenade.Tests.EditMode
                     landing.Footprint.center.x,
                     landing.SurfaceY +
                     CityArchShelterPlacementResolver
-                        .MinimumClearHeight * 0.5f,
+                        .MinimumUpperLandingHeadroom * 0.5f,
                     landing.Footprint.center.y),
                 new Vector3(
                     landing.Footprint.width,
                     CityArchShelterPlacementResolver
-                        .MinimumClearHeight,
+                        .MinimumUpperLandingHeadroom,
                     landing.Footprint.height));
             foreach (CityArchShelterObstacleDescriptor obstacle in plan.Obstacles)
             {
@@ -454,7 +454,7 @@ namespace BarPromenade.Tests.EditMode
                 Is.True,
                 "The non-walkable connector must roof the authored seam.");
 
-            Assert.That(plan.Obstacles, Has.Count.EqualTo(9));
+            Assert.That(plan.Obstacles, Has.Count.EqualTo(10));
             Assert.That(
                 plan.Obstacles.Select(obstacle => obstacle.Kind),
                 Is.EquivalentTo(Enum.GetValues(

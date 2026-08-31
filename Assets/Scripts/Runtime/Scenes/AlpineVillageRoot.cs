@@ -153,6 +153,7 @@ namespace BarPromenade
                                     Vector3.up *
                                     PlayerFactory.GroundedRootOffset;
             string spawnSource = "lane_foot";
+            bool arrivedAtChartedPlace = false;
 
             if (HadAreaArrival && ArrivalToken == AreaArrivalToken.Cableway)
             {
@@ -177,6 +178,7 @@ namespace BarPromenade
                 // the hero into the slope.
                 spawnPosition = pointSpawn;
                 spawnSource = "map_point";
+                arrivedAtChartedPlace = true;
             }
 
             GameLog.Info(
@@ -204,9 +206,24 @@ namespace BarPromenade
             // `0.48 m` down onto the pad - which he then cannot climb back.
             // From the cabin he is turned down the steps; the lane is what he
             // sees the moment he is off them.
+            //
+            // And EXCEPT off the chart, where the lane is the wrong answer
+            // for the same kind of reason: the map names a place, he is put
+            // down on the route to it, and what he should be looking at is
+            // the place he asked for - not up a street that, at the head of
+            // the lane, points into the wall of the house at the top.
             Vector3 facing = ArrivalToken == AreaArrivalToken.Cableway
                 ? -Plan.Station.Cableway.LineForward
                 : Plan.SpawnForward;
+            if (arrivedAtChartedPlace)
+            {
+                Vector3 towards = arrivalPoint - spawnPosition;
+                towards.y = 0f;
+                if (towards.sqrMagnitude > 0.0001f)
+                {
+                    facing = towards.normalized;
+                }
+            }
             Player.GameObject.transform.rotation = Quaternion.LookRotation(
                 facing,
                 Vector3.up);

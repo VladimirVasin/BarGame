@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.2.0",
+  "generator_version": "4.3.1",
   "blender_version": "5.0.1",
   "design_id": "nightlife_shelter_sleeping_resident_v2",
   "display_name": "Nightlife Shelter Sleeping Resident",
@@ -19,7 +19,7 @@
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
   "mesh_count": 45,
-  "triangle_count": 1500,
+  "triangle_count": 2164,
   "triangle_budget": [
     1500,
     2200
@@ -30,12 +30,12 @@
   "pivot_names": [],
   "bounds_min": [
     -0.770878,
-    -0.230359,
+    -0.238388,
     0.0
   ],
   "bounds_max": [
     0.772878,
-    0.161103,
+    0.176462,
     1.75
   ],
   "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
@@ -55,7 +55,8 @@
     0.28,
     0.6
   ],
-  "build_signature": "f45f6a21d5ba4b037004d5bef761bd7b452e8c22b2ced49387806577481edad6",
+  "lying_support_plane_offset_m": -0.0225,
+  "build_signature": "66f065da2c7f569343dc873b862ce62459bbf80eafaefa89ac1268f74593b0d2",
   "bones": [
     {
       "name": "root",
@@ -732,8 +733,8 @@
         0.105,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12,
+      "vertices": 42,
+      "triangles": 80,
       "atlas_region": "CoatChest"
     },
     {
@@ -761,8 +762,8 @@
         0.105,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 26,
+      "triangles": 48
     },
     {
       "name": "CLO_BlanketFoldLeg.R",
@@ -775,8 +776,8 @@
         0.058,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 26,
+      "triangles": 48
     },
     {
       "name": "CLO_BlanketFoldWaist",
@@ -789,8 +790,8 @@
         0.105,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 26,
+      "triangles": 48
     },
     {
       "name": "CLO_BlanketHip.L",
@@ -803,8 +804,8 @@
         0.105,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12,
+      "vertices": 26,
+      "triangles": 48,
       "atlas_region": "CoatHem.L"
     },
     {
@@ -818,8 +819,8 @@
         0.058,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12,
+      "vertices": 26,
+      "triangles": 48,
       "atlas_region": "CoatHem.R"
     },
     {
@@ -861,8 +862,8 @@
         0.058,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12,
+      "vertices": 42,
+      "triangles": 80,
       "atlas_region": "CoatWaist"
     },
     {
@@ -876,8 +877,8 @@
         0.058,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 42,
+      "triangles": 80
     },
     {
       "name": "CLO_Cuff.L",
@@ -1004,8 +1005,8 @@
         0.064,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 42,
+      "triangles": 80
     },
     {
       "name": "CLO_Thigh.R",
@@ -1018,8 +1019,8 @@
         0.064,
         1.0
       ],
-      "vertices": 24,
-      "triangles": 44
+      "vertices": 42,
+      "triangles": 80
     },
     {
       "name": "GEO_Boot.L",
@@ -1032,8 +1033,8 @@
         0.032,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12,
+      "vertices": 42,
+      "triangles": 80,
       "atlas_region": "Boot.L"
     },
     {
@@ -1047,8 +1048,8 @@
         0.032,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12,
+      "vertices": 42,
+      "triangles": 80,
       "atlas_region": "Boot.R"
     },
     {
@@ -1149,8 +1150,8 @@
         0.017,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 26,
+      "triangles": 48
     },
     {
       "name": "GEO_Sole.R",
@@ -1163,8 +1164,8 @@
         0.017,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 26,
+      "triangles": 48
     }
   ],
   "texture_bindings": [

@@ -24,14 +24,14 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(path.StableId, Is.Not.Empty);
                 Assert.That(path.LengthXZ, Is.GreaterThan(0.25f));
 
-                // The centre of a full-sized hero may not leave trodden
-                // ground while still being accepted by the mask. Trodden
-                // ground is the compacted ribbon plus the bare-soil skirt
-                // the terrain pass paints around it - the same constant the
-                // world builder reads - not the ribbon mesh alone: a
-                // household path's corridor (1.10 m) minus the hero (0.35 m)
-                // puts his centre 0.75 m out, inside the 0.62 + 0.15 m of
-                // bare soil and outside the 0.62 m ribbon.
+                // A full-sized hero walking the route stays on the ground the
+                // route paints. The mask no longer depends on this - the
+                // whole bowl is walkable - but a track whose corridor is
+                // wider than its own compacted ribbon plus the bare-soil
+                // skirt is a route that does not look like one under his
+                // feet: a household path's corridor (1.10 m) minus the hero
+                // (0.35 m) puts his centre 0.75 m out, inside the
+                // 0.62 + 0.15 m of bare soil and outside the 0.62 m ribbon.
                 Assert.That(
                     path.WalkableHalfWidth - radius,
                     Is.LessThanOrEqualTo(

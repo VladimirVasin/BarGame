@@ -130,32 +130,51 @@ The vertical slice contains:
   house at its head, which is the highest thing in the village and the only
   thing the composition points at. Twelve houses stand either side; the chapel
   over the source, the adit with its overgrown spoil and the burial ground sit
-  on side spurs. Every permitted capsule-chain branch now comes from the same
-  `AlpineVillagePathDescriptor` list as a visible compacted strip, including
-  each household threshold and the narrow turn to the chapel water outlet.
+  on side spurs. The whole bowl is walkable: the mask is `TerrainBounds` grown
+  by the sampler's own `RidgeStandoff` — the line where the `74°` rise begins,
+  so the terrain holds the perimeter — minus every plot's rotated footprint
+  (the burial ground excepted; it is ground, and the adit gained the
+  `Physical Shell` it never had) and minus the cableway cut, the one
+  `7-28°` walkable way out of the village. Each
+  `AlpineVillagePathDescriptor` remains a visible compacted strip and the
+  route's clearance envelope against those footprints — including each
+  household threshold and the narrow turn to the chapel water outlet — but no
+  longer decides where a person may stand. Beside each of them the snow has a
+  depth: `AlpineVillageSnowDrift` is a pure field over the shared "distance
+  outside the nearest trodden route", laid as one colliderless mesh rather
+  than as a term in the height contract, because a `2 m` terrain cell cannot
+  hold a `1 m` drift and `TerrainCell` carries the station apron and the
+  cableway cut's own entrance. `0.45 m` where the plan's downhill gale
+  unloads and `0.18 m` where it scours, crest at `1.3 m` with a `3.5 m` tail —
+  a drift and not the raked bank the art bible refuses.
   Authored distance/side/yaw beats form frontage clusters and pauses; exact OBB
   validation, three `7.2-7.5 m` rear-row depth beats and a bounded symmetric
   local correction keep every seeded rotated footprint out of its neighbours
   and the lane without cascading the whole frontage away from the street.
   `AlpineVillageTerrainSampler` is the one height contract shared by planning,
-  validation, the ground mesh and the map's teleport ground; its enclosing
-  ridge starts `18 m` outside the top house's envelope (`TerrainMargin 12`)
-  and climbs at `1.6` (`58°`) to a `50 m` crest `31 m` past the toe,
-  deliberately steeper than the hero's own `45°` slope limit — the wall
-  looms at `39°` from the lane head, `36°` from the platform toward the open
-  side and `28-31°` sideways from mid-lane (an AABB-hull limit; an oriented
-  hull is the recorded follow-up). `TerrainBounds` remains the inhabited bowl
+  validation, the ground mesh and the map's teleport ground. Its shelves ease
+  back to the macro slope over the `3.6 m` the constant names — they ran at
+  `0.347 m` until `Mathf.SmoothStep` was found being fed a distance where it
+  wants a `0-1` fraction — so the lane reads as a worn hollow rather than a
+  ribbon on a flat field, and the ground carries no vertex colours because
+  `Ps1Lit` inherits URP Lit's `COLOR`-free `Attributes` and never read them; its enclosing
+  ridge starts `15 m` outside the top house's envelope (`TerrainMargin 12`
+  plus `RidgeStandoff 3`) and climbs at `3.6` (`74°`) to a `60 m` crest
+  `16.7 m` past the toe, deliberately steeper than the hero's own `45°` slope
+  limit — the mean silhouette from mid-lane is `34.1°` and reaches `43°` on
+  the nearest bearings. `TerrainBounds` remains the inhabited bowl
   (and the map's chart patch, now the bowl plus `12 m`) while the larger
   `TerrainMeshBounds` builds the complete physical rise, hidden crest and
   sampled cableway brink, so the bowl and upper turn are closed by the
   mountain and not only by a mask. The ground is one mesh, one collider, two
   submeshes: the floor on the ordinary primitive material, the rise on
   `AlpineVillageRidgeAppearance`'s `CityMountainPhysical` material (village
-  haze colour, breathing density, `0.30` visibility floor, `96-108 m`
+  haze colour, breathing density, `0.40` visibility floor, `96-108 m`
   handoff, the floor's own `WindSnow` sheet and `_BaseMap_ST`, a cold
   snow-shadow tint, no shadow because the shader has no caster pass), with
-  the toe ring buried `0.08 m` under the floor and the cableway valley kept
-  on the floor material. Warm fog and warm key light are the zone's whole
+  the toe ring buried `0.08 m` under the floor and the cableway valley carved
+  into the rise rather than split out onto the floor material — a pale strip
+  in a dark wall reads as a hole, not a gorge. Warm fog and warm key light are the zone's whole
   signature, and the fog breathes: `RuntimeSceneSetup.EvaluateAlpineVillageFogDensity`
   runs `0.017` between gusts (`9 %` of the mother's door at `91 m` from the
   platform) to `0.045` at a crest (`41 m` left at `3 %` — the far half of

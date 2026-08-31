@@ -87,6 +87,17 @@ namespace BarPromenade
         /// </summary>
         internal const float SeamBurial = 0.08f;
 
+        /// <summary>
+        /// The one object holding the lying snow. Named here because the
+        /// contract that keeps it visual - that it carries no collider - is
+        /// asserted against this name.
+        /// </summary>
+        internal const string SnowDriftObjectName = "Village Snow Drifts";
+
+        /// <summary>Buried inner toe, crest, tail knee, buried outer toe.
+        /// </summary>
+        private const int DriftCrossSectionVertices = 4;
+
         private static readonly int BaseMapTransformId =
             Shader.PropertyToID("_BaseMap_ST");
 
@@ -217,6 +228,7 @@ namespace BarPromenade
             GameObject terrainRoot = BuildTerrain(root.transform, plan);
             GameObject laneSurface = BuildLane(root.transform, plan);
             BuildPathSurfaces(root.transform, plan);
+            BuildSnowDrifts(root.transform, plan);
 
             // The station is the cableway builder's, not this one's. Both
             // terminals are the same building and the second must not be a
@@ -259,8 +271,7 @@ namespace BarPromenade
         /// One grid mesh over the whole plan, sampled from the shared height
         /// contract, with ONE collider and TWO submeshes.
         ///
-        /// Snow above, soil in the lane's own cut - that tint is a vertex
-        /// decision and needs no second material. The enclosing rise does:
+        /// The floor needs no second material. The enclosing rise does:
         /// on the floor's plain Exp2 fog a wall `85 m` off is at `12 %`
         /// between gusts and gone at a gust crest, so the bowl that was
         /// moved in to loom would vanish exactly when the storm is fullest.
@@ -285,6 +296,17 @@ namespace BarPromenade
         /// snapped floor edge and no hairline can open at the toe. The
         /// collider takes the whole mesh; the buried ring is under the
         /// floor and never the first thing a ray hits.
+        ///
+        /// IT CARRIES NO VERTEX COLOURS, and it never usefully did. Every
+        /// vertex used to be tinted snow-to-soil by its distance from the
+        /// lane and the paths, on the reasoning above - and `Ps1Lit` is a
+        /// verbatim copy of URP Lit, whose `Attributes` has no `COLOR`
+        /// semantic at all, so not one of those colours ever reached a
+        /// shader. The compacted ground a player actually sees is the path
+        /// ribbons' own `ForestFloor` sheet, which is a different mesh and a
+        /// different texture. Reviving the tint would mean hand-editing a
+        /// clone the architecture notes require to stay verbatim, for one
+        /// mesh in one scene; the dead field is gone instead.
         /// </summary>
         private static GameObject BuildTerrain(
             Transform parent,
@@ -302,13 +324,10 @@ namespace BarPromenade
             int rows = Mathf.Max(
                 1,
                 Mathf.CeilToInt(bounds.height / TerrainCellSize));
-            IReadOnlyList<AlpineVillagePathDescriptor> paths =
-                AlpineVillagePathPlanner.Create(plan);
 
             int gridVertexCount = (columns + 1) * (rows + 1);
             var vertices = new List<Vector3>(gridVertexCount);
             var uvs = new List<Vector2>(gridVertexCount);
-            var colors = new List<Color>(gridVertexCount);
             for (int row = 0; row <= rows; row++)
             {
                 for (int column = 0; column <= columns; column++)
@@ -323,28 +342,6 @@ namespace BarPromenade
                         point);
                     vertices.Add(new Vector3(x, height, z));
                     uvs.Add(new Vector2(x, z) * 0.25f);
-
-                    // Snow lies everywhere except where feet and doors keep
-                    // it off, which is the lane and the aprons.
-                    plan.Lane.FindNearest(point, out float lateral);
-                    float bare = 1f - Mathf.SmoothStep(
-                        1.6f,
-                        5.5f,
-                        lateral);
-                    for (int pathIndex = 0;
-                         pathIndex < paths.Count;
-                         pathIndex++)
-                    {
-                        AlpineVillagePathDescriptor path = paths[pathIndex];
-                        float pathBare = 1f - Mathf.SmoothStep(
-                            path.SurfaceHalfWidth +
-                            AlpineVillagePathPlanner.BareSkirtHalfWidth,
-                            path.SurfaceHalfWidth + 1.35f,
-                            path.DistanceToCenterline(point));
-                        bare = Mathf.Max(bare, pathBare);
-                    }
-
-                    colors.Add(Color.Lerp(SnowColor, SoilColor, bare));
                 }
             }
 
@@ -388,30 +385,18 @@ namespace BarPromenade
                     // of its four corners, in the rise submesh.
                     AppendCell(
                         riseTriangles,
-                        BuriedVertex(
-                            origin,
-                            buriedTwins,
-                            vertices,
-                            uvs,
-                            colors),
-                        BuriedVertex(
-                            origin + 1,
-                            buriedTwins,
-                            vertices,
-                            uvs,
-                            colors),
+                        BuriedVertex(origin, buriedTwins, vertices, uvs),
+                        BuriedVertex(origin + 1, buriedTwins, vertices, uvs),
                         BuriedVertex(
                             origin + columns + 1,
                             buriedTwins,
                             vertices,
-                            uvs,
-                            colors),
+                            uvs),
                         BuriedVertex(
                             origin + columns + 2,
                             buriedTwins,
                             vertices,
-                            uvs,
-                            colors));
+                            uvs));
                 }
             }
 
@@ -424,7 +409,6 @@ namespace BarPromenade
             };
             mesh.SetVertices(vertices);
             mesh.SetUVs(0, uvs);
-            mesh.SetColors(colors);
             mesh.subMeshCount = 2;
             mesh.SetTriangles(floorTriangles, TerrainFloorMaterialIndex);
             mesh.SetTriangles(riseTriangles, TerrainRiseMaterialIndex);
@@ -579,8 +563,7 @@ namespace BarPromenade
             int source,
             Dictionary<int, int> buriedTwins,
             List<Vector3> vertices,
-            List<Vector2> uvs,
-            List<Color> colors)
+            List<Vector2> uvs)
         {
             if (buriedTwins.TryGetValue(source, out int buried))
             {
@@ -590,7 +573,6 @@ namespace BarPromenade
             buried = vertices.Count;
             vertices.Add(vertices[source] - Vector3.up * SeamBurial);
             uvs.Add(uvs[source]);
-            colors.Add(colors[source]);
             buriedTwins.Add(source, buried);
             return buried;
         }
@@ -673,6 +655,285 @@ namespace BarPromenade
                 renderer,
                 MountainRoadSurfaceKind.ForestFloor,
                 LaneColor);
+        }
+
+        /// <summary>
+        /// The snow lying beside every trodden route, as one mesh.
+        ///
+        /// The ground the village stands on is sampled on a `2 m` grid, and a
+        /// two-metre quad cannot hold a drift - so this is not a term in the
+        /// height contract but its own skin laid over it, dense where it needs
+        /// to be and nowhere else. That split is what makes the feature cheap:
+        /// <see cref="AlpineVillageTerrainSampler"/> is untouched, and with it
+        /// the collider, the shelves, the cableway brink and the walkable
+        /// mask.
+        ///
+        /// IT CARRIES NO COLLIDER, deliberately. The hero walks the same flat
+        /// ground he always did and the snow closes over his shins, which is
+        /// both the cheapest and the most honest way to read deep snow -
+        /// planar velocity is read back from achieved movement, so ground he
+        /// could catch a boot on would read as a crawl.
+        /// </summary>
+        private static void BuildSnowDrifts(
+            Transform parent,
+            AlpineVillagePlan plan)
+        {
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
+            var vertices = new List<Vector3>();
+            var uvs = new List<Vector2>();
+            var triangles = new List<int>();
+
+            AppendLaneDrifts(plan, paths, vertices, uvs, triangles);
+            for (int index = 0; index < paths.Count; index++)
+            {
+                AppendPathDrifts(
+                    plan,
+                    paths,
+                    paths[index],
+                    vertices,
+                    uvs,
+                    triangles);
+            }
+
+            if (triangles.Count == 0)
+            {
+                return;
+            }
+
+            var mesh = new Mesh
+            {
+                name = "Alpine Village Snow Drifts",
+                indexFormat = vertices.Count > 65000
+                    ? IndexFormat.UInt32
+                    : IndexFormat.UInt16
+            };
+            mesh.SetVertices(vertices);
+            mesh.SetUVs(0, uvs);
+            mesh.SetTriangles(triangles, 0);
+            mesh.RecalculateNormals();
+            mesh.RecalculateBounds();
+
+            var host = new GameObject(SnowDriftObjectName);
+            host.transform.SetParent(parent, false);
+            host.AddComponent<MeshFilter>().sharedMesh = mesh;
+            MeshRenderer renderer = host.AddComponent<MeshRenderer>();
+            renderer.sharedMaterial = RuntimePrimitiveFactory.DefaultMaterial;
+            // A `0.45 m` lip casting into a `640x360` frame is acne, not
+            // shape; the ground under it carries the shadow it already had.
+            renderer.shadowCastingMode = ShadowCastingMode.Off;
+            renderer.receiveShadows = true;
+            // The floor's own sheet and tint, so the drift is the ground
+            // getting deeper rather than a second material lying on it.
+            MountainRoadSurfaceAppearance.Apply(
+                renderer,
+                AlpineVillageRidgeAppearance.Surface,
+                SnowColor);
+        }
+
+        /// <summary>
+        /// Both shoulders of the street. The lane's own plan samples are used
+        /// rather than a re-walk: they already carry the carriageway's width
+        /// and its right vector at every metre.
+        /// </summary>
+        private static void AppendLaneDrifts(
+            AlpineVillagePlan plan,
+            IReadOnlyList<AlpineVillagePathDescriptor> paths,
+            List<Vector3> vertices,
+            List<Vector2> uvs,
+            List<int> triangles)
+        {
+            IReadOnlyList<AlpineVillageLaneSample> samples =
+                plan.Lane.Samples;
+            for (int side = -1; side <= 1; side += 2)
+            {
+                var stations = new List<DriftStation>(samples.Count);
+                for (int index = 0; index < samples.Count; index++)
+                {
+                    AlpineVillageLaneSample sample = samples[index];
+                    Vector3 outward = sample.Right * side;
+                    Vector3 edge = sample.Position +
+                                   outward * (sample.Width * 0.5f);
+                    stations.Add(new DriftStation(
+                        new Vector2(edge.x, edge.z),
+                        new Vector2(outward.x, outward.z).normalized));
+                }
+
+                AppendDriftStrip(
+                    plan,
+                    paths,
+                    stations,
+                    side < 0,
+                    vertices,
+                    uvs,
+                    triangles);
+            }
+        }
+
+        private static void AppendPathDrifts(
+            AlpineVillagePlan plan,
+            IReadOnlyList<AlpineVillagePathDescriptor> paths,
+            AlpineVillagePathDescriptor path,
+            List<Vector3> vertices,
+            List<Vector2> uvs,
+            List<int> triangles)
+        {
+            Vector3 direction = path.End - path.Start;
+            direction.y = 0f;
+            if (direction.sqrMagnitude <= 0.000001f)
+            {
+                return;
+            }
+
+            direction.Normalize();
+            Vector3 right = Vector3.Cross(Vector3.up, direction).normalized;
+            int steps = Mathf.Max(
+                1,
+                Mathf.CeilToInt(
+                    path.LengthXZ /
+                    AlpineVillageSnowDrift.PathSampleStep));
+            for (int side = -1; side <= 1; side += 2)
+            {
+                Vector3 outward = right * side;
+                var stations = new List<DriftStation>(steps + 1);
+                for (int step = 0; step <= steps; step++)
+                {
+                    float amount = step / (float)steps;
+                    Vector3 centre = Vector3.Lerp(
+                        path.Start,
+                        path.End,
+                        amount);
+                    Vector3 edge = centre +
+                                   outward * path.SurfaceHalfWidth;
+                    stations.Add(new DriftStation(
+                        new Vector2(edge.x, edge.z),
+                        new Vector2(outward.x, outward.z).normalized));
+                }
+
+                AppendDriftStrip(
+                    plan,
+                    paths,
+                    stations,
+                    side < 0,
+                    vertices,
+                    uvs,
+                    triangles);
+            }
+        }
+
+        /// <summary>
+        /// One shoulder: four vertices per station, marched outward from the
+        /// trodden edge. Every vertex asks the depth field for ITS OWN point
+        /// rather than sharing the station's, which is what lets a drift
+        /// pinch shut on its own where another route crosses under it.
+        /// </summary>
+        private static void AppendDriftStrip(
+            AlpineVillagePlan plan,
+            IReadOnlyList<AlpineVillagePathDescriptor> paths,
+            List<DriftStation> stations,
+            bool mirrored,
+            List<Vector3> vertices,
+            List<Vector2> uvs,
+            List<int> triangles)
+        {
+            if (stations.Count < 2)
+            {
+                return;
+            }
+
+            int origin = vertices.Count;
+            for (int index = 0; index < stations.Count; index++)
+            {
+                DriftStation station = stations[index];
+                float exposure = AlpineVillageSnowDrift.MeasureExposure(
+                    plan,
+                    station.Outward);
+                AlpineVillageSnowDrift.CrossSection(
+                    exposure,
+                    out float toe,
+                    out float crest,
+                    out float knee,
+                    out float tail);
+                AppendDriftVertex(plan, paths, station, toe, vertices, uvs);
+                AppendDriftVertex(plan, paths, station, crest, vertices, uvs);
+                AppendDriftVertex(plan, paths, station, knee, vertices, uvs);
+                AppendDriftVertex(plan, paths, station, tail, vertices, uvs);
+            }
+
+            for (int index = 0; index < stations.Count - 1; index++)
+            {
+                for (int across = 0;
+                     across < DriftCrossSectionVertices - 1;
+                     across++)
+                {
+                    int a = origin +
+                            index * DriftCrossSectionVertices +
+                            across;
+                    int b = a + DriftCrossSectionVertices;
+                    int c = a + 1;
+                    int d = b + 1;
+                    if (mirrored)
+                    {
+                        // The outward axis flips with the shoulder, and with
+                        // it the handedness; without this the far shoulder of
+                        // every route is back-face culled and reads as a hole.
+                        triangles.Add(a);
+                        triangles.Add(c);
+                        triangles.Add(b);
+                        triangles.Add(c);
+                        triangles.Add(d);
+                        triangles.Add(b);
+                        continue;
+                    }
+
+                    triangles.Add(a);
+                    triangles.Add(b);
+                    triangles.Add(c);
+                    triangles.Add(c);
+                    triangles.Add(b);
+                    triangles.Add(d);
+                }
+            }
+        }
+
+        private static void AppendDriftVertex(
+            AlpineVillagePlan plan,
+            IReadOnlyList<AlpineVillagePathDescriptor> paths,
+            DriftStation station,
+            float offset,
+            List<Vector3> vertices,
+            List<Vector2> uvs)
+        {
+            Vector2 point = station.Edge + station.Outward * offset;
+            float depth = AlpineVillageSnowDrift.SampleDepth(
+                plan,
+                paths,
+                point);
+            float ground = AlpineVillageTerrainSampler.SampleHeight(
+                plan,
+                point);
+            float height = depth <= 0.0005f
+                ? ground - AlpineVillageSnowDrift.ToeBurial
+                : ground + depth;
+            vertices.Add(new Vector3(point.x, height, point.y));
+            // The ground's own planar UV, so the one sheet runs across the
+            // toe at the pitch the snow beside it already has.
+            uvs.Add(new Vector2(point.x, point.y) * 0.25f);
+        }
+
+        private readonly struct DriftStation
+        {
+            internal DriftStation(Vector2 edge, Vector2 outward)
+            {
+                Edge = edge;
+                Outward = outward;
+            }
+
+            /// <summary>The trodden edge this shoulder starts from.</summary>
+            internal Vector2 Edge { get; }
+
+            /// <summary>Unit, away from the route.</summary>
+            internal Vector2 Outward { get; }
         }
 
         /// <summary>
@@ -1425,12 +1686,35 @@ namespace BarPromenade
                     true),
                 MountainRoadSurfaceKind.ForestFloor,
                 SoilColor);
+
+            // A mine is a hole in solid rock, and now that the hero may leave
+            // the path he can reach this one. Without a shell he walks through
+            // the darkness slab and stands inside the frame in a void; the
+            // frame is scaled to the plot's own footprint, so this box is the
+            // same rectangle the walkable mask refuses. Collision is the
+            // plan's, never the model's - the imported frame carries none.
+            var mountainside = new GameObject("Physical Shell");
+            mountainside.transform.SetParent(parent, false);
+            mountainside.transform.localPosition =
+                Vector3.up * (plot.Height * 0.5f);
+            BoxCollider adit = mountainside.AddComponent<BoxCollider>();
+            adit.size = new Vector3(
+                plot.FootprintSize.x,
+                plot.Height,
+                plot.FootprintSize.y);
         }
 
         /// <summary>
         /// The burial ground. Rows of low markers and no signpost anywhere:
         /// the hero does not visit his father's grave, so nothing here invites
         /// him to.
+        ///
+        /// It is the one plot with no shell: a graveyard is ground, and the
+        /// walkable mask leaves it open so a person can walk in among the
+        /// stones. That makes the soil slab and the markers things he can
+        /// actually meet, so both carry collision - the slab as a `0.12 m`
+        /// step, well under the motor's `0.28 m` step offset, and each marker
+        /// on the unscaled pivot rather than on the imported mesh.
         /// </summary>
         private static void BuildCemetery(
             Transform parent,
@@ -1447,7 +1731,7 @@ namespace BarPromenade
                         0.12f,
                         plot.FootprintSize.y),
                     SoilColor,
-                    false),
+                    true),
                 MountainRoadSurfaceKind.ForestFloor,
                 SoilColor);
 
@@ -1469,7 +1753,7 @@ namespace BarPromenade
                             position + Vector3.up * (markerHeight * 0.5f),
                             new Vector3(0.36f, markerHeight, 0.12f),
                             StoneColor,
-                            false),
+                            true),
                         MountainRoadSurfaceKind.LayeredStone,
                         StoneColor);
                     continue;
@@ -1490,6 +1774,14 @@ namespace BarPromenade
                     new Vector2(0.42f, 0.18f),
                     markerHeight,
                     _ => StoneColor);
+
+                // The pivot is unscaled - PlaceKitAssembly scales its own
+                // children and nothing else - so a box authored in metres
+                // here is a box in metres in the world. On the imported part
+                // it would be neither.
+                BoxCollider stone = marker.AddComponent<BoxCollider>();
+                stone.center = new Vector3(0f, markerHeight * 0.5f, 0f);
+                stone.size = new Vector3(0.42f, markerHeight, 0.18f);
             }
         }
 

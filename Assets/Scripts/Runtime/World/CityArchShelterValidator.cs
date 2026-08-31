@@ -11,7 +11,7 @@ namespace BarPromenade
         private const int ExpectedClearLaneCount = 1;
         private const int ExpectedNpcAnchorCount = 3;
         private const int ExpectedPropCount = 4;
-        private const int ExpectedObstacleCount = 9;
+        private const int ExpectedObstacleCount = 10;
         private const int ExpectedRainOccluderCount = 1;
 
         public static void ValidateOrThrow(
@@ -291,12 +291,13 @@ namespace BarPromenade
                 new Vector3(
                     landing.Footprint.center.x,
                     landing.SurfaceY +
-                    CityArchShelterPlacementResolver.MinimumClearHeight *
-                    0.5f,
+                    CityArchShelterPlacementResolver
+                        .MinimumUpperLandingHeadroom * 0.5f,
                     landing.Footprint.center.y),
                 new Vector3(
                     landing.Footprint.width,
-                    CityArchShelterPlacementResolver.MinimumClearHeight,
+                    CityArchShelterPlacementResolver
+                        .MinimumUpperLandingHeadroom,
                     landing.Footprint.height));
             for (int index = 0; index < plan.Obstacles.Count; index++)
             {
@@ -454,7 +455,7 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "The arch shelter requires one clear lower lane, three " +
-                    "staged residents, four authored prop assemblies, six " +
+                    "staged residents, four authored prop assemblies, seven " +
                     "tableau/structure blockers, three platform guards and " +
                     "one rain volume.");
             }
@@ -725,6 +726,11 @@ namespace BarPromenade
                             "complete common side-facade depth.");
                     }
                 }
+                else if (obstacle.Kind ==
+                         CityArchShelterObstacleKind.VaultCrown)
+                {
+                    ValidateVaultCrown(plan, obstacle);
+                }
 
                 for (int laneIndex = 0;
                      laneIndex < plan.ClearLanes.Count;
@@ -749,6 +755,42 @@ namespace BarPromenade
 
             ValidatePlatformWallAttachment(plan);
             ValidatePlatformGuardRails(plan);
+        }
+
+        private static void ValidateVaultCrown(
+            CityArchShelterPlan plan,
+            CityArchShelterObstacleDescriptor vault)
+        {
+            CityArchShelterPlacement placement = plan.Placement;
+            Bounds overhead = FindObstacle(
+                plan,
+                CityArchShelterObstacleKind.OverheadGallery).Bounds;
+            float lowerSurface = Mathf.Min(
+                placement.WestSurfaceY,
+                placement.EastSurfaceY);
+            Rect footprint = ToXZRect(vault.Bounds);
+            Rect common = placement.CommonFacadeFootprint;
+            float inset = CityArchShelterPlacementResolver.VaultDepthInset;
+            if (!Approximately(
+                    vault.Bounds.min.y,
+                    lowerSurface +
+                    CityArchShelterPlacementResolver
+                        .VaultCrownClearanceAboveLowerSurface) ||
+                !Approximately(vault.Bounds.max.y, overhead.min.y) ||
+                !Approximately(
+                    vault.Bounds.center.x,
+                    placement.StructurePosition.x) ||
+                !Approximately(
+                    vault.Bounds.size.x,
+                    CityArchShelterPlacementResolver.VaultCrownHalfWidth *
+                    2f) ||
+                !Approximately(footprint.yMin, common.yMin + inset) ||
+                !Approximately(footprint.yMax, common.yMax - inset))
+            {
+                throw new InvalidOperationException(
+                    "The vault crown blocker must fill the measured " +
+                    "masonry below the overhead gallery.");
+            }
         }
 
         private static void ValidatePlatformWallAttachment(

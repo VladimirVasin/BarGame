@@ -24,6 +24,13 @@ namespace BarPromenade
         public const float PlatformGuardRailThickness = 0.12f;
         public const float FacadeAttachmentOverlap = 0.19f;
         public const float MinimumClearHeight = 3.4f;
+        public const float MinimumUpperLandingHeadroom = 2.4f;
+        // Measured from the central six voussoirs authored by
+        // build-city-misc-3d-model.py. This box lives wholly inside masonry;
+        // it gives the chase camera a physical soffit without changing art.
+        public const float VaultCrownClearanceAboveLowerSurface = 4.049f;
+        public const float VaultCrownHalfWidth = 3.611f;
+        public const float VaultDepthInset = 0.08f;
         public const float GalleryCrownRise = 1.66f;
 
         public static bool TryCreate(

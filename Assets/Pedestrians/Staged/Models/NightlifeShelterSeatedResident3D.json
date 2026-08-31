@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.2.0",
+  "generator_version": "4.3.1",
   "blender_version": "5.0.1",
   "design_id": "nightlife_shelter_seated_resident_v2",
   "display_name": "Nightlife Shelter Seated Resident",
@@ -55,7 +55,8 @@
     0.025
   ],
   "lying_height_m": null,
-  "build_signature": "e57c48f3e5317ff48ec2b5d31ac518121e383c22ca39cd6560ba61ba7e9e5327",
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "71888b09124af449749e7d4df67ad8832c09a1f4b37fbf9079aab4f118790f15",
   "bones": [
     {
       "name": "root",

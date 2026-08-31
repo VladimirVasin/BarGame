@@ -191,12 +191,12 @@ MonoBehaviour:
   rightFoot: {fileID: 903861050286999015}
   detailAtlas: {fileID: 2800000, guid: bc3e29a6a3d0bbd478d6ade5951cfb72, type: 3}
   localBounds:
-    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.0346279}
-    m_Extent: {x: 0.7718781, y: 0.8749999, z: 0.1957311}
-  triangleCount: 1500
-  generatorVersion: 4.2.0
+    m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.030962974}
+    m_Extent: {x: 0.7718781, y: 0.8749999, z: 0.20742537}
+  triangleCount: 2164
+  generatorVersion: 4.3.1
   designId: nightlife_shelter_sleeping_resident_v2
-  buildSignature: f45f6a21d5ba4b037004d5bef761bd7b452e8c22b2ced49387806577481edad6
+  buildSignature: 66f065da2c7f569343dc873b862ce62459bbf80eafaefa89ac1268f74593b0d2
 --- !u!1001 &1062253926776189611
 PrefabInstance:
   m_ObjectHideFlags: 0

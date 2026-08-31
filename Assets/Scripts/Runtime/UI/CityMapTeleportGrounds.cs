@@ -416,8 +416,41 @@ namespace BarPromenade
     public sealed class CityMapAlpineVillageTeleportGround
         : ICityMapTeleportGround
     {
+        /// <summary>
+        /// How far back along a place's own route a CHARTED arrival stands.
+        ///
+        /// The chart carries each plot's `DoorDockPosition`, and a dock is an
+        /// interaction pose - `1.1 m` from the threshold, facing it - not a
+        /// place to be put down. Arriving on one at the house at the top of
+        /// the lane left the hero nose to the door with `1.26 m` of ground in
+        /// front of him; he holds forward, the wall takes his whole planar
+        /// velocity, and because the gait is weighted by ACHIEVED speed the
+        /// walk cycle simply stops. It reads as the animation breaking.
+        ///
+        /// Standing back along the route the place is reached by fixes it
+        /// with no new geometry: the path is authored, it is trodden ground,
+        /// and its envelope is already validated clear of every rotated plot
+        /// footprint - so this is also the one landing that cannot drop him
+        /// inside the spoil heap or the source bowl, which the mask has
+        /// permitted ever since the bowl was opened.
+        /// </summary>
+        public const float ChartedArrivalStandoff = 2.5f;
+
+        /// <summary>
+        /// How close a request has to be to a dock to be read as that place
+        /// rather than as a bare coordinate.
+        ///
+        /// Deliberately far tighter than it needs to be for a chart point,
+        /// which carries the dock VERBATIM and lands at zero distance. The
+        /// number is set by its nearest neighbour instead: the adit's raven
+        /// roost is anchored `1.2 m` off the mouth against the dock's `1.1`,
+        /// so anything approaching `0.1` would quietly move a bird.
+        /// </summary>
+        private const float ChartedDockTolerance = 0.02f;
+
         private readonly AlpineVillagePlan plan;
         private readonly AlpineVillageWalkableArea walkableArea;
+        private IReadOnlyList<AlpineVillagePathDescriptor> paths;
 
         public CityMapAlpineVillageTeleportGround(AlpineVillagePlan plan)
             : this(new AlpineVillageWalkableArea(plan))
@@ -440,6 +473,7 @@ namespace BarPromenade
         {
             standingPosition = default;
             float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+            worldXZ = StandBackFromChartedPlace(worldXZ);
             var probe = new Vector3(worldXZ.x, 0f, worldXZ.y);
             Vector3 candidate = walkableArea.Contains(probe, radius)
                 ? probe
@@ -475,6 +509,69 @@ namespace BarPromenade
             return TryResolveStandingPosition(
                 new Vector2(arrival.x, arrival.z),
                 out destination);
+        }
+
+        /// <summary>
+        /// Turns a request that names a PLACE into a request that names the
+        /// ground you look at it from. A bare coordinate is returned
+        /// untouched, which is what keeps the roost planner and every other
+        /// caller measuring exactly the point they asked about.
+        /// </summary>
+        private Vector2 StandBackFromChartedPlace(Vector2 worldXZ)
+        {
+            AlpineVillagePlotDescriptor place = FindChartedPlace(worldXZ);
+            if (place == null)
+            {
+                return worldXZ;
+            }
+
+            paths ??= AlpineVillagePathPlanner.Create(plan);
+            var dock = new Vector2(
+                place.DoorDockPosition.x,
+                place.DoorDockPosition.z);
+            for (int index = 0; index < paths.Count; index++)
+            {
+                AlpineVillagePathDescriptor path = paths[index];
+                var end = new Vector2(path.End.x, path.End.z);
+                if (Vector2.Distance(end, dock) > ChartedDockTolerance)
+                {
+                    continue;
+                }
+
+                // Back along the route the place is reached by, never past
+                // where that route began: the summit's own path is only
+                // `0.9 m` long, and overshooting it would put the arrival on
+                // ground that has nothing to do with the house.
+                var start = new Vector2(path.Start.x, path.Start.z);
+                Vector2 back = start - end;
+                float length = back.magnitude;
+                if (length <= 0.001f)
+                {
+                    return worldXZ;
+                }
+
+                return end + back / length *
+                    Mathf.Min(ChartedArrivalStandoff, length);
+            }
+
+            return worldXZ;
+        }
+
+        private AlpineVillagePlotDescriptor FindChartedPlace(Vector2 worldXZ)
+        {
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                AlpineVillagePlotDescriptor plot = plan.Plots[index];
+                var dock = new Vector2(
+                    plot.DoorDockPosition.x,
+                    plot.DoorDockPosition.z);
+                if (Vector2.Distance(dock, worldXZ) <= ChartedDockTolerance)
+                {
+                    return plot;
+                }
+            }
+
+            return null;
         }
     }
 }

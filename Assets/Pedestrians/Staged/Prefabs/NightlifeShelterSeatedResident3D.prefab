@@ -206,9 +206,9 @@ MonoBehaviour:
     m_Center: {x: -0.0010001659, y: 0.8749999, z: 0.034205854}
     m_Extent: {x: 0.77483803, y: 0.8749999, z: 0.1961531}
   triangleCount: 1736
-  generatorVersion: 4.2.0
+  generatorVersion: 4.3.1
   designId: nightlife_shelter_seated_resident_v2
-  buildSignature: e57c48f3e5317ff48ec2b5d31ac518121e383c22ca39cd6560ba61ba7e9e5327
+  buildSignature: 71888b09124af449749e7d4df67ad8832c09a1f4b37fbf9079aab4f118790f15
 --- !u!1001 &7114926684130439681
 PrefabInstance:
   m_ObjectHideFlags: 0

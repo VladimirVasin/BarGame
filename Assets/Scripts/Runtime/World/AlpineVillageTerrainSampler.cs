@@ -27,8 +27,23 @@ namespace BarPromenade
         /// lane, measured from its own edge.</summary>
         internal const float LaneShoulder = 1.4f;
 
-        /// <summary>Over what distance the ground returns to the macro slope
-        /// past a shelf.</summary>
+        /// <summary>
+        /// Over what distance the ground returns to the macro slope past a
+        /// shelf.
+        ///
+        /// FOR A LONG TIME IT DID NOT MEAN THIS. All three blends read
+        /// `Mathf.SmoothStep(0f, ShelfBlendDistance, distance)`, and Unity's
+        /// third argument is a `0-1` FRACTION, not a distance: the call
+        /// returns metres, saturates at one metre of input, and the weight
+        /// falling out of `1 - that` went NEGATIVE past `0.347 m`. It
+        /// survived only because `Mathf.Lerp` clamps, so every shelf blended
+        /// out over `0.347 m` instead of `3.6` - a factor of `10.4` - while
+        /// the guards a few lines away (`outside >= ShelfBlendDistance`)
+        /// went on believing the constant. `TerrainMargin` was sized against
+        /// the intended `3.6` all along, so the fix moves the ground TOWARDS
+        /// what the rest of the plan already assumed. Use
+        /// <see cref="SmoothRange"/> here, never the bare `Mathf.SmoothStep`.
+        /// </summary>
         internal const float ShelfBlendDistance = 3.6f;
 
         /// <summary>Flat apron kept around a plot's footprint.</summary>
@@ -60,28 +75,38 @@ namespace BarPromenade
 
         /// <summary>
         /// Where the enclosing ridge starts to climb, as a distance outside
-        /// the walkable extent.
+        /// the inhabited extent.
+        ///
+        /// It is also the walkable mask's own outer boundary - see
+        /// <see cref="AlpineVillageWalkableArea.GroundOutset"/>. That is a
+        /// contract and not a coincidence: the mask ends on the exact line
+        /// where the ground starts refusing him, so the perimeter is held by
+        /// the slope rather than by an invisible wall standing on flat snow.
         /// </summary>
         internal const float RidgeStandoff = 3f;
 
         /// <summary>
         /// Steeper than the hero's `45°` slope limit, and that is the floor
         /// of the number rather than a look: at `0.62` (`32°`) the ridge was
-        /// climbable, so "you can only get here by cabin" was a claim held
-        /// up by the walkable mask alone. `1.15` (`49°`) closed that; `1.6`
-        /// is `58°`, chosen so the full `50 m` rise is reached `31 m` past
-        /// the toe instead of `43.5`, which puts the lateral crests
-        /// `83-88 m` from mid-lane - inside the `110 m` draw range and under
-        /// the ridge material's `96 m` handoff - and lifts the wall to
-        /// `39°` from the lane head, `36°` from the platform toward the
-        /// open side and `28-31°` sideways from mid-lane.
+        /// climbable, so "you can only get here by cabin" was a claim held up
+        /// by the walkable mask alone. `1.15` (`49°`) closed that and `1.6`
+        /// (`58°`) read as a smear in the haze; `3.6` is `74°`, which reaches
+        /// the full rise `16.7 m` past the toe, keeps the lateral crests well
+        /// inside the `110 m` draw range and the ridge material's `96 m`
+        /// handoff, and lifts the mean silhouette from mid-lane to `34.1°`
+        /// (`43°` on the nearest bearings).
+        ///
+        /// The mask no longer depends on this, which is the point: it opens
+        /// the whole bowl and stops at
+        /// <see cref="RidgeStandoff"/>, so the wall is what actually holds
+        /// the perimeter and there is nothing invisible about it.
         /// </summary>
         internal const float RidgeRisePerMeter = 3.6f;
 
         /// <summary>
         /// Full height of the wall over the bowl floor. `34` with the old
         /// `30 m` margin subtended `16-20°` and dissolved into the haze;
-        /// `50` over the `12 m` margin is what makes the bowl press in over
+        /// `60` over the `12 m` margin is what makes the bowl press in over
         /// the roofs. The plan's world-bounds ceiling follows it.
         /// </summary>
         internal const float RidgeMaximumRise = 60f;
@@ -203,7 +228,7 @@ namespace BarPromenade
             float pastEdge = Mathf.Max(
                 0f,
                 lateralDistance - laneHalfWidth - LaneShoulder);
-            float laneWeight = 1f - Mathf.SmoothStep(
+            float laneWeight = 1f - SmoothRange(
                 0f,
                 ShelfBlendDistance,
                 pastEdge);
@@ -226,7 +251,7 @@ namespace BarPromenade
             float outsideStation = DistanceOutsideStation(plan.Station, point);
             if (outsideStation < ShelfBlendDistance)
             {
-                float stationWeight = 1f - Mathf.SmoothStep(
+                float stationWeight = 1f - SmoothRange(
                     0f,
                     ShelfBlendDistance,
                     outsideStation);
@@ -248,7 +273,7 @@ namespace BarPromenade
                     continue;
                 }
 
-                float weight = 1f - Mathf.SmoothStep(
+                float weight = 1f - SmoothRange(
                     0f,
                     ShelfBlendDistance,
                     outside);

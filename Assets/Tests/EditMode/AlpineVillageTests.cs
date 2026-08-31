@@ -1497,5 +1497,588 @@ namespace BarPromenade.Tests.EditMode
                 }
             }
         }
+
+        /// <summary>
+        /// THE VILLAGE IS A PLACE AND NOT A CORRIDOR.
+        ///
+        /// The mask used to be the lane centreline plus one capsule per
+        /// visible path - `2.38 m` of usable half-width on the street,
+        /// `0.78 m` on a household branch - inside a bowl `93 x 125 m`
+        /// across. That is six per cent of the village walkable, and stepping
+        /// off the path was impossible everywhere: the burial ground could be
+        /// faced but never entered, and no house could be walked round.
+        ///
+        /// The number is deliberately coarse. What it pins is the SHAPE of
+        /// the rule - ground by default, minus what stands in it - so a later
+        /// change that quietly reintroduces corridors fails here rather than
+        /// in a play session.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void WalkableArea_OpensTheWholeBowlInsteadOfACorridor()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            var area = new AlpineVillageWalkableArea(plan);
+            float radius = CityGroundTraversalPlanner.MaximumAgentRadius;
+
+            Rect bowl = plan.TerrainBounds;
+            int walkable = 0;
+            int total = 0;
+            for (float x = bowl.xMin + 0.5f; x < bowl.xMax; x += 1f)
+            {
+                for (float z = bowl.yMin + 0.5f; z < bowl.yMax; z += 1f)
+                {
+                    total++;
+                    if (area.Contains(new Vector3(x, 0f, z), radius))
+                    {
+                        walkable++;
+                    }
+                }
+            }
+
+            Assert.That(
+                walkable / (float)total,
+                Is.GreaterThan(0.8f),
+                "The inhabited bowl is a corridor again.");
+
+            // Every house can be walked round. This is the one that the old
+            // capsule chain could never pass, and the reason the complaint
+            // was "I cannot step off the path".
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                AlpineVillagePlotDescriptor plot = plan.Plots[index];
+                Vector3 behind = plot.GroundCenter -
+                                 plot.Facing *
+                                 (plot.FootprintSize.y * 0.5f + 1.5f);
+                Assert.That(
+                    area.Contains(behind, radius),
+                    Is.True,
+                    $"There is no ground behind '{plot.StableId}'.");
+            }
+
+            // And the burial ground is ground: the one plot with no shell,
+            // walked in among rather than looked at over a fence.
+            AlpineVillagePlotDescriptor cemetery = null;
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                if (plan.Plots[index].Kind ==
+                    AlpineVillagePlotKind.Cemetery)
+                {
+                    cemetery = plan.Plots[index];
+                    break;
+                }
+            }
+
+            Assert.That(cemetery, Is.Not.Null);
+            Assert.That(
+                area.Contains(cemetery.GroundCenter, radius),
+                Is.True,
+                "The hero still cannot walk in among the graves.");
+        }
+
+        /// <summary>
+        /// What an open bowl still has to refuse, and why each one is not an
+        /// invisible wall.
+        ///
+        /// A building is refused on the exact rectangle its own
+        /// `Physical Shell` collider stands on, so the mask agrees with the
+        /// physics instead of leaving the hero to graze it - contact is read
+        /// back as achieved movement and a graze reads as a crawl.
+        ///
+        /// The mountain is refused on the line where the ground starts to
+        /// climb at `74°` against a `45°` slope limit, so past the boundary
+        /// the slope is already doing the work.
+        ///
+        /// The cableway brink is the exception that has to be held by the
+        /// mask alone: the cut falls at `7-28°`, which is walkable, and it
+        /// is the only way out of the village on foot.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void WalkableArea_RefusesTheBuildingsTheMountainAndTheBrink()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            var area = new AlpineVillageWalkableArea(plan);
+
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                AlpineVillagePlotDescriptor plot = plan.Plots[index];
+                bool solid = plot.Kind != AlpineVillagePlotKind.Cemetery;
+                Assert.That(
+                    area.Contains(plot.GroundCenter),
+                    Is.EqualTo(!solid),
+                    $"'{plot.StableId}' disagrees with its own collider.");
+            }
+
+            MountainRoadCablewayPlan cableway = plan.Station.Cableway;
+            Vector3 pad = plan.Station.PadArea.Center;
+
+            // Down the gorge. Twelve metres out is past the entrance ramp and
+            // already well below the bowl floor.
+            Assert.That(
+                area.Contains(pad + cableway.LineForward * 12f, 0.32f),
+                Is.False,
+                "The hero can walk out of the village down the cableway cut.");
+
+            // But not one centimetre of the boarding side is lost to it: the
+            // strip runs off the FRONT of the pad and its far end stands
+            // within half a metre of the cut's own entrance line.
+            Vector3 platformFar = pad +
+                                  cableway.LineRight *
+                                  cableway.BoardingDockRightOffset +
+                                  cableway.LineForward *
+                                  cableway.BoardingPlatformFarForward;
+            Assert.That(
+                area.Contains(platformFar, 0.32f),
+                Is.True,
+                "The brink has eaten the far end of the boarding platform.");
+
+            // The mountain. Beyond the standoff the ground climbs steeper
+            // than the hero can walk, and the mask stops on the same line.
+            Rect bowl = plan.TerrainBounds;
+            float outside = AlpineVillageWalkableArea.GroundOutset + 4f;
+            Vector3[] beyond =
+            {
+                new Vector3(bowl.center.x, 0f, bowl.yMax + outside),
+                new Vector3(bowl.center.x, 0f, bowl.yMin - outside),
+                new Vector3(bowl.xMax + outside, 0f, bowl.center.y),
+                new Vector3(bowl.xMin - outside, 0f, bowl.center.y)
+            };
+            for (int index = 0; index < beyond.Length; index++)
+            {
+                Assert.That(
+                    area.Contains(beyond[index]),
+                    Is.False,
+                    $"The mask reaches into the enclosing ridge at " +
+                    $"{beyond[index]}.");
+            }
+        }
+
+        /// <summary>
+        /// A run at a wall has to become a slide along it, not a stop against
+        /// it: planar velocity is read back from achieved movement, so a mask
+        /// that refuses the step without offering the tangent one costs the
+        /// hero his whole speed on a graze.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void WalkableArea_SlidesAlongAFootprintRatherThanStopping()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            var area = new AlpineVillageWalkableArea(plan);
+            AlpineVillagePlotDescriptor house = plan.Plots[1];
+            const float radius = 0.32f;
+
+            Vector3 across = Vector3.Cross(Vector3.up, house.Facing)
+                .normalized;
+            Vector3 start = house.GroundCenter +
+                            house.Facing *
+                            (house.FootprintSize.y * 0.5f + radius + 0.35f) +
+                            across * (house.FootprintSize.x * 0.25f);
+            Assert.That(
+                area.Contains(start, radius),
+                Is.True,
+                "The approach point is not standable to begin with.");
+
+            // Straight at the facade, a quarter of the way along it. He is
+            // brought up against the wall - all `0.35 m` of the gap he had -
+            // and not one centimetre sideways.
+            Vector3 desired = start - house.Facing * 0.6f;
+            Vector3 constrained = area.Constrain(start, desired, radius);
+            Assert.That(
+                area.Contains(constrained, radius - 0.001f),
+                Is.True,
+                "The slide left the mask.");
+            Assert.That(
+                Vector3.Dot(constrained - start, -house.Facing),
+                Is.EqualTo(0.35f).Within(0.01f),
+                "The wall is not where the collider stands.");
+            Assert.That(
+                Mathf.Abs(Vector3.Dot(constrained - start, across)),
+                Is.LessThan(0.01f),
+                "A head-on step should not slide sideways.");
+
+            // And at forty-five degrees it keeps the tangent component.
+            Vector3 diagonal = start + (across - house.Facing).normalized * 0.6f;
+            Vector3 slid = area.Constrain(start, diagonal, radius);
+            Assert.That(
+                area.Contains(slid, radius - 0.001f),
+                Is.True,
+                "The diagonal slide left the mask.");
+            Assert.That(
+                Vector3.Dot(slid - start, across),
+                Is.GreaterThan(0.2f),
+                "The hero stopped dead against the wall instead of sliding.");
+        }
+
+        /// <summary>
+        /// A CHARTED arrival has room to walk out of.
+        ///
+        /// The map carries each plot's `DoorDockPosition`, and a dock is an
+        /// interaction pose - `1.1 m` from the threshold, facing it - not a
+        /// place to put a person down. Landing on the one at the house at the
+        /// top of the lane left `1.26 m` of ground ahead on the arrival's own
+        /// heading: hold forward, the wall takes the whole planar velocity,
+        /// and because the gait is weighted by ACHIEVED speed the walk cycle
+        /// stops. It reads as the animation breaking, and it was reported as
+        /// exactly that.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void ChartedArrivals_StandBackFarEnoughToWalkOut()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            var area = new AlpineVillageWalkableArea(plan);
+            var ground = new CityMapAlpineVillageTeleportGround(area);
+            const float radius = 0.32f;
+
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                AlpineVillagePlotDescriptor plot = plan.Plots[index];
+                Assert.That(
+                    ground.TryClampArrival(
+                        plot.DoorDockPosition,
+                        out Vector3 landing),
+                    Is.True,
+                    $"'{plot.StableId}' cannot be arrived at.");
+
+                // He is put down looking at the place he asked for, so the
+                // room that matters is the room on THAT heading.
+                Vector3 towards = plot.DoorDockPosition - landing;
+                towards.y = 0f;
+                Assert.That(
+                    towards.magnitude,
+                    Is.GreaterThan(0.5f),
+                    $"'{plot.StableId}' lands on its own dock, nose to the " +
+                    "threshold.");
+
+                Vector3 heading = towards.normalized;
+                Vector3 at = landing;
+                float walked = 0f;
+                for (int step = 0; step < 200 && walked < 2f; step++)
+                {
+                    Vector3 next = area.Constrain(
+                        at,
+                        at + heading * 0.02f,
+                        radius);
+                    Vector3 moved = next - at;
+                    moved.y = 0f;
+                    if (moved.magnitude < 0.0005f)
+                    {
+                        break;
+                    }
+
+                    walked += moved.magnitude;
+                    at = next;
+                }
+
+                Assert.That(
+                    walked,
+                    Is.GreaterThan(1.6f),
+                    $"'{plot.StableId}' arrives with {walked:0.00} m of " +
+                    "ground ahead - the hero holds forward and nothing " +
+                    "happens.");
+            }
+        }
+
+        /// <summary>
+        /// Snow lies BESIDE what feet have worn and never on it. That is the
+        /// whole shape of the field: the route reads as a trodden hollow
+        /// because the ground either side of it is deeper, not because a wall
+        /// was raked up along its edge.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void SnowDrifts_LieBesideEveryRouteAndNowhereOnIt()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
+
+            for (float distance = 0f;
+                 distance <= plan.Lane.Length;
+                 distance += 1f)
+            {
+                Vector3 centre = plan.Lane.Sample(distance).Position;
+                Assert.That(
+                    AlpineVillageSnowDrift.SampleDepth(
+                        plan,
+                        paths,
+                        new Vector2(centre.x, centre.z)),
+                    Is.LessThan(0.01f),
+                    $"Snow is lying on the lane at {distance:0.0} m.");
+            }
+
+            int deepShoulders = 0;
+            for (int index = 0; index < paths.Count; index++)
+            {
+                AlpineVillagePathDescriptor path = paths[index];
+                Vector3 direction = path.End - path.Start;
+                direction.y = 0f;
+                direction.Normalize();
+                Vector3 right = Vector3.Cross(Vector3.up, direction)
+                    .normalized;
+
+                int samples = Mathf.Max(2, Mathf.CeilToInt(path.LengthXZ));
+                for (int step = 0; step <= samples; step++)
+                {
+                    Vector3 centre = Vector3.Lerp(
+                        path.Start,
+                        path.End,
+                        step / (float)samples);
+                    Assert.That(
+                        AlpineVillageSnowDrift.SampleDepth(
+                            plan,
+                            paths,
+                            new Vector2(centre.x, centre.z)),
+                        Is.LessThan(0.01f),
+                        $"Snow is lying on '{path.StableId}'.");
+                }
+
+                // The middle of the route, one crest offset out on the side
+                // the gale unloads into.
+                Vector3 middle = Vector3.Lerp(path.Start, path.End, 0.5f);
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    Vector3 outward = right * side;
+                    var outwardXZ = new Vector2(outward.x, outward.z);
+                    if (AlpineVillageSnowDrift.MeasureExposure(
+                            plan,
+                            outwardXZ) < 0.75f)
+                    {
+                        continue;
+                    }
+
+                    Vector3 probe = middle +
+                                    outward *
+                                    (path.SurfaceHalfWidth +
+                                     AlpineVillagePathPlanner
+                                         .BareSkirtHalfWidth +
+                                     AlpineVillageSnowDrift.LeeCrestOffset);
+                    if (AlpineVillageSnowDrift.SampleDepth(
+                            plan,
+                            paths,
+                            new Vector2(probe.x, probe.z)) >= 0.2f)
+                    {
+                        deepShoulders++;
+                    }
+                }
+            }
+
+            Assert.That(
+                deepShoulders,
+                Is.GreaterThan(3),
+                "No route in the village has a deep shoulder at all.");
+        }
+
+        /// <summary>
+        /// The gale scours one lip and loads the other. Symmetric snow is
+        /// snow nobody put there - it reads as moulding along a kerb rather
+        /// than as weather, which is the failure this whole shape avoids.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void SnowDrifts_AreScouredToWindwardAndDeepInTheLee()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            Vector2 wind = AlpineVillageSnowDrift.PrevailingWind(plan);
+
+            Assert.That(
+                AlpineVillageSnowDrift.MeasureExposure(plan, wind),
+                Is.EqualTo(1f).Within(0.001f),
+                "The downwind face is not the one that fills.");
+            Assert.That(
+                AlpineVillageSnowDrift.MeasureExposure(plan, -wind),
+                Is.EqualTo(0f).Within(0.001f));
+
+            AlpineVillageSnowDrift.CrossSection(
+                1f,
+                out float leeToe,
+                out float leeCrest,
+                out _,
+                out float leeTail);
+            AlpineVillageSnowDrift.CrossSection(
+                0f,
+                out _,
+                out float windwardCrest,
+                out _,
+                out _);
+
+            Assert.That(
+                AlpineVillageSnowDrift.LeeCrestHeight,
+                Is.GreaterThan(AlpineVillageSnowDrift.WindwardCrestHeight * 2f),
+                "The two faces of a trodden route carry the same snow.");
+            Assert.That(leeCrest, Is.GreaterThan(windwardCrest));
+            Assert.That(leeToe, Is.EqualTo(
+                AlpineVillagePathPlanner.BareSkirtHalfWidth).Within(0.0001f),
+                "The snow does not start where the bare soil ends.");
+
+            // A drift, not a bank: the tail is what keeps it from reading as
+            // something a person shovelled, which the art bible refuses.
+            Assert.That(
+                leeTail - leeCrest,
+                Is.GreaterThan((leeCrest - leeToe) * 2.5f),
+                "The crest has no tail; this is a kerb.");
+        }
+
+        /// <summary>
+        /// Nothing lies on a threshold or on the station. A door dock refuses
+        /// silently past two centimetres of vertical tolerance, and
+        /// knee-deep snow drawn over one is a bug report about a door that
+        /// does not work.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void SnowDrifts_ClearEveryDoorApronAndTheStationPad()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
+
+            for (int index = 0; index < plan.Plots.Count; index++)
+            {
+                AlpineVillagePlotDescriptor plot = plan.Plots[index];
+                Assert.That(
+                    AlpineVillageSnowDrift.SampleDepth(
+                        plan,
+                        paths,
+                        new Vector2(
+                            plot.DoorDockPosition.x,
+                            plot.DoorDockPosition.z)),
+                    Is.LessThan(0.01f),
+                    $"Snow is lying on '{plot.StableId}''s threshold.");
+            }
+
+            MountainRoadTerminalRect pad = plan.Station.PadArea;
+            Assert.That(
+                AlpineVillageSnowDrift.SampleDepth(
+                    plan,
+                    paths,
+                    new Vector2(pad.Center.x, pad.Center.z)),
+                Is.LessThan(0.01f),
+                "Snow is lying on the station pad.");
+            Vector3 dock = plan.Station.BoardingDockPosition;
+            Assert.That(
+                AlpineVillageSnowDrift.SampleDepth(
+                    plan,
+                    paths,
+                    new Vector2(dock.x, dock.z)),
+                Is.LessThan(0.01f),
+                "Snow is lying on the boarding dock.");
+
+            // And none of it climbs the mountain: past the standoff there is
+            // no route to drift against and the wall is `74°`.
+            Rect bowl = plan.TerrainBounds;
+            float outside = AlpineVillageWalkableArea.GroundOutset + 6f;
+            Assert.That(
+                AlpineVillageSnowDrift.SampleDepth(
+                    plan,
+                    paths,
+                    new Vector2(bowl.center.x, bowl.yMax + outside)),
+                Is.LessThan(0.01f),
+                "Snow is lying on the enclosing rise.");
+        }
+
+        /// <summary>
+        /// A drift beside one route disappears where another crosses it. The
+        /// depth field is a minimum over EVERY route for exactly this reason;
+        /// a per-segment measure cannot see the crossing and leaves a bank
+        /// laid across the path it joins.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void SnowDrifts_VanishWhereRoutesCross()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
+            var laneOnly = new AlpineVillagePathDescriptor[0];
+
+            int proven = 0;
+            for (int index = 0; index < paths.Count; index++)
+            {
+                AlpineVillagePathDescriptor path = paths[index];
+
+                // Walk the branch out from the street until it is under the
+                // lane's own shoulder - measured against the lane alone,
+                // which is exactly what a per-segment field would see there.
+                int samples = Mathf.Max(2, Mathf.CeilToInt(path.LengthXZ * 4f));
+                for (int step = 0; step <= samples; step++)
+                {
+                    Vector3 point = Vector3.Lerp(
+                        path.Start,
+                        path.End,
+                        step / (float)samples);
+                    var pointXZ = new Vector2(point.x, point.z);
+                    if (AlpineVillageSnowDrift.SampleDepth(
+                            plan,
+                            laneOnly,
+                            pointXZ) <= 0.05f)
+                    {
+                        continue;
+                    }
+
+                    // Under the lane's snow, and standing on this branch.
+                    // The field has to answer for the branch.
+                    Assert.That(
+                        AlpineVillageSnowDrift.SampleDepth(
+                            plan,
+                            paths,
+                            pointXZ),
+                        Is.LessThan(0.01f),
+                        $"The lane's drift lies across '{path.StableId}'.");
+                    proven++;
+                    break;
+                }
+            }
+
+            Assert.That(
+                proven,
+                Is.GreaterThan(2),
+                "No branch leaves the street through the lane's own " +
+                "shoulder, so this proves nothing about crossings.");
+        }
+
+        /// <summary>
+        /// The contract that keeps the decision honest: the snow is a look
+        /// and not a shape. Give it a collider and the hero catches a boot on
+        /// every shoulder - planar velocity is read back from achieved
+        /// movement, so a graze reads as a crawl - and the walkable bowl this
+        /// scene just opened closes again from underneath.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void SnowDrifts_CarryNoCollision()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            var host = new GameObject("Snow Drift Collision Probe");
+            try
+            {
+                AlpineVillageWorldResult world =
+                    AlpineVillageWorldBuilder.Build(host.transform, plan);
+                Transform drifts = world.Root.transform.Find(
+                    AlpineVillageWorldBuilder.SnowDriftObjectName);
+                Assert.That(
+                    drifts,
+                    Is.Not.Null,
+                    "The village built no lying snow at all.");
+                Assert.That(
+                    drifts.GetComponentsInChildren<Collider>(true),
+                    Is.Empty,
+                    "The lying snow has become geometry the hero can trip " +
+                    "on.");
+
+                MeshFilter filter = drifts.GetComponent<MeshFilter>();
+                Assert.That(filter, Is.Not.Null);
+                Assert.That(
+                    filter.sharedMesh.vertexCount,
+                    Is.GreaterThan(500),
+                    "The drift mesh is too coarse to hold a profile.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
     }
 }

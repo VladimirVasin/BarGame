@@ -1,6 +1,7 @@
 
 using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Reflection;
 using NUnit.Framework;
 using UnityEngine;
@@ -467,6 +468,73 @@ namespace BarPromenade.Tests.PlayMode
                     focusPoint,
                     camera.transform.position),
                 Is.EqualTo(unobstructedDistance).Within(0.01f));
+        }
+
+
+
+        [UnityTest]
+        public IEnumerator ExteriorCamera_DefaultArchVaultShortensCameraArm()
+        {
+            CityLayout layout = CityLayoutGenerator.Generate(
+                CityBlueprintCatalog.Default,
+                CityGenerationSettings.Default,
+                GameSessionState.DefaultCitySeed);
+            CityArchShelterPlan plan =
+                CityArchShelterPlanner.Create(layout);
+            CityArchShelterPropDescriptor barrel = plan.Props.Single(
+                prop => prop.Kind == CityArchShelterPropKind.BurnBarrel);
+            CityArchShelterObstacleDescriptor vault =
+                plan.Obstacles.Single(
+                    obstacle => obstacle.Kind ==
+                        CityArchShelterObstacleKind.VaultCrown);
+
+            GameObject vaultObject = CreateObject("Arch Vault Crown");
+            vaultObject.transform.position = vault.Bounds.center;
+            BoxCollider vaultCollider =
+                vaultObject.AddComponent<BoxCollider>();
+            vaultCollider.size = vault.Bounds.size;
+
+            Camera camera = CreateCamera(Vector3.zero);
+            GameObject player = CreateObject("Arch Camera Target");
+            player.transform.position = barrel.Position;
+            PlayerCameraFollow follow =
+                camera.gameObject.AddComponent<PlayerCameraFollow>();
+            Physics.SyncTransforms();
+            follow.Initialize(camera, player.transform, false);
+            follow.SetOrbitInputEnabled(false);
+            follow.SetCinematicMotionEnabled(false);
+
+            Vector3 focusPoint =
+                player.transform.position + Vector3.up * 1.4f;
+            Assert.That(
+                Vector3.Distance(focusPoint, camera.transform.position),
+                Is.EqualTo(2.6f).Within(0.01f),
+                "The ordinary low-angle shot must retain its full arm.");
+
+            follow.RotatePitch(
+                follow.MaximumOrbitPitch - follow.TargetOrbitPitch);
+            follow.Snap();
+            yield return null;
+
+            float obstructedDistance = Vector3.Distance(
+                focusPoint,
+                camera.transform.position);
+            Assert.That(
+                obstructedDistance,
+                Is.LessThan(1.2f),
+                "The masonry below the old roof proxy must pull the " +
+                "camera close before it enters the visible vault.");
+            Assert.That(
+                camera.transform.position.y + 0.2f,
+                Is.LessThan(vault.Bounds.min.y - 0.05f),
+                "The complete camera collision sphere must remain below " +
+                "the vault crown.");
+            Assert.That(
+                Vector3.Angle(
+                    camera.transform.forward,
+                    (focusPoint - camera.transform.position).normalized),
+                Is.LessThan(0.1f),
+                "Vault avoidance must keep the hero centered.");
         }
 
 
