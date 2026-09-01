@@ -370,14 +370,14 @@ Assets/
         MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
         AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane, OBB-safe plots + looming 74° / 60 m ridge, 12 m margin, brink mesh
         AlpineVillagePathPlan.cs visible path/traversal segments + shared dressing anchors
-        AlpineVillage{WalkableArea,WorldBuilder,WeatherShaper}.cs free bowl mask, two-submesh ground with one shared snapped edge, wave-2 kit, warmth targets + permanent blizzard
+        AlpineVillage{WalkableArea,WorldBuilder,WeatherShaper}.cs free bowl mask, two-submesh ground with one shared snapped edge, 2+1 house kit, warmth targets + permanent blizzard
         AlpineVillageRidgeAppearance.cs  village-only stable opaque 96-108 m haze handoff, 0.40 floor + floor-matched PS1 snap/world UV
         AlpineVillageStormField.cs       terrain-sampled ground spindrift + shared wind bed + gust-keyed storm wave rules
         AlpineVillagePeripheralStorm{Plan,Field}.cs route-distance side/rear curtains + protected full-house landmark aperture; presentation only
         AlpineVillageGarlandWind.cs      fixed-anchor wire deformation from shaped village wind
         Audio/AlpineVillageSoundscape*.cs six deterministic causal spatial voices
         AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}.cs boarding, first-person ride, ridge fade
-        VillageAssetProvider.cs         19 assemblies / 53 passive village meshes, closed outward-facing shells
+        VillageAssetProvider.cs         17 assemblies / 43 passive meshes: two ordinary closed-shell house archetypes + unique TopHouse
         MountainRoadMiscAssetProvider.cs 19 passive Blender meshes + deterministic visual variants
         MountainRoadWalkableArea.cs route/plateau movement boundary
         MountainRoadWorldBuilder.cs separate mountain-only composition + 12 imported misc batches
@@ -992,7 +992,7 @@ tools/
   build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
   build-mountain-road-cafe-3d-model.py  51-mesh cafe, six sheets, anchors/props/collider/overlap validator
-  build-village-3d-model.py      v2.1.1, 19 assemblies / 53 outward-validated meshes; no doors/panes/new sheet
+  build-village-3d-model.py      v3.0.0 / village_house_archetypes_v3, 17 assemblies / 43 outward-validated meshes; no doors/panes/new sheet
   build-city-misc-3d-model.py    82 kinds / 122 assemblies / 259 citywide role meshes
   build-city-buildings-3d-model.py  four fixed-metre district prototypes / 28 semantic meshes + UV/exact/near-layer validation
   build-city-building-surface-textures.py  24 deterministic district/semantic albedos + validator

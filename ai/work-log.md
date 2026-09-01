@@ -6,6 +6,122 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-01 — The snow presses down, and the lane stopped being cut open
+
+Three asks: no snow on the paths anywhere, snow that deforms underfoot, and a
+footstep effect with its own sound - plus a second sound for bare ground.
+
+**"Snow on the path" was not snow.** The area-sampled mesh test said no snow
+triangle lay over a compacted ribbon, and the screen said otherwise, so the
+argument was settled by shooting one frame twice: with the snow renderer on
+and off. The frames were identical - the pale wedges were there either way.
+What lies across the street is the TERRAIN, cutting up through the lane skin.
+
+Measured: `423` of `2490` probes across the carriageway, the worst standing
+`0.44 m` proud. The cause is this session's own `SmoothStep` correction. The
+lane skin is laid flat at the PLAN's centreline height while the ground under
+it is the sampler's; while the shelves blended over `0.347 m` that ground was
+flat across the street and the skin covered it, and at the intended `3.6 m` it
+curves. Two vertices cannot follow a curve. The path ribbons never showed it
+only because they are narrower - and they had the same bug, laid flat at their
+centre's height with the station exit `2.5 m` wide.
+
+So both now sample the ground at EVERY vertex, the lane skin is cut into six
+quads across its width, and it rides `LaneSkinLift 0.08 m` over the ground -
+the same order as `SeamBurial`, and for the same reason: the terrain is drawn
+on a `2 m` grid and its chords stand above the smooth height the skin is
+placed at. `LaneSurface_IsNeverCutByItsOwnGround` measures the CHORD that is
+actually drawn rather than a point, because a point-sampled version of it
+passes while the street is visibly cut.
+
+Two small patches survive on the lane and are recorded rather than claimed
+fixed: most likely the longitudinal chord between `1 m` lane samples over a
+shelf's curve.
+
+**The snow deforms.** `AlpineVillageSnowTreading` keeps one float per vertex,
+presses it under a `0.55 m` soft stamp as the hero moves, refills it at a rate
+tied to the snowfall the storm is drawn at, and re-uploads at `10 Hz`. The
+stamp is wider than a boot deliberately: at `640x360` what survives is the
+groove, not the tread, and a stamp narrower than `RibbonCrossStep` would fall
+between vertices and press nothing.
+
+No RenderTexture and no vertex displacement, which is the industry answer and
+the wrong one here: it would need a THIRD verbatim `Ps1Lit` clone to keep
+re-copyable on a URP bump, and the snapped clip position would quantise
+exactly the sub-decimetre amplitude a footprint is made of. The snow was
+already its own mesh with its own pure field, so pressing it is one float and
+a throttled upload. Nothing touches collision.
+
+**Footsteps got a surface.** `IPlayerFootstepSurface` lets an area claim the
+step the motor has already decided to take; whoever claims it owns sound and
+effect together, so a surface and the default can never double. The village
+claims every step and picks by the depth it can actually see:
+`RetroSfxId.FootstepSnow` off the routes, `FootstepSoil` on them - which is
+what finally makes a path AUDIBLE. `AlpineVillageSnowKickup` throws five small
+solid motes for a third of a second; solid rather than a billboard, because
+flat untextured quads near anything the player walks up to are banned.
+
+The snow sound had to be redone after the lead heard it: it read as a BLASTER,
+and correctly - the first cut mixed a `1750 -> 980 Hz` glide under the noise
+for the squeak of grains, and a descending tone under a noise burst is a
+science-fiction weapon. There is no pitched content in a step in snow, so
+there is none now: two noise layers, body and bite. Also made dry rather than
+muffled - the roll-off went `2600 -> 5200 Hz`, because filtering a crunch that
+low leaves a thud with a whistle in it.
+
+Two of this session's own defects were found by the tests rather than by the
+screen: the ribbon carried four vertices across `4.5 m`, so any route crossing
+the three-metre gap between `far` and `edge` was BRIDGED by one quad of
+full-depth snow (fixed by `RibbonCrossStep 0.4 m`, chosen against the `1.54 m`
+zero band of the narrowest household path); and `SampleVisibleDepth` accepted a
+vertex only within the tread radius while the field sheet is on a `1 m` grid,
+so in open snow it returned zero and every step out there would have sounded
+like bare earth.
+
+Verification: EditMode `AlpineVillage|VillageAsset` **54/54** and PlayMode
+`PlayerMotorHeading` **21/21** on the combined tree with the neighbouring
+session's village-kit work, `0` compile errors. Frames re-shot and compared
+against the before set. The sound is the one thing a batch run cannot judge -
+that is the lead's ear.
+
+## 2026-09-01 — The village houses became three related buildings
+
+The passive village asset contract moved to generator `v3.0.0`, design
+`village_house_archetypes_v3`: `17` assemblies and `43` role meshes. Four
+cosmetic variants of one ordinary shell became two structural archetypes. Type
+A is a low dark timber block on a heavy stone plinth with sparse irregular
+openings. Type B raises a bracketed projecting timber upper storey over a high
+masonry base and uses a more regular opening rhythm. `TopHouse` remains its own
+kind but is rebuilt as the third type: a broad timber main mass with one
+weathered whitewashed masonry side wing.
+
+The imported kit still owns closed outward-facing wall/roof geometry and its
+physical facade relief; the world plan still owns real-metre doors, lit panes,
+placement and simple collision proxies. Existing mountain material families
+cover timber, masonry, snow and iron. The redesign adds no heraldry, frescoes,
+ornamental chalet language, interior, interaction or story claim to the
+mother's house.
+
+The generator keeps the normalized descriptor bounds, and the planner keeps
+the same twelve plots, footprints, heights, routes and OBB clearance. The top
+house therefore keeps its protected storm aperture and its station-to-house
+landmark rhythm; the redesign changes form without changing access, collision
+or meaning.
+
+Verification: Blender validate-only and the full deterministic generation both
+completed successfully, producing `17` assemblies / `43` role meshes / `3,692`
+triangles with signature
+`b2fa217bed2b7ce174c22000d0ff5ec98f79558dc79816592ccd29b4a3effbea`.
+Unity `VillageAssetSetup.RunBatch` completed successfully, and the focused
+PlayMode `AreaCaptureFixture.AlpineVillage` selection passed `1/1` in
+`19.230524 s`.
+
+The generated contact sheet and the capture set were also reviewed manually:
+front and side views of both ordinary types, the `TopHouse`, and the overall,
+landmark and rear views. The two ordinary masses remain distinct at capture
+scale; their windows sit on the corresponding wall storeys, while the mother's
+masonry wing and the closed rear/side volumes remain readable.
+
 ## 2026-09-01 — The snow became a field with trenches worn into it
 
 The lead asked for one thing: the drift should keep getting deeper as you

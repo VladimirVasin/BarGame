@@ -2187,6 +2187,279 @@ namespace BarPromenade.Tests.EditMode
         }
 
         /// <summary>
+        /// THE LANE IS NOT CUT BY ITS OWN GROUND.
+        ///
+        /// The lane skin is laid flat at the PLAN's centreline height plus a
+        /// couple of centimetres, while the ground under it is the sampler's
+        /// and is built on a `2 m` grid. Wherever that ground rises above the
+        /// skin the terrain wins the depth test and shows through as a pale
+        /// wedge with hard polygon edges lying across the street - which is
+        /// exactly what was reported as "snow on the path", and is not snow
+        /// at all: the same wedges are there with the snow renderer off.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void LaneSurface_IsNeverCutByItsOwnGround()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            float lift = AlpineVillageWorldBuilder.LaneSkinLift;
+
+            float worst = 0f;
+            Vector3 where = Vector3.zero;
+            int cut = 0;
+            int probes = 0;
+            int across = AlpineVillageWorldBuilder.LaneSkinCrossSteps;
+            for (float distance = 0f;
+                 distance <= plan.Lane.Length;
+                 distance += 0.5f)
+            {
+                AlpineVillageLaneSample sample = plan.Lane.Sample(distance);
+                float half = sample.Width * 0.5f;
+                for (int step = 0; step < across; step++)
+                {
+                    // The chord between two neighbouring skin vertices is
+                    // what actually gets drawn; the ground bulging above THAT
+                    // is what shows through.
+                    float left = Mathf.Lerp(-half, half, step / (float)across);
+                    float right = Mathf.Lerp(
+                        -half,
+                        half,
+                        (step + 1) / (float)across);
+                    Vector3 a = sample.Position + sample.Right * left;
+                    Vector3 b = sample.Position + sample.Right * right;
+                    float skinA = SampleGround(plan, a) + lift;
+                    float skinB = SampleGround(plan, b) + lift;
+                    for (float t = 0f; t <= 1f; t += 0.25f)
+                    {
+                        Vector3 point = Vector3.Lerp(a, b, t);
+                        float ground = SampleGround(plan, point);
+                        float skin = Mathf.Lerp(skinA, skinB, t);
+                        probes++;
+                        float proud = ground - skin;
+                        if (proud <= 0f)
+                        {
+                            continue;
+                        }
+
+                        cut++;
+                        if (proud > worst)
+                        {
+                            worst = proud;
+                            where = point;
+                        }
+                    }
+                }
+            }
+
+            Assert.That(
+                cut,
+                Is.Zero,
+                $"The ground rises through the lane skin at {cut} of " +
+                $"{probes} probes; the worst stands {worst:0.000} m proud " +
+                $"at {where}.");
+        }
+
+        private static float SampleGround(
+            AlpineVillagePlan plan,
+            Vector3 point)
+        {
+            return AlpineVillageTerrainSampler.SampleHeight(
+                plan,
+                new Vector2(point.x, point.z));
+        }
+
+        /// <summary>
+        /// NO SNOW LIES ON A ROUTE, and the mesh has to say so - not just
+        /// the field.
+        ///
+        /// The depth field is zero over every trodden surface and always was.
+        /// A mesh only knows what its vertices know, though, and the first
+        /// cut carried four across a ribbon `4.5 m` wide: a route crossing
+        /// inside that three-metre gap was BRIDGED, one quad of full-depth
+        /// snow laid straight over trodden ground. This walks the built
+        /// triangles instead of the field, which is the only way to see it.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void SnowMesh_NeverLiesOverATroddenRoute()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            IReadOnlyList<AlpineVillagePathDescriptor> paths =
+                AlpineVillagePathPlanner.Create(plan);
+            var host = new GameObject("Snow Bridging Probe");
+            try
+            {
+                AlpineVillageWorldResult world =
+                    AlpineVillageWorldBuilder.Build(host.transform, plan);
+                Transform drifts = world.Root.transform.Find(
+                    AlpineVillageWorldBuilder.SnowDriftObjectName);
+                Assert.That(drifts, Is.Not.Null);
+                Mesh mesh = drifts.GetComponent<MeshFilter>().sharedMesh;
+                Vector3[] vertices = mesh.vertices;
+                int[] triangles = mesh.triangles;
+
+                // ACROSS THE WHOLE TRIANGLE, not at its centre. A quad a
+                // metre wide can cover most of a path while its centroid
+                // sits comfortably off it - which is exactly what the first
+                // version of this test missed and the screen did not.
+                var weights = new[]
+                {
+                    new Vector3(1f, 0f, 0f),
+                    new Vector3(0f, 1f, 0f),
+                    new Vector3(0f, 0f, 1f),
+                    new Vector3(0.5f, 0.5f, 0f),
+                    new Vector3(0f, 0.5f, 0.5f),
+                    new Vector3(0.5f, 0f, 0.5f),
+                    new Vector3(1f / 3f, 1f / 3f, 1f / 3f),
+                    new Vector3(0.6f, 0.2f, 0.2f),
+                    new Vector3(0.2f, 0.6f, 0.2f),
+                    new Vector3(0.2f, 0.2f, 0.6f)
+                };
+
+                int bridged = 0;
+                Vector3 worst = Vector3.zero;
+                float worstLift = 0f;
+                for (int index = 0; index + 2 < triangles.Length; index += 3)
+                {
+                    Vector3 a = vertices[triangles[index]];
+                    Vector3 b = vertices[triangles[index + 1]];
+                    Vector3 c = vertices[triangles[index + 2]];
+                    bool flagged = false;
+                    for (int step = 0;
+                         step < weights.Length && !flagged;
+                         step++)
+                    {
+                        Vector3 w = weights[step];
+                        Vector3 point = a * w.x + b * w.y + c * w.z;
+                        var pointXZ = new Vector2(point.x, point.z);
+                        // Over the COMPACTED RIBBON, which is what a path
+                        // is. Not the bare skirt beyond it:
+                        // `BareSkirtHalfWidth` exists precisely to say where
+                        // snow may start again.
+                        float outside = AlpineVillagePathPlanner
+                            .MeasureDistanceOutsideTrodden(
+                                plan,
+                                paths,
+                                pointXZ,
+                                out _);
+                        if (outside > 0f)
+                        {
+                            continue;
+                        }
+
+                        float ground =
+                            AlpineVillageTerrainSampler.SampleHeight(
+                                plan,
+                                pointXZ);
+                        float lift = point.y - ground;
+                        if (lift <= 0.02f)
+                        {
+                            continue;
+                        }
+
+                        bridged++;
+                        flagged = true;
+                        if (lift > worstLift)
+                        {
+                            worstLift = lift;
+                            worst = point;
+                        }
+                    }
+                }
+
+                Assert.That(
+                    bridged,
+                    Is.Zero,
+                    $"{bridged} snow triangles lie over trodden ground; the " +
+                    $"worst stands {worstLift:0.00} m proud at {worst}.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        /// <summary>
+        /// Walking through the snow presses it down, and the snow says what
+        /// is left rather than what the plan wanted.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void SnowTreading_PressesDownWhereHeWalks()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            var host = new GameObject("Snow Treading Probe");
+            try
+            {
+                AlpineVillageWorldResult world =
+                    AlpineVillageWorldBuilder.Build(host.transform, plan);
+                AlpineVillageSnowTreading treading = world.SnowTreading;
+                Assert.That(
+                    treading,
+                    Is.Not.Null,
+                    "The village built no treadable snow.");
+
+                // Open snow beside the lane, clear of every apron.
+                Vector3 spot = Vector3.zero;
+                float before = 0f;
+                for (float distance = 4f;
+                     distance <= plan.Lane.Length - 4f;
+                     distance += 1f)
+                {
+                    AlpineVillageLaneSample sample =
+                        plan.Lane.Sample(distance);
+                    for (int side = -1; side <= 1; side += 2)
+                    {
+                        Vector3 outward = sample.Right * side;
+                        if (!IsClearOfEveryApron(
+                                plan,
+                                sample.Position,
+                                outward,
+                                8f))
+                        {
+                            continue;
+                        }
+
+                        for (float out3 = 3f; out3 <= 8f; out3 += 0.5f)
+                        {
+                            Vector3 probe = sample.Position + outward * out3;
+                            float depth =
+                                treading.SampleVisibleDepth(probe);
+                            if (depth > before)
+                            {
+                                before = depth;
+                                spot = probe;
+                            }
+                        }
+                    }
+                }
+
+                Assert.That(
+                    before,
+                    Is.GreaterThan(0.2f),
+                    "Found no deep snow beside the lane to tread on.");
+
+                treading.Press(spot);
+                float after = treading.SampleVisibleDepth(spot);
+                Assert.That(
+                    after,
+                    Is.LessThan(before * 0.5f),
+                    $"A pass through {before:0.00} m of snow left " +
+                    $"{after:0.00} m - it is not being pressed down.");
+
+                // And a step there sounds like snow, not like the path.
+                Assert.That(
+                    treading.TryPlayFootstep(spot, 0f),
+                    Is.True,
+                    "The snow did not claim its own footstep.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        /// <summary>
         /// The contract that keeps the decision honest: the snow is a look
         /// and not a shape. Give it a collider and the hero catches a boot on
         /// every shoulder - planar velocity is read back from achieved

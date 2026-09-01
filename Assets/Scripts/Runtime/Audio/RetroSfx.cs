@@ -48,6 +48,8 @@ namespace BarPromenade
         RopeCreak,
         CoffinSettle,
         StoneTamp,
+        FootstepSnow,
+        FootstepSoil,
         Count
     }
 
@@ -167,6 +169,42 @@ namespace BarPromenade
                 4400f,
                 0.08f,
                 132),
+            // Snow takes the thump out of a step and leaves the grain: all
+            // noise, quieter, and SHORT. The roll-off is high rather than low
+            // - dry snow is a crisp sound, and filtering it down to `2600 Hz`
+            // made it a thud with a whistle in it. The wide pitch variation
+            // is the point: no two steps in snow are alike, and at this
+            // stride a fixed one reads as a machine.
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepSnow,
+                RetroSfxCategory.World,
+                0.13f,
+                0.19f,
+                1f,
+                3,
+                0.075f,
+                3,
+                512,
+                5200f,
+                0.18f,
+                131),
+            // And the trodden path answers back: shorter and drier than
+            // snow, with a knock the snow has not got. This is what makes a
+            // route audible - step off the path and the sound changes before
+            // the eye has finished noticing the ground did.
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepSoil,
+                RetroSfxCategory.World,
+                0.11f,
+                0.22f,
+                1f,
+                3,
+                0.075f,
+                3,
+                512,
+                3600f,
+                0.10f,
+                131),
             new RetroSfxDefinition(
                 RetroSfxId.Door,
                 RetroSfxCategory.World,
@@ -629,6 +667,16 @@ namespace BarPromenade
                         time,
                         duration,
                         ref noiseState);
+                case RetroSfxId.FootstepSnow:
+                    return GenerateFootstepSnow(
+                        time,
+                        duration,
+                        ref noiseState);
+                case RetroSfxId.FootstepSoil:
+                    return GenerateFootstepSoil(
+                        time,
+                        duration,
+                        ref noiseState);
                 case RetroSfxId.Door:
                     return GenerateDoor(
                         time,
@@ -826,6 +874,52 @@ namespace BarPromenade
                        NextNoise(ref noiseState) * 0.32f) *
                    envelope *
                    0.78f;
+        }
+
+        /// <summary>
+        /// A boot going into snow: dry grain, and nothing else.
+        ///
+        /// The first cut mixed in a `1750 -> 980 Hz` glide for the squeak of
+        /// grains sliding, and a descending tone under a noise burst is a
+        /// BLASTER - it read as science fiction the moment it was heard in
+        /// the scene. There is no pitched content in a footstep in snow, so
+        /// there is none here: two noise layers, one for the body of the
+        /// compression and a faster one for the bite at the top of it.
+        /// </summary>
+        private static float GenerateFootstepSnow(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float body = Envelope(time, duration, 0.005f, 3.6f);
+            float bite = Envelope(time, duration, 0.001f, 13f);
+            return (
+                       NextNoise(ref noiseState) * 0.62f * body +
+                       NextNoise(ref noiseState) * 0.38f * bite) *
+                   0.72f;
+        }
+
+        /// <summary>
+        /// And a boot on the trodden path: the same weight arriving on
+        /// something that stops it, so the knock is back and the tail is
+        /// short.
+        /// </summary>
+        private static float GenerateFootstepSoil(
+            float time,
+            float duration,
+            ref uint noiseState)
+        {
+            float envelope = Envelope(time, duration, 0.002f, 4.2f);
+            float knock = GlideSine(
+                time,
+                duration,
+                168f,
+                84f);
+            return (
+                       knock * 0.45f +
+                       NextNoise(ref noiseState) * 0.55f) *
+                   envelope *
+                   0.8f;
         }
 
         private static float GenerateDoor(

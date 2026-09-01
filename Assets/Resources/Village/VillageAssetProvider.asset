@@ -12,8 +12,8 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 09d576db562acf242a7812c51d119f67, type: 3}
   m_Name: VillageAssetProvider
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.VillageAssetProvider
-  designId: village_wave2_v2
-  buildSignature: 24ca0fc6fb9c310d56183a03b147a3da2c3898c47a3fde5b92930eb3a865bb57
+  designId: village_house_archetypes_v3
+  buildSignature: b2fa217bed2b7ce174c22000d0ff5ec98f79558dc79816592ccd29b4a3effbea
   entries:
   - kind: 0
     variant: 0
@@ -55,46 +55,6 @@ MonoBehaviour:
     variant: 1
     role: 10
     mesh: {fileID: -1414390201386567431, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
-  - kind: 0
-    variant: 2
-    role: 0
-    mesh: {fileID: -1809310067615020133, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
-  - kind: 0
-    variant: 2
-    role: 1
-    mesh: {fileID: -293168554205909333, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
-  - kind: 0
-    variant: 2
-    role: 2
-    mesh: {fileID: -5731008040921353394, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
-  - kind: 0
-    variant: 2
-    role: 3
-    mesh: {fileID: 2617092289427539767, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
-  - kind: 0
-    variant: 2
-    role: 10
-    mesh: {fileID: 7782902961605949362, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
-  - kind: 0
-    variant: 3
-    role: 0
-    mesh: {fileID: -6944993557328703731, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
-  - kind: 0
-    variant: 3
-    role: 1
-    mesh: {fileID: 5924030858611887982, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
-  - kind: 0
-    variant: 3
-    role: 2
-    mesh: {fileID: -3242224846430195177, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
-  - kind: 0
-    variant: 3
-    role: 3
-    mesh: {fileID: -723268181779112580, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
-  - kind: 0
-    variant: 3
-    role: 10
-    mesh: {fileID: 5644154683125370587, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
   - kind: 1
     variant: 0
     role: 0

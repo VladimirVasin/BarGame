@@ -96,6 +96,22 @@ namespace BarPromenade
         internal const float PathSampleStep = 0.8f;
 
         /// <summary>
+        /// Pitch of the ribbon ACROSS its route, and the reason snow cannot
+        /// lie on a path.
+        ///
+        /// The depth field is zero over every route, but a mesh only knows
+        /// what its vertices know: the first cut carried four of them - toe,
+        /// two on the rise, outer edge - which left a three-metre span with
+        /// nothing in it. Any route crossing inside that span was BRIDGED, a
+        /// single quad of full-depth snow laid straight over trodden ground.
+        /// The narrowest route in the village is a household path, `0.62 m`
+        /// of ribbon plus its skirt either side, so its zero band is
+        /// `1.54 m` wide; at this pitch a vertex always lands inside one and
+        /// the snow pinches down to the ground where it belongs.
+        /// </summary>
+        internal const float RibbonCrossStep = 0.4f;
+
+        /// <summary>
         /// How far a zero-depth edge is sunk under the ground it meets.
         ///
         /// Unlike the ground's two submeshes, this is an independently
@@ -192,6 +208,32 @@ namespace BarPromenade
             near = toe + rise * 0.35f;
             far = toe + rise;
             edge = Mathf.Max(RibbonReach, far + FieldCellSize);
+        }
+
+        /// <summary>
+        /// Every offset the ribbon carries across its route, from the buried
+        /// toe out to the edge that meets the field sheet, at a pitch fine
+        /// enough that no quad can bridge a crossing route.
+        /// </summary>
+        internal static void AppendCrossSectionOffsets(
+            float exposure,
+            List<float> offsets)
+        {
+            if (offsets == null)
+            {
+                throw new ArgumentNullException(nameof(offsets));
+            }
+
+            offsets.Clear();
+            CrossSection(exposure, out float toe, out _, out _, out float edge);
+            int steps = Mathf.Max(
+                1,
+                Mathf.CeilToInt((edge - toe) / RibbonCrossStep));
+            for (int index = 0; index <= steps; index++)
+            {
+                offsets.Add(
+                    Mathf.Lerp(toe, edge, index / (float)steps));
+            }
         }
 
         /// <summary>

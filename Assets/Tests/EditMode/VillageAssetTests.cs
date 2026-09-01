@@ -111,23 +111,37 @@ namespace BarPromenade.Tests.EditMode
 
         /// <summary>
         /// A house keeps its shape across rebuilds of the same seed, and the
-        /// four variants are actually used rather than one being picked for
-        /// every plot on the lane.
+        /// two architectural families are both distributed along the lane.
+        /// The house at its head remains a third, separate catalog kind.
         /// </summary>
         [Test]
         [Category("AlpineVillage")]
         public void VariantSelection_IsStableAndSpreadAcrossTheLane()
         {
             AlpineVillagePlan plan = CreatePlan();
-            var used = new HashSet<int>();
-            foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
-            {
-                if (plot.Kind != AlpineVillagePlotKind.House &&
-                    plot.Kind != AlpineVillagePlotKind.MothersHouse)
-                {
-                    continue;
-                }
+            Assert.That(
+                VillageAssetProvider.GetVariantCount(
+                    VillageAssetKind.House),
+                Is.EqualTo(2),
+                "Ordinary weathering variants must not become more " +
+                "architectural families.");
+            Assert.That(
+                VillageAssetProvider.GetVariantCount(
+                    VillageAssetKind.TopHouse),
+                Is.EqualTo(1),
+                "The house at the head of the lane is its own third type.");
 
+            var used = new HashSet<int>();
+            int[] counts = new int[VillageAssetProvider.HouseVariantCount];
+            int previous = -1;
+            int runLength = 0;
+            int longestRun = 0;
+            AlpineVillagePlotDescriptor[] ordinaryHouses = plan.Plots
+                .Where(plot => plot.Kind == AlpineVillagePlotKind.House)
+                .OrderBy(plot => plot.LaneDistance)
+                .ToArray();
+            foreach (AlpineVillagePlotDescriptor plot in ordinaryHouses)
+            {
                 int first = VillageAssetProvider.SelectVariant(
                     VillageAssetKind.House,
                     plot.StableId);
@@ -141,12 +155,29 @@ namespace BarPromenade.Tests.EditMode
                         0,
                         VillageAssetProvider.HouseVariantCount - 1));
                 used.Add(first);
+                counts[first]++;
+                runLength = first == previous ? runLength + 1 : 1;
+                longestRun = Mathf.Max(longestRun, runLength);
+                previous = first;
             }
 
             Assert.That(
                 used.Count,
-                Is.GreaterThanOrEqualTo(3),
-                "A lane of identical houses is not a village.");
+                Is.EqualTo(2),
+                "Both ordinary architectural types must reach the lane.");
+            Assert.That(
+                System.Math.Abs(counts[0] - counts[1]),
+                Is.LessThanOrEqualTo(2),
+                "One ordinary house type overwhelms the other.");
+            Assert.That(
+                longestRun,
+                Is.LessThanOrEqualTo(2),
+                "Three identical house silhouettes form a cloned row.");
+            Assert.That(
+                VillageAssetProvider.SelectVariant(
+                    VillageAssetKind.TopHouse,
+                    plan.MothersHouse.StableId),
+                Is.Zero);
         }
 
         /// <summary>

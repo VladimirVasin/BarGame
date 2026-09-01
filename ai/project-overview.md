@@ -149,7 +149,16 @@ The vertical slice contains:
   it scours — a field with trenches worn into it, not the raked bank the art
   bible refuses. Fitted ribbons carry the rise along each route and a `1 m`
   sheet carries the saturated remainder, overlapping by a cell and drawn under
-  it so the ribbon wins the join.
+  it so the ribbon wins the join. `AlpineVillageSnowTreading` keeps one float
+  per vertex so a boot presses the snow down and the snowfall fills it back
+  in - CPU-side, because vertex displacement would need a third verbatim
+  `Ps1Lit` clone and the snap would quantise the amplitude a print is made of.
+  `IPlayerFootstepSurface` lets the village claim each step the motor takes
+  and pick `FootstepSnow` or `FootstepSoil` by the depth it can see, which is
+  what makes a route audible. The lane skin and the path ribbons sample the
+  ground at every vertex and ride `LaneSkinLift` over it: laid flat at their
+  centreline's height they were cut open by ground that curves, which is the
+  pale wedges that were reported as snow lying on the street.
   Authored distance/side/yaw beats form frontage clusters and pauses; exact OBB
   validation, three `7.2-7.5 m` rear-row depth beats and a bounded symmetric
   local correction keep every seeded rotated footprint out of its neighbours
@@ -221,13 +230,22 @@ The vertical slice contains:
   reducer and shaft, tension carriage and weight stack above with no motor at
   all. Boarding is outboard of the outbound track, because the gap between the
   two tracks is filled by the bullwheel pedestal. The village wears a fourth
-  deterministic Blender kit - `19` assemblies / `53` meshes - with roof snow,
-  a distinct top house, facade repairs/shutters, garland posts, cable gate,
-  rail bridge and a plain stone catch basin added to the original houses,
-  chapel, mine cart, adit frame, grave markers and firewood. Every house and
-  the chapel now render as a closed outward-facing Blender shell on all four
-  sides; roofs and facade dressing no longer survive around an invisible wall
-  volume. It raises no new
+  deterministic Blender kit - generator contract `v3.0.0` /
+  `village_house_archetypes_v3`, `17` assemblies / `43` role meshes. Two
+  ordinary closed-shell house archetypes replace the former four cosmetic
+  variants: one is a low dark timber block on a heavy stone plinth with sparse
+  irregular openings; the other raises a bracketed projecting timber upper
+  storey over a high masonry base and uses a more regular opening rhythm. The
+  distinct top house is a third type, a broad timber main mass with a
+  weathered whitewashed masonry side wing, larger and tidier without heraldry,
+  frescoes or tourist-chalet ornament. Roof snow, facade repairs/shutters,
+  garland posts, cable gate, rail bridge and a plain stone catch basin remain
+  alongside the chapel, mine cart, adit frame, grave markers and firewood.
+  Every house and the chapel render as a closed outward-facing Blender shell
+  on all four sides; roofs and facade dressing do not survive around an
+  invisible wall volume. The redesign preserves the planner's normalized
+  bounds, footprints, collision proxies, routes, landmark aperture and story
+  meaning. It raises no new
   surface family and ships no doors or window panes, because both scale with
   the descriptor across plots from `4.2` to `7 m` and are drawn by the world
   builder at real metres on the wall face the mesh's own bounds report.

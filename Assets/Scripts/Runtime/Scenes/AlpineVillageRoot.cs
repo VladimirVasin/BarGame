@@ -250,6 +250,17 @@ namespace BarPromenade
                 areaCamera,
                 Player.GameObject.transform,
                 false);
+
+            // The snow gets its walker and its refill rate now that both
+            // exist: the builder has no player, and the snowfall it fills
+            // back in with is the same intensity the storm is drawn at.
+            if (World.SnowTreading != null)
+            {
+                World.SnowTreading.AttachWalker(
+                    Player.GameObject.transform,
+                    () => Snow == null ? 1f : Snow.Intensity);
+                Player.Motor.SetFootstepSurface(World.SnowTreading);
+            }
             BuildAtmosphere();
             BuildCableway();
             BuildCommonUi(ui);

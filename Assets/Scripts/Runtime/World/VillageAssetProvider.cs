@@ -113,12 +113,18 @@ namespace BarPromenade
     public sealed class VillageAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "Village/VillageAssetProvider";
-        public const string GeneratorVersion = "2.1.1";
-        public const string DesignId = "village_wave2_v2";
-        public const int ExpectedAssemblyCount = 19;
-        public const int ExpectedMeshCount = 53;
+        public const string GeneratorVersion = "3.0.0";
+        public const string DesignId = "village_house_archetypes_v3";
+        public const int ExpectedAssemblyCount = 17;
+        public const int ExpectedMeshCount = 43;
 
-        public const int HouseVariantCount = 4;
+        /// <summary>
+        /// The lane alternates two real architectural families. Small
+        /// weathering differences belong to facade dressing; they are not
+        /// additional house shapes. The house at the head of the lane is the
+        /// separate <see cref="VillageAssetKind.TopHouse"/> family.
+        /// </summary>
+        public const int HouseVariantCount = 2;
         public const int GraveMarkerVariantCount = 3;
         public const int FacadeDetailVariantCount = 3;
 
@@ -351,8 +357,7 @@ namespace BarPromenade
             switch (role)
             {
                 case VillageMeshRole.Walls:
-                    return kind == VillageAssetKind.Chapel ||
-                           kind == VillageAssetKind.TopHouse
+                    return kind == VillageAssetKind.Chapel
                         ? MountainRoadSurfaceKind.Masonry
                         : MountainRoadSurfaceKind.Timber;
                 case VillageMeshRole.Roof:

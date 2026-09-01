@@ -14,8 +14,10 @@ namespace BarPromenade
             GameObject laneSurface,
             MountainCablewayWorldResult cableway,
             AlpineVillageWalkableArea walkableArea,
-            IDictionary<string, Transform> semanticObjects)
+            IDictionary<string, Transform> semanticObjects,
+            AlpineVillageSnowTreading snowTreading)
         {
+            SnowTreading = snowTreading;
             Root = root ?? throw new ArgumentNullException(nameof(root));
             TerrainRoot = terrainRoot ??
                 throw new ArgumentNullException(nameof(terrainRoot));
@@ -37,6 +39,10 @@ namespace BarPromenade
 
         /// <summary>The upper terminal and its running line.</summary>
         public MountainCablewayWorldResult Cableway { get; }
+
+        /// <summary>The lying snow, and the thing a boot presses into it.
+        /// Null only if the plan yielded no snow at all.</summary>
+        public AlpineVillageSnowTreading SnowTreading { get; }
 
         public GameObject StationRoot => Cableway.StationRoot;
         public AlpineVillageWalkableArea WalkableArea { get; }
@@ -81,9 +87,17 @@ namespace BarPromenade
         /// </summary>
         internal const string SnowDriftObjectName = "Village Snow Drifts";
 
-        /// <summary>Buried inner toe, crest, tail knee, buried outer toe.
+        /// <summary>How far the lane skin is laid over the ground it covers.
         /// </summary>
-        private const int DriftCrossSectionVertices = 4;
+        internal const float LaneSkinLift = 0.08f;
+
+        /// <summary>
+        /// How many quads the lane skin is cut into across its width. At
+        /// `3.6 m` that is `0.9 m` a quad, which is fine enough that the
+        /// ground's own curve cannot bulge through the chord between two of
+        /// them.
+        /// </summary>
+        internal const int LaneSkinCrossSteps = 6;
 
         private static readonly Color SnowColor =
             new Color(0.695f, 0.685f, 0.655f, 1f);
@@ -212,7 +226,8 @@ namespace BarPromenade
             GameObject terrainRoot = BuildTerrain(root.transform, plan);
             GameObject laneSurface = BuildLane(root.transform, plan);
             BuildPathSurfaces(root.transform, plan);
-            BuildSnowDrifts(root.transform, plan);
+            AlpineVillageSnowTreading snowTreading =
+                BuildSnowDrifts(root.transform, plan);
 
             // The station is the cableway builder's, not this one's. Both
             // terminals are the same building and the second must not be a
@@ -248,7 +263,8 @@ namespace BarPromenade
                 laneSurface,
                 cableway,
                 walkableArea,
-                semanticObjects);
+                semanticObjects,
+                snowTreading);
         }
 
         /// <summary>
@@ -493,13 +509,18 @@ namespace BarPromenade
             {
                 float amount = step / (float)steps;
                 Vector3 center = Vector3.Lerp(path.Start, path.End, amount);
-                center.y = AlpineVillageTerrainSampler.SampleHeight(
-                    plan,
-                    new Vector2(center.x, center.z)) + 0.025f;
                 Vector3 across = right * path.SurfaceHalfWidth;
+                // Each edge on its own ground, for the reason the lane skin
+                // learned the hard way: a ribbon laid flat at its centre's
+                // height is cut open by any ground that curves under it, and
+                // the station exit is `2.5 m` wide.
+                Vector3 left = center - across;
+                Vector3 rightEdge = center + across;
+                left.y = LaneSkinHeight(plan, left);
+                rightEdge.y = LaneSkinHeight(plan, rightEdge);
                 int vertex = step * 2;
-                vertices[vertex] = center - across;
-                vertices[vertex + 1] = center + across;
+                vertices[vertex] = left;
+                vertices[vertex + 1] = rightEdge;
                 float travelled = path.LengthXZ * amount * 0.42f;
                 uvs[vertex] = new Vector2(0f, travelled);
                 uvs[vertex + 1] = new Vector2(1f, travelled);
@@ -555,7 +576,7 @@ namespace BarPromenade
         /// planar velocity is read back from achieved movement, so ground he
         /// could catch a boot on would read as a crawl.
         /// </summary>
-        private static void BuildSnowDrifts(
+        private static AlpineVillageSnowTreading BuildSnowDrifts(
             Transform parent,
             AlpineVillagePlan plan)
         {
@@ -564,8 +585,13 @@ namespace BarPromenade
             var vertices = new List<Vector3>();
             var uvs = new List<Vector2>();
             var triangles = new List<int>();
+            // Kept beside the vertices so the treading pass can lower each
+            // one back towards its own ground without re-deriving anything.
+            var grounds = new List<float>();
+            var depths = new List<float>();
 
-            AppendLaneDrifts(plan, paths, vertices, uvs, triangles);
+            AppendLaneDrifts(
+                plan, paths, vertices, uvs, triangles, grounds, depths);
             for (int index = 0; index < paths.Count; index++)
             {
                 AppendPathDrifts(
@@ -574,14 +600,17 @@ namespace BarPromenade
                     paths[index],
                     vertices,
                     uvs,
-                    triangles);
+                    triangles,
+                    grounds,
+                    depths);
             }
 
-            AppendSnowField(plan, paths, vertices, uvs, triangles);
+            AppendSnowField(
+                plan, paths, vertices, uvs, triangles, grounds, depths);
 
             if (triangles.Count == 0)
             {
-                return;
+                return null;
             }
 
             var mesh = new Mesh
@@ -613,6 +642,20 @@ namespace BarPromenade
                 AlpineVillageRidgeAppearance.Surface,
                 SnowColor,
                 0);
+
+            // The snow keeps its own vertices so a boot can press them. It
+            // is armed here and given its walker by the scene root, because
+            // the builder has no player and must not wait for one.
+            AlpineVillageSnowTreading treading =
+                host.AddComponent<AlpineVillageSnowTreading>();
+            treading.Initialize(
+                mesh,
+                vertices.ToArray(),
+                grounds.ToArray(),
+                depths.ToArray(),
+                null,
+                null);
+            return treading;
         }
 
         /// <summary>
@@ -636,7 +679,9 @@ namespace BarPromenade
             IReadOnlyList<AlpineVillagePathDescriptor> paths,
             List<Vector3> vertices,
             List<Vector2> uvs,
-            List<int> triangles)
+            List<int> triangles,
+            List<float> grounds,
+            List<float> depths)
         {
             Rect bowl = plan.TerrainBounds;
             float outset = AlpineVillageTerrainSampler.RidgeStandoff;
@@ -667,10 +712,11 @@ namespace BarPromenade
                     float ground = AlpineVillageTerrainSampler.SampleHeight(
                         plan,
                         point);
-                    vertices.Add(new Vector3(
-                        point.x,
-                        ground + depth - AlpineVillageSnowDrift.FieldBurial,
-                        point.y));
+                    float height =
+                        ground + depth - AlpineVillageSnowDrift.FieldBurial;
+                    vertices.Add(new Vector3(point.x, height, point.y));
+                    grounds.Add(ground);
+                    depths.Add(Mathf.Max(0f, height - ground));
                     uvs.Add(
                         AlpineVillageRidgeAppearance.CreateWorldUv(point));
                 }
@@ -718,7 +764,9 @@ namespace BarPromenade
             IReadOnlyList<AlpineVillagePathDescriptor> paths,
             List<Vector3> vertices,
             List<Vector2> uvs,
-            List<int> triangles)
+            List<int> triangles,
+            List<float> grounds,
+            List<float> depths)
         {
             IReadOnlyList<AlpineVillageLaneSample> samples =
                 plan.Lane.Samples;
@@ -743,7 +791,9 @@ namespace BarPromenade
                     side < 0,
                     vertices,
                     uvs,
-                    triangles);
+                    triangles,
+                    grounds,
+                    depths);
             }
         }
 
@@ -753,7 +803,9 @@ namespace BarPromenade
             AlpineVillagePathDescriptor path,
             List<Vector3> vertices,
             List<Vector2> uvs,
-            List<int> triangles)
+            List<int> triangles,
+            List<float> grounds,
+            List<float> depths)
         {
             Vector3 direction = path.End - path.Start;
             direction.y = 0f;
@@ -794,7 +846,9 @@ namespace BarPromenade
                     side < 0,
                     vertices,
                     uvs,
-                    triangles);
+                    triangles,
+                    grounds,
+                    depths);
             }
         }
 
@@ -811,12 +865,21 @@ namespace BarPromenade
             bool mirrored,
             List<Vector3> vertices,
             List<Vector2> uvs,
-            List<int> triangles)
+            List<int> triangles,
+            List<float> grounds,
+            List<float> depths)
         {
             if (stations.Count < 2)
             {
                 return;
             }
+
+            // Every station carries the same count, because the strip is
+            // indexed as a grid. Exposure only stretches WHERE the offsets
+            // fall, never how many there are.
+            var offsets = new List<float>();
+            AlpineVillageSnowDrift.AppendCrossSectionOffsets(1f, offsets);
+            int across = offsets.Count;
 
             int origin = vertices.Count;
             for (int index = 0; index < stations.Count; index++)
@@ -825,36 +888,34 @@ namespace BarPromenade
                 float exposure = AlpineVillageSnowDrift.MeasureExposure(
                     plan,
                     station.Outward);
-                AlpineVillageSnowDrift.CrossSection(
+                AlpineVillageSnowDrift.AppendCrossSectionOffsets(
                     exposure,
-                    out float toe,
-                    out float near,
-                    out float far,
-                    out float edge);
-                AppendDriftVertex(
-                    plan, paths, station, toe, false, vertices, uvs);
-                AppendDriftVertex(
-                    plan, paths, station, near, false, vertices, uvs);
-                AppendDriftVertex(
-                    plan, paths, station, far, false, vertices, uvs);
-                // The outer edge meets the field sheet, which is drawn under
-                // its own height so the ribbon wins their overlap. Sink this
-                // one with it, or the ribbon ends in a step the height of
-                // that burial, ringing every route in the village.
-                AppendDriftVertex(
-                    plan, paths, station, edge, true, vertices, uvs);
+                    offsets);
+                for (int step = 0; step < across; step++)
+                {
+                    // The outer edge meets the field sheet, which is drawn
+                    // under its own height so the ribbon wins their overlap.
+                    // Sink that one with it, or the ribbon ends in a step the
+                    // height of that burial, ringing every route.
+                    AppendDriftVertex(
+                        plan,
+                        paths,
+                        station,
+                        offsets[Mathf.Min(step, offsets.Count - 1)],
+                        step == across - 1,
+                        vertices,
+                        uvs,
+                        grounds,
+                        depths);
+                }
             }
 
             for (int index = 0; index < stations.Count - 1; index++)
             {
-                for (int across = 0;
-                     across < DriftCrossSectionVertices - 1;
-                     across++)
+                for (int step = 0; step < across - 1; step++)
                 {
-                    int a = origin +
-                            index * DriftCrossSectionVertices +
-                            across;
-                    int b = a + DriftCrossSectionVertices;
+                    int a = origin + index * across + step;
+                    int b = a + across;
                     int c = a + 1;
                     int d = b + 1;
                     if (mirrored)
@@ -888,7 +949,9 @@ namespace BarPromenade
             float offset,
             bool meetsTheField,
             List<Vector3> vertices,
-            List<Vector2> uvs)
+            List<Vector2> uvs,
+            List<float> grounds,
+            List<float> depths)
         {
             Vector2 point = station.Edge + station.Outward * offset;
             float depth = AlpineVillageSnowDrift.SampleDepth(
@@ -907,6 +970,8 @@ namespace BarPromenade
             }
 
             vertices.Add(new Vector3(point.x, height, point.y));
+            grounds.Add(ground);
+            depths.Add(Mathf.Max(0f, height - ground));
             // The ground's own planar UV, so the one sheet runs across the
             // toe at the pitch the snow beside it already has.
             uvs.Add(AlpineVillageRidgeAppearance.CreateWorldUv(point));
@@ -938,30 +1003,56 @@ namespace BarPromenade
         {
             IReadOnlyList<AlpineVillageLaneSample> samples =
                 plan.Lane.Samples;
-            var vertices = new Vector3[samples.Count * 2];
+            // ACROSS AS WELL AS ALONG, and each vertex on its own ground.
+            //
+            // The skin used to be one quad the full `3.6 m` width, laid flat
+            // at the plan's centreline height, while the ground under it is
+            // the sampler's. Wherever a plot shelf lifted that ground the
+            // terrain won the depth test and showed through as a pale wedge
+            // with hard polygon edges lying across the street - reported as
+            // snow on the path, and not snow at all: the same wedges are
+            // there with the snow renderer off. Measured before this: `423`
+            // of `2490` probes across the carriageway, the worst standing
+            // `0.44 m` proud. Two vertices cannot follow a curve; the path
+            // ribbons never showed it only because they are narrower.
+            int across = LaneSkinCrossSteps + 1;
+            var vertices = new Vector3[samples.Count * across];
             var uvs = new Vector2[vertices.Length];
             for (int index = 0; index < samples.Count; index++)
             {
                 AlpineVillageLaneSample sample = samples[index];
-                Vector3 offset = sample.Right * (sample.Width * 0.5f);
-                Vector3 lift = Vector3.up * 0.02f;
-                vertices[index * 2] = sample.Position - offset + lift;
-                vertices[index * 2 + 1] = sample.Position + offset + lift;
-                uvs[index * 2] = new Vector2(0f, sample.Distance * 0.35f);
-                uvs[index * 2 + 1] = new Vector2(1f, sample.Distance * 0.35f);
+                float half = sample.Width * 0.5f;
+                for (int step = 0; step < across; step++)
+                {
+                    float side = Mathf.Lerp(
+                        -half,
+                        half,
+                        step / (float)LaneSkinCrossSteps);
+                    Vector3 point = sample.Position + sample.Right * side;
+                    point.y = LaneSkinHeight(plan, point);
+                    int vertex = index * across + step;
+                    vertices[vertex] = point;
+                    uvs[vertex] = new Vector2(
+                        step / (float)LaneSkinCrossSteps,
+                        sample.Distance * 0.35f);
+                }
             }
 
-            var triangles = new int[(samples.Count - 1) * 6];
+            var triangles =
+                new int[(samples.Count - 1) * LaneSkinCrossSteps * 6];
             int cursor = 0;
             for (int index = 0; index < samples.Count - 1; index++)
             {
-                int origin = index * 2;
-                triangles[cursor++] = origin;
-                triangles[cursor++] = origin + 2;
-                triangles[cursor++] = origin + 1;
-                triangles[cursor++] = origin + 1;
-                triangles[cursor++] = origin + 2;
-                triangles[cursor++] = origin + 3;
+                for (int step = 0; step < LaneSkinCrossSteps; step++)
+                {
+                    int origin = index * across + step;
+                    triangles[cursor++] = origin;
+                    triangles[cursor++] = origin + across;
+                    triangles[cursor++] = origin + 1;
+                    triangles[cursor++] = origin + 1;
+                    triangles[cursor++] = origin + across;
+                    triangles[cursor++] = origin + across + 1;
+                }
             }
 
             var mesh = new Mesh { name = "Alpine Village Lane" };
@@ -986,6 +1077,25 @@ namespace BarPromenade
             host.AddComponent<MeshCollider>().sharedMesh = mesh;
             return host;
         }
+        /// <summary>
+        /// Where the lane skin sits over its own ground at one point.
+        ///
+        /// The lift has to clear more than the two surfaces disagree by: the
+        /// terrain is drawn on a `2 m` grid and interpolates straight between
+        /// samples, so across a shelf's curve its chord stands above the
+        /// smooth height the skin is placed at. `SeamBurial` solves the same
+        /// problem at the bowl's toe with the same order of number.
+        /// </summary>
+        private static float LaneSkinHeight(
+            AlpineVillagePlan plan,
+            Vector3 point)
+        {
+            return AlpineVillageTerrainSampler.SampleHeight(
+                       plan,
+                       new Vector2(point.x, point.z)) +
+                   LaneSkinLift;
+        }
+
         /// <summary>
         /// Every plot, dressed from the authored village kit.
         ///
@@ -1077,10 +1187,22 @@ namespace BarPromenade
             }
         }
 
+        private static readonly Color HeideHouseTimberColor =
+            new Color(0.285f, 0.195f, 0.125f, 1f);
+        private static readonly Color RenaissanceHouseTimberColor =
+            new Color(0.385f, 0.285f, 0.195f, 1f);
+        private static readonly Color MothersHouseTimberColor =
+            new Color(0.365f, 0.275f, 0.190f, 1f);
+        private static readonly Color RenaissancePlinthColor =
+            new Color(0.515f, 0.495f, 0.455f, 1f);
+
         private static Color HouseTint(
             AlpineVillagePlotDescriptor plot,
+            int houseVariant,
             VillageMeshRole role)
         {
+            bool mothersHouse =
+                plot.Kind == AlpineVillagePlotKind.MothersHouse;
             switch (role)
             {
                 case VillageMeshRole.Roof:
@@ -1088,23 +1210,28 @@ namespace BarPromenade
                 case VillageMeshRole.Snow:
                     return SnowColor;
                 case VillageMeshRole.Plinth:
-                    return StoneColor;
+                    return !mothersHouse && houseVariant == 1
+                        ? RenaissancePlinthColor
+                        : StoneColor;
                 case VillageMeshRole.Chimney:
-                    return ChimneyColor;
+                    // The top-house generator groups its whitewashed side
+                    // wing with the chimney so the timber body can keep the
+                    // ordinary Walls role and surface family.
+                    return mothersHouse
+                        ? WhitewashColor
+                        : ChimneyColor;
                 case VillageMeshRole.Walls:
-                    if (plot.Kind == AlpineVillagePlotKind.MothersHouse)
+                    if (mothersHouse)
                     {
-                        return WhitewashColor;
+                        return MothersHouseTimberColor;
                     }
 
-                    // Old whitewash and exposed hewn timber share a street.
-                    // Variant selection is stable, and light remains the
-                    // source of warmth - neither family is clean or new.
-                    return VillageAssetProvider.SelectVariant(
-                            VillageAssetKind.FacadeDetail,
-                            plot.StableId) == 1
-                        ? TimberColor
-                        : new Color(0.585f, 0.555f, 0.500f, 1f);
+                    // Variant zero is the compact dark Heide house. Variant
+                    // one is the taller Renaissance block house; both stay
+                    // weathered timber, and light remains the only warmth.
+                    return houseVariant == 0
+                        ? HeideHouseTimberColor
+                        : RenaissanceHouseTimberColor;
                 default:
                     return TimberColor;
             }
@@ -1127,6 +1254,8 @@ namespace BarPromenade
 
         private static Color FacadeDetailTint(
             AlpineVillagePlotDescriptor plot,
+            int houseVariant,
+            int detailVariant,
             VillageMeshRole role)
         {
             switch (role)
@@ -1134,18 +1263,27 @@ namespace BarPromenade
                 case VillageMeshRole.Repair:
                     return plot.Kind == AlpineVillagePlotKind.MothersHouse
                         ? new Color(0.625f, 0.595f, 0.540f, 1f)
-                        : StoneColor;
+                        : houseVariant == 0
+                            ? StoneColor
+                            : RenaissancePlinthColor;
                 case VillageMeshRole.Bracket:
                     return RustColor;
                 case VillageMeshRole.Shutters:
-                    int variant = VillageAssetProvider.SelectVariant(
-                        VillageAssetKind.FacadeDetail,
-                        plot.StableId);
-                    return variant == 0
-                        ? FadedGreenColor
-                        : variant == 1
-                            ? FadedRedColor
-                            : FadedBlueColor;
+                    if (plot.Kind == AlpineVillagePlotKind.MothersHouse)
+                    {
+                        return FadedGreenColor;
+                    }
+
+                    if (houseVariant == 0)
+                    {
+                        return detailVariant % 2 == 0
+                            ? FadedBlueColor
+                            : FadedGreenColor;
+                    }
+
+                    return detailVariant % 2 == 0
+                        ? FadedRedColor
+                        : FadedGreenColor;
                 default:
                     return TimberColor;
             }
@@ -1168,6 +1306,13 @@ namespace BarPromenade
         {
             bool chapel = plot.Kind == AlpineVillagePlotKind.Chapel;
             bool tallest = plot.Kind == AlpineVillagePlotKind.MothersHouse;
+            VillageAssetKind kind = chapel
+                ? VillageAssetKind.Chapel
+                : tallest
+                    ? VillageAssetKind.TopHouse
+                    : VillageAssetKind.House;
+            int variant =
+                VillageAssetProvider.SelectVariant(kind, plot.StableId);
 
             // Where the WALL actually is, which is not where the plot's
             // footprint is. The authored shell stops short of its own cube so
@@ -1180,13 +1325,6 @@ namespace BarPromenade
 
             if (kit != null)
             {
-                VillageAssetKind kind = chapel
-                    ? VillageAssetKind.Chapel
-                    : tallest
-                        ? VillageAssetKind.TopHouse
-                        : VillageAssetKind.House;
-                int variant =
-                    VillageAssetProvider.SelectVariant(kind, plot.StableId);
                 PlaceKitAssembly(
                     parent,
                     kit,
@@ -1195,7 +1333,7 @@ namespace BarPromenade
                     plot.FootprintSize,
                     plot.Height,
                     chapel ? (Func<VillageMeshRole, Color>)ChapelTint
-                        : role => HouseTint(plot, role));
+                        : role => HouseTint(plot, variant, role));
                 if (kit.TryGetPart(
                         kind,
                         variant,
@@ -1204,8 +1342,30 @@ namespace BarPromenade
                 {
                     Bounds local = walls.Mesh.bounds;
                     face = new Vector2(
-                        local.max.x * plot.FootprintSize.x,
+                        Mathf.Max(
+                            Mathf.Abs(local.min.x),
+                            Mathf.Abs(local.max.x)) *
+                        plot.FootprintSize.x,
                         local.max.z * plot.FootprintSize.y);
+
+                    // The mother's whitewashed wing lives in the existing
+                    // masonry Chimney bucket and reaches farther right than
+                    // the timber Walls mesh. Side openings address the full
+                    // authored envelope rather than the asymmetric body.
+                    if (tallest && kit.TryGetPart(
+                            kind,
+                            variant,
+                            VillageMeshRole.Chimney,
+                            out VillageMeshPart wing))
+                    {
+                        Bounds wingBounds = wing.Mesh.bounds;
+                        face.x = Mathf.Max(
+                            face.x,
+                            Mathf.Max(
+                                Mathf.Abs(wingBounds.min.x),
+                                Mathf.Abs(wingBounds.max.x)) *
+                            plot.FootprintSize.x);
+                    }
                 }
             }
             else
@@ -1242,7 +1402,11 @@ namespace BarPromenade
                 plot.Height,
                 plot.FootprintSize.y);
 
-            BuildDoor(parent, plot, chapel, face.y);
+            BuildDoor(
+                parent,
+                chapel,
+                face.y,
+                GetDoorAcross(chapel, tallest, variant));
             if (chapel)
             {
                 // No lit windows: the chapel has none, and nothing about it
@@ -1250,8 +1414,8 @@ namespace BarPromenade
                 return;
             }
 
-            BuildFacadeDetail(parent, plot, kit, face);
-            BuildLitWindows(parent, plot, tallest, face);
+            BuildFacadeDetail(parent, plot, kit, variant, face);
+            BuildLitWindows(parent, plot, tallest, variant, face);
             if (tallest ||
                 plot.StableId == "village-house-01" ||
                 plot.StableId == "village-house-07")
@@ -1270,6 +1434,7 @@ namespace BarPromenade
             Transform parent,
             AlpineVillagePlotDescriptor plot,
             VillageAssetProvider kit,
+            int houseVariant,
             Vector2 wallFace)
         {
             if (kit == null)
@@ -1280,23 +1445,57 @@ namespace BarPromenade
             int variant = VillageAssetProvider.SelectVariant(
                 VillageAssetKind.FacadeDetail,
                 plot.StableId);
-            float across = plot.Kind == AlpineVillagePlotKind.MothersHouse
-                ? 0f
-                : (variant % 2 == 0 ? -1f : 1f) * wallFace.x * 0.38f;
+            bool mothersHouse =
+                plot.Kind == AlpineVillagePlotKind.MothersHouse;
+            float across;
+            float baseHeight;
+            Vector2 footprint;
+            float height;
+            if (mothersHouse)
+            {
+                // The stone wing occupies local +X. This close-read repair
+                // stays on the timber main block instead of crossing the
+                // material seam.
+                across = -wallFace.x * 0.22f;
+                baseHeight = 1.05f;
+                footprint = new Vector2(1.90f, 0.18f);
+                height = 1.32f;
+            }
+            else if (houseVariant == 0)
+            {
+                across = (variant % 2 == 0 ? -1f : 1f) *
+                         wallFace.x * 0.34f;
+                baseHeight = 0.58f;
+                footprint = new Vector2(1.62f, 0.18f);
+                height = 1.10f;
+            }
+            else
+            {
+                across = (variant % 2 == 0 ? 1f : -1f) *
+                         wallFace.x * 0.27f;
+                baseHeight = 1.04f;
+                footprint = new Vector2(1.86f, 0.18f);
+                height = 1.28f;
+            }
+
             var anchor = new GameObject("Weathered Facade Detail");
             anchor.transform.SetParent(parent, false);
             anchor.transform.localPosition = new Vector3(
                 across,
-                0.72f,
+                baseHeight,
                 wallFace.y + 0.09f);
             PlaceKitAssembly(
                 anchor.transform,
                 kit,
                 VillageAssetKind.FacadeDetail,
                 variant,
-                new Vector2(1.85f, 0.18f),
-                1.25f,
-                role => FacadeDetailTint(plot, role));
+                footprint,
+                height,
+                role => FacadeDetailTint(
+                    plot,
+                    houseVariant,
+                    variant,
+                    role));
         }
 
         /// <summary>
@@ -1309,15 +1508,18 @@ namespace BarPromenade
         /// </summary>
         private static void BuildDoor(
             Transform parent,
-            AlpineVillagePlotDescriptor plot,
             bool chapel,
-            float wallFace)
+            float wallFace,
+            float across)
         {
             float half = wallFace;
             var frame = RuntimePrimitiveFactory.CreateBox(
                 "Door Frame",
                 parent,
-                new Vector3(0f, DoorHeight * 0.5f + 0.06f, half + 0.02f),
+                new Vector3(
+                    across,
+                    DoorHeight * 0.5f + 0.06f,
+                    half + 0.02f),
                 new Vector3(DoorWidth + 0.22f, DoorHeight + 0.16f, 0.09f),
                 StoneColor,
                 false);
@@ -1332,7 +1534,10 @@ namespace BarPromenade
                 RuntimePrimitiveFactory.CreateBox(
                     "Door Leaf",
                     parent,
-                    new Vector3(0f, DoorHeight * 0.5f, half + 0.07f),
+                    new Vector3(
+                        across,
+                        DoorHeight * 0.5f,
+                        half + 0.07f),
                     new Vector3(DoorWidth, DoorHeight, 0.07f),
                     DoorColor,
                     false),
@@ -1344,7 +1549,7 @@ namespace BarPromenade
                 RuntimePrimitiveFactory.CreateBox(
                     "Physical Door Step",
                     parent,
-                    new Vector3(0f, 0.05f, half + 0.28f),
+                    new Vector3(across, 0.05f, half + 0.28f),
                     new Vector3(DoorWidth + 0.5f, 0.1f, 0.55f),
                     StoneColor,
                     true),
@@ -1352,53 +1557,179 @@ namespace BarPromenade
                 StoneColor);
         }
 
+        /// <summary>
+        /// A restrained fixed-metre offset is enough to stop the plan-owned
+        /// doors reading as one stamped row. The step remains wider than the
+        /// offset, so every centreline threshold path still meets it.
+        /// </summary>
+        private static float GetDoorAcross(
+            bool chapel,
+            bool mothersHouse,
+            int houseVariant)
+        {
+            if (chapel)
+            {
+                return 0f;
+            }
+
+            if (mothersHouse)
+            {
+                return -0.36f;
+            }
+
+            return houseVariant == 0 ? -0.22f : 0.26f;
+        }
+
         private static void BuildLitWindows(
             Transform parent,
             AlpineVillagePlotDescriptor plot,
             bool tallest,
+            int houseVariant,
             Vector2 wallFace)
         {
             float half = wallFace.y;
             float halfWidth = wallFace.x;
-            int perSide = tallest ? 3 : 2;
-            float sill = Mathf.Min(1.35f, plot.Height * 0.32f);
-            var size = new Vector3(0.78f, 0.92f, 0.05f);
-
-            for (int side = -1; side <= 1; side += 2)
+            if (tallest)
             {
-                for (int index = 0; index < perSide; index++)
+                float sill = Mathf.Clamp(
+                    plot.Height * 0.29f,
+                    1.85f,
+                    2.15f);
+                float[] across = { -0.54f, -0.08f, 0.46f };
+                for (int side = -1; side <= 1; side += 2)
                 {
-                    float amount = (index + 1f) / (perSide + 1f);
-                    float across = Mathf.Lerp(
-                        -halfWidth * 0.74f,
-                        halfWidth * 0.74f,
-                        amount);
+                    for (int index = 0; index < across.Length; index++)
+                    {
+                        CreateWindow(
+                            parent,
+                            new Vector3(
+                                halfWidth * across[index],
+                                sill,
+                                side * (half + 0.03f)),
+                            new Vector3(0.74f, 0.90f, 0.05f));
+                    }
+
                     CreateWindow(
                         parent,
-                        new Vector3(across, sill, side * (half + 0.03f)),
-                        size);
+                        new Vector3(
+                            -halfWidth * 0.16f,
+                            plot.Height * 0.59f,
+                            side * (half + 0.03f)),
+                        new Vector3(0.66f, 0.66f, 0.05f));
                 }
 
-                // And one in the gable, which is what makes a night village
-                // read as two storeys rather than a row of boxes.
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    for (int index = -1; index <= 1; index += 2)
+                    {
+                        CreateWindow(
+                            parent,
+                            new Vector3(
+                                side * (halfWidth + 0.03f),
+                                sill,
+                                index * half * 0.28f),
+                            new Vector3(0.05f, 0.88f, 0.68f));
+                    }
+                }
+
+                return;
+            }
+
+            if (houseVariant == 0)
+            {
+                // The compact Heide house keeps small, slightly irregular
+                // openings in the timber block.
+                float sill = Mathf.Clamp(
+                    plot.Height * 0.31f,
+                    1.28f,
+                    1.90f);
+                float[] across = { -0.36f, 0.24f };
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    for (int index = 0; index < across.Length; index++)
+                    {
+                        CreateWindow(
+                            parent,
+                            new Vector3(
+                                halfWidth *
+                                    (side > 0
+                                        ? across[index]
+                                        : -across[index]),
+                                sill + index * 0.10f,
+                                side * (half + 0.03f)),
+                            new Vector3(0.60f, 0.74f, 0.05f));
+                    }
+
+                    if (plot.Height > 5.15f)
+                    {
+                        CreateWindow(
+                            parent,
+                            new Vector3(
+                                side * halfWidth * 0.07f,
+                                plot.Height * 0.62f,
+                                side * (half + 0.03f)),
+                            new Vector3(0.52f, 0.54f, 0.05f));
+                    }
+                }
+
+                for (int side = -1; side <= 1; side += 2)
+                {
+                    CreateWindow(
+                        parent,
+                        new Vector3(
+                            side * (halfWidth + 0.03f),
+                            sill + (side > 0 ? 0.08f : 0f),
+                            side * half * 0.12f),
+                        new Vector3(0.05f, 0.72f, 0.58f));
+                }
+
+                return;
+            }
+
+            // The Renaissance house exposes a high masonry base and a more
+            // regular, denser window rhythm in the projecting timber floors.
+            float upperSill = Mathf.Clamp(
+                plot.Height * 0.50f,
+                2.05f,
+                3.00f);
+            float[] regularAcross = { -0.52f, 0f, 0.52f };
+            for (int side = -1; side <= 1; side += 2)
+            {
+                for (int index = 0; index < regularAcross.Length; index++)
+                {
+                    CreateWindow(
+                        parent,
+                        new Vector3(
+                            halfWidth * regularAcross[index],
+                            upperSill,
+                            side * (half + 0.03f)),
+                        new Vector3(0.68f, 0.82f, 0.05f));
+                }
+
                 if (plot.Height > 5f)
                 {
                     CreateWindow(
                         parent,
                         new Vector3(
                             0f,
-                            plot.Height * 0.62f,
+                            plot.Height * 0.66f,
                             side * (half + 0.03f)),
-                        new Vector3(0.62f, 0.62f, 0.05f));
+                        new Vector3(0.58f, 0.60f, 0.05f));
                 }
             }
 
             for (int side = -1; side <= 1; side += 2)
             {
-                CreateWindow(
-                    parent,
-                    new Vector3(side * (halfWidth + 0.03f), sill, 0f),
-                    new Vector3(0.05f, 0.92f, 0.78f));
+                for (int index = -1; index <= 1; index += 2)
+                {
+                    CreateWindow(
+                        parent,
+                        new Vector3(
+                            side * (halfWidth + 0.03f),
+                            upperSill,
+                            index * half * 0.24f),
+                        new Vector3(0.05f, 0.80f, 0.62f));
+                }
             }
         }
 

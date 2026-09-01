@@ -1419,10 +1419,10 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         /// <summary>
-        /// Frames the one uphill composition and then proves that both the
-        /// ordinary and terminal house shells survive the runtime material's
-        /// back-face culling. Every point comes from the shipped plan; no
-        /// camera depends on this seed keeping yesterday's world coordinates.
+        /// Frames the one uphill composition, one representative of each
+        /// ordinary house archetype, and the separate house at the head of
+        /// the lane. Every point comes from the shipped plan; no camera
+        /// depends on this seed keeping yesterday's world coordinates.
         /// </summary>
         private static Shot[] AlpineVillageShots(AlpineVillageRoot root)
         {
@@ -1446,24 +1446,37 @@ namespace BarPromenade.Tests.PlayMode
                 Is.GreaterThanOrEqualTo(
                     AlpineVillageWeatherRules.WindFloor));
             AlpineVillagePlan plan = root.Plan;
-            AlpineVillagePlotDescriptor lowerHouse = null;
+            var ordinaryHouses = new AlpineVillagePlotDescriptor[
+                VillageAssetProvider.HouseVariantCount];
             for (int index = 0; index < plan.Plots.Count; index++)
             {
                 AlpineVillagePlotDescriptor plot = plan.Plots[index];
-                if (plot.Kind != AlpineVillagePlotKind.House ||
-                    (lowerHouse != null &&
-                     plot.LaneDistance >= lowerHouse.LaneDistance))
+                if (plot.Kind != AlpineVillagePlotKind.House)
                 {
                     continue;
                 }
 
-                lowerHouse = plot;
+                int variant = VillageAssetProvider.SelectVariant(
+                    VillageAssetKind.House,
+                    plot.StableId);
+                if (ordinaryHouses[variant] == null ||
+                    plot.LaneDistance <
+                    ordinaryHouses[variant].LaneDistance)
+                {
+                    ordinaryHouses[variant] = plot;
+                }
             }
 
-            Assert.That(
-                lowerHouse,
-                Is.Not.Null,
-                "The village has no ordinary house to photograph.");
+            for (int variant = 0;
+                 variant < ordinaryHouses.Length;
+                 variant++)
+            {
+                Assert.That(
+                    ordinaryHouses[variant],
+                    Is.Not.Null,
+                    $"The village has no ordinary house type {variant} " +
+                    "to photograph.");
+            }
 
             AlpineVillageLaneSample foot = plan.Lane.Sample(2f);
             AlpineVillageLaneSample reveal = plan.Lane.Sample(
@@ -1499,18 +1512,29 @@ namespace BarPromenade.Tests.PlayMode
                     58f,
                     30),
                 FrameVillageBuilding(
-                    "01-ordinary-house-front-side",
-                    lowerHouse,
+                    "01-heide-house-front-side",
+                    ordinaryHouses[0],
                     1f,
                     4.3f,
                     0.34f,
                     50f),
                 FrameVillageBuildingSide(
-                    "02-ordinary-house-side-wall",
-                    lowerHouse,
+                    "02-heide-house-side-wall",
+                    ordinaryHouses[0],
                     -1f),
                 FrameVillageBuilding(
-                    "03-top-house",
+                    "03-renaissance-house-front-side",
+                    ordinaryHouses[1],
+                    -1f,
+                    4.7f,
+                    0.34f,
+                    50f),
+                FrameVillageBuildingSide(
+                    "04-renaissance-house-side-wall",
+                    ordinaryHouses[1],
+                    1f),
+                FrameVillageBuilding(
+                    "05-top-house",
                     plan.MothersHouse,
                     -1f,
                     6.4f,
@@ -1527,7 +1551,7 @@ namespace BarPromenade.Tests.PlayMode
                 //  slats filled the first frame. And it waits for the
                 //  trough, because the landmark is promised BETWEEN gusts.
                 Shot.At(
-                    "04-platform-landmark",
+                    "06-platform-landmark",
                     foot.Position - foot.Forward * PlatformApronSetback +
                     Vector3.up * EyeHeight,
                     plan.MothersHouse.GroundCenter +
@@ -1540,7 +1564,7 @@ namespace BarPromenade.Tests.PlayMode
                 //  cold mass with a crest line, the toe seam under it, and
                 //  no cut line where it meets the plane.
                 Shot.At(
-                    "05-mid-lane-wall-right",
+                    "07-mid-lane-wall-right",
                     midLane.Position + Vector3.up * EyeHeight,
                     midLane.Position + midLane.Right * WallAimDistance +
                     Vector3.up * WallAimHeight,
@@ -1551,7 +1575,7 @@ namespace BarPromenade.Tests.PlayMode
                 //  again in the trough. Each waits on the root's own wave,
                 //  not a frame count - the rhythm is hashed per seed.
                 Shot.At(
-                    "06-lower-uphill-axis-gust-crest",
+                    "08-lower-uphill-axis-gust-crest",
                     foot.Position - foot.Forward * 2.6f +
                     foot.Right * 0.25f + Vector3.up * EyeHeight,
                     reveal.Position + Vector3.up * 2.2f,
@@ -1559,7 +1583,7 @@ namespace BarPromenade.Tests.PlayMode
                     0,
                     () => root.StormWave >= GustCrestWave),
                 Shot.At(
-                    "07-lower-uphill-axis-gust-trough",
+                    "09-lower-uphill-axis-gust-trough",
                     foot.Position - foot.Forward * 2.6f +
                     foot.Right * 0.25f + Vector3.up * EyeHeight,
                     reveal.Position + Vector3.up * 2.2f,
@@ -1571,7 +1595,7 @@ namespace BarPromenade.Tests.PlayMode
                 // snow immediately beside it should close into a readable
                 // wall even in the trough.
                 Shot.At(
-                    "08-platform-side-whiteout",
+                    "10-platform-side-whiteout",
                     foot.Position - foot.Forward * PlatformApronSetback +
                     Vector3.up * EyeHeight,
                     foot.Position + foot.Right * 28f +
@@ -1584,7 +1608,7 @@ namespace BarPromenade.Tests.PlayMode
                 // cut through the frame. This moves only the capture camera;
                 // the field itself remains world-anchored and deterministic.
                 Shot.At(
-                    "09-off-route-looking-to-lane",
+                    "11-off-route-looking-to-lane",
                     exposedCamera,
                     midLane.Position + midLane.Forward * 15f +
                     Vector3.up * 1.8f,
@@ -1594,7 +1618,7 @@ namespace BarPromenade.Tests.PlayMode
                 // The house is still a landmark from below; behind its rear
                 // wall the world closes before the enclosing ridge.
                 Shot.At(
-                    "10-top-house-rear-closure",
+                    "12-top-house-rear-closure",
                     plan.MothersHouse.GroundCenter +
                     houseFacing * 7f +
                     houseRight * (houseHalfWidth + 5f) +
@@ -1872,7 +1896,7 @@ namespace BarPromenade.Tests.PlayMode
                     RavenRoostSettings.AlpineVillage,
                     index,
                     descriptors[index],
-                    $"{8 + index:00}-roost-" +
+                    $"{13 + index:00}-roost-" +
                     ShortRoostName(descriptors[index].StableId));
             }
         }

@@ -66,6 +66,23 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   unrotated AABB;
   explicit rear-row depth beats own the frontage layers and the seeded solver
   may only make a bounded symmetric correction around them.
+- **Accepted — a skin laid over sampled ground samples that ground at every
+  vertex:** the village lane was laid flat at its centreline's height across
+  `3.6 m` while the ground under it is the sampler's, so once the shelf blends
+  ran at their intended width the terrain cut up through it at `423` of `2490`
+  probes, `0.44 m` at worst — pale wedges across the street that were reported
+  as snow and were not. Two vertices cannot follow a curve: subdivide across,
+  sample each vertex, and ride a lift of the same order as `SeamBurial`,
+  because the terrain is drawn on a `2 m` grid whose chords stand above the
+  smooth height. The same rule caught the snow ribbon bridging crossing routes
+  at a coarse cross pitch. A test for either must measure the CHORD that is
+  drawn, not a point on it — the point-sampled version passes while the street
+  is visibly cut.
+- **Accepted — the motor decides WHEN a footstep happens, the surface decides
+  what it is:** `IPlayerFootstepSurface` hands the step to whoever the hero is
+  standing on, and a claimant owns sound and effect together so a surface and
+  the default can never double. Snow-versus-trodden is what makes a route
+  audible before it is visible.
 - **Accepted — a dock is an interaction pose, never an arrival:** a chart
   point carries a place's `DoorDockPosition`, which stands `1.1 m` off a
   threshold facing it. Landing a player there puts him against a wall, and the

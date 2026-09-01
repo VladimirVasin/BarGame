@@ -248,12 +248,18 @@ UV scale once and retain identity material transforms; floor and rise share
 their toe indices and the same PS1 vertex snap, so neither a buried overlap
 ring nor moving screen-space coverage can make the lower wall crawl. The
 shared shader's City defaults keep their existing clip-dither handoff.
-The deterministic passive village kit now carries `19` assemblies / `53`
-role meshes: correctly outward-wound closed wall shells and roof solids, roof
-snow, a distinct top house, facade repairs and shutters,
-garland posts, cable gate, rail bridge and a plain catch basin join the original
-houses, chapel, mine cart, adit, grave markers and firewood without adding a
-surface family. Two garland cords and three windows own the five real village
+The deterministic passive village kit now carries `17` assemblies / `43`
+role meshes under generator contract `v3.0.0` / `village_house_archetypes_v3`.
+Its twelve ordinary houses draw from two structurally different closed-shell
+archetypes: a low dark timber block on a heavy stone plinth, and a taller house
+whose timber upper storey projects on brackets above a high masonry base. The
+unique top house is a third type, a broad timber main mass with one weathered
+whitewashed masonry side wing. Their roof solids and snow, facade repairs and
+shutters, garland posts, cable gate, rail bridge, catch basin, chapel, mine
+cart, adit, grave markers and firewood add no new surface family. The three
+house types retain the plan's normalized bounds, footprints, collision and
+meaning; no heraldry, frescoes or tourist-chalet decoration was introduced.
+Two garland cords and three windows own the five real village
 lights. Six bounded synthesized spatial voices stay on visible causes. Two
 or three raven pairs sit hunched against the gale at the adit mouth, the
 firewood mine cart and a lane fence — never at the chapel over the spring,

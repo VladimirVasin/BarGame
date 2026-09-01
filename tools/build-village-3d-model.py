@@ -53,9 +53,9 @@ except ImportError as error:  # pragma: no cover - Blender entry point.
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATOR_VERSION = "2.1.1"
-DESIGN_ID = "village_wave2_v2"
-DISPLAY_NAME = "Village Wave 2.1.1"
+GENERATOR_VERSION = "3.0.0"
+DESIGN_ID = "village_house_archetypes_v3"
+DISPLAY_NAME = "Village House Archetypes 3.0.0"
 
 DEFAULT_BLEND = (
     ROOT / "ArtSource" / "Village" / "Blender" / "Village3D.blend"
@@ -97,6 +97,7 @@ PREVIEW_COLORS = {
     "HousePlinth": (0.235, 0.225, 0.200, 1.0),
     "HouseChimney": (0.265, 0.215, 0.185, 1.0),
     "TopHouseWall": (0.425, 0.385, 0.315, 1.0),
+    "TopHouseTimber": (0.285, 0.160, 0.090, 1.0),
     "ChapelWhitewash": (0.560, 0.525, 0.455, 1.0),
     "ChapelRoof": (0.135, 0.105, 0.082, 1.0),
     "CartIron": (0.215, 0.105, 0.048, 1.0),
@@ -518,25 +519,14 @@ def triangular_root(angle: float, reach: float, width: float,
     return points, faces
 
 
-# Per-variant crookedness.  Nothing here is random: four hand-picked sets of
-# eaves heights, apex skews and wall leans, so no two houses on the lane share
-# a silhouette and the whole street can still be rebuilt byte for byte.
-HOUSE_VARIANTS = (
-    # left eave, right eave, apex x, top lean, roof pitch bias
-    #
-    # Pushed well past "slightly irregular" on purpose.  At the first pass
-    # these were a couple of centimetres of the normalized cube - about
-    # fifteen real centimetres - and the contact sheet came back with four
-    # houses that read as the same house.  An apex a metre off centre and
-    # eaves half a metre apart is what makes two slopes of one roof visibly
-    # different, which is the whole of "кривые сказочные домики".
-    (0.055, -0.045, -0.115, 0.030, 0.014),
-    (-0.070, 0.045, 0.125, -0.038, -0.018),
-    (0.090, 0.020, -0.060, 0.022, 0.026),
-    (-0.030, -0.085, 0.100, -0.026, -0.010),
-)
-
-HOUSE_WALL_TINTS = ("HouseWallA", "HouseWallB", "HouseWallC", "HouseWallD")
+HOUSE_ARCHETYPE_COUNT = 2
+HOUSE_WALL_TINTS = ("HouseWallA", "HouseWallB")
+HOUSE_FACADE_PLANES = {
+    ("House", 0): 0.405,
+    ("House", 1): 0.430,
+    ("TopHouse", 0): 0.415,
+}
+HOUSE_FACADE_SUPPORT_Z = (-0.420, -0.160, 0.050)
 
 
 def gable_profile(
@@ -685,71 +675,227 @@ def broken_roof_snow(
     )
 
 
-def build_village_house(variant: int) -> AssemblySpec:
-    left_eave, right_eave, apex_x, lean, pitch = HOUSE_VARIANTS[variant]
-    depth = 0.415 + variant * 0.005
-
-    walls = prism_y(
-        gable_profile(left_eave, right_eave, apex_x, lean),
-        -depth,
-        depth)
-
-    # Two slabs meeting at the ridge, each overhanging the wall it covers.
-    # The eaves reach past the gable so the shell reads as a roof rather than
-    # a lid, and the overhang is what casts the shadow line down the facade.
-    thickness = 0.055 + pitch * 0.4
-    left_slab = prism_y(
-        (
-            (-0.5, left_eave - 0.045),
-            (apex_x, 0.40),
-            (apex_x, 0.40 + thickness),
-            (-0.5, left_eave - 0.045 + thickness),
-        ),
-        -depth - 0.05,
-        depth + 0.05)
-    right_slab = prism_y(
-        (
-            (apex_x, 0.40),
-            (0.5, right_eave - 0.045),
-            (0.5, right_eave - 0.045 + thickness),
-            (apex_x, 0.40 + thickness),
-        ),
-        -depth - 0.05,
-        depth + 0.05)
-    ridge = chamfered_box(
-        (apex_x, 0.0, 0.40 + thickness * 0.5),
-        (0.075, (depth + 0.05) * 2.0, thickness * 0.9),
-        0.014)
-    roof = merge(left_slab, right_slab, ridge)
+def gabled_roof(
+    left_x: float,
+    left_eave: float,
+    apex_x: float,
+    apex_z: float,
+    right_x: float,
+    right_eave: float,
+    half_depth: float,
+    thickness: float,
+    snow_pattern: int,
+) -> tuple[Geometry, Geometry]:
+    """One old roof and its discontinuous lee-side snow cover."""
+    eave_drop = 0.038
+    left_base = left_eave - eave_drop
+    right_base = right_eave - eave_drop
+    roof = merge(
+        prism_y(
+            (
+                (left_x, left_base),
+                (apex_x, apex_z),
+                (apex_x, apex_z + thickness),
+                (left_x, left_base + thickness),
+            ),
+            -half_depth,
+            half_depth),
+        prism_y(
+            (
+                (apex_x, apex_z),
+                (right_x, right_base),
+                (right_x, right_base + thickness),
+                (apex_x, apex_z + thickness),
+            ),
+            -half_depth,
+            half_depth),
+        chamfered_box(
+            (apex_x, 0.0, apex_z + thickness * 0.5),
+            (0.072, half_depth * 2.0, thickness * 0.88),
+            0.012),
+    )
     snow = broken_roof_snow(
-        -0.5,
-        left_eave - 0.045 + thickness,
+        left_x,
+        left_base + thickness,
         apex_x,
-        0.40 + thickness,
+        apex_z + thickness,
+        right_x,
+        right_base + thickness,
+        half_depth,
+        snow_pattern)
+    return roof, snow
+
+
+def build_heide_house() -> AssemblySpec:
+    """Late-medieval Heidehüs: timber-heavy, squat and irregular.
+
+    The reference's identity is structural rather than decorative: a dark
+    block rises from a serious stone foot, the gable stays low and log ends
+    remain legible on both side walls.  Doors and windows are deliberately
+    absent because the runtime still owns those at real human scale.
+    """
+    variant = 0
+    wall_depth = 0.405
+    left_eave = 0.118
+    right_eave = 0.098
+    apex_x = -0.042
+    apex_z = 0.355
+    walls = prism_y(
+        (
+            (-0.455, -0.285),
+            (0.455, -0.285),
+            (0.462, right_eave),
+            (apex_x, apex_z),
+            (-0.448, left_eave),
+        ),
+        -wall_depth,
+        wall_depth)
+
+    # Short projecting log ends break both side elevations without disturbing
+    # the flat +/-Y facade planes used by plan-owned doors and windows.
+    log_ends: list[Geometry] = []
+    for side in (-1.0, 1.0):
+        x = side * 0.456
+        for index, y in enumerate((-0.29, -0.10, 0.10, 0.29)):
+            z = -0.205 + index * 0.092
+            log_ends.append(chamfered_box(
+                (x, y, z),
+                (0.026, 0.115, 0.024),
+                0.005))
+    walls = merge(walls, *log_ends)
+
+    roof, snow = gabled_roof(
+        -0.5,
+        left_eave,
+        apex_x,
+        apex_z,
         0.5,
-        right_eave - 0.045 + thickness,
-        depth + 0.05,
+        right_eave,
+        0.465,
+        0.052,
         variant)
 
-    # A stone base course.  Every wall in this village stands on one, because
-    # timber on soil rots and these houses are old.
-    plinth = chamfered_box(
-        (0.0, 0.0, -0.5 + 0.035),
-        (0.965, depth * 2.0 + 0.05, 0.07),
-        0.016)
-
-    chimney_x = -apex_x * 0.55 + lean
-    chimney = merge(
+    # The deep base is the lower storey, not a token course under a box.  Its
+    # central forward stone closes the real facade plane behind the door.
+    plinth = merge(
         chamfered_box(
-            (chimney_x, -depth * 0.45, 0.33),
-            (0.115, 0.115, 0.34),
-            0.014),
+            (0.0, 0.0, -0.385),
+            (0.940, 0.790, 0.230),
+            0.018),
         chamfered_box(
-            (chimney_x, -depth * 0.45, 0.482),
-            (0.145, 0.145, 0.030),
-            0.010),
+            (0.0, 0.395, -0.385),
+            (0.340, 0.020, 0.230),
+            0.005),
+        chamfered_box(
+            (-0.325, -0.385, -0.392),
+            (0.205, 0.040, 0.180),
+            0.008),
     )
 
+    chimney = merge(
+        chamfered_box(
+            (0.205, -0.185, 0.330),
+            (0.112, 0.120, 0.330),
+            0.013),
+        chamfered_box(
+            (0.205, -0.185, 0.485),
+            (0.148, 0.154, 0.030),
+            0.009),
+    )
+    return village_house_assembly(
+        variant, walls, roof, plinth, chimney, snow)
+
+
+def build_untergommer_house() -> AssemblySpec:
+    """Untergoms Renaissance house: high stone base, timber upper block.
+
+    The upper floor projects laterally over the narrower hall/cellar storey.
+    Three pairs of square timber brackets make that construction readable at
+    lane range while the front and rear wall planes remain continuous.
+    """
+    variant = 1
+    wall_depth = 0.430
+    left_eave = 0.154
+    right_eave = 0.132
+    apex_x = 0.052
+    apex_z = 0.405
+    walls = prism_y(
+        (
+            (-0.455, -0.105),
+            (0.455, -0.105),
+            (0.448, right_eave),
+            (apex_x, apex_z),
+            (-0.462, left_eave),
+        ),
+        -wall_depth,
+        wall_depth)
+
+    brackets: list[Geometry] = []
+    for side in (-1.0, 1.0):
+        for y in (-0.285, 0.0, 0.285):
+            brackets.append(tube_between(
+                (side * 0.385, y, -0.205),
+                (side * 0.452, y, -0.072),
+                0.014,
+                0.014,
+                4))
+    walls = merge(walls, *brackets)
+
+    roof, snow = gabled_roof(
+        -0.5,
+        left_eave,
+        apex_x,
+        apex_z,
+        0.5,
+        right_eave,
+        0.480,
+        0.045,
+        variant)
+
+    # The masonry storey reaches the facade plane.  Narrow side piers support
+    # the overhanging timber and keep the plan-owned side windows grounded in
+    # a real wall rather than hanging outside the recessed base.
+    plinth = merge(
+        chamfered_box(
+            (0.0, 0.0, -0.2925),
+            (0.790, 0.860, 0.415),
+            0.018),
+        chamfered_box(
+            (-0.430, 0.0, -0.2925),
+            (0.090, 0.350, 0.415),
+            0.014),
+        chamfered_box(
+            (0.430, 0.0, -0.2925),
+            (0.090, 0.350, 0.415),
+            0.014),
+        chamfered_box(
+            (0.0, 0.0, -0.470),
+            (0.890, 0.890, 0.060),
+            0.012),
+    )
+
+    chimney = merge(
+        chamfered_box(
+            (-0.185, -0.205, 0.340),
+            (0.118, 0.125, 0.310),
+            0.013),
+        chamfered_box(
+            (-0.185, -0.205, 0.485),
+            (0.154, 0.160, 0.030),
+            0.009),
+    )
+    return village_house_assembly(
+        variant, walls, roof, plinth, chimney, snow)
+
+
+def village_house_assembly(
+    variant: int,
+    walls: Geometry,
+    roof: Geometry,
+    plinth: Geometry,
+    chimney: Geometry,
+    snow: Geometry,
+) -> AssemblySpec:
     tint = HOUSE_WALL_TINTS[variant]
     return AssemblySpec(
         "House", variant, "normalized_to_descriptor",
@@ -769,6 +915,14 @@ def build_village_house(variant: int) -> AssemblySpec:
                      "RoofSnow", snow),
         ),
     )
+
+
+def build_village_house(variant: int) -> AssemblySpec:
+    if variant == 0:
+        return build_heide_house()
+    if variant == 1:
+        return build_untergommer_house()
+    raise ValueError(f"Unsupported village house archetype {variant}")
 
 
 def build_chapel() -> AssemblySpec:
@@ -970,116 +1124,131 @@ def build_firewood() -> AssemblySpec:
 
 
 def build_top_house() -> AssemblySpec:
-    """The lane's one terminal mass: cared for, never new or prosperous.
+    """Jost-Sigristen-inspired terminal house, stripped of prestige signs.
 
-    Its profile is steadier than the cottages and its base is heavier, but
-    the off-centre ridge, patched chimney and broken snow keep it inside the
-    same old village rather than promoting it into a manor or postcard lodge.
+    A broad cared-for timber block remains the lane's culmination.  The low
+    weathered masonry wing on local +X makes it a third architectural type,
+    not a larger copy of either cottage.  There is no fresco, heraldry,
+    balcony or museum ornament: mass and upkeep do all the work.
+
+    The five-role import contract is intentionally retained.  ``Walls`` is
+    the timber main block; the masonry material bucket called ``Chimney``
+    carries both the closed side wing and its actual chimney.
     """
-    left_eave = 0.072
-    right_eave = 0.048
-    apex_x = -0.026
-    lean = 0.012
-    depth = 0.420
-    apex_z = 0.368
-    thickness = 0.052
+    left_eave = 0.108
+    right_eave = 0.090
+    apex_x = -0.142
+    apex_z = 0.370
+    wall_depth = 0.415
 
+    # The main block is deliberately asymmetric in X, leaving the right third
+    # of the descriptor to a real attached wing.  Its +/-Y faces remain flat
+    # and share one plane with that wing.
     walls = prism_y(
-        gable_profile(
-            left_eave,
-            right_eave,
-            apex_x,
-            lean,
-            apex_z,
-            0.46),
-        -depth,
-        depth)
+        (
+            (-0.460, -0.290),
+            (0.205, -0.290),
+            (0.205, right_eave),
+            (apex_x, apex_z),
+            (-0.460, left_eave),
+        ),
+        -wall_depth,
+        wall_depth)
 
-    roof = merge(
-        prism_y(
-            (
-                (-0.5, left_eave - 0.040),
-                (apex_x, apex_z),
-                (apex_x, apex_z + thickness),
-                (-0.5, left_eave - 0.040 + thickness),
-            ),
-            -depth - 0.055,
-            depth + 0.055),
-        prism_y(
-            (
-                (apex_x, apex_z),
-                (0.5, right_eave - 0.040),
-                (0.5, right_eave - 0.040 + thickness),
-                (apex_x, apex_z + thickness),
-            ),
-            -depth - 0.055,
-            depth + 0.055),
-        chamfered_box(
-            (apex_x, 0.0, apex_z + thickness * 0.5),
-            (0.080, (depth + 0.055) * 2.0, thickness * 0.9),
-            0.012),
-        # A repaired door hood, functional and shallow.  It is deliberately
-        # not a balcony and does not create a second storey of ornament.
-        chamfered_box(
-            (0.0, depth + 0.020, -0.030),
-            (0.37, 0.100, 0.050),
-            0.010),
-    )
+    main_roof, main_snow = gabled_roof(
+        -0.5,
+        left_eave,
+        apex_x,
+        apex_z,
+        0.265,
+        right_eave,
+        0.470,
+        0.050,
+        5)
+
+    # The masonry return is a complete four-sided wedge under its own low
+    # lean-to.  It overlaps the timber block slightly, so no oblique view can
+    # reveal an empty seam between the two closed masses.
+    side_wing = prism_y(
+        (
+            (0.180, -0.5),
+            (0.470, -0.5),
+            (0.470, 0.040),
+            (0.180, 0.100),
+        ),
+        -0.205,
+        wall_depth)
+    wing_roof = prism_y(
+        (
+            (0.140, 0.083),
+            (0.5, 0.023),
+            (0.5, 0.075),
+            (0.140, 0.143),
+        ),
+        -0.250,
+        0.465)
+
+    def wing_roof_height(x: float) -> float:
+        amount = (x - 0.140) / (0.5 - 0.140)
+        return 0.143 + (0.075 - 0.143) * amount
+
+    wing_snow = sloped_skin(
+        0.185,
+        0.470,
+        -0.190,
+        0.395,
+        wing_roof_height,
+        0.011,
+        0.014,
+        0.028)
+    roof = merge(main_roof, wing_roof)
+    snow = merge(main_snow, wing_snow)
 
     plinth = merge(
         chamfered_box(
-            (0.0, 0.0, -0.5 + 0.045),
-            (0.972, depth * 2.0 + 0.075, 0.090),
+            (-0.1275, 0.0, -0.385),
+            (0.695, 0.830, 0.230),
             0.018),
-        # Two unmatched repairs make the foundation maintained, not clean.
+        # Two unmatched foundation repairs say "maintained", not "new".
         chamfered_box(
-            (-0.36, depth + 0.020, -0.398),
-            (0.18, 0.085, 0.155),
-            0.015),
+            (-0.355, 0.405, -0.392),
+            (0.180, 0.020, 0.175),
+            0.006),
         chamfered_box(
-            (0.31, -depth - 0.012, -0.418),
-            (0.24, 0.070, 0.118),
-            0.012),
+            (0.105, -0.405, -0.410),
+            (0.150, 0.020, 0.130),
+            0.006),
     )
 
-    chimney_x = 0.145
+    chimney_x = 0.335
     chimney = merge(
+        side_wing,
         chamfered_box(
-            (chimney_x, -depth * 0.42, 0.315),
-            (0.125, 0.125, 0.340),
+            (chimney_x, -0.045, 0.315),
+            (0.120, 0.125, 0.330),
             0.014),
         chamfered_box(
-            (chimney_x, -depth * 0.42, 0.472),
-            (0.158, 0.158, 0.035),
+            (chimney_x, -0.045, 0.485),
+            (0.158, 0.162, 0.030),
             0.010),
-        # One old masonry collar, visibly a repair rather than decoration.
+        # One old collar is enough to keep the whitewashed stack imperfect.
         chamfered_box(
-            (chimney_x + 0.010, -depth * 0.42, 0.235),
-            (0.148, 0.140, 0.055),
+            (chimney_x + 0.008, -0.045, 0.235),
+            (0.145, 0.142, 0.050),
             0.010),
     )
-
-    snow = broken_roof_snow(
-        -0.5,
-        left_eave - 0.040 + thickness,
-        apex_x,
-        apex_z + thickness,
-        0.5,
-        right_eave - 0.040 + thickness,
-        depth + 0.055,
-        5)
 
     return AssemblySpec(
         "TopHouse", 0, "normalized_to_descriptor",
         (
             PartSpec("GEO_VIL_TopHouse_Walls", "TopHouse", 0, "Walls",
-                     "Masonry", "TopHouseWall", walls),
+                     "Timber", "TopHouseTimber", walls),
             PartSpec("GEO_VIL_TopHouse_Roof", "TopHouse", 0, "Roof",
                      "Timber", "HouseRoof", roof),
             PartSpec("GEO_VIL_TopHouse_Plinth", "TopHouse", 0, "Plinth",
                      "LayeredStone", "HousePlinth", plinth),
             PartSpec("GEO_VIL_TopHouse_Chimney", "TopHouse", 0,
-                     "Chimney", "Masonry", "HouseChimney", chimney),
+                     "Chimney", "Masonry", "TopHouseWall", chimney),
             PartSpec("GEO_VIL_TopHouse_Snow", "TopHouse", 0, "Snow",
                      "WindSnow", "RoofSnow", snow),
         ),
@@ -1343,7 +1512,8 @@ def build_source_bowl() -> AssemblySpec:
 
 def make_assemblies() -> tuple[AssemblySpec, ...]:
     return (
-        *(build_village_house(index) for index in range(4)),
+        *(build_village_house(index)
+          for index in range(HOUSE_ARCHETYPE_COUNT)),
         build_chapel(),
         build_mine_cart(),
         build_adit_frame(),
@@ -1489,10 +1659,72 @@ def validate_geometry(part: PartSpec, problems: list[str]) -> None:
         problems.append(f"{part.mesh} has a collapsed UV span")
 
 
+def face_covers_front_point(
+    geometry: Geometry,
+    plane_y: float,
+    point_x: float,
+    point_z: float,
+) -> bool:
+    """Conservative proof that a plan-owned facade piece has wall behind it.
+
+    House wall and base faces are convex in XZ, and the tested point is on the
+    centreline, so the bounds of a coplanar face are sufficient here.  This is
+    intentionally an authoring assertion, not a general polygon query.
+    """
+    vertices, faces = geometry
+    for face in faces:
+        points = [vertices[index] for index in face]
+        if not all(abs(point[1] - plane_y) <= BOUNDS_EPSILON
+                   for point in points):
+            continue
+        if (min(point[0] for point in points) - BOUNDS_EPSILON <= point_x <=
+                max(point[0] for point in points) + BOUNDS_EPSILON and
+                min(point[2] for point in points) - BOUNDS_EPSILON <= point_z <=
+                max(point[2] for point in points) + BOUNDS_EPSILON):
+            return True
+    return False
+
+
+def validate_house_architecture(
+    assembly: AssemblySpec,
+    problems: list[str],
+) -> None:
+    key = assembly.kind, assembly.variant
+    plane_y = HOUSE_FACADE_PLANES.get(key)
+    if plane_y is None:
+        return
+
+    # Every role is a union of closed positive-volume solids.  A roof skin or
+    # material patch may not stand in for one of the four opaque wall sides.
+    for part in assembly.parts:
+        if not is_closed_geometry(part.geometry):
+            problems.append(f"{key} role {part.part_role} is not closed")
+
+    walls = next(part for part in assembly.parts
+                 if part.part_role == "Walls")
+    _, wall_high = geometry_bounds(walls.geometry)
+    if abs(wall_high[1] - plane_y) > BOUNDS_EPSILON:
+        problems.append(
+            f"{key} wall face is Y={wall_high[1]:.6f}, "
+            f"expected flat facade Y={plane_y:.6f}")
+
+    facade_parts = [
+        part for part in assembly.parts
+        if part.part_role in {"Walls", "Plinth", "Chimney"}
+    ]
+    for point_z in HOUSE_FACADE_SUPPORT_Z:
+        if not any(face_covers_front_point(
+                part.geometry, plane_y, 0.0, point_z)
+                   for part in facade_parts):
+            problems.append(
+                f"{key} has no centre facade support at "
+                f"Y={plane_y:.3f}, Z={point_z:.3f}")
+
+
 def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     problems: list[str] = []
     expected_variants = {
-        "House": 4,
+        "House": HOUSE_ARCHETYPE_COUNT,
         "Chapel": 1,
         "MineCart": 1,
         "AditFrame": 1,
@@ -1508,7 +1740,7 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
     expected_roles = {
         **{("House", index):
            ("Walls", "Roof", "Plinth", "Chimney", "Snow")
-           for index in range(4)},
+           for index in range(HOUSE_ARCHETYPE_COUNT)},
         ("Chapel", 0): ("Walls", "Roof", "Plinth", "Snow"),
         ("MineCart", 0): ("Body", "Wheels"),
         ("AditFrame", 0): ("Timber", "Rubble"),
@@ -1544,6 +1776,8 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
             names.add(part.mesh)
             validate_geometry(part, problems)
 
+        validate_house_architecture(assembly, problems)
+
         low, high = combined_bounds(assembly.parts)
         if abs(low[2] + 0.5) > 1e-6:
             problems.append(
@@ -1557,8 +1791,40 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
                         if item_kind == kind)
         if actual != list(range(count)):
             problems.append(f"{kind} variants are {actual}, expected 0..{count - 1}")
-    if len(names) != 53:
-        problems.append(f"mesh count is {len(names)}, expected 53")
+
+    # These are architectural families, not four cosmetic roof skews.  The
+    # Renaissance house must devote materially more height to its masonry
+    # storey than the timber-heavy Heidehüs.
+    house_plinth_tops = {}
+    for assembly in assemblies:
+        if assembly.kind != "House":
+            continue
+        plinth = next(part for part in assembly.parts
+                      if part.part_role == "Plinth")
+        house_plinth_tops[assembly.variant] = geometry_bounds(
+            plinth.geometry)[1][2]
+    if (house_plinth_tops.get(1, -1.0) -
+            house_plinth_tops.get(0, -1.0) < 0.12):
+        problems.append(
+            "House archetypes do not differ enough in masonry-storey height")
+
+    top_house = next(
+        (assembly for assembly in assemblies
+         if (assembly.kind, assembly.variant) == ("TopHouse", 0)),
+        None)
+    if top_house is not None:
+        top_walls = next(part for part in top_house.parts
+                         if part.part_role == "Walls")
+        top_masonry = next(part for part in top_house.parts
+                           if part.part_role == "Chimney")
+        _, timber_high = geometry_bounds(top_walls.geometry)
+        masonry_low, masonry_high = geometry_bounds(top_masonry.geometry)
+        if (timber_high[0] > 0.22 or masonry_low[2] > -0.5 + BOUNDS_EPSILON or
+                masonry_high[0] < 0.46):
+            problems.append(
+                "TopHouse lost its timber-main/masonry-+X-wing composition")
+    if len(names) != 43:
+        problems.append(f"mesh count is {len(names)}, expected 43")
     total_triangles = sum(triangle_count(part.geometry)
                           for assembly in assemblies
                           for part in assembly.parts)

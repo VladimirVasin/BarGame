@@ -27,6 +27,7 @@ namespace BarPromenade
 
         private CharacterController controller;
         private IWalkableArea walkableArea;
+        private IPlayerFootstepSurface footstepSurface;
         private IPlayerMotionPresentation presentation;
         private float verticalSpeed;
         private float speedMultiplier = 1f;
@@ -71,6 +72,17 @@ namespace BarPromenade
             {
                 StopPlanarMotion();
             }
+        }
+
+        /// <summary>
+        /// Hands the footstep to whatever the hero is standing ON, if the
+        /// area has an opinion. A surface that answers owns the step - sound
+        /// and effect both - and the default is played only when nothing
+        /// does, so an area cannot accidentally double it.
+        /// </summary>
+        public void SetFootstepSurface(IPlayerFootstepSurface surface)
+        {
+            footstepSurface = surface;
         }
 
         public void SetSpeedMultiplier(float multiplier)
@@ -507,9 +519,14 @@ namespace BarPromenade
             }
 
             footstepDistance %= stride;
-            RetroAudio.PlayAt(
-                RetroSfxId.Footstep,
-                transform.position);
+            Vector3 at = transform.position;
+            if (footstepSurface != null &&
+                footstepSurface.TryPlayFootstep(at, runBlend))
+            {
+                return;
+            }
+
+            RetroAudio.PlayAt(RetroSfxId.Footstep, at);
         }
 
         private static void ValidateInteractionPose(
