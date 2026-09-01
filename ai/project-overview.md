@@ -20,10 +20,11 @@
   `Assets/Scenes/MountainRoad.unity` and
   `Assets/Scenes/AreaLoading.unity`, followed by
   `Assets/Scenes/ChurchInterior.unity` and
-  `Assets/Scenes/AlpineVillage.unity`. The last four are appended at build
-  indices `7`, `8`, `9` and `10`, preserving every previous index.
+  `Assets/Scenes/AlpineVillage.unity`, then
+  `Assets/Scenes/MothersHouseInterior.unity`. The last five are appended at
+  build indices `7`, `8`, `9`, `10` and `11`, preserving every previous index.
 - Runtime assembly: `BarPromenade.Runtime`.
-- Player presentation: one modular `Player3DV2.prefab` in all eight gameplay
+- Player presentation: one modular `Player3DV2.prefab` in all nine gameplay
   roots, with independent mesh parts, a Generic in-place action set,
   same-prefab first-person subsets, a dedicated portrait, real mesh shadows
   and an analytic contact patch.
@@ -34,8 +35,9 @@
 
 ## Implemented MVP
 
-A runtime-composed 3D coastal city, a separately loaded mountain road and the
-village above its cableway, in which
+A runtime-composed 3D coastal city, a separately loaded mountain road, the
+village above its cableway and the accessible interior of the house at its
+head, in which
 one modular low-poly 3D hero walks the streets, the climb and the village lane, approaches the
 interactive home-adjacent bar, a supermarket, his home and the church north of
 the cemetery,
@@ -43,6 +45,25 @@ enters separate interiors, and returns to the matching exterior entrance.
 
 The vertical slice contains:
 
+- one separate `MothersHouseInterior` gameplay root entered through the
+  existing summit-house exterior door and exited back to a one-shot safe
+  arrival outside that same threshold. Its deterministic imported room keeps
+  a low central tea table, north rocking chair, west sofa, a burning fireplace
+  between two north windows and a light, clean, cared-for but old and modest
+  domestic dressing under one fixed camera. Repairs, fading and soft wear carry
+  age without dirt or abandonment. One dedicated `MothersHousePositiveAtlas`
+  owns every room-authored surface instead of reusing Home or City albedos.
+  Its centred south-wall entrance faces the north-wall hearth and spawns the
+  hero looking north. Cool window spill and a shaded floor lamp create one
+  restrained local pool without displacing the hearth as
+  the warm key or adding invisible ceiling fill. Fire, muffled wind,
+  alternating clock ticks and sparse timber settling form its calm sound bed.
+  The table
+  instantiates the literal Kettle Hat pedestrian
+  prefab and leaves only its ten authored kettle renderers visible, preserving
+  the source meshes, material and detail atlas as the explicit atlas exception;
+  mother, cat, dinner and dialogue
+  remain outside this MVP;
 - a black `MainMenu` launch boundary at build index `0` that resets every
   session-owned value, writes the one-shot `OpeningSleep` Home arrival and
   Single-loads the existing `HomeInterior` instead of duplicating the room;
@@ -129,8 +150,9 @@ The vertical slice contains:
   step anywhere on it — from the cableway station on the lowest terrace to the
   house at its head, which is the highest thing in the village and the only
   thing the composition points at. Twelve houses stand either side; the chapel
-  over the source, the adit with its overgrown spoil and the burial ground sit
-  on side spurs. The whole bowl is walkable: the mask is `TerrainBounds` grown
+  over the source and the head of the spring sit on side spurs; the adit and
+  the burial ground stood there until the lead took both out of the village
+  and out of the story, and the father's grave went with the cemetery. The whole bowl is walkable: the mask is `TerrainBounds` grown
   by the sampler's own `RidgeStandoff` — the line where the `74°` rise begins,
   so the terrain holds the perimeter — minus every plot's rotated footprint
   (the burial ground excepted; it is ground, and the adit gained the
@@ -1236,7 +1258,7 @@ The vertical slice contains:
   entrance's own sidewalk arrival point rather than the road centerline;
 - diegetic bar identification through warm windows, framed entrances and
   shared camera-facing pixel mug signs;
-- one production `Resources/Player/Player3DV2` prefab selected by all eight
+- one production `Resources/Player/Player3DV2` prefab selected by all nine
   gameplay roots, prefab-derived first-person subsets and the inventory
   portrait. It keeps the `1.75 m`, 31-bone contract with 38 bone-only Actions
   in 34 mesh parts and 1,984 triangles, but uses adult `7.4946`-head
@@ -1271,8 +1293,8 @@ The vertical slice contains:
   untouched. Run weight progressively releases downward grounding, and at full
   Run it only lifts sole penetration instead of pulling both airborne boots
   down to the floor;
-- one shared source-scene action for all eight ordinary bar, supermarket,
-  home and stairwell location doors. After the existing interact command, the
+- one shared source-scene action for all ten ordinary bar, supermarket,
+  home, stairwell and mother's-house location doors. After the existing interact command, the
   constrained motor guides the visible hero to an explicit grounded dock and
   facing, holds a neutral frame, then plays the planted
   `DoorUseEnter/Loop/Exit` lean and short physical-right-hand press. Only the

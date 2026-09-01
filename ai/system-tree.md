@@ -16,6 +16,7 @@ Assets/
     AreaLoading.unity
     ChurchInterior.unity
     AlpineVillage.unity
+    MothersHouseInterior.unity
   Settings/
     CityNoirVolumeProfile.asset
     PCPresentationBaselineVolumeProfile.asset  project-owned Neutral/Bloom/Vignette baseline
@@ -118,6 +119,10 @@ Assets/
         HomePaintedMetalAlbedo.png      brush streaks, bolt lattice, rust bleeding down
         HomeConcreteAlbedo.png          stucco, offset formwork seams, damp streaks
         HomeRugAlbedo.png               diamond lattice, medallions, worn walking track
+    MothersHouse/
+      MothersHouseInterior3D.prefab     passive 10 x 8 m room, typed anchors/parts; no gameplay components
+      Textures/
+        MothersHousePositiveAtlas.png   dedicated light, clean 4 x 4 room atlas; no Home/City sheets
     Stairwell/
       Textures/                         eight active RGB albedos
         StairwellWallPaintAlbedoV2.png  active higher-contrast plaster/bands
@@ -160,6 +165,8 @@ Assets/
     Church/
       ChurchExterior3D.prefab          passive Catholic exterior + typed semantic anchors
       ChurchInterior3D.prefab          passive furnished interior + typed semantic anchors
+  MothersHouse/
+    Models/MothersHouseInterior3D.{fbx,json}  deterministic fixed-metre room + contract manifest
     Localization/
       ru.json
       en.json
@@ -320,7 +327,11 @@ Assets/
         DraughtsEngine.cs      negamax over snapshots + forced-capture extension + slack pick
         DraughtsMatch.cs       lattice-native adapter, capture-compulsory flag
       Map/           ordered road-route model and heap pathfinding
-      World/         city plus validated bar/home/supermarket plans and builders
+      World/         city plus validated bar/home/supermarket/mother-house plans and builders
+        MothersHouseInterior{LayoutPlan,LayoutPlanner,LayoutValidator,WorldBuilder,WorldResult}.cs
+                                      pure room contract + imported-model composition
+        MothersHouseInteriorAssetRegistry.cs  typed passive model anchors, parts and appearance
+        MothersHouseKettleProp.cs     literal Kettle Hat prefab with only its ten kettle renderers visible
         MountainRoadCafe{AssetRegistry,ModelResources,SurfaceAppearance}.cs
                                       passive authored cafe presentation bridge
         MountainRoadCafeCollisionWorldBuilder.cs  exact 17-collider plan-owned shell
@@ -694,7 +705,7 @@ Assets/
       Player/        motor, presentation contracts, chase/fixed cameras and contact shadow
         PlayerMotor.cs             tank walk/back/run input + grounded guided walk approach
         PlayerPresentation.cs      3D motion/status/clip/visibility contracts
-        PlayerFactory.cs           shared prefab spawn in all eight gameplay roots
+        PlayerFactory.cs           shared prefab spawn in all nine gameplay roots
         PlayerAttention.cs         Silent Hill head: notice cone rules, target picker + magnets
         PlayerCameraFollow.cs      bounded yaw/pitch chase, fixed pose + shared mouse/stick/arrow orbit sampling
         PlayerContactShadow.cs     slope-aligned planted/fall-aware analytic ground patch
@@ -720,7 +731,7 @@ Assets/
         HomeRefrigeratorInventoryAdapter.cs  slot sources -> inventory IDs
         SupermarketProductCatalog.cs five offers with localized metadata/prices
         SupermarketPurchaseRules.cs  pure finite-source/cash/stack validation
-      Interaction/   contracts, shops and bar/home/stairwell/supermarket/church doors
+      Interaction/   contracts, shops and bar/home/stairwell/supermarket/church/mother-house doors
         CityTunnelTravel{Plan,Planner,Controller}.cs automatic unavailable crossing + visible return
         InventoryTargetInteraction.cs   reusable item requirement/menu state/handler contract
         PlayerAnimatedInteraction*.cs  positioning, static/moving pelvis targets + independent exit
@@ -736,12 +747,16 @@ Assets/
         HomeShowerInteraction.cs       curtain/water/steam shower scene + timeline + effect
         HomeTeethBrushingInteraction.cs  mirror close-up, CCD brushing arm, foam, day-gated relief
         Supermarket{Entrance,Exit}.cs  separate-scene round trip and return context
+        MothersHouse{Entrance,Exit}.cs existing village leaf -> room -> one-shot safe return
         SupermarketShelf{Station,ShopController,ShopView}.cs  physical shelf browser
-      Scenes/        startup/loading plus eight gameplay roots, including ChurchInterior and AlpineVillage
+      Scenes/        startup/loading plus nine gameplay roots, including AlpineVillage and MothersHouseInterior
         MainMenuRoot.cs                 black build-index-0 new-run boundary
         AreaLoadingRoot.cs              black unscaled progress-bar area transfer
         MountainRoadRoot.cs             standalone mountain world/player/UI composition
         AlpineVillageRoot.cs            standalone upper-village world/player/UI composition
+        MothersHouseInteriorRoot.cs     room/world/player/UI, kettle and exit composition
+        MothersHouseInteriorAtmosphere.cs  hearth + windows + one floor practical; restrained grade/crackle
+        MothersHouseInteriorSoundscape.cs  muffled wind + tick/tock + sparse timber settling
         MountainRoadWeather{Rules,Shaper}.cs  the city's own weather slot re-read by altitude, as snow and harder wind
         MountainRoadWindDriver.cs       carries that wind to the crowns, the cloth and the sound bed
         MountainRoadAtmosphere.cs       cold fog, time grade and flickering tunnel lamp
@@ -794,6 +809,7 @@ Assets/
         InteractionPromptView.cs    localized clickable contextual actions
         HomeRefrigeratorItemInspectionView.cs  hover label and PS1 item panel
     Editor/          scene/build helpers and reproducible noir/PS1/audio asset setup
+      MothersHouse/  fixed-metre FBX import, passive Resources prefab + manifest validation
       Environment/ExteriorCloud{AssetSetup,ModelImporter,TextureImporter}.cs  deterministic import/prefab validation
       City/CityMiscAssetSetup.cs  FBX import/provider binding + strict manifest/root/bounds validation
       Village/VillageAssetSetup.cs  village FBX import/binding; expectation derived from the runtime catalog
@@ -936,6 +952,7 @@ Assets/
       IntoxicationStatusPlayModeTests.cs hybrid handoff, fixed root, one-phase Rise cleanup
       PlayerAnimatedInteraction3DPlayModeTests.cs   clip sampling, pelvis alignment and cleanup
       PlayerDoorActionPlayModeTests.cs terminal transition commit + cancellation cleanup
+      MothersHouseInteriorPlayModeTests.cs room/kettle/light contract + real village door round trip
       Player3DGameplaySceneIntegrationPlayModeTests.cs  shared gameplay-root camera/hero contract
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  prefab subsets + visibility restoration
@@ -973,6 +990,10 @@ ArtSource/
     Cafe/Preview/                deterministic Nighthawks-composition review PNG
   Village/Blender/               village kit `.blend` source and contact sheet (no sheet of its own)
   Church/Blender/                Catholic `.blend` source + accepted exterior/interior previews
+  MothersHouse/
+    Blender/                     generated fixed-metre room `.blend`
+    Preview/                     approved wide fixed-camera composition PNG
+    Textures/MothersHousePositiveAtlas.prompt.md  4 x 4 clean/aged atlas source prompt + acceptance
 tools/
   build-exterior-cloud-3d-model.py  deterministic hemisphere, packed density texture and export validator
   build-city-bus-3d-model.py         real-scale bus model/export validator
@@ -990,6 +1011,7 @@ tools/
   build-stairwell-cat-3d-model.py   armature-free pivot-empty cat + grin-UV validator
   build-church-3d-model.py       deterministic Catholic exterior/interior Blender build + validator
   build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
+  build-mothers-house-interior-3d-model.py  fixed-metre room, UV/triangle/anchor/export validator
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
   build-mountain-road-cafe-3d-model.py  51-mesh cafe, six sheets, anchors/props/collider/overlap validator
   build-village-3d-model.py      v3.0.0 / village_house_archetypes_v3, 17 assemblies / 43 outward-validated meshes; no doors/panes/new sheet
@@ -1092,6 +1114,15 @@ AlpineVillageRoot -> AlpineVillagePlanner -> validated village above the rope
                                            -> one bearing/gust rhythm + continuous wind bed
                                            -> canopy/cabin dry; uphill axis remains readable
                   -> pure City + mountain plans for the other two map tabs
+                  -> existing top-house door -> MothersHouseInterior (Single)
+MothersHouseInteriorRoot -> pure layout -> passive 10 x 8 m imported room
+                                         -> fixed southeast camera: hearth + both windows + furniture
+                                         -> centred south entrance -> north-facing player spawn
+                                         -> floor lamp; no invisible ceiling fill
+                                         -> calm fire/wind/tick-tock/timber ASMR bed
+                                         -> dedicated positive atlas; no Home/City environment sheets
+                                         -> exact Kettle Hat prefab instance on the tea table
+                                         -> exit -> one-shot safe AlpineVillage return outside the trigger
 blueprint ID + seed -> CityBlueprintCatalog -> immutable CityBlueprint
                                           -> stable area IDs + categories/profiles
                                           -> sparse active-cell topology
@@ -1296,7 +1327,7 @@ layout -> CityBusPlanner -> canonical right-hand Route 01
                             -> simplified pale neutral closed route
                             -> five default numbered localized hover stops + compact legend
                             -> below darker bone-toned player route; no live bus marker
-eight gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
+nine gameplay roots -> PlayerFactory -> Resources/Player/Player3DV2.prefab
                                       -> 34 mesh bindings + 16 core parts
                                       -> 38 Generic in-place Actions
                                          -> Idle/Walk/Run/atlas-face/status/fall

@@ -871,15 +871,10 @@ namespace BarPromenade
                     label = LocalizationService.Get(
                         "map.alpine_village.chapel");
                     return true;
-                case AlpineVillagePlotKind.Adit:
+                case AlpineVillagePlotKind.Spring:
                     kind = CityMapPointKind.Village;
                     label = LocalizationService.Get(
-                        "map.alpine_village.adit");
-                    return true;
-                case AlpineVillagePlotKind.Cemetery:
-                    kind = CityMapPointKind.Village;
-                    label = LocalizationService.Get(
-                        "map.alpine_village.cemetery");
+                        "map.alpine_village.spring");
                     return true;
                 default:
                     kind = CityMapPointKind.Village;

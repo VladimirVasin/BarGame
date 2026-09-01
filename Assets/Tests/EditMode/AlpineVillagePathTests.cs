@@ -101,17 +101,11 @@ namespace BarPromenade.Tests.EditMode
                 AlpineVillagePlan plan = AlpineVillagePlanner.Create(seed);
                 IReadOnlyList<AlpineVillagePathDescriptor> paths =
                     AlpineVillagePathPlanner.Create(plan);
-                int aditSegments = 0;
                 for (int pathIndex = 0;
                      pathIndex < paths.Count;
                      pathIndex++)
                 {
                     AlpineVillagePathDescriptor path = paths[pathIndex];
-                    if (path.Kind == AlpineVillagePathKind.AditSpur)
-                    {
-                        aditSegments++;
-                    }
-
                     float envelope = Mathf.Max(
                         path.SurfaceHalfWidth,
                         path.WalkableHalfWidth);
@@ -129,11 +123,6 @@ namespace BarPromenade.Tests.EditMode
                             $"'{plot.StableId}'");
                     }
                 }
-
-                Assert.That(
-                    aditSegments,
-                    Is.InRange(3, 4),
-                    $"seed {seed}: the adit lost its authored outer hook");
             }
         }
 

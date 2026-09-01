@@ -38,5 +38,8 @@ EditorBuildSettings:
   - enabled: 1
     path: Assets/Scenes/AlpineVillage.unity
     guid: 83ba1c48e22c40678831abab2b8635d9
+  - enabled: 1
+    path: Assets/Scenes/MothersHouseInterior.unity
+    guid: 14fe038b18821f84bb83ef3166ecf4ee
   m_configObjects:
     com.unity.input.settings.actions: {fileID: -944628639613478452, guid: 052faaac586de48259a63d0c4782560b, type: 3}

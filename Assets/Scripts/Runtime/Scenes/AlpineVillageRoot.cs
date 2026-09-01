@@ -68,6 +68,8 @@ namespace BarPromenade
         public PauseMenuController PauseMenu { get; private set; }
         public AreaArrivalToken ArrivalToken { get; private set; }
         public bool HadAreaArrival { get; private set; }
+        public AlpineVillageArrivalKind VillageArrival { get; private set; }
+        public MothersHouseEntrance MothersHouseEntrance { get; private set; }
 
         /// <summary>The offer to board the cabin back down.</summary>
         public AlpineCablewayCabinSeat CabinSeat { get; private set; }
@@ -143,6 +145,7 @@ namespace BarPromenade
             Audio = RetroAudioService.EnsureInstalled();
             Plan = AlpineVillagePlanner.Create(GameSessionState.CitySeed);
             World = AlpineVillageWorldBuilder.Build(transform, Plan);
+            MothersHouseEntrance = World.MothersHouseEntrance;
 
             // The loading service arms this before destination activation, so
             // consume it before any spawn decision or PlayerFactory call.
@@ -154,6 +157,7 @@ namespace BarPromenade
             ArrivalToken = HadAreaArrival
                 ? token
                 : AreaArrivalToken.Default;
+            VillageArrival = GameSessionState.ConsumeAlpineVillageArrival();
 
             var ui = new GameObject("Runtime UI");
             ui.transform.SetParent(transform, false);
@@ -192,6 +196,18 @@ namespace BarPromenade
                 arrivedAtChartedPlace = true;
             }
 
+            bool arrivedFromMothersHouse =
+                !HadAreaArrival &&
+                VillageArrival ==
+                    AlpineVillageArrivalKind.MothersHouseDoor;
+            if (arrivedFromMothersHouse)
+            {
+                spawnPosition = Plan.MothersHouseReturnPosition +
+                                Vector3.up *
+                                PlayerFactory.GroundedRootOffset;
+                spawnSource = "mothers_house_return";
+            }
+
             GameLog.Info(
                 "alpine_village",
                 "spawn_selected",
@@ -226,6 +242,12 @@ namespace BarPromenade
             Vector3 facing = ArrivalToken == AreaArrivalToken.Cableway
                 ? -Plan.Station.Cableway.LineForward
                 : Plan.SpawnForward;
+            if (arrivedFromMothersHouse)
+            {
+                // Face away from the leaf and down the lane. The return is a
+                // completed exit, not another invitation to enter at once.
+                facing = Plan.MothersHouse.Facing;
+            }
             if (arrivedAtChartedPlace)
             {
                 Vector3 towards = arrivalPoint - spawnPosition;
@@ -813,9 +835,9 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The station canopy is the only roof the player can stand under out
-        /// here. The houses are shut - their doors do not open yet - so a
-        /// doorway is not shelter.
+        /// The station canopy is the only roof the player can stand under in
+        /// this exterior. Entering the house changes scenes; standing at its
+        /// threshold is still standing in the village weather.
         /// </summary>
         private bool IsSheltered()
         {

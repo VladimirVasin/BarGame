@@ -6,21 +6,24 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Chooses the alpine village's raven roosts: the spoil-heap edge
-    /// before the adit mouth, the firewood mine-cart behind it, and a
-    /// fence-line spot at one ordinary house's cable gate. The chapel
-    /// over the source takes NO roost and pushes everything away by
-    /// the birds' whole audible radius: story §5 poured the poison
-    /// there, so a held corvid pair over the spring would be the
-    /// game's clearest false omen — the chapel gets exactly the
-    /// waterworks-court treatment, place plus silence.
+    /// Chooses the alpine village's raven roosts: one fence-line spot
+    /// at an ordinary house's cable gate, and that is now the whole
+    /// list. The spoil-heap edge and the firewood cart were the other
+    /// two and went out of the village with the adit itself.
+    ///
+    /// The chapel over the source takes NO roost and pushes everything
+    /// away by the birds' whole audible radius: story §5 poured the
+    /// poison there, so a held corvid pair over the spring would be
+    /// the game's clearest false omen — the chapel gets exactly the
+    /// waterworks-court treatment, place plus silence. The spring's own
+    /// head inherits nothing here yet; whether the birds may stand at
+    /// it belongs with the detailed source.
     ///
     /// The planner is pure and seedless in its arithmetic (the
     /// village plan already carries the seed), and it deliberately
-    /// reads the dog and firewood positions out of the soundscape
-    /// planner rather than re-deriving them — one authority for where
-    /// the cart stands and where the dog lives, so audio and birds
-    /// can never disagree about either.
+    /// reads the dog's position out of the soundscape planner rather
+    /// than re-deriving it — one authority for where the dog lives, so
+    /// audio and birds can never disagree.
     /// </summary>
     public static class AlpineVillageRavenRoostPlanner
     {
@@ -87,99 +90,26 @@ namespace BarPromenade
 
             // The soundscape planner is exactly as strict as the
             // village validator about the plots it needs, so a plan
-            // that builds a village at all also answers for the dog
-            // and the firewood cart.
+            // that builds a village at all also answers for the dog.
             AlpineVillageSoundscapePlan soundscape =
                 AlpineVillageSoundscapePlanner.Create(plan);
             AlpineVillageSoundAnchorDescriptor dog =
                 soundscape.GetRequiredAnchor(
                     AlpineVillageSoundKind.DogBehindFence);
-            AlpineVillageSoundAnchorDescriptor firewood =
-                soundscape.GetRequiredAnchor(
-                    AlpineVillageSoundKind.FirewoodInMineCart);
             AlpineVillagePlotDescriptor dogHouse =
                 FindDogHouse(plan);
             Func<Vector2, bool> excluded =
                 BuildExclusion(plan, dog);
 
-            var roosts = new List<RavenRoostDescriptor>(3);
-            var acceptedAnchors = new List<Vector2>(3);
-            AlpineVillagePlotDescriptor adit =
-                FindPlot(plan, AlpineVillagePlotKind.Adit);
-            if (adit != null)
-            {
-                TryAddAditRoost(
-                    adit, ground, excluded,
-                    roosts, acceptedAnchors);
-                TryAddWoodpileRoost(
-                    adit, firewood, ground, excluded,
-                    roosts, acceptedAnchors);
-            }
-
+            // The adit and the woodpile were the other two sites, and both
+            // went with the adit itself. The fence is what is left, which is
+            // one pair - inside the brief's "no more than three" either way.
+            var roosts = new List<RavenRoostDescriptor>(1);
+            var acceptedAnchors = new List<Vector2>(1);
             TryAddLaneFenceRoost(
                 plan, dogHouse, dog, ground, excluded,
                 roosts, acceptedAnchors);
             return new ReadOnlyCollection<RavenRoostDescriptor>(roosts);
-        }
-
-        /// <summary>
-        /// A pair on the spoil-heap edge before the adit mouth —
-        /// bare worked ground with the dark opening behind it, gravel
-        /// and stone for a backdrop exactly as the art rule wants.
-        /// </summary>
-        private static void TryAddAditRoost(
-            AlpineVillagePlotDescriptor adit,
-            ICityMapTeleportGround ground,
-            Func<Vector2, bool> excluded,
-            List<RavenRoostDescriptor> roosts,
-            List<Vector2> acceptedAnchors)
-        {
-            Vector3 anchor = adit.GroundCenter +
-                adit.Facing *
-                (adit.FootprintSize.y * 0.5f +
-                 AditMouthStandOffMeters);
-            TryAddTerrainRoost(
-                "village-roost-adit",
-                new Vector2(anchor.x, anchor.z),
-                adit.GroundCenter,
-                ground,
-                excluded,
-                roosts,
-                acceptedAnchors);
-        }
-
-        /// <summary>
-        /// A pair beside the firewood mine-cart — the village's
-        /// deliberately unremarkable site. The cart stands behind the
-        /// adit plot, so on the default village this anchor lands
-        /// well inside the adit roost's spacing circle and the greedy
-        /// pass drops it, leaving two roosts; the row is still
-        /// authored because a reseeded village that pushes the two
-        /// apart fields it with no code change, and the priority
-        /// order (mouth first, woodpile second) is the deliberate
-        /// tie-break.
-        /// </summary>
-        private static void TryAddWoodpileRoost(
-            AlpineVillagePlotDescriptor adit,
-            AlpineVillageSoundAnchorDescriptor firewood,
-            ICityMapTeleportGround ground,
-            Func<Vector2, bool> excluded,
-            List<RavenRoostDescriptor> roosts,
-            List<Vector2> acceptedAnchors)
-        {
-            // OwnerPosition is the cart itself (the sound sits a
-            // hand's width above it); the bird stands a step toward
-            // the lane side of the cart.
-            Vector3 anchor = firewood.OwnerPosition +
-                             adit.Facing * FirewoodStandOffMeters;
-            TryAddTerrainRoost(
-                "village-roost-woodpile",
-                new Vector2(anchor.x, anchor.z),
-                firewood.OwnerPosition,
-                ground,
-                excluded,
-                roosts,
-                acceptedAnchors);
         }
 
         /// <summary>
@@ -337,14 +267,6 @@ namespace BarPromenade
                 rects.Add(Inflate(
                     chapel.BoundsXZ,
                     ChapelClearanceMeters));
-            }
-
-            AlpineVillagePlotDescriptor cemetery = FindPlot(
-                plan,
-                AlpineVillagePlotKind.Cemetery);
-            if (cemetery != null)
-            {
-                rects.Add(cemetery.BoundsXZ);
             }
 
             rects.Add(plan.MothersHouse.BoundsXZ);

@@ -201,10 +201,10 @@ namespace BarPromenade.Tests.EditMode
                 "The road degrades to three roosts, never fewer.");
             Assert.That(
                 villageRoosts.Count,
-                Is.InRange(2, 3),
-                "The village fields two or three roosts (the " +
-                "woodpile is expected to fall to the adit's " +
-                "spacing circle on the default seed).");
+                Is.EqualTo(1),
+                "The village fields exactly one roost: the adit's own edge " +
+                "and the woodpile beside it went out of the village with " +
+                "the adit, and the lane fence is what is left.");
 
             AssertWellFormed(cityRoosts, "City");
             AssertWellFormed(roadRoosts, "MountainRoad");
@@ -254,7 +254,6 @@ namespace BarPromenade.Tests.EditMode
                 villageRoosts,
                 new[]
                 {
-                    "village-roost-adit",
                     "village-roost-lane-fence"
                 },
                 "AlpineVillage");
@@ -672,9 +671,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(chapel, Is.Not.Null,
                 "The village always builds its chapel — the crime " +
                 "scene the roosts must clear.");
-            AlpineVillagePlotDescriptor cemetery = FindPlot(
-                villagePlan,
-                AlpineVillagePlotKind.Cemetery);
             MountainRoadTerminalRect pad =
                 villagePlan.Station.PadArea;
             Vector2 dogXZ = XZ(villageDog.OwnerPosition);
@@ -699,16 +695,6 @@ namespace BarPromenade.Tests.EditMode
                         Is.False,
                         label + " stands inside the chapel's " +
                         "audible clearance.");
-                    if (cemetery != null)
-                    {
-                        Assert.That(
-                            ContainsInclusive(
-                                cemetery.BoundsXZ,
-                                point),
-                            Is.False,
-                            label + " stands on the burial plot.");
-                    }
-
                     Assert.That(
                         ContainsInclusive(
                             villagePlan.MothersHouse.BoundsXZ,

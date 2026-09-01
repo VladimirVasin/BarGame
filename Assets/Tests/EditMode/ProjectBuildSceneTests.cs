@@ -30,7 +30,8 @@ namespace BarPromenade.Tests.EditMode
                 "Assets/Scenes/MountainRoad.unity",
                 "Assets/Scenes/AreaLoading.unity",
                 "Assets/Scenes/ChurchInterior.unity",
-                "Assets/Scenes/AlpineVillage.unity"
+                "Assets/Scenes/AlpineVillage.unity",
+                "Assets/Scenes/MothersHouseInterior.unity"
             };
 
             CollectionAssert.AreEqual(expected, actual);

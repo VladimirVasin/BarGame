@@ -124,6 +124,10 @@ namespace BarPromenade
             {
                 EnsureAlpineVillageInstalled();
             }
+            else if (scene.name == SceneIds.MothersHouseInterior)
+            {
+                EnsureMothersHouseInteriorInstalled();
+            }
             else if (scene.name == SceneIds.AreaLoading)
             {
                 EnsureAreaLoadingInstalled();
@@ -142,6 +146,7 @@ namespace BarPromenade
                    sceneName == SceneIds.DoorTransition ||
                    sceneName == SceneIds.MountainRoad ||
                    sceneName == SceneIds.AlpineVillage ||
+                   sceneName == SceneIds.MothersHouseInterior ||
                    sceneName == SceneIds.AreaLoading;
         }
 
@@ -378,6 +383,29 @@ namespace BarPromenade
                 GameObject root = new GameObject(
                     "[Bar Promenade] Alpine Village Runtime");
                 return root.AddComponent<AlpineVillageRoot>();
+            }
+            finally
+            {
+                creating = false;
+            }
+        }
+
+        public static MothersHouseInteriorRoot
+            EnsureMothersHouseInteriorInstalled()
+        {
+            MothersHouseInteriorRoot existing =
+                Object.FindAnyObjectByType<MothersHouseInteriorRoot>();
+            if (existing != null)
+            {
+                return existing;
+            }
+
+            creating = true;
+            try
+            {
+                GameObject root = new GameObject(
+                    "[Bar Promenade] Mother's House Interior Runtime");
+                return root.AddComponent<MothersHouseInteriorRoot>();
             }
             finally
             {

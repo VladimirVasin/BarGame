@@ -16,7 +16,8 @@ namespace BarPromenade
         GarlandWire = 2,
         DogBehindFence = 3,
         SourceWater = 4,
-        FirewoodInMineCart = 5,
+        // `5` was the firewood settling in the mine cart. The cart went out
+        // of the village with the adit; the number stays as a hole.
         WordlessHumBehindWall = 6,
         Count = 7
     }
@@ -230,25 +231,41 @@ namespace BarPromenade
             return anchor;
         }
 
+        /// <summary>
+        /// Every DECLARED kind has an anchor.
+        ///
+        /// Walked over the declared values rather than over `1..Count`: the
+        /// numbering carries a hole where the firewood cart used to be, and
+        /// counting the range demands a voice for a place the village no
+        /// longer has.
+        /// </summary>
         public void ValidateOrThrow()
         {
-            int expected = (int)AlpineVillageSoundKind.Count - 1;
-            if (Anchors.Count != expected)
+            var required = new List<AlpineVillageSoundKind>();
+            foreach (AlpineVillageSoundKind kind in
+                     Enum.GetValues(typeof(AlpineVillageSoundKind)))
+            {
+                if (kind != AlpineVillageSoundKind.None &&
+                    kind != AlpineVillageSoundKind.Count)
+                {
+                    required.Add(kind);
+                }
+            }
+
+            if (Anchors.Count != required.Count)
             {
                 throw new InvalidOperationException(
-                    $"The village soundscape needs exactly {expected} " +
+                    $"The village soundscape needs exactly {required.Count} " +
                     $"causal anchors; it has {Anchors.Count}.");
             }
 
-            for (int value = 1;
-                 value < (int)AlpineVillageSoundKind.Count;
-                 value++)
+            for (int index = 0; index < required.Count; index++)
             {
-                var kind = (AlpineVillageSoundKind)value;
-                if (!byKind.ContainsKey(kind))
+                if (!byKind.ContainsKey(required[index]))
                 {
                     throw new InvalidOperationException(
-                        $"The village soundscape is missing '{kind}'.");
+                        $"The village soundscape is missing " +
+                        $"'{required[index]}'.");
                 }
             }
         }
@@ -256,7 +273,7 @@ namespace BarPromenade
 
     /// <summary>
     /// Derives all sound positions from the same immutable village plan that
-    /// places the station, lane, houses, chapel and adit dressing.
+    /// places the station, lane, houses and chapel dressing.
     /// </summary>
     public static class AlpineVillageSoundscapePlanner
     {
@@ -268,8 +285,6 @@ namespace BarPromenade
             "village-sound-dog-behind-fence";
         public const string SourceWaterAnchorId =
             "village-sound-source-water";
-        public const string FirewoodAnchorId =
-            "village-sound-firewood";
         public const string WordlessHumAnchorId =
             "village-sound-wordless-hum";
 
@@ -281,8 +296,6 @@ namespace BarPromenade
             AlpineVillageDressingPlanner.CableGateOwnerStableId;
         public const string SourceBowlOwnerStableId =
             AlpineVillageDressingPlanner.SourceBowlOwnerStableId;
-        public const string FirewoodOwnerStableId =
-            AlpineVillageDressingPlanner.FirewoodOwnerStableId;
 
         public const int AudibleGarlandSpanIndex =
             AlpineVillageDressingPlanner.AudibleGarlandSpanIndex;
@@ -305,9 +318,6 @@ namespace BarPromenade
             AlpineVillagePlotDescriptor chapel = RequirePlot(
                 village,
                 AlpineVillagePlotKind.Chapel);
-            AlpineVillagePlotDescriptor adit = RequirePlot(
-                village,
-                AlpineVillagePlotKind.Adit);
             AlpineVillagePlotDescriptor dogHouse = FindClosestHouse(
                 village,
                 village.Lane.Length * DogHouseLaneFraction,
@@ -325,7 +335,6 @@ namespace BarPromenade
                 CreateGarlandAnchor(village),
                 CreateDogAnchor(village, dogHouse),
                 CreateSourceWaterAnchor(village, chapel),
-                CreateFirewoodAnchor(adit),
                 CreateWordlessHumAnchor(humHouse)
             };
             return new AlpineVillageSoundscapePlan(village.Seed, anchors);
@@ -403,27 +412,6 @@ namespace BarPromenade
                 source,
                 bowl,
                 chapel.Facing);
-        }
-
-        private static AlpineVillageSoundAnchorDescriptor CreateFirewoodAnchor(
-            AlpineVillagePlotDescriptor adit)
-        {
-            Quaternion rotation = Quaternion.LookRotation(
-                adit.Facing,
-                Vector3.up);
-            Vector3 local = new Vector3(
-                adit.FootprintSize.x * 0.42f,
-                0.42f,
-                -adit.FootprintSize.y * 0.9f);
-            Vector3 firewoodOwner = adit.GroundCenter + rotation * local;
-            Vector3 firewoodSound = firewoodOwner + Vector3.up * 0.12f;
-            return new AlpineVillageSoundAnchorDescriptor(
-                FirewoodAnchorId,
-                FirewoodOwnerStableId,
-                AlpineVillageSoundKind.FirewoodInMineCart,
-                firewoodSound,
-                firewoodOwner,
-                adit.Facing);
         }
 
         private static AlpineVillageSoundAnchorDescriptor

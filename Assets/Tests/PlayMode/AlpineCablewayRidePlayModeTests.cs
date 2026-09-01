@@ -1,6 +1,7 @@
 using System.Collections;
 using NUnit.Framework;
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using UnityEngine.TestTools;
 
 namespace BarPromenade.Tests.PlayMode
@@ -34,6 +35,8 @@ namespace BarPromenade.Tests.PlayMode
 
         private const int MaximumSteps = 4000;
 
+        private static int teardownCount;
+
         private MountainRoadCablewayPlan cableway;
 
         [SetUp]
@@ -47,12 +50,71 @@ namespace BarPromenade.Tests.PlayMode
                 .Cableway;
         }
 
-        [TearDown]
-        public void ReleaseTheClock()
+        /// <summary>
+        /// How long the area travel this fixture starts may take to land.
+        /// REAL seconds: the load is asynchronous and progresses on the
+        /// wall clock, while the pinned frame clock says whatever it likes.
+        /// </summary>
+        private const float AreaLandingSeconds = 60f;
+
+        [UnityTearDown]
+        public IEnumerator ReleaseTheClockAndLandTheAreaTravel()
         {
             Time.captureDeltaTime = 0f;
             GameSessionState.SetRidingTheCableway(false);
+
+            // The last act of the ride is a REAL area travel, and destroying
+            // this fixture's scene does not cancel it. It lands whenever the
+            // async load lands - inside whatever test is running by then -
+            // and a single load destroys everything in the active scene. Two
+            // village fixtures were dying that way, with a
+            // MissingReferenceException naming an object they had built
+            // themselves seconds earlier. Land it here, in the fixture that
+            // asked for it, and hand the next test an empty scene.
+            float deadline =
+                Time.realtimeSinceStartup + AreaLandingSeconds;
+            while (Time.realtimeSinceStartup < deadline &&
+                   (AreaTravelService.HasPendingTravel ||
+                    AreaTravelService.IsTraveling ||
+                    SceneTransitionService.IsTransitioning))
+            {
+                yield return null;
+            }
+
+            // Only the tests that actually travel bring an area scene in,
+            // and a scene name has to be unique, so neither the blank nor
+            // the unloading is done speculatively.
+            bool landed = false;
+            for (int index = 0; index < SceneManager.sceneCount; index++)
+            {
+                landed |= IsAreaScene(SceneManager.GetSceneAt(index));
+            }
+
+            if (landed)
+            {
+                Scene blank = SceneManager.CreateScene(
+                    $"Alpine Cableway Ride Teardown {++teardownCount}");
+                SceneManager.SetActiveScene(blank);
+                for (int index = SceneManager.sceneCount - 1;
+                     index >= 0;
+                     index--)
+                {
+                    Scene loaded = SceneManager.GetSceneAt(index);
+                    if (IsAreaScene(loaded))
+                    {
+                        yield return SceneManager.UnloadSceneAsync(loaded);
+                    }
+                }
+            }
+
             GameSessionState.BeginNewGame();
+        }
+
+        private static bool IsAreaScene(Scene scene)
+        {
+            return scene.isLoaded &&
+                   (scene.name == SceneIds.AlpineVillage ||
+                    scene.name == SceneIds.AreaLoading);
         }
 
         [UnityTest]

@@ -11,6 +11,12 @@ namespace BarPromenade
         OpeningSleep = 1
     }
 
+    public enum AlpineVillageArrivalKind
+    {
+        Default = 0,
+        MothersHouseDoor = 1
+    }
+
     public enum InventoryItemUseStatus
     {
         Success = 0,
@@ -137,6 +143,11 @@ namespace BarPromenade
             get;
             private set;
         } = HomeArrivalKind.Normal;
+        public static AlpineVillageArrivalKind AlpineVillageArrival
+        {
+            get;
+            private set;
+        } = AlpineVillageArrivalKind.Default;
         public static int IntoxicationLevel { get; private set; }
         public static int LastTeethBrushingDayIndex
         {
@@ -356,6 +367,7 @@ namespace BarPromenade
             ReturnKind = CityReturnKind.None;
             StairwellArrival = StairwellArrivalKind.StreetDoor;
             HomeArrival = HomeArrivalKind.Normal;
+            AlpineVillageArrival = AlpineVillageArrivalKind.Default;
             DebugCityMapOnArrivalRequested = false;
             IntoxicationLevel = 0;
             needsProgression.Reset();
@@ -1257,6 +1269,14 @@ namespace BarPromenade
                 "church_entered");
         }
 
+        public static void EnterMothersHouse()
+        {
+            AlpineVillageArrival = AlpineVillageArrivalKind.Default;
+            GameLog.Info(
+                "session",
+                "mothers_house_entered");
+        }
+
         public static void PrepareHomeReturn()
         {
             if (ReturnKind == CityReturnKind.PlayerHome)
@@ -1390,6 +1410,35 @@ namespace BarPromenade
             GameLog.Info(
                 "session",
                 "home_arrival_consumed",
+                GameLog.Field("arrival", arrival.ToString()));
+            return arrival;
+        }
+
+        public static void PrepareAlpineVillageArrival(
+            AlpineVillageArrivalKind arrival)
+        {
+            if (arrival != AlpineVillageArrivalKind.Default &&
+                arrival != AlpineVillageArrivalKind.MothersHouseDoor)
+            {
+                throw new ArgumentOutOfRangeException(nameof(arrival));
+            }
+
+            AlpineVillageArrival = arrival;
+            GameLog.Info(
+                "session",
+                "alpine_village_arrival_prepared",
+                GameLog.Field(
+                    "arrival",
+                    AlpineVillageArrival.ToString()));
+        }
+
+        public static AlpineVillageArrivalKind ConsumeAlpineVillageArrival()
+        {
+            AlpineVillageArrivalKind arrival = AlpineVillageArrival;
+            AlpineVillageArrival = AlpineVillageArrivalKind.Default;
+            GameLog.Info(
+                "session",
+                "alpine_village_arrival_consumed",
                 GameLog.Field("arrival", arrival.ToString()));
             return arrival;
         }

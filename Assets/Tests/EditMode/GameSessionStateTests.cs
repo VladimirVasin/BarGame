@@ -192,6 +192,34 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void AlpineVillageArrival_IsConsumedAndResetsToDefault()
+        {
+            GameSessionState.PrepareAlpineVillageArrival(
+                AlpineVillageArrivalKind.MothersHouseDoor);
+
+            Assert.That(
+                GameSessionState.AlpineVillageArrival,
+                Is.EqualTo(AlpineVillageArrivalKind.MothersHouseDoor));
+            Assert.That(
+                GameSessionState.ConsumeAlpineVillageArrival(),
+                Is.EqualTo(AlpineVillageArrivalKind.MothersHouseDoor));
+            Assert.That(
+                GameSessionState.AlpineVillageArrival,
+                Is.EqualTo(AlpineVillageArrivalKind.Default));
+            Assert.That(
+                GameSessionState.ConsumeAlpineVillageArrival(),
+                Is.EqualTo(AlpineVillageArrivalKind.Default));
+        }
+
+        [Test]
+        public void AlpineVillageArrival_RejectsUnknownValue()
+        {
+            Assert.Throws<System.ArgumentOutOfRangeException>(
+                () => GameSessionState.PrepareAlpineVillageArrival(
+                    (AlpineVillageArrivalKind)99));
+        }
+
+        [Test]
         public void BeginNewGame_RestoresEverySessionContract()
         {
             GameSessionState.SetCitySeed(-7001);
@@ -207,6 +235,8 @@ namespace BarPromenade.Tests.EditMode
                 StairwellArrivalKind.ApartmentDoor);
             GameSessionState.PrepareHomeArrival(
                 HomeArrivalKind.OpeningSleep);
+            GameSessionState.PrepareAlpineVillageArrival(
+                AlpineVillageArrivalKind.MothersHouseDoor);
             GameSessionState.UpdateDrinkingProgress(
                 67,
                 DrinkId.CognacVsop,
@@ -249,6 +279,9 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 GameSessionState.HomeArrival,
                 Is.EqualTo(HomeArrivalKind.Normal));
+            Assert.That(
+                GameSessionState.AlpineVillageArrival,
+                Is.EqualTo(AlpineVillageArrivalKind.Default));
             Assert.That(
                 GameSessionState.IntoxicationLevel,
                 Is.Zero);

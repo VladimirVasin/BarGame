@@ -168,6 +168,40 @@ namespace BarPromenade
                     "The mother's door dock is not level with the head of " +
                     "the lane.");
             }
+
+            Vector3 fromDoor =
+                plan.MothersHouseReturnPosition -
+                house.DoorGroundPosition;
+            fromDoor.y = 0f;
+            float minimumTriggerClearance =
+                AlpineVillagePlanner.MothersHouseEntranceTriggerRadius +
+                PlayerDoorActionPlan.DockBoundaryClearance;
+            if (Vector3.Distance(
+                    fromDoor,
+                    house.Facing *
+                    AlpineVillagePlanner.MothersHouseReturnStandoff) >
+                    0.001f ||
+                fromDoor.magnitude < minimumTriggerClearance ||
+                Vector3.Distance(
+                    plan.MothersHouseReturnPosition,
+                    house.DoorDockPosition) < 0.1f)
+            {
+                throw new InvalidOperationException(
+                    "The mother's house return must be distinct from the " +
+                    "door dock and clear the exterior trigger.");
+            }
+
+            Vector3 returnPosition = plan.MothersHouseReturnPosition;
+            float returnGround = AlpineVillageTerrainSampler.SampleHeight(
+                plan,
+                new Vector2(returnPosition.x, returnPosition.z));
+            if (Mathf.Abs(returnPosition.y - returnGround) >
+                PlayerMotor.InteractionVerticalTolerance)
+            {
+                throw new InvalidOperationException(
+                    "The mother's house return does not stand on the " +
+                    "planned terrain.");
+            }
         }
 
         private static void ValidatePlots(AlpineVillagePlan plan)

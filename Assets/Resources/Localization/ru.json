@@ -121,6 +121,18 @@
       "value": "E — выйти к кладбищу"
     },
     {
+      "key": "interaction.enter_mothers_house",
+      "value": "E — войти в дом"
+    },
+    {
+      "key": "interaction.open_village_door",
+      "value": "E — открыть дверь"
+    },
+    {
+      "key": "interaction.exit_mothers_house",
+      "value": "E — выйти в деревню"
+    },
+    {
       "key": "interaction.enter_supermarket",
       "value": "E — войти в магазин"
     },
@@ -227,6 +239,10 @@
     {
       "key": "city.dumpster.placeholder",
       "value": "Только мокрый картон и запах."
+    },
+    {
+      "key": "alpine_village.house_door.locked",
+      "value": "Дверь заперта. Ручка не поддаётся."
     },
     {
       "key": "city.tunnel.unavailable",
@@ -657,12 +673,8 @@
       "value": "Часовня"
     },
     {
-      "key": "map.alpine_village.adit",
-      "value": "Штольня"
-    },
-    {
-      "key": "map.alpine_village.cemetery",
-      "value": "Кладбище"
+      "key": "map.alpine_village.spring",
+      "value": "Родник"
     },
     {
       "key": "map.route_title",

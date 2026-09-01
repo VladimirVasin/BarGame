@@ -226,12 +226,13 @@ namespace BarPromenade
             for (int index = 0; index < plan.Plots.Count; index++)
             {
                 AlpineVillagePlotDescriptor plot = plan.Plots[index];
-                if (plot.Kind == AlpineVillagePlotKind.Cemetery)
+                if (plot.Kind == AlpineVillagePlotKind.Spring)
                 {
-                    // The burial ground is the one plot that is ground. It
-                    // carries no shell, its markers carry their own small
-                    // colliders, and being able to walk in among them is the
-                    // entire reason it is on the hill.
+                    // The spring is the one plot that is GROUND. It carries
+                    // no shell - only its stone catch has a collider - and
+                    // walking up to the water is the entire reason it is
+                    // there. The burial ground held this seat before the
+                    // village lost it.
                     continue;
                 }
 

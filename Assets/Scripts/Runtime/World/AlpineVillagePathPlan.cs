@@ -14,9 +14,13 @@ namespace BarPromenade
         HouseThreshold = 1,
         SummitThreshold = 2,
         ChapelSpur = 3,
-        AditSpur = 4,
-        CemeterySpur = 5,
-        ChapelSource = 6
+
+        // `4` and `5` were the adit and cemetery spurs. Both places are gone
+        // from the village and from the story; the numbers stay as holes.
+        ChapelSource = 6,
+
+        /// <summary>The worn line out to the spring's head.</summary>
+        SpringSpur = 7
     }
 
     /// <summary>
@@ -118,6 +122,18 @@ namespace BarPromenade
         /// </summary>
         public const float BareSkirtHalfWidth = 0.15f;
 
+        // The spring's head stands where the adit used to, behind the rear-row
+        // house at beat 08, and a straight line to it cuts a frontage house on
+        // every seeded layout - which is why the adit had this hook and why
+        // the spring inherits it rather than being moved somewhere easier.
+        // The route enters from above house 10, follows the outside of both,
+        // then turns around house 08's seeded OBB.
+        public const float SpringBypassLaneDistance = 78f;
+        public const float SpringBypassOutwardDistance = 22f;
+        public const float SpringBypassSafetyMargin = 0.04f;
+        public const string SpringBlockingHouseStableId =
+            "village-house-08";
+
         /// <summary>
         /// How far the point lies outside the nearest trodden surface - the
         /// lane skin or any path ribbon - and which way is out of it.
@@ -189,16 +205,6 @@ namespace BarPromenade
             return start + segment * amount;
         }
 
-        // The adit sits behind the rear-row house at beat 08. Its path enters
-        // from above house 10, follows the outside of both houses, then turns
-        // around house 08's seeded OBB before reaching the adit threshold. A
-        // fixed dog-leg necessarily cuts that footprint on some seeds.
-        public const float AditBypassLaneDistance = 78f;
-        public const float AditBypassOutwardDistance = 22f;
-        public const float AditBypassSafetyMargin = 0.04f;
-        public const string AditBlockingHouseStableId =
-            "village-house-08";
-
         public static IReadOnlyList<AlpineVillagePathDescriptor> Create(
             AlpineVillagePlan plan)
         {
@@ -265,16 +271,14 @@ namespace BarPromenade
                 return;
             }
 
-            if (plot.Kind == AlpineVillagePlotKind.Adit)
+            if (plot.Kind == AlpineVillagePlotKind.Spring)
             {
-                AppendAditBypassPath(plan, plot, target);
+                AppendSpringBypassPath(plan, plot, target);
                 return;
             }
 
-            // The remaining side paths stay simple enough to read from the
-            // lane. The chapel takes one shallow found turn; the cemetery's
-            // direct worn line keeps its full envelope clear of the nearest
-            // house on every seeded frontage.
+            // The chapel takes one shallow found turn and that is the whole
+            // of it.
             float bendOffset = plot.Kind == AlpineVillagePlotKind.Chapel
                 ? 1.35f
                 : 0f;
@@ -311,21 +315,21 @@ namespace BarPromenade
             }
         }
 
-        private static void AppendAditBypassPath(
+        private static void AppendSpringBypassPath(
             AlpineVillagePlan plan,
-            AlpineVillagePlotDescriptor adit,
+            AlpineVillagePlotDescriptor spring,
             ICollection<AlpineVillagePathDescriptor> target)
         {
             AlpineVillageLaneSample entry = plan.Lane.Sample(
-                AditBypassLaneDistance);
+                SpringBypassLaneDistance);
             Vector3 outside = entry.Position +
                               entry.Right *
-                              (adit.Side * AditBypassOutwardDistance);
+                              (spring.Side * SpringBypassOutwardDistance);
             Ground(plan, ref outside);
 
-            IReadOnlyList<Vector3> bypass = ResolveAditBypass(
+            IReadOnlyList<Vector3> bypass = ResolveSpringBypass(
                 plan,
-                adit,
+                spring,
                 outside);
             var route = new List<Vector3>(bypass.Count + 3)
             {
@@ -337,14 +341,14 @@ namespace BarPromenade
                 route.Add(bypass[index]);
             }
 
-            route.Add(adit.DoorDockPosition);
+            route.Add(spring.DoorDockPosition);
             for (int index = 0; index < route.Count - 1; index++)
             {
                 Add(
                     target,
-                    $"{adit.StableId}-path-{(char)('a' + index)}",
-                    adit.StableId,
-                    AlpineVillagePathKind.AditSpur,
+                    $"{spring.StableId}-path-{(char)('a' + index)}",
+                    spring.StableId,
+                    AlpineVillagePathKind.SpringSpur,
                     route[index],
                     route[index + 1],
                     LandmarkSurfaceHalfWidth,
@@ -352,9 +356,9 @@ namespace BarPromenade
             }
         }
 
-        private static IReadOnlyList<Vector3> ResolveAditBypass(
+        private static IReadOnlyList<Vector3> ResolveSpringBypass(
             AlpineVillagePlan plan,
-            AlpineVillagePlotDescriptor adit,
+            AlpineVillagePlotDescriptor spring,
             Vector3 outside)
         {
             AlpineVillagePlotDescriptor blocker = null;
@@ -362,7 +366,7 @@ namespace BarPromenade
             {
                 if (string.Equals(
                         plan.Plots[index].StableId,
-                        AditBlockingHouseStableId,
+                        SpringBlockingHouseStableId,
                         StringComparison.Ordinal))
                 {
                     blocker = plan.Plots[index];
@@ -373,8 +377,8 @@ namespace BarPromenade
             if (blocker == null)
             {
                 throw new InvalidOperationException(
-                    $"The adit bypass cannot find " +
-                    $"'{AditBlockingHouseStableId}'.");
+                    $"The spring bypass cannot find " +
+                    $"'{SpringBlockingHouseStableId}'.");
             }
 
             float envelope = Mathf.Max(
@@ -383,9 +387,9 @@ namespace BarPromenade
             Vector3 forward = blocker.Facing.normalized;
             Vector3 right = Vector3.Cross(Vector3.up, forward).normalized;
             float halfWidth = blocker.FootprintSize.x * 0.5f +
-                              envelope + AditBypassSafetyMargin;
+                              envelope + SpringBypassSafetyMargin;
             float halfDepth = blocker.FootprintSize.y * 0.5f +
-                              envelope + AditBypassSafetyMargin;
+                              envelope + SpringBypassSafetyMargin;
             Vector3[] corners =
             {
                 blocker.GroundCenter + right * halfWidth +
@@ -406,11 +410,11 @@ namespace BarPromenade
             float bestLength = float.PositiveInfinity;
             for (int index = 0; index < corners.Length; index++)
             {
-                if (!AditSegmentIsClear(plan, outside, corners[index]) ||
-                    !AditSegmentIsClear(
+                if (!SpringSegmentIsClear(plan, outside, corners[index]) ||
+                    !SpringSegmentIsClear(
                         plan,
                         corners[index],
-                        adit.DoorDockPosition))
+                        spring.DoorDockPosition))
                 {
                     continue;
                 }
@@ -418,7 +422,7 @@ namespace BarPromenade
                 float length = DistanceXZ(outside, corners[index]) +
                                DistanceXZ(
                                    corners[index],
-                                   adit.DoorDockPosition);
+                                   spring.DoorDockPosition);
                 if (length < bestLength - 0.0001f)
                 {
                     best = index;
@@ -436,7 +440,7 @@ namespace BarPromenade
             bestLength = float.PositiveInfinity;
             for (int first = 0; first < corners.Length; first++)
             {
-                if (!AditSegmentIsClear(plan, outside, corners[first]))
+                if (!SpringSegmentIsClear(plan, outside, corners[first]))
                 {
                     continue;
                 }
@@ -444,14 +448,14 @@ namespace BarPromenade
                 for (int second = 0; second < corners.Length; second++)
                 {
                     if (first == second ||
-                        !AditSegmentIsClear(
+                        !SpringSegmentIsClear(
                             plan,
                             corners[first],
                             corners[second]) ||
-                        !AditSegmentIsClear(
+                        !SpringSegmentIsClear(
                             plan,
                             corners[second],
-                            adit.DoorDockPosition))
+                            spring.DoorDockPosition))
                     {
                         continue;
                     }
@@ -462,7 +466,7 @@ namespace BarPromenade
                                        corners[second]) +
                                    DistanceXZ(
                                        corners[second],
-                                       adit.DoorDockPosition);
+                                       spring.DoorDockPosition);
                     if (length < bestLength - 0.0001f)
                     {
                         bestFirst = first;
@@ -485,7 +489,7 @@ namespace BarPromenade
                 "The authored adit bypass cannot clear the seeded houses.");
         }
 
-        private static bool AditSegmentIsClear(
+        private static bool SpringSegmentIsClear(
             AlpineVillagePlan plan,
             Vector3 start,
             Vector3 end)
@@ -611,10 +615,8 @@ namespace BarPromenade
                     return AlpineVillagePathKind.SummitThreshold;
                 case AlpineVillagePlotKind.Chapel:
                     return AlpineVillagePathKind.ChapelSpur;
-                case AlpineVillagePlotKind.Adit:
-                    return AlpineVillagePathKind.AditSpur;
-                case AlpineVillagePlotKind.Cemetery:
-                    return AlpineVillagePathKind.CemeterySpur;
+                case AlpineVillagePlotKind.Spring:
+                    return AlpineVillagePathKind.SpringSpur;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));
             }
@@ -630,8 +632,7 @@ namespace BarPromenade
                 case AlpineVillagePathKind.SummitThreshold:
                     return SummitSurfaceHalfWidth;
                 case AlpineVillagePathKind.ChapelSpur:
-                case AlpineVillagePathKind.AditSpur:
-                case AlpineVillagePathKind.CemeterySpur:
+                case AlpineVillagePathKind.SpringSpur:
                     return LandmarkSurfaceHalfWidth;
                 case AlpineVillagePathKind.ChapelSource:
                     return SourceSurfaceHalfWidth;
@@ -927,8 +928,6 @@ namespace BarPromenade
             "village-cable-gate";
         public const string SourceBowlOwnerStableId =
             "village-chapel-source-bowl";
-        public const string FirewoodOwnerStableId =
-            "village-adit-firewood";
 
         public const int AudibleGarlandSpanIndex = 3;
         public const float DogHouseLaneFraction = 0.52f;

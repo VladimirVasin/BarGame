@@ -66,6 +66,16 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   unrotated AABB;
   explicit rear-row depth beats own the frontage layers and the seeded solver
   may only make a bounded symmetric correction around them.
+- **Accepted — the adit and the burial ground are out of the village and out
+  of the story:** the lead's explicit decision, taken after the adit's spoil
+  heap was found to be a twelve-triangle box reading as a table above the
+  street. Both bibles are amended rather than excepted, and the father's grave
+  goes with the cemetery. The head of the SPRING stands where the adit did, so
+  the one reason the place exists above the cableway is water — which the
+  chapel over the source always was. Enum numbering keeps holes, as the deleted
+  city lake's did, so nothing that ever wrote a value down reads a different
+  place back; and a lookup table indexed BY those values (the village
+  soundscape's) had to become a search by kind the moment a row was removed.
 - **Accepted — a skin laid over sampled ground samples that ground at every
   vertex:** the village lane was laid flat at its centreline's height across
   `3.6 m` while the ground under it is the sampler's, so once the shelf blends
@@ -264,6 +274,26 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   behind the ridge and no sign naming it: the player boards without being told
   where the cabin goes. `10f` is amended from «Единственная зона за пределами
   города» to name both, and a new `§10g` states the village's form.
+- **Accepted architecture exception — 2026-09-01, explicit user request — the
+  mother's house is enterable from the village:** This supersedes only the
+  2026-08-28 clause that its lit door refuses and story-bible §25's matching
+  prohibition. The already built threshold becomes a two-way residential
+  transition to the separate `MothersHouseInterior` gameplay scene and returns
+  the hero to a safe point outside the same door. The room is available from
+  the first visit as an ordinary, quiet environment. **What is lifted is the
+  threshold, not the unwritten event:** the mother, Cat, dinner, news and all
+  dialogue remain absent; entering the room neither starts nor promises the
+  prologue. Imported Blender geometry owns visuals and semantic anchors while
+  pure plans continue to own walkability, collision, camera, light and the
+  one-shot return position. The internal threshold is centred on the south wall
+  opposite the hearth and owns the north-facing arrival pose. One passive
+  authored floor-lamp fixture exposes a typed anchor; runtime lights that anchor
+  instead of inventing a ceiling fill. The kettle on the table instantiates the existing
+  Kettle Hat pedestrian prefab and exposes its original ten kettle renderers,
+  material and atlas rather than copying or remodelling them. Every surface
+  authored for the room uses the dedicated `MothersHousePositiveAtlas` instead
+  of a Home or City albedo; the exact NPC kettle is the deliberate exception,
+  not an environment-sheet dependency.
 - **Accepted architecture exception — 2026-08-29, explicit user request —
   Alpine Village always carries very heavy snow and very strong wind:** This
   supersedes story-bible §6 level `0` «Ясно», the §12 / art-bible §10g ban on

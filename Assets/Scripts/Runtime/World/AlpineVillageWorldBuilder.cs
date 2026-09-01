@@ -15,7 +15,9 @@ namespace BarPromenade
             MountainCablewayWorldResult cableway,
             AlpineVillageWalkableArea walkableArea,
             IDictionary<string, Transform> semanticObjects,
-            AlpineVillageSnowTreading snowTreading)
+            AlpineVillageSnowTreading snowTreading,
+            MothersHouseEntrance mothersHouseEntrance,
+            IList<LockedDoorInteraction> houseDoors)
         {
             SnowTreading = snowTreading;
             Root = root ?? throw new ArgumentNullException(nameof(root));
@@ -27,6 +29,12 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(cableway));
             WalkableArea = walkableArea ??
                 throw new ArgumentNullException(nameof(walkableArea));
+            MothersHouseEntrance = mothersHouseEntrance ??
+                throw new ArgumentNullException(nameof(mothersHouseEntrance));
+            HouseDoors = new ReadOnlyCollection<LockedDoorInteraction>(
+                new List<LockedDoorInteraction>(
+                    houseDoors ??
+                    throw new ArgumentNullException(nameof(houseDoors))));
             SemanticObjects = new ReadOnlyDictionary<string, Transform>(
                 new Dictionary<string, Transform>(
                     semanticObjects,
@@ -47,6 +55,13 @@ namespace BarPromenade
         public GameObject StationRoot => Cableway.StationRoot;
         public AlpineVillageWalkableArea WalkableArea { get; }
         public IReadOnlyDictionary<string, Transform> SemanticObjects { get; }
+        public MothersHouseEntrance MothersHouseEntrance { get; }
+
+        /// <summary>
+        /// The shut doors: one per house on the lane, the mother's excepted.
+        /// They carry the ordinary door gesture and answer with a line.
+        /// </summary>
+        public IReadOnlyList<LockedDoorInteraction> HouseDoors { get; }
     }
 
     /// <summary>
@@ -142,6 +157,33 @@ namespace BarPromenade
 
         public const float DoorWidth = 0.92f;
 
+        /// <summary>Where a hand meets a door.</summary>
+        public const float DoorHandleHeight = 1.02f;
+
+        /// <summary>
+        /// How high over the threshold a door's interaction trigger sits.
+        /// Chest height, so the interactor's own overlap sphere - which is
+        /// cast from `0.8 m` over the hero's root - meets it squarely rather
+        /// than clipping its bottom cap.
+        /// </summary>
+        public const float DoorInteractionHeight = 0.82f;
+
+        /// <summary>What a house door on the lane offers.</summary>
+        public const string HouseDoorPromptKey =
+            "interaction.open_village_door";
+
+        /// <summary>
+        /// What it answers with. Every house but the mother's is shut: the
+        /// village has one interior and the rest are lived in by people the
+        /// hero has no business calling on.
+        /// </summary>
+        public const string HouseDoorLockedKey =
+            "alpine_village.house_door.locked";
+
+        /// <summary>The one object carrying a shut house's interaction.
+        /// Named here because the tests address it by name.</summary>
+        internal const string HouseDoorObjectName = "Interactive House Door";
+
         public const float GarlandHeight = 4.6f;
         public const float GarlandAnchorReach = 1.8f;
         public const float GarlandSag = 0.85f;
@@ -162,28 +204,19 @@ namespace BarPromenade
 
         internal static int GarlandSpanCount => GarlandDistanceBeats.Length;
 
-        // Loose bands, not a parade-ground grid. The gaps keep the burial
-        // ground ordinary and old without selecting one marker for attention.
-        private static readonly Vector2[] CemeteryMarkerPattern =
-        {
-            new Vector2(-0.36f, -0.32f),
-            new Vector2(-0.18f, -0.27f),
-            new Vector2(0.03f, -0.35f),
-            new Vector2(0.22f, -0.28f),
-            new Vector2(0.38f, -0.34f),
-            new Vector2(-0.31f, -0.10f),
-            new Vector2(-0.08f, -0.06f),
-            new Vector2(0.15f, -0.14f),
-            new Vector2(0.34f, -0.05f),
-            new Vector2(-0.38f, 0.11f),
-            new Vector2(-0.19f, 0.16f),
-            new Vector2(0.07f, 0.07f),
-            new Vector2(0.29f, 0.18f),
-            new Vector2(-0.29f, 0.34f),
-            new Vector2(-0.05f, 0.28f),
-            new Vector2(0.19f, 0.35f),
-            new Vector2(0.38f, 0.27f)
-        };
+        /// <summary>Ground the spring keeps too wet to whiten - the one dark
+        /// patch in a village that is otherwise all snow.</summary>
+        private static readonly Color SpringWetColor =
+            new Color(0.205f, 0.215f, 0.220f, 1f);
+
+        /// <summary>
+        /// Standing water in the catch and in the runnel. Flat and cold for
+        /// now: the MOVING surface, its sound and the chapel outlet answering
+        /// it are the next step, and faking them with a stone sheet would be
+        /// a thing to unpick rather than build on.
+        /// </summary>
+        private static readonly Color SpringWaterColor =
+            new Color(0.150f, 0.180f, 0.205f, 1f);
 
         private static readonly Color GarlandWireColor =
             new Color(0.085f, 0.075f, 0.062f, 1f);
@@ -248,7 +281,18 @@ namespace BarPromenade
                     .StationMechanismOwnerStableId] =
                 cableway.Bullwheel;
 
-            BuildPlots(root.transform, plan, kit, semanticObjects);
+            var houseDoors = new List<LockedDoorInteraction>();
+            BuildPlots(
+                root.transform,
+                plan,
+                kit,
+                semanticObjects,
+                houseDoors);
+            MothersHouseEntrance mothersHouseEntrance =
+                BuildMothersHouseEntrance(
+                    root.transform,
+                    plan.MothersHouse,
+                    plan.MothersHouseReturnPosition);
             BuildVillageDressing(
                 root.transform,
                 plan,
@@ -264,7 +308,9 @@ namespace BarPromenade
                 cableway,
                 walkableArea,
                 semanticObjects,
-                snowTreading);
+                snowTreading,
+                mothersHouseEntrance,
+                houseDoors);
         }
 
         /// <summary>
@@ -1109,7 +1155,8 @@ namespace BarPromenade
             Transform parent,
             AlpineVillagePlan plan,
             VillageAssetProvider kit,
-            IDictionary<string, Transform> semanticObjects)
+            IDictionary<string, Transform> semanticObjects,
+            ICollection<LockedDoorInteraction> houseDoors)
         {
             for (int index = 0; index < plan.Plots.Count; index++)
             {
@@ -1122,19 +1169,20 @@ namespace BarPromenade
                 semanticObjects[plot.StableId] = root.transform;
                 switch (plot.Kind)
                 {
-                    case AlpineVillagePlotKind.Adit:
-                        BuildAdit(
-                            root.transform,
-                            plot,
-                            kit,
-                            semanticObjects);
-                        break;
-                    case AlpineVillagePlotKind.Cemetery:
-                        BuildCemetery(root.transform, plot, kit);
+                    case AlpineVillagePlotKind.Spring:
+                        BuildSpring(root.transform, plot, kit);
                         break;
                     default:
                         BuildBuilding(root.transform, plot, kit);
                         break;
+                }
+
+                // The mother's door is the one that opens, and it is built
+                // with its destination further down. The chapel is a spur
+                // errand rather than a home and keeps its plain threshold.
+                if (plot.Kind == AlpineVillagePlotKind.House)
+                {
+                    houseDoors.Add(BuildHouseDoor(root.transform, plot));
                 }
             }
         }
@@ -1402,11 +1450,7 @@ namespace BarPromenade
                 plot.Height,
                 plot.FootprintSize.y);
 
-            BuildDoor(
-                parent,
-                chapel,
-                face.y,
-                GetDoorAcross(chapel, tallest, variant));
+            BuildDoor(parent, plot, chapel, face.y);
             if (chapel)
             {
                 // No lit windows: the chapel has none, and nothing about it
@@ -1508,11 +1552,18 @@ namespace BarPromenade
         /// </summary>
         private static void BuildDoor(
             Transform parent,
+            AlpineVillagePlotDescriptor plot,
             bool chapel,
-            float wallFace,
-            float across)
+            float wallFace)
         {
             float half = wallFace;
+
+            // The plan's, for every kind. It used to be the plan's only for
+            // the mother's house and a mesh-variant guess for the rest,
+            // which was survivable while nothing stood at these doors; now
+            // the hero walks to one, and the leaf has to be where the plan
+            // put the threshold, the dock and the path.
+            float across = plot.DoorAcrossOffset;
             var frame = RuntimePrimitiveFactory.CreateBox(
                 "Door Frame",
                 parent,
@@ -1544,6 +1595,25 @@ namespace BarPromenade
                 MountainRoadSurfaceKind.Timber,
                 DoorColor);
 
+            // The handle. Small, and the only part of a door anyone ever
+            // touches - which is exactly why it is here: the leaf alone
+            // reads as a panel, and a panel does not invite the key that
+            // now does something at every house on the lane.
+            float handleSide = across >= 0f ? 1f : -1f;
+            Texture(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Door Handle",
+                    parent,
+                    new Vector3(
+                        across + handleSide * DoorWidth * 0.33f,
+                        DoorHandleHeight,
+                        half + 0.135f),
+                    new Vector3(0.055f, 0.055f, 0.16f),
+                    IronColor,
+                    false),
+                MountainRoadSurfaceKind.RustedIron,
+                IronColor);
+
             // A step, because a threshold on soil is a threshold in a puddle.
             Texture(
                 RuntimePrimitiveFactory.CreateBox(
@@ -1558,26 +1628,89 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// A restrained fixed-metre offset is enough to stop the plan-owned
-        /// doors reading as one stamped row. The step remains wider than the
-        /// offset, so every centreline threshold path still meets it.
+        /// The standard door interaction, on a house that stays shut.
+        ///
+        /// It is <see cref="BuildMothersHouseEntrance"/> with the
+        /// destination removed: the same trigger over the plan's threshold,
+        /// the same plan-owned dock and facing, the same door gesture. Only
+        /// the ending differs - one line instead of a scene load.
+        ///
+        /// Every position it uses is read from the plan rather than measured
+        /// off the shell, so the trigger, the dock, the trodden path that
+        /// arrives at it and the leaf the hero reaches for are the same four
+        /// numbers. The dock keeps the plot shelf's own height, which is the
+        /// only reason the gesture ever starts: a dock more than
+        /// <see cref="PlayerMotor.InteractionVerticalTolerance"/> off the
+        /// hero's root is refused in silence.
         /// </summary>
-        private static float GetDoorAcross(
-            bool chapel,
-            bool mothersHouse,
-            int houseVariant)
+        private static LockedDoorInteraction BuildHouseDoor(
+            Transform parent,
+            AlpineVillagePlotDescriptor plot)
         {
-            if (chapel)
+            Vector3 dock = plot.DoorDockPosition +
+                           Vector3.up * PlayerFactory.GroundedRootOffset;
+            Vector3 interaction = plot.DoorGroundPosition +
+                                  Vector3.up * DoorInteractionHeight;
+            var host = new GameObject(HouseDoorObjectName);
+            host.transform.SetParent(parent, false);
+            host.transform.position = interaction;
+            SphereCollider trigger = host.AddComponent<SphereCollider>();
+            trigger.isTrigger = true;
+            trigger.radius = AlpineVillagePlanner.HouseDoorTriggerRadius;
+
+            LockedDoorInteraction door =
+                host.AddComponent<LockedDoorInteraction>();
+            door.Configure(HouseDoorPromptKey, HouseDoorLockedKey);
+            PlayerDoorActionTarget doorAction =
+                host.AddComponent<PlayerDoorActionTarget>();
+            doorAction.Configure(
+                PlayerDoorActionPlan.CreateStationary(
+                    interaction,
+                    dock,
+                    -plot.Facing));
+            return door;
+        }
+
+        private static MothersHouseEntrance BuildMothersHouseEntrance(
+            Transform parent,
+            AlpineVillagePlotDescriptor house,
+            Vector3 returnGroundPosition)
+        {
+            if (house == null ||
+                house.Kind != AlpineVillagePlotKind.MothersHouse)
             {
-                return 0f;
+                throw new ArgumentException(
+                    "The village entrance requires the mother's house plan.",
+                    nameof(house));
             }
 
-            if (mothersHouse)
-            {
-                return -0.36f;
-            }
+            Vector3 dock = house.DoorDockPosition +
+                           Vector3.up * PlayerFactory.GroundedRootOffset;
+            Vector3 interaction = house.DoorGroundPosition +
+                                  Vector3.up * DoorInteractionHeight;
+            var entranceObject = new GameObject(
+                "Interactive Mothers House Entrance");
+            entranceObject.transform.SetParent(parent, false);
+            entranceObject.transform.position = interaction;
+            SphereCollider trigger =
+                entranceObject.AddComponent<SphereCollider>();
+            trigger.isTrigger = true;
+            trigger.radius =
+                AlpineVillagePlanner.MothersHouseEntranceTriggerRadius;
 
-            return houseVariant == 0 ? -0.22f : 0.26f;
+            MothersHouseEntrance entrance =
+                entranceObject.AddComponent<MothersHouseEntrance>();
+            entrance.Configure(
+                returnGroundPosition +
+                Vector3.up * PlayerFactory.GroundedRootOffset);
+            PlayerDoorActionTarget doorAction =
+                entranceObject.AddComponent<PlayerDoorActionTarget>();
+            doorAction.Configure(
+                PlayerDoorActionPlan.CreateStationary(
+                    interaction,
+                    dock,
+                    -house.Facing));
+            return entrance;
         }
 
         private static void BuildLitWindows(
@@ -1924,187 +2057,93 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// A hole in the slope behind the houses, the timber holding it open,
-        /// and the cart that used to come out of it - standing in the yard
-        /// with firewood in it, which is the only way this village keeps
-        /// anything the mine left.
-        /// </summary>
-        private static void BuildAdit(
-            Transform parent,
-            AlpineVillagePlotDescriptor plot,
-            VillageAssetProvider kit,
-            IDictionary<string, Transform> semanticObjects)
-        {
-            if (kit != null)
-            {
-                PlaceKitAssembly(
-                    parent,
-                    kit,
-                    VillageAssetKind.AditFrame,
-                    0,
-                    new Vector2(plot.FootprintSize.x, plot.FootprintSize.y),
-                    plot.Height,
-                    _ => AditTimberColor);
-
-                var yard = new GameObject("Adit Yard");
-                yard.transform.SetParent(parent, false);
-                yard.transform.localPosition = new Vector3(
-                    plot.FootprintSize.x * 0.42f,
-                    0f,
-                    -plot.FootprintSize.y * 0.9f);
-                yard.transform.localRotation = Quaternion.Euler(0f, 24f, 0f);
-                PlaceKitAssembly(
-                    yard.transform,
-                    kit,
-                    VillageAssetKind.MineCart,
-                    0,
-                    new Vector2(1.05f, 1.7f),
-                    1f,
-                    role => role == VillageMeshRole.Wheels
-                        ? CartWheelColor
-                        : CartIronColor);
-
-                var stack = new GameObject("Firewood In The Cart");
-                stack.transform.SetParent(yard.transform, false);
-                stack.transform.localPosition = new Vector3(0f, 0.42f, 0f);
-                PlaceKitAssembly(
-                    stack.transform,
-                    kit,
-                    VillageAssetKind.Firewood,
-                    0,
-                    new Vector2(0.62f, 0.86f),
-                    0.42f,
-                    _ => FirewoodColor);
-                semanticObjects[
-                    AlpineVillageDressingPlanner.FirewoodOwnerStableId] =
-                    stack.transform;
-            }
-
-            // The mouth itself: an absence, and the darkest thing in the
-            // village. It takes no sheet because it is not a surface.
-            GameObject mouth = RuntimePrimitiveFactory.CreateBox(
-                "Adit Darkness",
-                parent,
-                new Vector3(
-                    0f,
-                    plot.Height * 0.36f,
-                    plot.FootprintSize.y * 0.5f - 0.34f),
-                new Vector3(1.9f, plot.Height * 0.7f, 0.3f),
-                new Color(0.026f, 0.028f, 0.026f, 1f),
-                false);
-            mouth.GetComponent<Renderer>().shadowCastingMode =
-                ShadowCastingMode.Off;
-
-            Texture(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Physical Overgrown Spoil",
-                    parent,
-                    new Vector3(0f, 0.55f, -plot.FootprintSize.y * 0.32f),
-                    new Vector3(
-                        plot.FootprintSize.x * 1.2f,
-                        1.1f,
-                        plot.FootprintSize.y * 0.8f),
-                    SoilColor,
-                    true),
-                MountainRoadSurfaceKind.ForestFloor,
-                SoilColor);
-
-            // A mine is a hole in solid rock, and now that the hero may leave
-            // the path he can reach this one. Without a shell he walks through
-            // the darkness slab and stands inside the frame in a void; the
-            // frame is scaled to the plot's own footprint, so this box is the
-            // same rectangle the walkable mask refuses. Collision is the
-            // plan's, never the model's - the imported frame carries none.
-            var mountainside = new GameObject("Physical Shell");
-            mountainside.transform.SetParent(parent, false);
-            mountainside.transform.localPosition =
-                Vector3.up * (plot.Height * 0.5f);
-            BoxCollider adit = mountainside.AddComponent<BoxCollider>();
-            adit.size = new Vector3(
-                plot.FootprintSize.x,
-                plot.Height,
-                plot.FootprintSize.y);
-        }
-
-        /// <summary>
-        /// The burial ground. Rows of low markers and no signpost anywhere:
-        /// the hero does not visit his father's grave, so nothing here invites
-        /// him to.
+        /// Where the water comes out of the hill - MVP.
         ///
-        /// It is the one plot with no shell: a graveyard is ground, and the
-        /// walkable mask leaves it open so a person can walk in among the
-        /// stones. That makes the soil slab and the markers things he can
-        /// actually meet, so both carry collision - the slab as a `0.12 m`
-        /// step, well under the motor's `0.28 m` step offset, and each marker
-        /// on the unscaled pivot rather than on the imported mesh.
+        /// This stands where the adit used to, and it is deliberately the
+        /// smallest honest thing: a stone catch at the head, the wet ground
+        /// it keeps around itself, and the beginning of the runnel leaving
+        /// it downhill. The detailed source - flow, sound, the chapel's own
+        /// outlet answering it - is the next step, so nothing here invents a
+        /// mechanism it cannot yet keep.
+        ///
+        /// The stone is the kit's own `SourceBowl`, the same piece the
+        /// chapel's catch basin is made of. One spring, two places it is
+        /// visible, one asset.
         /// </summary>
-        private static void BuildCemetery(
+        private static void BuildSpring(
             Transform parent,
             AlpineVillagePlotDescriptor plot,
             VillageAssetProvider kit)
         {
+            // The wet apron. Low enough to be a step, dark enough to read as
+            // ground that never dries rather than as a pool.
             Texture(
                 RuntimePrimitiveFactory.CreateBox(
-                    "Burial Ground",
+                    "Spring Wet Ground",
                     parent,
-                    new Vector3(0f, 0.06f, 0f),
+                    new Vector3(0f, 0.05f, 0f),
                     new Vector3(
-                        plot.FootprintSize.x,
-                        0.12f,
-                        plot.FootprintSize.y),
-                    SoilColor,
+                        plot.FootprintSize.x * 0.72f,
+                        0.10f,
+                        plot.FootprintSize.y * 0.72f),
+                    SpringWetColor,
                     true),
                 MountainRoadSurfaceKind.ForestFloor,
-                SoilColor);
+                SpringWetColor);
 
-            for (int index = 0; index < CemeteryMarkerPattern.Length; index++)
+            if (kit != null)
             {
-                Vector2 authored = CemeteryMarkerPattern[index];
-                var position = new Vector3(
-                    authored.x * plot.FootprintSize.x,
-                    0.12f,
-                    authored.y * plot.FootprintSize.y);
-                float markerHeight = 0.68f +
-                    (index * 7 % 5) * 0.045f;
-                if (kit == null)
-                {
-                    Texture(
-                        RuntimePrimitiveFactory.CreateBox(
-                            "Grave Marker",
-                            parent,
-                            position + Vector3.up * (markerHeight * 0.5f),
-                            new Vector3(0.36f, markerHeight, 0.12f),
-                            StoneColor,
-                            true),
-                        MountainRoadSurfaceKind.LayeredStone,
-                        StoneColor);
-                    continue;
-                }
-
-                var marker = new GameObject($"Grave {index:00}");
-                marker.transform.SetParent(parent, false);
-                marker.transform.localPosition = position;
-                marker.transform.localRotation = Quaternion.Euler(
+                var head = new GameObject("Spring Head");
+                head.transform.SetParent(parent, false);
+                head.transform.localPosition = new Vector3(
                     0f,
-                    (index * 11 % 13) * 2.7f - 16.2f,
-                    (index * 5 % 7) * 0.75f - 2.25f);
+                    0.10f,
+                    plot.FootprintSize.y * 0.16f);
                 PlaceKitAssembly(
-                    marker.transform,
+                    head.transform,
                     kit,
-                    VillageAssetKind.GraveMarker,
-                    index % 3,
-                    new Vector2(0.42f, 0.18f),
-                    markerHeight,
+                    VillageAssetKind.SourceBowl,
+                    0,
+                    new Vector2(1.35f, 0.95f),
+                    0.62f,
                     _ => StoneColor);
-
-                // The pivot is unscaled - PlaceKitAssembly scales its own
-                // children and nothing else - so a box authored in metres
-                // here is a box in metres in the world. On the imported part
-                // it would be neither.
-                BoxCollider stone = marker.AddComponent<BoxCollider>();
-                stone.center = new Vector3(0f, markerHeight * 0.5f, 0f);
-                stone.size = new Vector3(0.42f, markerHeight, 0.18f);
+                BoxCollider stone = head.AddComponent<BoxCollider>();
+                stone.center = new Vector3(0f, 0.30f, 0f);
+                stone.size = new Vector3(1.2f, 0.6f, 0.8f);
             }
+
+            // The water itself, sitting in the catch. A separate surface
+            // rather than a tint on the stone, because the next step gives it
+            // movement and it has to be a thing that can be handed one.
+            Texture(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Spring Water",
+                    parent,
+                    new Vector3(
+                        0f,
+                        0.16f,
+                        plot.FootprintSize.y * 0.16f),
+                    new Vector3(0.95f, 0.06f, 0.62f),
+                    SpringWaterColor,
+                    false),
+                MountainRoadSurfaceKind.LayeredStone,
+                SpringWaterColor);
+
+            // And the runnel leaving downhill, which is all the flow this MVP
+            // claims: the water goes somewhere, and the ground says so.
+            Texture(
+                RuntimePrimitiveFactory.CreateBox(
+                    "Spring Runnel",
+                    parent,
+                    new Vector3(
+                        0f,
+                        0.04f,
+                        -plot.FootprintSize.y * 0.34f),
+                    new Vector3(0.55f, 0.05f, plot.FootprintSize.y * 0.58f),
+                    SpringWaterColor,
+                    false),
+                MountainRoadSurfaceKind.LayeredStone,
+                SpringWaterColor);
         }
 
         /// <summary>

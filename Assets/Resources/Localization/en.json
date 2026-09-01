@@ -121,6 +121,18 @@
       "value": "E — return to the cemetery road"
     },
     {
+      "key": "interaction.enter_mothers_house",
+      "value": "E — enter the house"
+    },
+    {
+      "key": "interaction.open_village_door",
+      "value": "E — open the door"
+    },
+    {
+      "key": "interaction.exit_mothers_house",
+      "value": "E — return to the village"
+    },
+    {
       "key": "interaction.enter_supermarket",
       "value": "E — enter the shop"
     },
@@ -227,6 +239,10 @@
     {
       "key": "city.dumpster.placeholder",
       "value": "Just damp cardboard and the smell."
+    },
+    {
+      "key": "alpine_village.house_door.locked",
+      "value": "The door is locked. The handle does not give."
     },
     {
       "key": "city.tunnel.unavailable",
@@ -657,12 +673,8 @@
       "value": "Chapel"
     },
     {
-      "key": "map.alpine_village.adit",
-      "value": "Adit"
-    },
-    {
-      "key": "map.alpine_village.cemetery",
-      "value": "Burial ground"
+      "key": "map.alpine_village.spring",
+      "value": "The spring"
     },
     {
       "key": "map.route_title",

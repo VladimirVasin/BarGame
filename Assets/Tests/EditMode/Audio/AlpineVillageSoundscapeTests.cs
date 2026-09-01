@@ -9,7 +9,7 @@ namespace BarPromenade.Tests.EditMode
     {
         [Test]
         [Category("AlpineVillage")]
-        public void DefaultPlan_BuildsSixDeterministicCausalSpatialVoices()
+        public void DefaultPlan_BuildsFiveDeterministicCausalSpatialVoices()
         {
             AlpineVillagePlan village = AlpineVillagePlanner.Create(
                 GameSessionState.DefaultCitySeed);
@@ -20,9 +20,12 @@ namespace BarPromenade.Tests.EditMode
                     AlpineVillagePlanner.Create(
                         GameSessionState.DefaultCitySeed));
 
-            Assert.That(first.Anchors, Has.Count.EqualTo(6));
+            Assert.That(first.Anchors, Has.Count.EqualTo(5));
             Assert.That(first.LoopingAnchors, Has.Count.EqualTo(4));
-            Assert.That(first.ScheduledAnchors, Has.Count.EqualTo(2));
+            // The dog behind the fence is the only scheduled one-shot left:
+            // the firewood settling in the mine cart went out of the village
+            // with the adit.
+            Assert.That(first.ScheduledAnchors, Has.Count.EqualTo(1));
             Assert.That(
                 AlpineVillageSoundSynthesis.Count,
                 Is.EqualTo(first.Anchors.Count));
@@ -130,10 +133,6 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 ownerIds.Contains(
                     AlpineVillageSoundscapePlanner.SourceBowlOwnerStableId),
-                Is.True);
-            Assert.That(
-                ownerIds.Contains(
-                    AlpineVillageSoundscapePlanner.FirewoodOwnerStableId),
                 Is.True);
 
             AlpineVillageSoundAnchorDescriptor dog = first.GetRequiredAnchor(
@@ -260,16 +259,12 @@ namespace BarPromenade.Tests.EditMode
                         " ignored the shared dimming grade.");
                 }
 
-                AlpineVillageSoundScheduleCursor wood =
-                    AlpineVillageSoundSchedulePlanner.Start(
-                        first,
-                        AlpineVillageSoundscapePlanner.FirewoodAnchorId,
-                        0d);
-                float throughBothFirstEvents = (float)Math.Max(
-                    firstDog.NextEventTimeSeconds,
-                    wood.NextEventTimeSeconds) + 0.1f;
-                soundscape.Advance(throughBothFirstEvents);
-                Assert.That(soundscape.PlayedEventCount, Is.EqualTo(2));
+                // The dog is the village's only scheduled one-shot now: the
+                // firewood settling in the mine cart went out with the adit.
+                float throughFirstEvent =
+                    (float)firstDog.NextEventTimeSeconds + 0.1f;
+                soundscape.Advance(throughFirstEvent);
+                Assert.That(soundscape.PlayedEventCount, Is.EqualTo(1));
             }
             finally
             {

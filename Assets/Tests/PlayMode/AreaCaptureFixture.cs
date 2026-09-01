@@ -786,6 +786,51 @@ namespace BarPromenade.Tests.PlayMode
                 SceneIds.HomeInterior, Root<HomeInteriorRoot>(), HeroShots());
         }
 
+        /// <summary>
+        /// The one gameplay composition of the mother's room. The pose is
+        /// read back from the initialized fixed-camera controller rather than
+        /// restated here, so this is the frame the player actually receives:
+        /// fireplace and both windows, the central tea table, rocking chair,
+        /// sofa, and the source-NPC kettle all have to survive it together.
+        /// </summary>
+        [UnityTest]
+        [Explicit("Capture, not a test. Look at Captures/MothersHouseInterior/.")]
+        public IEnumerator MothersHouse()
+        {
+            MothersHouseInteriorRoot interiorRoot = null;
+            yield return Capture(
+                SceneIds.MothersHouseInterior,
+                () =>
+                {
+                    interiorRoot = Object.FindAnyObjectByType<
+                        MothersHouseInteriorRoot>();
+                    return interiorRoot;
+                },
+                () => MothersHouseShots(interiorRoot));
+        }
+
+        private static Shot[] MothersHouseShots(
+            MothersHouseInteriorRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.IsInitialized, Is.True);
+            Assert.That(root.FixedCamera, Is.Not.Null);
+            Assert.That(root.FixedCamera.IsInitialized, Is.True);
+            Assert.That(root.CameraFollow.FixedPoseActive, Is.True);
+            HomeCameraShot shot = root.FixedCamera.ActiveShot;
+            Assert.That(
+                shot.Kind,
+                Is.EqualTo(HomeCameraShotKind.MainRoom));
+            return new[]
+            {
+                Shot.At(
+                    "00-fixed-gameplay-camera",
+                    shot.Position,
+                    shot.Position + shot.Rotation * Vector3.forward * 10f,
+                    shot.FieldOfView)
+            };
+        }
+
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator Stairwell()

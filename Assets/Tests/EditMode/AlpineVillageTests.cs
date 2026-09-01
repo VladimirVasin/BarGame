@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -91,9 +92,134 @@ namespace BarPromenade.Tests.EditMode
                 Is.GreaterThan(AlpineVillageValidator.MinimumElevationGain));
         }
 
+        [Test]
+        [Category("AlpineVillage")]
+        public void MothersHouseDoor_PlanOwnsVisibleLeafDockAndReturnAxis()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            AlpineVillagePlotDescriptor house = plan.MothersHouse;
+            Vector3 frontCenter = house.GroundCenter +
+                                  house.Facing *
+                                  (house.FootprintSize.y * 0.5f);
+
+            Assert.That(
+                house.DoorAcrossOffset,
+                Is.EqualTo(AlpineVillagePlanner.MothersHouseDoorAcross)
+                    .Within(0.001f));
+            Assert.That(
+                Vector3.Dot(
+                    house.DoorGroundPosition - frontCenter,
+                    house.Facing),
+                Is.Zero.Within(0.001f),
+                "The shifted leaf must stay on the front wall.");
+            Assert.That(
+                Vector3.Distance(
+                    house.DoorDockPosition - house.DoorGroundPosition,
+                    house.Facing *
+                    AlpineVillagePlanner.DoorDockStandoff),
+                Is.LessThan(0.001f));
+            Assert.That(
+                new AlpineVillageWalkableArea(plan).Contains(
+                    plan.MothersHouseReturnPosition,
+                    CityGroundTraversalPlanner.MaximumAgentRadius),
+                Is.True,
+                "The return point must remain safely standable.");
+            Assert.That(
+                Vector3.Distance(
+                    plan.MothersHouseReturnPosition,
+                    house.DoorDockPosition),
+                Is.GreaterThan(0.1f),
+                "A return is not the interaction dock.");
+
+            Vector3 fromTrigger =
+                plan.MothersHouseReturnPosition -
+                house.DoorGroundPosition;
+            fromTrigger.y = 0f;
+            Assert.That(
+                fromTrigger.magnitude,
+                Is.GreaterThanOrEqualTo(
+                    AlpineVillagePlanner.MothersHouseEntranceTriggerRadius +
+                    PlayerDoorActionPlan.DockBoundaryClearance),
+                "The returned capsule must not overlap the entrance trigger.");
+        }
+
+        /// <summary>
+        /// The offset that stops twelve doors reading as one stamped row is
+        /// the PLAN's, not the world builder's guess from a mesh variant.
+        ///
+        /// It matters now in a way it never did while a door was scenery:
+        /// the hero walks to a threshold, so the leaf, the trigger, the dock
+        /// and the trodden path have to be the same place. The offset stays
+        /// well inside the door step, so every centreline path still meets a
+        /// stone rather than snow.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void HouseDoors_SitOffCentreByThePlansOwnOffset()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            var area = new AlpineVillageWalkableArea(plan);
+            var offsets = new List<float>();
+            foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
+            {
+                if (plot.Kind != AlpineVillagePlotKind.House)
+                {
+                    continue;
+                }
+
+                float across = plot.DoorAcrossOffset;
+                offsets.Add(across);
+                Assert.That(
+                    Mathf.Abs(across),
+                    Is.LessThanOrEqualTo(
+                        AlpineVillagePlanner.HouseDoorAcross + 0.001f),
+                    $"'{plot.StableId}' opens outside its own front wall.");
+
+                // The step is `DoorWidth + 0.5` wide and centred on the
+                // leaf, so the offset may never carry the threshold path off
+                // it.
+                Assert.That(
+                    Mathf.Abs(across),
+                    Is.LessThan(
+                        (AlpineVillageWorldBuilder.DoorWidth + 0.5f) * 0.5f),
+                    $"'{plot.StableId}' steps off its own step.");
+
+                Vector3 frontCenter = plot.GroundCenter +
+                                      plot.Facing *
+                                      (plot.FootprintSize.y * 0.5f);
+                Assert.That(
+                    Vector3.Dot(
+                        plot.DoorGroundPosition - frontCenter,
+                        plot.Facing),
+                    Is.Zero.Within(0.001f),
+                    $"'{plot.StableId}' moved its door off the front wall.");
+                Assert.That(
+                    Vector3.Distance(
+                        plot.DoorDockPosition - plot.DoorGroundPosition,
+                        plot.Facing * AlpineVillagePlanner.DoorDockStandoff),
+                    Is.LessThan(0.001f),
+                    $"'{plot.StableId}' does not stand in front of its door.");
+                Assert.That(
+                    area.Contains(
+                        plot.DoorDockPosition,
+                        CityGroundTraversalPlanner.MaximumAgentRadius),
+                    Is.True,
+                    $"'{plot.StableId}' cannot be reached on foot.");
+            }
+
+            Assert.That(offsets.Count, Is.EqualTo(AlpineVillagePlanner.HouseCount));
+            Assert.That(
+                offsets.Count(offset => offset < -0.05f),
+                Is.GreaterThan(1),
+                "The row leans one way only if the seed never varies it.");
+            Assert.That(
+                offsets.Count(offset => offset > 0.05f),
+                Is.GreaterThan(1));
+        }
+
         /// <summary>
         /// Everything the plan places has to be reachable on foot. The spurs
-        /// matter most: the chapel, the adit and the graves stand more than
+        /// matter most: the chapel and the spring's head stand more than
         /// twenty metres off the lane and would otherwise be scenery.
         /// </summary>
         [Test]
@@ -859,7 +985,7 @@ namespace BarPromenade.Tests.EditMode
 
             // These came from the independent 200,001-seed mirror sweep and
             // exercise the old greedy-depth cascade, its furthest local trim,
-            // and the former house/adit collision.
+            // and the former house collision.
             foreach (int seed in new[]
                      {
                          -96746, -87107, -58640, -29563,
@@ -1521,24 +1647,24 @@ namespace BarPromenade.Tests.EditMode
                     $"There is no ground behind '{plot.StableId}'.");
             }
 
-            // And the burial ground is ground: the one plot with no shell,
-            // walked in among rather than looked at over a fence.
-            AlpineVillagePlotDescriptor cemetery = null;
+            // And the spring is ground: the one plot with no shell, walked
+            // up to rather than looked at from a path.
+            AlpineVillagePlotDescriptor spring = null;
             for (int index = 0; index < plan.Plots.Count; index++)
             {
                 if (plan.Plots[index].Kind ==
-                    AlpineVillagePlotKind.Cemetery)
+                    AlpineVillagePlotKind.Spring)
                 {
-                    cemetery = plan.Plots[index];
+                    spring = plan.Plots[index];
                     break;
                 }
             }
 
-            Assert.That(cemetery, Is.Not.Null);
+            Assert.That(spring, Is.Not.Null);
             Assert.That(
-                area.Contains(cemetery.GroundCenter, radius),
+                area.Contains(spring.GroundCenter, radius),
                 Is.True,
-                "The hero still cannot walk in among the graves.");
+                "The hero cannot walk up to the water.");
         }
 
         /// <summary>
@@ -1568,7 +1694,7 @@ namespace BarPromenade.Tests.EditMode
             for (int index = 0; index < plan.Plots.Count; index++)
             {
                 AlpineVillagePlotDescriptor plot = plan.Plots[index];
-                bool solid = plot.Kind != AlpineVillagePlotKind.Cemetery;
+                bool solid = plot.Kind != AlpineVillagePlotKind.Spring;
                 Assert.That(
                     area.Contains(plot.GroundCenter),
                     Is.EqualTo(!solid),

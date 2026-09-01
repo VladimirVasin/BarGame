@@ -6,6 +6,218 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-01 — The mother's room got a visible floor light, a south threshold and a quiet pulse
+
+The over-bright review frame no longer relies on its invisible ceiling point.
+Ambient light, reflection and exposure are restrained; the hearth remains the
+strongest key, while a fabric-shaded floor lamp beside the sofa creates a wide
+local downward/inward pool. Its passive meshes and typed light anchor are part
+of the deterministic room asset. The approved
+fixed camera stays exactly at `(5.8, 3.15, -2.8)`, looking at
+`(-0.2, 0.8, 1.0)` with a `60°` vertical FOV.
+
+The internal entrance moved from the east wall to the centre of the south wall,
+directly opposite the fireplace. Its open leaf, split skirting and runtime wall
+collision leave a real `1.30 m` aperture. Entry, exit and spawn share that axis;
+the hero appears just inside at `(0, 0, -2.45)` facing north, and the protected
+route now has a player-width junction instead of a token rectangle overlap.
+
+The room's asset-free ASMR-like soundscape now owns a seamless muffled window
+wind, soft alternating tick/tock from the visible clock and one deterministic
+low timber settle from the old cupboard every `42-78 s`. Fire crackle remains
+with the hearth. All layers are quiet spatial ambience; there is no music,
+voice, horror creak, hiss, boiling or kettle sound.
+
+Generator `1.3.0` validates at `43 meshes / 5196 triangles`, with final
+signature `450cfb780f55663f3b214825d4d552d5793516228efd77b145e9650c1e565e19`;
+two post-generation validate-only runs matched. Unity's direct room contract
+and real village-door round trip passed `2/2`. After the visual light tune, the
+cupboard lamp was removed completely at review; the direct contract plus GPU
+fixed-camera capture passed `2/2` again, and the final frame was inspected at
+`Captures/MothersHouseInterior/00-fixed-gameplay-camera.png`.
+`git diff --check` passed. No full Unity suite or player build was run in fast
+mode.
+
+## 2026-09-01 — Every house on the lane has a door, and every one is shut
+
+The twelve village houses used to carry a frame, a leaf and a step and nothing
+else: the hero could walk up to any of them and there was no key to press. They
+now carry the ordinary door interaction — the same `PlayerDoorActionTarget`
+gesture the mother's entrance uses, on the same kind of plan-owned dock and
+facing — and it ends in one line rather than a scene load. He reaches the
+handle, the handle does not give, and the prompt says so. The mother's house is
+untouched and remains the one door that opens; the chapel keeps its plain
+threshold, because it is a spur errand and not a home.
+
+Making a door a place the hero walks TO exposed a seam that did not matter
+while a door was scenery. The across-offset that stops twelve doors reading as
+one stamped row belonged to the world builder and was picked from the authored
+mesh variant, while the plan owned the threshold, the interaction dock and the
+trodden path that arrives at it — so the leaf stood up to a quarter of a metre
+beside its own dock. The offset is now the plan's, seeded per house like every
+other village position, and the builder reads `DoorAcrossOffset` for every
+kind. Leaf, trigger, dock and path are one place. Each door also gained the one
+part of a door anyone ever touches: a handle.
+
+Verification: `96/96` EditMode across the village, path, storm, map, raven,
+build-scene and asset fixtures, including three new tests — the shut doors and
+their plan-owned dock heights, the seeded across-offset, and both catalog
+lines. One new PlayMode test drives the real thing: standing on the plan's
+dock, the interactor offers the door, the key starts the standard gesture and
+the refusal comes up in the prompt, with nothing loaded and the hero left where
+he stood. It was proved to bite by raising the dock `0.06 m` — the exact silent
+refusal this class of bug produces — and it failed naming the gesture that
+never started.
+
+Two things found on the way, neither of them this change's. `AlpineCablewayRide`
+PlayMode left a REAL area travel in flight: destroying its own scene does not
+cancel the async load, so `AreaLoading` and then `AlpineVillage` landed inside
+whatever test was running next and a single load destroyed everything that test
+had built. `Station_HeGetsOutWalkingStraightAtTheVillage` was already dying that
+way with no village-door code in the run at all. The fixture now lands its own
+travel in a real-time-bounded teardown and hands the next test an empty scene;
+the whole alpine PlayMode set runs `6/6`. Still red and NOT touched here:
+`SceneFlowSmokeTests.CityScene_BarsHaveUniqueColliderFreeSignGeometry` and
+`CityScene_BootstrapsGeneratedWorldPlayerAndOneHomeBar`, both on a missing City
+street sign, both failing identically when that fixture runs alone.
+
+## 2026-09-01 — The mother's house got its own clean, positive surface contract
+
+The room's visual contract now says "light, clean and cared for" without
+turning old or modest into new, rich or pristine. Faded pigment, mending,
+repairs, mismatched long-kept objects and softly rubbed edges carry age; dirt,
+damp, mould and general soot do not. The art and story bibles now also make
+explicit that this cleanliness means care only, not the mother's health or
+presence, reconciliation, prosperity or a comforting ending.
+
+Every room-authored surface is isolated on the new four-by-four
+`MothersHousePositiveAtlas`; no Home or City albedo is reused. The exact Kettle
+Hat prefab remains the named exception because the user's requirement is that
+the table kettle be literally the same NPC asset, with its source material and
+atlas intact. A reproducible source prompt and a local fixed-camera acceptance
+gate now document both contracts. The editor importer keeps the generated atlas
+sRGB, clamp, bilinear, uncompressed, NPOT-preserving and mip-free; the passive
+prefab serializes one exact sheet-to-cell map plus normalized per-renderer UV
+bounds and `_BaseMap_ST`. Runtime now applies that atlas to all twelve authored
+surface families with clean neutral tints and has no Home/City texture lookup.
+
+Verification: Blender validate-only passed at `40 meshes / 4952 triangles`
+with signature `c89419ae5b822bc8`; the Unity setup rebuilt and reloaded the
+prefab with its texture/import/UV contract intact. The direct room contract and
+fixed-camera capture passed `2/2`, including the exact NPC kettle and explicit
+rejection of Home/City albedos. The final gameplay frame was inspected at
+`Captures/MothersHouseInterior/00-fixed-gameplay-camera.png`: the approved
+camera is unchanged and the cream plaster, honey floor, sage upholstery,
+patterned light rug, pale hearth and blue windows remain readable without the
+hero apartment's dirty brown cast. The real door round trip had already passed
+in the preceding `3/3` focused selection and its code did not change in this
+appearance pass. `git diff --check` passed; no full Unity suite or player build
+was run in fast mode.
+
+## 2026-09-01 — The mother's house became a real two-way interior
+
+The existing door on the summit house now enters a separate
+`MothersHouseInterior` gameplay scene and returns to one safe dock outside the
+same trigger. The room remains an empty environmental MVP: no mother, Cat,
+dinner, dialogue or prologue beat was inferred. The user explicitly accepted
+that threshold-only canon exception, now recorded in both governing bibles and
+the architecture notes.
+
+The room is a deterministic Blender-authored `10 x 8 m` shell driven by a pure
+layout plan. Its approved fixed pose is the wide southeast diagonal at
+`(5.8, 3.15, -2.8)`, looking at `(-0.2, 0.8, 1.0)` with a `60°` vertical FOV.
+That frame keeps the hearth and both windows, low table, north rocker and west
+sofa readable together. Runtime owns collision, the player, transition state,
+lighting and sound; the imported prefab remains passive visual geometry with
+typed anchors. Old boards, repaired upholstery, knitting, books, slippers,
+firewood and a clock carry age and use without adding forbidden family lore.
+
+The table kettle is a complete instance of the existing Kettle Hat pedestrian
+prefab. Runtime disables its rig, body, collision, steam and all non-kettle
+renderers, but preserves the source kettle's exact ten meshes, materials and
+atlas. Its visible bounds are aligned upright and in exact contact with the
+authored tabletop dock rather than copying or rebuilding the model.
+
+The first gameplay capture exposed a real presentation defect: the room beyond
+the flames was crushed almost to black. The camera stayed untouched. Stronger
+secondary snow-window spills, brighter ambient bounce and one soft unshadowed
+ceiling fill now reveal the furniture and tea service while the shadowed hearth
+remains the brightest warm key.
+
+Verification: Blender validation passes at `40 meshes / 4952 triangles` with
+signature `c89419ae5b822bc8`; Unity's focused interior, exact-kettle and real
+village-door round-trip selection passed `3/3`. After the lighting correction,
+the direct room contract plus fixed-camera capture passed `2/2`, and the new
+capture was inspected at
+`Captures/MothersHouseInterior/00-fixed-gameplay-camera.png`. No full Unity
+suite or player build was run in fast mode.
+
+## 2026-09-01 — The adit and the burial ground left the village, and the story
+
+The lead asked what the strange object above the street was and whether it had
+meant to be the chapel. It had not: it was the adit, and a diagnostic listing
+every side plot named it exactly - `AditFrame Timber`, the kit's own `Rubble`,
+and on top of both a `Physical Overgrown Spoil` box of TWELVE triangles,
+`7.2 x 4 m` and `1.1 m` tall, which is what read as a table standing in the
+snow. The chapel was fine and on the other spur. The answer to that was to
+delete both the adit and the burial ground, and - asked again - to delete them
+from the story too.
+
+So this is a canon amendment and not only a code change, and both bibles say
+so now. The story bible loses the mine from the village entirely (§ the
+village's own paragraph, the composition line, and the roadmap item that
+promised "штольня и вагонетка, кладбище с могилой отца"); the art bible loses
+the adit from the side spurs, from what stops the hero, and from where the
+ravens may stand. **The father's grave is gone with it** - that is the part
+worth being explicit about, because it was the one piece of the hero's family
+the village held in geometry.
+
+What stands in the adit's place is the head of the SPRING - MVP by the lead's
+framing, with the detailed source next. It is deliberately the smallest honest
+thing: the wet ground the water keeps dark, the kit's own `SourceBowl` stone as
+the catch, still water in it and the runnel leaving downhill. No water shader:
+the city river's material carries city globals, and faking movement with a
+stone sheet would be a thing to unpick rather than build on. The village now
+has one reason to exist above the cableway and it is water - which is what the
+chapel over the source was always about.
+
+Numbering holes stay, as the deleted city lake's did:
+`AlpineVillagePlotKind` keeps `3` and `4` empty and adds `Spring = 5`,
+`AlpineVillagePathKind` keeps `4` and `5` empty and adds `SpringSpur = 7`, and
+`AlpineVillageSoundKind` keeps `5` where the firewood cart settled.
+
+Three things the removal broke, each worth keeping:
+
+- **The spring inherited the adit's bypass, and had to.** Given the simple
+  chapel-shaped path it cut `village-house-08` by `1.10 m`; moved seven metres
+  up the lane it cut `village-house-10` by the same. That whole side is
+  frontage, which is exactly why the adit carried an authored outer hook with
+  a corner solver. Restored under the spring's name rather than moving the
+  spring off the place the lead named.
+- **The sound table was indexed by enum value.** Removing the firewood row
+  shifted every row after it, so the wordless hum began throwing for its own
+  number. It looks up by kind now, and the numbering can carry holes without
+  the table caring.
+- **The soundscape validator counted `1..Count`**, which demands a voice for a
+  hole. It walks the DECLARED values now.
+
+The raven roster drops from two to one: the spoil-heap edge and the woodpile
+went with the adit, and the lane fence is what is left. The map names the
+spring where it named the adit and the graves. The walkable mask's one
+non-obstacle plot is the spring, the seat the burial ground held.
+
+The village kit still ships `AditFrame`, `MineCart`, `Firewood` and
+`GraveMarker`; nothing uses them. Regenerating the FBX to drop them would
+collide with the neighbouring session's in-flight kit work and buys nothing
+today - recorded rather than done.
+
+Verification is INCOMPLETE and that is stated rather than glossed: the runtime,
+editor and PlayMode assemblies compile, and no error in any run names a file of
+this session's, but the EditMode suites cannot be run while the neighbouring
+session is mid-build of the mother's-house interior - `MothersHouseInteriorAssetRegistry`
+does not exist yet and every batch run dies on it. The village, roost and
+village-asset suites need one green run once that lands.
+
 ## 2026-09-01 — The snow presses down, and the lane stopped being cut open
 
 Three asks: no snow on the paths anywhere, snow that deforms underfoot, and a

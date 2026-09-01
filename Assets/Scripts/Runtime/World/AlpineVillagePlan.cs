@@ -22,11 +22,16 @@ namespace BarPromenade
         /// <summary>The chapel over the source, on a side spur.</summary>
         Chapel = 2,
 
-        /// <summary>The adit mouth and its overgrown spoil heap.</summary>
-        Adit = 3,
+            // `3` and `4` were the adit and the burial ground. Both are gone
+        // from the village and from the story, by the lead's decision; the
+        // numbers stay as holes exactly as the deleted city lake's did, so
+        // nothing that ever wrote one down reads a different place back.
 
-        /// <summary>The village burial ground.</summary>
-        Cemetery = 4
+        /// <summary>
+        /// Where the water comes out of the hill. The chapel further down
+        /// stands over the same water's outlet - this is its head.
+        /// </summary>
+        Spring = 5
     }
 
     /// <summary>
@@ -243,6 +248,24 @@ namespace BarPromenade
         public Vector3 DoorDockPosition { get; }
 
         /// <summary>
+        /// Signed distance from the centre of the front wall to the actual
+        /// door, along the building's local right axis. The world builder
+        /// reads this for any door whose authored placement is plan-owned.
+        /// </summary>
+        public float DoorAcrossOffset
+        {
+            get
+            {
+                Vector3 frontCenter = GroundCenter +
+                                      Facing * (FootprintSize.y * 0.5f);
+                Vector3 right = Vector3.Cross(Vector3.up, Facing).normalized;
+                return Vector3.Dot(
+                    DoorGroundPosition - frontCenter,
+                    right);
+            }
+        }
+
+        /// <summary>
         /// Axis-aligned envelope of the actual rotated ground footprint.
         /// Precise overlap uses SAT in the validator; terrain bounds and map
         /// envelopes use this conservative rectangle.
@@ -364,6 +387,7 @@ namespace BarPromenade
             AlpineVillageLanePlan lane,
             AlpineVillageStationPlan station,
             AlpineVillagePlotDescriptor mothersHouse,
+            Vector3 mothersHouseReturnPosition,
             IList<AlpineVillagePlotDescriptor> sourcePlots,
             IList<AlpineVillageRidgeDescriptor> sourceRidges,
             Rect terrainBounds,
@@ -382,6 +406,7 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(station));
             MothersHouse = mothersHouse ??
                 throw new ArgumentNullException(nameof(mothersHouse));
+            MothersHouseReturnPosition = mothersHouseReturnPosition;
             plots = new ReadOnlyCollection<AlpineVillagePlotDescriptor>(
                 new List<AlpineVillagePlotDescriptor>(sourcePlots));
             ridges = new ReadOnlyCollection<AlpineVillageRidgeDescriptor>(
@@ -416,6 +441,13 @@ namespace BarPromenade
         /// composition points at it.
         /// </summary>
         public AlpineVillagePlotDescriptor MothersHouse { get; }
+
+        /// <summary>
+        /// Ground point used only after leaving the house interior. It is
+        /// farther out than the interaction dock, beyond the exterior trigger
+        /// and the player's capsule clearance.
+        /// </summary>
+        public Vector3 MothersHouseReturnPosition { get; }
 
         public IReadOnlyList<AlpineVillagePlotDescriptor> Plots => plots;
         public IReadOnlyList<AlpineVillageRidgeDescriptor> Ridges => ridges;

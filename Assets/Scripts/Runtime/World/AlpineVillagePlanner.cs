@@ -106,9 +106,37 @@ namespace BarPromenade
         public static readonly Vector2 MothersHouseFootprint =
             new Vector2(11f, 9f);
         public const float MothersHouseHeight = 7f;
+        public const float MothersHouseDoorAcross = -0.36f;
+        public const float MothersHouseEntranceTriggerRadius = 1.05f;
+        public const float MothersHouseReturnStandoff = 1.55f;
 
         /// <summary>How far in front of a threshold the hero stands.</summary>
         public const float DoorDockStandoff = 1.1f;
+
+        /// <summary>
+        /// How far a house door may sit off the centre of its own front
+        /// wall, either way.
+        ///
+        /// The offset used to be the world builder's, picked from the
+        /// authored mesh variant, and it existed only so twelve doors did
+        /// not read as one stamped row. That was fine while a door was
+        /// scenery. It is not fine now that a door is a place the hero walks
+        /// to: the plan owns the threshold, the dock and the trodden path
+        /// that reaches it, and a leaf drawn a quarter of a metre off all
+        /// three is a handle standing beside its own door. So the offset is
+        /// the plan's, like every other village position, and the builder
+        /// reads <see cref="AlpineVillagePlotDescriptor.DoorAcrossOffset"/>
+        /// for the leaf it draws. Kept well under the door step's own half
+        /// width, so every threshold path still meets the step.
+        /// </summary>
+        public const float HouseDoorAcross = 0.26f;
+
+        /// <summary>
+        /// Reach of a house door's interaction trigger. Smaller than the
+        /// mother's, because twelve of these stand along one lane and the
+        /// prompt should belong to the door the hero is actually at.
+        /// </summary>
+        public const float HouseDoorTriggerRadius = 0.72f;
 
         /// <summary>
         /// Flat ground kept around the inhabited hull before the enclosing
@@ -129,6 +157,7 @@ namespace BarPromenade
         private const uint HouseJitterSalt = 0x5641_4C34u;
         private const uint HouseYawSalt = 0x5641_4C35u;
         private const uint HouseSetbackSalt = 0x5641_4C36u;
+        private const uint HouseDoorAcrossSalt = 0x5641_4C37u;
 
         public static AlpineVillagePlan Create(
             int seed = MountainRoadPlanner.DefaultSeed)
@@ -140,6 +169,10 @@ namespace BarPromenade
             var plots = new List<AlpineVillagePlotDescriptor>();
             AlpineVillagePlotDescriptor mothersHouse =
                 CreateMothersHouse(lane, uphill);
+            Vector3 mothersHouseReturn =
+                mothersHouse.DoorGroundPosition +
+                mothersHouse.Facing * MothersHouseReturnStandoff;
+            mothersHouseReturn.y = mothersHouse.GroundCenter.y;
             plots.Add(mothersHouse);
             AppendHouses(seed, lane, plots);
             AppendSpurs(lane, right, plots);
@@ -170,6 +203,7 @@ namespace BarPromenade
                 lane,
                 station,
                 mothersHouse,
+                mothersHouseReturn,
                 plots,
                 ridges,
                 terrainBounds,
@@ -251,12 +285,17 @@ namespace BarPromenade
         {
             AlpineVillageLaneSample head = lane.Sample(lane.Length);
             Vector3 facing = -head.Forward;
-            Vector3 doorGround = head.Position +
-                                 head.Forward * MothersHouseSetback;
-            Vector3 center = doorGround +
-                             head.Forward *
-                             (MothersHouseFootprint.y * 0.5f);
-            center.y = doorGround.y;
+            Vector3 frontCenter = head.Position +
+                                  head.Forward * MothersHouseSetback;
+            Vector3 center = frontCenter +
+                              head.Forward *
+                              (MothersHouseFootprint.y * 0.5f);
+            center.y = frontCenter.y;
+            Vector3 buildingRight = Vector3.Cross(
+                Vector3.up,
+                facing).normalized;
+            Vector3 doorGround = frontCenter +
+                                 buildingRight * MothersHouseDoorAcross;
             Vector3 dock = doorGround + facing * DoorDockStandoff;
             dock.y = head.Position.y;
             return new AlpineVillagePlotDescriptor(
@@ -325,6 +364,10 @@ namespace BarPromenade
                 Vector3 buildingRight = Vector3.Cross(
                     Vector3.up,
                     facing).normalized;
+                float doorAcross = Mathf.Lerp(
+                    -HouseDoorAcross,
+                    HouseDoorAcross,
+                    Unit(seed, index, HouseDoorAcrossSalt));
                 float outwardRadius =
                     Mathf.Abs(Vector3.Dot(outward, buildingRight)) *
                     footprint.x * 0.5f +
@@ -353,7 +396,8 @@ namespace BarPromenade
                     center.y = sample.Position.y;
                     Vector3 doorGround = center +
                                          facing *
-                                         (footprint.y * 0.5f);
+                                         (footprint.y * 0.5f) +
+                                         buildingRight * doorAcross;
                     Vector3 dock = doorGround +
                                    facing * DoorDockStandoff;
                     dock.y = sample.Position.y;
@@ -422,10 +466,14 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The three things that are not on the lane. All of them sit out on a
-        /// spur and none of them stands at the head of the street: the chapel
-        /// over the source is a side errand, the adit is behind the houses, and
-        /// the burial ground is passed rather than visited.
+        /// The two things that are not on the lane, and neither stands at the
+        /// head of the street: the chapel over the source is a side errand,
+        /// and the spring's head is behind the houses.
+        ///
+        /// The adit and the burial ground used to be here and are gone - out
+        /// of the village and out of the story, by the lead's decision. The
+        /// spring took the adit's place because the water is what the village
+        /// is actually about.
         /// </summary>
         private static void AppendSpurs(
             AlpineVillageLanePlan lane,
@@ -442,26 +490,19 @@ namespace BarPromenade
                 23f,
                 new Vector2(5f, 6.5f),
                 4.2f));
+            // The spring's head, where the adit used to be. Low and wide
+            // rather than tall: nothing here stands up out of the hill, the
+            // water simply arrives at the surface.
             target.Add(CreateSpur(
                 lane,
                 right,
-                "village-adit",
-                AlpineVillagePlotKind.Adit,
+                "village-spring",
+                AlpineVillagePlotKind.Spring,
                 67f,
                 -1,
                 29f,
                 new Vector2(6f, 5f),
-                3.4f));
-            target.Add(CreateSpur(
-                lane,
-                right,
-                "village-cemetery",
-                AlpineVillagePlotKind.Cemetery,
-                29f,
-                -1,
-                27f,
-                new Vector2(18f, 14f),
-                1.8f));
+                0.9f));
         }
 
         private static AlpineVillagePlotDescriptor CreateSpur(

@@ -128,10 +128,23 @@ north or east boundary. The sparse
 footprint can be non-rectangular, and the same data-first area contract supports
 reordered urban areas.
 
-The build now has eleven explicit scenes. `MountainRoad` is appended at index
+The build now has twelve explicit scenes. `MountainRoad` is appended at index
 `7` as the sixth gameplay root, `AreaLoading` at index `8` as a black,
 progress-bar-only transfer boundary, `ChurchInterior` at index `9` as the
-seventh gameplay root, and `AlpineVillage` at index `10` as the eighth. City,
+seventh gameplay root, `AlpineVillage` at index `10` as the eighth, and
+`MothersHouseInterior` at index `11` as the ninth. The existing door of the
+house at the head of the village now enters that separate room and returns the
+hero to a safe point outside the same threshold. The room-authored environment
+is deliberately light, clean and cared for while remaining old and modest:
+fading, repairs and soft use carry age, never dirt, damp or abandonment. Its
+surfaces use the dedicated `MothersHousePositiveAtlas` and do not reuse Home or
+City albedos. The exact Kettle Hat prefab on the tea table is the explicit
+exception and keeps its original material and atlas. Inside, the entrance is
+centred in the south wall directly opposite the fireplace, and the hero appears
+there facing north. A shaded floor lamp replaces the former invisible ceiling
+fill, keeping one local pool beneath the hearth key
+and restrained ambient floor. Fire, muffled wind, alternating clock ticks and
+sparse house settling form the quiet ASMR-like sound bed. City,
 Mountain Road and Alpine Village are each
 runtime-composed after a Single-mode load and are never resident or rendered
 together. The ordinary map has switchable City/Mountain Road/Village tabs; confirming
@@ -295,8 +308,9 @@ storm peak.
 
 The runtime places one visually
 distinct player home beside a bar street and one deterministic street-front
-supermarket, instantiates the same modular low-poly 3D hero in all eight gameplay
-roots, loads separate bar, supermarket, stairwell, home and church interiors, and
+supermarket, instantiates the same modular low-poly 3D hero in all nine gameplay
+roots, loads separate bar, supermarket, stairwell, home, church and mother's-house
+interiors, and
 restores the same seed and matching exterior return point. The hero keeps
 independent body meshes on one Generic rig, uses continuous in-place 3D clips
 for locomotion and contextual actions, including a separate heavy, weary

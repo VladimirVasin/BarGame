@@ -259,8 +259,7 @@ namespace BarPromenade.Tests.EditMode
 
                 foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
                 {
-                    if (plot.Kind == AlpineVillagePlotKind.Adit ||
-                        plot.Kind == AlpineVillagePlotKind.Cemetery)
+                    if (plot.Kind == AlpineVillagePlotKind.Spring)
                     {
                         continue;
                     }
@@ -411,8 +410,7 @@ namespace BarPromenade.Tests.EditMode
                 int found = 0;
                 foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
                 {
-                    if (plot.Kind == AlpineVillagePlotKind.Adit ||
-                        plot.Kind == AlpineVillagePlotKind.Cemetery)
+                    if (plot.Kind == AlpineVillagePlotKind.Spring)
                     {
                         continue;
                     }
@@ -433,6 +431,160 @@ namespace BarPromenade.Tests.EditMode
             finally
             {
                 Object.DestroyImmediate(host);
+            }
+        }
+
+        /// <summary>
+        /// Every house on the lane but the mother's is a door the hero can
+        /// try, and every one of them is shut.
+        ///
+        /// What this actually pins is the four numbers agreeing. The leaf,
+        /// the trigger, the dock the gesture walks him to and the trodden
+        /// path that arrives there all come off the same plan-owned
+        /// threshold, and the dock keeps the plot shelf's height - a dock
+        /// more than the motor's vertical tolerance off his root is refused
+        /// in SILENCE, which is a prompt that shows and a key that does
+        /// nothing forever.
+        /// </summary>
+        [Test]
+        [Category("AlpineVillage")]
+        public void HouseDoors_AreShutStandardDoorsOnEveryHouseButTheMothers()
+        {
+            AlpineVillagePlan plan = CreatePlan();
+            var host = new GameObject("Village Door Interaction Host");
+            try
+            {
+                AlpineVillageWorldResult world =
+                    AlpineVillageWorldBuilder.Build(host.transform, plan);
+                int houses = plan.Plots.Count(
+                    plot => plot.Kind == AlpineVillagePlotKind.House);
+                Assert.That(
+                    world.HouseDoors.Count,
+                    Is.EqualTo(houses),
+                    "One shut door per house on the lane.");
+                Assert.That(houses, Is.EqualTo(AlpineVillagePlanner.HouseCount));
+
+                foreach (AlpineVillagePlotDescriptor plot in plan.Plots)
+                {
+                    Transform plotRoot = world.SemanticObjects[plot.StableId];
+                    Transform doorRoot = plotRoot.Find(
+                        AlpineVillageWorldBuilder.HouseDoorObjectName);
+                    if (plot.Kind != AlpineVillagePlotKind.House)
+                    {
+                        Assert.That(
+                            doorRoot,
+                            Is.Null,
+                            $"'{plot.StableId}' is not a house on the lane.");
+                        continue;
+                    }
+
+                    Assert.That(doorRoot, Is.Not.Null, plot.StableId);
+                    var door =
+                        doorRoot.GetComponent<LockedDoorInteraction>();
+                    Assert.That(door, Is.Not.Null, plot.StableId);
+                    Assert.That(door.IsConfigured, Is.True, plot.StableId);
+                    Assert.That(
+                        door.PromptKey,
+                        Is.EqualTo(
+                            AlpineVillageWorldBuilder.HouseDoorPromptKey));
+                    Assert.That(
+                        door.LockedKey,
+                        Is.EqualTo(
+                            AlpineVillageWorldBuilder.HouseDoorLockedKey));
+                    Assert.That(world.HouseDoors, Contains.Item(door));
+
+                    var trigger = doorRoot.GetComponent<SphereCollider>();
+                    Assert.That(trigger, Is.Not.Null, plot.StableId);
+                    Assert.That(trigger.isTrigger, Is.True, plot.StableId);
+
+                    var target =
+                        doorRoot.GetComponent<PlayerDoorActionTarget>();
+                    Assert.That(target, Is.Not.Null, plot.StableId);
+                    Assert.That(target.IsConfigured, Is.True, plot.StableId);
+
+                    PlayerDoorActionPlan actionPlan = target.Plan;
+                    Assert.That(
+                        Vector3.Distance(
+                            actionPlan.EntryRootPosition,
+                            plot.DoorDockPosition +
+                            Vector3.up * PlayerFactory.GroundedRootOffset),
+                        Is.LessThan(0.001f),
+                        $"'{plot.StableId}' does not use the planned dock.");
+                    Assert.That(
+                        Vector3.Dot(
+                            actionPlan.EntryFacingDirection,
+                            plot.Facing),
+                        Is.LessThan(-0.999f),
+                        $"'{plot.StableId}' turns the hero away from itself.");
+
+                    // The dock stands on the plot's own flattened shelf, and
+                    // the gesture only ever starts because it does.
+                    float dockGround =
+                        AlpineVillageTerrainSampler.SampleHeight(
+                            plan,
+                            new Vector2(
+                                plot.DoorDockPosition.x,
+                                plot.DoorDockPosition.z));
+                    Assert.That(
+                        Mathf.Abs(plot.DoorDockPosition.y - dockGround),
+                        Is.LessThan(PlayerMotor.InteractionVerticalTolerance),
+                        $"'{plot.StableId}' docks off its own ground.");
+
+                    // The trigger stands over the leaf the hero reaches for,
+                    // not over the middle of a wall the plan never used.
+                    Transform leaf = plotRoot.Find("Door Leaf");
+                    Assert.That(
+                        Mathf.Abs(
+                            plotRoot.InverseTransformPoint(
+                                doorRoot.position).x -
+                            plotRoot.InverseTransformPoint(
+                                leaf.position).x),
+                        Is.LessThan(0.001f),
+                        $"'{plot.StableId}' triggers beside its own leaf.");
+                    Assert.That(
+                        plotRoot.Find("Door Handle"),
+                        Is.Not.Null,
+                        $"'{plot.StableId}' has nothing to take hold of.");
+                }
+
+                // The one door that opens keeps its own component and its
+                // own destination.
+                Transform mothers =
+                    world.SemanticObjects["village-mothers-house"];
+                Assert.That(
+                    mothers.GetComponentInChildren<LockedDoorInteraction>(),
+                    Is.Null,
+                    "The mother's house is not shut to her son.");
+                Assert.That(
+                    world.MothersHouseEntrance,
+                    Is.Not.Null);
+            }
+            finally
+            {
+                Object.DestroyImmediate(host);
+            }
+        }
+
+        [Test]
+        [Category("AlpineVillage")]
+        public void HouseDoorLines_ExistInBothLocalizationCatalogs()
+        {
+            foreach (string language in new[] { "ru", "en" })
+            {
+                TextAsset catalog = Resources.Load<TextAsset>(
+                    $"Localization/{language}");
+                Assert.That(catalog, Is.Not.Null);
+                foreach (string key in new[]
+                         {
+                             AlpineVillageWorldBuilder.HouseDoorPromptKey,
+                             AlpineVillageWorldBuilder.HouseDoorLockedKey
+                         })
+                {
+                    Assert.That(
+                        catalog.text.Contains($"\"{key}\""),
+                        Is.True,
+                        $"{language}.json is missing '{key}'.");
+                }
             }
         }
 

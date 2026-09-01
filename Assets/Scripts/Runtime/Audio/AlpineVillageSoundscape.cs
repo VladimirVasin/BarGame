@@ -107,16 +107,6 @@ namespace BarPromenade
                 3300f,
                 CitySoundScheduleInterval.None),
             new AlpineVillageSoundDefinition(
-                AlpineVillageSoundKind.FirewoodInMineCart,
-                AlpineVillageSoundPlayback.ScheduledOneShot,
-                0.58f,
-                4,
-                0.115f,
-                0.65f,
-                8.5f,
-                4300f,
-                new CitySoundScheduleInterval(27f, 62f)),
-            new AlpineVillageSoundDefinition(
                 AlpineVillageSoundKind.WordlessHumBehindWall,
                 AlpineVillageSoundPlayback.Loop,
                 LoopDuration,
@@ -130,16 +120,28 @@ namespace BarPromenade
 
         public static int Count => Definitions.Length - 1;
 
+        /// <summary>
+        /// Looked up BY KIND, never by position.
+        ///
+        /// The table used to be indexed with the enum value, which is exactly
+        /// the kind of coupling that survives until the day a row is removed:
+        /// taking the firewood cart out of the village shifted every row after
+        /// it, and the wordless hum started throwing for its own number. The
+        /// numbering carries a hole now and the table does not have to know.
+        /// </summary>
         public static AlpineVillageSoundDefinition GetDefinition(
             AlpineVillageSoundKind kind)
         {
-            int index = (int)kind;
-            if (index <= 0 || index >= Definitions.Length)
+            for (int index = 0; index < Definitions.Length; index++)
             {
-                throw new ArgumentOutOfRangeException(nameof(kind));
+                if (Definitions[index].Kind == kind &&
+                    kind != AlpineVillageSoundKind.None)
+                {
+                    return Definitions[index];
+                }
             }
 
-            return Definitions[index];
+            throw new ArgumentOutOfRangeException(nameof(kind));
         }
 
         public static float[] GenerateSamples(
@@ -162,10 +164,6 @@ namespace BarPromenade
                     return GenerateDogOneShot(definition.Duration, variant);
                 case AlpineVillageSoundKind.SourceWater:
                     return GenerateSourceWaterLoop(variant);
-                case AlpineVillageSoundKind.FirewoodInMineCart:
-                    return GenerateFirewoodOneShot(
-                        definition.Duration,
-                        variant);
                 case AlpineVillageSoundKind.WordlessHumBehindWall:
                     return GenerateWordlessHumLoop(variant);
                 default:
@@ -398,39 +396,6 @@ namespace BarPromenade
             return (throat + roughNoise * 0.17f) * envelope;
         }
 
-        private static float[] GenerateFirewoodOneShot(
-            float duration,
-            int variant)
-        {
-            uint noiseState = Seed(
-                AlpineVillageSoundKind.FirewoodInMineCart,
-                variant);
-            return GenerateOneShot(
-                duration,
-                (time, normalized) =>
-                {
-                    float grain = NextNoise(ref noiseState);
-                    float first = WoodKnock(
-                        time,
-                        0.045f,
-                        152f + variant * 8f,
-                        grain,
-                        1f);
-                    float settle = WoodKnock(
-                        time,
-                        0.22f + variant * 0.015f,
-                        116f + variant * 6f,
-                        grain,
-                        0.54f);
-                    float dryRub = time < 0.12f
-                        ? grain *
-                          Mathf.Sin(Mathf.PI * normalized) *
-                          0.035f
-                        : 0f;
-                    return first + settle + dryRub;
-                });
-        }
-
         private static float WoodKnock(
             float time,
             float start,
@@ -604,8 +569,6 @@ namespace BarPromenade
                     return 0.18f;
                 case AlpineVillageSoundKind.SourceWater:
                     return 0.42f;
-                case AlpineVillageSoundKind.FirewoodInMineCart:
-                    return 0.24f;
                 case AlpineVillageSoundKind.WordlessHumBehindWall:
                     return 0.12f;
                 default:

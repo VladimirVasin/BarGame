@@ -13,5 +13,6 @@ namespace BarPromenade
         public const string AreaLoading = "AreaLoading";
         public const string ChurchInterior = "ChurchInterior";
         public const string AlpineVillage = "AlpineVillage";
+        public const string MothersHouseInterior = "MothersHouseInterior";
     }
 }
