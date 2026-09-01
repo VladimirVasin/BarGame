@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.1.0",
+  "generator_version": "4.5.1",
   "blender_version": "5.0.1",
   "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
   "anatomy_standard": "NpcHumanV2",
@@ -9,19 +9,19 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 10,
+  "clip_count": 9,
   "clips": [
     {
-      "name": "CafeLoneIdle",
-      "archetype": "cafe_lone_patron_v1",
+      "name": "CafeLoneSleep",
+      "archetype": "cafe_lone_patron_v2",
       "duration_seconds": 12.0,
       "frame_start": 0,
       "frame_end": 288,
       "loop": true,
       "one_shot": false,
       "in_place": true,
-      "authored_posture": "seated alone with a broad back to the room, forearms low at the counter",
-      "gait": "two slow breaths and one slight shoulder sink without a backward glance",
+      "authored_posture": "seated on the door-side bar stool with rounded forearms crossed and stacked on the counter, his cheek resting on the upper arm",
+      "gait": "three slow sleeping breaths carried by the chest without lifting the cheek or either arm from its support",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
@@ -29,47 +29,75 @@
         0.0,
         0.0
       ],
-      "seated": true,
-      "perched": true,
-      "perch_seat_height_min_m": 0.457802,
-      "perch_seat_height_max_m": 0.457802,
-      "perch_pelvis_lift_m": 0.023051,
-      "perch_contact_parts": [
-        "GEO_Sole.R"
-      ],
-      "seated_drop_m": 0.480853
-    },
-    {
-      "name": "CafeLoneDrink",
-      "archetype": "cafe_lone_patron_v1",
-      "duration_seconds": 5.0,
-      "frame_start": 0,
-      "frame_end": 120,
-      "loop": false,
-      "one_shot": true,
-      "in_place": true,
-      "authored_posture": "seated alone with the face held beneath the fedora brim",
-      "gait": "right hand lifts the cup to one restrained sip and replaces it on the saucer",
-      "keyed_bone_count": 31,
-      "loop_max_error": 1e-06,
-      "root_translation_range_m": [
-        0.0,
-        0.0,
-        0.0
+      "motion_beats": [
+        {
+          "name": "inhale",
+          "normalized_time": 0.166667
+        },
+        {
+          "name": "exhale",
+          "normalized_time": 0.333333
+        },
+        {
+          "name": "inhale",
+          "normalized_time": 0.5
+        },
+        {
+          "name": "exhale",
+          "normalized_time": 0.666667
+        },
+        {
+          "name": "inhale",
+          "normalized_time": 0.833333
+        }
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.457802,
-      "perch_seat_height_max_m": 0.457802,
-      "perch_pelvis_lift_m": 0.023051,
-      "perch_contact_parts": [
-        "GEO_Sole.R"
+      "perch_seat_height_min_m": 0.48884,
+      "perch_seat_height_max_m": 0.48884,
+      "perch_support_contact_min_m": 0.817495,
+      "perch_support_contact_max_m": 0.817495,
+      "perch_support_radius_m": 0.201038,
+      "perch_pelvis_lift_m": 0.02284,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.019884
       ],
-      "seated_drop_m": 0.480853
+      "perch_contact_parts": [
+        "GEO_Shoe.R"
+      ],
+      "seated_drop_m": 0.51168,
+      "sleeping": true,
+      "counter_arm_contact_min_m": 6.6e-05,
+      "counter_arm_contact_max_m": 0.001562,
+      "stacked_arm_surface_gap_max_m": 0.008171,
+      "stacked_arm_cross_amount_min": 0.677942,
+      "stacked_arm_cross_amount_max": 0.698176,
+      "stacked_arm_height_min_m": 0.119477,
+      "stacked_arm_height_max_m": 0.122275,
+      "rounded_elbow_angle_min_degrees": 70.225721,
+      "rounded_elbow_angle_max_degrees": 73.017381,
+      "head_upper_arm_gap_max_m": 0.002063,
+      "head_lower_arm_gap_min_m": 0.087553,
+      "head_above_upper_arm_min_m": 0.001502,
+      "breathing_chest_travel_m": 0.0034,
+      "contact_frames_sampled": 289,
+      "animated_local_xz_min_m": [
+        -0.27765,
+        -0.133327
+      ],
+      "animated_local_xz_max_m": [
+        0.286642,
+        0.75093
+      ],
+      "animated_local_xz_size_m": [
+        0.564292,
+        0.884257
+      ]
     },
     {
       "name": "CafeManIdle",
-      "archetype": "cafe_couple_man_v1",
+      "archetype": "cafe_couple_man_v2",
       "duration_seconds": 10.0,
       "frame_start": 0,
       "frame_end": 240,
@@ -77,27 +105,60 @@
       "one_shot": false,
       "in_place": true,
       "authored_posture": "narrow seated silhouette inclined toward the woman beside him",
-      "gait": "three shallow breaths with the eyes held down at the counter",
+      "gait": "three uneven silent left-hand taps on the counter between shallow breaths",
       "keyed_bone_count": 31,
-      "loop_max_error": 1e-06,
+      "loop_max_error": 2e-06,
       "root_translation_range_m": [
         0.0,
         0.0,
         0.0
       ],
+      "motion_beats": [
+        {
+          "name": "tap",
+          "normalized_time": 0.22
+        },
+        {
+          "name": "tap",
+          "normalized_time": 0.33
+        },
+        {
+          "name": "tap",
+          "normalized_time": 0.46
+        }
+      ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.458887,
-      "perch_seat_height_max_m": 0.458887,
-      "perch_pelvis_lift_m": 0.023301,
-      "perch_contact_parts": [
-        "GEO_Sole.R"
+      "perch_seat_height_min_m": 0.492564,
+      "perch_seat_height_max_m": 0.492564,
+      "perch_support_contact_min_m": 0.818487,
+      "perch_support_contact_max_m": 0.818487,
+      "perch_support_radius_m": 0.16786,
+      "perch_pelvis_lift_m": 0.019735,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.017931
       ],
-      "seated_drop_m": 0.482188
+      "perch_contact_parts": [
+        "GEO_Shoe.R"
+      ],
+      "seated_drop_m": 0.512299,
+      "animated_local_xz_min_m": [
+        -0.410706,
+        -0.131673
+      ],
+      "animated_local_xz_max_m": [
+        0.489589,
+        0.717384
+      ],
+      "animated_local_xz_size_m": [
+        0.900295,
+        0.849057
+      ]
     },
     {
       "name": "CafeManDrink",
-      "archetype": "cafe_couple_man_v1",
+      "archetype": "cafe_couple_man_v2",
       "duration_seconds": 4.75,
       "frame_start": 0,
       "frame_end": 114,
@@ -107,7 +168,7 @@
       "authored_posture": "seated toward the woman with the near forearm resting low",
       "gait": "right hand lifts the cup in the same normalized rhythm as the woman",
       "keyed_bone_count": 31,
-      "loop_max_error": 1e-06,
+      "loop_max_error": 0.0,
       "root_translation_range_m": [
         0.0,
         0.0,
@@ -115,25 +176,44 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.458887,
-      "perch_seat_height_max_m": 0.458887,
-      "perch_pelvis_lift_m": 0.023301,
-      "perch_contact_parts": [
-        "GEO_Sole.R"
+      "perch_seat_height_min_m": 0.492564,
+      "perch_seat_height_max_m": 0.492564,
+      "perch_support_contact_min_m": 0.818487,
+      "perch_support_contact_max_m": 0.818487,
+      "perch_support_radius_m": 0.16786,
+      "perch_pelvis_lift_m": 0.019735,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.017931
       ],
-      "seated_drop_m": 0.482188
+      "perch_contact_parts": [
+        "GEO_Shoe.R"
+      ],
+      "seated_drop_m": 0.512299,
+      "animated_local_xz_min_m": [
+        -0.409284,
+        -0.152834
+      ],
+      "animated_local_xz_max_m": [
+        0.392881,
+        0.747995
+      ],
+      "animated_local_xz_size_m": [
+        0.802165,
+        0.900829
+      ]
     },
     {
       "name": "CafeWomanIdle",
-      "archetype": "cafe_couple_woman_v1",
+      "archetype": "cafe_couple_woman_v2",
       "duration_seconds": 11.0,
       "frame_start": 0,
       "frame_end": 264,
       "loop": true,
       "one_shot": false,
       "in_place": true,
-      "authored_posture": "seated in red, folded paper held near the cheek and gaze lowered",
-      "gait": "two uneven breaths while the paper remains suspended before use",
+      "authored_posture": "seated in red with a lit cigarette in the free right hand",
+      "gait": "one slow cigarette drag, a lowered hand and a restrained exhale",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
@@ -141,19 +221,60 @@
         0.0,
         0.0
       ],
+      "motion_beats": [
+        {
+          "name": "cigarette_drag",
+          "normalized_time": 0.31
+        },
+        {
+          "name": "exhale",
+          "normalized_time": 0.58
+        }
+      ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.454873,
-      "perch_seat_height_max_m": 0.454873,
-      "perch_pelvis_lift_m": 0.023721,
-      "perch_contact_parts": [
-        "GEO_Sole.R"
+      "perch_seat_height_min_m": 0.48865,
+      "perch_seat_height_max_m": 0.48865,
+      "perch_support_contact_min_m": 0.818276,
+      "perch_support_contact_max_m": 0.818276,
+      "perch_support_radius_m": 0.15879,
+      "perch_pelvis_lift_m": 0.020968,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.018908
       ],
-      "seated_drop_m": 0.478593
+      "perch_contact_parts": [
+        "GEO_Shoe.R"
+      ],
+      "seated_drop_m": 0.509617,
+      "cigarette_drag_filter_lip_surface_gap_min_m": 0.003637,
+      "cigarette_drag_filter_lip_surface_gap_max_m": 0.003637,
+      "cigarette_drag_filter_lip_center_distance_min_m": 0.012471,
+      "cigarette_drag_filter_lip_center_distance_max_m": 0.012471,
+      "cigarette_drag_axis_angle_max_degrees": 0.028397,
+      "cigarette_drag_socket_lip_alignment_min": 0.944842,
+      "cigarette_drag_ember_lip_distance_min_m": 0.092005,
+      "cigarette_drag_ember_farther_margin_min_m": 0.079534,
+      "cigarette_idle_cigarette_head_gap_min_m": 0.003616,
+      "cigarette_idle_hand_head_gap_min_m": 0.054593,
+      "cigarette_drag_frames_sampled": 27,
+      "cigarette_idle_frames_sampled": 265,
+      "animated_local_xz_min_m": [
+        -0.371593,
+        -0.168243
+      ],
+      "animated_local_xz_max_m": [
+        0.400168,
+        0.481497
+      ],
+      "animated_local_xz_size_m": [
+        0.771762,
+        0.64974
+      ]
     },
     {
       "name": "CafeWomanDrink",
-      "archetype": "cafe_couple_woman_v1",
+      "archetype": "cafe_couple_woman_v2",
       "duration_seconds": 4.75,
       "frame_start": 0,
       "frame_end": 114,
@@ -161,7 +282,7 @@
       "one_shot": true,
       "in_place": true,
       "authored_posture": "seated in red with one elbow held near the counter",
-      "gait": "left hand lifts the cup while the folded paper stays in the right fingers",
+      "gait": "left hand lifts the cup while the cigarette stays in the right fingers",
       "keyed_bone_count": 31,
       "loop_max_error": 1e-06,
       "root_translation_range_m": [
@@ -171,17 +292,36 @@
       ],
       "seated": true,
       "perched": true,
-      "perch_seat_height_min_m": 0.454873,
-      "perch_seat_height_max_m": 0.454873,
-      "perch_pelvis_lift_m": 0.023721,
-      "perch_contact_parts": [
-        "GEO_Sole.R"
+      "perch_seat_height_min_m": 0.48865,
+      "perch_seat_height_max_m": 0.48865,
+      "perch_support_contact_min_m": 0.818276,
+      "perch_support_contact_max_m": 0.818276,
+      "perch_support_radius_m": 0.15879,
+      "perch_pelvis_lift_m": 0.020968,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.018908
       ],
-      "seated_drop_m": 0.478593
+      "perch_contact_parts": [
+        "GEO_Shoe.R"
+      ],
+      "seated_drop_m": 0.509617,
+      "animated_local_xz_min_m": [
+        -0.376819,
+        -0.168243
+      ],
+      "animated_local_xz_max_m": [
+        0.399895,
+        0.754756
+      ],
+      "animated_local_xz_size_m": [
+        0.776714,
+        0.922999
+      ]
     },
     {
       "name": "CafeAttendantWipe",
-      "archetype": "cafe_attendant_v1",
+      "archetype": "cafe_attendant_v2",
       "duration_seconds": 9.0,
       "frame_start": 0,
       "frame_end": 216,
@@ -198,11 +338,23 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.532344,
+        -0.156173
+      ],
+      "animated_local_xz_max_m": [
+        0.600075,
+        0.662467
+      ],
+      "animated_local_xz_size_m": [
+        1.132419,
+        0.81864
+      ]
     },
     {
       "name": "CafeAttendantWalk",
-      "archetype": "cafe_attendant_v1",
+      "archetype": "cafe_attendant_v2",
       "duration_seconds": 1.25,
       "frame_start": 0,
       "frame_end": 30,
@@ -212,18 +364,30 @@
       "authored_posture": "standing behind the counter with towel left and coffee pot right",
       "gait": "one small in-place service step cycle without root translation",
       "keyed_bone_count": 31,
-      "loop_max_error": 1e-06,
+      "loop_max_error": 0.0,
       "root_translation_range_m": [
         0.0,
         0.0,
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.537237,
+        -0.288748
+      ],
+      "animated_local_xz_max_m": [
+        0.406553,
+        0.418472
+      ],
+      "animated_local_xz_size_m": [
+        0.943789,
+        0.707219
+      ]
     },
     {
       "name": "CafeAttendantPour",
-      "archetype": "cafe_attendant_v1",
+      "archetype": "cafe_attendant_v2",
       "duration_seconds": 3.5,
       "frame_start": 0,
       "frame_end": 84,
@@ -240,11 +404,23 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.549524,
+        -0.156173
+      ],
+      "animated_local_xz_max_m": [
+        0.397372,
+        0.743659
+      ],
+      "animated_local_xz_size_m": [
+        0.946896,
+        0.899831
+      ]
     },
     {
       "name": "CafeAttendantNotice",
-      "archetype": "cafe_attendant_v1",
+      "archetype": "cafe_attendant_v2",
       "duration_seconds": 2.5,
       "frame_start": 0,
       "frame_end": 60,
@@ -261,8 +437,20 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.529156,
+        -0.156173
+      ],
+      "animated_local_xz_max_m": [
+        0.40132,
+        0.504484
+      ],
+      "animated_local_xz_size_m": [
+        0.930476,
+        0.660656
+      ]
     }
   ],
-  "build_signature": "719156acc69e5094ac07ddfbd61e85e1f92357f90c33bbdf6a56fc24c54a55d0"
+  "build_signature": "c015c05279f54feed7e39134f8e5616769ce6d7326e509224e6e93b2754264c0"
 }

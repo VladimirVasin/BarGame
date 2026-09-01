@@ -27,6 +27,7 @@ namespace BarPromenade
 
             ValidateEnvelope(plan);
             ValidateAnchors(plan);
+            ValidateUpperFloor(plan);
             ValidateFixtures(plan);
             ValidatePaths(plan);
             ValidateComposition(plan);
@@ -73,6 +74,7 @@ namespace BarPromenade
                     plan.ModelLocalBounds,
                     MothersHouseInteriorLayoutPlanner.ModelLocalBounds,
                     AnchorTolerance) ||
+                plan.UpperFloor == null ||
                 !string.Equals(
                     plan.ModelResourcePath,
                     MothersHouseInteriorLayoutPlanner.ModelResourcePath,
@@ -166,31 +168,11 @@ namespace BarPromenade
                     "mother's-house model contract.");
             }
 
-            plan.CameraShot.Validate();
-            if (plan.CameraShot.Kind != HomeCameraShotKind.MainRoom ||
-                !plan.CameraShot.IsInActivationArea(plan.PlayerSpawn) ||
-                Distance(
-                    plan.CameraShot.Position,
-                    MothersHouseInteriorLayoutPlanner.CameraPosition) >
-                    AnchorTolerance ||
-                Distance(
+            ValidateCameraShots(plan);
+            if (Distance(
                     plan.CameraTarget,
                     MothersHouseInteriorLayoutPlanner.CameraTarget) >
                     AnchorTolerance ||
-                Vector3.Angle(
-                    plan.CameraShot.Rotation * Vector3.forward,
-                    plan.CameraTarget - plan.CameraShot.Position) >
-                    CameraAngleTolerance ||
-                Mathf.Abs(
-                    plan.CameraShot.FieldOfView -
-                    MothersHouseInteriorLayoutPlanner
-                        .CameraVerticalFieldOfView) > Tolerance ||
-                !RectMatch(
-                    plan.CameraShot.ActivationBounds,
-                    plan.WalkableBounds) ||
-                !RectMatch(
-                    plan.CameraShot.HoldBounds,
-                    plan.WalkableBounds) ||
                 Mathf.Abs(plan.EntryPosition.z - plan.RoomBounds.yMin) >
                     0.2f ||
                 Mathf.Abs(plan.EntryPosition.x - plan.ExitPosition.x) >
@@ -200,9 +182,206 @@ namespace BarPromenade
                     Tolerance)
             {
                 throw new InvalidOperationException(
-                    "The single fixed shot must preserve the approved " +
-                    "wide southeast cutaway, south-wall entrance and " +
-                    "two-window hearth composition.");
+                    "The ground floor must preserve the approved south-wall " +
+                    "entrance and two-window hearth composition.");
+            }
+        }
+
+        private static void ValidateCameraShots(
+            MothersHouseInteriorLayoutPlan plan)
+        {
+            if (plan.CameraShots.Count != 4)
+            {
+                throw new InvalidOperationException(
+                    "The two-storey mother's house requires four fixed " +
+                    "gameplay shots.");
+            }
+
+            var kinds = new HashSet<HomeCameraShotKind>();
+            for (int index = 0; index < plan.CameraShots.Count; index++)
+            {
+                HomeCameraShot candidate = plan.CameraShots[index];
+                candidate.Validate();
+                if (!kinds.Add(candidate.Kind))
+                {
+                    throw new InvalidOperationException(
+                        $"Camera shot '{candidate.Kind}' is duplicated.");
+                }
+            }
+
+            ValidateCameraShot(
+                RequireCameraShot(plan, HomeCameraShotKind.MainRoom),
+                MothersHouseInteriorLayoutPlanner.CameraPosition,
+                MothersHouseInteriorLayoutPlanner.CameraTarget,
+                MothersHouseInteriorLayoutPlanner.CameraVerticalFieldOfView);
+            ValidateCameraShot(
+                RequireCameraShot(
+                    plan,
+                    HomeCameraShotKind.StairAndUpperCorridor),
+                MothersHouseInteriorLayoutPlanner.StairCameraPosition,
+                MothersHouseInteriorLayoutPlanner.StairCameraTarget,
+                MothersHouseInteriorLayoutPlanner
+                    .UpperCameraVerticalFieldOfView);
+            ValidateCameraShot(
+                RequireCameraShot(
+                    plan,
+                    HomeCameraShotKind.UpperSouthRoom),
+                MothersHouseInteriorLayoutPlanner.SouthRoomCameraPosition,
+                MothersHouseInteriorLayoutPlanner.SouthRoomCameraTarget,
+                MothersHouseInteriorLayoutPlanner
+                    .UpperCameraVerticalFieldOfView);
+            ValidateCameraShot(
+                RequireCameraShot(
+                    plan,
+                    HomeCameraShotKind.UpperNorthRoom),
+                MothersHouseInteriorLayoutPlanner.NorthRoomCameraPosition,
+                MothersHouseInteriorLayoutPlanner.NorthRoomCameraTarget,
+                MothersHouseInteriorLayoutPlanner
+                    .UpperCameraVerticalFieldOfView);
+
+            HomeCameraShot ground = plan.CameraShot;
+            if (ground.Kind != HomeCameraShotKind.MainRoom ||
+                !ground.IsInActivationArea(plan.PlayerSpawn) ||
+                !RectMatch(ground.ActivationBounds, plan.WalkableBounds) ||
+                !RectMatch(ground.HoldBounds, plan.WalkableBounds))
+            {
+                throw new InvalidOperationException(
+                    "The approved wide southeast ground-floor shot drifted.");
+            }
+        }
+
+        private static void ValidateCameraShot(
+            HomeCameraShot shot,
+            Vector3 expectedPosition,
+            Vector3 expectedTarget,
+            float expectedFieldOfView)
+        {
+            if (Distance(shot.Position, expectedPosition) > AnchorTolerance ||
+                Vector3.Angle(
+                    shot.Rotation * Vector3.forward,
+                    expectedTarget - shot.Position) >
+                    CameraAngleTolerance ||
+                Mathf.Abs(shot.FieldOfView - expectedFieldOfView) >
+                    Tolerance)
+            {
+                throw new InvalidOperationException(
+                    $"Camera shot '{shot.Kind}' drifted from its pure pose.");
+            }
+        }
+
+        private static HomeCameraShot RequireCameraShot(
+            MothersHouseInteriorLayoutPlan plan,
+            HomeCameraShotKind kind)
+        {
+            if (!plan.TryGetCameraShot(kind, out HomeCameraShot shot))
+            {
+                throw new InvalidOperationException(
+                    $"The layout is missing camera shot '{kind}'.");
+            }
+
+            return shot;
+        }
+
+        private static void ValidateUpperFloor(
+            MothersHouseInteriorLayoutPlan plan)
+        {
+            MothersHouseInteriorUpperFloorPlan upper = plan.UpperFloor;
+            StairwellFlightPlan stair = upper.StairFlight;
+            float pitch = Mathf.Atan2(
+                stair.TopElevation - stair.BaseElevation,
+                stair.RunLength) * Mathf.Rad2Deg;
+            if (Mathf.Abs(
+                    upper.FloorElevation -
+                    MothersHouseInteriorLayoutPlanner.UpperFloorElevation) >
+                    Tolerance ||
+                Mathf.Abs(
+                    upper.CeilingHeight -
+                    MothersHouseInteriorLayoutPlanner.UpperCeilingHeight) >
+                    Tolerance ||
+                upper.FloorElevation <= plan.RoomHeight ||
+                upper.CeilingHeight - upper.FloorElevation < 2.2f ||
+                !RectMatch(
+                    upper.StairOpeningBounds,
+                    MothersHouseInteriorLayoutPlanner.StairOpeningBounds) ||
+                !RectMatch(
+                    upper.CorridorBounds,
+                    MothersHouseInteriorLayoutPlanner.UpperCorridorBounds) ||
+                !RectMatch(
+                    upper.SouthRoomBounds,
+                    MothersHouseInteriorLayoutPlanner
+                        .UpperSouthRoomBounds) ||
+                !RectMatch(
+                    upper.NorthRoomBounds,
+                    MothersHouseInteriorLayoutPlanner
+                        .UpperNorthRoomBounds) ||
+                upper.SouthRoomBounds.Overlaps(upper.NorthRoomBounds) ||
+                Mathf.Abs(
+                    upper.PartitionX -
+                    MothersHouseInteriorLayoutPlanner.UpperPartitionX) >
+                    Tolerance ||
+                Mathf.Abs(
+                    upper.PartitionThickness -
+                    MothersHouseInteriorLayoutPlanner
+                        .UpperPartitionThickness) > Tolerance ||
+                Mathf.Abs(
+                    upper.RoomDividerZ -
+                    MothersHouseInteriorLayoutPlanner.UpperRoomDividerZ) >
+                    Tolerance ||
+                upper.DoorOpeningWidth < MinimumRouteClearance - Tolerance ||
+                Mathf.Abs(
+                    upper.DoorOpeningHeight -
+                    MothersHouseInteriorLayoutPlanner
+                        .UpperDoorOpeningHeight) > Tolerance ||
+                Mathf.Abs(
+                    upper.SouthDoorCenterZ -
+                    MothersHouseInteriorLayoutPlanner
+                        .UpperSouthDoorCenterZ) > Tolerance ||
+                Mathf.Abs(
+                    upper.NorthDoorCenterZ -
+                    MothersHouseInteriorLayoutPlanner
+                        .UpperNorthDoorCenterZ) > Tolerance ||
+                string.IsNullOrWhiteSpace(stair.Id) ||
+                stair.StepCount !=
+                    MothersHouseInteriorLayoutPlanner.StairStepCount ||
+                Mathf.Abs(
+                    stair.StepRise -
+                    MothersHouseInteriorLayoutPlanner.StairStepRise) >
+                    Tolerance ||
+                Mathf.Abs(
+                    stair.StepDepth -
+                    MothersHouseInteriorLayoutPlanner.StairStepDepth) >
+                    Tolerance ||
+                Mathf.Abs(
+                    stair.Width -
+                    MothersHouseInteriorLayoutPlanner.StairWidth) >
+                    Tolerance ||
+                Mathf.Abs(stair.BaseElevation) > Tolerance ||
+                Mathf.Abs(stair.TopElevation - upper.FloorElevation) >
+                    Tolerance ||
+                Vector2.Distance(stair.Start, new Vector2(-4f, 1.80f)) >
+                    Tolerance ||
+                Vector2.Distance(stair.Direction, Vector2.down) > Tolerance ||
+                pitch >= 45f)
+            {
+                throw new InvalidOperationException(
+                    "The upper storey must keep one continuous safe stair, " +
+                    "a real corridor and exactly two empty rooms.");
+            }
+
+            float halfDoor = upper.DoorOpeningWidth * 0.5f;
+            if (upper.SouthDoorCenterZ - halfDoor <=
+                    upper.SouthRoomBounds.yMin ||
+                upper.SouthDoorCenterZ + halfDoor >=
+                    upper.SouthRoomBounds.yMax ||
+                upper.NorthDoorCenterZ - halfDoor <=
+                    upper.NorthRoomBounds.yMin ||
+                upper.NorthDoorCenterZ + halfDoor >=
+                    upper.NorthRoomBounds.yMax ||
+                upper.CorridorBounds.width <
+                    MinimumRouteClearance - Tolerance)
+            {
+                throw new InvalidOperationException(
+                    "Both upper rooms must open from a capsule-clear corridor.");
             }
         }
 

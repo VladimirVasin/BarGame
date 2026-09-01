@@ -6,6 +6,521 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-02 — The mother is in the chair, and the chair rocks
+
+Her absence was written down three times and the geometry followed the writing,
+so the papers went first: a new `§6` registry row, the level-`0` row that said
+the opposite, `§25`, the art bible's `§10g` "Кресло пусто и неподвижно", and a
+dated accepted exception. What is lifted is her PRESENCE, not the unwritten
+event - the Cat, the dinner and the news are still not written, and she does not
+speak, react or offer an interaction.
+
+She is a new pedestrian archetype rather than a part of the room: the interior
+carries 51 meshes against a 64-renderer cap with ten required anchors, and she
+does not fit there and should not. The shared body library gave her the hero's
+own 31-bone rig for free, so "no less detailed than the hero" needed no second
+pipeline - 45 meshes and 1892 triangles against his 34 and 1984.
+
+Her pipeline is separate from `CityPedestrianAssetSetup`, which serves the other
+fourteen. A `PedestrianDescriptor` reads clip NAMES out of the one shared
+animation bank and declares a walk; hers is a bank of her own and she has never
+walked. Teaching that file a per-descriptor bank and an optional gait for one
+character would rewrite the contract fourteen working characters rest on.
+
+The rock turns the chair, not her. One angle places the chair's two meshes and
+her root, so the timber and the woman cannot disagree; her clip is only
+breathing. The pivot is derived from the runners' own parabola rather than
+chosen - `y = 0.055 + 0.2520 dz^2` gives a radius of curvature of `1.9845 m`
+and a centre at `(0, 2.0395, 1.55)`, which rolls the runners without sliding.
+It drives world poses and reparents nothing: the chair belongs to the imported
+room model, whose renderers the room's own test counts.
+
+Four defects were found and fixed on the way, and three of them fail silently:
+
+- The face atlas is painted in finished skin, and the renderer tint multiplies
+  it. Tinting the patch `mother_skin` applied her complexion twice and returned
+  a face at about a quarter brightness - and every Blender preview still looked
+  correct. `GEO_FaceSurface` is now white and the generator refuses to write a
+  face-atlas manifest for a patch that is not.
+- `apply_face_atlas_uv` hung off the tail of `assign_atlas_uvs`, which only
+  designs with a DETAIL atlas ever call. She has none, so it never ran: her face
+  exported with no UV layer at all and only Unity, two tools later, complained.
+  It now runs from the shared build driver, and the manifest refuses to claim an
+  atlas the geometry cannot sample.
+- The first rock reparented the chair's meshes under a pivot, which would have
+  left the room's renderer count two short.
+- A facing assertion read `Renderer.bounds` on a skinned mesh with
+  `updateWhenOffscreen` off, so it measured the bind pose and reported her nose
+  three millimetres behind her skull. Facing is now read off her root.
+
+The room was too dark to judge any of it, and the cause was the floor lamp. It
+stands BETWEEN the only two places anyone sits, and its `112` degree cone had a
+half-angle of `56`: the hero on the sofa lies `60` degrees off the axis and the
+mother `65`, so the pool landed on bare floor between them and touched neither.
+No aim fixes that - sofa and chair are two and a half metres apart with the lamp
+in the middle - so the cone went to `158` degrees and the intensity from `3.1`
+to `5.4`, which is also what a fabric shade open at the bottom actually does.
+On the user's request a single small warm `Hearth Floor Bounce` was added for
+her face, standing in for the hearth bounce off pale boards that no global
+illumination is here to carry. It is deliberately tiny, short and close -
+`0.24` intensity over a `1.1 m` range - and the room's test pins that leash, so
+it cannot become the `Warm Ceiling Fill` that file already bans.
+
+Verification:
+
+- Blender build is deterministic across repeated runs; the clip measures its
+  seat at `0.5714 m` over her own soles against a drawn cushion of `0.5700`.
+- Focused mother EditMode passed 9/9 and PlayMode 3/3; the room's own
+  `MothersHouseInteriorPlayModeTests` and `MothersHouseSofaSitPlayModeTests`
+  passed with it, 9/9 together, including the amended light contract.
+- The full EditMode suite passed 2046/2053. All six failures were confirmed to
+  be outside this work: the three `RetroSfxLibraryTests` and `CityMiscAssetTests`
+  are red on committed code with both test and subject unmodified,
+  `ExteriorCloudFieldTests` compares two colours that print identically, and
+  `MountainRoadSurfaceAppearanceTests` fails on `Cafe_CoffeeUrns` from a
+  neighbouring agent's live cafe work.
+- Rendered frames judged the result. `NpcHumanV2AssetSetup.RunBatch` was NOT
+  run: it rebuilds the cafe prefabs another agent is editing in this checkout.
+
+Her palette was then lifted, and the zone's own acceptance check decided how.
+It requires age to read through "выцветший пигмент, штопку, починку,
+разномастность" - and faded cloth is LIGHTER than new cloth, not darker. She
+had been authored uniformly dark and uniformly warm, which in a room whose only
+key is an orange hearth is the same as authoring her invisible. The specific
+defect was structural rather than a matter of values: `CLO_CardiganPanel.L/R`,
+the largest surface she turns to a camera, shared `mother_cardigan_dark` with
+the cuffs and buttons, so the panel could not be lightened without lightening
+the trim with it. The panels were split onto their own entry, the garments
+moved into a faded band, and the outer knit took a cool note - separation in
+this room can only come from temperature, because everything the hearth lights
+is already warm. Nothing out-reads the fire, which the same check requires.
+
+Two reds found by the full suite were outside this work but were fixed, because
+one of them was not a stale expectation at all:
+
+- `RetroSfx.GetDefinition` addresses its table by ENUM VALUE, and the two new
+  snow/soil footstep definitions had been placed beside the footstep they
+  belong with while their enum members sit at the end. Thirty of thirty-five
+  effects were returning their neighbour's category, volume, spatial blend and
+  priority - a door creaking at bar settings - and `FootstepSoil` indexed one
+  past the array and threw, which is the very step the village added them for.
+  The definitions were moved into enum order and `GetDefinition` now refuses a
+  table that is out of order instead of serving the wrong sound quietly.
+- `ExteriorCloudFieldTests` compared a colour that has been through the
+  graphics layer with `Is.EqualTo`. In a Linear project that round trip is not
+  bit-exact; the two values agree to three decimals. The comparison is now
+  component-wise within `0.001`.
+
+`CityMiscAssetTests`'s census was re-counted from `83` to `82`, with the cause
+established rather than assumed. The number was last anchored at `0b8776f`
+(`81 -> 83`), and `3713d2d` is the ONLY commit since that changed the city's
+composition. It added `ResolveFacadeCoreKind` / `ResolveRoofCoreKind`, so a
+core dressing is now chosen to suit the anchor it hangs on -
+`IndustrialStacksAndTanks` is a ROOF kind and it is wave-one, an Industrial
+FACADE slot used to receive it anyway, and that is the bug the commit fixed.
+Such a slot now correctly takes `IndustrialPipeRack`, which is not in the
+wave-one set. Nothing was dropped; a prop moved onto the right anchor. The
+reason is recorded beside the number, as the previous re-count recorded its own.
+
+`MountainRoadSurfaceAppearanceTests` was NOT touched. It fails on
+`Cafe_CoffeeUrns` carrying a sheet the road's sweep does not own, and the cafe
+has a surface family of its own (`MountainRoadCafeSurfaceAppearance`) that this
+sweep has never known about. The cafe manifest gained no sheet and no part -
+only the lone patron's three cup meshes were removed - but the cafe PREFAB was
+rebuilt in the working tree by the agent that owns it, and the failure is
+downstream of that rebuild. Fixing it means choosing between skipping the cafe
+root the way `Silent Cafe Tableau` is skipped and folding the cafe sheets into
+the road's sweep, and that is a design decision belonging to the work in
+flight.
+
+Known and deliberate: her face carries all five canonical expressions and
+nothing drives them, on the user's decision - the atlas ships complete and
+undriven, as the stairwell cat's grin ships with no scheduler. At the room's
+fixed camera she reads as a seated figure with a lit face rather than as a
+portrait: she is 7.5 m away and the floor lamp still lights the half of her
+that faces away from the camera.
+
+---
+
+## 2026-09-02 — The mountain cafe pair began a private conversation
+
+The two drinking patrons now own ten stable localization keys apiece in both
+Russian and English. Their authored order is fixed rather than shuffled:
+`Man01 -> Woman01 -> ... -> Man10 -> Woman10 -> loop`. The conversation exists
+only while the player is inside the cafe plan's physical interior. It uses one
+shared over-head text bubble with no voice AudioSource; the sleeper and attendant
+remain silent and the hero is never brought into the exchange.
+
+Each speaker turns the neck and head toward the partner before a line appears
+and settles back afterward. A pending line waits through either patron's Drink
+and through the woman's cigarette lift, plume and return window; its key is neither
+consumed nor skipped. Reserving the pair also prevents the next Drink from
+starting before the complete turn-and-bubble beat has returned control. The
+man's three idle taps remain inside his default clip and are deliberately
+allowed to continue beneath his own text.
+
+The cigarette drag was refitted at the source as well. Its filter sits
+`3.637 mm` from the visible lip surface, the ember remains `92.005 mm` away,
+and the dedicated validator checks contact, direction, hand grip and head
+clearance across all `265` idle frames. Generator `4.5.1` rebuilt the four cast
+sources plus the nine-clip bank; Unity reimported them and rebuilt the staged
+prefabs/provider successfully.
+
+The focused `MountainRoadCafeConversationTests` EditMode selection passed
+`12/12`, covering the fixed loop, both localization catalogs, a due cue held
+through a long prohibited window, Drink reservation, smoke window, tapping
+allowance and bounded look. No full Unity suite or player build was run in fast
+mode.
+
+## 2026-09-01 — The mountain cafe's coffee loop became visible
+
+The authored `0.022 m` empty and `0.101 m` full coffee heights belong to each
+cup's lift root, but the cafe importer had treated them as absolute heights from
+the prefab root. Both enabled liquid meshes consequently sat roughly a metre
+below their cups at floor level. The importer now preserves the imported full
+position, offsets the empty position along prefab up, and validates both
+absolute fill heights and lateral alignment against the manifest. The rebuilt
+`MountainRoadCafe3D.prefab` places both coffee surfaces back inside their cups.
+
+The service timeline previously began on the scene's first frames and advanced
+throughout the `620 m` approach, so early Drink and Pour episodes normally
+completed offscreen. `MountainRoadRoot` now binds the cast to the created player
+and cafe entrance; the pure clock remains paused until the first entry into the
+`16 m` entrance radius. A first `28 m` gate was rejected because its horizontal
+cylinder overlapped a lower hairpin despite the remaining route distance; the
+final gate excludes every route sample before `UpperApproach`. Initial fills of
+`0.44/0.56`, non-overlapping role-local drink windows and distinct sip amounts
+of `0.16/0.18` keep the man and woman from drinking together. The man's first
+observed sip still crosses the `0.30` threshold and reaches flowing Pour in
+under one minute. Only either of those two cups can enter the service queue, so
+refilling one visitor no longer resynchronizes the pair. The sleeping lone
+patron and hero never enter that queue; the silent one-episode cadence remains.
+This user-requested desynchronization is recorded as an accepted exception in
+`ai/architecture-notes.md` and updates both governing bibles.
+
+The first contact pass also exposed why the cups had travelled toward backs and
+why the pot could turn inside out: gameplay had parented props beneath imported
+FBX bones and inherited axes that are not a prop-orientation contract. A drink
+cup now keeps its authored parent, solves its pose in world space, places its
+authored `Grip` exactly on the animated hand, and tips its open rim by at most
+`32°` toward that actor's live
+mouth socket. The rebuilt Drink, carry and Pour poses provide anatomically
+fitted arms without using those bone axes to orient the vessel. The attendant's
+two Wipe contacts and the three service-rail marks were likewise fitted against
+the authored counter top, so the towel crosses the real surface rather than the
+air above it.
+
+A second contact review caught the two remaining discontinuities. The cup's
+authored dock was already centred on its saucer, but the live hand was still
+beside that dock immediately before release, so the final restore exposed a
+sideways snap. The two terminal Drink poses now carry each hand to its own
+real dock grip before release; there is no independent cup glide masking the
+placement. The attendant's Walk and Pour had also been blended back toward the
+low Wipe arm at their shared boundaries, pulling both hand and pot through the
+counter even though the Pour tip itself was aligned. Walk/Pour now retain one
+continuous service-carry chain, and its fitted carry/lift poses keep the whole
+right hand and coffee pot clear of the counter volume while leaving the spout
+over the active cup.
+
+The follow-up seating pass removed the lone patron's cup and Drink action
+entirely. The entrance-side man now owns one looping seated sleep: his butt
+remains supported by the stool while strongly crossed forearms rest on the
+counter, one visibly stacked above the other without intersection, and his head
+rests on the upper arm layer. He is absent from cup lookup, drinking, refill targeting
+and attendant rails. The two remaining handles were turned to the opposite side
+from the earlier build; their Grip anchors and pickup/release hand keys were
+refitted to those new handle positions. The isolated cast bank is consequently
+nine clips: one lone sleep loop, two clips for each member of the pair and four
+attendant clips.
+
+The visible stool geometry, semantic seat anchors and collider descriptors all
+move together from the obsolete `0.4675 m` top to `0.8175 m`. All seven stools
+now meet the measured underside of the seated cast at the butt instead of
+leaving a `0.35 m` gap that made the patrons read as crouching over their seats.
+Cast stations and the stair-free cafe floor remain unchanged; the hero seat uses
+the same raised top.
+
+The two members of the pair now use their long default loops for readable but
+silent business. The man makes three uneven contacts with the counter using his
+free left hand; no AudioSource or impact event accompanies them. The woman's
+folded paper was replaced by one visible cigarette in her free right hand. Its
+ember envelope follows the authored drag, and a small plume rises from that
+same ember during the following exhale pose by reading the presentation's live
+normalized default-idle phase.
+`MountainRoadCafeCigaretteEffect` owns no independent timer, Light or
+AudioSource, so the visual cause and effect cannot drift and the cafe remains
+silent.
+
+The coffee stream is not animation data. During Pour,
+`MountainRoadCafeServicePresentation` reads the animated pot-spout anchor and
+the active cup's `PourTarget` every frame and rebuilds the separate stream
+geometry between those two endpoints. Its start therefore remains in the
+moving spout and its end remains in the moving cup throughout the lift and tip;
+there is no baked world-space arc to drift away from either prop. The three
+service marks moved `0.24 m` toward the counter, placing the animated spout
+about `2.2 mm` from the cup's vertical centreline with a short `0.178 m` drop.
+
+The four cast designs were promoted from their boxy cafe-v1 treatment to
+`cafe_*_v2` under generator `4.5.0`. Curved faces, multi-ring torsos and limbs,
+oriented hands with thumbs, profiled shoes and layered hair/headwear now give
+the same close-read density as the current Hero V2. Each role owns one validated
+`256 x 256` point-filtered detail atlas covering face, clothing, hair/headwear
+and shoes while retaining the shared `Player3DLit` material. The rebuilt lone
+patron, man, woman and attendant contain respectively `41/2,084`, `39/2,060`,
+`40/2,220` and `48/2,244` meshes/triangles, against the current Hero V2's
+`1,984` triangles.
+
+The hero's free counter stool now owns a cafe-only first-person view. Entry stays
+in the ordinary follow camera; once the seated loop begins, the view moves to
+the live pelvis-derived eye point, hides head geometry and accepts bounded look
+input. Standing, cancellation, disable and scene teardown restore the exact
+prior fixed/follow pose, FOV, cinematic-motion state and head renderers.
+
+Focused verification for the earlier coffee/service pass passed. Blender
+regenerated and validated the cafe model;
+`BarPromenade.PlayModeTests.csproj` compiled with no errors, and a compiled
+deterministic timeline probe reproduced the staggered man/woman Drink windows,
+the first `0.28/0.38` threshold result and the next `0.74/0.20` service target.
+The final shipped-scene PlayMode selection was `2/2`: its contact regression
+enforces a horizontal spout-to-cup offset of at most `0.035 m`, checks both
+stream endpoints, demonstrates only one member of the pair drinking at a time,
+and preserves the seated first-person lifecycle; its capture regression wrote
+and visually confirmed the Wipe, staggered Drink and short vertical Pour
+frames. No full Unity suite or player build was run in fast mode. Unrelated
+in-progress Alpine and mother's-house work was preserved.
+The earlier cup-return, counter-clear carry and silent-idle selections
+established the contact invariants that the final fixtures retain: each active
+cup returns to its own dock, the attendant's hand/sleeves/pot sweep stays clear
+of the counter, all three tap contacts meet the top, and the woman's ember
+reaches the drag pose. Those runs predate removal of the lone cup and rail; they
+are not presented as verification of the final two-cup asset bank.
+
+The final cafe environment shape is `48` meshes / `4,568` triangles / `41`
+anchors / five dynamic props after removing the lone cup assembly and its
+unused service rail. Cast generator `4.5.0` emits the nine-clip bank described
+above while retaining the four current Hero V2-density model contracts. The
+documentation-only consolidation of the sleeper, reversed handles and raised
+seats ran no additional Unity suite or player build; focused integration
+verification belongs to the implementation pass.
+
+## 2026-09-01 - The hero can sit on his mother's sofa
+
+The sitting itself is not new and deliberately so: the seat is one
+`CityBenchSeat`, the offer is `CityBenchSitInteraction`, the clips are the
+bus's `BusBoardEnter` / `BusRideLoop` / `BusAlightExit`, and the timeline is
+the shared `PlayerAnimatedInteractionController` entered through
+`BeginPositioned`. `MountainRoadSeatPlanner` already proved that path works in
+an area with no `CityLayout`, so `MothersHouseSofaSeatPlanner` is 200 lines of
+authored numbers and a boot guard, not new machinery. Clause 9 of the
+contextual-animation standard asks for exactly that.
+
+What is specific is the room, and three numbers decided the whole shape.
+
+The cushion top, `0.57`, EXISTS NOWHERE IN THE RUNTIME. The fixture plan
+carries `BaseHeight 0` and `Height 1.33`, and `1.33` is the top of the
+BACKREST; the real seat height lives only in
+`tools/build-mothers-house-interior-3d-model.py:1263`. Taking the plan's own
+number would have docked the hero at a height that shows a prompt, accepts
+`E`, walks him over and never settles - in silence, because
+`PlayerMotor.InteractionVerticalTolerance` is 2 cm and refusal past it is
+mute.
+
+The seat is the SOUTH cushion. `DRESS_Sofa.PatchedThrow` stands a 0.30 m wall
+of folded throw over the north one, which a seated body would pass straight
+through.
+
+`SeatDepth` is `0.44`, not the cushion's `0.62`. The south back cushion is
+rotated `-5` degrees about Z, which carries its front face to `x = -2.4742` at
+seat height; the usable pocket is that to the cushion lip at `-2.04`. The
+cushion's own depth would have put the pelvis inside the upholstery.
+
+THE DEFECT THIS WAS DESIGNED AROUND is the approach. The stair ramp runs
+`x [-4.65, -3.35]` and the sofa's west face is `-2.925`: a 0.425 m gap against
+a 0.64 m capsule. `CityBenchSitPlan.BuildApproachWaypoints` emits a detour
+corner at `x = -3.03` for any hero west of the seat plane - squarely inside
+it - and the prompt reaches those pockets, so it was reachable and silent: the
+walk stalls, and the controller aborts with a warning. No `approachClearance`
+can fix it, because `Mathf.Max(EntryEdgeDistance, ApproachClearance)` floors
+the corner at `-3.00`, still inside the gap. So the seat carries a new
+`frontApproachOnly` flag and `CityBenchSitPlan.IsWithinApproachLane` - the
+exact mirror of the router's own early-out - which makes the corner
+unreachable by construction rather than survivable.
+`ApproachLane_NeverEmitsAWaypointAnywhereOnTheFloor` sweeps a 0.1 m grid over
+the whole room and proves it.
+
+Two additions to the shared seat are additive and default-off
+(`sitPromptKey`, `frontApproachOnly`); the third site,
+`ResolveSeatDockGround`, rebuilds `CityBenchSeat` from nine positional
+arguments and silently drops anything not listed, so both were appended there
+too. `ResolveSeatPromptKey(CityBenchSeatKind)` is untouched - the chess seat
+tests call it - and gained a plan-taking overload beside it.
+
+AND ONE OLD DEFECT, FIXED GENERICALLY. The capsule stays on the dock for the
+whole interaction while only `ModelRoot` is carried onto the seat, and
+`PlayerContactShadow` follows the ROOT. Every seated bench in the game has
+therefore been painting an oval on the ground three quarters of a metre in
+front of the sitter, under nobody. The car seat and the cableway cabin already
+suppressed it; benches never did. It is now suppressed in
+`CityBenchSitInteraction` for all of them, hooked on `Entering` and not
+`Positioning` because through the guided walk the capsule IS the body.
+
+Verification: full EditMode suite; the focused
+`MothersHouseSofaSeatTests|CityChessSeatSitTests|CityBenchRestTests|MountainRoadSeatTests|CityBoardGameTests|LocalizationCatalogTests`
+selection `38/38`; PlayMode `MothersHouseSofaSitPlayModeTests` `3/3` and the
+regression `MothersHouseInteriorPlayModeTests|MountainRoadCafePlayModeTests|CityBusRidePlayModeTests`
+`8/8`. MEASURED in the PlayMode run and asserted rather than logged: the
+seated pelvis lands at `(-2.260, 0.600, -0.600)`, exactly the authored point,
+with the feet at `y 0.168` and `0.146` - they hang, because these are bus
+passenger clips and every seat in the game wears them.
+`Validator_RefusesASeatThatWouldNotWork` was red first and found a real
+defect in the guard it tests: it was validating this file's own constants
+instead of the plan it was handed, which agreed for `CreateAll` and would have
+passed any other plan through. Codex was live in this checkout throughout;
+the `MothersHouse*` and `MountainRoadCafe*` changes in the working tree are
+its work. One Unity run hung for 23 minutes and was killed by PID after
+confirming from its command line that it was mine. No player build.
+
+## 2026-09-01 — The village spring became water, and it goes somewhere
+
+`BuildSpring` drew the catch and the runnel as boxes tinted `SpringWaterColor`
+and textured as LAYERED STONE, and said so in its own comment: the moving
+surface, its sound and the chapel outlet were "the next step, and faking them
+with a stone sheet would be a thing to unpick rather than build on". It was
+unpicked rather than built on.
+
+Water is now a plan. `AlpineVillageBrookPlanner` traces `97.5 m` of brook from
+the catch's overflow lip down to the cableway cut, falling `6.1 m` through
+eight cascades and widening `0.85 m` to `2.34 m`. Two findings shaped the
+route and are recorded in the planner: steepest descent does NOT lead to the
+station - the macro ground's fall line runs about `(-0.43, -0.90)`, west of
+the lane - so the brook meets the western wall and follows its toe to the only
+breach the bowl has, which is the cut the cabin descends. And the terrain's
+two undulation terms reach `0.071 m` of fall per metre against the macro
+plane's `0.078`, so a naive walk sits down in the first dimple; the trace
+carries momentum and the water surface is a running minimum computed
+afterwards, which makes "it only ever descends" true by construction.
+
+The channel is a term in `AlpineVillageTerrainSampler.SampleHeight`, not
+geometry laid on it. The terrain is sampled on a `2 m` grid and a brook is one
+metre wide, so the ground gives a wide shallow swale and the bed and water are
+ribbon geometry inside it - the division the lane already uses.
+`CityWaterSurfaceFactory` gained one method, `CreateRibbonSurface`, keeping
+that factory's contract exactly: top face only, flat-up normals, and no UVs at
+all, because every pattern in the water shader is a function of world XZ.
+`AlpineSpringWaterResources` adds two materials (a still catch, a running
+brook) and borrows the park fountain's falling-column and splash materials
+whole for the seeps and the steps.
+
+Four capture rounds drove the art. The first showed the seeps standing in open
+snow like grave markers and an EMPTY basin with its water lying beside it: the
+ledge did not exist, and the catch was placed by the plot builder while the
+water was placed from the plan. The kit gained `SpringLedge`, `CascadeStep`
+and three `BedStone` variants (generator `3.1.0`, `22` assemblies /
+`48` meshes / `4274` triangles, signature
+`b2d1e885de66c338e5f660847d7cd78f0491c239e65fecc50a1f92a05706dfec`, two
+validate-only runs matching), and the whole feature moved to one owner. The
+second showed the ledge growing through the basin, so the catch is now
+measured off the ledge's own size rather than off the plot. The third showed
+the brook BLACK - a tar stripe through a snowfield, because the city's water
+tones were carried over and this shader emits its colour whole rather than
+lighting an albedo.
+
+Snow keeps off open water through `MeasureSuppression`, from the brook plan's
+own `DistanceOutsideWetGround`, so the drift field and the painted dark band
+cannot disagree. Three water voices were added, each a separate KIND because
+that plan indexes voices by kind and holds one of each: the catch, one riffle
+at the middle of the run, and the loudest step.
+
+On the mountain road, `misc-culvert` has stood at a tenth of the route with a
+stone headwall, a dark cylinder for a bore and a `CulvertWater` sound anchor
+beside it - a sound with nothing making it. `MountainRoadBrookPlanner` traces
+the two short reaches either side of it and the bore now pours. Which side is
+uphill is measured rather than assumed, the outlet is the headwall mirrored
+through the road's centreline, and the road push had to be raised to `5.5 m`
+because the sampler sinks the soil under the asphalt: the road is a trench,
+its fall line points at it, and the first trace ran nine samples into the
+carriageway.
+
+Two existing tests changed, both for defects they were hiding.
+`SnowTreading_PressesDownWhereHeWalks` pressed ONCE at a probe point while
+`SampleVisibleDepth` reads the nearest field vertex out to a metre and `Press`
+reaches `0.55 m` - it passed on grid alignment, not on snow being pressed, and
+now tramples a cell as its own name claims. `IsClearOfEveryApron` now also
+avoids the spring's water, for the reason it already avoids door aprons: a ray
+crossing the brook measures the no-snow-on-water rule instead of the field.
+
+The plan for this work proposed a `52 m` bisse - an alpine water race - to
+connect the spring to the chapel's basin, and the art bible's §10g refused it:
+the spring is "мокрая земля, каменная приёмная чаша и ручеёк вниз, а не
+сооружение". The arithmetic then gave a better answer. The two catches sit
+`51.99 m` apart with `0.309 m` between them, which is `0.59 %` - not a
+gradient, a CONTOUR, because a spring line is level. The link is drawn as
+ground that never dries and nothing else.
+
+Verification: full EditMode `2016` tests, `2009` passed, `6` failed - all six
+pre-existing and none in code touched here (`CityMiscAssetTests`,
+`ExteriorCloudFieldTests`, `MountainRoadSurfaceAppearanceTests`, three
+`RetroSfxLibraryTests`). `MountainRoadSurfaceAppearanceTests` was the one that
+could plausibly have been mine, since this work adds a call to
+`MountainRoadWorldBuilder`; it was proved otherwise by disabling that call and
+re-running, where it failed identically. Focused: `AlpineVillageBrookTests`
+`10/10`, `MountainRoadBrookTests` `5/5`, the `Alpine|Village|Water|Fountain`
+filter `113/113`. `Water_SitsInGroundTheSamplerActuallyOpened` was proved to
+bite by returning the swale term unchanged, which failed with "the ground
+stands 0.144 m ABOVE the water: the brook is buried". Captures reviewed at
+`Captures/AlpineVillage/2*.png` and `Captures/MountainRoad/3*.png`. Codex was
+active in this checkout throughout; the `MothersHouse` changes in the working
+tree are its work, not this task's. No player build was run.
+
+## 2026-09-01 — The mother's house gained a real upper floor
+
+The blank wall behind the sofa now opens onto a continuous nineteen-riser
+wooden stair. Its requested final orientation has the low entrance at the
+north end (`z = +1.80`) and the upper landing at the south end (`z = -2.95`).
+Without moving that flight, its stepped west-side closure now meets the west
+wall and its solid upper-end body continues to the south wall, closing the
+left-of-stair area seen in the approved ground-floor shot.
+The landing connects to a west corridor and two separate, accessible rooms.
+Both rooms are deliberately finished but empty: they add no character,
+function, event, readable text or story claim.
+
+Pure layout data owns the stair flight, opening, upper slab, corridor, rooms,
+doorways, partitions and four height-aware fixed-camera shots. Runtime builds
+the colliders, including one continuous hidden walkable ramp beneath the
+authored steps; the imported Blender model stays passive. Generator `1.4.1`
+rebuilt the source, preview, FBX and manifest at `51 meshes / 7200 triangles`,
+with signature
+`efd6f0076db459cee505ae79d4f783a2907830ecd2999f21ece9cc4481e6f53e`.
+
+Before the final closure request, the focused direct-build, real
+CharacterController traversal and four-shot GPU capture checks passed `3/3`,
+including climbing the reversed stair and entering both rooms. For the final
+closure, the deterministic model validator passed, Unity imported the matching
+`1.4.1` signature into the prefab, and the fresh authored ground-floor preview
+was inspected. A repeated combined PlayMode run could not enter PlayMode
+because unrelated in-progress Alpine brook files currently fail with `CS0117`
+and `CS7036`; those files were left untouched. `git diff --check` passed. No
+full Unity suite or player build was run in fast mode.
+
+## 2026-09-01 — The mother's-house camera cleared the ceiling and the floor gained a finer scale
+
+The fixed southeast camera anchor moved down from `(5.8, 3.15, -2.8)` to
+`(5.8, 2.75, -2.8)`. Its target and `60°` vertical FOV stay unchanged, so the
+fireplace, both windows, table, rocker and sofa retain the approved composition
+while the upper frustum now enters below the ceiling slab. The light honey-oak
+`PlankFloor` atlas cell now carries roughly twice as many, half-width boards and
+shorter staggered lengths. Only that cell's `98,576` pixels changed; a pixel
+comparison found `0` changes across the other fifteen cells.
+
+Generator `1.3.1` rebuilt the Blender source, preview, FBX and manifest at
+`43 meshes / 5196 triangles`, with signature
+`2cd5a7dbad6b7fd32ef1ea79b66dbc127ad2054a23f7b271a6c85c8116e942e9`.
+Unity reimported the sources and rebuilt the runtime prefab. The direct room
+contract plus explicit GPU camera capture passed `2/2`; the resulting
+`Captures/MothersHouseInterior/00-fixed-gameplay-camera.png` was inspected for
+the ceiling clearance and finer floor scale. `git diff --check` passed. No full
+Unity suite or player build was run in fast mode.
+
 ## 2026-09-01 — The mother's room got a visible floor light, a south threshold and a quiet pulse
 
 The over-bright review frame no longer relies on its invisible ceiling point.
@@ -1196,7 +1711,7 @@ a player build were intentionally not run in fast mode.
 
 The accepted Nighthawks-composition pass is implemented, not merely recorded.
 `tools/build-mountain-road-cafe-3d-model.py` now emits one fixed-metre passive
-Blender/FBX set with `51` semantic meshes, `4,970` triangles, `45` anchors, six
+Blender/FBX set with `48` semantic meshes, `4,568` triangles, `41` anchors, five
 dynamic prop assemblies and a measured manifest. The shell, glass corner,
 interior, long counter/return, appliances, seven stools and close props replace
 the old runtime-primitive presentation. The plan remains authoritative for the
@@ -1216,29 +1731,22 @@ the usable `1.6 x 2.28 m` doorway remains unchanged. The glazed frontage's
 luminous head was raised and interlocked `3 mm` into both its top rail and
 fascia, closing the smaller dark reveal without adding a coplanar layer.
 
-The isolated cafe library now contains ten clips. Three environment-owned cups
-lift without their saucers and drain during the patrons' Drink clips; the pair
-shares one exact clock. The attendant loops Wipe, notices a cup only below its
-refill threshold, walks along authored service marks, pours it full from an
-exact exported pot-spout anchor and returns. The pure timeline is hitch-safe
-and never creates a hero target. The hero stool separately gained independent
-seated and approach directions: its dock remains in the open aisle while the
-ordinary seated rig now faces the counter, so no replacement animation was
-needed.
+The isolated cafe library now contains nine clips: one sleeping loop for the
+lone patron, two clips for each member of the pair and four for the attendant.
+The sleeper owns no cup; two environment-owned cups lift without their saucers
+and drain in separate pair Drink windows. Their handles face the side opposite
+the earlier build, with grips and hand poses refitted to match. The attendant
+loops Wipe, notices either cup only below its refill threshold, walks along
+authored service marks, pours it full from an exact exported pot-spout anchor
+and returns. The pure timeline is hitch-safe and never creates a sleeper or hero
+target. All seven stool tops now stand at `0.8175 m`, giving seated butt contact.
+The hero stool keeps independent seated and approach directions: its dock
+remains in the open aisle while the ordinary seated rig faces the counter.
 
-Verification: the environment generator completed its full Blender build and
-validate pass (`51` meshes, `4,970` triangles, `45` anchors, six dynamic props,
-`17` collider descriptors and `overlap_count = 0`); the isolated cast generator
-completed its deterministic build/FBX round-trip with all ten clips and the
-measured pot-spout socket. `MountainRoadCafeAssetSetup.RunBatch` exited `0` and
-rebuilt the environment prefab, four cast prefabs and provider. The focused
-EditMode selection passed the model, collision and hero-seat contracts; its
-first runtime composition exposed two imported-rig binding mistakes, and the
-exact regression rerun passed `19/19`, including all `18` cafe-cast tests and
-the complete Mountain Road world build. Scoped `git diff --check` is clean.
-The entrance follow-up regenerated the environment as `1.0.2` with signature
-`7034eebefe669fc19b75dc2658e7f91e338347917a01003669f1900d1bc59d94`;
-the Unity setup exited `0` and the expanded exact model contract passed `1/1`.
+The earlier authored-environment and cast round-trips established the passive
+geometry, pot-spout and prefab/provider pipeline. Verification of the final
+two-cup, nine-clip and raised-seat follow-up is recorded with its implementation
+pass rather than being inferred from those superseded selections.
 
 ## 2026-08-31 — Two cemetery ravens keep the first sealed grave
 
@@ -5125,10 +5633,10 @@ four more causal sounds; and a third map landmark.
 - **Not done, deliberately:** the cafe sign is a blank enamel board.
   Lettering needs two new glyphs in the shared `CitySignLettering` and
   is worth its own change.
-- **Found and not fixed:** the counter stools sit at `0.4675 m` under a
-  `1.02 m` counter. That is `0.3 m` low for a bar, but the three silent
-  patrons are already posed on them, so raising the row moves the cast
-  and belongs to its own pass. The hero sits at their height.
+- **Resolved in the cafe seating pass:** all seven counter-stool tops now sit
+  at `0.8175 m` under the `1.02 m` counter. Their visible geometry, semantic
+  anchors, collider descriptors and hero seat moved together, and the three
+  seated visitors make real butt contact instead of hovering over short seats.
 - Verification: the focused EditMode `MountainRoad` selection, `81/81`.
   Complete suites, a player build and a rendered smoke were not run.
 
@@ -6324,18 +6832,19 @@ Two reports, one cause, and the second one hid the first.
 ## 2026-08-25 — The mountain cafe has its own silent cast
 
 - Replaced the four generic static counter figures with four isolated staged
-  roles: a lone patron, a neighbouring man/woman couple and an attendant. Each
-  owns a distinct low-poly model and two in-place Generic clips in the dedicated
-  `MountainRoadCafeCast` animation library; the prefabs and serialized provider
-  stay outside the ordinary pedestrian pool.
-- The immutable cast plan preserves semantic role IDs, leaves two stools empty
-  and aligns only the three occupied places with cups. A seeded controller keeps
-  long `18-32 s` global rests, `35-55 s` per-role cooldowns, one active beat at
-  most and one synchronized couple beat. It adds no voices, physics, lights or
-  ambient emitters.
-- Blender's cafe-only validator rebuilt the four models and eight-clip library,
-  proved all three seated contacts against the `0.46 m` stool and the attendant
-  against the floor, and exported a reviewed four-role contact sheet. Unity's
+  roles: a sleeping lone patron, a neighbouring man/woman couple and an
+  attendant. Each owns a distinct low-poly model in the dedicated nine-clip
+  `MountainRoadCafeCast` library; the prefabs and serialized provider stay
+  outside the ordinary pedestrian pool.
+- The immutable cast plan preserves semantic role IDs and leaves four stools
+  empty. Only the pair's two occupied places align with cups; the lone patron
+  sleeps on crossed arms without one. A seeded controller keeps long `18-32 s`
+  rests, at most one drink/refill episode and separate pair drink windows. It
+  adds no voices, physics, lights or ambient emitters.
+- Blender's cafe-only validator rebuilds the four models and nine-clip library,
+  proves the three seated contacts against the real `0.8175 m` stool top and the
+  attendant against the floor, and exports a reviewed four-role contact sheet.
+  Unity's
   asset setup imported the passive prefabs/provider successfully. A live batch
   import also exposed a rebuild ping-pong: the cafe postprocessor had treated
   shared Player assets as cafe-owned source triggers, so neighbouring setup

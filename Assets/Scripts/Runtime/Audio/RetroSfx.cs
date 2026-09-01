@@ -169,42 +169,6 @@ namespace BarPromenade
                 4400f,
                 0.08f,
                 132),
-            // Snow takes the thump out of a step and leaves the grain: all
-            // noise, quieter, and SHORT. The roll-off is high rather than low
-            // - dry snow is a crisp sound, and filtering it down to `2600 Hz`
-            // made it a thud with a whistle in it. The wide pitch variation
-            // is the point: no two steps in snow are alike, and at this
-            // stride a fixed one reads as a machine.
-            new RetroSfxDefinition(
-                RetroSfxId.FootstepSnow,
-                RetroSfxCategory.World,
-                0.13f,
-                0.19f,
-                1f,
-                3,
-                0.075f,
-                3,
-                512,
-                5200f,
-                0.18f,
-                131),
-            // And the trodden path answers back: shorter and drier than
-            // snow, with a knock the snow has not got. This is what makes a
-            // route audible - step off the path and the sound changes before
-            // the eye has finished noticing the ground did.
-            new RetroSfxDefinition(
-                RetroSfxId.FootstepSoil,
-                RetroSfxCategory.World,
-                0.11f,
-                0.22f,
-                1f,
-                3,
-                0.075f,
-                3,
-                512,
-                3600f,
-                0.10f,
-                131),
             new RetroSfxDefinition(
                 RetroSfxId.Door,
                 RetroSfxCategory.World,
@@ -568,7 +532,43 @@ namespace BarPromenade
                 1024,
                 4800f,
                 0.060f,
-                62)
+                62),
+            // Snow takes the thump out of a step and leaves the grain: all
+            // noise, quieter, and SHORT. The roll-off is high rather than low
+            // - dry snow is a crisp sound, and filtering it down to `2600 Hz`
+            // made it a thud with a whistle in it. The wide pitch variation
+            // is the point: no two steps in snow are alike, and at this
+            // stride a fixed one reads as a machine.
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepSnow,
+                RetroSfxCategory.World,
+                0.13f,
+                0.19f,
+                1f,
+                3,
+                0.075f,
+                3,
+                512,
+                5200f,
+                0.18f,
+                131),
+            // And the trodden path answers back: shorter and drier than
+            // snow, with a knock the snow has not got. This is what makes a
+            // route audible - step off the path and the sound changes before
+            // the eye has finished noticing the ground did.
+            new RetroSfxDefinition(
+                RetroSfxId.FootstepSoil,
+                RetroSfxCategory.World,
+                0.11f,
+                0.22f,
+                1f,
+                3,
+                0.075f,
+                3,
+                512,
+                3600f,
+                0.10f,
+                131)
         };
 
         public static int Count => definitions.Length - 1;
@@ -581,7 +581,25 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(nameof(id));
             }
 
-            return definitions[index];
+            RetroSfxDefinition definition = definitions[index];
+
+            // THE TABLE IS ADDRESSED BY ENUM VALUE, so a definition added out
+            // of enum order silently hands every later effect its neighbour's
+            // category, volume, spatial blend and priority - and it looks like
+            // nothing at all until someone notices a door creaking indoors at
+            // bar volume. Two footstep definitions were once grouped beside
+            // the footstep they belonged with while their enum members sat at
+            // the end, and thirty of thirty-five effects came back wrong.
+            // One comparison per lookup turns that back into an error.
+            if (definition.Id != id)
+            {
+                throw new InvalidOperationException(
+                    $"Sound table is out of enum order: slot {index} holds " +
+                    $"'{definition.Id}' where '{id}' belongs. Definitions " +
+                    "must be listed in RetroSfxId order.");
+            }
+
+            return definition;
         }
 
         public static float[] GenerateSamples(RetroSfxId id)

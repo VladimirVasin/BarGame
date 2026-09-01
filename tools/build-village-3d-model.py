@@ -53,7 +53,7 @@ except ImportError as error:  # pragma: no cover - Blender entry point.
 
 
 ROOT = Path(__file__).resolve().parents[1]
-GENERATOR_VERSION = "3.0.0"
+GENERATOR_VERSION = "3.1.0"
 DESIGN_ID = "village_house_archetypes_v3"
 DISPLAY_NAME = "Village House Archetypes 3.0.0"
 
@@ -134,6 +134,9 @@ PREVIEW_DESCRIPTOR_SIZES = {
     "CableGate": (3.20, 0.42, 1.25),
     "RailBridge": (1.35, 3.20, 0.32),
     "SourceBowl": (1.15, 0.75, 0.55),
+    "SpringLedge": (3.40, 2.10, 1.45),
+    "CascadeStep": (1.55, 0.85, 0.40),
+    "BedStone": (0.62, 0.58, 0.34),
 }
 
 
@@ -520,6 +523,10 @@ def triangular_root(angle: float, reach: float, width: float,
 
 
 HOUSE_ARCHETYPE_COUNT = 2
+
+# 43 before the spring gained real water: the ledge its seeps come out from
+# under, the step its cascades fall over and three bed stones.
+EXPECTED_MESH_COUNT = 48
 HOUSE_WALL_TINTS = ("HouseWallA", "HouseWallB")
 HOUSE_FACADE_PLANES = {
     ("House", 0): 0.405,
@@ -1510,6 +1517,160 @@ def build_source_bowl() -> AssemblySpec:
     )
 
 
+def fit_normalized(geometry: Geometry) -> Geometry:
+    """Scales an authored lump to fill the normalized envelope exactly.
+
+    The hand-authored archetypes reach -0.5..0.5 because every number in them
+    was chosen to; a jittered tube cannot, because the jitter is applied after
+    the radius. Rather than tune ring radii against a tolerance until the
+    validator stops complaining - which is fitting the numbers to the test -
+    this measures the lump and scales it, so the envelope is satisfied BY
+    CONSTRUCTION and the shape stays the one that was authored.
+
+    X and Y fill the box; Z sits the lowest vertex on the ground plane and
+    only scales if the mass would otherwise stand out through the top.
+    """
+    low, high = geometry_bounds(geometry)
+    vertices, faces = geometry
+    span_x = max(1e-6, high[0] - low[0])
+    span_y = max(1e-6, high[1] - low[1])
+    mid_x = (high[0] + low[0]) * 0.5
+    mid_y = (high[1] + low[1]) * 0.5
+    scale_x = 1.0 / span_x
+    scale_y = 1.0 / span_y
+    span_z = max(1e-6, high[2] - low[2])
+    scale_z = min(1.0, 1.0 / span_z)
+    return (
+        [
+            (
+                (vertex[0] - mid_x) * scale_x,
+                (vertex[1] - mid_y) * scale_y,
+                -0.5 + (vertex[2] - low[2]) * scale_z,
+            )
+            for vertex in vertices
+        ],
+        list(faces),
+    )
+
+
+def build_spring_ledge() -> AssemblySpec:
+    """The rock the water comes out from under.
+
+    Not a cliff and not a monument: a low outcrop with a brow that overhangs
+    an undercut face, which is the shape that lets several seeps arrive at
+    several heights out of shadow instead of out of one tidy hole.  The
+    art bible's §10g wants "вода выходит из склона", so the mass has to read
+    as part of the hillside - it is broad and squat, and its crown drops
+    below the brow rather than standing up as a peak.
+
+    Bedded strata across the face give the layered-stone sheet something to
+    agree with; without them a smooth lump takes the texture as noise.
+    """
+    mass = irregular_tube_z(
+        (
+            # (z, centre-x, centre-y, radius-x, radius-y, phase)
+            (-0.50, 0.00, 0.075, 0.500, 0.395, 0.00),
+            # Undercut: the belly draws BACK, which is the shadow the
+            # seeps arrive out of.
+            (-0.31, 0.01, 0.135, 0.480, 0.330, 0.72),
+            (-0.12, -0.01, 0.055, 0.495, 0.430, 1.44),
+            # The brow, hanging forward over that undercut.
+            (0.11, 0.015, -0.055, 0.460, 0.455, 2.16),
+            (0.31, 0.00, 0.030, 0.355, 0.350, 2.88),
+            (0.50, -0.025, 0.080, 0.185, 0.205, 3.55),
+        ),
+        sides=11)
+    # Narrower than the mass at their own height, or they read as blades
+    # stuck through the rock rather than as bedding in it - the first render
+    # of this outcrop had exactly that, four spikes out of the left face.
+    upper_stratum = chamfered_box(
+        (0.005, -0.020, 0.055), (0.60, 0.56, 0.070), 0.020)
+    lower_stratum = chamfered_box(
+        (-0.015, 0.020, -0.215), (0.68, 0.52, 0.055), 0.018)
+    # One block calved off the face and standing in front of it, so the toe
+    # is not a clean sweep of one silhouette.
+    fallen = chamfered_box(
+        (-0.285, -0.330, -0.395), (0.30, 0.26, 0.21), 0.030)
+    return AssemblySpec(
+        "SpringLedge", 0, "normalized_to_descriptor",
+        (
+            PartSpec("GEO_VIL_SpringLedge_Stone", "SpringLedge", 0,
+                     "Stone", "LayeredStone", "SourceStone",
+                     fit_normalized(
+                         merge(mass, upper_stratum,
+                               lower_stratum, fallen))),
+        ),
+    )
+
+
+def build_cascade_step() -> AssemblySpec:
+    """A stone lip the brook falls over.
+
+    Wider than it is deep and worn smooth on the nose, because that is the
+    edge the water has been running across.  It is bedded INTO the channel
+    rather than standing on it, so the sunk rear half is deliberate.
+    """
+    slab = chamfered_box((0.0, 0.06, -0.14), (1.0, 0.88, 0.62), 0.045)
+    nose = chamfered_box((0.0, -0.335, 0.145), (0.90, 0.33, 0.26), 0.070)
+    shoulder_left = chamfered_box(
+        (-0.415, -0.11, 0.230), (0.17, 0.44, 0.30), 0.040)
+    shoulder_right = chamfered_box(
+        (0.400, -0.06, 0.185), (0.20, 0.40, 0.24), 0.038)
+    return AssemblySpec(
+        "CascadeStep", 0, "normalized_to_descriptor",
+        (
+            PartSpec("GEO_VIL_CascadeStep_Stone", "CascadeStep", 0,
+                     "Stone", "LayeredStone", "SourceStone",
+                     fit_normalized(
+                         merge(slab, nose,
+                               shoulder_left, shoulder_right))),
+        ),
+    )
+
+
+# Three stones for the bed, each a different lump.  The brief's one rule
+# about them is the useful one: no repeating arrangement of identical rocks,
+# which needs the variants to differ in SILHOUETTE and not only in yaw.
+BED_STONE_VARIANT_COUNT = 3
+
+BED_STONE_VARIANTS = (
+    # (squash, lean-x, lean-y, phase)
+    (0.62, 0.030, -0.020, 0.35),
+    (0.44, -0.055, 0.035, 1.15),
+    (0.78, 0.015, 0.045, 2.05),
+)
+
+
+def build_bed_stone(variant: int) -> AssemblySpec:
+    """A rounded stone, part sunk, of the kind water leaves behind."""
+    squash, lean_x, lean_y, phase = BED_STONE_VARIANTS[variant]
+    rings = []
+    steps = 5
+    for index in range(steps):
+        amount = index / (steps - 1)
+        z = -0.5 + amount
+        # Widest a third of the way up, then closing: a boulder, not a cone.
+        radius = 0.5 * (0.72 + 0.46 * math.sin((amount * 0.82 + 0.16) * math.pi))
+        rings.append((
+            -0.5 + amount * squash,
+            lean_x * amount,
+            lean_y * amount,
+            radius,
+            radius * (0.86 + 0.18 * amount),
+            phase + amount * 1.7,
+        ))
+    return AssemblySpec(
+        "BedStone", variant, "normalized_to_descriptor",
+        (
+            PartSpec("GEO_VIL_BedStone_Variant%02d_Stone" % variant,
+                     "BedStone", variant, "Stone", "LayeredStone",
+                     "SourceStone",
+                     fit_normalized(
+                         irregular_tube_z(tuple(rings), sides=9))),
+        ),
+    )
+
+
 def make_assemblies() -> tuple[AssemblySpec, ...]:
     return (
         *(build_village_house(index)
@@ -1525,6 +1686,9 @@ def make_assemblies() -> tuple[AssemblySpec, ...]:
         build_cable_gate(),
         build_rail_bridge(),
         build_source_bowl(),
+        build_spring_ledge(),
+        build_cascade_step(),
+        *(build_bed_stone(index) for index in range(BED_STONE_VARIANT_COUNT)),
     )
 
 
@@ -1736,6 +1900,9 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         "CableGate": 1,
         "RailBridge": 1,
         "SourceBowl": 1,
+        "SpringLedge": 1,
+        "CascadeStep": 1,
+        "BedStone": BED_STONE_VARIANT_COUNT,
     }
     expected_roles = {
         **{("House", index):
@@ -1755,6 +1922,10 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
         ("CableGate", 0): ("Timber", "Cable"),
         ("RailBridge", 0): ("Rails", "Sleepers"),
         ("SourceBowl", 0): ("Stone",),
+        ("SpringLedge", 0): ("Stone",),
+        ("CascadeStep", 0): ("Stone",),
+        **{("BedStone", index): ("Stone",)
+           for index in range(BED_STONE_VARIANT_COUNT)},
     }
     names: set[str] = set()
     keys: set[tuple[str, int]] = set()
@@ -1823,8 +1994,9 @@ def validate_assemblies(assemblies: Sequence[AssemblySpec]) -> None:
                 masonry_high[0] < 0.46):
             problems.append(
                 "TopHouse lost its timber-main/masonry-+X-wing composition")
-    if len(names) != 43:
-        problems.append(f"mesh count is {len(names)}, expected 43")
+    if len(names) != EXPECTED_MESH_COUNT:
+        problems.append(
+            f"mesh count is {len(names)}, expected {EXPECTED_MESH_COUNT}")
     total_triangles = sum(triangle_count(part.geometry)
                           for assembly in assemblies
                           for part in assembly.parts)

@@ -19,7 +19,25 @@ namespace BarPromenade
         // `5` was the firewood settling in the mine cart. The cart went out
         // of the village with the adit; the number stays as a hole.
         WordlessHumBehindWall = 6,
-        Count = 7
+
+        /// <summary>The brook running over its own bed and stones.</summary>
+        BrookRiffle = 7,
+
+        /// <summary>A step the water falls over. Louder, and local to it.
+        /// </summary>
+        CascadeFall = 8,
+
+        /// <summary>
+        /// The spring's own catch under the ledge.
+        ///
+        /// A separate kind from <see cref="SourceWater"/>, which is the
+        /// chapel's basin, because the soundscape indexes its voices BY KIND
+        /// and two anchors sharing one would collide - and because they are
+        /// not the same sound anyway: this one has seeps falling into it,
+        /// and the chapel's is a full basin standing still.
+        /// </summary>
+        SpringCatchWater = 9,
+        Count = 10
     }
 
     /// <summary>
@@ -285,6 +303,25 @@ namespace BarPromenade
             "village-sound-dog-behind-fence";
         public const string SourceWaterAnchorId =
             "village-sound-source-water";
+
+        public const string SpringCatchAnchorId =
+            "village-sound-spring-catch";
+        public const string BrookRiffleAnchorId =
+            "village-sound-brook-riffle";
+        public const string CascadeFallAnchorId =
+            "village-sound-cascade-fall";
+        /// <summary>
+        /// The visible owners of the spring's three water voices. They are
+        /// three different objects - the stone catch, the channel and one
+        /// step - and each names its own, because this plan's rule is that
+        /// every sound has a visible thing it comes out of, and because the
+        /// anchors are indexed by owner as well as by kind.
+        /// </summary>
+        public const string SpringCatchOwnerStableId =
+            "village-spring-catch";
+
+        public const string BrookChannelOwnerStableId =
+            "village-brook-channel";
         public const string WordlessHumAnchorId =
             "village-sound-wordless-hum";
 
@@ -337,6 +374,7 @@ namespace BarPromenade
                 CreateSourceWaterAnchor(village, chapel),
                 CreateWordlessHumAnchor(humHouse)
             };
+            AppendBrookAnchors(village, anchors);
             return new AlpineVillageSoundscapePlan(village.Seed, anchors);
         }
 
@@ -393,6 +431,77 @@ namespace BarPromenade
                 dog,
                 gate,
                 house.Facing);
+        }
+
+        /// <summary>
+        /// The spring itself, and the two loudest steps on the way down.
+        ///
+        /// Audio takes every one of these from the BROOK PLAN, the way the
+        /// chapel's basin sound already takes its place from the path plan:
+        /// a sound whose position is guessed drifts away from the thing it
+        /// is supposed to be coming from the first time that thing moves.
+        /// </summary>
+        private static void AppendBrookAnchors(
+            AlpineVillagePlan village,
+            ICollection<AlpineVillageSoundAnchorDescriptor> anchors)
+        {
+            AlpineVillageBrookPlan brook = village.Brook;
+            if (brook == null || brook.Samples.Count < 4)
+            {
+                return;
+            }
+
+            // The catch, which is where a person actually stands.
+            anchors.Add(new AlpineVillageSoundAnchorDescriptor(
+                SpringCatchAnchorId,
+                SpringCatchOwnerStableId,
+                AlpineVillageSoundKind.SpringCatchWater,
+                brook.BowlCenter + Vector3.up * 0.30f,
+                brook.BowlCenter,
+                brook.LedgeFacing));
+
+            // ONE riffle, at the middle of the run.
+            //
+            // Not a chain of them: this soundscape carries exactly one voice
+            // per kind and indexes them by it, so a second `BrookRiffle`
+            // collides on the key. That is the system's shape rather than an
+            // oversight, and it suits the brief anyway - the water is asked
+            // to be heard NEAR itself and not across the mountain. Three
+            // water voices spread down the brook (the catch at the head, the
+            // riffle in the middle, the loudest step below) is the coverage,
+            // and each keeps a small sphere.
+            AlpineVillageBrookSample middle =
+                brook.Samples[brook.Samples.Count / 2];
+            anchors.Add(new AlpineVillageSoundAnchorDescriptor(
+                BrookRiffleAnchorId,
+                BrookChannelOwnerStableId,
+                AlpineVillageSoundKind.BrookRiffle,
+                middle.Position + Vector3.up * 0.22f,
+                middle.Position,
+                middle.Right));
+
+            // And the tallest step, which is the one worth hearing.
+            AlpineVillageBrookCascade loudest = default;
+            bool found = false;
+            for (int index = 0; index < brook.Cascades.Count; index++)
+            {
+                if (!found || brook.Cascades[index].Drop > loudest.Drop)
+                {
+                    loudest = brook.Cascades[index];
+                    found = true;
+                }
+            }
+
+            if (found)
+            {
+                anchors.Add(new AlpineVillageSoundAnchorDescriptor(
+                    CascadeFallAnchorId,
+                    loudest.StableId,
+                    AlpineVillageSoundKind.CascadeFall,
+                    loudest.Lip + Vector3.up * 0.18f,
+                    loudest.Lip,
+                    loudest.Forward));
+            }
         }
 
         private static AlpineVillageSoundAnchorDescriptor

@@ -54,13 +54,14 @@ namespace BarPromenade.Editor
             "Assets/Resources/Materials/CityNoirEmission.mat";
         private const string ExpectedDesignId =
             "mountain_road_cafe_nighthawks_v1";
-        private const int ExpectedMeshCount = 51;
+        private const int ExpectedMeshCount = 48;
         private const int ExpectedStoolCount = 7;
-        private const int ExpectedCupCount = 3;
+        private const int ExpectedCupCount = 2;
         private const int ExpectedColliderCount = 17;
         private const int MaximumTriangles = 45000;
         private const int MaximumRenderers = 90;
         private const float MeasureTolerance = 0.035f;
+        private const float FillPositionTolerance = 0.002f;
 
         private static readonly string[] TexturePaths =
         {
@@ -88,13 +89,10 @@ namespace BarPromenade.Editor
             "Cast.PairMan",
             "Cast.PairWoman",
             "Cast.Attendant",
-            "Cup.Lone",
             "Cup.PairMan",
             "Cup.PairWoman",
-            "PourTarget.Lone",
             "PourTarget.PairMan",
             "PourTarget.PairWoman",
-            "Grip.Lone",
             "Grip.PairMan",
             "Grip.PairWoman",
             "PotDock",
@@ -105,7 +103,6 @@ namespace BarPromenade.Editor
             "ServiceRail.00",
             "ServiceRail.01",
             "ServiceRail.02",
-            "ServiceRail.03",
             "Light.WarmCounter",
             "Light.ColdService",
             "Light.ExteriorWash",
@@ -387,15 +384,11 @@ namespace BarPromenade.Editor
                     Vector3 fullLocalPosition = Vector3.zero;
                     if (liquidTransform != null)
                     {
-                        emptyLocalPosition = ConvertRootHeightToParentLocalPosition(
+                        fullLocalPosition = liquidTransform.localPosition;
+                        emptyLocalPosition = OffsetAlongPrefabUp(
                             root.transform,
                             liquidTransform,
-                            prop.empty_local_y);
-                        fullLocalPosition = ConvertRootHeightToParentLocalPosition(
-                            root.transform,
-                            liquidTransform,
-                            prop.full_local_y);
-                        liquidTransform.localPosition = fullLocalPosition;
+                            prop.empty_local_y - prop.full_local_y);
                     }
 
                     propBindings.Add(new MountainRoadCafeDynamicPropBinding(
@@ -524,7 +517,7 @@ namespace BarPromenade.Editor
                 }
             }
 
-            foreach (string owner in new[] { "Lone", "PairMan", "PairWoman" })
+            foreach (string owner in new[] { "PairMan", "PairWoman" })
             {
                 if (!registry.TryGetProp(
                         $"Cup.{owner}",
@@ -534,7 +527,15 @@ namespace BarPromenade.Editor
                     cup.PourTarget == null ||
                     cup.LiquidTransform == null ||
                     cup.LiquidRenderer == null ||
-                    !HasUpwardFillTravel(registry.transform, cup))
+                    !HasUpwardFillTravel(registry.transform, cup) ||
+                    !HasAuthoredFillHeights(
+                        registry.transform,
+                        cup,
+                        manifest.dynamic_props.Single(prop =>
+                            string.Equals(
+                                prop.name,
+                                $"Cup.{owner}",
+                                StringComparison.Ordinal))))
                 {
                     problems.Add($"cup prop '{owner}' has an incomplete lift/fill binding");
                 }
@@ -688,7 +689,7 @@ namespace BarPromenade.Editor
                 StringComparer.Ordinal);
             foreach (string required in new[]
             {
-                "Cup.Lone", "Cup.PairMan", "Cup.PairWoman",
+                "Cup.PairMan", "Cup.PairWoman",
                 "PourStream", "ServicePot", "ServiceTowel"
             })
             {
@@ -947,10 +948,10 @@ namespace BarPromenade.Editor
             }
         }
 
-        private static Vector3 ConvertRootHeightToParentLocalPosition(
+        private static Vector3 OffsetAlongPrefabUp(
             Transform prefabRoot,
             Transform liquidTransform,
-            float authoredMeters)
+            float offsetMeters)
         {
             Transform parent = liquidTransform != null
                 ? liquidTransform.parent
@@ -961,11 +962,9 @@ namespace BarPromenade.Editor
                     "Cafe liquid mesh has no parent transform.");
             }
 
-            Vector3 rootLocalPosition = prefabRoot.InverseTransformPoint(
-                liquidTransform.position);
-            rootLocalPosition.y = authoredMeters;
             return parent.InverseTransformPoint(
-                prefabRoot.TransformPoint(rootLocalPosition));
+                liquidTransform.position +
+                prefabRoot.TransformVector(Vector3.up * offsetMeters));
         }
 
         private static bool HasUpwardFillTravel(
@@ -983,6 +982,35 @@ namespace BarPromenade.Editor
             Vector3 fullWorld = parent.TransformPoint(cup.FullLocalPosition);
             return Vector3.Dot(fullWorld - emptyWorld, prefabRoot.up) >
                 MeasureTolerance;
+        }
+
+        private static bool HasAuthoredFillHeights(
+            Transform prefabRoot,
+            MountainRoadCafeDynamicPropBinding cup,
+            CafeDynamicProp authored)
+        {
+            if (prefabRoot == null || cup == null || authored == null ||
+                cup.LiftRoot == null || cup.LiquidTransform == null ||
+                cup.LiquidTransform.parent == null)
+            {
+                return false;
+            }
+
+            Transform parent = cup.LiquidTransform.parent;
+            Vector3 emptyOffset = prefabRoot.InverseTransformVector(
+                parent.TransformPoint(cup.EmptyLocalPosition) -
+                cup.LiftRoot.position);
+            Vector3 fullOffset = prefabRoot.InverseTransformVector(
+                parent.TransformPoint(cup.FullLocalPosition) -
+                cup.LiftRoot.position);
+            return Mathf.Abs(emptyOffset.y - authored.empty_local_y) <=
+                       FillPositionTolerance &&
+                   Mathf.Abs(fullOffset.y - authored.full_local_y) <=
+                       FillPositionTolerance &&
+                   new Vector2(emptyOffset.x, emptyOffset.z).sqrMagnitude <=
+                       FillPositionTolerance * FillPositionTolerance &&
+                   new Vector2(fullOffset.x, fullOffset.z).sqrMagnitude <=
+                       FillPositionTolerance * FillPositionTolerance;
         }
 
         private static void AssertBoundsMatchManifest(

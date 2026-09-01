@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-mothers-house-interior-3d-model.py",
-  "generator_version": "1.3.0",
+  "generator_version": "1.4.1",
   "blender_version": "5.0.1",
   "design_id": "mothers_house_interior_v1",
   "display_name": "Bar Promenade Mother's House Interior",
@@ -8,6 +8,32 @@
     "width": 10.0,
     "depth": 8.0,
     "height": 3.4
+  },
+  "upper_storey_m": {
+    "floor_elevation": 3.54,
+    "ceiling_height": 5.9,
+    "stair_center_x": -4.0,
+    "stair_start_z": 1.8,
+    "stair_direction_z": -1.0,
+    "stair_step_count": 19,
+    "stair_step_rise": 0.1863157894736842,
+    "stair_step_depth": 0.25,
+    "stair_width": 1.3,
+    "stair_opening": [
+      -4.88,
+      -3.05,
+      -3.18,
+      1.82
+    ],
+    "corridor_clear_width": 1.4300000000000002,
+    "door_width": 1.2,
+    "door_height": 2.2,
+    "door_centers_z": [
+      -1.85,
+      1.85
+    ],
+    "room_count": 2,
+    "furnished": false
   },
   "wall_thickness_m": 0.24,
   "floor_thickness_m": 0.18,
@@ -58,7 +84,9 @@
       -1.72,
       1.5,
       1.45
-    ]
+    ],
+    "upper_room_count": 2,
+    "upper_rooms_furnished": false
   },
   "spawn_forward_unity": [
     0.0,
@@ -113,7 +141,7 @@
   "bounds_max": [
     5.12,
     4.12,
-    3.54
+    6.04
   ],
   "unity_bounds_min": [
     -5.12,
@@ -122,11 +150,11 @@
   ],
   "unity_bounds_max": [
     5.12,
-    3.54,
+    6.04,
     4.12
   ],
-  "mesh_count": 43,
-  "triangle_count": 5196,
+  "mesh_count": 51,
+  "triangle_count": 7200,
   "anchors": [
     {
       "name": "ANCHOR_Camera",
@@ -134,11 +162,11 @@
       "local_position": [
         5.8,
         -2.8,
-        3.15
+        2.75
       ],
       "unity_local_position": [
         5.8,
-        3.15,
+        2.75,
         -2.8
       ]
     },
@@ -456,43 +484,6 @@
       ]
     },
     {
-      "name": "FIX_Ceiling",
-      "role": "ceiling",
-      "group": "fixed",
-      "sheet": "CeilingPlaster",
-      "emissive": false,
-      "casts_shadows": true,
-      "tint": [
-        0.82,
-        0.77,
-        0.64,
-        1.0
-      ],
-      "colliders": [],
-      "vertices": 8,
-      "triangles": 12,
-      "bounds_min": [
-        -5.0,
-        -4.0,
-        3.4
-      ],
-      "bounds_max": [
-        5.0,
-        4.0,
-        3.54
-      ],
-      "unity_bounds_min": [
-        -5.0,
-        3.4,
-        -4.0
-      ],
-      "unity_bounds_max": [
-        5.0,
-        3.54,
-        4.0
-      ]
-    },
-    {
       "name": "FIX_Skirting",
       "role": "skirting",
       "group": "fixed",
@@ -638,6 +629,339 @@
         1.84,
         2.16,
         -3.7
+      ]
+    },
+    {
+      "name": "FIX_InterstoreyCeiling",
+      "role": "interstorey_ceiling",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.82,
+        0.77,
+        0.64,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -5.0,
+        -4.0,
+        3.4
+      ],
+      "bounds_max": [
+        5.0,
+        4.0,
+        3.54
+      ],
+      "unity_bounds_min": [
+        -5.0,
+        3.4,
+        -4.0
+      ],
+      "unity_bounds_max": [
+        5.0,
+        3.54,
+        4.0
+      ]
+    },
+    {
+      "name": "FIX_UpperFloor",
+      "role": "upper_floor",
+      "group": "fixed",
+      "sheet": "PlankFloor",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.55,
+        0.3,
+        0.13,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -5.0,
+        -4.0,
+        3.54
+      ],
+      "bounds_max": [
+        5.0,
+        4.0,
+        3.558
+      ],
+      "unity_bounds_min": [
+        -5.0,
+        3.54,
+        -4.0
+      ],
+      "unity_bounds_max": [
+        5.0,
+        3.558,
+        4.0
+      ]
+    },
+    {
+      "name": "FIX_Stair.Steps",
+      "role": "stair",
+      "group": "fixed",
+      "sheet": "PlankFloor",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.55,
+        0.3,
+        0.13,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 624,
+      "triangles": 1092,
+      "bounds_min": [
+        -4.886,
+        -3.886,
+        0.0
+      ],
+      "bounds_max": [
+        -3.35,
+        1.806,
+        3.54
+      ],
+      "unity_bounds_min": [
+        -4.886,
+        0.0,
+        -3.886
+      ],
+      "unity_bounds_max": [
+        -3.35,
+        3.54,
+        1.806
+      ]
+    },
+    {
+      "name": "FIX_Stair.Rail",
+      "role": "stair_guard",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 224,
+      "bounds_min": [
+        -3.3325,
+        -2.8625,
+        0.186316
+      ],
+      "bounds_max": [
+        -3.2275,
+        1.7125,
+        4.494925
+      ],
+      "unity_bounds_min": [
+        -3.3325,
+        0.186316,
+        -2.8625
+      ],
+      "unity_bounds_max": [
+        -3.2275,
+        4.494925,
+        1.7125
+      ]
+    },
+    {
+      "name": "FIX_UpperWalls",
+      "role": "upper_wall",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.64,
+        0.48,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        -5.12,
+        -4.12,
+        3.54
+      ],
+      "bounds_max": [
+        5.12,
+        4.12,
+        5.9
+      ],
+      "unity_bounds_min": [
+        -5.12,
+        3.54,
+        -4.12
+      ],
+      "unity_bounds_max": [
+        5.12,
+        5.9,
+        4.12
+      ]
+    },
+    {
+      "name": "FIX_UpperPartitions",
+      "role": "upper_partition",
+      "group": "fixed",
+      "sheet": "Wallpaper",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.72,
+        0.64,
+        0.48,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -1.83,
+        -4.0,
+        3.54
+      ],
+      "bounds_max": [
+        5.0,
+        4.0,
+        5.9
+      ],
+      "unity_bounds_min": [
+        -1.83,
+        3.54,
+        -4.0
+      ],
+      "unity_bounds_max": [
+        5.0,
+        5.9,
+        4.0
+      ]
+    },
+    {
+      "name": "FIX_UpperDoorFrames",
+      "role": "upper_door_frame",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -1.87,
+        -2.54,
+        3.54
+      ],
+      "bounds_max": [
+        -1.63,
+        2.54,
+        5.83
+      ],
+      "unity_bounds_min": [
+        -1.87,
+        3.54,
+        -2.54
+      ],
+      "unity_bounds_max": [
+        -1.63,
+        5.83,
+        2.54
+      ]
+    },
+    {
+      "name": "FIX_UpperStairGuards",
+      "role": "stair_guard",
+      "group": "fixed",
+      "sheet": "DarkWood",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.38,
+        0.17,
+        0.07,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -4.88,
+        -2.3,
+        3.54
+      ],
+      "bounds_max": [
+        -3.1275,
+        1.8725,
+        4.54
+      ],
+      "unity_bounds_min": [
+        -4.88,
+        3.54,
+        -2.3
+      ],
+      "unity_bounds_max": [
+        -3.1275,
+        4.54,
+        1.8725
+      ]
+    },
+    {
+      "name": "FIX_UpperCeiling",
+      "role": "upper_ceiling",
+      "group": "fixed",
+      "sheet": "CeilingPlaster",
+      "emissive": false,
+      "casts_shadows": true,
+      "tint": [
+        0.82,
+        0.77,
+        0.64,
+        1.0
+      ],
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -5.0,
+        -4.0,
+        5.9
+      ],
+      "bounds_max": [
+        5.0,
+        4.0,
+        6.04
+      ],
+      "unity_bounds_min": [
+        -5.0,
+        5.9,
+        -4.0
+      ],
+      "unity_bounds_max": [
+        5.0,
+        6.04,
+        4.0
       ]
     },
     {
@@ -1862,5 +2186,5 @@
       ]
     }
   ],
-  "build_signature": "450cfb780f55663f3b214825d4d552d5793516228efd77b145e9650c1e565e19"
+  "build_signature": "efd6f0076db459cee505ae79d4f783a2907830ecd2999f21ece9cc4481e6f53e"
 }

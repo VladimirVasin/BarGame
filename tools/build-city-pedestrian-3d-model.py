@@ -34,7 +34,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "4.3.1"
+GENERATOR_VERSION = "4.5.1"
 CANONICAL_HEIGHT = 1.75
 NPC_ANATOMY_STANDARD = "NpcHumanV2"
 NPC_PELVIS_HEIGHT = 0.835
@@ -45,6 +45,9 @@ SHARED_MATERIAL_NAME = "MAT_Player3DLit"
 ANIMATION_FPS = 24
 ANIMATION_SOURCE = "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx"
 CAFE_ANIMATION_SOURCE = "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx"
+MOTHER_ANIMATION_SOURCE = (
+    "Assets/Pedestrians/Animations/MothersHouseMother.fbx"
+)
 SHELTER_ANIMATION_SOURCE = (
     "Assets/Pedestrians/Animations/NightlifeShelterResidents.fbx"
 )
@@ -79,6 +82,34 @@ DETAIL_ATLAS_SIZE = 256
 DETAIL_ATLAS_UV_INSET_PX = 1
 DETAIL_ATLAS_REGION_PROP = "bp_atlas_region"
 DETAIL_ATLAS_UV_LAYER = "UVMap"
+
+# The hero-style facial expression atlas. Every number here is fixed by the
+# consumers, not by taste: Unity's texture importer pins `maxTextureSize` to
+# 256, `Player3DFaceAtlasBinding` computes its cell transform as
+# `(1/columns, 1/rows, column/columns, row/rows)`, and the editor's
+# `ExpectedAtlas*` constants assume a 4x4 grid of 64 px cells.
+FACE_ATLAS_COLUMNS = 4
+FACE_ATLAS_ROWS = 4
+FACE_ATLAS_CELL_SIZE = 64
+FACE_ATLAS_SIZE = FACE_ATLAS_COLUMNS * FACE_ATLAS_CELL_SIZE
+FACE_ATLAS_UV_LAYER = "UVMap"
+FACE_ATLAS_RENDERER_PROP = "bp_face_atlas_renderer"
+FACE_ATLAS_UV_CONTRACT_PROP = "bp_uv_contract"
+FACE_SURFACE_PART = "GEO_FaceSurface"
+FACE_SURFACE_COLUMNS = 7
+FACE_SURFACE_ROWS = 7
+
+# The five expressions are a shared contract with C#: the generator writes
+# these exact strings and `PlayerFacialExpression` parses them case
+# sensitively. All five must resolve or `HasCanonicalCells()` fails and the
+# character silently falls back to the bone-driven face it does not have.
+FACE_EXPRESSIONS = (
+    "Neutral",
+    "HalfBlink",
+    "ClosedBlink",
+    "Watchful",
+    "Tense",
+)
 # Parts without a UV layer sample texel (0, 0) in the Blender preview (one
 # material serves the whole model), so the bottom-left cell of every atlas is
 # reserved pure white and nothing is ever painted into it.
@@ -101,6 +132,10 @@ SHELTER_SEATED_DETAIL_ATLAS_NAME = (
 SHELTER_SLEEPING_DETAIL_ATLAS_NAME = (
     "NightlifeShelterSleepingResident3DDetailAtlas.png"
 )
+CAFE_LONE_DETAIL_ATLAS_NAME = "MountainCafeLonePatron3DDetailAtlas.png"
+CAFE_MAN_DETAIL_ATLAS_NAME = "MountainCafeCoupleMan3DDetailAtlas.png"
+CAFE_WOMAN_DETAIL_ATLAS_NAME = "MountainCafeCoupleWoman3DDetailAtlas.png"
+CAFE_ATTENDANT_DETAIL_ATLAS_NAME = "MountainCafeAttendant3DDetailAtlas.png"
 # Lightweight-part gate for every design that goes through validate_result.
 # The ceiling rose from 52 to 60 for the Kettle Hat Walker's hands, boots
 # and cloth details; the floor keeps a design from being one blob.
@@ -271,6 +306,80 @@ SHELTER_SLEEPING_ATLAS_REGIONS = shelter_atlas_regions(
     head="GEO_Head",
     headwear="ACC_WoolCapCrown",
 )
+
+
+def cafe_atlas_regions(
+    *,
+    headwear: str,
+    headwear_kind: str,
+    headwear_sides: int = 0,
+    headwear_rings: int = 0,
+) -> tuple[AtlasRegion, ...]:
+    """Return the V2-density surface layout shared by the cafe cast.
+
+    The four figures keep independent PNGs and clothing, but use the same
+    texel density and semantic cells. The lower-left cell stays the global
+    white fallback for every unwrapped prop and facial accessory.
+    """
+
+    return (
+        AtlasRegion("Face", "GEO_FaceSurface", 0, 192, 64, 64, "grid", 7, 7),
+        AtlasRegion("Chest", "CLO_Chest", 64, 192, 64, 64, "ring", 12, 6),
+        AtlasRegion("Waist", "CLO_Waist", 128, 192, 64, 64, "ring", 12, 4),
+        AtlasRegion("Seat", "CLO_Seat", 192, 192, 64, 64, "ring", 12, 4),
+        AtlasRegion(
+            "UpperSleeve.L", "CLO_SleeveUpper.L",
+            0, 128, 64, 64, "ring", 10, 4,
+        ),
+        AtlasRegion(
+            "UpperSleeve.R", "CLO_SleeveUpper.R",
+            64, 128, 64, 64, "ring", 10, 4,
+        ),
+        AtlasRegion(
+            "LowerSleeve.L", "CLO_SleeveLower.L",
+            128, 128, 64, 64, "ring", 10, 4,
+        ),
+        AtlasRegion(
+            "LowerSleeve.R", "CLO_SleeveLower.R",
+            192, 128, 64, 64, "ring", 10, 4,
+        ),
+        AtlasRegion("Thigh.L", "CLO_Thigh.L", 0, 64, 64, 64, "ring", 10, 4),
+        AtlasRegion("Thigh.R", "CLO_Thigh.R", 64, 64, 64, 64, "ring", 10, 4),
+        AtlasRegion("Shin.L", "CLO_Shin.L", 128, 64, 64, 64, "ring", 10, 4),
+        AtlasRegion("Shin.R", "CLO_Shin.R", 192, 64, 64, 64, "ring", 10, 4),
+        AtlasRegion("Shoe.L", "GEO_Shoe.L", 64, 0, 64, 64, "box"),
+        AtlasRegion("Shoe.R", "GEO_Shoe.R", 128, 0, 64, 64, "box"),
+        AtlasRegion(
+            "Headwear", headwear, 192, 0, 64, 64,
+            headwear_kind, headwear_sides, headwear_rings,
+        ),
+    )
+
+
+CAFE_LONE_ATLAS_REGIONS = cafe_atlas_regions(
+    headwear="ACC_FedoraCrown",
+    headwear_kind="ring",
+    headwear_sides=12,
+    headwear_rings=4,
+)
+CAFE_MAN_ATLAS_REGIONS = cafe_atlas_regions(
+    headwear="ACC_FedoraCrown",
+    headwear_kind="ring",
+    headwear_sides=12,
+    headwear_rings=4,
+)
+CAFE_WOMAN_ATLAS_REGIONS = cafe_atlas_regions(
+    headwear="ACC_CopperHairCap",
+    headwear_kind="ellipsoid",
+    headwear_sides=14,
+    headwear_rings=7,
+)
+CAFE_ATTENDANT_ATLAS_REGIONS = cafe_atlas_regions(
+    headwear="ACC_PaperCapCrown",
+    headwear_kind="ring",
+    headwear_sides=12,
+    headwear_rings=4,
+)
 CAFE_ATTENDANT_RIG_ANCHORS = (
     RigAnchorSpec(
         "SOCKET_CafePotSpout",
@@ -335,6 +444,13 @@ class ArchetypeSpec:
     # every seated clip is still proved against exactly one band, and a
     # clip that cannot name its band is still an error.
     perch_seat_height_m: tuple[float, float] | None = None
+    # Optional absolute world support band for dedicated staged seating. The
+    # older perch band above measures hip-to-lowest-mesh distance and cannot
+    # detect an entire seated body hovering over a too-short stool. Cafe cast
+    # roots are authored on the floor, so their real coat-seat underside must
+    # independently meet the model's 0.8175 m bar-stool top.
+    perch_support_contact_m: tuple[float, float] | None = None
+    perch_support_radius_m: float | None = None
     # A third, deliberately separate support case: a person seated directly
     # on the world floor.  The band is the allowed all-frame height of the
     # lowest pelvis-bound coat/hip mesh above that plane.  It is not a zero-
@@ -404,6 +520,18 @@ class ArchetypeSpec:
     # that declare nothing here.
     texture_atlas: str | None = None
     texture_regions: tuple[AtlasRegion, ...] = ()
+    # Optional HERO-STYLE facial expression atlas, which is a different
+    # contract from the detail atlas above and must not be confused with it.
+    #
+    # A detail atlas is a grey multiply mask whose UV is BAKED into a
+    # sub-rect: the face it carries is one fixed drawing forever. An
+    # expression atlas is full-colour, its cells are switched at RUNTIME by
+    # writing `_BaseMap_ST`, and its UV0 therefore has to span the complete
+    # local 0..1 square so the runtime can address any cell. Hero V2 owns the
+    # only one of these today; a design that declares this name gets the same
+    # 4x4x64 px contract, and its `GEO_FaceSurface` is given the full square
+    # instead of a region.
+    face_atlas: str | None = None
     # Transforms the prefab build must create under bones for a declared
     # runtime effect. Declared here so the manifest, the editor build and
     # the runtime name the same things; the FBX carries none of them.
@@ -484,6 +612,29 @@ ARCHETYPES = {
         (900, 2000),
         staged=True,
         pool_eligible=False,
+    ),
+    # The mother, in her chair. The one design in the game that never
+    # stands, never walks and never speaks: both clip slots carry the same
+    # seated loop, because the catalog wants two names and she only has one
+    # posture. The walk slot is not a walk and must never be blended toward.
+    #
+    # She is the first NPC to declare `face_atlas`, which is the hero's
+    # runtime-switched expression grid rather than the baked detail mask
+    # every other face in the game wears.
+    #
+    # `perch_seat_height_m` is the rocking chair's own cushion: the drawn
+    # top is 0.57 m over the room floor, and the band is what proves her
+    # hips land on it instead of hovering or sinking.
+    "mother": ArchetypeSpec(
+        "mother", "mother_v1", "Mother", 401882,
+        "Mother3D.blend", "Mother3D",
+        "Mother3D.png", "MotherRock", "MotherRock",
+        (1700, 2500),
+        perch_seat_height_m=(0.555, 0.585),
+        staged=True,
+        pool_eligible=False,
+        animation_source=MOTHER_ANIMATION_SOURCE,
+        face_atlas="MotherFaceAtlas.png",
     ),
     # The cold-weighbridge attendant. One model serves both authored
     # instances: the weigher reads the tall indicator with a chalk
@@ -726,51 +877,65 @@ ARCHETYPES = {
     # The four figures inside the Mountain Road terminal cafe are one silent
     # authored tableau rather than an ambient pedestrian population. Each
     # design stays outside Resources and owns only its long idle plus one
-    # service actions in a dedicated ten-clip animation library.
+    # service actions in a dedicated nine-clip animation library.
     "cafe_lone_patron": ArchetypeSpec(
-        "cafe_lone_patron", "cafe_lone_patron_v1", "Cafe Lone Patron",
+        "cafe_lone_patron", "cafe_lone_patron_v2", "Cafe Lone Patron",
         1327109,
         "MountainCafeLonePatron3D.blend", "MountainCafeLonePatron3D",
-        "MountainCafeLonePatron3D.png", "CafeLoneIdle", "CafeLoneDrink",
-        (900, 1900),
+        "MountainCafeLonePatron3D.png", "CafeLoneSleep", "CafeLoneSleep",
+        (1800, 3000),
         staged=True,
         pool_eligible=False,
         perch_seat_height_m=(0.43, 0.50),
+        perch_support_contact_m=(0.8145, 0.8205),
+        perch_support_radius_m=0.22,
         animation_source=CAFE_ANIMATION_SOURCE,
+        texture_atlas=CAFE_LONE_DETAIL_ATLAS_NAME,
+        texture_regions=CAFE_LONE_ATLAS_REGIONS,
     ),
     "cafe_couple_man": ArchetypeSpec(
-        "cafe_couple_man", "cafe_couple_man_v1", "Cafe Couple Man",
+        "cafe_couple_man", "cafe_couple_man_v2", "Cafe Couple Man",
         1384157,
         "MountainCafeCoupleMan3D.blend", "MountainCafeCoupleMan3D",
         "MountainCafeCoupleMan3D.png", "CafeManIdle", "CafeManDrink",
-        (900, 1850),
+        (1800, 3000),
         staged=True,
         pool_eligible=False,
         perch_seat_height_m=(0.43, 0.50),
+        perch_support_contact_m=(0.8145, 0.8205),
+        perch_support_radius_m=0.22,
         animation_source=CAFE_ANIMATION_SOURCE,
+        texture_atlas=CAFE_MAN_DETAIL_ATLAS_NAME,
+        texture_regions=CAFE_MAN_ATLAS_REGIONS,
     ),
     "cafe_couple_woman": ArchetypeSpec(
-        "cafe_couple_woman", "cafe_couple_woman_v1", "Cafe Couple Woman",
+        "cafe_couple_woman", "cafe_couple_woman_v2", "Cafe Couple Woman",
         1439231,
         "MountainCafeCoupleWoman3D.blend", "MountainCafeCoupleWoman3D",
         "MountainCafeCoupleWoman3D.png", "CafeWomanIdle", "CafeWomanDrink",
-        (900, 1950),
+        (1800, 3000),
         staged=True,
         pool_eligible=False,
         perch_seat_height_m=(0.43, 0.50),
+        perch_support_contact_m=(0.8145, 0.8205),
+        perch_support_radius_m=0.22,
         animation_source=CAFE_ANIMATION_SOURCE,
+        texture_atlas=CAFE_WOMAN_DETAIL_ATLAS_NAME,
+        texture_regions=CAFE_WOMAN_ATLAS_REGIONS,
     ),
     "cafe_attendant": ArchetypeSpec(
-        "cafe_attendant", "cafe_attendant_v1", "Cafe Attendant",
+        "cafe_attendant", "cafe_attendant_v2", "Cafe Attendant",
         1498303,
         "MountainCafeAttendant3D.blend", "MountainCafeAttendant3D",
         "MountainCafeAttendant3D.png", "CafeAttendantWipe",
-        "CafeAttendantWalk", (900, 2000),
+        "CafeAttendantWalk", (1800, 3200),
         staged=True,
         pool_eligible=False,
         animation_source=CAFE_ANIMATION_SOURCE,
         action_clip="CafeAttendantPour",
         dismount_clip="CafeAttendantNotice",
+        texture_atlas=CAFE_ATTENDANT_DETAIL_ATLAS_NAME,
+        texture_regions=CAFE_ATTENDANT_ATLAS_REGIONS,
         rig_anchors=CAFE_ATTENDANT_RIG_ANCHORS,
     ),
 }
@@ -999,6 +1164,49 @@ PALETTE = {
     "gran_wool": (0.100, 0.095, 0.090, 1.0),
     "beater_plastic": (0.560, 0.165, 0.105, 1.0),
     "beater_plastic_dark": (0.300, 0.085, 0.055, 1.0),
+    # The Mother. Her room is the one warm interior in the game and she is
+    # dressed for it rather than against it: a washed-soft house dress under
+    # a hand-knitted cardigan, a blanket over the knees, felt slippers. The
+    # age is in the FADING and the MENDING - the art bible's §4 is explicit
+    # that old may be clean and cared for, and that nothing here reads as
+    # dirt, illness or poverty. Nothing in this palette is bright: the loud
+    # note in her room belongs to the hearth, not to her.
+    # Aged cloth reads FADED and MISMATCHED. That is not a preference: the
+    # zone's own acceptance check spells out "выцветший пигмент, штопку,
+    # починку, разномастность", and faded cloth is LIGHTER than new cloth,
+    # not darker. The first pass authored her uniformly dark and uniformly
+    # warm, and in a room whose only key is an orange hearth she vanished
+    # into the timber - her front panels shared `mother_cardigan_dark` with
+    # the cuffs and buttons, so the largest surface she turns to the camera
+    # was the darkest thing on her.
+    #
+    # The outer knit carries a COOL note, because separation here can only
+    # come from temperature: everything the hearth lights is warm, so a warm
+    # garment at any value reads as more room. Nothing below out-reads the
+    # fire, which the same check requires stay the warm key in grayscale.
+    "mother_dress": (0.268, 0.232, 0.248, 1.0),
+    "mother_dress_faded": (0.335, 0.302, 0.312, 1.0),
+    "mother_cardigan": (0.352, 0.360, 0.335, 1.0),
+    # Split out of `mother_cardigan_dark`, which now dresses ONLY the small
+    # trim. One entry cannot serve both a garment's largest panel and its
+    # buttons: lightening the panel lightened the buttons with it, and
+    # keeping the buttons dark kept the panel black.
+    "mother_cardigan_panel": (0.318, 0.328, 0.302, 1.0),
+    "mother_cardigan_dark": (0.205, 0.212, 0.192, 1.0),
+    "mother_blanket": (0.352, 0.218, 0.170, 1.0),
+    "mother_blanket_dark": (0.215, 0.130, 0.104, 1.0),
+    "mother_slipper": (0.200, 0.176, 0.166, 1.0),
+    "mother_hair": (0.545, 0.530, 0.505, 1.0),
+    "mother_hair_dark": (0.360, 0.348, 0.330, 1.0),
+    "mother_skin": (0.520, 0.400, 0.345, 1.0),
+    "mother_skin_shadow": (0.360, 0.268, 0.235, 1.0),
+    # The face patch is WHITE, and that is not a colour choice. Its atlas is
+    # painted in finished skin tones, and the renderer tint multiplies the
+    # texture: tinting it `mother_skin` would apply her complexion a second
+    # time and hand back a face at roughly a quarter brightness. A detail
+    # atlas is the opposite case - light greys asking to be tinted - which is
+    # exactly why the two atlases must never share a rule.
+    "mother_face_atlas": (1.0, 1.0, 1.0, 1.0),
     # Weigh Attendant. A quilted grey-green work jacket on the
     # Industrial cold axis: nothing bright, no authority markers —
     # the one near-white note is the chalk stub in the weigher's
@@ -1396,7 +1604,15 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=(
             "Build only the four Mountain Road cafe models plus their "
-            "dedicated eight-clip animation library."
+            "dedicated nine-clip animation library."
+        ),
+    )
+    parser.add_argument(
+        "--mother",
+        action="store_true",
+        help=(
+            "Build only the mother's model, her face atlas and her "
+            "single-clip animation library."
         ),
     )
     parser.add_argument(
@@ -1496,6 +1712,127 @@ def make_frustum_between(
     for index in range(sides):
         next_index = (index + 1) % sides
         faces.append((index, next_index, sides + next_index, sides + index))
+    return vertices, faces
+
+
+def make_profiled_segment(
+    start: Sequence[float],
+    end: Sequence[float],
+    profile: Sequence[tuple[float, float, float]],
+    sides: int = 10,
+    phase: float = math.pi / 10.0,
+):
+    """Closed limb volume with several anatomical radius stations."""
+
+    start_vector = v(start)
+    end_vector = v(end)
+    axis = end_vector - start_vector
+    rotation = axis.to_track_quat("Z", "Y")
+    basis_x = rotation @ Vector((1, 0, 0))
+    basis_y = rotation @ Vector((0, 1, 0))
+    vertices: list[Vector] = []
+    for fraction, radius, flatten in profile:
+        center = start_vector.lerp(end_vector, fraction)
+        for index in range(sides):
+            angle = phase + math.tau * index / sides
+            vertices.append(
+                center
+                + basis_x * math.cos(angle) * radius
+                + basis_y * math.sin(angle) * radius * flatten
+            )
+    faces: list[tuple[int, ...]] = [tuple(reversed(range(sides)))]
+    for ring_index in range(len(profile) - 1):
+        lower = ring_index * sides
+        upper = (ring_index + 1) * sides
+        for side_index in range(sides):
+            following = (side_index + 1) % sides
+            faces.append(
+                (
+                    lower + side_index,
+                    lower + following,
+                    upper + following,
+                    upper + side_index,
+                )
+            )
+    last = (len(profile) - 1) * sides
+    faces.append(tuple(last + index for index in range(sides)))
+    return vertices, faces
+
+
+def make_vertical_shell(
+    profiles: Sequence[tuple[float, float, float, float]],
+    sides: int = 12,
+):
+    """Closed garment shell from z/half-width/half-depth/y stations."""
+
+    vertices: list[Vector] = []
+    for height, half_width, half_depth, offset_y in profiles:
+        for index in range(sides):
+            angle = math.tau * index / sides
+            vertices.append(
+                Vector(
+                    (
+                        math.cos(angle) * half_width,
+                        offset_y + math.sin(angle) * half_depth,
+                        height,
+                    )
+                )
+            )
+    faces: list[tuple[int, ...]] = [tuple(reversed(range(sides)))]
+    for ring_index in range(len(profiles) - 1):
+        lower = ring_index * sides
+        upper = (ring_index + 1) * sides
+        for side_index in range(sides):
+            following = (side_index + 1) % sides
+            faces.append(
+                (
+                    lower + side_index,
+                    lower + following,
+                    upper + following,
+                    upper + side_index,
+                )
+            )
+    last = (len(profiles) - 1) * sides
+    faces.append(tuple(last + index for index in range(sides)))
+    return vertices, faces
+
+
+def make_cafe_shoe(center_x: float):
+    """One angular shoe with heel, instep and tapered toe planes."""
+
+    stations = (
+        (-0.255, 0.050, 0.000, 0.043),
+        (-0.222, 0.061, 0.000, 0.065),
+        (-0.150, 0.067, 0.000, 0.095),
+        (-0.075, 0.066, 0.000, 0.130),
+        (-0.015, 0.057, 0.010, 0.156),
+        (0.036, 0.050, 0.014, 0.164),
+    )
+    vertices: list[Vector] = []
+    for y, half_width, bottom_z, top_z in stations:
+        vertices.extend(
+            (
+                Vector((center_x - half_width, y, bottom_z)),
+                Vector((center_x + half_width, y, bottom_z)),
+                Vector((center_x - half_width * 0.88, y, top_z)),
+                Vector((center_x + half_width * 0.88, y, top_z)),
+            )
+        )
+    faces: list[tuple[int, ...]] = []
+    for station in range(len(stations) - 1):
+        current = station * 4
+        following = (station + 1) * 4
+        faces.extend(
+            (
+                (current, following, following + 1, current + 1),
+                (current + 2, current + 3, following + 3, following + 2),
+                (current, current + 2, following + 2, following),
+                (current + 1, following + 1, following + 3, current + 3),
+            )
+        )
+    faces.append((0, 1, 3, 2))
+    last = (len(stations) - 1) * 4
+    faces.append((last, last + 2, last + 3, last + 1))
     return vertices, faces
 
 
@@ -1679,6 +2016,10 @@ class PedestrianBuilder:
                 self.build_yard_babushka_body,
                 self.build_yard_babushka_details,
             ),
+            "mother": (
+                self.build_mother_body,
+                self.build_mother_details,
+            ),
             "weigh_attendant": (
                 self.build_weigh_attendant_body,
                 self.build_weigh_attendant_details,
@@ -1742,6 +2083,16 @@ class PedestrianBuilder:
             )
         for builder in builders[self.spec.key]:
             builder()
+        # Here, and NOT on the tail of `assign_atlas_uvs`, where this used to
+        # sit. That method is called only by designs that declare texture
+        # regions, so a design carrying a face atlas and no detail atlas
+        # skipped it entirely - and skipped it in silence, because the face
+        # patch simply exported with no UV layer at all and only Unity, two
+        # tools later, noticed. A face atlas must not depend on a detail
+        # atlas existing.
+        self.apply_face_atlas_uv(
+            {part.obj.name: part for part in self.result.parts}
+        )
         self.configure_scene_metadata()
         return self.result
 
@@ -1874,10 +2225,71 @@ class PedestrianBuilder:
                     part.obj, region.rect_px, DETAIL_ATLAS_SIZE,
                     region.name, DETAIL_ATLAS_REGION_PROP,
                 )
+            elif region.kind == "grid":
+                mesh = part.obj.data
+                expected_vertices = region.sides * region.rings
+                if len(mesh.vertices) != expected_vertices:
+                    raise RuntimeError(
+                        f"Atlas grid {region.name} needs {expected_vertices} "
+                        f"vertices, found {len(mesh.vertices)}"
+                    )
+                uv_layer = mesh.uv_layers.new(name=DETAIL_ATLAS_UV_LAYER)
+                min_u, min_v, max_u, max_v = rect_uv
+                for loop in mesh.loops:
+                    column = loop.vertex_index % region.sides
+                    row = loop.vertex_index // region.sides
+                    uv_layer.data[loop.index].uv = (
+                        min_u + (max_u - min_u) * column / (region.sides - 1),
+                        min_v + (max_v - min_v) * row / (region.rings - 1),
+                    )
+                mesh.uv_layers.active = uv_layer
+                uv_layer.active_render = True
+                part.obj[DETAIL_ATLAS_REGION_PROP] = region.name
             else:
                 raise RuntimeError(
                     f"Atlas region {region.name} has unknown layout {region.kind!r}"
                 )
+    def apply_face_atlas_uv(self, parts_by_name: dict) -> None:
+        """Give a hero-style face patch the complete 0..1 square.
+
+        Deliberately NOT an `AtlasRegion`: a region lays UV into a sub-rect
+        with a pixel inset, which is right for a baked detail mask and wrong
+        here. The runtime addresses a cell by writing `_BaseMap_ST`, so the
+        mesh has to own the whole square and nothing else may narrow it -
+        Unity's own `ValidateFaceUvRange` refuses a patch whose UV bounds are
+        more than a millimetre off `(0,0)..(1,1)`.
+        """
+
+        if self.spec.face_atlas is None:
+            return
+        part = parts_by_name.get(FACE_SURFACE_PART)
+        if part is None:
+            raise RuntimeError(
+                f"{self.spec.key} declares a face atlas but builds no "
+                f"{FACE_SURFACE_PART}"
+            )
+        mesh = part.obj.data
+        columns = FACE_SURFACE_COLUMNS
+        rows = FACE_SURFACE_ROWS
+        if len(mesh.vertices) != columns * rows:
+            raise RuntimeError(
+                f"{FACE_SURFACE_PART} needs {columns * rows} vertices, "
+                f"found {len(mesh.vertices)}"
+            )
+        uv_layer = mesh.uv_layers.new(name=FACE_ATLAS_UV_LAYER)
+        for loop in mesh.loops:
+            column = loop.vertex_index % columns
+            row = loop.vertex_index // columns
+            uv_layer.data[loop.index].uv = (
+                column / (columns - 1),
+                row / (rows - 1),
+            )
+        mesh.uv_layers.active = uv_layer
+        uv_layer.active_render = True
+        part.obj[FACE_ATLAS_RENDERER_PROP] = True
+        part.obj[FACE_ATLAS_UV_CONTRACT_PROP] = (
+            "local_0_1_runtime_cell_scale_offset"
+        )
 
     @staticmethod
     def create_armature(
@@ -3807,6 +4219,330 @@ class PedestrianBuilder:
             "head", "face_detail", "void",
         )
 
+    def build_mother_body(self) -> None:
+        """The mother, at the hero's own density, on the shared substrate.
+
+        Authored standing on the canonical A-pose skeleton like every other
+        design, because the Avatar is copied bone for bone from
+        `PlayerCharacter3DV2` and a source that sat down would not match it.
+        The sitting, the settled shoulders and the hands in the lap are all
+        in `MotherRock`.
+
+        Two things separate her from the yard babushka, who is otherwise the
+        template. She carries `GEO_FaceSurface` - the hero's own curved
+        expression patch - instead of the four `face_detail` boxes every
+        other NPC wears, so she is the first non-player character whose face
+        can change at all. And she is tessellated to the hero's budget rather
+        than the ambient walker's: the round masses take real segment counts,
+        because she is the one figure in the game the camera holds still on.
+
+        Her age is carried by the palette and by the pose, never by grime:
+        art bible §4 allows old to be clean and cared for, and §10g forbids
+        reading poverty or illness into this room.
+        """
+
+        # The head. Sixteen segments where a walker gets twelve: at 7.5 m
+        # through a 60-degree lens she is small, and a facetted skull is the
+        # first thing that gives a low-poly figure away when it holds still.
+        self.add_part(
+            "GEO_Head",
+            make_ellipsoid((0, -0.034, 1.548), (0.098, 0.092, 0.122), 20, 10),
+            "head", "body", "mother_skin",
+        )
+        self.build_mother_face_surface()
+        self.add_part(
+            "GEO_Neck",
+            make_frustum_between(
+                (0, -0.008, 1.318), (0, -0.024, 1.452), 0.066, 0.054, 14
+            ),
+            "neck", "body", "mother_skin_shadow",
+        )
+
+        # Grey hair, parted and gathered up. Five parts, so the silhouette
+        # reads from behind as well as from the fixed shot.
+        self.add_part(
+            "HAIR_Cap",
+            make_ellipsoid((0, -0.014, 1.596), (0.108, 0.102, 0.112), 16, 8),
+            "head", "hair", "mother_hair",
+        )
+        self.add_part(
+            "HAIR_Bun",
+            make_ellipsoid((0, 0.058, 1.672), (0.064, 0.060, 0.058), 14, 7),
+            "head", "hair", "mother_hair_dark",
+        )
+        # The knot owns the exact 1.75 m envelope, the way the babushka's
+        # scarf crest owns hers: a tapered box has exact extents, and an
+        # ellipsoid's pole does not land where its radius says it will.
+        self.add_part(
+            "HAIR_BunKnot",
+            make_tapered_box(
+                (0, 0.058, 1.700), (0, 0.056, 1.750),
+                (0.096, 0.092, 0), (0.044, 0.042, 0),
+            ),
+            "head", "hair", "mother_hair_dark",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"HAIR_Temple.{side}",
+                make_ellipsoid(
+                    (sign * 0.082, -0.010, 1.540), (0.030, 0.062, 0.070), 12, 6
+                ),
+                "head", "hair", "mother_hair",
+            )
+
+        # A washed house dress under a hand-knitted cardigan. The cardigan
+        # front is two panels rather than one box so the opening reads.
+        self.add_part(
+            "CLO_Bodice",
+            make_tapered_box(
+                (0, 0.006, 1.070), (0, -0.006, 1.336),
+                (0.360, 0.240, 0), (0.392, 0.262, 0),
+            ),
+            "chest", "clothing", "mother_dress",
+        )
+        self.add_part(
+            "CLO_Waist",
+            make_tapered_box(
+                (0, 0.018, 0.868), (0, 0.008, 1.088),
+                (0.376, 0.268, 0), (0.362, 0.244, 0),
+            ),
+            "spine", "clothing", "mother_dress_faded",
+        )
+        self.add_part(
+            "CLO_Cardigan",
+            make_tapered_box(
+                (0, 0.012, 1.062), (0, -0.002, 1.318),
+                (0.404, 0.278, 0), (0.428, 0.296, 0),
+            ),
+            "chest", "clothing", "mother_cardigan",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_CardiganPanel.{side}",
+                make_tapered_box(
+                    (sign * 0.096, -0.132, 1.062),
+                    (sign * 0.104, -0.146, 1.312),
+                    (0.150, 0.040, 0), (0.162, 0.042, 0),
+                ),
+                "chest", "clothing", "mother_cardigan_panel",
+            )
+        self.add_part(
+            "CLO_Collar",
+            make_tapered_box(
+                (0, -0.028, 1.318), (0, -0.020, 1.372),
+                (0.230, 0.190, 0), (0.180, 0.156, 0),
+            ),
+            "chest", "clothing", "mother_cardigan_dark",
+        )
+        for index, height in enumerate((1.108, 1.186, 1.264)):
+            self.add_part(
+                f"ACC_Button.{index + 1:02d}",
+                make_box((0, -0.150, height), (0.020, 0.014, 0.020)),
+                "chest" if height > 1.16 else "spine",
+                "clothing_detail", "mother_cardigan_dark",
+            )
+
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            shoulder = (sign * 0.204, sign * -0.004, 1.290)
+            elbow = (sign * 0.462, -0.010, 1.176)
+            wrist = (sign * 0.672, -0.018, 1.078)
+            self.add_part(
+                f"CLO_Sleeve.{side}",
+                make_frustum_between(shoulder, elbow, 0.070, 0.056, 14),
+                f"upper_arm.{side}", "clothing", "mother_cardigan",
+            )
+            self.add_part(
+                f"CLO_Cuff.{side}",
+                make_frustum_between(
+                    (sign * 0.430, -0.009, 1.192),
+                    (sign * 0.498, -0.011, 1.162),
+                    0.060, 0.054, 10,
+                ),
+                f"forearm.{side}", "clothing", "mother_cardigan_dark",
+            )
+            self.add_part(
+                f"GEO_Forearm.{side}",
+                make_frustum_between(elbow, wrist, 0.044, 0.035, 12),
+                f"forearm.{side}", "body", "mother_skin",
+            )
+            # Her hands are the second thing the room says about her age,
+            # after the pose - so they get a thumb of their own instead of
+            # the single block an ambient walker carries.
+            self.add_part(
+                f"GEO_Hand.{side}",
+                make_box((sign * 0.710, -0.020, 1.056), (0.078, 0.066, 0.052)),
+                f"hand.{side}", "body", "mother_skin",
+            )
+            self.add_part(
+                f"ACC_Thumb.{side}",
+                make_box(
+                    (sign * 0.678, -0.048, 1.050), (0.026, 0.048, 0.026)
+                ),
+                f"hand.{side}", "body_detail", "mother_skin_shadow",
+            )
+
+        # THE SKIRT IS SPLIT AT THE HIP, and the seam is load bearing.
+        #
+        # Authored as one pelvis-bound box to the ankles it did two wrong
+        # things at once. It swung rigidly with the hips instead of lying
+        # over the legs; and `perch_seat_height_m` measures the underside of
+        # the PELVIS-bound cloth against the soles, so a skirt hanging half
+        # a metre below the hip bone reported her seat as 0.23 m when the
+        # cushion is 0.57. The yoke stays on the pelvis; everything below
+        # the hip rides the thigh it actually rests on.
+        self.add_part(
+            "CLO_Skirt",
+            make_tapered_box(
+                (0, 0.016, 0.664), (0, 0.020, 0.888),
+                (0.436, 0.352, 0), (0.398, 0.300, 0),
+            ),
+            "pelvis", "clothing", "mother_dress",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_SkirtDrape.{side}",
+                make_tapered_box(
+                    (sign * 0.104, 0.004, 0.398),
+                    (sign * 0.100, 0.014, 0.672),
+                    (0.196, 0.230, 0), (0.226, 0.286, 0),
+                ),
+                f"thigh.{side}", "clothing", "mother_dress",
+            )
+            self.add_part(
+                f"CLO_SkirtHem.{side}",
+                make_tapered_box(
+                    (sign * 0.104, 0.002, 0.366),
+                    (sign * 0.104, 0.004, 0.406),
+                    (0.204, 0.238, 0), (0.196, 0.230, 0),
+                ),
+                f"thigh.{side}", "clothing", "mother_dress_faded",
+            )
+
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            hip = (sign * 0.096, 0.006, 0.860)
+            knee = (sign * 0.100, -0.012, 0.352)
+            ankle = (sign * 0.108, -0.022, 0.096)
+            self.add_part(
+                f"GEO_Thigh.{side}",
+                make_frustum_between(hip, knee, 0.086, 0.062, 12),
+                f"thigh.{side}", "body", "mother_dress_faded",
+            )
+            self.add_part(
+                f"GEO_Shin.{side}",
+                make_frustum_between(knee, ankle, 0.056, 0.044, 12),
+                f"shin.{side}", "body", "mother_dress_faded",
+            )
+            # Felt slippers, not boots: she has not been outside today.
+            self.add_part(
+                f"GEO_Slipper.{side}",
+                make_tapered_box(
+                    (sign * 0.108, -0.078, 0.028),
+                    (sign * 0.108, -0.050, 0.118),
+                    (0.098, 0.238, 0), (0.086, 0.176, 0),
+                ),
+                f"foot.{side}", "body", "mother_slipper",
+            )
+            self.add_part(
+                f"GEO_SlipperSole.{side}",
+                make_box((sign * 0.108, -0.078, 0.011), (0.102, 0.244, 0.022)),
+                f"foot.{side}", "body", "sole",
+            )
+
+    def build_mother_face_surface(self) -> None:
+        """The hero's curved expression patch, on an older skull.
+
+        Same 7x7 topology, same nose projection on rows 3 and 4, same
+        0.8 mm stand-off - the shape is a solved thing and re-deriving it
+        would only move it. The rows are lowered and narrowed onto her own
+        smaller head, and the patch keeps its raw 0..1 UV so the runtime can
+        address any cell of the atlas.
+        """
+
+        rows = (
+            (1.454, 0.032, 0.037),
+            (1.478, 0.050, 0.053),
+            (1.508, 0.070, 0.066),
+            (1.546, 0.086, 0.078),
+            (1.586, 0.090, 0.082),
+            (1.624, 0.083, 0.077),
+            (1.658, 0.056, 0.058),
+        )
+        columns = (-0.92, -0.61, -0.30, 0.0, 0.30, 0.61, 0.92)
+        vertices: list[Vector] = []
+        for row_index, (height, radius_x, depth) in enumerate(rows):
+            for normalized_x in columns:
+                x = normalized_x * radius_x
+                curve = 1.0 - 0.34 * normalized_x * normalized_x
+                nose_projection = 0.0
+                if row_index == 3:
+                    nose_projection = 0.018 * max(
+                        0.0, 1.0 - abs(normalized_x) * 1.7
+                    )
+                elif row_index == 4:
+                    nose_projection = 0.009 * max(
+                        0.0, 1.0 - abs(normalized_x) * 1.8
+                    )
+                vertices.append(
+                    Vector(
+                        (
+                            x,
+                            -0.034 - depth * curve - nose_projection - 0.0008,
+                            height,
+                        )
+                    )
+                )
+        faces: list[tuple[int, ...]] = []
+        width = len(columns)
+        for row_index in range(len(rows) - 1):
+            for column_index in range(width - 1):
+                lower = row_index * width + column_index
+                upper = (row_index + 1) * width + column_index
+                faces.append((lower, lower + 1, upper + 1, upper))
+        self.add_part(
+            FACE_SURFACE_PART,
+            (vertices, faces),
+            "head", "facial_atlas", "mother_face_atlas",
+        )
+
+    def build_mother_details(self) -> None:
+        """The blanket over her knees.
+
+        It is pelvis-bound rather than thigh-bound on purpose: it has to
+        travel with the seat when the chair rocks, not with either leg. Three
+        parts so the near edge reads as cloth with weight in it rather than
+        as a painted slab across the lap.
+        """
+
+        # Thigh-bound, not pelvis-bound: a blanket over the knees rests on
+        # the legs and has to travel with them, and the pelvis-bound version
+        # both swung wrong and dragged the perch measurement down with it.
+        # The lap piece keeps the pair reading as one cloth across the gap.
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"CLO_Blanket.{side}",
+                make_tapered_box(
+                    (sign * 0.104, -0.046, 0.452),
+                    (sign * 0.100, -0.024, 0.742),
+                    (0.212, 0.262, 0), (0.238, 0.310, 0),
+                ),
+                f"thigh.{side}", "clothing", "mother_blanket",
+            )
+            self.add_part(
+                f"CLO_BlanketHem.{side}",
+                make_box(
+                    (sign * 0.104, -0.046, 0.436), (0.220, 0.270, 0.034)
+                ),
+                f"thigh.{side}", "clothing", "mother_blanket_dark",
+            )
+        self.add_part(
+            "CLO_BlanketLap",
+            make_tapered_box(
+                (0, -0.040, 0.742), (0, -0.026, 0.836),
+                (0.318, 0.286, 0), (0.286, 0.252, 0),
+            ),
+            "pelvis", "clothing", "mother_blanket",
+        )
+
     def build_yard_babushka_details(self) -> None:
         """Both authored hand props, enabled per role by the runtime.
 
@@ -5681,40 +6417,66 @@ class PedestrianBuilder:
 
         self.add_part(
             "GEO_Head",
-            make_ellipsoid((0, -0.036, 1.565), (0.102, 0.088, 0.137), 12, 6),
+            make_ellipsoid((0, -0.036, 1.565), (0.102, 0.088, 0.137), 14, 8),
             "head", "body", skin,
         )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"GEO_Ear.{side}",
+                make_ellipsoid(
+                    (sign * 0.102, -0.028, 1.565),
+                    (0.018, 0.012, 0.034),
+                    6,
+                    3,
+                ),
+                "head", "body_detail", skin,
+            )
         self.add_part(
             "GEO_Neck",
             make_frustum_between(
                 (0, -0.004, 1.320), (0, -0.022, 1.465),
-                0.063, 0.055, 10,
+                0.063, 0.055, 12,
             ),
             "neck", "body", skin,
         )
         self.add_part(
             "CLO_Chest",
-            make_tapered_box(
-                (0, 0.008, 1.055), (0, -0.004, 1.335),
-                (waist_width, 0.205, 0), (shoulder_width, 0.225, 0),
+            make_vertical_shell(
+                (
+                    (1.055, waist_width * 0.50, 0.102, 0.008),
+                    (1.105, waist_width * 0.51, 0.105, 0.006),
+                    (1.175, shoulder_width * 0.48, 0.108, 0.002),
+                    (1.245, shoulder_width * 0.50, 0.112, -0.002),
+                    (1.300, shoulder_width * 0.51, 0.113, -0.004),
+                    (1.335, shoulder_width * 0.47, 0.106, -0.004),
+                ),
+                12,
             ),
             "chest", "body", coat,
         )
         self.add_part(
             "CLO_Waist",
-            make_tapered_box(
-                (0, 0.010, 0.840), (0, 0.008, 1.070),
-                (waist_width * 0.96, 0.200, 0),
-                (waist_width, 0.205, 0),
+            make_vertical_shell(
+                (
+                    (0.840, waist_width * 0.48, 0.100, 0.010),
+                    (0.910, waist_width * 0.49, 0.102, 0.010),
+                    (1.000, waist_width * 0.50, 0.103, 0.009),
+                    (1.070, waist_width * 0.50, 0.103, 0.008),
+                ),
+                12,
             ),
             "spine", "body", coat_dark,
         )
         self.add_part(
             "CLO_Seat",
-            make_tapered_box(
-                (0, 0.010, 0.690), (0, 0.010, 0.855),
-                (waist_width * 0.94, 0.205, 0),
-                (waist_width * 0.98, 0.205, 0),
+            make_vertical_shell(
+                (
+                    (0.690, waist_width * 0.47, 0.101, 0.010),
+                    (0.745, waist_width * 0.49, 0.104, 0.011),
+                    (0.805, waist_width * 0.50, 0.104, 0.010),
+                    (0.855, waist_width * 0.49, 0.103, 0.010),
+                ),
+                12,
             ),
             "pelvis", "body", coat_dark,
         )
@@ -5726,18 +6488,40 @@ class PedestrianBuilder:
             hand = (sign * 0.755, -0.022, 1.038)
             self.add_part(
                 f"CLO_SleeveUpper.{side}",
-                make_frustum_between(shoulder, elbow, 0.072, 0.057, 10),
+                make_profiled_segment(
+                    shoulder,
+                    elbow,
+                    (
+                        (0.0, 0.058, 0.82),
+                        (0.18, 0.075, 0.86),
+                        (0.62, 0.066, 0.84),
+                        (1.0, 0.057, 0.82),
+                    ),
+                    10,
+                ),
                 f"upper_arm.{side}", "clothing", coat,
             )
             self.add_part(
                 f"CLO_SleeveLower.{side}",
-                make_frustum_between(elbow, wrist, 0.058, 0.044, 10),
+                make_profiled_segment(
+                    elbow,
+                    wrist,
+                    (
+                        (0.0, 0.058, 0.84),
+                        (0.24, 0.061, 0.86),
+                        (0.68, 0.051, 0.83),
+                        (1.0, 0.044, 0.80),
+                    ),
+                    10,
+                ),
                 f"forearm.{side}", "clothing", coat_light,
             )
+            wrist_vector = v(wrist)
+            hand_vector = v(hand)
             self.add_part(
                 f"GEO_Hand.{side}",
                 make_ellipsoid(
-                    tuple((v(wrist) + v(hand)) * 0.5),
+                    tuple((wrist_vector + hand_vector) * 0.5),
                     (
                         0.046 * hand_scale,
                         0.035 * hand_scale,
@@ -5745,29 +6529,66 @@ class PedestrianBuilder:
                     ),
                     10,
                     5,
+                    orientation=(hand_vector - wrist_vector).to_track_quat(
+                        "Z", "Y"
+                    ),
                 ),
                 f"hand.{side}", "body", skin,
+            )
+            self.add_part(
+                f"GEO_Thumb.{side}",
+                make_frustum_between(
+                    tuple(
+                        wrist_vector.lerp(hand_vector, 0.28)
+                        + Vector((sign * 0.020, -0.005, -0.002))
+                    ),
+                    tuple(
+                        wrist_vector.lerp(hand_vector, 0.68)
+                        + Vector((sign * 0.036, -0.012, -0.014))
+                    ),
+                    0.017 * hand_scale,
+                    0.012 * hand_scale,
+                    6,
+                    0.82,
+                ),
+                f"hand.{side}", "body_detail", skin,
             )
             hip = (sign * 0.086, 0.008, 0.738)
             knee = (sign * 0.103, -0.010, 0.356)
             ankle = (sign * 0.111, -0.023, 0.105)
             self.add_part(
                 f"CLO_Thigh.{side}",
-                make_frustum_between(hip, knee, 0.084, 0.066, 10),
+                make_profiled_segment(
+                    hip,
+                    knee,
+                    (
+                        (0.0, 0.084, 0.88),
+                        (0.22, 0.089, 0.90),
+                        (0.68, 0.074, 0.86),
+                        (1.0, 0.066, 0.84),
+                    ),
+                    10,
+                ),
                 f"thigh.{side}", "clothing", trousers,
             )
             self.add_part(
                 f"CLO_Shin.{side}",
-                make_frustum_between(knee, ankle, 0.066, 0.052, 10),
+                make_profiled_segment(
+                    knee,
+                    ankle,
+                    (
+                        (0.0, 0.066, 0.84),
+                        (0.20, 0.071, 0.87),
+                        (0.58, 0.062, 0.84),
+                        (1.0, 0.052, 0.81),
+                    ),
+                    10,
+                ),
                 f"shin.{side}", "clothing", trousers,
             )
             self.add_part(
                 f"GEO_Shoe.{side}",
-                make_tapered_box(
-                    (sign * 0.111, -0.088, 0.018),
-                    (sign * 0.111, -0.052, 0.145),
-                    (0.126, 0.250, 0), (0.108, 0.176, 0),
-                ),
+                make_cafe_shoe(sign * 0.111),
                 f"foot.{side}", "body", "cafe_shoe",
             )
             self.add_part(
@@ -5777,59 +6598,131 @@ class PedestrianBuilder:
             )
 
     def build_cafe_face(self, skin: str, shadow: str, narrow: bool) -> None:
-        eye_half = 0.036 if narrow else 0.041
-        for side, sign in (("L", 1.0), ("R", -1.0)):
-            self.add_part(
-                f"ACC_Eye.{side}",
-                make_box((sign * eye_half, -0.126, 1.585), (0.040, 0.014, 0.018)),
-                "head", "face_detail", shadow,
-            )
-        self.add_part(
-            "ACC_Nose",
-            make_tapered_box(
-                (0, -0.142, 1.520), (0, -0.126, 1.570),
-                (0.042, 0.044, 0), (0.030, 0.035, 0),
-            ),
-            "head", "face_detail", skin,
+        # The active Hero V2 uses one curved 7x7 facial surface instead of
+        # stuck-on box eyes and mouth. Cafe faces keep a static expression,
+        # but share that same geometry/surface-detail standard.
+        rows = (
+            (1.448, 0.034, 0.039),
+            (1.474, 0.054, 0.057),
+            (1.508, 0.076, 0.072),
+            (1.548, 0.093, 0.084),
+            (1.590, 0.098, 0.088),
+            (1.630, 0.090, 0.082),
+            (1.666, 0.061, 0.063),
         )
+        columns = (-0.92, -0.61, -0.30, 0.0, 0.30, 0.61, 0.92)
+        vertices: list[Vector] = []
+        for row_index, (height, radius_x, depth) in enumerate(rows):
+            for normalized_x in columns:
+                x = normalized_x * radius_x
+                curve = 1.0 - 0.34 * normalized_x * normalized_x
+                nose_projection = 0.0
+                if row_index == 3:
+                    nose_projection = 0.020 * max(
+                        0.0, 1.0 - abs(normalized_x) * 1.7
+                    )
+                elif row_index == 4:
+                    nose_projection = 0.010 * max(
+                        0.0, 1.0 - abs(normalized_x) * 1.8
+                    )
+                vertices.append(
+                    Vector(
+                        (
+                            x,
+                            -0.036 - depth * curve - nose_projection - 0.001,
+                            height,
+                        )
+                    )
+                )
+        faces: list[tuple[int, ...]] = []
+        width = len(columns)
+        for row_index in range(len(rows) - 1):
+            for column_index in range(width - 1):
+                lower = row_index * width + column_index
+                upper = (row_index + 1) * width + column_index
+                faces.append((lower, lower + 1, upper + 1, upper))
         self.add_part(
-            "ACC_Mouth",
-            make_box((0, -0.128, 1.486), (0.062 if narrow else 0.070, 0.014, 0.012)),
-            "head", "face_detail", shadow,
+            "GEO_FaceSurface",
+            (vertices, faces),
+            "head", "facial_atlas", skin,
         )
 
-    def build_cafe_fedora(self, crown: str, band: str, broad: bool) -> None:
+    def build_cafe_fedora(
+        self,
+        crown: str,
+        band: str,
+        broad: bool,
+        hat_back_offset_m: float = 0.0,
+    ) -> None:
+        # Cafe faces look toward local -Y, so +Y moves the complete hat toward
+        # the back of the skull.  Keeping this offset head-local also preserves
+        # that fit when a staged clip tips the head forward onto the counter.
         width = 0.285 if broad else 0.255
+        depth = 0.205 if broad else 0.188
         self.add_part(
             "ACC_FedoraCrown",
-            make_tapered_box(
-                (0, -0.010, 1.665), (0, -0.006, 1.750),
-                (width * 0.73, 0.205, 0), (width * 0.64, 0.172, 0),
+            make_vertical_shell(
+                (
+                    (1.665, width * 0.365, depth * 0.50, -0.010 + hat_back_offset_m),
+                    (1.695, width * 0.355, depth * 0.48, -0.009 + hat_back_offset_m),
+                    (1.728, width * 0.335, depth * 0.45, -0.007 + hat_back_offset_m),
+                    (1.750, width * 0.320, depth * 0.42, -0.006 + hat_back_offset_m),
+                ),
+                12,
             ),
             "head", "signature_silhouette", crown,
         )
         self.add_part(
             "ACC_FedoraBand",
-            make_tapered_box(
-                (0, -0.010, 1.644), (0, -0.010, 1.675),
-                (width * 0.76, 0.215, 0), (width * 0.74, 0.208, 0),
+            make_vertical_shell(
+                (
+                    (1.644, width * 0.380, depth * 0.535, -0.010 + hat_back_offset_m),
+                    (1.660, width * 0.378, depth * 0.530, -0.010 + hat_back_offset_m),
+                    (1.675, width * 0.370, depth * 0.520, -0.010 + hat_back_offset_m),
+                ),
+                12,
             ),
             "head", "signature_silhouette", band,
         )
         self.add_part(
             "ACC_FedoraBrim",
-            make_tapered_box(
-                (0, -0.035, 1.625), (0, -0.035, 1.646),
-                (width, 0.330 if broad else 0.300, 0),
-                (width * 0.96, 0.316 if broad else 0.286, 0),
+            make_ellipsoid(
+                (0, -0.035 + hat_back_offset_m, 1.636),
+                (width * 0.50, 0.165 if broad else 0.150, 0.013),
+                16,
+                3,
             ),
             "head", "signature_silhouette", crown,
         )
         self.add_part(
             "ACC_FedoraBrowShadow",
-            make_box((0, -0.094, 1.611), (width * 0.60, 0.075, 0.028)),
+            make_box(
+                (0, -0.094 + hat_back_offset_m, 1.611),
+                (width * 0.60, 0.075, 0.028),
+            ),
             "head", "face_detail", band,
         )
+        # Hair remains quiet beneath the hat, but no longer disappears into
+        # the head primitive. These temple/nape planes match Hero V2's
+        # layered silhouette without turning the cafe patrons into clones.
+        self.add_part(
+            "ACC_HairNape",
+            make_ellipsoid(
+                (0, 0.040, 1.535), (0.092, 0.050, 0.080), 10, 4
+            ),
+            "head", "body_detail", band,
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"ACC_HairTemple.{side}",
+                make_ellipsoid(
+                    (sign * 0.088, -0.005, 1.565),
+                    (0.028, 0.038, 0.070),
+                    8,
+                    3,
+                ),
+                "head", "body_detail", band,
+            )
 
     def build_cafe_lone_patron_body(self) -> None:
         self.build_cafe_human_body(
@@ -5874,13 +6767,18 @@ class PedestrianBuilder:
             "chest", "surface_detail", "cafe_charcoal_dark",
         )
         self.build_cafe_face("cafe_skin", "cafe_charcoal_dark", True)
-        self.build_cafe_fedora("cafe_hat_grey", "cafe_hat_band", True)
+        self.build_cafe_fedora(
+            "cafe_hat_grey", "cafe_hat_band", True,
+            hat_back_offset_m=0.025,
+        )
         for index, height in enumerate((1.055, 0.960, 0.865), start=1):
             self.add_part(
                 f"ACC_SuitButton.{index:02d}",
                 make_box((0.028, -0.147, height), (0.018, 0.015, 0.018)),
                 "spine" if height < 1.05 else "chest", "surface_detail", "button",
             )
+        bpy.context.view_layer.update()
+        self.assign_atlas_uvs()
 
     def build_cafe_couple_man_body(self) -> None:
         self.build_cafe_human_body(
@@ -5918,20 +6816,14 @@ class PedestrianBuilder:
         )
         self.build_cafe_face("cafe_skin_pale", "cafe_navy_dark", True)
         self.build_cafe_fedora("cafe_hat_grey", "cafe_navy_dark", False)
-        self.add_part(
-            "ACC_HollowCheek.L", make_box((0.070, -0.112, 1.525), (0.030, 0.012, 0.050)),
-            "head", "face_detail", "cafe_skin_shadow",
-        )
-        self.add_part(
-            "ACC_HollowCheek.R", make_box((-0.070, -0.112, 1.525), (0.030, 0.012, 0.050)),
-            "head", "face_detail", "cafe_skin_shadow",
-        )
         for index, height in enumerate((1.020, 0.915), start=1):
             self.add_part(
                 f"ACC_NavyButton.{index:02d}",
                 make_box((0.024, -0.146, height), (0.016, 0.014, 0.016)),
                 "spine", "surface_detail", "button",
             )
+        bpy.context.view_layer.update()
+        self.assign_atlas_uvs()
 
     def build_cafe_couple_woman_body(self) -> None:
         self.build_cafe_human_body(
@@ -5975,39 +6867,91 @@ class PedestrianBuilder:
         # red-orange halo, not individually modelled strands.
         self.add_part(
             "ACC_CopperHairCap",
-            make_ellipsoid((0, -0.002, 1.625), (0.132, 0.112, 0.125), 12, 6),
+            make_ellipsoid((0, -0.002, 1.625), (0.132, 0.112, 0.125), 14, 7),
             "head", "signature_silhouette", "cafe_copper",
         )
         self.add_part(
             "ACC_CopperHairTop",
-            make_tapered_box((0, 0.004, 1.705), (0, 0.004, 1.750), (0.180, 0.160, 0), (0.140, 0.130, 0)),
+            make_vertical_shell(
+                (
+                    (1.695, 0.090, 0.080, 0.004),
+                    (1.714, 0.084, 0.075, 0.004),
+                    (1.735, 0.077, 0.069, 0.004),
+                    (1.750, 0.070, 0.065, 0.004),
+                ),
+                12,
+            ),
             "head", "signature_silhouette", "cafe_copper",
         )
         for side, sign in (("L", 1.0), ("R", -1.0)):
             self.add_part(
                 f"ACC_HairWave.{side}",
-                make_tapered_box(
+                make_profiled_segment(
                     (sign * 0.112, 0.008, 1.455),
                     (sign * 0.115, 0.006, 1.650),
-                    (0.075, 0.100, 0), (0.082, 0.105, 0),
+                    (
+                        (0.0, 0.034, 0.82),
+                        (0.28, 0.044, 0.88),
+                        (0.68, 0.048, 0.90),
+                        (1.0, 0.041, 0.86),
+                    ),
+                    10,
                 ),
                 "head", "signature_silhouette", "cafe_copper_dark" if side == "R" else "cafe_copper",
             )
+            self.add_part(
+                f"ACC_HairCurl.{side}",
+                make_frustum_between(
+                    (sign * 0.088, -0.082, 1.565),
+                    (sign * 0.096, -0.065, 1.470),
+                    0.026,
+                    0.020,
+                    8,
+                    0.74,
+                ),
+                "head", "signature_silhouette",
+                "cafe_copper" if side == "L" else "cafe_copper_dark",
+            )
         self.build_cafe_face("cafe_skin_pale", "cafe_copper_dark", False)
         self.add_part(
-            "ACC_LipRed", make_box((0, -0.139, 1.486), (0.072, 0.016, 0.014)),
+            "ACC_LipRed",
+            make_ellipsoid(
+                (0, -0.139, 1.486), (0.037, 0.008, 0.008), 8, 3
+            ),
             "head", "face_detail", "cafe_red_light",
         )
-        # A folded paper packet in the right fingers. Its animation is silent:
-        # it never makes contact with the counter during the authored beat.
+        # One ordinary cigarette in the free right hand. The left hand owns
+        # the coffee cup, so the two props never exchange hands. Runtime uses
+        # the existing SOCKET_Cigarette.R phase/axis for the small causal
+        # plume; neither smoke nor a realtime light is baked into this model.
         self.add_part(
-            "ACC_FoldedPaper",
-            make_tapered_box(
-                (-0.742, -0.040, 1.000), (-0.742, -0.040, 1.098),
-                (0.105, 0.028, 0), (0.092, 0.026, 0),
+            "ACC_CafeCigarette",
+            make_frustum_between(
+                # The filter begins behind the gripping fingers, so the
+                # cigarette spans the visible lips, fingers and outward
+                # ember in that order during the drag.  The old bind placed
+                # the complete prop beyond the hand; rotating the wrist then
+                # made it point vertically beside the face instead of into
+                # the mouth.
+                (-0.718303, 0.066267, 1.032366),
+                (-0.732509, -0.004833, 1.017569),
+                0.0068,
+                0.0060,
+                6,
+                1.0,
             ),
             "hand.R", "held_prop", "cafe_paper",
         )
+        self.add_part(
+            "ACC_CafeCigaretteEmber",
+            make_box(
+                (-0.725268, -0.010713, 1.019494),
+                (0.015, 0.014, 0.015),
+            ),
+            "hand.R", "surface_detail", "cafe_red_light",
+        )
+        bpy.context.view_layer.update()
+        self.assign_atlas_uvs()
 
     def build_cafe_attendant_body(self) -> None:
         self.build_cafe_human_body(
@@ -6054,7 +6998,15 @@ class PedestrianBuilder:
         # chef toque. The top plane is the canonical 1.75 m silhouette cap.
         self.add_part(
             "ACC_PaperCapCrown",
-            make_tapered_box((0, -0.002, 1.680), (0, -0.002, 1.750), (0.225, 0.145, 0), (0.185, 0.115, 0)),
+            make_vertical_shell(
+                (
+                    (1.680, 0.112, 0.072, -0.002),
+                    (1.702, 0.108, 0.069, -0.002),
+                    (1.728, 0.100, 0.063, -0.002),
+                    (1.750, 0.092, 0.057, -0.002),
+                ),
+                12,
+            ),
             "head", "signature_silhouette", "cafe_ivory_light",
         )
         self.add_part(
@@ -6063,6 +7015,24 @@ class PedestrianBuilder:
             "head", "signature_silhouette", "cafe_ivory_dark",
         )
         self.build_cafe_face("cafe_skin", "cafe_skin_shadow", False)
+        self.add_part(
+            "ACC_AttendantHairNape",
+            make_ellipsoid(
+                (0, 0.042, 1.545), (0.090, 0.046, 0.075), 10, 4
+            ),
+            "head", "body_detail", "cafe_hat_band",
+        )
+        for side, sign in (("L", 1.0), ("R", -1.0)):
+            self.add_part(
+                f"ACC_AttendantTemple.{side}",
+                make_ellipsoid(
+                    (sign * 0.086, -0.002, 1.575),
+                    (0.026, 0.034, 0.062),
+                    8,
+                    3,
+                ),
+                "head", "body_detail", "cafe_hat_band",
+            )
         # Towel left, pot right: the two props never exchange hands. Runtime
         # hides the pot while he wipes/notices and reveals it for Walk/Pour.
         self.add_part(
@@ -6091,6 +7061,27 @@ class PedestrianBuilder:
             ),
             "hand.R", "held_prop", "cafe_pot_dark",
         )
+        self.add_part(
+            "ACC_CoffeePotBaseRing",
+            make_frustum_between(
+                (-0.748, -0.022, 0.944),
+                (-0.748, -0.022, 0.960),
+                0.074,
+                0.070,
+                12,
+            ),
+            "hand.R", "held_prop", "cafe_pot_dark",
+        )
+        self.add_part(
+            "ACC_CoffeePotLidKnob",
+            make_ellipsoid(
+                (-0.748, -0.022, 1.121),
+                (0.018, 0.018, 0.015),
+                8,
+                3,
+            ),
+            "hand.R", "held_prop", "cafe_pot_dark",
+        )
         coffee_spout_base = (-0.748, -0.076, 1.040)
         coffee_spout_tip = (-0.748, -0.218, 1.104)
         self.add_part(
@@ -6103,11 +7094,27 @@ class PedestrianBuilder:
             ),
             "hand.R", "held_prop", "cafe_pot",
         )
+        self.add_part(
+            "ACC_CoffeePotSpoutLip",
+            make_ellipsoid(
+                coffee_spout_tip,
+                (0.026, 0.014, 0.020),
+                8,
+                3,
+                orientation=(v(coffee_spout_tip) - v(coffee_spout_base))
+                .to_track_quat("Z", "Y"),
+            ),
+            "hand.R", "held_prop", "cafe_pot_dark",
+        )
         self.create_bone_anchor(
             "SOCKET_CafePotSpout",
             "hand.R",
             coffee_spout_tip,
-            tuple(v(coffee_spout_tip) - v(coffee_spout_base)),
+            # FBX converts Blender's right-handed local Z to Unity with the
+            # Empty's forward axis reversed.  Author the Empty against the
+            # mesh direction here so Transform.forward in Unity follows the
+            # visible spout from pot body to lip.
+            tuple(v(coffee_spout_base) - v(coffee_spout_tip)),
         )
         self.add_part(
             "ACC_CoffeePotHandleTop",
@@ -6136,6 +7143,8 @@ class PedestrianBuilder:
             ),
             "hand.R", "held_prop", "cafe_pot_dark",
         )
+        bpy.context.view_layer.update()
+        self.assign_atlas_uvs()
 
     def build_shelter_adult_base(
         self,
@@ -7007,11 +8016,389 @@ def paint_shelter_sleeping_detail_atlas() -> atlas_kit.PixelCanvas:
     return paint_shelter_detail_atlas(SHELTER_SLEEPING_ATLAS_REGIONS, 2)
 
 
+def paint_cafe_detail_atlas(
+    regions: tuple[AtlasRegion, ...],
+    variant: int,
+) -> atlas_kit.PixelCanvas:
+    """Paint one static Hero-V2-density face and wardrobe for the cafe."""
+
+    canvas = atlas_kit.PixelCanvas(DETAIL_ATLAS_SIZE, DETAIL_ATLAS_SIZE)
+    canvas.rect(0, 0, canvas.width, canvas.height, DETAIL_ATLAS_WHITE)
+    by_name = {region.name: region for region in regions}
+    rect = atlas_kit.atlas_rect_bottom_left
+    line = atlas_kit.atlas_line_bottom_left
+
+    # Jacket/dress/apron construction: hems, vertical closures and shallow
+    # folds. The pattern remains colour-neutral so each role's palette stays
+    # under the one shared Player3DLit material.
+    for name in (
+        "Chest", "Waist", "Seat",
+        "UpperSleeve.L", "UpperSleeve.R",
+        "LowerSleeve.L", "LowerSleeve.R",
+        "Thigh.L", "Thigh.R", "Shin.L", "Shin.R",
+    ):
+        region = by_name[name]
+        line(
+            canvas,
+            region.x + 6,
+            region.y + 8,
+            region.x + region.width - 6,
+            region.y + 8,
+            DETAIL_ATLAS_SEAM,
+            2,
+        )
+        fold_x = region.x + 15 + ((variant + len(name)) % 3) * 11
+        line(
+            canvas,
+            fold_x,
+            region.y + 13,
+            fold_x + (8 if name.endswith("L") else -8),
+            region.y + 53,
+            DETAIL_ATLAS_WEAR,
+            2,
+        )
+
+    chest = by_name["Chest"]
+    front = chest.x + chest.width * 3 // 4
+    line(canvas, front, chest.y + 7, front, chest.y + 59, DETAIL_ATLAS_GROOVE, 2)
+    # Collar/lapels and two usable-looking pocket mouths. The woman gets a
+    # square neckline; the attendant a bib/collar read; both men keep lapels.
+    if variant in (0, 1):
+        line(canvas, front, chest.y + 56, front - 16, chest.y + 35, DETAIL_ATLAS_SEAM, 2)
+        line(canvas, front, chest.y + 56, front + 13, chest.y + 35, DETAIL_ATLAS_SEAM, 2)
+    elif variant == 2:
+        rect(canvas, front - 13, chest.y + 47, front + 13, chest.y + 57, DETAIL_ATLAS_GROOVE)
+        rect(canvas, front - 11, chest.y + 45, front + 11, chest.y + 57, DETAIL_ATLAS_WHITE)
+    else:
+        line(canvas, front - 15, chest.y + 51, front, chest.y + 39, DETAIL_ATLAS_GROOVE, 2)
+        line(canvas, front + 15, chest.y + 51, front, chest.y + 39, DETAIL_ATLAS_GROOVE, 2)
+    for pocket_x in (front - 18, front + 7):
+        line(canvas, pocket_x, chest.y + 20, pocket_x + 10, chest.y + 20, DETAIL_ATLAS_SEAM, 2)
+        line(canvas, pocket_x + 1, chest.y + 20, pocket_x + 3, chest.y + 13, DETAIL_ATLAS_WEAR, 1)
+
+    waist = by_name["Waist"]
+    waist_front = waist.x + waist.width * 3 // 4
+    line(canvas, waist_front, waist.y + 6, waist_front, waist.y + 58, DETAIL_ATLAS_SEAM, 2)
+    for button_y in (20, 33, 46):
+        rect(
+            canvas,
+            waist_front - 2,
+            waist.y + button_y - 2,
+            waist_front + 2,
+            waist.y + button_y + 2,
+            DETAIL_ATLAS_GROOVE,
+        )
+    if variant == 3:
+        # Clean apron double stitch and a broad service pocket.
+        line(canvas, waist.x + 9, waist.y + 52, waist.x + 57, waist.y + 52, DETAIL_ATLAS_GROOVE, 2)
+        rect(canvas, waist_front - 17, waist.y + 12, waist_front + 17, waist.y + 31, DETAIL_ATLAS_SEAM)
+        rect(canvas, waist_front - 15, waist.y + 14, waist_front + 15, waist.y + 31, DETAIL_ATLAS_WHITE)
+
+    # Cuff seams and a little elbow wear make the animated arm chains read as
+    # cloth wrapped around anatomy rather than uniform cylinders.
+    for name in (
+        "UpperSleeve.L", "UpperSleeve.R",
+        "LowerSleeve.L", "LowerSleeve.R",
+    ):
+        region = by_name[name]
+        line(canvas, region.x + 6, region.y + 48, region.x + 58, region.y + 48, DETAIL_ATLAS_GROOVE, 2)
+        for stitch_x in range(region.x + 8, region.x + 58, 6):
+            rect(canvas, stitch_x, region.y + 10, stitch_x + 2, region.y + 12, DETAIL_ATLAS_SEAM)
+
+    # Trouser/dress seams, knee creases and hems.
+    for name in ("Thigh.L", "Thigh.R", "Shin.L", "Shin.R"):
+        region = by_name[name]
+        line(canvas, region.x + 20, region.y + 8, region.x + 20, region.y + 57, DETAIL_ATLAS_SEAM, 2)
+        line(canvas, region.x + 8, region.y + 35, region.x + 55, region.y + 29, DETAIL_ATLAS_WEAR, 2)
+        if variant == 2:
+            line(canvas, region.x + 8, region.y + 51, region.x + 57, region.y + 51, DETAIL_ATLAS_GROOVE, 2)
+
+    # Proper shoe construction: heel seam, sole welt, four eyelet pairs,
+    # crossing laces and a restrained toe scuff.
+    for name in ("Shoe.L", "Shoe.R"):
+        region = by_name[name]
+        side_x = region.x
+        top_x = region.x + region.width // 2
+        line(canvas, side_x + 7, region.y + 5, side_x + 7, region.y + 57, DETAIL_ATLAS_SEAM, 2)
+        line(canvas, side_x + 3, region.y + 45, side_x + 30, region.y + 45, DETAIL_ATLAS_GROOVE, 2)
+        for lace_y in range(region.y + 21, region.y + 50, 7):
+            rect(canvas, top_x + 8, lace_y, top_x + 11, lace_y + 3, DETAIL_ATLAS_LACE)
+            rect(canvas, top_x + 21, lace_y, top_x + 24, lace_y + 3, DETAIL_ATLAS_LACE)
+            line(canvas, top_x + 10, lace_y + 1, top_x + 22, lace_y + 5, DETAIL_ATLAS_LACE)
+            line(canvas, top_x + 22, lace_y + 1, top_x + 10, lace_y + 5, DETAIL_ATLAS_LACE)
+        rect(canvas, top_x + 4, region.y + 54, top_x + 29, region.y + 60, DETAIL_ATLAS_WEAR)
+
+    # Static facial atlas on a curved 7x7 patch: brows, heavy lids, eye
+    # whites/pupils, nose bridge/tip, cheek planes, under-eye lines and mouth.
+    face = by_name["Face"]
+    eye_y = face.y + (39 if variant != 1 else 38)
+    for eye_x in (face.x + 20, face.x + 44):
+        rect(canvas, eye_x - 6, eye_y - 3, eye_x + 6, eye_y + 3, DETAIL_ATLAS_WEAR)
+        line(canvas, eye_x - 7, eye_y + 4, eye_x + 7, eye_y + 5, DETAIL_ATLAS_GROOVE, 2)
+        rect(canvas, eye_x - 2, eye_y - 2, eye_x + 2, eye_y + 3, DETAIL_ATLAS_LACE)
+        line(canvas, eye_x - 6, eye_y - 6, eye_x + 6, eye_y - 5, DETAIL_ATLAS_SEAM, 1)
+    brow_slant = 2 if variant in (0, 3) else -1
+    line(canvas, face.x + 12, face.y + 49, face.x + 27, face.y + 49 + brow_slant, DETAIL_ATLAS_GROOVE, 2)
+    line(canvas, face.x + 37, face.y + 49 + brow_slant, face.x + 52, face.y + 49, DETAIL_ATLAS_GROOVE, 2)
+    line(canvas, face.x + 32, face.y + 43, face.x + 31, face.y + 25, DETAIL_ATLAS_SEAM, 2)
+    line(canvas, face.x + 25, face.y + 24, face.x + 32, face.y + 21, DETAIL_ATLAS_WEAR, 2)
+    line(canvas, face.x + 32, face.y + 21, face.x + 40, face.y + 24, DETAIL_ATLAS_WEAR, 2)
+    line(canvas, face.x + 20, face.y + 17, face.x + 44, face.y + 17, DETAIL_ATLAS_GROOVE, 2)
+    line(canvas, face.x + 23, face.y + 14, face.x + 41, face.y + 14, DETAIL_ATLAS_SEAM, 1)
+    if variant == 0:
+        for y in range(face.y + 8, face.y + 23, 5):
+            for x in range(face.x + 14 + (y % 2), face.x + 52, 7):
+                rect(canvas, x, y, x + 2, y + 2, DETAIL_ATLAS_GROOVE)
+    elif variant == 1:
+        line(canvas, face.x + 10, face.y + 31, face.x + 22, face.y + 27, DETAIL_ATLAS_WEAR, 2)
+        line(canvas, face.x + 42, face.y + 27, face.x + 54, face.y + 31, DETAIL_ATLAS_WEAR, 2)
+    elif variant == 2:
+        line(canvas, face.x + 14, face.y + 52, face.x + 27, face.y + 50, DETAIL_ATLAS_LACE, 1)
+        line(canvas, face.x + 37, face.y + 50, face.x + 50, face.y + 52, DETAIL_ATLAS_LACE, 1)
+
+    headwear = by_name["Headwear"]
+    if variant == 2:
+        # Copper parting and wave highlights.
+        line(canvas, headwear.x + 32, headwear.y + 8, headwear.x + 28, headwear.y + 58, DETAIL_ATLAS_GROOVE, 2)
+        for offset in (10, 22, 44, 55):
+            line(canvas, headwear.x + offset, headwear.y + 12, headwear.x + offset - 3, headwear.y + 54, DETAIL_ATLAS_WEAR, 2)
+    else:
+        line(canvas, headwear.x + 6, headwear.y + 18, headwear.x + 58, headwear.y + 18, DETAIL_ATLAS_GROOVE, 2)
+        for stitch_x in range(headwear.x + 8, headwear.x + 58, 6):
+            rect(canvas, stitch_x, headwear.y + 49, stitch_x + 2, headwear.y + 52, DETAIL_ATLAS_SEAM)
+    return canvas
+
+
+def paint_cafe_lone_detail_atlas() -> atlas_kit.PixelCanvas:
+    return paint_cafe_detail_atlas(CAFE_LONE_ATLAS_REGIONS, 0)
+
+
+def paint_cafe_man_detail_atlas() -> atlas_kit.PixelCanvas:
+    return paint_cafe_detail_atlas(CAFE_MAN_ATLAS_REGIONS, 1)
+
+
+def paint_cafe_woman_detail_atlas() -> atlas_kit.PixelCanvas:
+    return paint_cafe_detail_atlas(CAFE_WOMAN_ATLAS_REGIONS, 2)
+
+
+def paint_cafe_attendant_detail_atlas() -> atlas_kit.PixelCanvas:
+    return paint_cafe_detail_atlas(CAFE_ATTENDANT_ATLAS_REGIONS, 3)
+
+
+MOTHER_FACE_ATLAS_NAME = "MotherFaceAtlas.png"
+
+# Her face, at sixty-four pixels a side. Full-colour final sRGB, not a
+# multiply mask: an expression atlas is composited whole, and the palette
+# entry that carries it is white so the registry's own tint cannot darken
+# it twice.
+MOTHER_FACE_SKIN = (133, 102, 88, 255)
+MOTHER_FACE_SKIN_LIGHT = (147, 114, 97, 255)
+MOTHER_FACE_SKIN_SHADOW = (88, 66, 60, 255)
+MOTHER_FACE_SKIN_DARK = (52, 39, 37, 255)
+MOTHER_FACE_EYE_WHITE = (126, 119, 112, 255)
+MOTHER_FACE_EYE_DULL = (101, 96, 92, 255)
+MOTHER_FACE_SOCKET = (99, 73, 68, 255)
+MOTHER_FACE_UNDER_EYE = (88, 63, 60, 255)
+MOTHER_FACE_LINE = (74, 54, 51, 255)
+MOTHER_FACE_HAIR = (108, 104, 98, 255)
+MOTHER_FACE_LIP = (92, 63, 62, 255)
+
+
+def draw_mother_face_tile(
+    canvas: atlas_kit.PixelCanvas,
+    column: int,
+    top_row: int,
+    expression: str,
+) -> None:
+    """One 64x64 expression cell.
+
+    Structurally the hero's tile - the same eye line, the same nose column,
+    the same mouth row - because the two faces have to sit in the same
+    grammar to read as one game. What differs is age, and age here is three
+    things and no more: the lids sit lower, the sockets are deeper, and
+    there are set lines from the nose to the mouth corners. No sag, no
+    blotching, no illness; §10g forbids reading a diagnosis off her.
+    """
+
+    size = FACE_ATLAS_CELL_SIZE
+    origin_x = column * size
+    origin_y = top_row * size
+
+    def put(x: int, y: int, colour: tuple[int, int, int, int]) -> None:
+        if 0 <= x < size and 0 <= y < size:
+            canvas.put(origin_x + x, origin_y + y, colour)
+
+    for y in range(size):
+        for x in range(size):
+            put(x, y, MOTHER_FACE_SKIN)
+
+    # Temple shadow rails, forehead band and the jaw contour: the shared
+    # substrate every cell starts from.
+    for y in range(size):
+        put(0, y, MOTHER_FACE_SKIN_SHADOW)
+        put(1, y, MOTHER_FACE_SKIN_SHADOW)
+        put(size - 1, y, MOTHER_FACE_SKIN_SHADOW)
+        put(size - 2, y, MOTHER_FACE_SKIN_SHADOW)
+    for y in range(6, 12):
+        for x in range(10, 54):
+            put(x, y, MOTHER_FACE_SKIN_LIGHT)
+    # Grey hair closing the top of the cell.
+    for y in range(0, 6):
+        for x in range(2, 62):
+            put(x, y, MOTHER_FACE_HAIR)
+    for x in range(12, 52):
+        put(x, 56 + (abs(x - 32) // 9), MOTHER_FACE_SKIN_SHADOW)
+        put(x, 57 + (abs(x - 32) // 9), MOTHER_FACE_SKIN_DARK)
+
+    # Deep sockets - the single strongest age cue at this size.
+    for x in range(13, 29):
+        put(x, 22, MOTHER_FACE_SOCKET)
+        put(x, 23, MOTHER_FACE_SOCKET)
+    for x in range(35, 51):
+        put(x, 22, MOTHER_FACE_SOCKET)
+        put(x, 23, MOTHER_FACE_SOCKET)
+
+    # The nose: bridge column and tip, matching the geometry's own
+    # projection rows so the painted nose sits on the modelled one.
+    for y in range(18, 40):
+        put(31, y, MOTHER_FACE_SKIN_SHADOW)
+        put(32, y, MOTHER_FACE_SKIN_LIGHT)
+    for x in range(28, 37):
+        put(x, 40, MOTHER_FACE_SKIN_SHADOW)
+    for x in range(29, 36):
+        put(x, 41, MOTHER_FACE_SKIN_DARK)
+
+    # Set lines from the nose to the mouth corners. Age, drawn once.
+    for step in range(7):
+        put(26 - step // 2, 42 + step, MOTHER_FACE_LINE)
+        put(38 + step // 2, 42 + step, MOTHER_FACE_LINE)
+
+    eye_y = 26
+    brow_flat = expression != "Tense"
+    if expression == "ClosedBlink":
+        eye_height = 0
+    elif expression == "Watchful":
+        eye_height = 4
+    elif expression == "HalfBlink":
+        eye_height = 1
+    else:
+        eye_height = 2
+
+    for centre_x in (21, 43):
+        # The brow. Flat everywhere but Tense, exactly as the hero's is:
+        # a slanted brow is the one shape that reads as an opinion.
+        for offset in range(-8, 9):
+            x = centre_x + offset
+            if brow_flat:
+                y = 19
+            else:
+                lean = offset if centre_x == 21 else -offset
+                y = 19 + (1 if lean > 3 else 0) - (1 if lean < -3 else 0)
+            put(x, y, MOTHER_FACE_LINE)
+            put(x, y + 1, MOTHER_FACE_SKIN_SHADOW)
+
+        if eye_height == 0:
+            for offset in range(-7, 8):
+                put(centre_x + offset, eye_y + 2, MOTHER_FACE_SKIN_DARK)
+                put(centre_x + offset, eye_y + 4, MOTHER_FACE_UNDER_EYE)
+        else:
+            fill = (
+                MOTHER_FACE_EYE_DULL
+                if expression == "Tense"
+                else MOTHER_FACE_EYE_WHITE
+            )
+            for offset in range(-6, 7):
+                for row in range(eye_height):
+                    put(centre_x + offset, eye_y + row, fill)
+            if expression not in ("HalfBlink",):
+                pupil_x = centre_x + (1 if expression == "Watchful" else 0)
+                for row in range(eye_height):
+                    put(pupil_x, eye_y + row, MOTHER_FACE_SKIN_DARK)
+                    put(pupil_x + 1, eye_y + row, MOTHER_FACE_SKIN_DARK)
+            # The heavy upper lid: what makes the eye old rather than tired.
+            for offset in range(-7, 8):
+                put(centre_x + offset, eye_y - 1, MOTHER_FACE_SOCKET)
+        for offset in range(-6, 7):
+            put(centre_x + offset, eye_y + eye_height + 2, MOTHER_FACE_UNDER_EYE)
+
+    mouth_y = 47
+    if expression == "Tense":
+        for x in range(26, 39):
+            put(x, mouth_y, MOTHER_FACE_LIP)
+            put(x, mouth_y + 1, MOTHER_FACE_LIP)
+    else:
+        # A closed, level mouth with a slight fall at one corner - not a
+        # frown, and certainly not a smile: §13 says her face answers
+        # nothing, and a mouth is where an answer would show first.
+        for x in range(26, 39):
+            put(x, mouth_y, MOTHER_FACE_LIP)
+        for x in range(26, 32):
+            put(x, mouth_y + 1, MOTHER_FACE_LIP)
+        put(25, mouth_y + 1, MOTHER_FACE_LINE)
+        put(39, mouth_y, MOTHER_FACE_LINE)
+    for x in range(25, 40):
+        put(x, mouth_y + 3, MOTHER_FACE_SKIN_SHADOW)
+
+
+def paint_mother_face_atlas() -> atlas_kit.PixelCanvas:
+    """The 4x4 expression grid.
+
+    EVERY cell is painted Neutral first and only then overwritten. That is
+    not tidiness: a wrong cell transform is otherwise invisible, because the
+    row order flips between Blender and Unity, and a mis-flipped lookup that
+    landed on an unpainted cell would show a hole in her face instead of a
+    face that simply never changes.
+    """
+
+    canvas = atlas_kit.PixelCanvas(FACE_ATLAS_SIZE, FACE_ATLAS_SIZE)
+    for row in range(FACE_ATLAS_ROWS):
+        for column in range(FACE_ATLAS_COLUMNS):
+            draw_mother_face_tile(canvas, column, row, "Neutral")
+    for column, top_row, expression in MOTHER_FACE_CELLS:
+        draw_mother_face_tile(canvas, column, top_row, expression)
+    return canvas
+
+
+# (column, top_row, expression) as PAINTED - top-down, Blender's order.
+# The Unity row is `FACE_ATLAS_ROWS - 1 - top_row`; see `mother_face_cells`.
+MOTHER_FACE_CELLS = (
+    (0, 0, "Neutral"),
+    (1, 0, "HalfBlink"),
+    (2, 0, "ClosedBlink"),
+    (0, 1, "Watchful"),
+    (1, 1, "Tense"),
+)
+
+
+def mother_face_cells() -> list[dict]:
+    """The cell table as UNITY reads it, with the row flip applied once.
+
+    This flip is the single most dangerous number in the feature and it
+    fails silently in both directions: Python paints top-down, Unity samples
+    bottom-up, and because every cell is a face, a wrong row shows a face.
+    It is converted here, once, and the manifest carries the converted value
+    so no consumer has to know the rule.
+    """
+
+    return [
+        {
+            "expression": expression,
+            "column": column,
+            "row": FACE_ATLAS_ROWS - 1 - top_row,
+        }
+        for column, top_row, expression in MOTHER_FACE_CELLS
+    ]
+
+
 DETAIL_ATLAS_PAINTERS = {
     KETTLE_DETAIL_ATLAS_NAME: paint_kettle_hat_detail_atlas,
     SHELTER_STANDING_DETAIL_ATLAS_NAME: paint_shelter_standing_detail_atlas,
     SHELTER_SEATED_DETAIL_ATLAS_NAME: paint_shelter_seated_detail_atlas,
     SHELTER_SLEEPING_DETAIL_ATLAS_NAME: paint_shelter_sleeping_detail_atlas,
+    CAFE_LONE_DETAIL_ATLAS_NAME: paint_cafe_lone_detail_atlas,
+    CAFE_MAN_DETAIL_ATLAS_NAME: paint_cafe_man_detail_atlas,
+    CAFE_WOMAN_DETAIL_ATLAS_NAME: paint_cafe_woman_detail_atlas,
+    CAFE_ATTENDANT_DETAIL_ATLAS_NAME: paint_cafe_attendant_detail_atlas,
 }
 
 
@@ -7036,6 +8423,35 @@ def paint_detail_atlas(spec: ArchetypeSpec, path: Path) -> AtlasReport:
     if painter is None:
         raise RuntimeError(f"No painter is registered for {spec.texture_atlas}")
     return atlas_report_from_canvas(painter(), path)
+
+
+FACE_ATLAS_PAINTERS = {
+    MOTHER_FACE_ATLAS_NAME: paint_mother_face_atlas,
+}
+
+
+def build_face_atlas(spec: ArchetypeSpec, path: Path) -> AtlasReport:
+    """Paint and write a design's expression atlas, and prove it landed."""
+
+    if spec.face_atlas is None:
+        raise RuntimeError(f"{spec.design_id} declares no face atlas")
+    painter = FACE_ATLAS_PAINTERS.get(spec.face_atlas)
+    if painter is None:
+        raise RuntimeError(f"No painter is registered for {spec.face_atlas}")
+    report = atlas_report_from_canvas(painter(), path)
+    if report.width != FACE_ATLAS_SIZE or report.height != FACE_ATLAS_SIZE:
+        raise RuntimeError(
+            f"{spec.face_atlas} is {report.width}x{report.height}; the "
+            f"importer pins {FACE_ATLAS_SIZE}"
+        )
+    painter().write_png(path)
+    written = hashlib.sha256(path.read_bytes()).hexdigest()
+    if written != report.sha256:
+        raise RuntimeError(
+            f"Face atlas {path} hashes {written} on disk but "
+            f"{report.sha256} in memory"
+        )
+    return report
 
 
 def build_detail_atlas(spec: ArchetypeSpec, path: Path) -> AtlasReport:
@@ -7179,6 +8595,27 @@ def validate_detail_atlas(
             errors.append("Shelter resident atlas needs two detailed laced boots")
         if count(DETAIL_ATLAS_GROOVE) < 300:
             errors.append("Shelter resident atlas needs knit, cuff and face grooves")
+    if archetype.texture_atlas in {
+        CAFE_LONE_DETAIL_ATLAS_NAME,
+        CAFE_MAN_DETAIL_ATLAS_NAME,
+        CAFE_WOMAN_DETAIL_ATLAS_NAME,
+        CAFE_ATTENDANT_DETAIL_ATLAS_NAME,
+    }:
+        whole = (0, 0, DETAIL_ATLAS_SIZE, DETAIL_ATLAS_SIZE)
+
+        def cafe_count(color: tuple[int, int, int, int]) -> int:
+            return atlas_kit.count_rect_color(
+                atlas.pixels, atlas.width, atlas.height, whole, {color},
+            )
+
+        if cafe_count(DETAIL_ATLAS_SEAM) < 420:
+            errors.append("Cafe detail atlas needs visible seams and facial planes")
+        if cafe_count(DETAIL_ATLAS_WEAR) < 300:
+            errors.append("Cafe detail atlas needs visible cloth and face shading")
+        if cafe_count(DETAIL_ATLAS_GROOVE) < 250:
+            errors.append("Cafe detail atlas needs closures, eyelids and shoe structure")
+        if cafe_count(DETAIL_ATLAS_LACE) < 80:
+            errors.append("Cafe detail atlas needs pupils and two detailed laced shoes")
 
 
 def validate_result(
@@ -7660,6 +9097,7 @@ def write_manifest(
     report: ValidationReport,
     spec: ArchetypeSpec,
     atlas: AtlasReport | None = None,
+    face_atlas: AtlasReport | None = None,
 ) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     parts_by_name = {part.obj.name: part for part in result.parts}
@@ -7725,6 +9163,12 @@ def write_manifest(
             if spec.perch_seat_height_m is not None
             else None
         ),
+        "perch_support_contact_m": (
+            list(spec.perch_support_contact_m)
+            if spec.perch_support_contact_m is not None
+            else None
+        ),
+        "perch_support_radius_m": spec.perch_support_radius_m,
         "floor_seated_contact_m": (
             list(spec.floor_seated_contact_m)
             if spec.floor_seated_contact_m is not None
@@ -7825,6 +9269,62 @@ def write_manifest(
                 ],
             }
         ]
+    if spec.face_atlas is not None:
+        if face_atlas is None:
+            raise RuntimeError(
+                f"{spec.design_id} manifest needs its painted face atlas"
+            )
+        if FACE_SURFACE_PART not in parts_by_name:
+            raise RuntimeError(
+                f"{spec.design_id} declares a face atlas without "
+                f"{FACE_SURFACE_PART}"
+            )
+        # The tint declared two lines below is not decoration - the renderer
+        # multiplies it by the atlas, and the atlas already carries finished
+        # skin. A coloured patch would darken every expression by its own
+        # complexion, and it would do it silently: the face would simply look
+        # muddy in the room and correct in every preview render.
+        # The patch must carry the UV layer that makes it addressable. An
+        # unwrapped face exports without complaint, imports without complaint,
+        # and only fails where nobody is looking - so the manifest refuses to
+        # claim a face atlas the geometry cannot actually sample.
+        face_part = parts_by_name[FACE_SURFACE_PART]
+        face_uv_layers = [layer.name for layer in face_part.obj.data.uv_layers]
+        if FACE_ATLAS_UV_LAYER not in face_uv_layers:
+            raise RuntimeError(
+                f"{spec.design_id}: {FACE_SURFACE_PART} carries no "
+                f"'{FACE_ATLAS_UV_LAYER}' UV layer (found {face_uv_layers}) "
+                "- the runtime cell transform has nothing to slide"
+            )
+        face_tint = face_part.color
+        if any(abs(component - 1.0) > 1e-6 for component in face_tint[:3]):
+            raise RuntimeError(
+                f"{spec.design_id}: {FACE_SURFACE_PART} must be tinted "
+                f"white, not {face_tint[:3]} - a full-colour face atlas is "
+                "multiplied by the renderer tint"
+            )
+        payload["face_atlas"] = {
+            "texture_asset": texture_asset_path(face_atlas.path),
+            "renderer": FACE_SURFACE_PART,
+            "columns": FACE_ATLAS_COLUMNS,
+            "rows": FACE_ATLAS_ROWS,
+            "cell_size_px": FACE_ATLAS_CELL_SIZE,
+            "width_px": face_atlas.width,
+            "height_px": face_atlas.height,
+            "sha256": face_atlas.sha256,
+            "color_space": "sRGB",
+            "filter_mode": "Point",
+            "wrap_mode": "Clamp",
+            "mipmaps": False,
+            "compression": "Uncompressed",
+            "uv_channel": 0,
+            # Already flipped into Unity's own bottom-up row order by
+            # `mother_face_cells`. Nothing downstream should flip it again.
+            "uv_origin": "bottom_left",
+            "material_tint_hex": "FFFFFF",
+            "uv_contract": "local_0_1_runtime_cell_scale_offset",
+            "cells": mother_face_cells(),
+        }
     temporary = path.with_suffix(path.suffix + ".tmp")
     temporary.write_text(
         json.dumps(payload, ensure_ascii=False, indent=2) + "\n",
@@ -8054,6 +9554,21 @@ ACTION_SPECS = (
         # pelvis by more than the roof allows is wearing the roof, and
         # this is the only clip that would show it.
     ),
+    # Her one clip. Six seconds of breathing and nothing else - the chair's
+    # rock is driven in C# so that a single angle carries both the timber
+    # and the woman on it, and writing a sway in here as well would give
+    # the same motion two owners and let them drift apart.
+    #
+    # The archetype names it in BOTH slots. That is not an oversight: the
+    # catalog wants an idle and a walk, and she has exactly one posture and
+    # never stands up.
+    ActionSpec(
+        "MotherRock", "mother_v1", 6.0, 144,
+        "settled back in the rocking chair with both hands folded in her lap",
+        "four slow breaths carried by the ribs, the folded hands drifting with them",
+        seated=True,
+        perched=True,
+    ),
     ActionSpec(
         "ChessBrood", "park_chess_player_v1", 12.0, 288,
         "perched on the bench plank, both elbows on the board rim, the head sunk into both hands",
@@ -8184,29 +9699,29 @@ ACTION_SPECS = (
     # service step, and exact-base pour/notice one-shots. They live in
     # MountainRoadCafeCast.fbx, never in the ambient locomotion contract.
     ActionSpec(
-        "CafeLoneIdle", "cafe_lone_patron_v1", 12.0, 288,
-        "seated alone with a broad back to the room, forearms low at the counter",
-        "two slow breaths and one slight shoulder sink without a backward glance",
+        "CafeLoneSleep", "cafe_lone_patron_v2", 12.0, 288,
+        "seated on the door-side bar stool with rounded forearms crossed and stacked on the counter, his cheek resting on the upper arm",
+        "three slow sleeping breaths carried by the chest without lifting the cheek or either arm from its support",
         seated=True,
         perched=True,
+        motion_beats=(
+            ("inhale", 1.0 / 6.0),
+            ("exhale", 1.0 / 3.0),
+            ("inhale", 1.0 / 2.0),
+            ("exhale", 2.0 / 3.0),
+            ("inhale", 5.0 / 6.0),
+        ),
     ),
     ActionSpec(
-        "CafeLoneDrink", "cafe_lone_patron_v1", 5.0, 120,
-        "seated alone with the face held beneath the fedora brim",
-        "right hand lifts the cup to one restrained sip and replaces it on the saucer",
-        seated=True,
-        perched=True,
-        one_shot=True,
-    ),
-    ActionSpec(
-        "CafeManIdle", "cafe_couple_man_v1", 10.0, 240,
+        "CafeManIdle", "cafe_couple_man_v2", 10.0, 240,
         "narrow seated silhouette inclined toward the woman beside him",
-        "three shallow breaths with the eyes held down at the counter",
+        "three uneven silent left-hand taps on the counter between shallow breaths",
         seated=True,
         perched=True,
+        motion_beats=(("tap", 0.22), ("tap", 0.33), ("tap", 0.46)),
     ),
     ActionSpec(
-        "CafeManDrink", "cafe_couple_man_v1", 4.75, 114,
+        "CafeManDrink", "cafe_couple_man_v2", 4.75, 114,
         "seated toward the woman with the near forearm resting low",
         "right hand lifts the cup in the same normalized rhythm as the woman",
         seated=True,
@@ -8214,38 +9729,39 @@ ACTION_SPECS = (
         one_shot=True,
     ),
     ActionSpec(
-        "CafeWomanIdle", "cafe_couple_woman_v1", 11.0, 264,
-        "seated in red, folded paper held near the cheek and gaze lowered",
-        "two uneven breaths while the paper remains suspended before use",
+        "CafeWomanIdle", "cafe_couple_woman_v2", 11.0, 264,
+        "seated in red with a lit cigarette in the free right hand",
+        "one slow cigarette drag, a lowered hand and a restrained exhale",
         seated=True,
         perched=True,
+        motion_beats=(("cigarette_drag", 0.31), ("exhale", 0.58)),
     ),
     ActionSpec(
-        "CafeWomanDrink", "cafe_couple_woman_v1", 4.75, 114,
+        "CafeWomanDrink", "cafe_couple_woman_v2", 4.75, 114,
         "seated in red with one elbow held near the counter",
-        "left hand lifts the cup while the folded paper stays in the right fingers",
+        "left hand lifts the cup while the cigarette stays in the right fingers",
         seated=True,
         perched=True,
         one_shot=True,
     ),
     ActionSpec(
-        "CafeAttendantWipe", "cafe_attendant_v1", 9.0, 216,
+        "CafeAttendantWipe", "cafe_attendant_v2", 9.0, 216,
         "standing behind the counter with the towel in the left hand",
         "three unhurried wiping passes over the counter between service calls",
     ),
     ActionSpec(
-        "CafeAttendantWalk", "cafe_attendant_v1", 1.25, 30,
+        "CafeAttendantWalk", "cafe_attendant_v2", 1.25, 30,
         "standing behind the counter with towel left and coffee pot right",
         "one small in-place service step cycle without root translation",
     ),
     ActionSpec(
-        "CafeAttendantPour", "cafe_attendant_v1", 3.5, 84,
+        "CafeAttendantPour", "cafe_attendant_v2", 3.5, 84,
         "standing at a patron cup with the coffee pot in the right hand",
         "pot lifts, tips for one measured pour, rights itself and returns to base",
         one_shot=True,
     ),
     ActionSpec(
-        "CafeAttendantNotice", "cafe_attendant_v1", 2.5, 60,
+        "CafeAttendantNotice", "cafe_attendant_v2", 2.5, 60,
         "standing behind the counter with the towel held low",
         "head and shoulders register the arrival, hold, then return without speech",
         one_shot=True,
@@ -8991,6 +10507,123 @@ def chess_player_base_pose() -> dict[str, BonePose]:
     }
 
 
+def mother_base_pose() -> dict[str, BonePose]:
+    """Settled back in the rocking chair, hands in her lap.
+
+    Three sources, each for the thing it already solved.
+
+    The LEGS are the chess player's, angle for angle, and for his reason
+    rather than a new one: the shared rig is asymmetric on purpose
+    (`toe.L` at -0.230, `toe.R` at -0.188), so symmetric legs land the two
+    soles about 32 mm apart and `perch_seat_height_m` has no single contact
+    to measure. One flat plant, one foot drawn back. Her cushion is 0.57 m
+    where his plank is 0.54, so the thighs come up three degrees.
+
+    The AGE is the babushka's recipe - rounded spine, sunk neck, dropped
+    pelvis - but shallower, because she is not standing under her own
+    weight. A stoop authored for a woman on her feet reads as a collapse in
+    a chair with a back to lean on.
+
+    The BACKREST is this pose's own problem. The chair's slats lean 12
+    degrees and a figure sitting bolt upright would pass straight through
+    them, so the torso is laid back to meet the wood rather than posed
+    forward the way every other seated design in the game is.
+
+    Her hands rest in her lap, one loosely over the other. Nothing is held:
+    §10g excludes work in her hands as firmly as it excludes medicines.
+    """
+
+    return {
+        # THE RECLINE LIVES IN THE SPINE, NOT IN THE PELVIS, and that is a
+        # correction rather than a preference: the thighs are the pelvis's
+        # children, so rolling it back to lean her on the slats swings both
+        # legs up with it. Authored that way she measured 0.133 m from hips
+        # to soles against a 0.57 m cushion - she was sitting in mid-air with
+        # her knees at her chest. The pelvis therefore stays where a seated
+        # pelvis belongs and the chair's 12 degrees are met further up.
+        "pelvis": BonePose(
+            rotation_degrees=(6.0, 0.0, 0.0), location_m=(0, 0.004, -0.010)
+        ),
+        "spine": BonePose(rotation_degrees=(-14.0, 0.0, 0.0)),
+        # The chest comes forward again: the rounded upper back is the age,
+        # and without it a reclined torso reads as a young woman lounging.
+        "chest": BonePose(rotation_degrees=(9.0, 0.0, 0.0)),
+        "neck": BonePose(rotation_degrees=(-7.0, 0.0, 0.0)),
+        # And the head level. She is not looking at anything - §10g forbids
+        # a gaze that answers the door - so the face simply faces the room.
+        "head": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
+        # Old shoulders: up, forward, and narrower than a walker's.
+        "clavicle.L": BonePose(rotation_degrees=(3.0, -6.0, 8.0)),
+        "clavicle.R": BonePose(rotation_degrees=(3.0, 6.0, -8.0)),
+        # Arms down and in, forearms crossing into the lap. The upper arms
+        # stay close to the ribs, which is what makes a seated figure look
+        # settled rather than posed.
+        # Taken from the two designs that already sit with their arms down -
+        # the cafe woman and the shelter's seated resident - rather than
+        # posed again. Both converged on the same shape, and it is nothing
+        # like a guess would give: the upper arm swings barely ten degrees
+        # in Z and does its work in X. Authored by eye at Z 38 her arms
+        # stood out from her sides like a doll's.
+        "upper_arm.L": BonePose(rotation_degrees=(-30.0, 4.0, 10.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-32.0, -4.0, -11.0)),
+        "forearm.L": BonePose(rotation_degrees=(-80.0, 2.0, -14.0)),
+        "forearm.R": BonePose(rotation_degrees=(-76.0, -2.0, 12.0)),
+        # One hand over the other, so the pair reads as folded rather than
+        # as two hands that happen to be adjacent.
+        "hand.L": BonePose(rotation_degrees=(8.0, -5.0, 5.0)),
+        "hand.R": BonePose(rotation_degrees=(5.0, 5.0, -5.0)),
+        # The chess player's own measured legs, unchanged. They were
+        # converged against `perch_seat_height_m` rather than posed, and his
+        # plank and her cushion are within three centimetres of each other,
+        # so re-deriving them would only move a solved thing.
+        "thigh.L": BonePose(rotation_degrees=(-64.0, 0.0, 4.0)),
+        "shin.L": BonePose(rotation_degrees=(37.5, 0.0, 0.0)),
+        "foot.L": BonePose(rotation_degrees=(-8.0, 0.0, 0.0)),
+        "thigh.R": BonePose(rotation_degrees=(-90.0, 0.0, -4.0)),
+        "shin.R": BonePose(rotation_degrees=(101.0, 0.0, 0.0)),
+        "foot.R": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
+    }
+
+
+def mother_breath_pose(amount: float) -> dict[str, BonePose]:
+    """The whole of her movement: a breath, and the hands settling on it.
+
+    Deliberately tiny. The chair's rock is a separate, larger motion driven
+    in C#, and a clip that also swayed would fight it - two sources of the
+    same movement is exactly what the runtime design avoids. What is left
+    here is what a rocking chair does NOT do: fill and empty a chest.
+    """
+
+    pose = mother_base_pose()
+    pose["chest"] = BonePose(
+        rotation_degrees=(9.0 - 1.1 * amount, 0.0, 0.0)
+    )
+    pose["spine"] = BonePose(
+        rotation_degrees=(-4.0 - 0.5 * amount, 0.0, 0.0)
+    )
+    pose["neck"] = BonePose(
+        rotation_degrees=(-7.0 + 0.6 * amount, 0.0, 0.0)
+    )
+    pose["head"] = BonePose(
+        rotation_degrees=(4.0 - 0.4 * amount, 0.0, 0.0)
+    )
+    pose["clavicle.L"] = BonePose(
+        rotation_degrees=(3.0 - 0.8 * amount, -6.0, 8.0)
+    )
+    pose["clavicle.R"] = BonePose(
+        rotation_degrees=(3.0 - 0.8 * amount, 6.0, -8.0)
+    )
+    # The hands drift a fraction with the breath, one slightly more than
+    # the other, so the pair never looks welded together.
+    pose["forearm.L"] = BonePose(
+        rotation_degrees=(-80.0 + 0.9 * amount, 2.0, -14.0)
+    )
+    pose["forearm.R"] = BonePose(
+        rotation_degrees=(-76.0 + 0.6 * amount, -2.0, 12.0)
+    )
+    return pose
+
+
 def chess_player_stand_pose() -> dict[str, BonePose]:
     """The stooped stance the trudge is built on.
 
@@ -9064,22 +10697,37 @@ CAFE_PERCH_LEGS = {
 
 
 def cafe_lone_base_pose() -> dict[str, BonePose]:
+    """Deep counter sleep with a real rounded, stacked-arm pillow.
+
+    Both elbows remain visibly flexed and open to the sides.  The left
+    forearm owns the counter contact, the right crosses above it, and the
+    anatomical head (not the fedora) rests on that upper forearm.
+    """
+
     return merge_pose(
         {
             "pelvis": BonePose(
                 rotation_degrees=(7.0, 0.0, 0.0),
-                location_m=(0, 0.004, -0.012),
+                location_m=(0.0, 0.00507, -0.012),
             ),
-            "spine": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
-            "chest": BonePose(rotation_degrees=(10.0, 0.0, 0.0)),
-            "neck": BonePose(rotation_degrees=(-6.0, 0.0, 0.0)),
-            "head": BonePose(rotation_degrees=(5.0, 0.0, 0.0)),
+            "spine": BonePose(rotation_degrees=(54.0, 0.0, 0.0)),
+            "chest": BonePose(rotation_degrees=(18.0, 0.0, 0.0)),
+            "neck": BonePose(rotation_degrees=(-90.0, 0.0, 0.0)),
+            "head": BonePose(rotation_degrees=(75.0, 0.0, 0.0)),
             "clavicle.L": BonePose(rotation_degrees=(5.0, -5.0, 8.0)),
             "clavicle.R": BonePose(rotation_degrees=(5.0, 5.0, -8.0)),
-            "upper_arm.L": BonePose(rotation_degrees=(-30.0, 4.0, 10.0)),
-            "upper_arm.R": BonePose(rotation_degrees=(-30.0, -4.0, -10.0)),
-            "forearm.L": BonePose(rotation_degrees=(-78.0, 0.0, -12.0)),
-            "forearm.R": BonePose(rotation_degrees=(-78.0, 0.0, 12.0)),
+            "upper_arm.L": BonePose(
+                rotation_degrees=(19.912182, -55.331786, -137.616209)
+            ),
+            "upper_arm.R": BonePose(
+                rotation_degrees=(47.795133, 29.025982, 167.668385)
+            ),
+            "forearm.L": BonePose(
+                rotation_degrees=(-104.319214, -4.917218, -11.900408)
+            ),
+            "forearm.R": BonePose(
+                rotation_degrees=(-107.655529, 5.130078, 11.746436)
+            ),
             "hand.L": BonePose(rotation_degrees=(6.0, -4.0, 4.0)),
             "hand.R": BonePose(rotation_degrees=(6.0, 4.0, -4.0)),
         },
@@ -9124,14 +10772,15 @@ def cafe_woman_base_pose() -> dict[str, BonePose]:
             "head": BonePose(rotation_degrees=(7.0, -5.0, 1.0)),
             "clavicle.L": BonePose(rotation_degrees=(4.0, -5.0, 8.0)),
             "clavicle.R": BonePose(rotation_degrees=(8.0, 6.0, -11.0)),
-            # Left forearm stays low toward the man; the right hand carries
-            # the folded paper near the cheek without actually touching it.
+            # Left forearm stays low toward the man and owns the cup. The
+            # free right hand rests with its lit cigarette below the face;
+            # CafeWomanIdle raises this exact chain for one slow drag.
             "upper_arm.L": BonePose(rotation_degrees=(-30.0, 4.0, 10.0)),
             "forearm.L": BonePose(rotation_degrees=(-78.0, 0.0, -12.0)),
             "hand.L": BonePose(rotation_degrees=(6.0, -4.0, 4.0)),
-            "upper_arm.R": BonePose(rotation_degrees=(-100.0, -2.0, -90.0)),
-            "forearm.R": BonePose(rotation_degrees=(-116.0, -45.0, -10.0)),
-            "hand.R": BonePose(rotation_degrees=(18.0, -20.0, 12.0)),
+            "upper_arm.R": BonePose(rotation_degrees=(-38.0, -4.0, -12.0)),
+            "forearm.R": BonePose(rotation_degrees=(-86.0, 8.0, 8.0)),
+            "hand.R": BonePose(rotation_degrees=(12.0, 4.0, -6.0)),
         },
         CAFE_PERCH_LEGS,
     )
@@ -9150,11 +10799,14 @@ def cafe_attendant_base_pose() -> dict[str, BonePose]:
         "clavicle.L": BonePose(rotation_degrees=(4.0, -5.0, 8.0)),
         "clavicle.R": BonePose(rotation_degrees=(5.0, 5.0, -9.0)),
         "upper_arm.L": BonePose(rotation_degrees=(-30.0, 5.0, 10.0)),
-        "upper_arm.R": BonePose(rotation_degrees=(-30.0, -5.0, -10.0)),
+        # The right chain is also the service-carry baseline. Keeping it
+        # above the real 1.02 m counter makes the initial Walk blend safe;
+        # Wipe and Notice inherit the same coherent resting arm.
+        "upper_arm.R": BonePose(rotation_degrees=(19.260, 28.568, 5.067)),
         "forearm.L": BonePose(rotation_degrees=(-78.0, 2.0, -12.0)),
-        "forearm.R": BonePose(rotation_degrees=(-78.0, -2.0, 12.0)),
+        "forearm.R": BonePose(rotation_degrees=(-127.610, 13.628, 10.738)),
         "hand.L": BonePose(rotation_degrees=(6.0, -4.0, 4.0)),
-        "hand.R": BonePose(rotation_degrees=(6.0, 4.0, -4.0)),
+        "hand.R": BonePose(rotation_degrees=(66.198, 45.852, -36.440)),
         "thigh.L": BonePose(rotation_degrees=(-4.0, 0.0, 2.0)),
         "shin.L": BonePose(rotation_degrees=(8.0, 0.0, 0.0)),
         "foot.L": BonePose(rotation_degrees=(-4.0, 0.0, 0.0)),
@@ -9290,6 +10942,7 @@ def shelter_sleeping_base_pose() -> dict[str, BonePose]:
 # says a model is seated on world timber; it does not say how, and two
 # designs now declare it.
 PERCH_PREVIEW_POSES = {
+    "mother": mother_base_pose,
     "last_route_ferryman": ferryman_base_pose,
     "park_chess_player": chess_player_base_pose,
     "park_checkers_player": checkers_player_base_pose,
@@ -10614,6 +12267,13 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             "chest": BonePose(rotation_degrees=(12.0 - 2.2 * amount, 0.0, 0.0)),
         }
 
+    # Four breaths in six seconds, and that is her whole clip. The rocking
+    # is not here on purpose: it is one C# angle turning the chair and the
+    # woman together, so this loop must stay something a rocking chair
+    # cannot do by itself.
+    mother_settled = mother_base_pose()
+    mother_inhale = mother_breath_pose(1.0)
+
     chess_brood = chess
     chess_brood_inhale = merge_pose(chess, chess_breath(1.0))
     # The one thing that happens in twelve seconds: the back rounds a
@@ -10956,32 +12616,38 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     # ------------------------------------------------ mountain cafe cast
     cafe_lone = cafe_lone_base_pose()
     cafe_lone_breath = merge_pose(cafe_lone, {
-        "spine": BonePose(rotation_degrees=(16.8, 0.0, 0.0)),
-        "chest": BonePose(rotation_degrees=(8.6, 0.0, 0.0)),
-        "clavicle.L": BonePose(rotation_degrees=(5.8, -5.0, 8.0)),
-        "clavicle.R": BonePose(rotation_degrees=(5.8, 5.0, -8.0)),
-    })
-    cafe_lone_sink = merge_pose(cafe_lone, {
-        "spine": BonePose(rotation_degrees=(20.0, 0.0, -0.8)),
-        "chest": BonePose(rotation_degrees=(11.2, 0.0, -0.6)),
-        "head": BonePose(rotation_degrees=(6.5, 0.0, 0.0)),
+        # Only the chest expands on inhale.  Head, neck, clavicles and both
+        # arm chains therefore travel as one subtree and retain the physical
+        # counter -> lower arm -> upper arm -> cheek support chain.
+        "chest": BonePose(
+            rotation_degrees=(17.6, 0.0, 0.0),
+            scale=(1.012, 1.015, 1.020),
+        ),
     })
     cafe_lone_pick = merge_pose(cafe_lone, {
-        "upper_arm.R": BonePose(rotation_degrees=(28.0, -3.0, -27.0)),
-        "forearm.R": BonePose(rotation_degrees=(-74.0, -2.0, 20.0)),
-        "hand.R": BonePose(rotation_degrees=(10.0, 6.0, -5.0)),
+        # The shared production Generic Avatar reflects the authored source
+        # rig's lateral socket coordinate. These source-space fits therefore
+        # intentionally target the reflected X; in Unity the real Grip meets
+        # the real dock handle. The complete sleeve remains above the 1.02 m
+        # counter throughout pickup and release.
+        "spine": BonePose(rotation_degrees=(23.8962, 9.5690, -1.6357)),
+        "chest": BonePose(rotation_degrees=(14.7447, 9.6140, -2.7187)),
+        "clavicle.R": BonePose(rotation_degrees=(21.2635, 16.9117, 7.3488)),
+        "upper_arm.R": BonePose(rotation_degrees=(-70.2560, 5.6280, -7.4321)),
+        "forearm.R": BonePose(rotation_degrees=(-107.0520, 66.3706, -15.9431)),
+        "hand.R": BonePose(rotation_degrees=(9.7059, 7.7666, -6.4818)),
         "head": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
     })
     cafe_lone_lift = merge_pose(cafe_lone, {
-        "upper_arm.R": BonePose(rotation_degrees=(-52.0, -4.0, -63.0)),
-        "forearm.R": BonePose(rotation_degrees=(-103.0, -28.0, 22.0)),
-        "hand.R": BonePose(rotation_degrees=(21.0, 14.0, -16.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-60.0, 0.0, 0.0)),
+        "forearm.R": BonePose(rotation_degrees=(-120.0, 30.0, -5.0)),
+        "hand.R": BonePose(rotation_degrees=(20.0, 14.0, -20.0)),
         "head": BonePose(rotation_degrees=(3.0, -2.0, 0.0)),
     })
     cafe_lone_sip = merge_pose(cafe_lone, {
-        "upper_arm.R": BonePose(rotation_degrees=(-94.0, -3.0, -88.0)),
-        "forearm.R": BonePose(rotation_degrees=(-116.0, -42.0, 12.0)),
-        "hand.R": BonePose(rotation_degrees=(29.0, 22.0, -28.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-75.0, 10.0, 15.0)),
+        "forearm.R": BonePose(rotation_degrees=(-140.0, 40.0, -9.0)),
+        "hand.R": BonePose(rotation_degrees=(30.0, 20.0, -35.0)),
         "neck": BonePose(rotation_degrees=(-9.0, 0.0, 0.0)),
         "head": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
     })
@@ -10995,20 +12661,66 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "neck": BonePose(rotation_degrees=(-2.0, 5.0, 0.0)),
         "head": BonePose(rotation_degrees=(5.0, 8.0, 0.0)),
     })
+    # The left hand is free while the right owns the cup. It first rises
+    # behind the near edge, reaches forward while already above the slab, and
+    # makes three uneven silent contacts. These poses were fitted against the
+    # real 1.02 m counter: the working hand clears it by 44 mm on each lift
+    # and its lowest vertex sits 0.3 mm above it on each tap. The complete
+    # left arm also stays clear of the docked cup and saucer throughout.
+    cafe_man_tap_prepare = merge_pose(cafe_man, {
+        "upper_arm.L": BonePose(rotation_degrees=(-4.2524, 0.3167, 6.2798)),
+        "forearm.L": BonePose(rotation_degrees=(-100.0774, -18.3937, -12.7208)),
+        "hand.L": BonePose(rotation_degrees=(-17.1399, -9.6130, -0.5217)),
+        "head": BonePose(rotation_degrees=(4.0, 8.0, 0.0)),
+    })
+    cafe_man_tap_lift = merge_pose(cafe_man, {
+        "spine": BonePose(rotation_degrees=(18.1583, -4.1842, -0.9438)),
+        "chest": BonePose(rotation_degrees=(11.4607, -10.8410, -1.7164)),
+        "clavicle.L": BonePose(rotation_degrees=(9.3599, -8.4445, -7.5229)),
+        "upper_arm.L": BonePose(rotation_degrees=(-15.5596, 9.0830, -2.5692)),
+        "forearm.L": BonePose(rotation_degrees=(-90.8676, -87.4963, 1.8299)),
+        "hand.L": BonePose(rotation_degrees=(-9.7076, -13.1530, 20.3994)),
+        "head": BonePose(rotation_degrees=(4.0, 8.0, 0.0)),
+    })
+    cafe_man_tap_contact = merge_pose(cafe_man, {
+        "spine": BonePose(rotation_degrees=(18.1583, -4.1842, -0.9438)),
+        "chest": BonePose(rotation_degrees=(11.4607, -10.8410, -1.7164)),
+        "clavicle.L": BonePose(rotation_degrees=(9.3599, -8.4445, -7.5229)),
+        "upper_arm.L": BonePose(rotation_degrees=(-18.8053, 9.2250, -3.4840)),
+        "forearm.L": BonePose(rotation_degrees=(-85.0832, -86.4566, 2.4395)),
+        "hand.L": BonePose(rotation_degrees=(-7.3929, -12.7175, 19.5020)),
+        "head": BonePose(rotation_degrees=(4.0, 8.0, 0.0)),
+    })
+    # The handle now docks on the opposite side. A clearance key on each side
+    # of pickup keeps the complete right sleeve above the real counter front;
+    # the fitted Pick meets the new +X Grip to sub-millimetre precision.
+    cafe_man_pre_pick = merge_pose(cafe_man, {
+        "spine": BonePose(rotation_degrees=(18.6864, 14.5941, -4.4873)),
+        "chest": BonePose(rotation_degrees=(11.7854, 18.9005, -2.9578)),
+        "clavicle.R": BonePose(rotation_degrees=(-1.7179, -7.8281, -17.8538)),
+        "upper_arm.R": BonePose(rotation_degrees=(-21.6264, -22.5918, 5.2521)),
+        "forearm.R": BonePose(rotation_degrees=(-108.8559, 64.3335, 22.9709)),
+        "hand.R": BonePose(rotation_degrees=(-1.4738, 2.6743, -6.1344)),
+    })
     cafe_man_pick = merge_pose(cafe_man, {
-        "upper_arm.R": BonePose(rotation_degrees=(26.0, -4.0, -27.0)),
-        "forearm.R": BonePose(rotation_degrees=(-75.0, -2.0, 20.0)),
-        "hand.R": BonePose(rotation_degrees=(10.0, 6.0, -5.0)),
+        "spine": BonePose(rotation_degrees=(18.6864, 14.5941, -4.4873)),
+        "chest": BonePose(rotation_degrees=(11.7854, 18.9005, -2.9578)),
+        "clavicle.R": BonePose(rotation_degrees=(8.7762, 7.1963, 3.4990)),
+        "upper_arm.R": BonePose(rotation_degrees=(-15.8214, -6.5623, 11.0491)),
+        "forearm.R": BonePose(rotation_degrees=(-88.7945, 76.8203, -0.9144)),
+        "hand.R": BonePose(rotation_degrees=(-13.7805, 12.2500, -20.4022)),
     })
     cafe_man_lift = merge_pose(cafe_man, {
-        "upper_arm.R": BonePose(rotation_degrees=(-50.0, -4.0, -62.0)),
-        "forearm.R": BonePose(rotation_degrees=(-102.0, -27.0, 21.0)),
-        "hand.R": BonePose(rotation_degrees=(21.0, 14.0, -16.0)),
+        "clavicle.R": BonePose(rotation_degrees=(1.8338, 4.8723, -15.1190)),
+        "upper_arm.R": BonePose(rotation_degrees=(-43.4348, 10.0371, -4.9499)),
+        "forearm.R": BonePose(rotation_degrees=(-133.1650, 34.1324, -21.2776)),
+        "hand.R": BonePose(rotation_degrees=(6.8863, 22.0251, -44.7492)),
     })
     cafe_man_sip = merge_pose(cafe_man, {
-        "upper_arm.R": BonePose(rotation_degrees=(-92.0, -3.0, -86.0)),
-        "forearm.R": BonePose(rotation_degrees=(-115.0, -40.0, 12.0)),
-        "hand.R": BonePose(rotation_degrees=(28.0, 21.0, -27.0)),
+        "clavicle.R": BonePose(rotation_degrees=(-2.6805, 7.7120, -12.5990)),
+        "upper_arm.R": BonePose(rotation_degrees=(-63.9928, 23.3528, 2.6497)),
+        "forearm.R": BonePose(rotation_degrees=(-159.9966, 37.8664, -32.4828)),
+        "hand.R": BonePose(rotation_degrees=(25.6078, 37.4590, -56.0689)),
         "neck": BonePose(rotation_degrees=(-7.0, 5.0, 0.0)),
         "head": BonePose(rotation_degrees=(-1.0, 8.0, 0.0)),
     })
@@ -11021,20 +12733,57 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     cafe_woman_still = merge_pose(cafe_woman, {
         "head": BonePose(rotation_degrees=(8.0, -5.0, 1.0)),
     })
+    cafe_woman_cigarette_lift = merge_pose(cafe_woman, {
+        "upper_arm.R": BonePose(rotation_degrees=(-58.0, 6.0, 2.0)),
+        "forearm.R": BonePose(rotation_degrees=(-118.0, 28.0, -4.0)),
+        "hand.R": BonePose(rotation_degrees=(20.0, 10.0, -18.0)),
+        "head": BonePose(rotation_degrees=(5.0, -5.0, 1.0)),
+    })
+    cafe_woman_cigarette_drag = merge_pose(cafe_woman, {
+        "upper_arm.R": BonePose(rotation_degrees=(-72.0, 11.0, 10.0)),
+        "forearm.R": BonePose(rotation_degrees=(-136.0, 36.0, -7.0)),
+        # Roll the held cigarette almost horizontally away from the visible
+        # lips. The bind geometry now reaches back through the fingers, so
+        # neither the hand nor the forearm has to enter the face to make
+        # contact.
+        "hand.R": BonePose(rotation_degrees=(80.4515, 48.1965, 28.9751)),
+        "neck": BonePose(rotation_degrees=(-8.0, -3.0, 0.0)),
+        "head": BonePose(rotation_degrees=(2.0, -5.0, 1.0)),
+    })
+    cafe_woman_cigarette_exhale = merge_pose(cafe_woman, {
+        "upper_arm.R": BonePose(rotation_degrees=(-46.0, -1.0, -8.0)),
+        "forearm.R": BonePose(rotation_degrees=(-96.0, 16.0, 4.0)),
+        "hand.R": BonePose(rotation_degrees=(15.0, 7.0, -10.0)),
+        "neck": BonePose(rotation_degrees=(-10.0, -3.0, 0.0)),
+        "head": BonePose(rotation_degrees=(-1.0, -5.0, 1.0)),
+    })
+    cafe_woman_pre_pick = merge_pose(cafe_woman, {
+        "spine": BonePose(rotation_degrees=(22.0978, -12.9417, 1.7568)),
+        "chest": BonePose(rotation_degrees=(12.5383, -14.2393, 1.3095)),
+        "clavicle.L": BonePose(rotation_degrees=(2.5175, -12.1896, 36.4484)),
+        "upper_arm.L": BonePose(rotation_degrees=(-36.2901, 23.2770, 13.4430)),
+        "forearm.L": BonePose(rotation_degrees=(-65.3523, -34.3289, -88.3156)),
+        "hand.L": BonePose(rotation_degrees=(1.7408, -12.7523, -4.8371)),
+    })
     cafe_woman_pick = merge_pose(cafe_woman, {
-        "upper_arm.L": BonePose(rotation_degrees=(26.0, 4.0, 27.0)),
-        "forearm.L": BonePose(rotation_degrees=(-75.0, 2.0, -20.0)),
-        "hand.L": BonePose(rotation_degrees=(10.0, -6.0, 5.0)),
+        "spine": BonePose(rotation_degrees=(22.0978, -12.9417, 1.7568)),
+        "chest": BonePose(rotation_degrees=(12.5383, -14.2393, 1.3095)),
+        "clavicle.L": BonePose(rotation_degrees=(4.3159, -33.8302, 10.4160)),
+        "upper_arm.L": BonePose(rotation_degrees=(-39.9103, -2.9069, 9.4790)),
+        "forearm.L": BonePose(rotation_degrees=(-44.0527, -14.8326, -64.3764)),
+        "hand.L": BonePose(rotation_degrees=(-9.1688, -15.9445, 7.0139)),
     })
     cafe_woman_lift = merge_pose(cafe_woman, {
-        "upper_arm.L": BonePose(rotation_degrees=(-50.0, 4.0, 62.0)),
-        "forearm.L": BonePose(rotation_degrees=(-102.0, 27.0, -21.0)),
-        "hand.L": BonePose(rotation_degrees=(21.0, -14.0, 16.0)),
+        "clavicle.L": BonePose(rotation_degrees=(1.6943, -4.8050, 15.0158)),
+        "upper_arm.L": BonePose(rotation_degrees=(-43.6225, -10.5711, 4.3048)),
+        "forearm.L": BonePose(rotation_degrees=(-131.4946, -34.5856, 21.7199)),
+        "hand.L": BonePose(rotation_degrees=(6.2381, -21.2179, 45.2872)),
     })
     cafe_woman_sip = merge_pose(cafe_woman, {
-        "upper_arm.L": BonePose(rotation_degrees=(-92.0, 3.0, 86.0)),
-        "forearm.L": BonePose(rotation_degrees=(-115.0, 40.0, -12.0)),
-        "hand.L": BonePose(rotation_degrees=(28.0, -21.0, 27.0)),
+        "clavicle.L": BonePose(rotation_degrees=(-3.0890, -7.7070, 12.4134)),
+        "upper_arm.L": BonePose(rotation_degrees=(-63.7002, -23.4407, -3.2133)),
+        "forearm.L": BonePose(rotation_degrees=(-158.7263, -38.0693, 33.2344)),
+        "hand.L": BonePose(rotation_degrees=(24.6457, -36.2630, 57.5406)),
         "neck": BonePose(rotation_degrees=(-9.0, -3.0, 0.0)),
         "head": BonePose(rotation_degrees=(1.0, -5.0, 1.0)),
     })
@@ -11052,46 +12801,61 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     })
     cafe_attendant_wipe_a = merge_pose(cafe_attendant, {
         "chest": BonePose(rotation_degrees=(8.0, -3.0, -2.0)),
-        "upper_arm.L": BonePose(rotation_degrees=(38.0, 2.0, 28.0)),
-        "forearm.L": BonePose(rotation_degrees=(-90.0, 4.0, -24.0)),
-        "hand.L": BonePose(rotation_degrees=(12.0, -7.0, 5.0)),
+        # Fitted against the real 1.02 m counter top. The towel's working
+        # face lies flat at 1.025 m and the entire chain remains in source
+        # -Y, in front of the attendant rather than behind his back.
+        "upper_arm.L": BonePose(rotation_degrees=(-36.3, -16.0, -7.05)),
+        "forearm.L": BonePose(rotation_degrees=(-48.5, -17.9, -12.55)),
+        "hand.L": BonePose(rotation_degrees=(-26.2, -8.85, -20.65)),
         "head": BonePose(rotation_degrees=(7.0, -3.0, 0.0)),
     })
     cafe_attendant_wipe_b = merge_pose(cafe_attendant, {
         "chest": BonePose(rotation_degrees=(8.0, 3.0, 2.0)),
-        "upper_arm.L": BonePose(rotation_degrees=(31.0, 8.0, 42.0)),
-        "forearm.L": BonePose(rotation_degrees=(-72.0, 1.0, -16.0)),
-        "hand.L": BonePose(rotation_degrees=(0.0, -2.0, 2.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-71.5, -32.0, 37.1)),
+        "forearm.L": BonePose(rotation_degrees=(-23.0, -21.0, -23.5)),
+        "hand.L": BonePose(rotation_degrees=(-12.45, 3.2, -16.9)),
         "head": BonePose(rotation_degrees=(7.0, 3.0, 0.0)),
     })
-    cafe_attendant_step_l = merge_pose(cafe_attendant, {
+    # The service carry is a separate arm posture. Freezing the Wipe/base arm
+    # during Walk laid the pot almost horizontal; this fitted grip keeps its
+    # body axis within nine degrees of vertical while the legs sidestep.
+    cafe_attendant_carry = merge_pose(cafe_attendant, {
+        "upper_arm.R": BonePose(rotation_degrees=(19.260, 28.568, 5.067)),
+        "forearm.R": BonePose(rotation_degrees=(-127.610, 13.628, 10.738)),
+        "hand.R": BonePose(rotation_degrees=(66.198, 45.852, -36.440)),
+    })
+    cafe_attendant_step_l = merge_pose(cafe_attendant_carry, {
         "pelvis": BonePose(rotation_degrees=(5.0, 0.0, 1.5), location_m=(0, -0.004, -0.030)),
         "thigh.L": BonePose(rotation_degrees=(-17.0, 0.0, 2.0)),
         "shin.L": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
         "thigh.R": BonePose(rotation_degrees=(8.0, 0.0, -2.0)),
         "shin.R": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
     })
-    cafe_attendant_step_r = merge_pose(cafe_attendant, {
+    cafe_attendant_step_r = merge_pose(cafe_attendant_carry, {
         "pelvis": BonePose(rotation_degrees=(5.0, 0.0, -1.5), location_m=(0, -0.004, -0.030)),
         "thigh.L": BonePose(rotation_degrees=(8.0, 0.0, 2.0)),
         "shin.L": BonePose(rotation_degrees=(4.0, 0.0, 0.0)),
         "thigh.R": BonePose(rotation_degrees=(-17.0, 0.0, -2.0)),
         "shin.R": BonePose(rotation_degrees=(22.0, 0.0, 0.0)),
     })
-    cafe_attendant_pass = merge_pose(cafe_attendant, {
+    cafe_attendant_pass = merge_pose(cafe_attendant_carry, {
         "thigh.L": BonePose(rotation_degrees=(-4.0, 0.0, 2.0)),
         "thigh.R": BonePose(rotation_degrees=(-4.0, 0.0, -2.0)),
     })
-    cafe_attendant_pour_lift = merge_pose(cafe_attendant, {
-        "upper_arm.R": BonePose(rotation_degrees=(12.0, -12.0, -35.0)),
-        "forearm.R": BonePose(rotation_degrees=(-92.0, -8.0, 28.0)),
-        "hand.R": BonePose(rotation_degrees=(12.0, 7.0, -8.0)),
+    cafe_attendant_pour_lift = merge_pose(cafe_attendant_carry, {
+        "upper_arm.R": BonePose(rotation_degrees=(27.484, -41.454, 40.115)),
+        "forearm.R": BonePose(rotation_degrees=(-90.408, 25.555, 20.081)),
+        "hand.R": BonePose(rotation_degrees=(7.926, 28.479, 3.792)),
         "chest": BonePose(rotation_degrees=(9.0, -4.0, -2.0)),
     })
     cafe_attendant_pour_tip = merge_pose(cafe_attendant_pour_lift, {
-        "upper_arm.R": BonePose(rotation_degrees=(28.0, -15.0, -48.0)),
-        "forearm.R": BonePose(rotation_degrees=(-78.0, -12.0, 34.0)),
-        "hand.R": BonePose(rotation_degrees=(58.0, 18.0, -24.0)),
+        # With the service mark offset to the attendant's right, the fitted
+        # spout sits about 0.30 m right / 0.72 m forward / 1.31 m high and
+        # points down toward the real cup instead of producing a 1.2 m beam
+        # across his back.
+        "upper_arm.R": BonePose(rotation_degrees=(-22.55, 39.75, 44.4)),
+        "forearm.R": BonePose(rotation_degrees=(-87.1, 38.9, -12.4)),
+        "hand.R": BonePose(rotation_degrees=(58.05, 46.75, -109.5)),
         "head": BonePose(rotation_degrees=(9.0, -5.0, 0.0)),
     })
     cafe_attendant_notice = merge_pose(cafe_attendant, {
@@ -11229,6 +12993,17 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.5, ferry_drive_breath),
             (1.0, ferry_drive),
         ),
+        "MotherRock": (
+            (0.0, mother_settled),
+            (0.125, mother_inhale),
+            (0.25, mother_settled),
+            (0.375, mother_inhale),
+            (0.5, mother_settled),
+            (0.625, mother_inhale),
+            (0.75, mother_settled),
+            (0.875, mother_inhale),
+            (1.0, mother_settled),
+        ),
         "ChessBrood": (
             (0.0, chess_brood),
             (0.125, chess_brood_inhale),
@@ -11291,69 +13066,78 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.82, checkers_jeer_fall),
             (1.0, checkers_mull),
         ),
-        "CafeLoneIdle": (
+        "CafeLoneSleep": (
             (0.0, cafe_lone),
-            (0.16, cafe_lone_breath),
-            (0.32, cafe_lone),
-            (0.52, cafe_lone_sink),
-            (0.68, cafe_lone_breath),
-            (0.84, cafe_lone),
-            (1.0, cafe_lone),
-        ),
-        "CafeLoneDrink": (
-            (0.0, cafe_lone),
-            (0.16, cafe_lone_pick),
-            (0.34, cafe_lone_lift),
-            (0.48, cafe_lone_sip),
-            (0.62, cafe_lone_sip),
-            (0.76, cafe_lone_lift),
-            (0.84, cafe_lone_pick),
+            (1.0 / 6.0, cafe_lone_breath),
+            (1.0 / 3.0, cafe_lone),
+            (1.0 / 2.0, cafe_lone_breath),
+            (2.0 / 3.0, cafe_lone),
+            (5.0 / 6.0, cafe_lone_breath),
             (1.0, cafe_lone),
         ),
         "CafeManIdle": (
             (0.0, cafe_man),
-            (0.18, cafe_man_breath),
-            (0.36, cafe_man),
-            (0.54, cafe_man_down),
+            (0.12, cafe_man_breath),
+            (0.145, cafe_man_tap_prepare),
+            (0.17, cafe_man_tap_lift),
+            (0.22, cafe_man_tap_contact),
+            (0.27, cafe_man_tap_lift),
+            (0.33, cafe_man_tap_contact),
+            (0.39, cafe_man_tap_lift),
+            (0.46, cafe_man_tap_contact),
+            (0.50, cafe_man_tap_lift),
+            (0.525, cafe_man_tap_prepare),
+            (0.56, cafe_man_down),
             (0.72, cafe_man_breath),
             (1.0, cafe_man),
         ),
         "CafeManDrink": (
             (0.0, cafe_man),
+            (0.08, cafe_man_pre_pick),
             (0.16, cafe_man_pick),
             (0.34, cafe_man_lift),
             (0.48, cafe_man_sip),
             (0.62, cafe_man_sip),
             (0.76, cafe_man_lift),
             (0.84, cafe_man_pick),
+            (0.92, cafe_man_pre_pick),
             (1.0, cafe_man),
         ),
         "CafeWomanIdle": (
             (0.0, cafe_woman),
-            (0.20, cafe_woman_breath),
-            (0.40, cafe_woman),
-            (0.62, cafe_woman_still),
-            (0.80, cafe_woman_breath),
+            (0.10, cafe_woman_breath),
+            (0.16, cafe_woman_cigarette_lift),
+            (0.26, cafe_woman_cigarette_drag),
+            (0.36, cafe_woman_cigarette_drag),
+            (0.46, cafe_woman_cigarette_lift),
+            (0.58, cafe_woman_cigarette_exhale),
+            (0.72, cafe_woman_still),
+            (0.84, cafe_woman_breath),
             (1.0, cafe_woman),
         ),
         "CafeWomanDrink": (
             (0.0, cafe_woman),
+            (0.08, cafe_woman_pre_pick),
             (0.16, cafe_woman_pick),
             (0.34, cafe_woman_lift),
             (0.48, cafe_woman_sip),
             (0.62, cafe_woman_sip),
             (0.76, cafe_woman_lift),
             (0.84, cafe_woman_pick),
+            (0.92, cafe_woman_pre_pick),
             (1.0, cafe_woman),
         ),
         "CafeAttendantWipe": (
-            (0.0, cafe_attendant),
+            # Every sampled key is a real counter contact. Returning to the
+            # unrelated standing base at 0/1 made one quarter of this loop a
+            # visible wipe through empty air.
+            (0.0, cafe_attendant_wipe_a),
             (0.12, cafe_attendant_wipe_a),
             (0.28, cafe_attendant_wipe_b),
             (0.44, cafe_attendant_wipe_a),
             (0.60, cafe_attendant_wipe_b),
             (0.76, cafe_attendant_wipe_a),
-            (1.0, cafe_attendant),
+            (1.0, cafe_attendant_wipe_a),
         ),
         "CafeAttendantWalk": (
             (0.0, cafe_attendant_step_l),
@@ -11363,12 +13147,12 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (1.0, cafe_attendant_step_l),
         ),
         "CafeAttendantPour": (
-            (0.0, cafe_attendant),
+            (0.0, cafe_attendant_carry),
             (0.20, cafe_attendant_pour_lift),
             (0.38, cafe_attendant_pour_tip),
             (0.72, cafe_attendant_pour_tip),
             (0.88, cafe_attendant_pour_lift),
-            (1.0, cafe_attendant),
+            (1.0, cafe_attendant_carry),
         ),
         "CafeAttendantNotice": (
             (0.0, cafe_attendant),
@@ -11847,6 +13631,518 @@ def point_segment_distance(point: Vector, start: Vector, end: Vector) -> float:
     return (point - (start + segment * amount)).length
 
 
+def evaluated_part_family_bvh(
+    parts: list[PartRecord],
+    depsgraph,
+):
+    """Build one world-space BVH for a small evaluated mesh family."""
+
+    from mathutils.bvhtree import BVHTree
+
+    vertices: list[Vector] = []
+    polygons: list[tuple[int, ...]] = []
+    for part in parts:
+        evaluated = part.obj.evaluated_get(depsgraph)
+        mesh = evaluated.to_mesh()
+        try:
+            offset = len(vertices)
+            vertices.extend(
+                evaluated.matrix_world @ vertex.co for vertex in mesh.vertices
+            )
+            polygons.extend(
+                tuple(offset + index for index in polygon.vertices)
+                for polygon in mesh.polygons
+            )
+        finally:
+            evaluated.to_mesh_clear()
+    return BVHTree.FromPolygons(
+        vertices, polygons, all_triangles=False
+    ), vertices
+
+
+def mesh_family_nearest_gap(
+    first_bvh,
+    first_vertices: list[Vector],
+    second_bvh,
+    second_vertices: list[Vector],
+) -> tuple[float, Vector, Vector]:
+    """Return a symmetric vertex-to-surface distance and ordered points."""
+
+    candidates: list[tuple[float, Vector, Vector]] = []
+    for vertex in first_vertices:
+        nearest = second_bvh.find_nearest(vertex)
+        if nearest is not None:
+            candidates.append((nearest[3], vertex.copy(), nearest[0].copy()))
+    for vertex in second_vertices:
+        nearest = first_bvh.find_nearest(vertex)
+        if nearest is not None:
+            candidates.append((nearest[3], nearest[0].copy(), vertex.copy()))
+    if not candidates:
+        raise RuntimeError("Mesh-family contact validation found no surfaces")
+    return min(candidates, key=lambda candidate: candidate[0])
+
+
+def projected_segment_crossing(
+    first_start: Vector,
+    first_end: Vector,
+    second_start: Vector,
+    second_end: Vector,
+) -> tuple[float, float, Vector, Vector]:
+    """Intersect two bone segments in XY while retaining each segment's Z."""
+
+    first_delta = first_end - first_start
+    second_delta = second_end - second_start
+    denominator = (
+        first_delta.x * second_delta.y
+        - first_delta.y * second_delta.x
+    )
+    if abs(denominator) < 0.000001:
+        raise RuntimeError("Crossed forearms became parallel in plan view")
+    offset = second_start - first_start
+    first_amount = (
+        offset.x * second_delta.y - offset.y * second_delta.x
+    ) / denominator
+    second_amount = (
+        offset.x * first_delta.y - offset.y * first_delta.x
+    ) / denominator
+    return (
+        first_amount,
+        second_amount,
+        first_start.lerp(first_end, first_amount),
+        second_start.lerp(second_end, second_amount),
+    )
+
+
+def cafe_sleep_elbow_angle(result: BuildResult, side: str) -> float:
+    rig = result.rig
+    upper = rig.pose.bones[f"upper_arm.{side}"]
+    forearm = rig.pose.bones[f"forearm.{side}"]
+    shoulder = rig.matrix_world @ upper.head
+    elbow = rig.matrix_world @ upper.tail
+    wrist = rig.matrix_world @ forearm.tail
+    first = (shoulder - elbow).normalized()
+    second = (wrist - elbow).normalized()
+    return math.degrees(
+        math.acos(max(-1.0, min(1.0, first.dot(second))))
+    )
+
+
+def validate_cafe_lone_sleep_contact(
+    result: BuildResult,
+    action: bpy.types.Action,
+) -> dict[str, object]:
+    """Prove the complete rounded-arm sleeping contact on every frame.
+
+    A recognisable pose is not enough here: the lower arm must remain on the
+    real 1.02 m counter, the right forearm must stay physically above the
+    left at their central crossing, and the anatomical head must rest on the
+    upper arm without either mesh passing through another.  The fedora is
+    deliberately excluded from head contact.
+    """
+
+    required = {
+        "lower": {
+            "CLO_SleeveLower.L", "GEO_Hand.L", "GEO_Thumb.L"
+        },
+        "upper": {
+            "CLO_SleeveLower.R", "GEO_Hand.R", "GEO_Thumb.R"
+        },
+        "head": {"GEO_Head", "GEO_FaceSurface"},
+    }
+    parts_by_name = {part.obj.name: part for part in result.parts}
+    missing = sorted(
+        name for names in required.values() for name in names
+        if name not in parts_by_name
+    )
+    if missing:
+        raise RuntimeError(
+            "CafeLoneSleep contact validation is missing parts: "
+            + ", ".join(missing)
+        )
+    families = {
+        family: [parts_by_name[name] for name in sorted(names)]
+        for family, names in required.items()
+    }
+    scene = bpy.context.scene
+    rig = result.rig
+    counter_height = 1.02
+    counter_min_x, counter_max_x = -1.06, 5.30
+    counter_min_y, counter_max_y = -1.54, -0.52
+    support_gaps: list[float] = []
+    support_details: list[tuple[float, int]] = []
+    arm_gaps: list[float] = []
+    head_upper_gaps: list[float] = []
+    head_lower_gaps: list[float] = []
+    head_above: list[float] = []
+    stack_heights: list[float] = []
+    crossing_amounts: list[float] = []
+    elbow_angles: list[float] = []
+    chest_samples: list[Vector] = []
+    for frame in range(round(action.frame_start), round(action.frame_end) + 1):
+        scene.frame_set(frame)
+        bpy.context.view_layer.update()
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        evaluated = {
+            family: evaluated_part_family_bvh(parts, depsgraph)
+            for family, parts in families.items()
+        }
+        lower_bvh, lower_vertices = evaluated["lower"]
+        upper_bvh, upper_vertices = evaluated["upper"]
+        head_bvh, head_vertices = evaluated["head"]
+        lower_on_counter = [
+            vertex for vertex in lower_vertices
+            if counter_min_x <= vertex.x <= counter_max_x
+            and counter_min_y <= vertex.y <= counter_max_y
+        ]
+        if not lower_on_counter:
+            raise RuntimeError(
+                f"CafeLoneSleep lower arm leaves the counter footprint "
+                f"at frame {frame}"
+            )
+        support_gap = (
+            min(vertex.z for vertex in lower_on_counter) - counter_height
+        )
+        support_gaps.append(support_gap)
+        support_details.append((support_gap, frame))
+        if lower_bvh.overlap(upper_bvh):
+            raise RuntimeError(
+                f"CafeLoneSleep forearms intersect at frame {frame}"
+            )
+        arm_gap, _, _ = mesh_family_nearest_gap(
+            lower_bvh, lower_vertices, upper_bvh, upper_vertices
+        )
+        arm_gaps.append(arm_gap)
+        if head_bvh.overlap(upper_bvh) or head_bvh.overlap(lower_bvh):
+            raise RuntimeError(
+                f"CafeLoneSleep anatomical head intersects its arm pillow "
+                f"at frame {frame}"
+            )
+        head_gap, head_point, upper_point = mesh_family_nearest_gap(
+            head_bvh, head_vertices, upper_bvh, upper_vertices
+        )
+        lower_head_gap, _, _ = mesh_family_nearest_gap(
+            head_bvh, head_vertices, lower_bvh, lower_vertices
+        )
+        head_upper_gaps.append(head_gap)
+        head_lower_gaps.append(lower_head_gap)
+        head_above.append(head_point.z - upper_point.z)
+
+        left = rig.pose.bones["forearm.L"]
+        right = rig.pose.bones["forearm.R"]
+        crossing = projected_segment_crossing(
+            rig.matrix_world @ left.head,
+            rig.matrix_world @ left.tail,
+            rig.matrix_world @ right.head,
+            rig.matrix_world @ right.tail,
+        )
+        crossing_amounts.extend(crossing[:2])
+        stack_heights.append(crossing[3].z - crossing[2].z)
+        elbow_angles.extend(
+            cafe_sleep_elbow_angle(result, side) for side in ("L", "R")
+        )
+        chest = rig.pose.bones["chest"]
+        chest_samples.append(rig.matrix_world @ chest.tail)
+
+    support_min, support_max = min(support_gaps), max(support_gaps)
+    if support_min < -0.001:
+        _, worst_frame = min(support_details)
+        raise RuntimeError(
+            f"CafeLoneSleep lower arm penetrates the counter by "
+            f"{-support_min:.4f} m at frame {worst_frame}"
+        )
+    if support_max > 0.005:
+        _, worst_frame = max(support_details)
+        raise RuntimeError(
+            f"CafeLoneSleep lower arm floats {support_max:.4f} m above the counter "
+            f"at frame {worst_frame}"
+        )
+    if max(arm_gaps) > 0.012:
+        raise RuntimeError(
+            f"CafeLoneSleep stacked arms separate by {max(arm_gaps):.4f} m"
+        )
+    if min(crossing_amounts) < 0.15 or max(crossing_amounts) > 0.85:
+        raise RuntimeError(
+            "CafeLoneSleep forearms no longer cross through their interiors: "
+            f"{min(crossing_amounts):.3f}-{max(crossing_amounts):.3f}"
+        )
+    if min(stack_heights) < 0.080 or max(stack_heights) > 0.150:
+        raise RuntimeError(
+            "CafeLoneSleep upper forearm loses its fixed layer over the lower: "
+            f"{min(stack_heights):.4f}-{max(stack_heights):.4f} m"
+        )
+    if min(elbow_angles) < 55.0 or max(elbow_angles) > 115.0:
+        raise RuntimeError(
+            "CafeLoneSleep elbows lose their rounded flex: "
+            f"{min(elbow_angles):.2f}-{max(elbow_angles):.2f} degrees"
+        )
+    if max(head_upper_gaps) > 0.008:
+        raise RuntimeError(
+            f"CafeLoneSleep head floats {max(head_upper_gaps):.4f} m "
+            "above its upper arm"
+        )
+    if min(head_lower_gaps) < 0.015:
+        raise RuntimeError(
+            f"CafeLoneSleep head approaches the lower arm to "
+            f"{min(head_lower_gaps):.4f} m"
+        )
+    if min(head_above) < 0.0005:
+        raise RuntimeError(
+            "CafeLoneSleep head is not consistently above its upper arm: "
+            f"minimum order {min(head_above):.4f} m"
+        )
+    chest_travel = max(
+        (sample - other).length
+        for sample in chest_samples for other in chest_samples
+    )
+    if chest_travel < 0.0005 or chest_travel > 0.012:
+        raise RuntimeError(
+            "CafeLoneSleep breathing travel is outside its subtle idle band: "
+            f"{chest_travel:.4f} m"
+        )
+    return {
+        "sleeping": True,
+        "counter_arm_contact_min_m": stable_float(support_min),
+        "counter_arm_contact_max_m": stable_float(support_max),
+        "stacked_arm_surface_gap_max_m": stable_float(max(arm_gaps)),
+        "stacked_arm_cross_amount_min": stable_float(min(crossing_amounts)),
+        "stacked_arm_cross_amount_max": stable_float(max(crossing_amounts)),
+        "stacked_arm_height_min_m": stable_float(min(stack_heights)),
+        "stacked_arm_height_max_m": stable_float(max(stack_heights)),
+        "rounded_elbow_angle_min_degrees": stable_float(min(elbow_angles)),
+        "rounded_elbow_angle_max_degrees": stable_float(max(elbow_angles)),
+        "head_upper_arm_gap_max_m": stable_float(max(head_upper_gaps)),
+        "head_lower_arm_gap_min_m": stable_float(min(head_lower_gaps)),
+        "head_above_upper_arm_min_m": stable_float(min(head_above)),
+        "breathing_chest_travel_m": stable_float(chest_travel),
+        "contact_frames_sampled": (
+            round(action.frame_end) - round(action.frame_start) + 1
+        ),
+    }
+
+
+def validate_cafe_woman_cigarette_contact(
+    result: BuildResult,
+    action: bpy.types.Action,
+) -> dict[str, object]:
+    """Prove the complete cigarette drag against visible lips and fingers.
+
+    The shared mouth socket sits above the woman's modelled red lips, so a
+    socket-only distance can pass while the prop visibly misses her mouth.
+    This validator consequently measures the evaluated ``ACC_LipRed`` mesh,
+    keeps the filter just outside that surface, and derives the cigarette
+    axis from the live filter/ember geometry.  Every idle frame also proves
+    that neither the hand nor the prop crosses the anatomical head and that
+    the cigarette remains inside the gripping hand.
+    """
+
+    required = {
+        "body": {"ACC_CafeCigarette"},
+        "ember": {"ACC_CafeCigaretteEmber"},
+        "lip": {"ACC_LipRed"},
+        "hand": {"GEO_Hand.R", "GEO_Thumb.R"},
+        "head": {
+            "GEO_Head", "GEO_FaceSurface", "ACC_LipRed",
+            "GEO_Ear.L", "GEO_Ear.R",
+        },
+    }
+    parts_by_name = {part.obj.name: part for part in result.parts}
+    missing = sorted(
+        name for names in required.values() for name in names
+        if name not in parts_by_name
+    )
+    if missing:
+        raise RuntimeError(
+            "CafeWomanIdle cigarette validation is missing parts: "
+            + ", ".join(missing)
+        )
+    families = {
+        family: [parts_by_name[name] for name in sorted(names)]
+        for family, names in required.items()
+    }
+
+    scene = bpy.context.scene
+    rig = result.rig
+    first_frame = round(action.frame_start)
+    last_frame = round(action.frame_end)
+    drag_first = round(action.frame_end * 0.26)
+    drag_last = round(action.frame_end * 0.36)
+    all_cigarette_head_gaps: list[float] = []
+    all_hand_head_gaps: list[float] = []
+    drag_lip_surface_gaps: list[float] = []
+    drag_filter_center_distances: list[float] = []
+    drag_axis_angles: list[float] = []
+    drag_socket_lip_alignments: list[float] = []
+    drag_ember_distances: list[float] = []
+    drag_ember_margins: list[float] = []
+
+    for frame in range(first_frame, last_frame + 1):
+        scene.frame_set(frame)
+        bpy.context.view_layer.update()
+        depsgraph = bpy.context.evaluated_depsgraph_get()
+        evaluated = {
+            family: evaluated_part_family_bvh(parts, depsgraph)
+            for family, parts in families.items()
+        }
+        body_bvh, body_vertices = evaluated["body"]
+        ember_bvh, ember_vertices = evaluated["ember"]
+        lip_bvh, lip_vertices = evaluated["lip"]
+        hand_bvh, hand_vertices = evaluated["hand"]
+        head_bvh, head_vertices = evaluated["head"]
+
+        if body_bvh.overlap(head_bvh) or ember_bvh.overlap(head_bvh):
+            raise RuntimeError(
+                f"CafeWomanIdle cigarette intersects the anatomical head "
+                f"at frame {frame}"
+            )
+        if hand_bvh.overlap(head_bvh):
+            raise RuntimeError(
+                f"CafeWomanIdle right hand intersects the anatomical head "
+                f"at frame {frame}"
+            )
+        if not body_bvh.overlap(hand_bvh):
+            raise RuntimeError(
+                f"CafeWomanIdle cigarette leaves the gripping hand "
+                f"at frame {frame}"
+            )
+
+        cigarette_head_gap, _, _ = mesh_family_nearest_gap(
+            body_bvh, body_vertices, head_bvh, head_vertices
+        )
+        ember_head_gap, _, _ = mesh_family_nearest_gap(
+            ember_bvh, ember_vertices, head_bvh, head_vertices
+        )
+        hand_head_gap, _, _ = mesh_family_nearest_gap(
+            hand_bvh, hand_vertices, head_bvh, head_vertices
+        )
+        all_cigarette_head_gaps.append(
+            min(cigarette_head_gap, ember_head_gap)
+        )
+        all_hand_head_gaps.append(hand_head_gap)
+
+        if frame < drag_first or frame > drag_last:
+            continue
+
+        body_center = sum(body_vertices, Vector()) / len(body_vertices)
+        ember_center = sum(ember_vertices, Vector()) / len(ember_vertices)
+        outward = (ember_center - body_center).normalized()
+        projections = [
+            (vertex - body_center).dot(outward)
+            for vertex in body_vertices
+        ]
+        filter_projection = min(projections)
+        filter_ring = [
+            vertex for vertex, projection in zip(body_vertices, projections)
+            if projection <= filter_projection + 0.0015
+        ]
+        if not filter_ring:
+            raise RuntimeError(
+                f"CafeWomanIdle cannot resolve its filter ring at frame {frame}"
+            )
+        filter_center = sum(filter_ring, Vector()) / len(filter_ring)
+        lip_center = sum(lip_vertices, Vector()) / len(lip_vertices)
+        lip_gap, cigarette_point, _ = mesh_family_nearest_gap(
+            body_bvh, body_vertices, lip_bvh, lip_vertices
+        )
+        if (cigarette_point - filter_center).length > 0.012:
+            raise RuntimeError(
+                f"CafeWomanIdle touches the lips away from its filter "
+                f"at frame {frame}"
+            )
+
+        mouth = rig.pose.bones["SOCKET_Mouth"]
+        mouth_head = rig.matrix_world @ mouth.head
+        mouth_forward = (
+            rig.matrix_world @ mouth.tail - mouth_head
+        ).normalized()
+        # Keep the live socket's left/right yaw but neutralise the head's
+        # steep downward pitch: a cigarette held at the lips reads almost
+        # level, with only a small outward rise toward the fingers.
+        natural_outward = Vector(
+            (mouth_forward.x, mouth_forward.y, 0.04)
+        ).normalized()
+        axis_angle = math.degrees(
+            math.acos(max(-1.0, min(1.0, outward.dot(natural_outward))))
+        )
+        socket_lip_outward = (mouth_head - lip_center).normalized()
+        filter_distance = (filter_center - lip_center).length
+        ember_distance = (ember_center - lip_center).length
+        drag_lip_surface_gaps.append(lip_gap)
+        drag_filter_center_distances.append(filter_distance)
+        drag_axis_angles.append(axis_angle)
+        drag_socket_lip_alignments.append(outward.dot(socket_lip_outward))
+        drag_ember_distances.append(ember_distance)
+        drag_ember_margins.append(ember_distance - filter_distance)
+
+    lip_gap_min = min(drag_lip_surface_gaps)
+    lip_gap_max = max(drag_lip_surface_gaps)
+    filter_distance_min = min(drag_filter_center_distances)
+    filter_distance_max = max(drag_filter_center_distances)
+    axis_angle_max = max(drag_axis_angles)
+    socket_lip_alignment_min = min(drag_socket_lip_alignments)
+    ember_distance_min = min(drag_ember_distances)
+    ember_margin_min = min(drag_ember_margins)
+    if lip_gap_min < 0.0015 or lip_gap_max > 0.0050:
+        raise RuntimeError(
+            "CafeWomanIdle filter loses its visible lip contact band: "
+            f"{lip_gap_min:.4f}-{lip_gap_max:.4f} m"
+        )
+    if filter_distance_min < 0.0070 or filter_distance_max > 0.0130:
+        raise RuntimeError(
+            "CafeWomanIdle filter centre misses the visible lips: "
+            f"{filter_distance_min:.4f}-{filter_distance_max:.4f} m"
+        )
+    if axis_angle_max > 8.0:
+        raise RuntimeError(
+            "CafeWomanIdle cigarette no longer points naturally outward: "
+            f"maximum axis error {axis_angle_max:.2f} degrees"
+        )
+    if socket_lip_alignment_min < 0.94:
+        raise RuntimeError(
+            "CafeWomanIdle cigarette no longer satisfies the runtime "
+            "socket/lip outward contract: minimum alignment "
+            f"{socket_lip_alignment_min:.4f}"
+        )
+    if ember_distance_min < 0.075 or ember_margin_min < 0.065:
+        raise RuntimeError(
+            "CafeWomanIdle ember is not visibly farther from the lips than "
+            f"the filter: distance {ember_distance_min:.4f} m, margin "
+            f"{ember_margin_min:.4f} m"
+        )
+
+    return {
+        "cigarette_drag_filter_lip_surface_gap_min_m": stable_float(
+            lip_gap_min
+        ),
+        "cigarette_drag_filter_lip_surface_gap_max_m": stable_float(
+            lip_gap_max
+        ),
+        "cigarette_drag_filter_lip_center_distance_min_m": stable_float(
+            filter_distance_min
+        ),
+        "cigarette_drag_filter_lip_center_distance_max_m": stable_float(
+            filter_distance_max
+        ),
+        "cigarette_drag_axis_angle_max_degrees": stable_float(axis_angle_max),
+        "cigarette_drag_socket_lip_alignment_min": stable_float(
+            socket_lip_alignment_min
+        ),
+        "cigarette_drag_ember_lip_distance_min_m": stable_float(
+            ember_distance_min
+        ),
+        "cigarette_drag_ember_farther_margin_min_m": stable_float(
+            ember_margin_min
+        ),
+        "cigarette_idle_cigarette_head_gap_min_m": stable_float(
+            min(all_cigarette_head_gaps)
+        ),
+        "cigarette_idle_hand_head_gap_min_m": stable_float(
+            min(all_hand_head_gaps)
+        ),
+        "cigarette_drag_frames_sampled": drag_last - drag_first + 1,
+        "cigarette_idle_frames_sampled": last_frame - first_frame + 1,
+    }
+
+
 def validate_wheelchair_clips(
     result: BuildResult,
     actions: dict[str, bpy.types.Action],
@@ -12044,6 +14340,14 @@ def validate_animated_grounding(
         )
     seated_band = archetype.seated_clearance_m if archetype is not None else None
     perch_band = archetype.perch_seat_height_m if archetype is not None else None
+    perch_support_band = (
+        archetype.perch_support_contact_m
+        if archetype is not None else None
+    )
+    perch_support_radius = (
+        archetype.perch_support_radius_m
+        if archetype is not None else None
+    )
     floor_seated_band = (
         archetype.floor_seated_contact_m if archetype is not None else None
     )
@@ -12071,15 +14375,26 @@ def validate_animated_grounding(
             if leaves_seat_action(action_name):
                 continue
 
-            reports[action_name] = validate_seated_clip(
+            seated_report = validate_seated_clip(
                 result,
                 action,
                 action_name,
                 seated_band,
                 perch_band,
+                perch_support_band,
+                perch_support_radius,
                 floor_drop,
                 floor_seated_band,
             )
+            if action_name == "CafeLoneSleep":
+                seated_report.update(
+                    validate_cafe_lone_sleep_contact(result, action)
+                )
+            elif action_name == "CafeWomanIdle":
+                seated_report.update(
+                    validate_cafe_woman_cigarette_contact(result, action)
+                )
+            reports[action_name] = seated_report
             continue
 
         contact_gaps: list[float] = []
@@ -12279,6 +14594,8 @@ def validate_seated_clip(
     action_name: str,
     seated_band: tuple[float, float] | None,
     perch_band: tuple[float, float] | None = None,
+    perch_support_band: tuple[float, float] | None = None,
+    perch_support_radius: float | None = None,
     floor_drop: float = 0.41,
     floor_seated_band: tuple[float, float] | None = None,
 ) -> dict[str, object]:
@@ -12335,7 +14652,10 @@ def validate_seated_clip(
     # them would report the knee rather than the seat.
     hip_parts = [part for part in result.parts if part.bone == "pelvis"]
     perch_heights: list[float] = []
+    perch_support_contacts: list[float] = []
+    perch_support_radii: list[float] = []
     perch_lifts: list[float] = []
+    perch_pelvis_planar: list[tuple[float, float]] = []
     perch_contacts: list[str] = []
     floor_bottoms: list[float] = []
     floor_hip_contacts: list[float] = []
@@ -12349,7 +14669,8 @@ def validate_seated_clip(
         scene.frame_set(frame)
         bpy.context.view_layer.update()
         depsgraph = bpy.context.evaluated_depsgraph_get()
-        pelvis_z = (rig.matrix_world @ rig.pose.bones["pelvis"].head).z
+        pelvis_head = rig.matrix_world @ rig.pose.bones["pelvis"].head
+        pelvis_z = pelvis_head.z
         top = max(evaluated_part_max_z(part, depsgraph) for part in result.parts)
         bottom = min(
             evaluated_part_min_z(part, depsgraph) for part in result.parts
@@ -12399,7 +14720,23 @@ def validate_seated_clip(
                 evaluated_part_min_z(part, depsgraph) for part in hip_parts
             )
             perch_heights.append(hip_bottom - bottom)
+            perch_support_contacts.append(hip_bottom)
+            if perch_support_radius is not None:
+                origin = rig.matrix_world.translation
+                perch_support_radii.append(max(
+                    math.hypot(vertex.x - origin.x, vertex.y - origin.y)
+                    for part in hip_parts
+                    for vertex in evaluated_part_world_vertices(
+                        part, depsgraph)
+                ))
             perch_lifts.append(pelvis_z - hip_bottom)
+            # Where the pelvis stands in the design's OWN ground
+            # plane. The vertical sibling above lets the runtime set
+            # her on the cushion; this one lets it set her ON THE
+            # SEAT rather than merely at the right height, because a
+            # seated pose puts the hips well behind the model origin
+            # and the placement would otherwise be eyeballed.
+            perch_pelvis_planar.append((pelvis_head.x, pelvis_head.y))
             # Which part actually reaches the ground. A seated design has
             # two candidates and they are not interchangeable: if the
             # tucked foot outreaches the planted one, the pose reads as a
@@ -12477,6 +14814,28 @@ def validate_seated_clip(
                 f"above its own soles; the design is authored for a "
                 f"{floor:.3f}-{ceiling:.3f} m seat"
             )
+        support_min = min(perch_support_contacts)
+        support_max = max(perch_support_contacts)
+        if perch_support_band is not None:
+            support_floor, support_ceiling = perch_support_band
+            if (support_min < support_floor or
+                    support_max > support_ceiling):
+                raise RuntimeError(
+                    f"{action_name} keeps its coat seat at "
+                    f"{support_min:.4f}-{support_max:.4f} m absolute height; "
+                    f"the staged support is "
+                    f"{support_floor:.4f}-{support_ceiling:.4f} m"
+                )
+        support_radius = (
+            max(perch_support_radii) if perch_support_radii else 0.0
+        )
+        if (perch_support_radius is not None and
+                support_radius > perch_support_radius):
+            raise RuntimeError(
+                f"{action_name} spreads its coat seat to "
+                f"{support_radius:.4f} m from the stool centre; expected at "
+                f"most {perch_support_radius:.4f} m"
+            )
         # How far the pelvis bone rides above the underside of the hips. The
         # runtime lifts the model by exactly this to stand the seat of the
         # coat on the drawn plank instead of sinking it into the timber.
@@ -12492,7 +14851,16 @@ def validate_seated_clip(
             "perched": True,
             "perch_seat_height_min_m": stable_float(lowest),
             "perch_seat_height_max_m": stable_float(highest),
+            "perch_support_contact_min_m": stable_float(support_min),
+            "perch_support_contact_max_m": stable_float(support_max),
+            "perch_support_radius_m": stable_float(support_radius),
             "perch_pelvis_lift_m": stable_float(perch_lift),
+            "perch_pelvis_planar_m": [
+                stable_float(
+                    sum(axis) / len(perch_pelvis_planar)
+                )
+                for axis in zip(*perch_pelvis_planar)
+            ],
             "perch_contact_parts": contacts,
             "seated_drop_m": stable_float(drop),
         }
@@ -13081,6 +15449,27 @@ def build_cafe_animation_library(config: argparse.Namespace) -> None:
     )
 
 
+def build_mother_animation_library(config: argparse.Namespace) -> None:
+    """Her own one-clip bank.
+
+    Kept separate for a reason that is not aesthetic: rebuilding the shared
+    City locomotion bank crashes on the committed tree. `FerrymanDismount`
+    is a `leaves_seat` clip, so `validate_animated_grounding` skips it while
+    `validate_animated_footprints` still reports it, and merging the two
+    raises `KeyError: 'FerrymanDismount'`. That bug is not this feature's to
+    fix - a task may not quietly rebuild a neighbouring system it happened
+    to touch - so she is built without regenerating that bank at all.
+    """
+
+    build_named_animation_library(
+        config,
+        (ARCHETYPES["mother"],),
+        "MothersHouseMother",
+        "mothers_house_mother_v1",
+        "MothersHouseMotherContactSheet.png",
+    )
+
+
 def build_shelter_animation_library(config: argparse.Namespace) -> None:
     shelter_archetypes = tuple(ARCHETYPES[key] for key in SHELTER_RESIDENT_KEYS)
     build_named_animation_library(
@@ -13094,16 +15483,18 @@ def build_shelter_animation_library(config: argparse.Namespace) -> None:
 
 def main() -> None:
     config = parse_args()
-    if config.cafe_cast and config.shelter_residents:
-        raise SystemExit("--cafe-cast cannot be combined with --shelter-residents")
+    if sum((config.cafe_cast, config.shelter_residents, config.mother)) > 1:
+        raise SystemExit("Only one dedicated cast selector may be given")
     if (
-        (config.cafe_cast or config.shelter_residents)
+        (config.cafe_cast or config.shelter_residents or config.mother)
         and config.archetype != "all"
     ):
         raise SystemExit(
             "Dedicated cast selectors cannot be combined with --archetype"
         )
-    if config.cafe_cast:
+    if config.mother:
+        selected = (ARCHETYPES["mother"],)
+    elif config.cafe_cast:
         selected = tuple(ARCHETYPES[key] for key in CAFE_CAST_KEYS)
     elif config.shelter_residents:
         selected = tuple(ARCHETYPES[key] for key in SHELTER_RESIDENT_KEYS)
@@ -13122,12 +15513,17 @@ def main() -> None:
     print(f"  Blender: {bpy.app.version_string}")
     reports: list[tuple[ArchetypeSpec, ValidationReport]] = []
     atlases: dict[str, AtlasReport] = {}
+    face_atlases: dict[str, AtlasReport] = {}
     for spec in selected:
         atlas = None
         if spec.texture_atlas is not None:
             # Painted before the build so the review render can sample it.
             atlas = build_detail_atlas(spec, config.texture_dir / spec.texture_atlas)
             atlases[spec.design_id] = atlas
+        if spec.face_atlas is not None:
+            face_atlases[spec.design_id] = build_face_atlas(
+                spec, config.texture_dir / spec.face_atlas
+            )
         result = PedestrianBuilder(
             spec, atlas_path=atlas.path if atlas is not None else None
         ).build()
@@ -13140,7 +15536,10 @@ def main() -> None:
         if not config.no_preview:
             render_preview(preview_path, result, spec)
         export_fbx(fbx_path, result)
-        write_manifest(manifest_path, result, report, spec, atlas)
+        write_manifest(
+            manifest_path, result, report, spec, atlas,
+            face_atlases.get(spec.design_id),
+        )
         save_blend(blend_path)
         reports.append((spec, report))
         print(f"  {spec.design_id}: {report.mesh_count} meshes, {report.triangle_count} triangles")
@@ -13149,7 +15548,9 @@ def main() -> None:
             print(f"    Atlas: {atlas.path} sha256 {atlas.sha256}")
         print(f"    Blend: {blend_path}")
         print(f"    FBX: {fbx_path}")
-    if config.cafe_cast:
+    if config.mother:
+        build_mother_animation_library(config)
+    elif config.cafe_cast:
         build_cafe_animation_library(config)
     elif config.shelter_residents:
         build_shelter_animation_library(config)

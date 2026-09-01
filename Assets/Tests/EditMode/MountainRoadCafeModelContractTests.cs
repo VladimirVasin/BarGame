@@ -17,10 +17,10 @@ namespace BarPromenade.Tests.EditMode
             "Assets/MountainRoad/Cafe/Models/MountainRoadCafe3D.json";
         private const string ModelPath =
             "Assets/MountainRoad/Cafe/Models/MountainRoadCafe3D.fbx";
-        private const int ExpectedMeshCount = 51;
-        private const int ExpectedTriangleCount = 4970;
-        private const int ExpectedAnchorCount = 45;
-        private const int ExpectedPropCount = 6;
+        private const int ExpectedMeshCount = 48;
+        private const int ExpectedTriangleCount = 4568;
+        private const int ExpectedAnchorCount = 41;
+        private const int ExpectedPropCount = 5;
         private const int ExpectedColliderDescriptorCount = 17;
 
         private static readonly string[] ExpectedTextureSheets =
@@ -80,7 +80,7 @@ namespace BarPromenade.Tests.EditMode
                 "Broad coplanar overlaps reintroduce visible flicker.");
             AssertDoorHeaderClosesFacade(manifest);
             Assert.That(manifest.stool_count, Is.EqualTo(7));
-            Assert.That(manifest.cup_assembly_count, Is.EqualTo(3));
+            Assert.That(manifest.cup_assembly_count, Is.EqualTo(2));
             Assert.That(manifest.colliders, Is.False);
             Assert.That(manifest.lights, Is.False);
             Assert.That(manifest.cameras, Is.False);
@@ -206,17 +206,69 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(registry.TryGetAnchor("DoorThreshold", out _), Is.True);
             Assert.That(registry.TryGetAnchor("CounterCorner", out _), Is.True);
             Assert.That(registry.TryGetAnchor("GlassCorner", out _), Is.True);
+            Assert.That(
+                registry.TryGetAnchor("Stool.00", out Transform stool),
+                Is.True);
+            Assert.That(
+                stool.position.y - registry.transform.position.y,
+                Is.EqualTo(
+                    MountainRoadCafeWorldBuilder.StoolSeatTopAboveFloor)
+                    .Within(0.001f));
+            MountainRoadCafePartBinding stoolSeats = registry.Parts.Single(
+                part => part.SourceName == "Cafe_StoolSeats");
+            Assert.That(
+                stoolSeats.Renderer.bounds.max.y -
+                registry.transform.position.y,
+                Is.EqualTo(
+                    MountainRoadCafeWorldBuilder.StoolSeatTopAboveFloor)
+                    .Within(0.001f),
+                "The rendered bar stool and its seat anchor must share a top.");
 
-            AssertCupBindings(registry);
+            const float expectedCounterTop = 1.02f;
+            foreach (string counterAnchorName in new[]
+                     { "CounterStart", "CounterCorner", "CounterEnd" })
+            {
+                Assert.That(
+                    registry.TryGetAnchor(
+                        counterAnchorName,
+                        out Transform counterAnchor),
+                    Is.True);
+                Assert.That(
+                    counterAnchor.position.y - registry.transform.position.y,
+                    Is.EqualTo(expectedCounterTop).Within(0.001f),
+                    counterAnchorName);
+            }
+            MountainRoadCafePartBinding counterTop = registry.Parts.Single(
+                part => part.SourceName == "Cafe_CounterTop");
+            Assert.That(
+                counterTop.Renderer.bounds.max.y -
+                registry.transform.position.y,
+                Is.EqualTo(expectedCounterTop).Within(0.001f),
+                "The sleeper and attendant contacts require the authored " +
+                "counter plane at 1.02 m.");
+
+            AssertCupBindings(registry, manifest);
             registry.ApplyAppearance();
             AssertSharedTransparentGlass(registry);
         }
 
         private static void AssertCupBindings(
-            MountainRoadCafeAssetRegistry registry)
+            MountainRoadCafeAssetRegistry registry,
+            CafeManifest manifest)
         {
-            foreach (string owner in new[] { "Lone", "PairMan", "PairWoman" })
+            Assert.That(registry.TryGetProp("Cup.Lone", out _), Is.False,
+                "The sleeping door-side patron must not retain hidden cup data.");
+            Assert.That(registry.TryGetAnchor("Grip.Lone", out _), Is.False);
+            Assert.That(
+                registry.TryGetAnchor("PourTarget.Lone", out _),
+                Is.False);
+            foreach (string owner in new[] { "PairMan", "PairWoman" })
             {
+                CafeDynamicProp authored = manifest.dynamic_props.Single(prop =>
+                    string.Equals(
+                        prop.name,
+                        $"Cup.{owner}",
+                        StringComparison.Ordinal));
                 Assert.That(
                     registry.TryGetProp(
                         $"Cup.{owner}",
@@ -239,6 +291,34 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(0.079f).Within(0.002f));
                 Assert.That(cup.LiquidTransform.parent,
                     Is.EqualTo(cup.LiftRoot));
+                Vector3 gripOffset =
+                    registry.transform.InverseTransformVector(
+                        cup.GripAnchor.position - cup.LiftRoot.position);
+                float expectedGripX = owner == "PairMan" ? 0.092f : -0.092f;
+                Assert.That(
+                    gripOffset.x,
+                    Is.EqualTo(expectedGripX).Within(0.002f),
+                    $"{owner} handle did not reverse to its requested side.");
+                Vector3 emptyOffset = registry.transform.InverseTransformVector(
+                    emptyWorld - cup.LiftRoot.position);
+                Vector3 fullOffset = registry.transform.InverseTransformVector(
+                    fullWorld - cup.LiftRoot.position);
+                Assert.That(
+                    emptyOffset.y,
+                    Is.EqualTo(authored.empty_local_y).Within(0.002f),
+                    $"{owner} empty coffee level must stay local to its cup.");
+                Assert.That(
+                    fullOffset.y,
+                    Is.EqualTo(authored.full_local_y).Within(0.002f),
+                    $"{owner} full coffee level must stay local to its cup.");
+                Assert.That(
+                    new Vector2(emptyOffset.x, emptyOffset.z).magnitude,
+                    Is.LessThan(0.002f),
+                    $"{owner} empty coffee level cannot drift sideways.");
+                Assert.That(
+                    new Vector2(fullOffset.x, fullOffset.z).magnitude,
+                    Is.LessThan(0.002f),
+                    $"{owner} full coffee level cannot drift sideways.");
 
                 Renderer saucer = cup.Renderers.Single(renderer =>
                     renderer.name.EndsWith("_Saucer", StringComparison.Ordinal));
@@ -337,6 +417,8 @@ namespace BarPromenade.Tests.EditMode
         private sealed class CafeDynamicProp
         {
             public string name;
+            public float empty_local_y;
+            public float full_local_y;
         }
 
         [Serializable]

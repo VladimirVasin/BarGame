@@ -453,6 +453,39 @@ namespace BarPromenade
         public IReadOnlyList<AlpineVillageRidgeDescriptor> Ridges => ridges;
 
         /// <summary>
+        /// The spring's water, or null before it has been traced.
+        ///
+        /// It arrives after construction, and that is deliberate rather than
+        /// untidy. The brook is traced by walking downhill on
+        /// <c>AlpineVillageTerrainSampler.SampleHeight</c>, and that sampler
+        /// dishes a swale under the brook - so the trace has to happen while
+        /// this is still null, or the brook would be following the channel it
+        /// is in the middle of deciding. Null here means exactly one thing:
+        /// "the ground has no channel in it yet".
+        /// </summary>
+        public AlpineVillageBrookPlan Brook { get; private set; }
+
+        /// <summary>
+        /// Hands the plan its traced water. Once, and only from the planner,
+        /// between tracing and validation.
+        /// </summary>
+        internal void AttachBrook(AlpineVillageBrookPlan brook)
+        {
+            if (brook == null)
+            {
+                throw new ArgumentNullException(nameof(brook));
+            }
+
+            if (Brook != null)
+            {
+                throw new InvalidOperationException(
+                    "The village already carries its brook.");
+            }
+
+            Brook = brook;
+        }
+
+        /// <summary>
         /// The inhabited inner extent. Shelves, plots and the walkable mask
         /// live inside it; the enclosing mountain starts outside it.
         /// </summary>

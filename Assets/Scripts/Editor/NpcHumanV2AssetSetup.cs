@@ -19,6 +19,7 @@ namespace BarPromenade.Editor
             isBuilding ||
             CityPedestrianAssetSetup.IsBuilding ||
             CityArchShelterResidentAssetSetup.IsBuilding ||
+            MothersHouseMotherAssetSetup.IsBuilding ||
             MountainRoadCafeCastAssetSetup.IsBuilding ||
             BarBartenderAssetSetup.IsBuilding ||
             SupermarketCashierAssetSetup.IsBuilding ||
@@ -38,6 +39,7 @@ namespace BarPromenade.Editor
             {
                 CityPedestrianAssetSetup.BuildOrThrow();
                 CityArchShelterResidentAssetSetup.BuildOrThrow();
+                MothersHouseMotherAssetSetup.BuildOrThrow();
                 MountainRoadCafeCastAssetSetup.BuildOrThrow();
                 BarBartenderAssetSetup.BuildOrThrow();
                 SupermarketCashierAssetSetup.BuildOrThrow();
@@ -46,6 +48,7 @@ namespace BarPromenade.Editor
 
                 CityPedestrianAssetSetup.ValidateOrThrow();
                 CityArchShelterResidentAssetSetup.ValidateOrThrow();
+                MothersHouseMotherAssetSetup.ValidateOrThrow();
                 MountainRoadCafeCastAssetSetup.ValidateOrThrow();
                 BarBartenderAssetSetup.ValidateOrThrow();
                 SupermarketCashierAssetSetup.ValidateOrThrow();

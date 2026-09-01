@@ -328,8 +328,29 @@ namespace BarPromenade
                             point)));
             }
 
+            // SNOW DOES NOT LIE ON RUNNING WATER, and it does not lie on the
+            // ground the spring keeps wet either. Both come from one oracle -
+            // the brook plan's own wet-ground distance - so the drift field
+            // and the dark band the builder paints can never disagree about
+            // where the water is.
+            if (plan.Brook != null && weight > 0f)
+            {
+                weight = Mathf.Min(
+                    weight,
+                    SmoothRange(
+                        0f,
+                        WetGroundClearance,
+                        plan.Brook.DistanceOutsideWetGround(point)));
+            }
+
             return weight;
         }
+
+        /// <summary>
+        /// How far past the wet ground the snow takes to come back. Shorter
+        /// than a door's apron: a thaw margin, not a swept yard.
+        /// </summary>
+        internal const float WetGroundClearance = 1.4f;
 
         /// <summary>
         /// Wander, in world space rather than along a route, so two drifts

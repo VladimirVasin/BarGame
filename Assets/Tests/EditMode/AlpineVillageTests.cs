@@ -2189,6 +2189,18 @@ namespace BarPromenade.Tests.EditMode
                         return false;
                     }
                 }
+
+                // And clear of the spring's water, for exactly the reason
+                // the aprons are excluded: snow cannot lie on running water
+                // or on ground that never dries, so a ray crossing the brook
+                // or its seep line measures that rule instead of the field
+                // this is here to measure.
+                if (plan.Brook != null &&
+                    plan.Brook.DistanceOutsideWetGround(point) <
+                    AlpineVillageSnowDrift.WetGroundClearance)
+                {
+                    return false;
+                }
             }
 
             return true;
@@ -2565,7 +2577,31 @@ namespace BarPromenade.Tests.EditMode
                     Is.GreaterThan(0.2f),
                     "Found no deep snow beside the lane to tread on.");
 
-                treading.Press(spot);
+                // A PASS, NOT A STAMP - and the difference is the whole test.
+                //
+                // `SampleVisibleDepth` reads the NEAREST field vertex and
+                // accepts one out to `FieldCellSize` (a metre), while `Press`
+                // reaches only `TreadRadius` (0.55 m). So a single press at a
+                // probe point can be measured against a vertex it never
+                // touched, and whether it does is decided by where the metre
+                // grid happens to fall - the assertion passed on alignment
+                // luck rather than on the snow being pressed. Walking a short
+                // pass through the spot, which is what the name claims and
+                // what a hero does, covers the vertex under it either way.
+                // A cross is not enough either: the field vertex can sit
+                // diagonally off the probe, which a pair of axis lines never
+                // comes closer to than a quarter metre. Trample the cell.
+                for (float east = -0.6f; east <= 0.6f; east += 0.2f)
+                {
+                    for (float north = -0.6f; north <= 0.6f; north += 0.2f)
+                    {
+                        treading.Press(
+                            spot +
+                            Vector3.right * east +
+                            Vector3.forward * north);
+                    }
+                }
+
                 float after = treading.SampleVisibleDepth(spot);
                 Assert.That(
                     after,

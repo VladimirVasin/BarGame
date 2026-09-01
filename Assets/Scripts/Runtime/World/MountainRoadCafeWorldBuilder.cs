@@ -42,7 +42,7 @@ namespace BarPromenade
 
         public const int EmptyStoolIndex = 1;
         public const float StoolForward = -2.18f;
-        public const float StoolSeatTopAboveFloor = 0.4675f;
+        public const float StoolSeatTopAboveFloor = 0.8175f;
         public const float StoolSeatThickness = 0.055f;
         public const float StoolSeatDiameter = 0.48f;
 

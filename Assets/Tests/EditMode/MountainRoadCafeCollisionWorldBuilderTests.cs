@@ -130,6 +130,27 @@ namespace BarPromenade.Tests.EditMode
             MountainRoadCafePlan plan,
             MountainRoadCafeCollisionWorldResult result)
         {
+            foreach (CapsuleCollider stool in result.StoolColliders)
+            {
+                Assert.That(
+                    stool.height,
+                    Is.EqualTo(
+                        MountainRoadCafeCollisionWorldBuilder
+                            .StoolColliderHeight).Within(0.0001f));
+                Assert.That(
+                    stool.center.y,
+                    Is.EqualTo(
+                        MountainRoadCafeCollisionWorldBuilder
+                            .StoolColliderCenterAboveFloor).Within(0.0001f));
+                Assert.That(
+                    stool.center.y + stool.height * 0.5f,
+                    Is.EqualTo(
+                        MountainRoadCafeWorldBuilder
+                            .StoolSeatTopAboveFloor).Within(0.0001f),
+                    "The physical capsule top must meet the authored bar " +
+                    "stool seat instead of ending beneath the sitter.");
+            }
+
             for (int index = 0;
                  index < MountainRoadCafeCollisionWorldBuilder
                      .MainRowStoolCount;

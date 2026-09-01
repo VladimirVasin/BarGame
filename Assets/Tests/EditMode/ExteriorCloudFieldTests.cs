@@ -365,9 +365,19 @@ namespace BarPromenade.Tests.EditMode
 
                 field.SetVisibility(haze, 0.75f, 0.35f);
                 field.Renderer.GetPropertyBlock(propertyBlock);
-                Assert.That(
-                    propertyBlock.GetColor("_HazeColor"),
-                    Is.EqualTo(haze));
+                // Component-wise, not `Is.EqualTo`. This colour has been
+                // through the graphics layer and back, and in a Linear
+                // project (`m_ActiveColorSpace: 1`) that round trip is not
+                // bit-exact: the two agree to three decimals and differ in
+                // the last few ulps, which an exact float comparison reads
+                // as a failure. What this test is actually asserting is that
+                // the haze reached the property block at all rather than
+                // cloning the shared material, and that survives a tolerance.
+                Color storedHaze = propertyBlock.GetColor("_HazeColor");
+                Assert.That(storedHaze.r, Is.EqualTo(haze.r).Within(0.001f));
+                Assert.That(storedHaze.g, Is.EqualTo(haze.g).Within(0.001f));
+                Assert.That(storedHaze.b, Is.EqualTo(haze.b).Within(0.001f));
+                Assert.That(storedHaze.a, Is.EqualTo(haze.a).Within(0.001f));
                 Assert.That(
                     field.Renderer.sharedMaterial,
                     Is.SameAs(sharedMaterial),

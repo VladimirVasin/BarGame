@@ -185,6 +185,10 @@
       "value": "E — sit on the bench"
     },
     {
+      "key": "interaction.sit_sofa",
+      "value": "E — sit on the sofa"
+    },
+    {
       "key": "lastroute.ride.skip",
       "value": "F10 - skip the drive"
     },
@@ -1443,6 +1447,86 @@
     {
       "key": "lastroute.ferryman.mountain.line.12",
       "value": "Don't ask about going back."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.01",
+      "value": "Take off your coat. I'll take off the rest."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.02",
+      "value": "Smoke like that and my trousers get tight."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.03",
+      "value": "I don't need a room. I need your mouth."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.04",
+      "value": "After you, the sheets go straight in the bin."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.05",
+      "value": "Sit closer. We won't need the coffee."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.06",
+      "value": "Bullshit. I remember you under this table."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.07",
+      "value": "I won't make it to the bed with you tonight."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.08",
+      "value": "No knickers again. I can see how you sit."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.09",
+      "value": "Decency ends at the door with you."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.10",
+      "value": "The bed squeaked till dawn. Wasn't me."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.01",
+      "value": "Coat off. Tear the rest away with your teeth."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.02",
+      "value": "Trousers tight: take the fucking things off."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.03",
+      "value": "You'll get my mouth if you don't finish first."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.04",
+      "value": "No sheets. This wall will do."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.05",
+      "value": "Drink the coffee. You'll need the heart tonight."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.06",
+      "value": "You didn't last long under the table."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.07",
+      "value": "Can't carry me: take me right here."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.08",
+      "value": "Look closer. My legs aren't even open yet."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.09",
+      "value": "I left nothing but my coat at the door."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.10",
+      "value": "The bed kept squeaking. You finished first."
     },
     {
       "key": "park.quarrel.chess.line.01",

@@ -8,15 +8,31 @@ namespace BarPromenade
         public const float RoomWidth = 10f;
         public const float RoomDepth = 8f;
         public const float RoomHeight = 3.4f;
+        public const float UpperFloorElevation = 3.54f;
+        public const float UpperCeilingHeight = 5.9f;
         public const float WallThickness = 0.24f;
         public const float DoorOpeningWidth = 1.3f;
+        public const float DoorOpeningHeight = 2.2f;
+        public const float UpperPartitionThickness = 0.16f;
+        public const float UpperPartitionX = -1.75f;
+        public const float UpperRoomDividerZ = 0f;
+        public const float UpperDoorOpeningWidth = 1.2f;
+        public const float UpperDoorOpeningHeight = 2.2f;
+        public const float UpperSouthDoorCenterZ = -1.85f;
+        public const float UpperNorthDoorCenterZ = 1.85f;
+        public const int StairStepCount = 19;
+        public const float StairStepRise =
+            UpperFloorElevation / StairStepCount;
+        public const float StairStepDepth = 0.25f;
+        public const float StairWidth = 1.3f;
         public const float CameraVerticalFieldOfView = 60f;
+        public const float UpperCameraVerticalFieldOfView = 58f;
         public const string ModelResourcePath =
             "MothersHouse/MothersHouseInterior3D";
 
         public static readonly Bounds ModelLocalBounds = new Bounds(
-            new Vector3(0f, 1.68f, 0f),
-            new Vector3(10.24f, 3.72f, 8.24f));
+            new Vector3(0f, 2.93f, 0f),
+            new Vector3(10.24f, 6.22f, 8.24f));
         public static readonly Rect RoomBounds =
             new Rect(-5f, -4f, RoomWidth, RoomDepth);
         public static readonly Rect WalkableBounds =
@@ -28,9 +44,21 @@ namespace BarPromenade
         public static readonly Vector3 ExitAnchorPosition =
             new Vector3(0f, 0f, -3.15f);
         public static readonly Vector3 CameraPosition =
-            new Vector3(5.8f, 3.15f, -2.8f);
+            new Vector3(5.8f, 2.75f, -2.8f);
         public static readonly Vector3 CameraTarget =
             new Vector3(-0.2f, 0.8f, 1f);
+        public static readonly Vector3 StairCameraPosition =
+            new Vector3(-5.9f, 5.1f, 2.65f);
+        public static readonly Vector3 StairCameraTarget =
+            new Vector3(-2.85f, 4.25f, -0.3f);
+        public static readonly Vector3 SouthRoomCameraPosition =
+            new Vector3(5.8f, 5.1f, -3.05f);
+        public static readonly Vector3 SouthRoomCameraTarget =
+            new Vector3(1.25f, 4.25f, -1.9f);
+        public static readonly Vector3 NorthRoomCameraPosition =
+            new Vector3(5.8f, 5.1f, 3.05f);
+        public static readonly Vector3 NorthRoomCameraTarget =
+            new Vector3(1.25f, 4.25f, 1.9f);
         public static readonly Vector3 WestWindowPosition =
             new Vector3(-2.72f, 1.55f, 3.82f);
         public static readonly Vector3 EastWindowPosition =
@@ -65,18 +93,53 @@ namespace BarPromenade
             -1.42f,
             1.75f);
         public const float FloorLampHeight = 1.82f;
+        public static readonly Rect StairOpeningBounds = Rect.MinMaxRect(
+            -4.88f,
+            -3.05f,
+            -3.18f,
+            1.82f);
+        public static readonly Rect UpperCorridorBounds = Rect.MinMaxRect(
+            -3.18f,
+            -3.65f,
+            -1.83f,
+            3.65f);
+        public static readonly Rect UpperSouthRoomBounds = Rect.MinMaxRect(
+            -1.67f,
+            -3.88f,
+            4.88f,
+            -0.08f);
+        public static readonly Rect UpperNorthRoomBounds = Rect.MinMaxRect(
+            -1.67f,
+            0.08f,
+            4.88f,
+            3.88f);
 
         public static MothersHouseInteriorLayoutPlan Generate()
         {
-            var cameraShot = new HomeCameraShot(
-                HomeCameraShotKind.MainRoom,
-                WalkableBounds,
-                WalkableBounds,
-                CameraPosition,
-                Quaternion.LookRotation(
-                    CameraTarget - CameraPosition,
-                    Vector3.up),
-                CameraVerticalFieldOfView);
+            List<HomeCameraShot> cameraShots = CreateCameraShots();
+            var upperFloor = new MothersHouseInteriorUpperFloorPlan(
+                UpperFloorElevation,
+                UpperCeilingHeight,
+                new StairwellFlightPlan(
+                    "mother-house-stair",
+                    new Vector2(-4f, 1.80f),
+                    Vector2.down,
+                    0f,
+                    StairStepCount,
+                    StairStepRise,
+                    StairStepDepth,
+                    StairWidth),
+                StairOpeningBounds,
+                UpperCorridorBounds,
+                UpperSouthRoomBounds,
+                UpperNorthRoomBounds,
+                UpperPartitionX,
+                UpperPartitionThickness,
+                UpperRoomDividerZ,
+                UpperDoorOpeningWidth,
+                UpperDoorOpeningHeight,
+                UpperSouthDoorCenterZ,
+                UpperNorthDoorCenterZ);
 
             var plan = new MothersHouseInteriorLayoutPlan(
                 new Vector2(RoomWidth, RoomDepth),
@@ -92,7 +155,8 @@ namespace BarPromenade
                 ExitAnchorPosition + Vector3.up * 0.95f,
                 new Vector3(1.15f, 1.9f, 1.25f),
                 CameraTarget,
-                cameraShot,
+                cameraShots,
+                upperFloor,
                 WestWindowPosition,
                 EastWindowPosition,
                 FireplaceAnchorPosition,
@@ -105,6 +169,103 @@ namespace BarPromenade
                 CreateFixtures());
             MothersHouseInteriorLayoutValidator.ValidateOrThrow(plan);
             return plan;
+        }
+
+        private static List<HomeCameraShot> CreateCameraShots()
+        {
+            Rect stairAndCorridorBounds = Rect.MinMaxRect(
+                -4.65f,
+                -3.65f,
+                -1.67f,
+                3.65f);
+            Rect stairAndCorridorHold = Rect.MinMaxRect(
+                -4.65f,
+                -3.65f,
+                -1.30f,
+                3.65f);
+            Rect southRoomActivation = Rect.MinMaxRect(
+                -1.65f,
+                -3.65f,
+                4.65f,
+                -0.09f);
+            Rect southRoomHold = Rect.MinMaxRect(
+                -1.95f,
+                -3.65f,
+                4.65f,
+                0.05f);
+            Rect northRoomActivation = Rect.MinMaxRect(
+                -1.65f,
+                0.09f,
+                4.65f,
+                3.65f);
+            Rect northRoomHold = Rect.MinMaxRect(
+                -1.95f,
+                -0.05f,
+                4.65f,
+                3.65f);
+            Vector2 upperActivationHeight = new Vector2(3.48f, 5.5f);
+            Vector2 upperHoldHeight = new Vector2(3.42f, 5.6f);
+
+            return new List<HomeCameraShot>
+            {
+                CreateShot(
+                    HomeCameraShotKind.MainRoom,
+                    WalkableBounds,
+                    WalkableBounds,
+                    new Vector2(-0.1f, 1.58f),
+                    new Vector2(-0.1f, 1.72f),
+                    CameraPosition,
+                    CameraTarget,
+                    CameraVerticalFieldOfView),
+                CreateShot(
+                    HomeCameraShotKind.StairAndUpperCorridor,
+                    stairAndCorridorBounds,
+                    stairAndCorridorHold,
+                    new Vector2(1.6f, 5.5f),
+                    new Vector2(1.5f, 5.6f),
+                    StairCameraPosition,
+                    StairCameraTarget,
+                    UpperCameraVerticalFieldOfView),
+                CreateShot(
+                    HomeCameraShotKind.UpperSouthRoom,
+                    southRoomActivation,
+                    southRoomHold,
+                    upperActivationHeight,
+                    upperHoldHeight,
+                    SouthRoomCameraPosition,
+                    SouthRoomCameraTarget,
+                    UpperCameraVerticalFieldOfView),
+                CreateShot(
+                    HomeCameraShotKind.UpperNorthRoom,
+                    northRoomActivation,
+                    northRoomHold,
+                    upperActivationHeight,
+                    upperHoldHeight,
+                    NorthRoomCameraPosition,
+                    NorthRoomCameraTarget,
+                    UpperCameraVerticalFieldOfView)
+            };
+        }
+
+        private static HomeCameraShot CreateShot(
+            HomeCameraShotKind kind,
+            Rect activationBounds,
+            Rect holdBounds,
+            Vector2 activationHeightRange,
+            Vector2 holdHeightRange,
+            Vector3 position,
+            Vector3 target,
+            float fieldOfView)
+        {
+            return new HomeCameraShot(
+                kind,
+                activationBounds,
+                holdBounds,
+                activationHeightRange,
+                holdHeightRange,
+                position,
+                Quaternion.LookRotation(target - position, Vector3.up),
+                fieldOfView);
         }
 
         private static List<MothersHouseInteriorPathPlan> CreatePaths()

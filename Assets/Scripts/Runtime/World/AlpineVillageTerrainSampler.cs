@@ -280,9 +280,101 @@ namespace BarPromenade
                 height = Mathf.Lerp(height, plot.GroundCenter.y, weight);
             }
 
+            height = SampleBrookSwale(plan, point, height);
+
             float enclosedHeight = height + SampleRidgeRise(plan, point);
             return SampleCablewayBrink(plan, point, enclosedHeight);
         }
+
+        /// <summary>
+        /// The hollow the brook runs in.
+        ///
+        /// THE CHANNEL ITSELF CANNOT LIVE HERE, and that is the whole design.
+        /// This mesh is sampled on a <see cref="TerrainCell"/> grid - two
+        /// metres - and a brook is one metre wide; the class already learned
+        /// this the expensive way with the cableway ("a two-metre terrain grid
+        /// can otherwise interpolate across a bend"). So the ground gives a
+        /// WIDE SHALLOW SWALE, which two-metre vertices can express, and the
+        /// bed and the water are ribbon geometry laid inside it - exactly the
+        /// division the lane already uses, where this samples a bed clearance
+        /// and <c>BuildLane</c> lays the skin on top.
+        ///
+        /// Returns the height unchanged while <c>plan.Brook</c> is null: that
+        /// is the state the brook is TRACED in, and a swale that existed
+        /// during its own tracing would be a channel following itself.
+        /// </summary>
+        internal static float SampleBrookSwale(
+            AlpineVillagePlan plan,
+            Vector2 point,
+            float height)
+        {
+            AlpineVillageBrookPlan brook = plan.Brook;
+            if (brook == null)
+            {
+                return height;
+            }
+
+            float distance = brook.DistanceToChannel(point, out float bedDepth);
+            if (distance >= BrookSwaleHalfWidth)
+            {
+                return height;
+            }
+
+            float bedY = SampleBrookBedHeight(brook, point) - bedDepth;
+            if (bedY >= height)
+            {
+                return height;
+            }
+
+            float weight = 1f - SmoothRange(0f, BrookSwaleHalfWidth, distance);
+            return Mathf.Lerp(height, bedY, weight);
+        }
+
+        /// <summary>Water-surface height at the nearest point of the channel.
+        /// </summary>
+        private static float SampleBrookBedHeight(
+            AlpineVillageBrookPlan brook,
+            Vector2 point)
+        {
+            IReadOnlyList<AlpineVillageBrookSample> samples = brook.Samples;
+            float best = float.MaxValue;
+            float surface = 0f;
+            for (int index = 0; index < samples.Count - 1; index++)
+            {
+                Vector2 start = new Vector2(
+                    samples[index].Position.x,
+                    samples[index].Position.z);
+                Vector2 segment = new Vector2(
+                    samples[index + 1].Position.x,
+                    samples[index + 1].Position.z) - start;
+                float lengthSquared = segment.sqrMagnitude;
+                float amount = lengthSquared <= 0.000001f
+                    ? 0f
+                    : Mathf.Clamp01(
+                        Vector2.Dot(point - start, segment) / lengthSquared);
+                float distance = Vector2.Distance(
+                    point,
+                    start + segment * amount);
+                if (distance >= best)
+                {
+                    continue;
+                }
+
+                best = distance;
+                surface = Mathf.Lerp(
+                    samples[index].Position.y,
+                    samples[index + 1].Position.y,
+                    amount);
+            }
+
+            return surface;
+        }
+
+        /// <summary>
+        /// How wide the ground's hollow is. Well over the terrain cell, or the
+        /// grid samples straight across it and the brook lies on a flat.
+        /// </summary>
+        internal const float BrookSwaleHalfWidth = 2.6f;
 
         /// <summary>
         /// The bowl. Beyond the walkable extent the ground climbs steeply and

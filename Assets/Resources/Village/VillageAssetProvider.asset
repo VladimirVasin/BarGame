@@ -13,7 +13,7 @@ MonoBehaviour:
   m_Name: VillageAssetProvider
   m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.VillageAssetProvider
   designId: village_house_archetypes_v3
-  buildSignature: b2fa217bed2b7ce174c22000d0ff5ec98f79558dc79816592ccd29b4a3effbea
+  buildSignature: b2d1e885de66c338e5f660847d7cd78f0491c239e65fecc50a1f92a05706dfec
   entries:
   - kind: 0
     variant: 0
@@ -187,3 +187,23 @@ MonoBehaviour:
     variant: 0
     role: 8
     mesh: {fileID: 3959966458069028015, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 12
+    variant: 0
+    role: 8
+    mesh: {fileID: 334507626215128007, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 13
+    variant: 0
+    role: 8
+    mesh: {fileID: 6470783941161566338, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 14
+    variant: 0
+    role: 8
+    mesh: {fileID: -6028593124998292016, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 14
+    variant: 1
+    role: 8
+    mesh: {fileID: 8875335993342462173, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}
+  - kind: 14
+    variant: 2
+    role: 8
+    mesh: {fileID: -6136398911055578720, guid: 6634919f3b9211f49b1596e7ea7f3c85, type: 3}

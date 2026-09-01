@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 using Stopwatch = System.Diagnostics.Stopwatch;
 
@@ -66,6 +67,35 @@ namespace BarPromenade
         }
         public MothersHouseKettleProp Kettle { get; private set; }
         public MothersHouseExit Exit { get; private set; }
+
+        /// <summary>The two drawn chair meshes, by their authored names.
+        /// </summary>
+        public const string RockingChairFrameName = "FIX_RockingChair.Frame";
+        public const string RockingChairCushionName =
+            "FIX_RockingChair.Cushion";
+
+        /// <summary>
+        /// She is present from the first visit and she is always seated. Null
+        /// only when her staged prefab has not been built, which the editor
+        /// pipeline reports on its own.
+        /// </summary>
+        public MothersHouseMotherPresentation Mother { get; private set; }
+
+        public MothersHouseRockingChairMotion ChairMotion
+        {
+            get;
+            private set;
+        }
+
+        /// <summary>Every seat in the room. One, today: the sofa.</summary>
+        public IReadOnlyList<CityBenchSitInteraction> Seats
+        {
+            get;
+            private set;
+        }
+
+        public CityBenchSitInteraction Sofa =>
+            Seats != null && Seats.Count > 0 ? Seats[0] : null;
         public InventoryController Inventory { get; private set; }
         public JournalController Journal { get; private set; }
         public PauseMenuController PauseMenu { get; private set; }
@@ -138,10 +168,12 @@ namespace BarPromenade
             FixedCamera.Initialize(
                 CameraFollow,
                 Player.GameObject.transform,
-                new[] { Layout.CameraShot });
+                Layout.CameraShots);
 
             BuildStatus(ui, camera);
             BuildExit();
+            BuildSeats(camera);
+            BuildMother();
             Inventory = ui.AddComponent<InventoryController>();
             Inventory.Initialize(
                 Player,
@@ -188,6 +220,67 @@ namespace BarPromenade
                 CameraFollow,
                 IntoxicationHud,
                 balanceView);
+        }
+
+        /// <summary>
+        /// The sofa, through the city's own shared sit offer.
+        ///
+        /// Parented to this root and NOT to `World.Root` or
+        /// `World.CollisionRoot`: the builder makes its own child and sets
+        /// the trigger's world pose directly, and the room's PlayMode test
+        /// pins the exact contents of `World.GameplayColliders`.
+        /// </summary>
+        private void BuildSeats(Camera camera)
+        {
+            Seats = CityBenchSitWorldBuilder.Build(
+                transform,
+                MothersHouseSofaSeatPlanner.CreateAll(Layout),
+                Player,
+                camera);
+        }
+
+        /// <summary>
+        /// The mother, and the chair that carries her.
+        ///
+        /// The rock is built first and given the chair's two drawn meshes;
+        /// she is handed over afterwards, once she has been placed. It drives
+        /// their world poses and reparents nothing - the chair belongs to the
+        /// imported room model, whose renderers the room's own test counts
+        /// under the asset registry.
+        ///
+        /// Her instance hangs off this root, NOT off `World.Root` or
+        /// `World.CollisionRoot`: she is a presentation, she owns no
+        /// collision, and the room pins the exact contents of both.
+        /// </summary>
+        private void BuildMother()
+        {
+            var motionObject = new GameObject("Rocking Chair Motion");
+            motionObject.transform.SetParent(transform, false);
+            ChairMotion = motionObject.AddComponent<
+                MothersHouseRockingChairMotion>();
+
+            MothersHouseMotherPlan plan = MothersHouseMotherPlan.Create();
+            ChairMotion.Initialize(
+                World.Root,
+                plan.InitialPhase,
+                FindChairPart(RockingChairFrameName),
+                FindChairPart(RockingChairCushionName));
+
+            Mother = MothersHouseMotherFactory.Create(
+                transform,
+                plan,
+                ChairMotion);
+        }
+
+        private Transform FindChairPart(string sourceName)
+        {
+            return World.Registry != null &&
+                   World.Registry.TryGetPart(
+                       sourceName,
+                       out MothersHouseInteriorPartBinding part) &&
+                   part.Renderer != null
+                ? part.Renderer.transform
+                : null;
         }
 
         private void BuildExit()

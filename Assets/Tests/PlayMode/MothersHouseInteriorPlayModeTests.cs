@@ -83,7 +83,7 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         [UnityTest]
-        public IEnumerator DirectSceneBoot_BuildsTheFixedWarmRoomWithTheExactNpcKettle()
+        public IEnumerator DirectSceneBoot_BuildsTheTwoStoreyWarmHouseWithTheExactNpcKettle()
         {
             AssertSceneIsStreamable(SceneIds.MothersHouseInterior);
 
@@ -102,6 +102,78 @@ namespace BarPromenade.Tests.PlayMode
             AssertExactKettleContract(interior);
             AssertFixedCameraAndLightContract(interior);
             AssertCalmSoundscapeContract(interior);
+            LogAssert.NoUnexpectedReceived();
+        }
+
+        [UnityTest]
+        public IEnumerator PlayerClimbsTheRealStairAndEntersBothEmptyRooms()
+        {
+            MothersHouseInteriorRoot interior = null;
+            yield return LoadSceneAndWaitForRoot(
+                SceneIds.MothersHouseInterior,
+                InteriorRootName,
+                (MothersHouseInteriorRoot root) => interior = root);
+            yield return WaitUntil(
+                () => interior.IsInitialized &&
+                      !SceneTransitionService.IsTransitioning,
+                "Mother's house interior did not finish booting.");
+            yield return null;
+
+            interior.Player.Motor.SetInputEnabled(false);
+            interior.Player.Motor.enabled = false;
+            CharacterController controller = interior.Player.GameObject
+                .GetComponent<CharacterController>();
+            Assert.That(controller, Is.Not.Null);
+            Assert.That(interior.World.StairRampCollider, Is.Not.Null);
+            Assert.That(interior.World.StairRampCollider.enabled, Is.True);
+
+            yield return MoveControllerTo(controller, new Vector2(1.70f, 2.56f));
+            yield return MoveControllerTo(controller, new Vector2(-4f, 2.56f));
+            yield return MoveControllerTo(controller, new Vector2(-4f, 1.80f));
+            yield return MoveControllerTo(controller, new Vector2(-4f, -2.93f));
+            Assert.That(
+                controller.transform.position.y,
+                Is.GreaterThan(3.45f),
+                "The stair must physically carry the player to the upper floor.");
+
+            yield return MoveControllerTo(controller, new Vector2(-2.45f, -2.93f));
+            Assert.That(
+                interior.FixedCamera.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.StairAndUpperCorridor));
+
+            yield return MoveControllerTo(controller, new Vector2(-2.45f, -1.85f));
+            yield return MoveControllerTo(controller, new Vector2(-1.25f, -1.85f));
+            yield return MoveControllerTo(
+                controller,
+                new Vector2(
+                    interior.Layout.UpperFloor.SouthRoomCenter.x,
+                    interior.Layout.UpperFloor.SouthRoomCenter.z));
+            Assert.That(
+                interior.FixedCamera.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.UpperSouthRoom));
+            Assert.That(
+                controller.transform.position.y,
+                Is.EqualTo(
+                    interior.Layout.UpperFloor.FloorElevation +
+                    PlayerFactory.GroundedRootOffset).Within(0.12f));
+
+            yield return MoveControllerTo(controller, new Vector2(-1.25f, -1.85f));
+            yield return MoveControllerTo(controller, new Vector2(-2.45f, -1.85f));
+            yield return MoveControllerTo(controller, new Vector2(-2.45f, 1.85f));
+            yield return MoveControllerTo(controller, new Vector2(-1.25f, 1.85f));
+            yield return MoveControllerTo(
+                controller,
+                new Vector2(
+                    interior.Layout.UpperFloor.NorthRoomCenter.x,
+                    interior.Layout.UpperFloor.NorthRoomCenter.z));
+            Assert.That(
+                interior.FixedCamera.ActiveShotKind,
+                Is.EqualTo(HomeCameraShotKind.UpperNorthRoom));
+            Assert.That(
+                controller.transform.position.y,
+                Is.EqualTo(
+                    interior.Layout.UpperFloor.FloorElevation +
+                    PlayerFactory.GroundedRootOffset).Within(0.12f));
             LogAssert.NoUnexpectedReceived();
         }
 
@@ -273,7 +345,7 @@ namespace BarPromenade.Tests.PlayMode
                 fixture => fixture.BlocksMovement);
             Assert.That(
                 interior.World.GameplayColliders,
-                Has.Count.EqualTo(6 + blockingFixtureCount));
+                Has.Count.EqualTo(21 + blockingFixtureCount));
             Assert.That(
                 interior.World.GameplayColliders.All(
                     collider =>
@@ -355,7 +427,15 @@ namespace BarPromenade.Tests.PlayMode
             {
                 "East Wall",
                 "South Wall West of Door",
-                "South Wall East of Door"
+                "South Wall East of Door",
+                "South Door Lintel",
+                "Upper Floor East Slab",
+                "Upper Floor North Landing",
+                "Stair South Closure",
+                "Stair Walkable Ramp",
+                "Upper Partition Between Doors",
+                "Upper Room Divider",
+                "Upper Stair East Guard"
             };
             for (int index = 0;
                  index < requiredWallColliders.Length;
@@ -792,7 +872,8 @@ namespace BarPromenade.Tests.PlayMode
                 interior.GetComponentsInChildren<HomeFixedCameraController>(
                     true),
                 Has.Length.EqualTo(1),
-                "The room owns one fixed gameplay shot, not a camera network.");
+                "The house owns one controller for its planned fixed shots.");
+            Assert.That(interior.Layout.CameraShots, Has.Count.EqualTo(4));
             HomeCameraShot shot = interior.Layout.CameraShot;
             Assert.That(
                 interior.FixedCamera.ActiveShotKind,
@@ -843,11 +924,47 @@ namespace BarPromenade.Tests.PlayMode
                 Is.EqualTo(4));
             Assert.That(
                 atmosphere.GetComponentsInChildren<Light>(true),
-                Has.Length.EqualTo(4));
+                Has.Length.EqualTo(
+                    MothersHouseInteriorAtmosphere.PracticalLightCount +
+                    MothersHouseInteriorAtmosphere.HearthBounceLightCount));
             Assert.That(
                 atmosphere.transform.Find("Warm Ceiling Fill"),
                 Is.Null,
                 "The scene must not return to an invisible global fill.");
+
+            // THE ONE SOURCELESS LIGHT, and the leash that keeps it from
+            // becoming the fill that was banned above. The hearth burns
+            // behind the mother's chair and there is no global illumination
+            // to carry its bounce off the boards back onto her face, so this
+            // stands in for it - but it may only ever reach her. A range that
+            // dies inside the chair and an intensity a twentieth of the floor
+            // lamp's are what make "local" a fact rather than an intention.
+            Light bounce = atmosphere.HearthBounceLight;
+            Assert.That(bounce, Is.Not.Null);
+            Assert.That(bounce.enabled, Is.True);
+            Assert.That(bounce.type, Is.EqualTo(LightType.Spot));
+            Assert.That(bounce.shadows, Is.EqualTo(LightShadows.None));
+            Assert.That(
+                bounce.range,
+                Is.LessThan(1.5f),
+                "A sourceless light must not be able to reach a wall.");
+            Assert.That(
+                bounce.intensity,
+                Is.LessThan(
+                    MothersHouseInteriorAtmosphere.FloorLampIntensity * 0.1f),
+                "The bounce must stay far under the lamp that motivates it.");
+            Assert.That(
+                Vector3.Distance(
+                    bounce.transform.position,
+                    interior.World.Root.TransformPoint(
+                        MothersHouseInteriorAtmosphere.HearthBouncePosition)),
+                Is.LessThan(0.001f));
+            Assert.That(
+                Vector3.Distance(
+                    bounce.transform.position,
+                    atmosphere.FireLight.transform.position),
+                Is.GreaterThan(bounce.range),
+                "It stands in for the fire's bounce and must not sit in it.");
             Assert.That(
                 MothersHouseInteriorAtmosphere.LampLightCount,
                 Is.EqualTo(1));
@@ -1493,6 +1610,65 @@ namespace BarPromenade.Tests.PlayMode
                 Vector3.Distance(actual, expected),
                 Is.LessThanOrEqualTo(tolerance),
                 message + $" Expected {expected}, got {actual}.");
+        }
+
+        private static IEnumerator MoveControllerTo(
+            CharacterController controller,
+            Vector2 target)
+        {
+            const int maximumSteps = 220;
+            const float stepDistance = 0.055f;
+            for (int index = 0; index < maximumSteps; index++)
+            {
+                Vector3 position = controller.transform.position;
+                Vector2 remaining = target -
+                    new Vector2(position.x, position.z);
+                if (remaining.magnitude < 0.08f)
+                {
+                    yield break;
+                }
+
+                Vector2 planar = Vector2.ClampMagnitude(
+                    remaining,
+                    stepDistance);
+                controller.Move(new Vector3(planar.x, -0.08f, planar.y));
+                yield return null;
+            }
+
+            Assert.Fail(
+                $"Controller did not reach {target} from " +
+                $"{controller.transform.position}. " +
+                BuildCollisionReport(controller, target));
+        }
+
+        private static string BuildCollisionReport(
+            CharacterController controller,
+            Vector2 target)
+        {
+            Vector3 origin = controller.transform.position +
+                Vector3.up * 0.85f;
+            Vector3 targetWorld = new Vector3(target.x, origin.y, target.y);
+            Vector3 direction = (targetWorld - origin).normalized;
+            RaycastHit[] hits = Physics.SphereCastAll(
+                origin,
+                controller.radius,
+                direction,
+                2f,
+                ~0,
+                QueryTriggerInteraction.Ignore);
+            string result = "Forward colliders:";
+            for (int index = 0; index < hits.Length; index++)
+            {
+                Collider collider = hits[index].collider;
+                if (collider == null || collider == controller)
+                {
+                    continue;
+                }
+
+                result += $" {collider.name}@{hits[index].distance:F2};";
+            }
+
+            return result;
         }
     }
 }

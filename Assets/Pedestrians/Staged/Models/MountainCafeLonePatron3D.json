@@ -1,8 +1,8 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.1.0",
+  "generator_version": "4.5.1",
   "blender_version": "5.0.1",
-  "design_id": "cafe_lone_patron_v1",
+  "design_id": "cafe_lone_patron_v2",
   "display_name": "Cafe Lone Patron",
   "seed": 1327109,
   "height_m": 1.75,
@@ -18,24 +18,24 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 37,
-  "triangle_count": 904,
+  "mesh_count": 41,
+  "triangle_count": 2084,
   "triangle_budget": [
-    900,
-    1900
+    1800,
+    3000
   ],
   "staged": true,
   "pool_eligible": false,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
-    -0.772707,
-    -0.210136,
+    -0.784416,
+    -0.243097,
     0.0
   ],
   "bounds_max": [
-    0.774707,
-    0.1364,
+    0.786416,
+    0.139063,
     1.75
   ],
   "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
@@ -45,8 +45,7 @@
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx",
   "shared_clips": [
-    "CafeLoneIdle",
-    "CafeLoneDrink"
+    "CafeLoneSleep"
   ],
   "rides_bus": false,
   "seated_clearance_m": null,
@@ -54,7 +53,15 @@
     0.43,
     0.5
   ],
-  "build_signature": "8197a846583c3c95b74da7851349326c3178bd862feafa2a009ddbf3b2d76117",
+  "perch_support_contact_m": [
+    0.8145,
+    0.8205
+  ],
+  "perch_support_radius_m": 0.22,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "79cd7ba844979b956e3d679551e3bb5206e9b8e3485d9b586c0d720ce9551bc4",
   "bones": [
     {
       "name": "root",
@@ -538,34 +545,6 @@
       "triangles": 12
     },
     {
-      "name": "ACC_Eye.L",
-      "role": "face_detail",
-      "bone": "head",
-      "palette_name": "cafe_charcoal_dark",
-      "base_color": [
-        0.022,
-        0.026,
-        0.031,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
-      "name": "ACC_Eye.R",
-      "role": "face_detail",
-      "bone": "head",
-      "palette_name": "cafe_charcoal_dark",
-      "base_color": [
-        0.022,
-        0.026,
-        0.031,
-        1.0
-      ],
-      "vertices": 8,
-      "triangles": 12
-    },
-    {
       "name": "ACC_FedoraBand",
       "role": "signature_silhouette",
       "bone": "head",
@@ -576,8 +555,8 @@
         0.045,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 36,
+      "triangles": 68
     },
     {
       "name": "ACC_FedoraBrim",
@@ -590,8 +569,8 @@
         0.175,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 34,
+      "triangles": 64
     },
     {
       "name": "ACC_FedoraBrowShadow",
@@ -618,36 +597,51 @@
         0.175,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 48,
+      "triangles": 92,
+      "atlas_region": "Headwear"
     },
     {
-      "name": "ACC_Mouth",
-      "role": "face_detail",
+      "name": "ACC_HairNape",
+      "role": "body_detail",
       "bone": "head",
-      "palette_name": "cafe_charcoal_dark",
+      "palette_name": "cafe_hat_band",
       "base_color": [
-        0.022,
-        0.026,
-        0.031,
+        0.035,
+        0.04,
+        0.045,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 32,
+      "triangles": 60
     },
     {
-      "name": "ACC_Nose",
-      "role": "face_detail",
+      "name": "ACC_HairTemple.L",
+      "role": "body_detail",
       "bone": "head",
-      "palette_name": "cafe_skin",
+      "palette_name": "cafe_hat_band",
       "base_color": [
-        0.455,
-        0.315,
-        0.235,
+        0.035,
+        0.04,
+        0.045,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 18,
+      "triangles": 32
+    },
+    {
+      "name": "ACC_HairTemple.R",
+      "role": "body_detail",
+      "bone": "head",
+      "palette_name": "cafe_hat_band",
+      "base_color": [
+        0.035,
+        0.04,
+        0.045,
+        1.0
+      ],
+      "vertices": 18,
+      "triangles": 32
     },
     {
       "name": "ACC_SuitButton.01",
@@ -716,8 +710,9 @@
         0.07,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 72,
+      "triangles": 140,
+      "atlas_region": "Chest"
     },
     {
       "name": "CLO_Lapel.L",
@@ -758,8 +753,9 @@
         0.031,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 48,
+      "triangles": 92,
+      "atlas_region": "Seat"
     },
     {
       "name": "CLO_Shin.L",
@@ -772,8 +768,9 @@
         0.031,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 40,
+      "triangles": 76,
+      "atlas_region": "Shin.L"
     },
     {
       "name": "CLO_Shin.R",
@@ -786,8 +783,9 @@
         0.031,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 40,
+      "triangles": 76,
+      "atlas_region": "Shin.R"
     },
     {
       "name": "CLO_ShirtSliver",
@@ -814,8 +812,9 @@
         0.112,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 40,
+      "triangles": 76,
+      "atlas_region": "LowerSleeve.L"
     },
     {
       "name": "CLO_SleeveLower.R",
@@ -828,8 +827,9 @@
         0.112,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 40,
+      "triangles": 76,
+      "atlas_region": "LowerSleeve.R"
     },
     {
       "name": "CLO_SleeveUpper.L",
@@ -842,8 +842,9 @@
         0.07,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 40,
+      "triangles": 76,
+      "atlas_region": "UpperSleeve.L"
     },
     {
       "name": "CLO_SleeveUpper.R",
@@ -856,8 +857,9 @@
         0.07,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 40,
+      "triangles": 76,
+      "atlas_region": "UpperSleeve.R"
     },
     {
       "name": "CLO_SuitFront.L",
@@ -898,8 +900,9 @@
         0.031,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 40,
+      "triangles": 76,
+      "atlas_region": "Thigh.L"
     },
     {
       "name": "CLO_Thigh.R",
@@ -912,8 +915,9 @@
         0.031,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 40,
+      "triangles": 76,
+      "atlas_region": "Thigh.R"
     },
     {
       "name": "CLO_Waist",
@@ -926,8 +930,52 @@
         0.031,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 48,
+      "triangles": 92,
+      "atlas_region": "Waist"
+    },
+    {
+      "name": "GEO_Ear.L",
+      "role": "body_detail",
+      "bone": "head",
+      "palette_name": "cafe_skin",
+      "base_color": [
+        0.455,
+        0.315,
+        0.235,
+        1.0
+      ],
+      "vertices": 14,
+      "triangles": 24
+    },
+    {
+      "name": "GEO_Ear.R",
+      "role": "body_detail",
+      "bone": "head",
+      "palette_name": "cafe_skin",
+      "base_color": [
+        0.455,
+        0.315,
+        0.235,
+        1.0
+      ],
+      "vertices": 14,
+      "triangles": 24
+    },
+    {
+      "name": "GEO_FaceSurface",
+      "role": "facial_atlas",
+      "bone": "head",
+      "palette_name": "cafe_skin",
+      "base_color": [
+        0.455,
+        0.315,
+        0.235,
+        1.0
+      ],
+      "vertices": 49,
+      "triangles": 72,
+      "atlas_region": "Face"
     },
     {
       "name": "GEO_Hand.L",
@@ -968,8 +1016,8 @@
         0.235,
         1.0
       ],
-      "vertices": 62,
-      "triangles": 120
+      "vertices": 100,
+      "triangles": 196
     },
     {
       "name": "GEO_Neck",
@@ -982,8 +1030,8 @@
         0.235,
         1.0
       ],
-      "vertices": 20,
-      "triangles": 36
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GEO_Shoe.L",
@@ -996,8 +1044,9 @@
         0.027,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44,
+      "atlas_region": "Shoe.L"
     },
     {
       "name": "GEO_Shoe.R",
@@ -1010,8 +1059,9 @@
         0.027,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 24,
+      "triangles": 44,
+      "atlas_region": "Shoe.R"
     },
     {
       "name": "GEO_Sole.L",
@@ -1040,6 +1090,176 @@
       ],
       "vertices": 8,
       "triangles": 12
+    },
+    {
+      "name": "GEO_Thumb.L",
+      "role": "body_detail",
+      "bone": "hand.L",
+      "palette_name": "cafe_skin",
+      "base_color": [
+        0.455,
+        0.315,
+        0.235,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
+    },
+    {
+      "name": "GEO_Thumb.R",
+      "role": "body_detail",
+      "bone": "hand.R",
+      "palette_name": "cafe_skin",
+      "base_color": [
+        0.455,
+        0.315,
+        0.235,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
+    }
+  ],
+  "texture_bindings": [
+    {
+      "texture_asset": "Assets/Pedestrians/Textures/MountainCafeLonePatron3DDetailAtlas.png",
+      "width_px": 256,
+      "height_px": 256,
+      "materials": [],
+      "shader_property": "_BaseMap",
+      "color_space": "sRGB",
+      "filter_mode": "Point",
+      "wrap_mode": "Clamp",
+      "mipmaps": false,
+      "compression": "Uncompressed",
+      "uv_channel": 0,
+      "uv_origin": "bottom_left",
+      "uv_safe_inset_px": 1,
+      "material_tint_hex": "FFFFFF",
+      "tint_source": "renderer_palette",
+      "sha256": "406bf815c7276ea32f8abc544e3d834d1db91266286a0ef598b59f6b37fea46a",
+      "regions": [
+        {
+          "name": "Face",
+          "renderer": "GEO_FaceSurface",
+          "x_px": 0,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Chest",
+          "renderer": "CLO_Chest",
+          "x_px": 64,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Waist",
+          "renderer": "CLO_Waist",
+          "x_px": 128,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Seat",
+          "renderer": "CLO_Seat",
+          "x_px": 192,
+          "y_px": 192,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "UpperSleeve.L",
+          "renderer": "CLO_SleeveUpper.L",
+          "x_px": 0,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "UpperSleeve.R",
+          "renderer": "CLO_SleeveUpper.R",
+          "x_px": 64,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "LowerSleeve.L",
+          "renderer": "CLO_SleeveLower.L",
+          "x_px": 128,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "LowerSleeve.R",
+          "renderer": "CLO_SleeveLower.R",
+          "x_px": 192,
+          "y_px": 128,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Thigh.L",
+          "renderer": "CLO_Thigh.L",
+          "x_px": 0,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Thigh.R",
+          "renderer": "CLO_Thigh.R",
+          "x_px": 64,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Shin.L",
+          "renderer": "CLO_Shin.L",
+          "x_px": 128,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Shin.R",
+          "renderer": "CLO_Shin.R",
+          "x_px": 192,
+          "y_px": 64,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Shoe.L",
+          "renderer": "GEO_Shoe.L",
+          "x_px": 64,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Shoe.R",
+          "renderer": "GEO_Shoe.R",
+          "x_px": 128,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        },
+        {
+          "name": "Headwear",
+          "renderer": "ACC_FedoraCrown",
+          "x_px": 192,
+          "y_px": 0,
+          "width_px": 64,
+          "height_px": 64
+        }
+      ]
     }
   ]
 }

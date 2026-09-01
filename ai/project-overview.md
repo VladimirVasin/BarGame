@@ -50,8 +50,13 @@ The vertical slice contains:
   arrival outside that same threshold. Its deterministic imported room keeps
   a low central tea table, north rocking chair, west sofa, a burning fireplace
   between two north windows and a light, clean, cared-for but old and modest
-  domestic dressing under one fixed camera. Repairs, fading and soft wear carry
-  age without dirt or abandonment. One dedicated `MothersHousePositiveAtlas`
+  domestic dressing. Behind the sofa, a real north-entry stair rises south
+  through a split slab to a narrow west corridor and exactly two separate,
+  accessible, currently empty upper rooms. One hidden plan-owned ramp makes the
+  visible collider-free steps continuously walkable; structural slabs,
+  partitions, door openings and well guards are runtime collision. Four
+  height-aware fixed shots cover the ground room, stair/corridor and both rooms.
+  Repairs, fading and soft wear carry age without dirt or abandonment. One dedicated `MothersHousePositiveAtlas`
   owns every room-authored surface instead of reusing Home or City albedos.
   Its centred south-wall entrance faces the north-wall hearth and spawns the
   hero looking north. Cool window spill and a shaded floor lamp create one
@@ -118,8 +123,9 @@ The vertical slice contains:
   route bounds, ground their bases against the minimum sampled terrain beneath
   each oriented footprint and reserve those footprints from both the road
   corridor and tree crowns. The left side owns an enterable glass cafe with a
-  bespoke silent four-role cast (lone patron, couple and attendant), two
-  deliberate empty stools and rare deterministic gesture beats. The right
+  bespoke four-role cast: its lone patron and attendant stay silent while the
+  drinking couple share a private localized text conversation, four deliberate
+  stools remain empty and rare deterministic gesture beats continue. The right
   side owns an operating `230 m` cableway with nine supports and eight cabins,
   with every cable height rebased from the raised terminal rather than old
   absolute world heights. At the normal `2.6 m/s`
@@ -607,8 +613,8 @@ The vertical slice contains:
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
   `0.835 m` rest pelvis. The five pooled and nine ordinary staged model
   manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
-  The four Mountain Road cafe models and their separate `10`-clip bank use
-  `4.1.0`; the shelter trio and dedicated three-loop bank use `4.2.0`; the
+  The four Mountain Road cafe models and their separate `9`-clip bank use
+  `4.5.1`; the shelter trio and dedicated three-loop bank use `4.2.0`; the
   three special manifests use `2.0.0`. The generated FBXs were
   reimported and every production prefab/provider output rebuilt; runtime
   therefore consumes the replaced models, not legacy prefabs behind revised
@@ -1436,21 +1442,60 @@ The vertical slice contains:
   plateau. On the left, one five-sided Nighthawks-inspired glass cafe is
   enterable without a scene load. Its lone patron, neighbouring couple and
   attendant are four dedicated staged models rather than pedestrian-pool
-  substitutes. Its deterministic fixed-metre Blender set contains `51` meshes /
-  `4,970` triangles, `45` semantic anchors and six dynamic prop assemblies.
-  Seven stools follow the main counter and return: three are occupied and four
-  remain empty. The hero may take the middle main-row gap; its dock remains in
-  the aisle while its independent facing now looks at the counter. Three cups
-  visibly drain during the patrons' Drink clips. A pure clock synchronizes the
-  pair, keeps the attendant wiping between episodes, and sends him to walk and
-  pour when a cup crosses its refill threshold. The ten-clip cast has no NPC
-  voice bed and never services the hero. The plan continues to own entry,
+  substitutes. Its deterministic fixed-metre Blender set contains `48` meshes /
+  `4,568` triangles, `41` semantic anchors and five dynamic prop assemblies.
+  Seven stools follow the main counter and return with their seat tops at
+  `0.8175 m`: three are occupied with real butt contact and four remain empty.
+  The hero may take the middle main-row gap; its dock remains in the aisle while
+  its independent facing now looks at the counter. The lone patron nearest the
+  entrance sleeps with his head on strongly crossed forearms, visibly stacked
+  one above the other without intersecting, on the counter. He owns no
+  cup, never drinks and never enters the attendant's service queue. Only the
+  pair's two cups visibly drain during their Drink clips. Both handles face the
+  side opposite the earlier build; each refitted Grip stays exactly on the
+  animated hand while the open rim tips toward the owner's live mouth socket,
+  independent of imported bone axes, then returns exactly to the centre of its
+  own saucer. The attendant's Wipe reaches the real
+  counter surface, while the complete right hand and pot stay clear through
+  carry, lift and action blends. During Pour, separate runtime geometry is
+  rebuilt every frame from the animated pot spout to the active cup's
+  `PourTarget`; the stream is not baked into any clip. A pure clock arms on the
+  player's first entry into the cafe's `16 m` entrance radius, which excludes
+  every earlier hairpin. Role-local windows and distinct fill/consumption
+  profiles and non-overlapping windows keep the pair out of lockstep while the
+  first visible sip still crosses the refill threshold within one minute. The
+  attendant wipes between episodes, then walks and pours when either of those
+  two cups crosses that threshold. Completing
+  the hero-stool sit switches to a bounded eye-level first-person view of the
+  counter and restores the exact prior follow-camera state on exit. The
+  nine-clip cast (`1` sleeping loop, `2 + 2` pair clips, `4` attendant clips)
+  has no NPC voice bed and never services the hero. Only while the player is
+  inside the plan's physical cafe volume, the pair follows the fixed localized
+  text order `Man01 -> Woman01 -> ... -> Man10 -> Woman10 -> loop`; each role
+  owns ten stable keys in both Russian and English. A queued turn survives
+  either patron's Drink and the woman's cigarette lift/smoke window without
+  consuming or skipping its key, then resumes after the authored action. One over-head bubble
+  belongs to the active speaker, whose additive neck/head look turns toward the
+  partner before the line appears. The sleeping patron and attendant have no
+  lines. The pair's default seated idles remain legible around the conversation:
+  the man makes
+  three uneven left-hand taps with no impact sound and may continue tapping
+  beneath his text, while the woman takes one cigarette drag and settles into a
+  restrained exhale. The authored ember and
+  its smoke envelope read the same live normalized idle phase and own no
+  separate timer, Light or AudioSource. The bubbles likewise add no voice or
+  other AudioSource. The
+  plan continues to own entry,
   shelter, anchors, lighting and exactly `17` logical colliders. Two visible
   practicals and one shadowless technical wash remain. Six neutral semantic
   detail sheets partition exterior, interior, counter, metal, props and glass;
   authored UV regions and a zero-overlap validator prevent repeated samples,
   stretching and flicker without a new base hue, readable brand, `PHILLIES`,
   `5¢`, price, menu or city background.
+  The four cast members also use role-specific `256 px` detail atlases and
+  curved/multi-segment geometry at the current Hero V2 fidelity level; these
+  atlases cover face, clothing, hair/headwear and shoes through the shared
+  player lit material rather than adding per-instance materials.
   On the right, a `230 m` continuously looping cableway moves eight
   colliderless cabins over nine supports while its upper return remains beyond
   the Mountain Road draw range. The cafe interior and lower station participate

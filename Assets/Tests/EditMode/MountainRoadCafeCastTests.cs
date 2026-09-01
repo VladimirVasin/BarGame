@@ -11,8 +11,11 @@ namespace BarPromenade.Tests.EditMode
     {
         private const string PlayerModelPath =
             "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
+        private const string SharedMaterialPath =
+            "Assets/Player3D/Materials/Player3DLit.mat";
         private const string StagedPrefabRoot =
             "Assets/Pedestrians/Staged/Prefabs/";
+        private const int MinimumDetailedTriangleCount = 1800;
 
         private static readonly string[] StableIds =
         {
@@ -189,8 +192,8 @@ namespace BarPromenade.Tests.EditMode
                 prefabs.Sum(prefab => prefab
                     .GetComponent<MountainRoadCafeCastAssetRegistry>()
                     .ClipBindings.Count),
-                Is.EqualTo(10),
-                "The isolated cafe library is a ten-clip contract.");
+                Is.EqualTo(9),
+                "The isolated cafe library is a nine-clip contract.");
         }
 
         [Test]
@@ -267,7 +270,8 @@ namespace BarPromenade.Tests.EditMode
                     controllers[0].TryGetCup(
                         MountainRoadCafeCastRole.LonePatron,
                         out _),
-                    Is.True);
+                    Is.False,
+                    "The sleeping door-side patron must own no cup.");
                 Assert.That(
                     controllers[0].TryGetCup(
                         MountainRoadCafeCastRole.PairMan,
@@ -303,6 +307,169 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        [Test]
+        [Category("MountainRoad")]
+        public void BuiltCafe_ArmsNearPlayerAndPresentsDrinkDrainAndRefill()
+        {
+            var parent = new GameObject("Cafe Service Regression Parent");
+            var observer = new GameObject("Cafe Service Observer");
+            observer.transform.SetParent(parent.transform, false);
+            try
+            {
+                MountainRoadCafeWorldResult result =
+                    MountainRoadCafeWorldBuilder.Build(
+                        parent.transform,
+                        CreateCafePlan());
+                MountainRoadCafeCastController controller = result.Cast;
+                observer.transform.position = result.Entrance.position +
+                    Vector3.right *
+                    (MountainRoadCafeCastController.ActivationRadius + 1f);
+
+                Assert.That(controller.IsTimelineArmed, Is.False);
+                Assert.That(
+                    controller.BindActivationObserver(
+                        observer.transform,
+                        result.Entrance.position),
+                    Is.True);
+                controller.Advance(
+                    MountainRoadCafeCastController
+                        .MaximumEpisodeDelaySeconds + 1f);
+                Assert.That(controller.IsTimelineArmed, Is.False);
+                Assert.That(controller.ElapsedSeconds, Is.Zero);
+
+                observer.transform.position = result.Entrance.position;
+                controller.Advance(0f);
+                Assert.That(controller.IsTimelineArmed, Is.True);
+                Assert.That(controller.ElapsedSeconds, Is.Zero);
+                Assert.That(
+                    controller.TryGetCup(
+                        MountainRoadCafeCastRole.PairMan,
+                        out MountainRoadCafeCupView pairManCup),
+                    Is.True);
+                Assert.That(
+                    controller.TryGetCup(
+                        MountainRoadCafeCastRole.PairWoman,
+                        out MountainRoadCafeCupView pairWomanCup),
+                    Is.True);
+                Assert.That(
+                    pairManCup.Fill01,
+                    Is.EqualTo(
+                        MountainRoadCafeServiceTimeline.InitialPairManFill));
+                Assert.That(
+                    pairWomanCup.Fill01,
+                    Is.EqualTo(
+                        MountainRoadCafeServiceTimeline
+                            .InitialPairWomanFill));
+                Assert.That(pairManCup.LiquidRenderer.enabled, Is.True);
+                Assert.That(pairWomanCup.LiquidRenderer.enabled, Is.True);
+
+                Assert.That(
+                    controller.TryRequestEpisode(
+                        MountainRoadCafeCastEpisode.Couple),
+                    Is.True);
+                controller.Advance(
+                    MountainRoadCafeServiceTimeline.PairPatronDrinkSeconds *
+                    0.55f);
+                Assert.That(
+                    controller.ServiceFrame.Phase,
+                    Is.EqualTo(MountainRoadCafeServicePhase.CoupleDrink));
+                Assert.That(pairManCup.Fill01,
+                    Is.EqualTo(0.36f).Within(0.0001f));
+                Assert.That(pairWomanCup.Fill01,
+                    Is.EqualTo(
+                        MountainRoadCafeServiceTimeline.InitialPairWomanFill)
+                        .Within(0.0001f));
+
+                MountainRoadCafeCastPresentation[] presentations =
+                    result.NpcRoot.GetComponentsInChildren<
+                        MountainRoadCafeCastPresentation>(true);
+                Assert.That(
+                    presentations.Single(presentation =>
+                            presentation.Role ==
+                            MountainRoadCafeCastRole.PairMan)
+                        .CurrentClipKind,
+                    Is.EqualTo(MountainRoadCafeCastClipKind.Drink));
+                Assert.That(
+                    presentations.Single(presentation =>
+                            presentation.Role ==
+                            MountainRoadCafeCastRole.PairWoman)
+                        .CurrentClipKind,
+                    Is.EqualTo(MountainRoadCafeCastClipKind.Idle));
+                Assert.That(
+                    Vector3.Distance(
+                        pairManCup.GripAnchor.position,
+                        controller.GetCupHandSocket(
+                            MountainRoadCafeCastRole.PairMan).position),
+                    Is.LessThanOrEqualTo(0.005f));
+                float untilWomanMidSip =
+                    MountainRoadCafeServiceTimeline
+                        .PairWomanDrinkStartSeconds +
+                    MountainRoadCafeServiceTimeline
+                        .PairPatronDrinkSeconds * 0.55f -
+                    controller.ServiceFrame.PhaseElapsedSeconds;
+                controller.Advance(untilWomanMidSip);
+                Assert.That(pairManCup.Fill01,
+                    Is.EqualTo(0.28f).Within(0.0001f));
+                Assert.That(pairWomanCup.Fill01,
+                    Is.EqualTo(0.47f).Within(0.0001f));
+                Assert.That(
+                    presentations.Single(presentation =>
+                            presentation.Role ==
+                            MountainRoadCafeCastRole.PairMan)
+                        .CurrentClipKind,
+                    Is.EqualTo(MountainRoadCafeCastClipKind.Idle));
+                Assert.That(
+                    presentations.Single(presentation =>
+                            presentation.Role ==
+                            MountainRoadCafeCastRole.PairWoman)
+                        .CurrentClipKind,
+                    Is.EqualTo(MountainRoadCafeCastClipKind.Drink));
+                Assert.That(
+                    Vector3.Distance(
+                        pairWomanCup.GripAnchor.position,
+                        controller.GetCupHandSocket(
+                            MountainRoadCafeCastRole.PairWoman).position),
+                    Is.LessThanOrEqualTo(0.005f));
+
+                controller.Advance(
+                    controller.ServiceFrame.PhaseDurationSeconds -
+                    controller.ServiceFrame.PhaseElapsedSeconds);
+                Assert.That(
+                    controller.ServiceFrame.Phase,
+                    Is.EqualTo(MountainRoadCafeServicePhase.Notice));
+                Assert.That(
+                    controller.ServiceFrame.ServiceTarget,
+                    Is.EqualTo(MountainRoadCafeCastRole.PairMan));
+                controller.Advance(
+                    MountainRoadCafeServiceTimeline.NoticeSeconds +
+                    MountainRoadCafeServiceTimeline.WalkSeconds);
+                Assert.That(
+                    controller.ServiceFrame.Phase,
+                    Is.EqualTo(MountainRoadCafeServicePhase.Pour));
+                float fillBeforePour = pairManCup.Fill01;
+                controller.Advance(
+                    MountainRoadCafeServiceTimeline.PourSeconds * 0.55f);
+                Assert.That(pairManCup.Fill01, Is.GreaterThan(fillBeforePour));
+                Assert.That(pairManCup.Fill01, Is.LessThan(0.90f));
+                Assert.That(
+                    presentations.Single(presentation =>
+                            presentation.Role ==
+                            MountainRoadCafeCastRole.Attendant)
+                        .CurrentClipKind,
+                    Is.EqualTo(MountainRoadCafeCastClipKind.Pour));
+                Assert.That(
+                    result.Model.TryGetProp(
+                        "PourStream",
+                        out MountainRoadCafeDynamicPropBinding stream),
+                    Is.True);
+                Assert.That(stream.Renderers.Single().enabled, Is.True);
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+            }
+        }
+
         [TestCase(-0.01f, 2f, 0f)]
         [TestCase(float.NaN, 2f, 0f)]
         [TestCase(0f, 0f, 0f)]
@@ -328,7 +495,7 @@ namespace BarPromenade.Tests.EditMode
 
         [Test]
         [Category("MountainRoad")]
-        public void ServiceTimeline_PairDrinkSharesOneClockAndFillDelta()
+        public void ServiceTimeline_PairUsesStaggeredClocksAndIndependentFill()
         {
             var timeline = new MountainRoadCafeServiceTimeline(42);
 
@@ -337,88 +504,99 @@ namespace BarPromenade.Tests.EditMode
                     MountainRoadCafeCastRole.PairMan),
                 Is.True);
             timeline.Advance(
-                MountainRoadCafeServiceTimeline.CoupleDrinkSeconds * 0.40f);
-            Assert.That(
-                timeline.Frame.PairManFill,
-                Is.EqualTo(0.78f).Within(0.0001f),
-                "Coffee cannot vanish while the cups are still lifting.");
-            timeline.Advance(
-                MountainRoadCafeServiceTimeline.CoupleDrinkSeconds * 0.15f);
-
+                MountainRoadCafeServiceTimeline.PairPatronDrinkSeconds *
+                0.55f);
             MountainRoadCafeServiceFrame frame = timeline.Frame;
+            Assert.That(
+                frame.IsDrinking(MountainRoadCafeCastRole.PairMan),
+                Is.True);
+            Assert.That(
+                frame.IsDrinking(MountainRoadCafeCastRole.PairWoman),
+                Is.False);
+            Assert.That(frame.PairManFill,
+                Is.EqualTo(0.36f).Within(0.0001f));
+            Assert.That(frame.PairWomanFill,
+                Is.EqualTo(
+                    MountainRoadCafeServiceTimeline.InitialPairWomanFill)
+                    .Within(0.0001f));
+
+            float untilWomanMidSip =
+                MountainRoadCafeServiceTimeline.PairWomanDrinkStartSeconds +
+                MountainRoadCafeServiceTimeline.PairPatronDrinkSeconds *
+                0.55f -
+                frame.PhaseElapsedSeconds;
+            timeline.Advance(
+                untilWomanMidSip);
+
+            frame = timeline.Frame;
             Assert.That(
                 frame.Phase,
                 Is.EqualTo(MountainRoadCafeServicePhase.CoupleDrink));
-            Assert.That(frame.PhaseNormalized, Is.EqualTo(0.55f).Within(0.0001f));
-            Assert.That(frame.PairManFill, Is.EqualTo(0.67f).Within(0.0001f));
-            Assert.That(frame.PairWomanFill, Is.EqualTo(0.67f).Within(0.0001f));
-            Assert.That(frame.LoneFill, Is.EqualTo(0.62f).Within(0.0001f));
+            Assert.That(
+                frame.IsDrinking(MountainRoadCafeCastRole.PairMan),
+                Is.False);
+            Assert.That(
+                frame.IsDrinking(MountainRoadCafeCastRole.PairWoman),
+                Is.True);
+            Assert.That(frame.PairManFill, Is.EqualTo(0.28f).Within(0.0001f));
+            Assert.That(frame.PairWomanFill,
+                Is.EqualTo(0.47f).Within(0.0001f));
+            timeline.Advance(
+                frame.PhaseDurationSeconds - frame.PhaseElapsedSeconds);
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.Notice));
+            Assert.That(
+                timeline.Frame.ServiceTarget,
+                Is.EqualTo(MountainRoadCafeCastRole.PairMan),
+                "Only the cup below the threshold should enter service.");
+            Assert.That(timeline.Frame.PairWomanFill,
+                Is.EqualTo(0.38f).Within(0.0001f));
+
+            timeline.Advance(
+                MountainRoadCafeServiceTimeline.NoticeSeconds +
+                MountainRoadCafeServiceTimeline.WalkSeconds +
+                MountainRoadCafeServiceTimeline.PourSeconds +
+                MountainRoadCafeServiceTimeline.WalkSeconds);
+            Assert.That(
+                timeline.TryRequestDrink(
+                    MountainRoadCafeCastRole.PairWoman),
+                Is.True);
+            timeline.Advance(
+                MountainRoadCafeServiceTimeline.CoupleDrinkSeconds);
+            Assert.That(
+                timeline.Frame.ServiceTarget,
+                Is.EqualTo(MountainRoadCafeCastRole.PairWoman),
+                "The next independently emptied cup should be serviced " +
+                "without refilling the man's cup again.");
+            Assert.That(timeline.Frame.PairManFill,
+                Is.EqualTo(0.74f).Within(0.0001f));
+            Assert.That(timeline.Frame.PairWomanFill,
+                Is.EqualTo(0.20f).Within(0.0001f));
         }
 
         [Test]
         [Category("MountainRoad")]
-        public void ServiceTimeline_RequestsRefillOnlyAtThreshold()
+        public void ServiceTimeline_SleepingLonePatronNeverOwnsACupOrDrink()
         {
             var timeline = new MountainRoadCafeServiceTimeline(42);
 
             Assert.That(
-                timeline.TryRequestDrink(
+                MountainRoadCafeServiceTimeline.IsPatronWithCup(
                     MountainRoadCafeCastRole.LonePatron),
-                Is.True);
-            timeline.Advance(MountainRoadCafeServiceTimeline.LoneDrinkSeconds);
-            Assert.That(
-                timeline.Frame.Phase,
-                Is.EqualTo(MountainRoadCafeServicePhase.Wiping));
-            Assert.That(
-                timeline.Frame.LoneFill,
-                Is.EqualTo(0.40f).Within(0.0001f));
-
+                Is.False);
             Assert.That(
                 timeline.TryRequestDrink(
                     MountainRoadCafeCastRole.LonePatron),
-                Is.True);
-            timeline.Advance(MountainRoadCafeServiceTimeline.LoneDrinkSeconds);
+                Is.False);
             Assert.That(
-                timeline.Frame.Phase,
-                Is.EqualTo(MountainRoadCafeServicePhase.Notice));
-            Assert.That(timeline.Frame.HasServiceTarget, Is.True);
+                timeline.Frame.IsDrinking(
+                    MountainRoadCafeCastRole.LonePatron),
+                Is.False);
             Assert.That(
-                timeline.Frame.ServiceTarget,
-                Is.EqualTo(MountainRoadCafeCastRole.LonePatron));
-            Assert.That(
-                timeline.Frame.LoneFill,
-                Is.EqualTo(0.18f).Within(0.0001f));
-
-            timeline.Advance(
-                MountainRoadCafeServiceTimeline.NoticeSeconds +
-                MountainRoadCafeServiceTimeline.WalkSeconds);
-            Assert.That(
-                timeline.Frame.Phase,
-                Is.EqualTo(MountainRoadCafeServicePhase.Pour));
-
-            timeline.Advance(
-                MountainRoadCafeServiceTimeline.PourSeconds * 0.30f);
-            Assert.That(
-                timeline.Frame.LoneFill,
-                Is.EqualTo(0.18f).Within(0.0001f),
-                "Coffee cannot rise while the pot is still lifting.");
-
-            timeline.Advance(
-                MountainRoadCafeServiceTimeline.PourSeconds * 0.25f);
-            Assert.That(
-                timeline.Frame.LoneFill,
-                Is.EqualTo(0.54f).Within(0.0001f),
-                "The fill should be halfway through its authored flow " +
-                "window at normalized clip time 0.55.");
-
-            timeline.Advance(
-                MountainRoadCafeServiceTimeline.PourSeconds * 0.45f);
-            Assert.That(
-                timeline.Frame.Phase,
-                Is.EqualTo(MountainRoadCafeServicePhase.WalkBack));
-            Assert.That(
-                timeline.Frame.LoneFill,
-                Is.EqualTo(0.90f).Within(0.0001f));
+                () => timeline.Frame.GetFill(
+                    MountainRoadCafeCastRole.LonePatron),
+                Throws.TypeOf<ArgumentOutOfRangeException>());
         }
 
         [Test]
@@ -442,14 +620,13 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 actual.PhaseElapsedSeconds,
                 Is.EqualTo(expected.PhaseElapsedSeconds).Within(0.002f));
-            Assert.That(actual.LoneFill, Is.EqualTo(expected.LoneFill).Within(0.0001f));
             Assert.That(actual.PairManFill, Is.EqualTo(expected.PairManFill).Within(0.0001f));
             Assert.That(actual.PairWomanFill, Is.EqualTo(expected.PairWomanFill).Within(0.0001f));
         }
 
         [Test]
         [Category("MountainRoad")]
-        public void ServiceTimeline_HeroNoticeNeverCreatesFourthServiceTarget()
+        public void ServiceTimeline_HeroNoticeNeverCreatesAnotherServiceTarget()
         {
             var timeline = new MountainRoadCafeServiceTimeline(91);
 
@@ -468,9 +645,69 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 timeline.Frame.Phase,
                 Is.EqualTo(MountainRoadCafeServicePhase.Wiping));
-            Assert.That(timeline.Frame.LoneFill, Is.EqualTo(0.62f));
-            Assert.That(timeline.Frame.PairManFill, Is.EqualTo(0.78f));
-            Assert.That(timeline.Frame.PairWomanFill, Is.EqualTo(0.78f));
+            Assert.That(
+                timeline.Frame.PairManFill,
+                Is.EqualTo(
+                    MountainRoadCafeServiceTimeline.InitialPairManFill));
+            Assert.That(
+                timeline.Frame.PairWomanFill,
+                Is.EqualTo(
+                    MountainRoadCafeServiceTimeline.InitialPairWomanFill));
+        }
+
+        [Test]
+        [Category("MountainRoad")]
+        public void CafeActivationRadius_DoesNotReachTheClimbingRoute()
+        {
+            MountainRoadPlan plan = MountainRoadPlanner.Create(
+                GameSessionState.DefaultCitySeed);
+            Vector3 entrance = plan.Terminal.Cafe.DoorCenter;
+            float nearest = float.PositiveInfinity;
+            foreach (MountainRoadRouteSample sample in plan.Route.Samples)
+            {
+                if (sample.Section == MountainRoadRouteSection.UpperApproach)
+                {
+                    continue;
+                }
+
+                Vector3 offset = sample.Position - entrance;
+                offset.y = 0f;
+                nearest = Mathf.Min(nearest, offset.magnitude);
+            }
+
+            Assert.That(
+                nearest,
+                Is.GreaterThan(
+                    MountainRoadCafeCastController.ActivationRadius + 2f),
+                "The cafe clock can arm from a lower hairpin.");
+        }
+
+        [TestCase(42)]
+        [TestCase(91)]
+        [Category("MountainRoad")]
+        public void ServiceTimeline_FirstAutonomousDrinkStartsPourWithinOneMinute(
+            int seed)
+        {
+            var timeline = new MountainRoadCafeServiceTimeline(seed);
+            float elapsed = 0f;
+            while ((timeline.Frame.Phase !=
+                        MountainRoadCafeServicePhase.Pour ||
+                    !MountainRoadCafeServiceTimeline.IsPourFlowActive(
+                        timeline.Frame.PhaseNormalized)) &&
+                   elapsed < 60f)
+            {
+                timeline.Advance(0.1f);
+                elapsed += 0.1f;
+            }
+
+            Assert.That(elapsed, Is.LessThan(60f));
+            Assert.That(
+                timeline.Frame.Phase,
+                Is.EqualTo(MountainRoadCafeServicePhase.Pour));
+            Assert.That(
+                MountainRoadCafeServiceTimeline.IsPourFlowActive(
+                    timeline.Frame.PhaseNormalized),
+                Is.True);
         }
 
         [Test]
@@ -500,7 +737,7 @@ namespace BarPromenade.Tests.EditMode
                 Vector3 restScale = lift.transform.localScale;
                 Vector3 worldScale = lift.transform.lossyScale;
                 view.Configure(
-                    MountainRoadCafeCastRole.LonePatron,
+                    MountainRoadCafeCastRole.PairMan,
                     liquid.transform,
                     renderer,
                     new Vector3(0f, 0.01f, 0f),
@@ -545,9 +782,17 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(registry.ModelRoot, Is.Not.Null);
             Assert.That(registry.Role, Is.EqualTo(expectedRole));
             Assert.That(registry.IdleClip, Is.Not.Null);
-            Assert.That(registry.BeatClip, Is.Not.Null);
-            int expectedClipCount =
-                expectedRole == MountainRoadCafeCastRole.Attendant ? 4 : 2;
+            Assert.That(
+                registry.BeatClip,
+                expectedRole == MountainRoadCafeCastRole.LonePatron
+                    ? Is.Null
+                    : Is.Not.Null);
+            int expectedClipCount = expectedRole switch
+            {
+                MountainRoadCafeCastRole.LonePatron => 1,
+                MountainRoadCafeCastRole.Attendant => 4,
+                _ => 2
+            };
             Assert.That(
                 registry.ClipBindings.Count,
                 Is.EqualTo(expectedClipCount));
@@ -571,7 +816,8 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     expectedRole == MountainRoadCafeCastRole.Attendant));
 
-            if (expectedRole != MountainRoadCafeCastRole.Attendant)
+            if (expectedRole == MountainRoadCafeCastRole.PairMan ||
+                expectedRole == MountainRoadCafeCastRole.PairWoman)
             {
                 string cupSocket = expectedRole ==
                                    MountainRoadCafeCastRole.PairWoman
@@ -600,6 +846,40 @@ namespace BarPromenade.Tests.EditMode
                     .Select(binding => binding.Renderer)
                     .Distinct().Count(),
                 Is.EqualTo(registry.RendererBindings.Count));
+
+            Texture2D atlas = registry.DetailAtlas;
+            Assert.That(atlas, Is.Not.Null);
+            Assert.That(
+                AssetDatabase.GetAssetPath(atlas),
+                Is.EqualTo(ExpectedAtlasPath(expectedRole)));
+            Assert.That(atlas.width, Is.EqualTo(256));
+            Assert.That(atlas.height, Is.EqualTo(256));
+            Assert.That(atlas.filterMode, Is.EqualTo(FilterMode.Point));
+            Assert.That(atlas.wrapMode, Is.EqualTo(TextureWrapMode.Clamp));
+            Assert.That(atlas.mipmapCount, Is.EqualTo(1));
+
+            Renderer[] prefabRenderers =
+                prefab.GetComponentsInChildren<Renderer>(true);
+            Assert.That(
+                CountTriangles(prefabRenderers),
+                Is.GreaterThanOrEqualTo(MinimumDetailedTriangleCount),
+                $"{expectedRole} fell below the cafe Hero V2 detail floor.");
+            Material sharedMaterial =
+                AssetDatabase.LoadAssetAtPath<Material>(SharedMaterialPath);
+            Assert.That(sharedMaterial, Is.Not.Null);
+            Assert.That(
+                registry.RendererBindings.All(binding =>
+                    binding.Renderer.sharedMaterials.Length == 1 &&
+                    binding.Renderer.sharedMaterial == sharedMaterial),
+                Is.True,
+                "Cafe detail atlases must not create material instances.");
+            int expectedMappedRendererCount = registry.RendererBindings.Count(
+                binding => binding.UsesDetailAtlas);
+            Assert.That(
+                expectedMappedRendererCount,
+                Is.GreaterThanOrEqualTo(12),
+                "The cafe atlas must cover face, clothing and footwear, " +
+                "not a token renderer.");
 
             Assert.That(
                 prefab.GetComponentsInChildren<Collider>(true),
@@ -633,6 +913,7 @@ namespace BarPromenade.Tests.EditMode
                         MountainRoadCafeCastAssetRegistry>(true);
                 instanceRegistry.ApplyBaseColors();
                 var properties = new MaterialPropertyBlock();
+                int mappedRendererCount = 0;
                 for (int index = 0;
                      index < instanceRegistry.RendererBindings.Count;
                      index++)
@@ -646,13 +927,73 @@ namespace BarPromenade.Tests.EditMode
                     AssertColor(
                         properties.GetColor("_Color"),
                         binding.Color);
+                    if (binding.UsesDetailAtlas)
+                    {
+                        Assert.That(
+                            properties.GetTexture("_BaseMap"),
+                            Is.SameAs(instanceRegistry.DetailAtlas));
+                        mappedRendererCount++;
+                    }
+
                     properties.Clear();
                 }
+
+                Assert.That(
+                    instanceRegistry.DetailAtlas,
+                    Is.SameAs(atlas));
+                Assert.That(
+                    mappedRendererCount,
+                    Is.EqualTo(expectedMappedRendererCount));
             }
             finally
             {
                 UnityEngine.Object.DestroyImmediate(instance);
             }
+        }
+
+        private static string ExpectedAtlasPath(
+            MountainRoadCafeCastRole role)
+        {
+            switch (role)
+            {
+                case MountainRoadCafeCastRole.LonePatron:
+                    return "Assets/Pedestrians/Textures/" +
+                           "MountainCafeLonePatron3DDetailAtlas.png";
+                case MountainRoadCafeCastRole.PairMan:
+                    return "Assets/Pedestrians/Textures/" +
+                           "MountainCafeCoupleMan3DDetailAtlas.png";
+                case MountainRoadCafeCastRole.PairWoman:
+                    return "Assets/Pedestrians/Textures/" +
+                           "MountainCafeCoupleWoman3DDetailAtlas.png";
+                case MountainRoadCafeCastRole.Attendant:
+                    return "Assets/Pedestrians/Textures/" +
+                           "MountainCafeAttendant3DDetailAtlas.png";
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(role),
+                        role,
+                        "Unknown cafe cast role.");
+            }
+        }
+
+        private static int CountTriangles(
+            IReadOnlyList<Renderer> renderers)
+        {
+            int triangleCount = 0;
+            for (int index = 0; index < renderers.Count; index++)
+            {
+                Renderer renderer = renderers[index];
+                Mesh mesh = renderer is SkinnedMeshRenderer skinned
+                    ? skinned.sharedMesh
+                    : renderer.GetComponent<MeshFilter>()?.sharedMesh;
+                Assert.That(
+                    mesh,
+                    Is.Not.Null,
+                    $"Renderer '{renderer.name}' has no shared mesh.");
+                triangleCount += (int)(mesh.GetIndexCount(0) / 3);
+            }
+
+            return triangleCount;
         }
 
         private static void AssertColor(Color actual, Color expected)

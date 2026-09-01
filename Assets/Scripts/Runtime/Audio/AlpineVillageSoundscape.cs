@@ -107,6 +107,36 @@ namespace BarPromenade
                 3300f,
                 CitySoundScheduleInterval.None),
             new AlpineVillageSoundDefinition(
+                AlpineVillageSoundKind.SpringCatchWater,
+                AlpineVillageSoundPlayback.Loop,
+                LoopDuration,
+                3,
+                0.079f,
+                0.52f,
+                6.5f,
+                3400f,
+                CitySoundScheduleInterval.None),
+            new AlpineVillageSoundDefinition(
+                AlpineVillageSoundKind.BrookRiffle,
+                AlpineVillageSoundPlayback.Loop,
+                LoopDuration,
+                3,
+                0.068f,
+                0.60f,
+                9f,
+                3600f,
+                CitySoundScheduleInterval.None),
+            new AlpineVillageSoundDefinition(
+                AlpineVillageSoundKind.CascadeFall,
+                AlpineVillageSoundPlayback.Loop,
+                LoopDuration,
+                2,
+                0.082f,
+                0.55f,
+                8f,
+                4200f,
+                CitySoundScheduleInterval.None),
+            new AlpineVillageSoundDefinition(
                 AlpineVillageSoundKind.WordlessHumBehindWall,
                 AlpineVillageSoundPlayback.Loop,
                 LoopDuration,
@@ -163,7 +193,12 @@ namespace BarPromenade
                 case AlpineVillageSoundKind.DogBehindFence:
                     return GenerateDogOneShot(definition.Duration, variant);
                 case AlpineVillageSoundKind.SourceWater:
+                case AlpineVillageSoundKind.SpringCatchWater:
                     return GenerateSourceWaterLoop(variant);
+                case AlpineVillageSoundKind.BrookRiffle:
+                    return GenerateBrookRiffleLoop(variant);
+                case AlpineVillageSoundKind.CascadeFall:
+                    return GenerateCascadeFallLoop(variant);
                 case AlpineVillageSoundKind.WordlessHumBehindWall:
                     return GenerateWordlessHumLoop(variant);
                 default:
@@ -296,6 +331,70 @@ namespace BarPromenade
                             phase * (263f + variant * 7f) + offset) *
                         0.036f;
                     return stream + stoneBowl + burble;
+                });
+        }
+
+        /// <summary>
+        /// Running water over a shallow stone bed. Broader and steadier than
+        /// the catch's burble, which is a basin filling; this one is going
+        /// somewhere.
+        /// </summary>
+        private static float[] GenerateBrookRiffleLoop(int variant)
+        {
+            float offset = variant * 0.63f;
+            return GenerateLoop(
+                phase =>
+                {
+                    float run = PeriodicNoise(
+                        phase,
+                        0.9f + offset,
+                        311 + variant * 29) * 0.104f;
+                    // The bed under it: a slower band that keeps the hiss
+                    // from reading as static.
+                    float bed = PeriodicNoise(
+                        phase,
+                        0.22f + offset,
+                        149 + variant * 17) * 0.052f;
+                    float chatter =
+                        Mathf.Pow(
+                            Mathf.Max(
+                                0f,
+                                Mathf.Sin(phase * (7f + variant) + 2.1f)),
+                            5f) *
+                        Mathf.Sin(phase * (331f + variant * 11f) + offset) *
+                        0.028f;
+                    return run + bed + chatter;
+                });
+        }
+
+        /// <summary>
+        /// A step the brook falls over: the same water with a body under it,
+        /// because a fall has a plunge and a riffle does not.
+        /// </summary>
+        private static float[] GenerateCascadeFallLoop(int variant)
+        {
+            float offset = variant * 0.37f;
+            return GenerateLoop(
+                phase =>
+                {
+                    float sheet = PeriodicNoise(
+                        phase,
+                        1.3f + offset,
+                        419 + variant * 31) * 0.118f;
+                    float plunge =
+                        PeriodicNoise(
+                            phase,
+                            0.16f + offset,
+                            97 + variant * 13) * 0.070f;
+                    float slap =
+                        Mathf.Pow(
+                            Mathf.Max(
+                                0f,
+                                Mathf.Sin(phase * (5f + variant) + 0.4f)),
+                            9f) *
+                        Mathf.Sin(phase * (89f + variant * 7f) + offset) *
+                        0.044f;
+                    return sheet + plunge + slap;
                 });
         }
 
@@ -569,6 +668,12 @@ namespace BarPromenade
                     return 0.18f;
                 case AlpineVillageSoundKind.SourceWater:
                     return 0.42f;
+                case AlpineVillageSoundKind.BrookRiffle:
+                    return 0.40f;
+                case AlpineVillageSoundKind.CascadeFall:
+                    return 0.46f;
+                case AlpineVillageSoundKind.SpringCatchWater:
+                    return 0.44f;
                 case AlpineVillageSoundKind.WordlessHumBehindWall:
                     return 0.12f;
                 default:

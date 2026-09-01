@@ -38,6 +38,7 @@ namespace BarPromenade.Tests.EditMode
             "bar.district.nightlife",
             "interaction.jukebox",
             "interaction.sit_bench",
+            "interaction.sit_sofa",
             "interaction.play_chess",
             "interaction.play_checkers",
             "park.board.chess.greet.01",

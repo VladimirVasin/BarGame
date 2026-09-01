@@ -120,7 +120,7 @@ Assets/
         HomeConcreteAlbedo.png          stucco, offset formwork seams, damp streaks
         HomeRugAlbedo.png               diamond lattice, medallions, worn walking track
     MothersHouse/
-      MothersHouseInterior3D.prefab     passive 10 x 8 m room, typed anchors/parts; no gameplay components
+      MothersHouseInterior3D.prefab     passive 10 x 8 m two-storey shell, stair/rooms + typed anchors/parts; no gameplay components
       Textures/
         MothersHousePositiveAtlas.png   dedicated light, clean 4 x 4 room atlas; no Home/City sheets
     Stairwell/
@@ -160,13 +160,13 @@ Assets/
     MountainRoad/
       MountainRoadCafeCastProvider.asset  four isolated staged cafe prefab links
       Cafe/
-        MountainRoadCafe3D.prefab         passive 51-mesh Nighthawks-inspired cafe + registry
+        MountainRoadCafe3D.prefab         passive 48-mesh Nighthawks-inspired cafe + registry
         Textures/                         six 512 px semantic detail sheets
     Church/
       ChurchExterior3D.prefab          passive Catholic exterior + typed semantic anchors
       ChurchInterior3D.prefab          passive furnished interior + typed semantic anchors
   MothersHouse/
-    Models/MothersHouseInterior3D.{fbx,json}  deterministic fixed-metre room + contract manifest
+    Models/MothersHouseInterior3D.{fbx,json}  deterministic fixed-metre two-storey interior + contract manifest
     Localization/
       ru.json
       en.json
@@ -199,23 +199,28 @@ Assets/
     Animations/
       CityPedestrianLocomotion.fbx      shared 37-clip NpcHumanV2 locomotion/action library
       CityPedestrianLocomotion.json     gait/contact/clearance/apex + staged wheel-contact manifest
-      MountainRoadCafeCast.{fbx,json}   isolated ten-clip drink/wipe/walk/pour cafe library
+      MountainRoadCafeCast.{fbx,json}   isolated nine-clip sleep/drink/wipe/walk/pour library + soundless tap/smoke idles
       NightlifeShelterResidents.{fbx,json} isolated three-loop warmer/seated/sleeper library
+      MothersHouseMother.{fbx,json}     isolated one-clip bank: MotherRock, 6 s of breathing only — the rock belongs to the chair, not to her
     Textures/
       KettleHatDetailAtlas.png          256 px grey detail atlas (seams, chips, grooves, laces) multiplied by the kettle walker's palette tint
+      MountainCafe*3DDetailAtlas.png    four role-specific 256 px face/clothing/hair/shoe atlases for the Hero V2-fidelity cafe cast
       NightlifeShelter*DetailAtlas.png  three 256 px garment/face atlases for the fixed arch residents
+      MotherFaceAtlas.png               256 px 4x4 EXPRESSION grid (not a detail atlas): full colour, cell chosen at runtime by _BaseMap_ST, so its patch must be tinted WHITE
     Staged/
       Models/
         PipebackRoller3D.fbx            passive 31-bone wheelchair NPC model
         PipebackRoller3D.json           staged geometry/rig/passive-anchor manifest
-        MountainCafe*3D.{fbx,json}      four distinct passive cafe role models/manifests
+        MountainCafe*3D.{fbx,json}      four distinct v2-detailed passive cafe role models/manifests
         NightlifeShelter*Resident3D.{fbx,json} three detailed passive Hero-Avatar resident models/manifests
         {YardBabushka,WeighbridgeAttendant,Cemetery*,LakeFisherman,Park*,LastRouteFerryman}3D.{fbx,json}
                                           eight further NpcHumanV2 staged roles/manifests
+        Mother3D.{fbx,json}             the mother, seated forever; 45 meshes / 1892 tris (the hero is 34 / 1984), face_atlas block instead of texture_bindings, no detail atlas
       Prefabs/
         PipebackRoller3D.prefab         passive asset outside Resources and the runtime pool
         MountainCafe*3D.prefab          four cafe roles outside Resources/pedestrian pool
         NightlifeShelter*Resident3D.prefab three fixed textured shelter roles outside Resources/pedestrian pool
+        Mother3D.prefab                 the mother, outside Resources/pool; her clip in the IDLE slot, walk slot deliberately empty, face atlas bound
   Vehicles/
     Models/
       CityBus3D.fbx                     real-scale exterior + modeled passenger cabin
@@ -328,15 +333,20 @@ Assets/
         DraughtsMatch.cs       lattice-native adapter, capture-compulsory flag
       Map/           ordered road-route model and heap pathfinding
       World/         city plus validated bar/home/supermarket/mother-house plans and builders
-        MothersHouseInterior{LayoutPlan,LayoutPlanner,LayoutValidator,WorldBuilder,WorldResult}.cs
+        MothersHouseInterior{LayoutPlan,LayoutPlanner,LayoutValidator,WorldBuilder,WorldResult}.cs  ground + stair/corridor/two-room plan and collision
+        MothersHouseMotherPlan.cs       where she sits, measured off the drawn cushion; one of her, no seed, no spawn band
+        MothersHouseSofaSeatPlanner.cs  the sofa as one authored CityBenchSeat: south cushion, front-approach-only past the stair ramp
                                       pure room contract + imported-model composition
         MothersHouseInteriorAssetRegistry.cs  typed passive model anchors, parts and appearance
         MothersHouseKettleProp.cs     literal Kettle Hat prefab with only its ten kettle renderers visible
         MountainRoadCafe{AssetRegistry,ModelResources,SurfaceAppearance}.cs
                                       passive authored cafe presentation bridge
         MountainRoadCafeCollisionWorldBuilder.cs  exact 17-collider plan-owned shell
-        MountainRoadCafe{ServiceTimeline,ServicePresentation,CupView}.cs
-                                      three-cup drink/refill loop; hero excluded
+        MountainRoadCafe{ServiceTimeline,ServicePresentation,CupView}.cs role-staggered drink/fill/refill + measured prop contacts
+                                       hand/mouth-fitted cups, exact saucer return, counter-clear carry + per-frame spout-to-target stream
+        MountainRoadCafeCigaretteEffect.cs woman idle phase -> ember/plume envelopes; no separate clock, Light or AudioSource
+        MountainRoadCafeConversation{Lines,Timeline,Controller,Look}.cs fixed ten-pair RU/EN bubble loop, cafe-volume gate + action-safe queue/head turns
+        MountainRoadCafeSeatView.cs   cafe-stool first-person camera/head lifecycle
         CityBlueprint.cs         immutable areas, sparse cells, topology + fluent builder
         CityBlueprintCatalog.cs  default 13x12 river city with eastern Cemetery, six Yards + legacy blueprint
         CityRiverPlan.cs         10 m channel, dual core promenades, three typed bridges + four lower landings
@@ -374,21 +384,23 @@ Assets/
         MountainRoadTerminal{Plan,Planner,Validator}.cs vehicle/cafe/cableway terminal contract
         MountainRoad{Terrain,Surface,Scenery}*.cs 76 m terrain, gorge, road + colliderless terminal apron
         MountainRoadSurfaceAppearance.cs six printed + nine borrowed measured surface families
-        MountainRoadCafe{WorldBuilder,WorldResult,Geometry}.cs current enterable glass cafe
-          [Planned] Blender shell/interior + seven-stool visual migration
-        MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs four-role silent cast
+        MountainRoadCafe{WorldBuilder,WorldResult}.cs imported enterable 48-mesh glass cafe composition
+        MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs nine-clip cast: silent sleeper/attendant + drinking, talking pair
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
         MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
         AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane, OBB-safe plots + looming 74° / 60 m ridge, 12 m margin, brink mesh
         AlpineVillagePathPlan.cs visible path/traversal segments + shared dressing anchors
+        AlpineVillageBrook{Plan,Planner,Builder}.cs 97 m spring brook: seeps, catch, swale cut into the sampler, ribbon water to the cableway cut
+        AlpineSpringWaterResources.cs   still catch + running brook + road reach on the shared city water shader
         AlpineVillage{WalkableArea,WorldBuilder,WeatherShaper}.cs free bowl mask, two-submesh ground with one shared snapped edge, 2+1 house kit, warmth targets + permanent blizzard
         AlpineVillageRidgeAppearance.cs  village-only stable opaque 96-108 m haze handoff, 0.40 floor + floor-matched PS1 snap/world UV
         AlpineVillageStormField.cs       terrain-sampled ground spindrift + shared wind bed + gust-keyed storm wave rules
         AlpineVillagePeripheralStorm{Plan,Field}.cs route-distance side/rear curtains + protected full-house landmark aperture; presentation only
         AlpineVillageGarlandWind.cs      fixed-anchor wire deformation from shaped village wind
-        Audio/AlpineVillageSoundscape*.cs six deterministic causal spatial voices
+        Audio/AlpineVillageSoundscape*.cs eight deterministic causal spatial voices
         AlpineCableway{RidePlan,CabinSeat,RideController,RideFactory}.cs boarding, first-person ride, ridge fade
-        VillageAssetProvider.cs         17 assemblies / 43 passive meshes: two ordinary closed-shell house archetypes + unique TopHouse
+        VillageAssetProvider.cs         22 assemblies / 48 passive meshes: two ordinary closed-shell house archetypes, unique TopHouse + spring ledge/step/bed stones
+        MountainRoadBrook{Plan,Builder}.cs water either side of the long-standing culvert, and the pour its sound anchor never had
         MountainRoadMiscAssetProvider.cs 19 passive Blender meshes + deterministic visual variants
         MountainRoadWalkableArea.cs route/plateau movement boundary
         MountainRoadWorldBuilder.cs separate mountain-only composition + 12 imported misc batches
@@ -754,8 +766,10 @@ Assets/
         AreaLoadingRoot.cs              black unscaled progress-bar area transfer
         MountainRoadRoot.cs             standalone mountain world/player/UI composition
         AlpineVillageRoot.cs            standalone upper-village world/player/UI composition
-        MothersHouseInteriorRoot.cs     room/world/player/UI, kettle and exit composition
-        MothersHouseInteriorAtmosphere.cs  hearth + windows + one floor practical; restrained grade/crackle
+        MothersHouseInteriorRoot.cs     two-storey world/player/UI, height-aware fixed shots, kettle, exit, sofa seat and the mother
+        MothersHouseMother{Presentation,Factory,Provider}.cs  the seated mother: manual PlayableGraph, hips aligned to the drawn cushion VERTICALLY only, an open SetExpression nothing calls
+        MothersHouseRockingChairMotion.cs  one angle turns the chair's two meshes AND her root; pivot derived from the runners' parabola, world poses driven, nothing reparented
+        MothersHouseInteriorAtmosphere.cs  hearth + two windows + one floor practical, and one sourceless Hearth Floor Bounce leashed to 1.1 m so it can never be the banned ceiling fill
         MothersHouseInteriorSoundscape.cs  muffled wind + tick/tock + sparse timber settling
         MountainRoadWeather{Rules,Shaper}.cs  the city's own weather slot re-read by altitude, as snow and harder wind
         MountainRoadWindDriver.cs       carries that wind to the crowns, the cloth and the sound bed
@@ -820,9 +834,10 @@ Assets/
       Supermarket/SupermarketExterior{AssetSetup,ModelImporter}.cs passive model/texture import, Resources prefab + manifest validation
       PlayerHome/PlayerHomeExterior{AssetSetup,ModelImporter}.cs passive import, prefab authoring + exact lit-window validation
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
-      MountainRoadCafeCastAssetSetup.cs  isolated model/clip import, validation + provider setup
+      MountainRoadCafeCastAssetSetup.cs  isolated v2 model/clip/256 px atlas import, validation + provider setup
       NpcHumanV2AssetSetup.cs       one batch rebuild/validation entry point for all 24 rigged humanoid NPC assets
       City/NPC/CityArchShelterResidentAssetSetup.cs isolated three-model/atlas/loop prefab + provider pipeline
+      MothersHouse/MothersHouseMotherAssetSetup.cs  her own pipeline: the shared descriptor reads clip names out of the ONE bank and demands a walk, and she has neither
       City/NPC/CityPedestrianTextureImporter.cs  routes pedestrian detail atlases to the Hero V2 atlas import contract (Point/Clamp/sRGB/256/no mip)
       Player3D/       production V2 atlas/import/prefab pipeline + retained V1 setup
       City/NPC/       production/staged NpcHumanV2 import, Hero V2 Avatar copy + prefab setup
@@ -874,7 +889,8 @@ Assets/
       CityTunnelShelterTests.cs          portal-depth/lateral shelter hysteresis
       MountainRoadTests.cs               route length/rise/hairpins/plateau/world contracts
       MountainRoadTerminalTests.cs       apron, landmarks, terrain blend + cabin clearance
-      MountainRoadCafeCastTests.cs       roles/gaps/passive assets/clip blend/world ownership
+      MountainRoadCafeCastTests.cs       roles/gaps/v2 atlas density/clip blend/world ownership
+      MountainRoadCafeConversationTests.cs fixed RU/EN pair loop, action-safe queue, smoke gate + partner look
       MountainCablewayTests.cs            loop continuity, world ownership and causal audio
       MountainCablewayRideTests.cs        exact docking, boarding step, treads, return station
       AlpineVillageTests.cs               lane grade, OBB seed sweep, looming bowl, shared-edge two-submesh ground/brink, weather + teleport ground
@@ -952,10 +968,11 @@ Assets/
       IntoxicationStatusPlayModeTests.cs hybrid handoff, fixed root, one-phase Rise cleanup
       PlayerAnimatedInteraction3DPlayModeTests.cs   clip sampling, pelvis alignment and cleanup
       PlayerDoorActionPlayModeTests.cs terminal transition commit + cancellation cleanup
-      MothersHouseInteriorPlayModeTests.cs room/kettle/light contract + real village door round trip
+      MothersHouseInteriorPlayModeTests.cs room/kettle/light + real stair/two rooms + village-door round trip
       Player3DGameplaySceneIntegrationPlayModeTests.cs  shared gameplay-root camera/hero contract
       Player3DVisualCapturePlayModeTests.cs  bounded scene framing capture
       BarDrinkFirstPersonArmsPlayModeTests.cs  prefab subsets + visibility restoration
+      MountainRoadCafePlayModeTests.cs  shipped-scene cup/saucer + hand/pot/counter contacts, silent phase idles and seat-camera restoration
 ArtSource/
   Environment/Clouds/Blender/    generated cloud-dome `.blend` and deterministic density preview
   Vehicles/
@@ -1013,7 +1030,7 @@ tools/
   build-church-textures.py       deterministic Catholic surface/stained-glass/sacred-art sheets
   build-mothers-house-interior-3d-model.py  fixed-metre room, UV/triangle/anchor/export validator
   build-mountain-road-misc-3d-model.py  15 assemblies / 19 normalized roadside meshes
-  build-mountain-road-cafe-3d-model.py  51-mesh cafe, six sheets, anchors/props/collider/overlap validator
+  build-mountain-road-cafe-3d-model.py  48-mesh cafe, six sheets, anchors/props/collider/overlap validator
   build-village-3d-model.py      v3.0.0 / village_house_archetypes_v3, 17 assemblies / 43 outward-validated meshes; no doors/panes/new sheet
   build-city-misc-3d-model.py    82 kinds / 122 assemblies / 259 citywide role meshes
   build-city-buildings-3d-model.py  four fixed-metre district prototypes / 28 semantic meshes + UV/exact/near-layer validation
@@ -1115,8 +1132,11 @@ AlpineVillageRoot -> AlpineVillagePlanner -> validated village above the rope
                                            -> canopy/cabin dry; uphill axis remains readable
                   -> pure City + mountain plans for the other two map tabs
                   -> existing top-house door -> MothersHouseInterior (Single)
-MothersHouseInteriorRoot -> pure layout -> passive 10 x 8 m imported room
-                                         -> fixed southeast camera: hearth + both windows + furniture
+MothersHouseInteriorRoot -> pure layout -> passive 10 x 8 m two-storey imported interior
+                                         -> ground southeast shot: hearth + both windows + furniture
+                                         -> north-entry stair rising south -> west upper corridor
+                                         -> two separate empty rooms -> height-aware fixed shots
+                                         -> hidden ramp + split slabs/partitions/guards as runtime collision
                                          -> centred south entrance -> north-facing player spawn
                                          -> floor lamp; no invisible ceiling fill
                                          -> calm fire/wind/tick-tock/timber ASMR bed

@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-village-3d-model.py",
-  "generator_version": "3.0.0",
+  "generator_version": "3.1.0",
   "blender_version": "5.0.1",
   "design_id": "village_house_archetypes_v3",
   "display_name": "Village House Archetypes 3.0.0",
@@ -38,9 +38,9 @@
   "lights": false,
   "cameras": false,
   "animation_count": 0,
-  "mesh_count": 43,
-  "assembly_count": 17,
-  "triangle_count": 3692,
+  "mesh_count": 48,
+  "assembly_count": 22,
+  "triangle_count": 4274,
   "assemblies": [
     {
       "kind": "House",
@@ -542,6 +542,146 @@
         0.48,
         0.5,
         0.47
+      ]
+    },
+    {
+      "kind": "SpringLedge",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_SpringLedge_Stone"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.5,
+        0.5
+      ]
+    },
+    {
+      "kind": "CascadeStep",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_CascadeStep_Stone"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.33
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.33,
+        0.5
+      ]
+    },
+    {
+      "kind": "BedStone",
+      "variant": 0,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_BedStone_Variant00_Stone"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.12
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.12,
+        0.5
+      ]
+    },
+    {
+      "kind": "BedStone",
+      "variant": 1,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_BedStone_Variant01_Stone"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        -0.06
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        -0.06,
+        0.5
+      ]
+    },
+    {
+      "kind": "BedStone",
+      "variant": 2,
+      "scale_mode": "normalized_to_descriptor",
+      "part_meshes": [
+        "GEO_VIL_BedStone_Variant02_Stone"
+      ],
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.28
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.28,
+        0.5
       ]
     }
   ],
@@ -2179,7 +2319,197 @@
         0.98,
         1.0
       ]
+    },
+    {
+      "mesh": "GEO_VIL_SpringLedge_Stone",
+      "kind": "SpringLedge",
+      "variant": 0,
+      "part_role": "Stone",
+      "surface_kind": "LayeredStone",
+      "tint_role": "SourceStone",
+      "vertices": 114,
+      "triangles": 212,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.5,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_CascadeStep_Stone",
+      "kind": "CascadeStep",
+      "variant": 0,
+      "part_role": "Stone",
+      "surface_kind": "LayeredStone",
+      "tint_role": "SourceStone",
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.33
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.33,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        0.955
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_BedStone_Variant00_Stone",
+      "kind": "BedStone",
+      "variant": 0,
+      "part_role": "Stone",
+      "surface_kind": "LayeredStone",
+      "tint_role": "SourceStone",
+      "vertices": 45,
+      "triangles": 86,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.12
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.12,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        0.998586
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_BedStone_Variant01_Stone",
+      "kind": "BedStone",
+      "variant": 1,
+      "part_role": "Stone",
+      "surface_kind": "LayeredStone",
+      "tint_role": "SourceStone",
+      "vertices": 45,
+      "triangles": 86,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        -0.06
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        -0.06,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        1.0
+      ]
+    },
+    {
+      "mesh": "GEO_VIL_BedStone_Variant02_Stone",
+      "kind": "BedStone",
+      "variant": 2,
+      "part_role": "Stone",
+      "surface_kind": "LayeredStone",
+      "tint_role": "SourceStone",
+      "vertices": 45,
+      "triangles": 86,
+      "bounds_min_source": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_source": [
+        0.5,
+        0.5,
+        0.28
+      ],
+      "bounds_min_unity": [
+        -0.5,
+        -0.5,
+        -0.5
+      ],
+      "bounds_max_unity": [
+        0.5,
+        0.28,
+        0.5
+      ],
+      "uv_min": [
+        0.0,
+        0.0
+      ],
+      "uv_max": [
+        1.0,
+        0.928489
+      ]
     }
   ],
-  "build_signature": "b2fa217bed2b7ce174c22000d0ff5ec98f79558dc79816592ccd29b4a3effbea"
+  "build_signature": "b2d1e885de66c338e5f660847d7cd78f0491c239e65fecc50a1f92a05706dfec"
 }

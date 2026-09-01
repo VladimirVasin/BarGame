@@ -22,7 +22,17 @@ namespace BarPromenade
         GarlandPost = 8,
         CableGate = 9,
         RailBridge = 10,
-        SourceBowl = 11
+        SourceBowl = 11,
+
+        /// <summary>The rock the spring's water comes out from under.
+        /// </summary>
+        SpringLedge = 12,
+
+        /// <summary>A stone lip the brook falls over.</summary>
+        CascadeStep = 13,
+
+        /// <summary>A rounded stone bedded in the channel.</summary>
+        BedStone = 14
     }
 
     /// <summary>
@@ -113,10 +123,10 @@ namespace BarPromenade
     public sealed class VillageAssetProvider : ScriptableObject
     {
         public const string ResourcePath = "Village/VillageAssetProvider";
-        public const string GeneratorVersion = "3.0.0";
+        public const string GeneratorVersion = "3.1.0";
         public const string DesignId = "village_house_archetypes_v3";
-        public const int ExpectedAssemblyCount = 17;
-        public const int ExpectedMeshCount = 43;
+        public const int ExpectedAssemblyCount = 22;
+        public const int ExpectedMeshCount = 48;
 
         /// <summary>
         /// The lane alternates two real architectural families. Small
@@ -127,6 +137,7 @@ namespace BarPromenade
         public const int HouseVariantCount = 2;
         public const int GraveMarkerVariantCount = 3;
         public const int FacadeDetailVariantCount = 3;
+        public const int BedStoneVariantCount = 3;
 
         [SerializeField] private string designId = DesignId;
         [SerializeField] private string buildSignature = string.Empty;
@@ -234,7 +245,7 @@ namespace BarPromenade
         // the generator's `make_assemblies()` cannot drift apart in silence.
         // ----------------------------------------------------------------
 
-        public static int SupportedKindCount => 12;
+        public static int SupportedKindCount => 15;
 
         public static VillageAssetKind GetSupportedKind(int index)
         {
@@ -252,6 +263,9 @@ namespace BarPromenade
                 case 9: return VillageAssetKind.CableGate;
                 case 10: return VillageAssetKind.RailBridge;
                 case 11: return VillageAssetKind.SourceBowl;
+                case 12: return VillageAssetKind.SpringLedge;
+                case 13: return VillageAssetKind.CascadeStep;
+                case 14: return VillageAssetKind.BedStone;
                 default:
                     throw new ArgumentOutOfRangeException(nameof(index));
             }
@@ -267,6 +281,8 @@ namespace BarPromenade
                     return GraveMarkerVariantCount;
                 case VillageAssetKind.FacadeDetail:
                     return FacadeDetailVariantCount;
+                case VillageAssetKind.BedStone:
+                    return BedStoneVariantCount;
                 default:
                     return 1;
             }
@@ -344,6 +360,9 @@ namespace BarPromenade
                         VillageMeshRole.Sleepers
                     };
                 case VillageAssetKind.SourceBowl:
+                case VillageAssetKind.SpringLedge:
+                case VillageAssetKind.CascadeStep:
+                case VillageAssetKind.BedStone:
                     return new[] { VillageMeshRole.Stone };
                 default:
                     throw new ArgumentOutOfRangeException(nameof(kind));

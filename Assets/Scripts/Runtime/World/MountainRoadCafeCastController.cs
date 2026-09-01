@@ -7,15 +7,16 @@ namespace BarPromenade
     public enum MountainRoadCafeCastEpisode
     {
         None = 0,
-        LonePatron = 1,
         Couple = 2,
         Attendant = 3
     }
 
     /// <summary>
     /// Applies one pure service clock to all four authored figures and the
-    /// optional environment-owned cup presentation. No animation events,
-    /// root motion or NPC audio participate in synchronization.
+    /// optional environment-owned cup presentation. The sleeping lone patron
+    /// never enters it; each member of the pair derives a stable role-specific
+    /// drink window from that clock. No animation events, root motion or NPC
+    /// audio participate in scheduling.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MountainRoadCafeCastController : MonoBehaviour
@@ -27,6 +28,7 @@ namespace BarPromenade
         public const float MinimumEpisodeCooldownSeconds = 35f;
         public const float MaximumEpisodeCooldownSeconds = 55f;
         public const float MaximumSchedulerStepSeconds = 0.25f;
+        public const float ActivationRadius = 16f;
         public const bool ServesHero = false;
         private const string LeftCupSocketName = "SOCKET_Vessel.L";
 
@@ -34,6 +36,7 @@ namespace BarPromenade
         // vertical grip as Bottle.R. It is the mirrored counterpart of
         // Vessel.L and follows the right-hand cafe drink animation.
         private const string RightCupSocketName = "SOCKET_Bottle.R";
+        private const string MouthSocketName = "SOCKET_Mouth";
 
         private MountainRoadCafeCastPresentation lonePatron;
         private MountainRoadCafeCastPresentation pairMan;
@@ -41,9 +44,16 @@ namespace BarPromenade
         private MountainRoadCafeCastPresentation attendant;
         private MountainRoadCafeServicePresentation servicePresentation;
         private MountainRoadCafeServiceTimeline timeline;
+        private Transform activationObserver;
+        private Vector3 activationPoint;
+        private float activationRadiusSquared;
         private float elapsedSeconds;
+        private bool isPairConversationReserved;
 
         public bool IsInitialized { get; private set; }
+        public bool IsTimelineArmed { get; private set; }
+        public bool IsPairConversationReserved =>
+            isPairConversationReserved;
         public MountainRoadCafeCastEpisode ActiveEpisode =>
             ResolveEpisode(timeline?.Frame.Phase ??
                            MountainRoadCafeServicePhase.Wiping);
@@ -68,9 +78,6 @@ namespace BarPromenade
         {
             switch (role)
             {
-                case MountainRoadCafeCastRole.LonePatron:
-                    return lonePatron?.Registry.FindModelTransform(
-                        RightCupSocketName);
                 case MountainRoadCafeCastRole.PairMan:
                     return pairMan?.Registry.FindModelTransform(
                         RightCupSocketName);
@@ -80,6 +87,20 @@ namespace BarPromenade
                 default:
                     return null;
             }
+        }
+
+        public Transform GetMouthSocket(MountainRoadCafeCastRole role)
+        {
+            MountainRoadCafeCastPresentation presentation =
+                GetPresentation(role);
+            return presentation?.Registry.FindModelTransform(
+                MouthSocketName);
+        }
+
+        public Transform GetPresentationRoot(
+            MountainRoadCafeCastRole role)
+        {
+            return GetPresentation(role)?.transform;
         }
 
         public void Initialize(
@@ -130,7 +151,12 @@ namespace BarPromenade
             }
 
             timeline = new MountainRoadCafeServiceTimeline(seed);
+            activationObserver = null;
+            activationPoint = Vector3.zero;
+            activationRadiusSquared = ActivationRadius * ActivationRadius;
             elapsedSeconds = 0f;
+            IsTimelineArmed = false;
+            isPairConversationReserved = false;
             IsInitialized = true;
             if (configuredServicePresentation != null &&
                 !BindServicePresentation(configuredServicePresentation))
@@ -157,10 +183,13 @@ namespace BarPromenade
 
             servicePresentation = presentation;
             if (!servicePresentation.BindDrinkSockets(
-                    GetCupHandSocket(
-                        MountainRoadCafeCastRole.LonePatron),
                     GetCupHandSocket(MountainRoadCafeCastRole.PairMan),
-                    GetCupHandSocket(MountainRoadCafeCastRole.PairWoman)))
+                    GetMouthSocket(MountainRoadCafeCastRole.PairMan),
+                    GetPresentationRoot(MountainRoadCafeCastRole.PairMan),
+                    GetCupHandSocket(MountainRoadCafeCastRole.PairWoman),
+                    GetMouthSocket(MountainRoadCafeCastRole.PairWoman),
+                    GetPresentationRoot(
+                        MountainRoadCafeCastRole.PairWoman)))
             {
                 servicePresentation = null;
                 return false;
@@ -184,9 +213,36 @@ namespace BarPromenade
         }
 
         /// <summary>
+        /// Delays the autonomous tableau until the hero reaches the terminal.
+        /// Mountain Road is long enough that advancing from scene load would
+        /// otherwise spend the first drink/refill cycles hundreds of metres
+        /// offscreen.
+        /// </summary>
+        public bool BindActivationObserver(
+            Transform observer,
+            Vector3 configuredActivationPoint,
+            float activationRadius = ActivationRadius)
+        {
+            if (!IsInitialized || observer == null ||
+                activationObserver != null ||
+                float.IsNaN(activationRadius) ||
+                float.IsInfinity(activationRadius) ||
+                activationRadius <= 0f)
+            {
+                return false;
+            }
+
+            activationObserver = observer;
+            activationPoint = configuredActivationPoint;
+            activationRadiusSquared = activationRadius * activationRadius;
+            TryArmFromObserver();
+            return true;
+        }
+
+        /// <summary>
         /// Explicit hero-exclusion hook used by the seat interaction. The
         /// request plays Notice only; the pure timeline cannot assign the
-        /// hero a service target or alter one of the three patron cups.
+        /// hero a service target or alter either patron cup.
         /// </summary>
         public bool TryRequestHeroNotice()
         {
@@ -195,6 +251,7 @@ namespace BarPromenade
                 return false;
             }
 
+            IsTimelineArmed = true;
             ApplyFrame(timeline.Frame);
             return true;
         }
@@ -210,13 +267,10 @@ namespace BarPromenade
             bool accepted;
             switch (episode)
             {
-                case MountainRoadCafeCastEpisode.LonePatron:
-                    accepted = timeline.TryRequestDrink(
-                        MountainRoadCafeCastRole.LonePatron);
-                    break;
                 case MountainRoadCafeCastEpisode.Couple:
-                    accepted = timeline.TryRequestDrink(
-                        MountainRoadCafeCastRole.PairMan);
+                    accepted = !isPairConversationReserved &&
+                               timeline.TryRequestDrink(
+                                   MountainRoadCafeCastRole.PairMan);
                     break;
                 case MountainRoadCafeCastEpisode.Attendant:
                     accepted = timeline.TryRequestHeroNotice();
@@ -228,23 +282,134 @@ namespace BarPromenade
 
             if (accepted)
             {
+                IsTimelineArmed = true;
                 ApplyFrame(timeline.Frame);
             }
 
             return accepted;
         }
 
+        /// <summary>
+        /// Reserves the two Idle poses for one complete spoken beat. A
+        /// reservation cannot begin during CoupleDrink; once accepted it
+        /// holds the autonomous Wiping clock before the next drink while the
+        /// attendant and every already-started service phase keep moving.
+        /// </summary>
+        public bool TryReservePairConversation()
+        {
+            if (!IsInitialized ||
+                isPairConversationReserved ||
+                timeline.Frame.Phase ==
+                    MountainRoadCafeServicePhase.CoupleDrink)
+            {
+                return false;
+            }
+
+            isPairConversationReserved = true;
+            return true;
+        }
+
+        public bool ReleasePairConversation()
+        {
+            if (!isPairConversationReserved)
+            {
+                return false;
+            }
+
+            isPairConversationReserved = false;
+            return true;
+        }
+
         private void Update()
+        {
+            Advance(Time.deltaTime);
+        }
+
+        public void Advance(float deltaSeconds)
         {
             if (!IsInitialized)
             {
                 return;
             }
 
-            float delta = Mathf.Max(0f, Time.deltaTime);
-            elapsedSeconds += delta;
-            timeline.Advance(delta);
+            if (float.IsNaN(deltaSeconds) ||
+                float.IsInfinity(deltaSeconds) ||
+                deltaSeconds < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(deltaSeconds),
+                    "Cafe cast time must be finite and non-negative.");
+            }
+
+            if (!IsTimelineArmed && !TryArmFromObserver())
+            {
+                return;
+            }
+
+            elapsedSeconds += deltaSeconds;
+            AdvanceServiceTimeline(deltaSeconds);
             ApplyFrame(timeline.Frame);
+        }
+
+        private void AdvanceServiceTimeline(float deltaSeconds)
+        {
+            if (!isPairConversationReserved)
+            {
+                timeline.Advance(deltaSeconds);
+                return;
+            }
+
+            // While the pair speak, an already-started attendant action is
+            // allowed to finish. Once it reaches Wiping, no part of the
+            // remaining hitch may cross that phase into CoupleDrink.
+            float remaining = deltaSeconds;
+            int transitions = 0;
+            while (remaining > 0f &&
+                   timeline.Frame.Phase !=
+                       MountainRoadCafeServicePhase.Wiping)
+            {
+                float step = Mathf.Min(
+                    remaining,
+                    timeline.RemainingPhaseSeconds);
+                if (step <= 0f)
+                {
+                    break;
+                }
+
+                timeline.Advance(step);
+                remaining -= step;
+                transitions++;
+                if (transitions > 16)
+                {
+                    throw new InvalidOperationException(
+                        "Cafe service crossed too many phases while the " +
+                        "pair conversation held its drink gate.");
+                }
+            }
+        }
+
+        private bool TryArmFromObserver()
+        {
+            if (IsTimelineArmed)
+            {
+                return true;
+            }
+
+            if (activationObserver == null)
+            {
+                return false;
+            }
+
+            Vector3 offset = activationObserver.position - activationPoint;
+            offset.y = 0f;
+            if (offset.sqrMagnitude > activationRadiusSquared)
+            {
+                return false;
+            }
+
+            IsTimelineArmed = true;
+            ApplyFrame(timeline.Frame);
+            return true;
         }
 
         private void OnEnable()
@@ -275,33 +440,35 @@ namespace BarPromenade
                 MountainRoadCafeCastClipKind.Wipe,
                 0f);
             servicePresentation?.ResetExact();
+            isPairConversationReserved = false;
         }
 
         private void ApplyFrame(MountainRoadCafeServiceFrame frame)
         {
             lonePatron.ApplyClip(
-                frame.Phase == MountainRoadCafeServicePhase.LoneDrink
-                    ? MountainRoadCafeCastClipKind.Drink
-                    : MountainRoadCafeCastClipKind.Idle,
-                frame.Phase == MountainRoadCafeServicePhase.LoneDrink
-                    ? frame.PhaseElapsedSeconds
-                    : 0f);
+                MountainRoadCafeCastClipKind.Idle,
+                elapsedSeconds);
 
-            bool coupleDrinks = frame.Phase ==
-                                MountainRoadCafeServicePhase.CoupleDrink;
-            float coupleClock = coupleDrinks
-                ? frame.PhaseElapsedSeconds
-                : 0f;
+            bool pairManDrinks = frame.IsDrinking(
+                MountainRoadCafeCastRole.PairMan);
             pairMan.ApplyClip(
-                coupleDrinks
+                pairManDrinks
                     ? MountainRoadCafeCastClipKind.Drink
                     : MountainRoadCafeCastClipKind.Idle,
-                coupleClock);
+                pairManDrinks
+                    ? frame.GetDrinkElapsedSeconds(
+                        MountainRoadCafeCastRole.PairMan)
+                    : 0f);
+            bool pairWomanDrinks = frame.IsDrinking(
+                MountainRoadCafeCastRole.PairWoman);
             pairWoman.ApplyClip(
-                coupleDrinks
+                pairWomanDrinks
                     ? MountainRoadCafeCastClipKind.Drink
                     : MountainRoadCafeCastClipKind.Idle,
-                coupleClock);
+                pairWomanDrinks
+                    ? frame.GetDrinkElapsedSeconds(
+                        MountainRoadCafeCastRole.PairWoman)
+                    : 0f);
 
             MountainRoadCafeCastClipKind attendantClip;
             switch (frame.Phase)
@@ -352,6 +519,24 @@ namespace BarPromenade
             }
         }
 
+        private MountainRoadCafeCastPresentation GetPresentation(
+            MountainRoadCafeCastRole role)
+        {
+            switch (role)
+            {
+                case MountainRoadCafeCastRole.LonePatron:
+                    return lonePatron;
+                case MountainRoadCafeCastRole.PairMan:
+                    return pairMan;
+                case MountainRoadCafeCastRole.PairWoman:
+                    return pairWoman;
+                case MountainRoadCafeCastRole.Attendant:
+                    return attendant;
+                default:
+                    return null;
+            }
+        }
+
         private static MountainRoadCafeCastPresentation AssignOnce(
             MountainRoadCafeCastPresentation current,
             MountainRoadCafeCastPresentation value)
@@ -370,8 +555,6 @@ namespace BarPromenade
         {
             switch (phase)
             {
-                case MountainRoadCafeServicePhase.LoneDrink:
-                    return MountainRoadCafeCastEpisode.LonePatron;
                 case MountainRoadCafeServicePhase.CoupleDrink:
                     return MountainRoadCafeCastEpisode.Couple;
                 case MountainRoadCafeServicePhase.Notice:

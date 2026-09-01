@@ -43,7 +43,9 @@ namespace BarPromenade
             Vector3 faceDirection,
             float approachClearance = DefaultApproachClearance,
             CityBenchSeatKind kind = CityBenchSeatKind.Plank,
-            Vector3 approachDirection = default)
+            Vector3 approachDirection = default,
+            string sitPromptKey = null,
+            bool frontApproachOnly = false)
         {
             faceDirection.y = 0f;
             approachDirection.y = 0f;
@@ -71,10 +73,30 @@ namespace BarPromenade
                     : FaceDirection;
             ApproachClearance = approachClearance;
             Kind = kind;
+            SitPromptKey = string.IsNullOrWhiteSpace(sitPromptKey)
+                ? string.Empty
+                : sitPromptKey;
+            FrontApproachOnly = frontApproachOnly;
             IsPresent = true;
         }
 
         public string Id { get; }
+
+        /// <summary>
+        /// The prompt this seat offers instead of the one its KIND implies.
+        /// Empty on every city seat, which is the point: a bench says
+        /// "присесть на лавочку" and a sofa cannot.
+        /// </summary>
+        public string SitPromptKey { get; }
+
+        /// <summary>
+        /// Whether this seat may be taken ONLY from the lane in front of it.
+        /// Off everywhere but the mother's-house sofa, whose back stands
+        /// 0.425 m from a stair ramp - narrower than the hero's own capsule,
+        /// so the shared router's detour corner has nowhere to land.
+        /// </summary>
+        public bool FrontApproachOnly { get; }
+
         public Vector3 SeatTopCenter { get; }
         public float SeatWidth { get; }
         public float SeatDepth { get; }
@@ -161,6 +183,8 @@ namespace BarPromenade
 
             Id = seat.Id;
             Kind = seat.Kind;
+            SitPromptKey = seat.SitPromptKey;
+            FrontApproachOnly = seat.FrontApproachOnly;
             SeatWidth = seat.SeatWidth;
             SeatDepth = seat.SeatDepth;
             ApproachClearance = seat.ApproachClearance;
@@ -271,6 +295,48 @@ namespace BarPromenade
         public bool IsPresent { get; }
         public string Id { get; }
         public CityBenchSeatKind Kind { get; }
+
+        /// <summary>The prompt key this seat overrides its kind with, or
+        /// empty to use the kind's own.</summary>
+        public string SitPromptKey { get; }
+
+        /// <summary>Whether the seat is offered only from the lane in
+        /// front of it. See <see cref="IsWithinApproachLane"/>.</summary>
+        public bool FrontApproachOnly { get; }
+
+        /// <summary>
+        /// Whether this plank's own dock lane is open where the sitter is
+        /// standing. A seat whose back and both ends are closed offers
+        /// itself ONLY from the lane where the walk is already a straight
+        /// line, because a detour around it has nowhere to go: the
+        /// mother's-house sofa has 0.425 m between its back and the stair
+        /// ramp, and a 0.64 m capsule does not fit there. Without this the
+        /// prompt reaches into that pocket, the hero accepts, the walk
+        /// stalls against two contradictory clearances, and the controller
+        /// aborts with a warning - a reachable, silent failure.
+        ///
+        /// Deliberately the exact mirror of BuildApproachWaypoints' own
+        /// early-out, so the offer and the router can never disagree.
+        /// </summary>
+        public bool IsWithinApproachLane(Vector3 fromPosition)
+        {
+            if (!IsPresent)
+            {
+                return false;
+            }
+
+            if (!FrontApproachOnly)
+            {
+                return true;
+            }
+
+            Vector3 approach = Kind == CityBenchSeatKind.Plank
+                ? ApproachDirection
+                : EntryRotation * Vector3.forward;
+            Vector3 offset = fromPosition - InteractionPosition;
+            offset.y = 0f;
+            return Vector3.Dot(offset, approach) >= SeatDepth * 0.5f;
+        }
 
         /// <summary>
         /// How far off the middle of a game plank its dock stands, along
@@ -837,7 +903,13 @@ namespace BarPromenade
                 seat.FaceDirection,
                 seat.ApproachClearance,
                 seat.Kind,
-                seat.ApproachDirection);
+                seat.ApproachDirection,
+                // Positional rebuild: anything not listed here is
+                // silently dropped, and no city seat authors either of
+                // these - so the loss would be invisible until a seat
+                // that DOES author them lost its prompt and its veto.
+                seat.SitPromptKey,
+                seat.FrontApproachOnly);
         }
 
         private static void SampleWalkwayTops(

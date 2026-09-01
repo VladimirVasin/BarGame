@@ -56,6 +56,9 @@ namespace BarPromenade
         private PlayerAnimatedInteractionDefinition definition;
         private bool ownsActiveInteraction;
         private bool seated;
+        private PlayerContactShadow contactShadow;
+        private bool contactShadowSuppressed;
+        private bool previousContactShadowEnabled;
 
         /// <summary>
         /// Raised when the hero settles onto this plank and again when
@@ -72,7 +75,7 @@ namespace BarPromenade
             controller.Phase ==
             PlayerAnimatedInteractionPhase.Looping
                 ? StandPromptKey
-                : ResolveSeatPromptKey(plan.Kind);
+                : ResolveSeatPromptKey(plan);
         public Vector3 InteractionPosition =>
             plan.InteractionPosition;
         public PlayerAnimatedInteractionController Controller =>
@@ -116,6 +119,7 @@ namespace BarPromenade
             }
 
             controller = interactionController;
+            contactShadow = player.ContactShadow;
             playerRoot = player.GameObject.transform;
             plan = interactionPlan;
             definition = CreateDefinition(plan.Kind);
@@ -139,6 +143,21 @@ namespace BarPromenade
                 default:
                     return SitPromptKey;
             }
+        }
+
+        /// <summary>
+        /// The same question asked of a whole seat, so a seat may name its
+        /// own prompt instead of inheriting its kind's.
+        ///
+        /// The kind-taking overload above is deliberately left alone:
+        /// `CityChessSeatSitTests` calls it directly, and every seat that
+        /// authors no key of its own still answers through it.
+        /// </summary>
+        public static string ResolveSeatPromptKey(CityBenchSitPlan plan)
+        {
+            return string.IsNullOrEmpty(plan.SitPromptKey)
+                ? ResolveSeatPromptKey(plan.Kind)
+                : plan.SitPromptKey;
         }
 
         public static PlayerAnimatedInteractionDefinition
@@ -190,6 +209,7 @@ namespace BarPromenade
                 Mathf.Abs(playerRoot.position.y -
                           plan.EntryRootPosition.y) >
                     ApproachVerticalTolerance ||
+                !plan.IsWithinApproachLane(playerRoot.position) ||
                 CityBenchSeatClaims.IsClaimedByOther(plan.Id, this) ||
                 SceneTransitionService.IsTransitioning)
             {
@@ -263,10 +283,32 @@ namespace BarPromenade
         private void HandlePhaseChanged(
             PlayerAnimatedInteractionPhase phase)
         {
+            // THE CAPSULE NEVER MOVES, SO ITS SHADOW MUST STOP DRAWING.
+            //
+            // Only `ModelRoot` is carried onto the seat; the
+            // CharacterController stays on the dock for the whole
+            // interaction, and `PlayerContactShadow` follows the ROOT in
+            // its own LateUpdate. Every seated bench in the game has
+            // therefore been painting an oval on the ground a little over
+            // half a metre in front of the sitter, under nobody. The car
+            // seat and the cableway cabin already suppress it; benches
+            // never did.
+            //
+            // Hooked on Entering and not Positioning on purpose: through
+            // the guided walk the capsule IS the body and the shadow is
+            // correct, and `BeginPositioned` raises Positioning before
+            // `ownsActiveInteraction` is even assigned.
+            if (ownsActiveInteraction &&
+                phase == PlayerAnimatedInteractionPhase.Entering)
+            {
+                SuppressContactShadow();
+            }
+
             if (ownsActiveInteraction &&
                 phase == PlayerAnimatedInteractionPhase.Idle)
             {
                 ownsActiveInteraction = false;
+                RestoreContactShadow();
                 CityBenchSeatClaims.Release(plan.Id, this);
             }
 
@@ -309,8 +351,38 @@ namespace BarPromenade
 
             controller?.CancelActiveInteraction();
             ownsActiveInteraction = false;
+            // Belt and braces: a cancel raises PhaseChanged(Idle) while the
+            // subscription is still live, but `InteractionCompleted` does
+            // not fire on one, so nothing may hang off that instead.
+            RestoreContactShadow();
             UpdateSeated(false);
             CityBenchSeatClaims.Release(plan.Id, this);
+        }
+
+        private void SuppressContactShadow()
+        {
+            if (contactShadowSuppressed || contactShadow == null)
+            {
+                return;
+            }
+
+            contactShadowSuppressed = true;
+            previousContactShadowEnabled = contactShadow.enabled;
+            contactShadow.enabled = false;
+        }
+
+        private void RestoreContactShadow()
+        {
+            if (!contactShadowSuppressed)
+            {
+                return;
+            }
+
+            contactShadowSuppressed = false;
+            if (contactShadow != null)
+            {
+                contactShadow.enabled = previousContactShadowEnabled;
+            }
         }
     }
 }

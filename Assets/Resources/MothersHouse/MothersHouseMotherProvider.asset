@@ -1,0 +1,15 @@
+%YAML 1.1
+%TAG !u! tag:unity3d.com,2011:
+--- !u!114 &11400000
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 0}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a4545b93048eb1148b116c71edee304a, type: 3}
+  m_Name: MothersHouseMotherProvider
+  m_EditorClassIdentifier: BarPromenade.Runtime::BarPromenade.MothersHouseMotherProvider
+  stagedPrefab: {fileID: 4071483369085362440, guid: 723cbe1a04f042e409033c9bb1b17bda, type: 3}

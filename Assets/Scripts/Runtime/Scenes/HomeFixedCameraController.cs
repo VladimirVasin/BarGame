@@ -8,11 +8,17 @@ namespace BarPromenade
     {
         MainRoom = 0,
         Bathroom = 1,
-        Balcony = 2
+        Balcony = 2,
+        StairAndUpperCorridor = 3,
+        UpperSouthRoom = 4,
+        UpperNorthRoom = 5
     }
 
     public readonly struct HomeCameraShot
     {
+        private static readonly Vector2 UnboundedHeightRange =
+            new Vector2(-10000f, 10000f);
+
         public HomeCameraShot(
             HomeCameraShotKind kind,
             Rect activationBounds,
@@ -24,6 +30,8 @@ namespace BarPromenade
                 kind,
                 activationBounds,
                 holdBounds,
+                UnboundedHeightRange,
+                UnboundedHeightRange,
                 position,
                 Quaternion.Euler(eulerAngles),
                 fieldOfView)
@@ -34,6 +42,27 @@ namespace BarPromenade
             HomeCameraShotKind kind,
             Rect activationBounds,
             Rect holdBounds,
+            Vector3 position,
+            Quaternion rotation,
+            float fieldOfView)
+            : this(
+                kind,
+                activationBounds,
+                holdBounds,
+                UnboundedHeightRange,
+                UnboundedHeightRange,
+                position,
+                rotation,
+                fieldOfView)
+        {
+        }
+
+        public HomeCameraShot(
+            HomeCameraShotKind kind,
+            Rect activationBounds,
+            Rect holdBounds,
+            Vector2 activationHeightRange,
+            Vector2 holdHeightRange,
             Vector3 position,
             Quaternion rotation,
             float fieldOfView)
@@ -50,6 +79,19 @@ namespace BarPromenade
                 throw new ArgumentException(
                     "A home camera activation area must stay inside its hold area.",
                     nameof(activationBounds));
+            }
+
+            ValidateHeightRange(
+                activationHeightRange,
+                nameof(activationHeightRange));
+            ValidateHeightRange(
+                holdHeightRange,
+                nameof(holdHeightRange));
+            if (!Contains(holdHeightRange, activationHeightRange))
+            {
+                throw new ArgumentException(
+                    "A home camera activation height range must stay inside its hold range.",
+                    nameof(activationHeightRange));
             }
 
             if (!IsFinite(position))
@@ -78,6 +120,8 @@ namespace BarPromenade
             Kind = kind;
             ActivationBounds = activationBounds;
             HoldBounds = holdBounds;
+            ActivationHeightRange = activationHeightRange;
+            HoldHeightRange = holdHeightRange;
             Position = position;
             Rotation = Normalize(rotation);
             FieldOfView = fieldOfView;
@@ -86,6 +130,8 @@ namespace BarPromenade
         public HomeCameraShotKind Kind { get; }
         public Rect ActivationBounds { get; }
         public Rect HoldBounds { get; }
+        public Vector2 ActivationHeightRange { get; }
+        public Vector2 HoldHeightRange { get; }
         public Vector3 Position { get; }
         public Quaternion Rotation { get; }
         public Vector3 EulerAngles => Rotation.eulerAngles;
@@ -93,12 +139,18 @@ namespace BarPromenade
 
         public bool IsInActivationArea(Vector3 worldPosition)
         {
-            return Contains(ActivationBounds, worldPosition);
+            return Contains(
+                ActivationBounds,
+                ActivationHeightRange,
+                worldPosition);
         }
 
         public bool IsInHoldArea(Vector3 worldPosition)
         {
-            return Contains(HoldBounds, worldPosition);
+            return Contains(
+                HoldBounds,
+                HoldHeightRange,
+                worldPosition);
         }
 
         internal void Validate()
@@ -110,7 +162,14 @@ namespace BarPromenade
             ValidateBounds(
                 HoldBounds,
                 nameof(HoldBounds));
+            ValidateHeightRange(
+                ActivationHeightRange,
+                nameof(ActivationHeightRange));
+            ValidateHeightRange(
+                HoldHeightRange,
+                nameof(HoldHeightRange));
             if (!Contains(HoldBounds, ActivationBounds) ||
+                !Contains(HoldHeightRange, ActivationHeightRange) ||
                 !IsFinite(Position) ||
                 !IsValidRotation(Rotation) ||
                 !IsFinite(FieldOfView) ||
@@ -124,12 +183,20 @@ namespace BarPromenade
 
         private static bool Contains(
             Rect bounds,
+            Vector2 heightRange,
             Vector3 worldPosition)
         {
             return worldPosition.x >= bounds.xMin &&
                    worldPosition.x <= bounds.xMax &&
+                   worldPosition.y >= heightRange.x &&
+                   worldPosition.y <= heightRange.y &&
                    worldPosition.z >= bounds.yMin &&
                    worldPosition.z <= bounds.yMax;
+        }
+
+        private static bool Contains(Vector2 outer, Vector2 inner)
+        {
+            return inner.x >= outer.x && inner.y <= outer.y;
         }
 
         private static bool Contains(
@@ -174,6 +241,20 @@ namespace BarPromenade
                 throw new ArgumentOutOfRangeException(
                     parameterName,
                     "Home camera bounds must be finite and positive.");
+            }
+        }
+
+        private static void ValidateHeightRange(
+            Vector2 range,
+            string parameterName)
+        {
+            if (!IsFinite(range.x) ||
+                !IsFinite(range.y) ||
+                range.y <= range.x)
+            {
+                throw new ArgumentOutOfRangeException(
+                    parameterName,
+                    "Home camera height ranges must be finite and positive.");
             }
         }
 

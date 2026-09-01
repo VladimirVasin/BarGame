@@ -4,22 +4,19 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Bridges the pure service frame to the three environment-owned cup
+    /// Bridges the pure service frame to the two environment-owned cup
     /// bindings and optional pour stream. No scheduling lives here.
     /// </summary>
     [DefaultExecutionOrder(100)]
     [DisallowMultipleComponent]
     public sealed class MountainRoadCafeServicePresentation : MonoBehaviour
     {
-        [SerializeField] private MountainRoadCafeCupView loneCup;
         [SerializeField] private MountainRoadCafeCupView pairManCup;
         [SerializeField] private MountainRoadCafeCupView pairWomanCup;
-        [SerializeField] private Transform loneDrinkSocket;
         [SerializeField] private Transform pairManDrinkSocket;
         [SerializeField] private Transform pairWomanDrinkSocket;
         [SerializeField] private Transform attendantMotionRoot;
         [SerializeField] private Transform attendantDock;
-        [SerializeField] private Transform loneServiceMark;
         [SerializeField] private Transform pairManServiceMark;
         [SerializeField] private Transform pairWomanServiceMark;
         [SerializeField] private Transform potSpout;
@@ -28,6 +25,7 @@ namespace BarPromenade
         [SerializeField] private float authoredStreamLength = 1f;
 
         private Vector3 authoredStreamScale;
+        private Vector3 authoredStreamLocalDirection = Vector3.forward;
         private Quaternion attendantAuthoredRotation;
         private MountainRoadCafeServiceFrame lastFrame;
         private bool hasFrame;
@@ -51,10 +49,6 @@ namespace BarPromenade
                     nameof(cast));
             }
 
-            MountainRoadCafeCupView lone = CreateCupView(
-                environment,
-                "Cup.Lone",
-                MountainRoadCafeCastRole.LonePatron);
             MountainRoadCafeCupView pairMan = CreateCupView(
                 environment,
                 "Cup.PairMan",
@@ -75,7 +69,12 @@ namespace BarPromenade
             }
 
             Renderer streamRenderer = stream.Renderers[0];
-            float streamLength = streamRenderer.bounds.size.y;
+            // The stream pivot is authored at the first cap. Its renderer
+            // centre is therefore exactly half a stream length away, and is
+            // also the reliable post-FBX direction of the long axis.
+            Vector3 streamCenterOffset =
+                streamRenderer.bounds.center - stream.PropRoot.position;
+            float streamLength = streamCenterOffset.magnitude * 2f;
             if (streamLength <= 0.0001f)
             {
                 throw new InvalidOperationException(
@@ -85,7 +84,6 @@ namespace BarPromenade
             var presentation = environment.gameObject.AddComponent<
                 MountainRoadCafeServicePresentation>();
             presentation.Configure(
-                lone,
                 pairMan,
                 pairWoman,
                 cast.AttendantPourSpout,
@@ -96,8 +94,7 @@ namespace BarPromenade
                     cast.AttendantMotionRoot,
                     RequireAnchor(environment, "ServiceRail.00"),
                     RequireAnchor(environment, "ServiceRail.01"),
-                    RequireAnchor(environment, "ServiceRail.02"),
-                    RequireAnchor(environment, "ServiceRail.03")) ||
+                    RequireAnchor(environment, "ServiceRail.02")) ||
                 !cast.BindServicePresentation(presentation))
             {
                 throw new InvalidOperationException(
@@ -109,7 +106,6 @@ namespace BarPromenade
         }
 
         public void Configure(
-            MountainRoadCafeCupView configuredLoneCup,
             MountainRoadCafeCupView configuredPairManCup,
             MountainRoadCafeCupView configuredPairWomanCup,
             Transform configuredPotSpout = null,
@@ -117,9 +113,6 @@ namespace BarPromenade
             Renderer configuredPourStreamRenderer = null,
             float configuredAuthoredStreamLength = 1f)
         {
-            ValidateCup(
-                configuredLoneCup,
-                MountainRoadCafeCastRole.LonePatron);
             ValidateCup(
                 configuredPairManCup,
                 MountainRoadCafeCastRole.PairMan);
@@ -142,7 +135,6 @@ namespace BarPromenade
                     "authored length.");
             }
 
-            loneCup = configuredLoneCup;
             pairManCup = configuredPairManCup;
             pairWomanCup = configuredPairWomanCup;
             potSpout = configuredPotSpout;
@@ -152,6 +144,21 @@ namespace BarPromenade
             authoredStreamScale = pourStream != null
                 ? pourStream.localScale
                 : Vector3.one;
+            if (pourStream != null)
+            {
+                Vector3 centerOffset =
+                    pourStreamRenderer.bounds.center - pourStream.position;
+                if (centerOffset.sqrMagnitude <= 0.00000001f)
+                {
+                    throw new ArgumentException(
+                        "A visible pour stream requires its authored pivot " +
+                        "at the first cap.");
+                }
+
+                authoredStreamLocalDirection =
+                    pourStream.InverseTransformDirection(
+                        centerOffset.normalized).normalized;
+            }
             IsConfigured = true;
             SetPourStreamVisible(false, null);
         }
@@ -162,9 +169,6 @@ namespace BarPromenade
         {
             switch (role)
             {
-                case MountainRoadCafeCastRole.LonePatron:
-                    cup = loneCup;
-                    return cup != null;
                 case MountainRoadCafeCastRole.PairMan:
                     cup = pairManCup;
                     return cup != null;
@@ -178,19 +182,36 @@ namespace BarPromenade
         }
 
         public bool BindDrinkSockets(
-            Transform configuredLoneDrinkSocket,
             Transform configuredPairManDrinkSocket,
-            Transform configuredPairWomanDrinkSocket)
+            Transform configuredPairManMouthSocket,
+            Transform configuredPairManRoot,
+            Transform configuredPairWomanDrinkSocket,
+            Transform configuredPairWomanMouthSocket,
+            Transform configuredPairWomanRoot)
         {
             if (!IsConfigured ||
-                configuredLoneDrinkSocket == null ||
                 configuredPairManDrinkSocket == null ||
-                configuredPairWomanDrinkSocket == null)
+                configuredPairManMouthSocket == null ||
+                configuredPairManRoot == null ||
+                configuredPairWomanDrinkSocket == null ||
+                configuredPairWomanMouthSocket == null ||
+                configuredPairWomanRoot == null)
             {
                 return false;
             }
 
-            loneDrinkSocket = configuredLoneDrinkSocket;
+            if (!pairManCup.BindDrinkRig(
+                    configuredPairManDrinkSocket,
+                    configuredPairManMouthSocket,
+                    configuredPairManRoot) ||
+                !pairWomanCup.BindDrinkRig(
+                    configuredPairWomanDrinkSocket,
+                    configuredPairWomanMouthSocket,
+                    configuredPairWomanRoot))
+            {
+                return false;
+            }
+
             pairManDrinkSocket = configuredPairManDrinkSocket;
             pairWomanDrinkSocket = configuredPairWomanDrinkSocket;
             return true;
@@ -199,14 +220,12 @@ namespace BarPromenade
         public bool BindAttendantMotion(
             Transform configuredAttendantMotionRoot,
             Transform configuredAttendantDock,
-            Transform configuredLoneServiceMark,
             Transform configuredPairManServiceMark,
             Transform configuredPairWomanServiceMark)
         {
             if (!IsConfigured ||
                 configuredAttendantMotionRoot == null ||
                 configuredAttendantDock == null ||
-                configuredLoneServiceMark == null ||
                 configuredPairManServiceMark == null ||
                 configuredPairWomanServiceMark == null)
             {
@@ -215,7 +234,6 @@ namespace BarPromenade
 
             attendantMotionRoot = configuredAttendantMotionRoot;
             attendantDock = configuredAttendantDock;
-            loneServiceMark = configuredLoneServiceMark;
             pairManServiceMark = configuredPairManServiceMark;
             pairWomanServiceMark = configuredPairWomanServiceMark;
             attendantAuthoredRotation = attendantMotionRoot.rotation;
@@ -230,25 +248,26 @@ namespace BarPromenade
                 return;
             }
 
-            loneCup.SetFill01(frame.LoneFill);
             pairManCup.SetFill01(frame.PairManFill);
             pairWomanCup.SetFill01(frame.PairWomanFill);
 
-            bool loneDrinks = frame.Phase ==
-                              MountainRoadCafeServicePhase.LoneDrink;
-            bool coupleDrinks = frame.Phase ==
-                                MountainRoadCafeServicePhase.CoupleDrink;
-            loneCup.SetDrinkPose(
-                loneDrinks,
-                loneDrinks ? frame.PhaseNormalized : 0f,
-                loneDrinkSocket);
+            bool pairManDrinks = frame.IsDrinking(
+                MountainRoadCafeCastRole.PairMan);
+            bool pairWomanDrinks = frame.IsDrinking(
+                MountainRoadCafeCastRole.PairWoman);
             pairManCup.SetDrinkPose(
-                coupleDrinks,
-                coupleDrinks ? frame.PhaseNormalized : 0f,
+                pairManDrinks,
+                pairManDrinks
+                    ? frame.GetDrinkNormalized(
+                        MountainRoadCafeCastRole.PairMan)
+                    : 0f,
                 pairManDrinkSocket);
             pairWomanCup.SetDrinkPose(
-                coupleDrinks,
-                coupleDrinks ? frame.PhaseNormalized : 0f,
+                pairWomanDrinks,
+                pairWomanDrinks
+                    ? frame.GetDrinkNormalized(
+                        MountainRoadCafeCastRole.PairWoman)
+                    : 0f,
                 pairWomanDrinkSocket);
             SetAttendantFrame(frame);
 
@@ -288,7 +307,6 @@ namespace BarPromenade
                 return;
             }
 
-            loneCup.ResetExact();
             pairManCup.ResetExact();
             pairWomanCup.ResetExact();
             SnapAttendantTo(attendantDock);
@@ -343,8 +361,6 @@ namespace BarPromenade
         {
             switch (role)
             {
-                case MountainRoadCafeCastRole.LonePatron:
-                    return loneServiceMark;
                 case MountainRoadCafeCastRole.PairMan:
                     return pairManServiceMark;
                 case MountainRoadCafeCastRole.PairWoman:
@@ -411,13 +427,17 @@ namespace BarPromenade
             }
 
             pourStream.position = start;
+            Vector3 currentStreamDirection =
+                pourStream.TransformDirection(
+                    authoredStreamLocalDirection).normalized;
             pourStream.rotation = Quaternion.FromToRotation(
-                Vector3.down,
-                delta / length);
-            Vector3 scale = authoredStreamScale;
-            scale.y = authoredStreamScale.y *
-                      (length / authoredStreamLength);
-            pourStream.localScale = scale;
+                currentStreamDirection,
+                delta / length) * pourStream.rotation;
+            // The flow is not baked into the attendant clip. This separate
+            // mesh is re-anchored and resized from the animated spout to the
+            // current cup target on every SetFrame/LateUpdate.
+            pourStream.localScale = authoredStreamScale *
+                                    (length / authoredStreamLength);
         }
 
         private static void ValidateCup(
@@ -433,7 +453,7 @@ namespace BarPromenade
             {
                 throw new InvalidOperationException(
                     "Cafe service cup bindings must be configured once in " +
-                    "Lone, PairMan, PairWoman order.");
+                    "PairMan, PairWoman order.");
             }
         }
 

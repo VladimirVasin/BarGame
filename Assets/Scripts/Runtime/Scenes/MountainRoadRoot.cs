@@ -71,6 +71,19 @@ namespace BarPromenade
             private set;
         }
 
+        /// <summary>The hero's eye-level view while he occupies the free
+        /// cafe stool.</summary>
+        public MountainRoadCafeSeatView CafeSeatView { get; private set; }
+
+        /// <summary>The alternating private talk of the two cafe patrons.
+        /// It owns its over-head bubble view and runs only inside the cafe.
+        /// </summary>
+        public MountainRoadCafeConversationController CafeConversation
+        {
+            get;
+            private set;
+        }
+
         /// <summary>The offer to board the cableway, on the platform beside
         /// the outbound track.</summary>
         public AlpineCablewayCabinSeat CabinSeat { get; private set; }
@@ -166,6 +179,29 @@ namespace BarPromenade
             Player.GameObject.transform.rotation = Quaternion.LookRotation(
                 Plan.SpawnForward,
                 Vector3.up);
+            if (!World.Cafe.Cast.BindActivationObserver(
+                    Player.GameObject.transform,
+                    World.Cafe.Entrance.position))
+            {
+                throw new InvalidOperationException(
+                    "The mountain cafe could not bind its player-proximity " +
+                    "service clock.");
+            }
+
+            CafeConversation =
+                MountainRoadCafeConversationController.Create(
+                    ui.transform,
+                    World.Cafe.Plan,
+                    World.Cafe.Cast,
+                    Player.GameObject.transform,
+                    camera,
+                    Plan.Seed);
+            if (CafeConversation == null)
+            {
+                throw new InvalidOperationException(
+                    "The mountain cafe pair conversation could not bind " +
+                    "its two patrons, player and camera.");
+            }
 
             CameraFollow = camera.GetComponent<PlayerCameraFollow>();
             if (CameraFollow == null)
@@ -371,6 +407,9 @@ namespace BarPromenade
                     continue;
                 }
 
+                CafeSeatView = gameObject.AddComponent<
+                    MountainRoadCafeSeatView>();
+                CafeSeatView.Initialize(seat, Player, CameraFollow);
                 seat.SeatedChanged += HandleCounterSeatedChanged;
             }
         }
@@ -389,10 +428,11 @@ namespace BarPromenade
 
         /// <summary>
         /// Whether the brink bench or the counter stool currently
-        /// holds the hero. Both seats drop the camera into a composed
-        /// shot, so the roost pairs freeze their manners while one is
-        /// taken — the mountain's equivalent of the city's grave-work
-        /// gate. The Seats property is read on EVERY call because the
+        /// holds the hero. The brink keeps its follow shot and the counter
+        /// stool owns a first-person view; in either case the roost pairs
+        /// freeze their manners while one is taken — the mountain's
+        /// equivalent of the city's grave-work gate. The Seats property is
+        /// read on EVERY call because the
         /// roost controller is wired in BuildAtmosphere, before
         /// BuildSeats has run: only a per-poll read ever sees the
         /// real list.

@@ -185,6 +185,10 @@
       "value": "E — присесть на лавочку"
     },
     {
+      "key": "interaction.sit_sofa",
+      "value": "E — сесть на диван"
+    },
+    {
       "key": "lastroute.ride.skip",
       "value": "F10 — пропустить поездку"
     },
@@ -1443,6 +1447,86 @@
     {
       "key": "lastroute.ferryman.mountain.line.12",
       "value": "Про обратно не спрашивай."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.01",
+      "value": "Сними пальто. Остальное я сниму сам."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.02",
+      "value": "Ты так куришь, что мне уже тесно в брюках."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.03",
+      "value": "Мне нужен не номер. Мне нужен твой рот."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.04",
+      "value": "После тебя простыни можно сразу выбрасывать."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.05",
+      "value": "Сядешь ближе — кофе нам больше не понадобится."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.06",
+      "value": "Не пизди: я помню, что ты делала под столом."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.07",
+      "value": "До кровати я тебя сегодня не донесу."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.08",
+      "value": "Ты опять без белья. Я вижу, как ты сидишь."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.09",
+      "value": "С тобой приличия заканчиваются у двери."
+    },
+    {
+      "key": "mountain.cafe.pair.man.line.10",
+      "value": "Кровать скрипела до рассвета. Я тут ни при чём."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.01",
+      "value": "Пальто сниму. Остальное сорвёшь зубами."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.02",
+      "value": "В брюках тесно — снимай их, блядь."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.03",
+      "value": "Рот получишь. Если не кончишь раньше."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.04",
+      "value": "Простыни не нужны. Мне хватит этой стены."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.05",
+      "value": "Кофе пей. Ночью тебе понадобится сердце."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.06",
+      "value": "Под столом ты тогда продержался недолго."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.07",
+      "value": "Не донесёшь — возьмёшь прямо здесь."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.08",
+      "value": "Смотри внимательнее. Я ещё ноги не раздвинула."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.09",
+      "value": "У двери я оставила только пальто."
+    },
+    {
+      "key": "mountain.cafe.pair.woman.line.10",
+      "value": "Кровать ещё скрипела. Ты кончил раньше."
     },
     {
       "key": "park.quarrel.chess.line.01",

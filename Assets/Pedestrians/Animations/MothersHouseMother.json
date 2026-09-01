@@ -1,0 +1,63 @@
+{
+  "generator": "tools/build-city-pedestrian-3d-model.py",
+  "generator_version": "4.5.1",
+  "blender_version": "5.0.1",
+  "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
+  "anatomy_standard": "NpcHumanV2",
+  "rest_pelvis_height_m": 0.835,
+  "bone_count": 31,
+  "fps": 24,
+  "root_motion": false,
+  "mesh_count": 0,
+  "clip_count": 1,
+  "clips": [
+    {
+      "name": "MotherRock",
+      "archetype": "mother_v1",
+      "duration_seconds": 6.0,
+      "frame_start": 0,
+      "frame_end": 144,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "settled back in the rocking chair with both hands folded in her lap",
+      "gait": "four slow breaths carried by the ribs, the folded hands drifting with them",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "perched": true,
+      "perch_seat_height_min_m": 0.571437,
+      "perch_seat_height_max_m": 0.571437,
+      "perch_support_contact_min_m": 0.786595,
+      "perch_support_contact_max_m": 0.786595,
+      "perch_support_radius_m": 0.0,
+      "perch_pelvis_lift_m": 0.052626,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.017909
+      ],
+      "perch_contact_parts": [
+        "GEO_SlipperSole.L"
+      ],
+      "seated_drop_m": 0.624063,
+      "animated_local_xz_min_m": [
+        -0.40959,
+        -0.222375
+      ],
+      "animated_local_xz_max_m": [
+        0.423349,
+        0.664303
+      ],
+      "animated_local_xz_size_m": [
+        0.832939,
+        0.886678
+      ]
+    }
+  ],
+  "build_signature": "c30fe70b689db96bbed12d89197f854cc650824bca0ce6bd94ac89042a05225e"
+}

@@ -1,13 +1,12 @@
 #!/usr/bin/env python3
-"""Build the fixed-camera interior of the mother's house.
+"""Build the two-storey fixed-camera interior of the mother's house.
 
-The model is a quiet, ordinary lived-in room: one broad cared-for room, the
-fireplace and two windows on its north wall, the low tea table at its centre,
-the rocking chair north of it, the sofa to its west, a centred south entrance
-and one old warm practical floor lamp.  Story actors, text, medicine, family
-photographs and the kettle are intentionally absent.  The table kettle is
-instantiated by Unity from the existing kettle-head NPC prefab; this asset
-publishes only ``ANCHOR_TeapotDock`` for it.
+The ground floor remains the quiet, ordinary lived-in room.  A real stair rises
+behind its west sofa to a narrow upper corridor and exactly two finished but
+unfurnished rooms.  Story actors, text, medicine, family photographs and the
+kettle are intentionally absent.  The table kettle is instantiated by Unity
+from the existing kettle-head NPC prefab; this asset publishes only
+``ANCHOR_TeapotDock`` for it.
 
 Run from the repository root with Blender 5::
 
@@ -22,7 +21,7 @@ made through ``bar_parts`` is converted to Blender source space by swapping Y/Z
 and re-winding every face.  Shell and profiled furniture made directly through
 ``interior_kit`` already use Blender's Z-up source frame.  Validation measures
 both forms and rejects non-positive signed volume, mirrored anchors and drift
-from the 10 x 8 m usable room contract.
+from the 10 x 8 m footprint contract.
 """
 
 from __future__ import annotations
@@ -48,13 +47,15 @@ sys.path.insert(0, str(ROOT / "tools"))
 
 import interior_kit as kit  # noqa: E402
 import bar_parts as bp  # noqa: E402
-GENERATOR_VERSION = "1.3.0"
+GENERATOR_VERSION = "1.4.1"
 DESIGN_ID = "mothers_house_interior_v1"
 DISPLAY_NAME = "Bar Promenade Mother's House Interior"
 
 ROOM_WIDTH = 10.0
 ROOM_DEPTH = 8.0
 ROOM_HEIGHT = 3.4
+UPPER_FLOOR_ELEVATION = 3.54
+UPPER_CEILING_HEIGHT = 5.90
 WALL_THICKNESS = 0.24
 FLOOR_THICKNESS = 0.18
 CEILING_THICKNESS = 0.14
@@ -66,6 +67,21 @@ WINDOW_WIDTH = 1.35
 WINDOW_SILL = 0.85
 WINDOW_HEAD = 2.25
 
+STAIR_CENTER_X = -4.0
+STAIR_START_Z = 1.80
+STAIR_DIRECTION_Z = -1.0
+STAIR_STEP_COUNT = 19
+STAIR_STEP_RISE = UPPER_FLOOR_ELEVATION / STAIR_STEP_COUNT
+STAIR_STEP_DEPTH = 0.25
+STAIR_WIDTH = 1.30
+STAIR_OPENING = (-4.88, -3.05, -3.18, 1.82)
+UPPER_PARTITION_X = -1.75
+UPPER_PARTITION_THICKNESS = 0.16
+UPPER_ROOM_DIVIDER_Z = 0.0
+UPPER_DOOR_WIDTH = 1.20
+UPPER_DOOR_HEIGHT = 2.20
+UPPER_DOOR_CENTERS_Z = (-1.85, 1.85)
+
 TABLE_WIDTH = 1.45
 TABLE_DEPTH = 0.90
 TABLE_HEIGHT = 0.48
@@ -76,7 +92,7 @@ ANCHORS_UNITY = {
     "ANCHOR_Entry": (DOOR_CENTER_X, 0.0, -3.86),
     "ANCHOR_Spawn": (DOOR_CENTER_X, 0.0, -2.45),
     "ANCHOR_Exit": (DOOR_CENTER_X, 0.0, -3.15),
-    "ANCHOR_Camera": (5.80, 3.15, -2.80),
+    "ANCHOR_Camera": (5.80, 2.75, -2.80),
     "ANCHOR_CameraTarget": (-0.20, 0.80, 1.00),
     "ANCHOR_Fireplace": (0.0, 0.0, 3.61),
     "ANCHOR_FireLight": (0.0, 0.78, 3.28),
@@ -464,21 +480,6 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
         "PlankFloor",
         unity_space=False,
     )
-    ceiling = kit.ceiling_slab(
-        ROOM_WIDTH,
-        ROOM_DEPTH,
-        CEILING_THICKNESS,
-        ROOM_HEIGHT,
-    )
-    add_part(
-        asset,
-        materials,
-        "FIX_Ceiling",
-        ceiling,
-        "ceiling",
-        "CeilingPlaster",
-        unity_space=False,
-    )
     add_part(
         asset,
         materials,
@@ -561,6 +562,348 @@ def build_shell(asset: AssetBuild, materials: dict) -> None:
         door_leaf,
         "entrance_door",
         "DarkWood",
+    )
+
+
+def u_box_limits(
+    x_min: float,
+    x_max: float,
+    y_min: float,
+    y_max: float,
+    z_min: float,
+    z_max: float,
+    chamfer: float = 0.006,
+) -> kit.Geometry:
+    return bp.u_box(
+        (
+            (x_min + x_max) * 0.5,
+            (y_min + y_max) * 0.5,
+            (z_min + z_max) * 0.5,
+        ),
+        (x_max - x_min, y_max - y_min, z_max - z_min),
+        chamfer,
+    )
+
+
+def build_upper_storey(asset: AssetBuild, materials: dict) -> None:
+    opening_x_min, opening_z_min, opening_x_max, opening_z_max = (
+        STAIR_OPENING
+    )
+    slab_regions = (
+        (opening_x_max, ROOM_WIDTH * 0.5,
+         -ROOM_DEPTH * 0.5, ROOM_DEPTH * 0.5),
+        (-ROOM_WIDTH * 0.5, opening_x_max,
+         opening_z_max, ROOM_DEPTH * 0.5),
+        (-ROOM_WIDTH * 0.5, opening_x_max,
+         -ROOM_DEPTH * 0.5, opening_z_min),
+    )
+    add_part(
+        asset,
+        materials,
+        "FIX_InterstoreyCeiling",
+        merge(
+            u_box_limits(
+                x_min,
+                x_max,
+                ROOM_HEIGHT,
+                UPPER_FLOOR_ELEVATION,
+                z_min,
+                z_max,
+            )
+            for x_min, x_max, z_min, z_max in slab_regions
+        ),
+        "interstorey_ceiling",
+        "CeilingPlaster",
+    )
+    add_part(
+        asset,
+        materials,
+        "FIX_UpperFloor",
+        merge(
+            u_box_limits(
+                x_min,
+                x_max,
+                UPPER_FLOOR_ELEVATION,
+                UPPER_FLOOR_ELEVATION + 0.018,
+                z_min,
+                z_max,
+                0.003,
+            )
+            for x_min, x_max, z_min, z_max in slab_regions
+        ),
+        "upper_floor",
+        "PlankFloor",
+    )
+
+    stair_steps = []
+    stair_west_closure = []
+    stair_west_edge_x = STAIR_CENTER_X - STAIR_WIDTH * 0.5
+    for index in range(STAIR_STEP_COUNT):
+        height = (index + 1) * STAIR_STEP_RISE
+        step_z = (
+            STAIR_START_Z +
+            STAIR_DIRECTION_Z * (index + 0.5) * STAIR_STEP_DEPTH
+        )
+        stair_steps.append(bp.u_box(
+            (
+                STAIR_CENTER_X,
+                height * 0.5,
+                step_z,
+            ),
+            (STAIR_WIDTH, height, STAIR_STEP_DEPTH + 0.012),
+            0.008,
+        ))
+        # The walkable 1.30 m flight stays plan-owned and unmoved. This
+        # matching stepped infill only closes its narrow west-side gap all
+        # the way to the inner face of the exterior wall.
+        stair_west_closure.append(bp.u_box(
+            (
+                (opening_x_min + stair_west_edge_x) * 0.5,
+                height * 0.5,
+                step_z,
+            ),
+            (
+                stair_west_edge_x - opening_x_min + 0.012,
+                height,
+                STAIR_STEP_DEPTH + 0.012,
+            ),
+            0.008,
+        ))
+    stair_top_z = (
+        STAIR_START_Z +
+        STAIR_DIRECTION_Z * STAIR_STEP_COUNT * STAIR_STEP_DEPTH
+    )
+    south_wall_inner_z = -ROOM_DEPTH * 0.5 + WALL_THICKNESS * 0.5
+    stair_south_closure = bp.u_box(
+        (
+            (opening_x_min + stair_west_edge_x + STAIR_WIDTH) * 0.5,
+            UPPER_FLOOR_ELEVATION * 0.5,
+            (south_wall_inner_z + stair_top_z) * 0.5,
+        ),
+        (
+            stair_west_edge_x + STAIR_WIDTH - opening_x_min,
+            UPPER_FLOOR_ELEVATION,
+            stair_top_z - south_wall_inner_z + 0.012,
+        ),
+        0.008,
+    )
+    add_part(
+        asset,
+        materials,
+        "FIX_Stair.Steps",
+        merge((*stair_steps, *stair_west_closure, stair_south_closure)),
+        "stair",
+        "PlankFloor",
+    )
+
+    rail_x = STAIR_CENTER_X + STAIR_WIDTH * 0.5 + 0.07
+    rail_height = 0.92
+    rail_posts = []
+    for index in range(0, STAIR_STEP_COUNT, 3):
+        step_top = (index + 1) * STAIR_STEP_RISE
+        rail_posts.append(bp.u_box(
+            (
+                rail_x,
+                step_top + rail_height * 0.5,
+                STAIR_START_Z +
+                STAIR_DIRECTION_Z * (index + 0.5) * STAIR_STEP_DEPTH,
+            ),
+            (0.075, rail_height, 0.075),
+            0.008,
+        ))
+    first_rail_z = (
+        STAIR_START_Z + STAIR_DIRECTION_Z * STAIR_STEP_DEPTH * 0.5
+    )
+    last_rail_z = (
+        STAIR_START_Z +
+        STAIR_DIRECTION_Z *
+        (STAIR_STEP_COUNT - 0.5) * STAIR_STEP_DEPTH
+    )
+    first_rail_y = STAIR_STEP_RISE + rail_height
+    last_rail_y = UPPER_FLOOR_ELEVATION + rail_height
+    rail_run = last_rail_z - first_rail_z
+    rail_rise = last_rail_y - first_rail_y
+    rail_length = math.hypot(rail_run, rail_rise)
+    rail_pitch = math.degrees(math.atan2(rail_rise, rail_run))
+    rail_top = bp.u_box(
+        (0.0, 0.0, 0.0),
+        (0.105, 0.105, rail_length),
+        0.012,
+    )
+    rail_top = bp.u_rotated(rail_top, (-rail_pitch, 0.0, 0.0))
+    rail_top = kit.translated(
+        rail_top,
+        (
+            rail_x,
+            (first_rail_y + last_rail_y) * 0.5,
+            (first_rail_z + last_rail_z) * 0.5,
+        ),
+    )
+    add_part(
+        asset,
+        materials,
+        "FIX_Stair.Rail",
+        merge((*rail_posts, rail_top)),
+        "stair_guard",
+        "DarkWood",
+    )
+
+    upper_wall_height = UPPER_CEILING_HEIGHT - UPPER_FLOOR_ELEVATION
+    upper_wall_center_y = (
+        UPPER_FLOOR_ELEVATION + UPPER_CEILING_HEIGHT
+    ) * 0.5
+    upper_perimeter = merge((
+        bp.u_box(
+            (0.0, upper_wall_center_y, -ROOM_DEPTH * 0.5),
+            (ROOM_WIDTH + WALL_THICKNESS, upper_wall_height, WALL_THICKNESS),
+            0.008,
+        ),
+        bp.u_box(
+            (0.0, upper_wall_center_y, ROOM_DEPTH * 0.5),
+            (ROOM_WIDTH + WALL_THICKNESS, upper_wall_height, WALL_THICKNESS),
+            0.008,
+        ),
+        bp.u_box(
+            (-ROOM_WIDTH * 0.5, UPPER_FLOOR_ELEVATION + 0.31, 0.0),
+            (WALL_THICKNESS, 0.62, ROOM_DEPTH + WALL_THICKNESS),
+            0.008,
+        ),
+        bp.u_box(
+            (ROOM_WIDTH * 0.5, UPPER_FLOOR_ELEVATION + 0.31, 0.0),
+            (WALL_THICKNESS, 0.62, ROOM_DEPTH + WALL_THICKNESS),
+            0.008,
+        ),
+    ))
+    add_part(
+        asset,
+        materials,
+        "FIX_UpperWalls",
+        upper_perimeter,
+        "upper_wall",
+        "Wallpaper",
+    )
+
+    door_half = UPPER_DOOR_WIDTH * 0.5
+    south_door_min = UPPER_DOOR_CENTERS_Z[0] - door_half
+    south_door_max = UPPER_DOOR_CENTERS_Z[0] + door_half
+    north_door_min = UPPER_DOOR_CENTERS_Z[1] - door_half
+    north_door_max = UPPER_DOOR_CENTERS_Z[1] + door_half
+    partition_segments = (
+        (-ROOM_DEPTH * 0.5, south_door_min),
+        (south_door_max, north_door_min),
+        (north_door_max, ROOM_DEPTH * 0.5),
+    )
+    partition_geometry = [
+        u_box_limits(
+            UPPER_PARTITION_X - UPPER_PARTITION_THICKNESS * 0.5,
+            UPPER_PARTITION_X + UPPER_PARTITION_THICKNESS * 0.5,
+            UPPER_FLOOR_ELEVATION,
+            UPPER_CEILING_HEIGHT,
+            z_min,
+            z_max,
+        )
+        for z_min, z_max in partition_segments
+    ]
+    lintel_y_min = UPPER_FLOOR_ELEVATION + UPPER_DOOR_HEIGHT
+    for center_z in UPPER_DOOR_CENTERS_Z:
+        partition_geometry.append(u_box_limits(
+            UPPER_PARTITION_X - UPPER_PARTITION_THICKNESS * 0.5,
+            UPPER_PARTITION_X + UPPER_PARTITION_THICKNESS * 0.5,
+            lintel_y_min,
+            UPPER_CEILING_HEIGHT,
+            center_z - door_half,
+            center_z + door_half,
+        ))
+    partition_geometry.append(u_box_limits(
+        UPPER_PARTITION_X + UPPER_PARTITION_THICKNESS * 0.5,
+        ROOM_WIDTH * 0.5,
+        UPPER_FLOOR_ELEVATION,
+        UPPER_CEILING_HEIGHT,
+        UPPER_ROOM_DIVIDER_Z - UPPER_PARTITION_THICKNESS * 0.5,
+        UPPER_ROOM_DIVIDER_Z + UPPER_PARTITION_THICKNESS * 0.5,
+    ))
+    add_part(
+        asset,
+        materials,
+        "FIX_UpperPartitions",
+        merge(partition_geometry),
+        "upper_partition",
+        "Wallpaper",
+    )
+
+    jamb = 0.09
+    frame_depth = 0.24
+    door_frames = []
+    for center_z in UPPER_DOOR_CENTERS_Z:
+        for side in (-1.0, 1.0):
+            door_frames.append(bp.u_box(
+                (
+                    UPPER_PARTITION_X,
+                    UPPER_FLOOR_ELEVATION + UPPER_DOOR_HEIGHT * 0.5,
+                    center_z + side * (door_half + jamb * 0.5),
+                ),
+                (frame_depth, UPPER_DOOR_HEIGHT, jamb),
+                0.008,
+            ))
+        door_frames.append(bp.u_box(
+            (
+                UPPER_PARTITION_X,
+                UPPER_FLOOR_ELEVATION + UPPER_DOOR_HEIGHT + jamb * 0.5,
+                center_z,
+            ),
+            (frame_depth, jamb, UPPER_DOOR_WIDTH + jamb * 2.0),
+            0.008,
+        ))
+    add_part(
+        asset,
+        materials,
+        "FIX_UpperDoorFrames",
+        merge(door_frames),
+        "upper_door_frame",
+        "DarkWood",
+    )
+
+    guard_height = 1.0
+    upper_guards = merge((
+        bp.u_box(
+            (
+                opening_x_max,
+                UPPER_FLOOR_ELEVATION + guard_height * 0.5,
+                (-2.30 + opening_z_max) * 0.5,
+            ),
+            (0.105, guard_height, opening_z_max - (-2.30)),
+            0.009,
+        ),
+        bp.u_box(
+            (
+                (opening_x_min + opening_x_max) * 0.5,
+                UPPER_FLOOR_ELEVATION + guard_height * 0.5,
+                opening_z_max,
+            ),
+            (opening_x_max - opening_x_min, guard_height, 0.105),
+            0.009,
+        ),
+    ))
+    add_part(
+        asset,
+        materials,
+        "FIX_UpperStairGuards",
+        upper_guards,
+        "stair_guard",
+        "DarkWood",
+    )
+
+    add_part(
+        asset,
+        materials,
+        "FIX_UpperCeiling",
+        bp.u_box(
+            (0.0, UPPER_CEILING_HEIGHT + CEILING_THICKNESS * 0.5, 0.0),
+            (ROOM_WIDTH, CEILING_THICKNESS, ROOM_DEPTH),
+            0.006,
+        ),
+        "upper_ceiling",
+        "CeilingPlaster",
     )
 
 
@@ -1160,6 +1503,7 @@ def build() -> AssetBuild:
     materials = {sheet: create_material(sheet) for sheet in SHEET_PITCH}
     asset = AssetBuild(root, collection)
     build_shell(asset, materials)
+    build_upper_storey(asset, materials)
     build_windows(asset, materials)
     build_fireplace(asset, materials)
     build_dressing(asset, materials)
@@ -1212,6 +1556,10 @@ def validate(asset: AssetBuild) -> dict:
         "FIX_Fire.Embers", "FIX_Fire.Flame.Back", "FIX_Fire.Flame.Front",
         "FIX_Table.Top", "FIX_RockingChair.Frame", "FIX_Sofa.Frame",
         "FIX_Door.Frame", "FIX_Door.OpenLeaf",
+        "FIX_InterstoreyCeiling", "FIX_UpperFloor",
+        "FIX_Stair.Steps", "FIX_Stair.Rail", "FIX_UpperWalls",
+        "FIX_UpperPartitions", "FIX_UpperDoorFrames",
+        "FIX_UpperStairGuards", "FIX_UpperCeiling",
         "DRESS_FloorLamp.Frame", "DRESS_FloorLamp.Shade",
         "DRESS_FloorLamp.Bulb",
     }
@@ -1226,7 +1574,9 @@ def validate(asset: AssetBuild) -> dict:
         "rocking_chair", "sofa_frame", "sofa_cushion", "worn_rug",
         "old_cupboard", "wall_clock", "yarn_basket", "slippers",
         "firewood", "fireplace_tool", "floor_lamp", "floor_lamp_shade",
-        "floor_lamp_bulb",
+        "floor_lamp_bulb", "interstorey_ceiling", "upper_floor",
+        "stair", "stair_guard", "upper_wall", "upper_partition",
+        "upper_door_frame", "upper_ceiling",
     }
     roles = {part.role for part in asset.parts}
     for missing in sorted(required_roles - roles):
@@ -1248,7 +1598,7 @@ def validate(asset: AssetBuild) -> dict:
     source_low, source_high = kit.bounds(merged)
     unity_low, unity_high = source_bounds_to_unity((source_low, source_high))
     expected_low = (-5.12, -0.18, -4.12)
-    expected_high = (5.12, 3.54, 4.12)
+    expected_high = (5.12, 6.04, 4.12)
     for index, label in enumerate(("Unity X", "Unity Y", "Unity Z")):
         if abs(unity_low[index] - expected_low[index]) > 0.002:
             problems.append(
@@ -1260,6 +1610,17 @@ def validate(asset: AssetBuild) -> dict:
                 f"expected {expected_high[index]:.4f}")
 
     by_name = {part.name: part for part in asset.parts}
+    stair_low, stair_high = source_bounds_to_unity(
+        kit.bounds(by_name["FIX_Stair.Steps"].geometry)
+    )
+    if stair_low[0] > STAIR_OPENING[0] + 0.002:
+        problems.append("the stair's west closure no longer reaches the wall")
+    expected_stair_south = -ROOM_DEPTH * 0.5 + WALL_THICKNESS * 0.5
+    if stair_low[2] > expected_stair_south + 0.002:
+        problems.append("the stair's south closure no longer reaches the wall")
+    expected_stair_east = STAIR_CENTER_X + STAIR_WIDTH * 0.5
+    if abs(stair_high[0] - expected_stair_east) > 0.002:
+        problems.append("the fixed stair moved while extending its west closure")
     table = centre_for(by_name["FIX_Table.Top"])
     rocker = centre_for(by_name["FIX_RockingChair.Frame"])
     sofa = centre_for(by_name["FIX_Sofa.Frame"])
@@ -1324,10 +1685,35 @@ def validate(asset: AssetBuild) -> dict:
             abs(floor_lamp[1] - 1.54) > 0.002):
         problems.append("the floor-lamp light left its visible shade")
 
-    if ANCHORS_UNITY["ANCHOR_Camera"] != (5.80, 3.15, -2.80):
+    if ANCHORS_UNITY["ANCHOR_Camera"] != (5.80, 2.75, -2.80):
         problems.append("the approved fixed camera position changed")
     if ANCHORS_UNITY["ANCHOR_CameraTarget"] != (-0.20, 0.80, 1.00):
         problems.append("the approved fixed camera target changed")
+
+    stair_run = STAIR_STEP_COUNT * STAIR_STEP_DEPTH
+    stair_top_z = STAIR_START_Z + STAIR_DIRECTION_Z * stair_run
+    stair_pitch = math.degrees(math.atan2(
+        UPPER_FLOOR_ELEVATION,
+        stair_run,
+    ))
+    opening_x_min, opening_z_min, opening_x_max, opening_z_max = (
+        STAIR_OPENING
+    )
+    if abs(stair_top_z - (-2.95)) > 1e-6:
+        problems.append("the stair no longer reaches its south landing")
+    if STAIR_STEP_RISE >= 0.28 or stair_pitch >= 45.0:
+        problems.append("the stair exceeds the player controller contract")
+    if (STAIR_CENTER_X - STAIR_WIDTH * 0.5 < opening_x_min or
+            STAIR_CENTER_X + STAIR_WIDTH * 0.5 > opening_x_max or
+            min(STAIR_START_Z, stair_top_z) < opening_z_min or
+            max(STAIR_START_Z, stair_top_z) > opening_z_max):
+        problems.append("the stair no longer fits its real floor opening")
+    if UPPER_PARTITION_X - opening_x_max < 1.20:
+        problems.append("the upper corridor is narrower than 1.2 metres")
+    if len(UPPER_DOOR_CENTERS_Z) != 2 or UPPER_DOOR_WIDTH < 1.20:
+        problems.append("the upper storey requires exactly two clear doors")
+    if UPPER_CEILING_HEIGHT - UPPER_FLOOR_ELEVATION < 2.20:
+        problems.append("the upper rooms lost standing clearance")
 
     table_top = ANCHORS_UNITY["ANCHOR_Tabletop"]
     teapot = ANCHORS_UNITY["ANCHOR_TeapotDock"]
@@ -1363,6 +1749,12 @@ def signature_for(asset: AssetBuild) -> str:
         "design_id": DESIGN_ID,
         "generator_version": GENERATOR_VERSION,
         "dimensions": [ROOM_WIDTH, ROOM_DEPTH, ROOM_HEIGHT],
+        "upper_storey": [
+            UPPER_FLOOR_ELEVATION,
+            UPPER_CEILING_HEIGHT,
+            STAIR_OPENING,
+            UPPER_DOOR_CENTERS_Z,
+        ],
         "wall_thickness": WALL_THICKNESS,
         "door": ["south", DOOR_CENTER_X, DOOR_WIDTH, DOOR_HEIGHT],
         "spawn_forward_unity": list(SPAWN_FORWARD_UNITY),
@@ -1436,6 +1828,26 @@ def manifest_for(asset: AssetBuild, report: dict, signature: str) -> dict:
             "depth": ROOM_DEPTH,
             "height": ROOM_HEIGHT,
         },
+        "upper_storey_m": {
+            "floor_elevation": UPPER_FLOOR_ELEVATION,
+            "ceiling_height": UPPER_CEILING_HEIGHT,
+            "stair_center_x": STAIR_CENTER_X,
+            "stair_start_z": STAIR_START_Z,
+            "stair_direction_z": STAIR_DIRECTION_Z,
+            "stair_step_count": STAIR_STEP_COUNT,
+            "stair_step_rise": STAIR_STEP_RISE,
+            "stair_step_depth": STAIR_STEP_DEPTH,
+            "stair_width": STAIR_WIDTH,
+            "stair_opening": list(STAIR_OPENING),
+            "corridor_clear_width": (
+                UPPER_PARTITION_X - STAIR_OPENING[2]
+            ),
+            "door_width": UPPER_DOOR_WIDTH,
+            "door_height": UPPER_DOOR_HEIGHT,
+            "door_centers_z": list(UPPER_DOOR_CENTERS_Z),
+            "room_count": 2,
+            "furnished": False,
+        },
         "wall_thickness_m": WALL_THICKNESS,
         "floor_thickness_m": FLOOR_THICKNESS,
         "ceiling_thickness_m": CEILING_THICKNESS,
@@ -1462,10 +1874,17 @@ def manifest_for(asset: AssetBuild, report: dict, signature: str) -> dict:
             "fireplace_wall": "north",
             "floor_lamp_light": list(
                 ANCHORS_UNITY["ANCHOR_FloorLampLight"]),
+            "upper_room_count": 2,
+            "upper_rooms_furnished": False,
         },
         "spawn_forward_unity": list(SPAWN_FORWARD_UNITY),
+        # "mother" left this list on 2026-09-01: she is present in the chair
+        # by an accepted architecture exception and a new §6 registry row.
+        # Her PRESENCE is what was lifted - the event was not, so the dinner,
+        # the news, the Cat and every line stay excluded, and so do the props
+        # that would state a diagnosis.
         "excluded_story_content": [
-            "mother", "cat", "dialogue", "dinner_event", "bidon",
+            "cat", "dialogue", "dinner_event", "bidon",
             "medicine", "family_photographs", "readable_text",
         ],
         "kettle_contract": {

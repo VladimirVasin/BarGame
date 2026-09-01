@@ -7,8 +7,8 @@ namespace BarPromenade
 {
     /// <summary>
     /// Manual Playables presentation for one cafe figure. The controller
-    /// supplies absolute phase time, so both members of the couple sample
-    /// their Drink clips from the same clock even after a frame hitch.
+    /// supplies absolute role-local action time, so staggered patrons remain
+    /// deterministic even after a frame hitch.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MountainRoadCafeCastPresentation : MonoBehaviour
@@ -26,6 +26,7 @@ namespace BarPromenade
         private float initialIdlePhaseSeconds;
         private bool hasGraph;
         private bool hasActionPlayable;
+        private bool actionStartedFromServiceCarry;
         private MountainRoadCafeCastClipKind currentClipKind;
         private float currentClipTimeSeconds;
 
@@ -35,6 +36,29 @@ namespace BarPromenade
         public MountainRoadCafeCastClipKind CurrentClipKind =>
             currentClipKind;
         public float CurrentClipTimeSeconds => currentClipTimeSeconds;
+        /// <summary>
+        /// Current normalized phase of the continuously running default
+        /// loop. Passive effects read the same Playable that moves the body,
+        /// so they cannot drift onto a separate timer.
+        /// </summary>
+        public float DefaultClipNormalizedTime
+        {
+            get
+            {
+                float length = registry?.IdleClip != null
+                    ? registry.IdleClip.length
+                    : 0f;
+                if (length <= 0f)
+                {
+                    return 0f;
+                }
+
+                double time = hasGraph && defaultPlayable.IsValid()
+                    ? defaultPlayable.GetTime()
+                    : initialIdlePhaseSeconds;
+                return Mathf.Repeat((float)(time / length), 1f);
+            }
+        }
         public bool IsBeatPlaying =>
             currentClipKind != registry?.DefaultClipKind;
         public bool CanBeginBeat => IsInitialized &&
@@ -102,6 +126,13 @@ namespace BarPromenade
                 return false;
             }
 
+            if (kind != currentClipKind)
+            {
+                actionStartedFromServiceCarry =
+                    IsServiceCarryClip(currentClipKind) &&
+                    IsServiceCarryClip(kind);
+            }
+
             currentClipKind = kind;
             currentClipTimeSeconds = loop
                 ? Mathf.Repeat(elapsedSeconds, Mathf.Max(0.0001f, clip.length))
@@ -129,8 +160,10 @@ namespace BarPromenade
             actionPlayable.SetTime(currentClipTimeSeconds);
             actionPlayable.SetSpeed(0d);
             float actionWeight = ResolveAuthoredActionWeight(
+                kind,
                 elapsedSeconds,
-                clip.length);
+                clip.length,
+                actionStartedFromServiceCarry);
             mixer.SetInputWeight(0, 1f - actionWeight);
             mixer.SetInputWeight(1, actionWeight);
             graph.Evaluate(0f);
@@ -138,8 +171,10 @@ namespace BarPromenade
         }
 
         private static float ResolveAuthoredActionWeight(
+            MountainRoadCafeCastClipKind kind,
             float elapsedSeconds,
-            float clipLengthSeconds)
+            float clipLengthSeconds,
+            bool startedFromServiceCarry)
         {
             if (clipLengthSeconds <= 0f ||
                 elapsedSeconds < 0f ||
@@ -148,12 +183,35 @@ namespace BarPromenade
                 return 0f;
             }
 
+            // The pot remains in the same authored carry chain throughout
+            // Walk -> Pour -> Walk. Blending those clips back toward Wipe at
+            // either edge dragged the right hand and pot through the counter.
+            if (kind == MountainRoadCafeCastClipKind.Pour ||
+                (kind == MountainRoadCafeCastClipKind.Walk &&
+                 startedFromServiceCarry))
+            {
+                return 1f;
+            }
+
+            if (kind == MountainRoadCafeCastClipKind.Walk)
+            {
+                return Mathf.Clamp01(
+                    elapsedSeconds / BeatBlendInSeconds);
+            }
+
             float rise = Mathf.Clamp01(
                 elapsedSeconds / BeatBlendInSeconds);
             float fall = Mathf.Clamp01(
                 (clipLengthSeconds - elapsedSeconds) /
                 BeatBlendOutSeconds);
             return Mathf.Min(rise, fall);
+        }
+
+        private static bool IsServiceCarryClip(
+            MountainRoadCafeCastClipKind kind)
+        {
+            return kind == MountainRoadCafeCastClipKind.Walk ||
+                   kind == MountainRoadCafeCastClipKind.Pour;
         }
 
         /// <summary>

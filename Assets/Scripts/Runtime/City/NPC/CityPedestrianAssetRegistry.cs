@@ -118,6 +118,12 @@ namespace BarPromenade
         [SerializeField] private bool preservesAirborneMotion;
         [SerializeField] private Texture2D detailAtlas;
 
+        /// <summary>
+        /// The hero's expression grid, on the designs that carry one. Null
+        /// on every ambient walker; see <see cref="ConfigureFaceAtlas"/>.
+        /// </summary>
+        [SerializeField] private Player3DFaceAtlasBinding faceAtlas;
+
         public Animator Animator => animator;
         public Transform ModelRoot => modelRoot;
         public IReadOnlyList<Renderer> Renderers => renderers;
@@ -181,6 +187,17 @@ namespace BarPromenade
         /// </summary>
         public Texture2D DetailAtlas => detailAtlas;
 
+        public Player3DFaceAtlasBinding FaceAtlas => faceAtlas;
+
+        /// <summary>
+        /// Whether this design can change expression at all. All-or-nothing
+        /// on purpose: the binding refuses to report itself configured
+        /// unless every one of the five canonical cells resolves, so a
+        /// half-authored atlas reads as no atlas instead of as a face with
+        /// holes in it.
+        /// </summary>
+        public bool HasFaceAtlas => faceAtlas != null && faceAtlas.IsConfigured;
+
         public static GameObject LoadPrefab()
         {
             return Resources.Load<GameObject>(PrefabResourcePath);
@@ -235,6 +252,27 @@ namespace BarPromenade
         {
             detailAtlas = atlas;
             ApplyPaletteVariant(paletteVariant);
+        }
+
+        /// <summary>
+        /// Hands this design the hero's runtime-switched facial atlas.
+        ///
+        /// A DIFFERENT thing from <see cref="ConfigureDetailAtlas"/>, and the
+        /// two must not be confused. A detail atlas is a grey multiply mask
+        /// whose UV is baked into a sub-rect, so the face it carries is one
+        /// drawing forever; that is what every other NPC in the game wears.
+        /// This is the full-colour 4x4 expression grid `_BaseMap_ST` selects
+        /// a cell of at runtime, and it is the whole difference between a
+        /// painted face and a face that can change.
+        ///
+        /// Optional by construction: a design that never calls this keeps a
+        /// null binding, and `Player3DFaceAtlasPresenter.Apply` simply
+        /// returns false for it - which is exactly how the hero's own V1
+        /// rig falls through to its bone-driven face.
+        /// </summary>
+        public void ConfigureFaceAtlas(Player3DFaceAtlasBinding binding)
+        {
+            faceAtlas = binding;
         }
 
         public void ApplyPaletteVariant(int variant)

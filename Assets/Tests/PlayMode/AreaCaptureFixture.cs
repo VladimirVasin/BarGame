@@ -787,11 +787,9 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         /// <summary>
-        /// The one gameplay composition of the mother's room. The pose is
-        /// read back from the initialized fixed-camera controller rather than
-        /// restated here, so this is the frame the player actually receives:
-        /// fireplace and both windows, the central tea table, rocking chair,
-        /// sofa, and the source-NPC kettle all have to survive it together.
+        /// Every planned gameplay composition of the mother's house. The
+        /// ground room, real stair/corridor and both empty upper rooms are
+        /// read from the same pure camera plan used during play.
         /// </summary>
         [UnityTest]
         [Explicit("Capture, not a test. Look at Captures/MothersHouseInterior/.")]
@@ -817,17 +815,161 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.FixedCamera, Is.Not.Null);
             Assert.That(root.FixedCamera.IsInitialized, Is.True);
             Assert.That(root.CameraFollow.FixedPoseActive, Is.True);
-            HomeCameraShot shot = root.FixedCamera.ActiveShot;
+            Assert.That(root.Layout.CameraShots, Has.Count.EqualTo(4));
+            return new[]
+            {
+                MothersHouseShot(
+                    root,
+                    HomeCameraShotKind.MainRoom,
+                    "00-ground-floor"),
+                MothersHouseShot(
+                    root,
+                    HomeCameraShotKind.StairAndUpperCorridor,
+                    "01-stair-and-upper-corridor"),
+                MothersHouseShot(
+                    root,
+                    HomeCameraShotKind.UpperSouthRoom,
+                    "02-empty-south-room"),
+                MothersHouseShot(
+                    root,
+                    HomeCameraShotKind.UpperNorthRoom,
+                    "03-empty-north-room")
+            };
+        }
+
+        private static Shot MothersHouseShot(
+            MothersHouseInteriorRoot root,
+            HomeCameraShotKind kind,
+            string name)
+        {
             Assert.That(
-                shot.Kind,
-                Is.EqualTo(HomeCameraShotKind.MainRoom));
+                root.Layout.TryGetCameraShot(kind, out HomeCameraShot shot),
+                Is.True,
+                $"The mother's house is missing camera shot '{kind}'.");
+            return Shot.At(
+                name,
+                shot.Position,
+                shot.Position + shot.Rotation * Vector3.forward * 10f,
+                shot.FieldOfView);
+        }
+
+        /// <summary>
+        /// The mother, close enough to judge.
+        ///
+        /// The room's own composition puts her seven and a half metres away
+        /// and directly in front of the hearth, where she reads as a
+        /// silhouette - fine for the room, useless for deciding whether her
+        /// hips are on the cushion and her back is against the rest. These
+        /// shots are a diagnostic and NOT a composition: the gameplay camera
+        /// is frozen by the accepted exception and nothing here touches it.
+        /// </summary>
+        [UnityTest]
+        [Explicit("Capture, not a test. The mother-* frames in Captures/MothersHouseInterior/.")]
+        public IEnumerator MothersHouseMother()
+        {
+            MothersHouseInteriorRoot interiorRoot = null;
+            yield return Capture(
+                SceneIds.MothersHouseInterior,
+                () =>
+                {
+                    interiorRoot = Object.FindAnyObjectByType<
+                        MothersHouseInteriorRoot>();
+                    return interiorRoot;
+                },
+                () => MothersHouseMotherShots(interiorRoot));
+        }
+
+        private static Shot[] MothersHouseMotherShots(
+            MothersHouseInteriorRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            Assert.That(root.IsInitialized, Is.True);
+            Assert.That(
+                root.Mother,
+                Is.Not.Null,
+                "There is nobody in the chair to photograph.");
+
+            // She is animated by a manually driven graph on a culled
+            // Animator. Batch mode renders through a RenderTexture, and a
+            // culled rig reads back in BIND pose - a standing A-pose in a
+            // rocking chair, which would look like a modelling failure rather
+            // than a capture setting.
+            root.Mother.Registry.Animator.cullingMode =
+                AnimatorCullingMode.AlwaysAnimate;
+
+            Transform room = root.World.Root;
+            Vector3 seat = room.TransformPoint(
+                new Vector3(
+                    MothersHouseMotherPlan.SeatX,
+                    1.05f,
+                    MothersHouseMotherPlan.SeatZ));
+            Vector3 face = room.TransformPoint(
+                new Vector3(
+                    MothersHouseMotherPlan.SeatX,
+                    1.33f,
+                    MothersHouseMotherPlan.SeatZ - 0.02f));
             return new[]
             {
                 Shot.At(
-                    "00-fixed-gameplay-camera",
-                    shot.Position,
-                    shot.Position + shot.Rotation * Vector3.forward * 10f,
-                    shot.FieldOfView)
+                    "mother-00-three-quarter",
+                    room.TransformPoint(new Vector3(1.15f, 1.45f, 0.10f)),
+                    seat,
+                    45f,
+                    delayFrames: 8),
+                // From the LAMP's side. The floor lamp stands at x = -1.72
+                // and the gameplay camera at +5.8, so every angle the room
+                // itself offers looks at the half of her the lamp does not
+                // reach. This one is the control: if she is dark here too,
+                // the fault is her palette and not the light.
+                Shot.At(
+                    "mother-01-profile-lamp-side",
+                    room.TransformPoint(new Vector3(-1.60f, 1.10f, 1.55f)),
+                    seat,
+                    45f,
+                    delayFrames: 8),
+                // What the player actually gets, walked in to read it. The
+                // real shot stands 7.5 m back and she is a thumbnail there.
+                Shot.At(
+                    "mother-05-gameplay-angle",
+                    room.TransformPoint(new Vector3(2.55f, 1.75f, -0.75f)),
+                    room.TransformPoint(
+                        new Vector3(
+                            MothersHouseMotherPlan.SeatX,
+                            1.05f,
+                            MothersHouseMotherPlan.SeatZ)),
+                    45f,
+                    delayFrames: 8),
+                Shot.At(
+                    "mother-02-face",
+                    room.TransformPoint(new Vector3(0.16f, 1.42f, 0.72f)),
+                    face,
+                    30f,
+                    delayFrames: 8),
+                // From the hearth, looking back into the room. Every other
+                // angle has the fire behind her, and a figure between a
+                // camera and a fire is a silhouette whatever it is made of.
+                // This one is lit rather than backlit, and it is the shot
+                // that says whether she is dark or merely in shadow.
+                Shot.At(
+                    "mother-04-lit-from-hearth",
+                    room.TransformPoint(new Vector3(-0.60f, 1.30f, 2.30f)),
+                    room.TransformPoint(
+                        new Vector3(
+                            MothersHouseMotherPlan.SeatX,
+                            1.10f,
+                            MothersHouseMotherPlan.SeatZ)),
+                    45f,
+                    delayFrames: 8),
+                Shot.At(
+                    "mother-03-seat-and-runners",
+                    room.TransformPoint(new Vector3(1.30f, 0.62f, 0.55f)),
+                    room.TransformPoint(
+                        new Vector3(
+                            MothersHouseMotherPlan.SeatX,
+                            0.50f,
+                            MothersHouseMotherPlan.SeatZ)),
+                    45f,
+                    delayFrames: 8)
             };
         }
 
@@ -1464,6 +1606,95 @@ namespace BarPromenade.Tests.PlayMode
         }
 
         /// <summary>
+        /// The culvert, from the road and from below it.
+        ///
+        /// This is where the mountain's water crosses under the road on its
+        /// way to the city, and the frame that has to show the bore actually
+        /// pouring - the anchor beside it has been making a running-water
+        /// sound over a dark empty cylinder since the road was built.
+        /// </summary>
+        /// <summary>
+        /// The culvert crossing, in DAYLIGHT and on its own.
+        ///
+        /// The road's own sheet is shot ninety minutes after the wake-up and
+        /// its subject is six hundred metres of silhouette; at that hour the
+        /// bore is a black hole in a black wall and the first attempt at
+        /// these frames came back unreadable. Water is a material question,
+        /// so it gets light.
+        /// </summary>
+        [UnityTest]
+        [Explicit("Capture, not a test. Run one area at a time.")]
+        public IEnumerator MountainRoadCulvert()
+        {
+            GameSessionState.TryStartGameTimeFromWake();
+            GameSessionState.AdvanceGameTime(400f);
+
+            MountainRoadRoot mountainRoot = null;
+            yield return Capture(
+                SceneIds.MountainRoad,
+                () =>
+                {
+                    mountainRoot = Object.FindAnyObjectByType<
+                        MountainRoadRoot>();
+                    return mountainRoot;
+                },
+                () =>
+                {
+                    var shots = new System.Collections.Generic.List<Shot>();
+                    AppendMountainRoadCulvertShots(mountainRoot.Plan, shots);
+                    return shots.ToArray();
+                });
+        }
+
+        private static void AppendMountainRoadCulvertShots(
+            MountainRoadPlan plan,
+            System.Collections.Generic.List<Shot> shots)
+        {
+            MountainRoadBrookPlan brook =
+                MountainRoadBrookPlanner.Create(plan);
+            Vector3 crossing = brook.OutletMouth - brook.InletMouth;
+            crossing.y = 0f;
+            Vector3 along = crossing.sqrMagnitude <= 0.0001f
+                ? Vector3.forward
+                : crossing.normalized;
+            Vector3 across = Vector3.Cross(Vector3.up, along).normalized;
+
+            shots.Add(Shot.At(
+                "30-culvert-bore-pouring",
+                brook.Bore + along * 4.2f + across * 2.6f +
+                Vector3.up * 1.5f,
+                brook.Bore + Vector3.down * 0.25f,
+                50f,
+                24));
+
+            shots.Add(Shot.At(
+                "31-culvert-inlet-from-uphill",
+                brook.InletMouth - along * 8f + Vector3.up * 2.6f,
+                brook.InletMouth + Vector3.down * 0.2f,
+                55f,
+                24));
+
+            // Standing BACK ALONG THE WATER, not across it: the first
+            // version of this frame stepped nine metres sideways and put the
+            // camera inside the hillside, which is the fixture's own oldest
+            // warning about invented coordinates.
+            Vector3 tail = brook.Outlet.Count > 0
+                ? brook.Outlet[brook.Outlet.Count - 1].Position
+                : brook.OutletMouth;
+            Vector3 downstream = tail - brook.Bore;
+            downstream.y = 0f;
+            Vector3 back = downstream.sqrMagnitude <= 0.0001f
+                ? along
+                : downstream.normalized;
+            shots.Add(Shot.At(
+                "32-water-leaving-toward-the-city",
+                brook.Bore - back * 7f + across * 5f + Vector3.up * 5.5f,
+                tail,
+                60f,
+                24));
+        }
+
+        /// <summary>
         /// Frames the one uphill composition, one representative of each
         /// ordinary house archetype, and the separate house at the head of
         /// the lane. Every point comes from the shipped plan; no camera
@@ -1677,7 +1908,97 @@ namespace BarPromenade.Tests.PlayMode
             var shots =
                 new System.Collections.Generic.List<Shot>(baseShots);
             AppendAlpineVillageRoostShots(root, shots);
+            AppendAlpineVillageSpringShots(root, shots);
             return shots.ToArray();
+        }
+
+        /// <summary>
+        /// The spring, at the three distances the brief asks to be judged at:
+        /// the ledge and its seeps close enough to see water leaving rock,
+        /// the catch and its overflow, and the long look down the brook to
+        /// where it leaves the bowl by the cableway cut.
+        ///
+        /// Every frame is computed from the brook PLAN, never from invented
+        /// coordinates: this fixture's own first City run produced a folder
+        /// of pictures of the inside of a wall that way.
+        /// </summary>
+        private static void AppendAlpineVillageSpringShots(
+            AlpineVillageRoot root,
+            System.Collections.Generic.List<Shot> shots)
+        {
+            AlpineVillageBrookPlan brook = root.Plan.Brook;
+            Assert.That(
+                brook,
+                Is.Not.Null,
+                "The village built no water to photograph.");
+
+            Vector3 facing = brook.LedgeFacing;
+            Vector3 across = Vector3.Cross(Vector3.up, facing).normalized;
+
+            shots.Add(Shot.At(
+                "20-spring-ledge-and-seeps",
+                brook.LedgeCenter + facing * 3.1f + across * 1.1f +
+                Vector3.up * 1.35f,
+                brook.LedgeCenter + Vector3.up * 0.55f,
+                46f,
+                24));
+
+            shots.Add(Shot.At(
+                "21-spring-catch-and-overflow",
+                brook.BowlCenter + facing * 2.4f - across * 2.2f +
+                Vector3.up * 1.75f,
+                brook.OverflowLip,
+                52f,
+                24));
+
+            // Down the brook from just below the lip: the reach the water
+            // actually takes, with the ledge behind the camera.
+            int quarter = Mathf.Clamp(
+                brook.Samples.Count / 4,
+                1,
+                brook.Samples.Count - 1);
+            Vector3 downstream = brook.Samples[quarter].Position;
+            shots.Add(Shot.At(
+                "22-brook-below-the-lip",
+                brook.OverflowLip - facing * 1.2f + Vector3.up * 1.9f,
+                downstream + Vector3.up * 0.2f,
+                58f,
+                24));
+
+            // And the whole run from above, which is the frame that has to
+            // answer "where does this water go" without a word.
+            Vector3 middle = brook.Samples[brook.Samples.Count / 2].Position;
+            Vector3 overview = brook.BowlCenter +
+                Vector3.up * 26f +
+                (brook.BowlCenter - middle).normalized * 22f;
+            shots.Add(Shot.At(
+                "23-brook-from-above",
+                overview,
+                middle,
+                62f,
+                24));
+
+            shots.Add(Shot.At(
+                "24-brook-outfall-to-the-cut",
+                brook.OutfallPoint +
+                Vector3.up * 6.5f +
+                (brook.BowlCenter - brook.OutfallPoint).normalized * 14f,
+                brook.OutfallPoint + Vector3.up * 0.3f,
+                58f,
+                24));
+
+            // The wet contour arriving at the chapel's basin: the whole of
+            // the link between the two stone catches, and the one that must
+            // not read as a built channel.
+            shots.Add(Shot.At(
+                "25-seep-line-to-chapel-basin",
+                brook.ChapelBasinPoint +
+                (brook.BowlCenter - brook.ChapelBasinPoint).normalized *
+                    -5.5f +
+                Vector3.up * 2.4f,
+                brook.ChapelBasinPoint + Vector3.up * 0.2f,
+                55f,
+                24));
         }
 
         private static Vector3 FindExposedVillageCamera(

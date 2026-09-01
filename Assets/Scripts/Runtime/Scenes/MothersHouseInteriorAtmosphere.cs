@@ -16,11 +16,95 @@ namespace BarPromenade
         public const int LampLightCount = 1;
         public const int PracticalLightCount =
             FireLightCount + WindowLightCount + LampLightCount;
-        public const float FloorLampIntensity = 3.1f;
-        public const float FloorLampSpotAngle = 112f;
+        /// <summary>
+        /// The lamp stands BETWEEN the two places anyone sits, and that is
+        /// what sets these two numbers.
+        ///
+        /// At `112` degrees the cone's half-angle was `56`, and both sitters
+        /// fell outside it: the hero on the sofa lies `60` degrees off the
+        /// axis and the mother in her chair `65`. The pool landed on bare
+        /// floor at about `(-1.35, 0.78)`, between the sofa and the chair,
+        /// touching neither - so both of them read as black shapes, and the
+        /// mother read as a silhouette because the only light on her came
+        /// from the hearth BEHIND her.
+        ///
+        /// No aim can fix that. The sofa sits at `x = -2.475` and the chair
+        /// at `x = 0.02`, two and a half metres apart with the lamp in
+        /// between, so any tilt that finds one loses the other - and the
+        /// contract holds the axis within `37` degrees of straight down
+        /// anyway. Width is the only answer, and it is the physically honest
+        /// one: a fabric shade open at the bottom throws a wide skirt of
+        /// light, not a beam.
+        /// </summary>
+        public const float FloorLampSpotAngle = 158f;
+
+        /// <summary>
+        /// Raised with the cone, because reach without strength only makes a
+        /// dimmer shape. The hearth delivers about `3.0` on the mother's back
+        /// from `1.7 m`; at `1.8 m` this now delivers about `1.7` to her
+        /// front, which lets her face read without ever pretending to be the
+        /// brighter light in the room. It stays well under the fire's `8.2`,
+        /// which the room's own test requires.
+        /// </summary>
+        public const float FloorLampIntensity = 5.4f;
+
+        /// <summary>
+        /// The one light in this room with no visible source, and it is kept
+        /// honest by being TINY, SHORT and CLOSE rather than by pretending
+        /// otherwise.
+        ///
+        /// What it stands in for is real: the hearth burns a metre and a half
+        /// behind the mother's chair and throws hard light onto pale boards
+        /// and a pale rug in front of her, and that floor would bounce warmth
+        /// back onto her face. There is no global illumination here to carry
+        /// it, so without this she is lit from behind and from nowhere else,
+        /// and a woman between a camera and a fire is a silhouette whatever
+        /// she is made of.
+        ///
+        /// It is NOT the banned `Warm Ceiling Fill`. That one hung over the
+        /// whole room and lifted everything from nowhere; this one cannot,
+        /// and the room's test pins the reason - a `1.1 m` range that dies
+        /// before any wall, floor or fixture, and an intensity a twentieth of
+        /// the floor lamp's. It reaches her and the rail in front of her
+        /// knees, and physically nothing else.
+        ///
+        /// It sits CLOSE on purpose. Placed out in the room it would have to
+        /// be strong to carry, and inverse-square would then blast whatever
+        /// stood nearest it - the low table, the chair's own front rail -
+        /// brighter than the face it was aimed at.
+        /// </summary>
+        public const float HearthBounceIntensity = 0.24f;
+        public const float HearthBounceRange = 1.1f;
+        public const float HearthBounceSpotAngle = 100f;
+        public const int HearthBounceLightCount = 1;
+
+        /// <summary>
+        /// Where it sits and what it looks at, in room space: low and just in
+        /// front of her knees, angled UP at her face, the way light off a
+        /// floor arrives.
+        ///
+        /// Low is not a stylistic choice. At chest height the nearest thing
+        /// to the source is her knee, and inverse-square would put the
+        /// brightest note in the room on the blanket over her lap while her
+        /// face stayed dim. Kept low the gradient runs the way the real
+        /// phenomenon runs - lap first, face last - so the falloff reads as
+        /// floor bounce instead of as a lamp nobody can see.
+        /// </summary>
+        public static readonly Vector3 HearthBouncePosition =
+            new Vector3(0.02f, 1.05f, 0.95f);
+        public static readonly Vector3 HearthBounceTarget =
+            new Vector3(0.02f, 1.33f, 1.62f);
 
         public static readonly Color FireColor =
             new Color(1f, 0.48f, 0.18f);
+
+        /// <summary>
+        /// Firelight that has already been off a pale floor once: the hearth's
+        /// own colour, desaturated, because a bounce carries the surface it
+        /// came off as much as the flame it started at.
+        /// </summary>
+        public static readonly Color HearthBounceColor =
+            new Color(1f, 0.68f, 0.44f);
         public static readonly Color WindowColor =
             new Color(0.52f, 0.65f, 0.82f);
         public static readonly Color FloorLampColor =
@@ -32,6 +116,14 @@ namespace BarPromenade
             Array.Empty<Light>();
         public Light[] WindowLights { get; private set; } =
             Array.Empty<Light>();
+
+        /// <summary>
+        /// Deliberately NOT counted among the practicals. A practical has a
+        /// drawn source you can point at in the room; this one is a stand-in
+        /// for a floor bounce and has nothing to show, which is exactly why
+        /// it is held to a range that cannot leave the chair.
+        /// </summary>
+        public Light HearthBounceLight { get; private set; }
         public MothersHouseFireFlicker FireFlicker { get; private set; }
         public AudioSource FireCrackleSource { get; private set; }
         public Volume PostProcessVolume { get; private set; }
@@ -82,6 +174,8 @@ namespace BarPromenade
             atmosphere.WindowLights = atmosphere.CreateWindowLights(
                 parent,
                 plan);
+            atmosphere.HearthBounceLight =
+                atmosphere.CreateHearthBounceLight(world.Root);
 
             Renderer[] flames =
             {
@@ -158,6 +252,35 @@ namespace BarPromenade
                     UniversalAdditionalLightData
                         .AdditionalLightsShadowResolutionTierLow;
             }
+            return light;
+        }
+
+        /// <summary>
+        /// The hearth's bounce off the boards in front of her chair.
+        ///
+        /// Shadowless on purpose: a bounce is not a source and must not draw
+        /// a second set of edges under a woman who already has the fire's.
+        /// </summary>
+        private Light CreateHearthBounceLight(Transform roomRoot)
+        {
+            var lightObject = new GameObject("Hearth Floor Bounce");
+            lightObject.transform.SetParent(transform, false);
+            lightObject.transform.position =
+                roomRoot.TransformPoint(HearthBouncePosition);
+            lightObject.transform.rotation = Quaternion.LookRotation(
+                roomRoot.TransformPoint(HearthBounceTarget) -
+                    roomRoot.TransformPoint(HearthBouncePosition),
+                roomRoot.up);
+            Light light = lightObject.AddComponent<Light>();
+            light.type = LightType.Spot;
+            light.color = HearthBounceColor;
+            light.intensity = HearthBounceIntensity;
+            light.range = HearthBounceRange;
+            light.spotAngle = HearthBounceSpotAngle;
+            light.shadows = LightShadows.None;
+            light.renderMode = LightRenderMode.ForcePixel;
+            light.bounceIntensity = 0f;
+            light.lightmapBakeType = LightmapBakeType.Realtime;
             return light;
         }
 

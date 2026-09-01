@@ -211,6 +211,13 @@ namespace BarPromenade
                 worldBounds,
                 spawnPosition,
                 uphill);
+
+            // The water is traced LAST and on the finished ground, because
+            // the fall line it follows is made by the lane's bed, the plot
+            // shelves and the cableway cut as much as by the macro plane -
+            // and because the sampler dishes a swale under it, which must not
+            // exist while it is deciding where to run.
+            plan.AttachBrook(AlpineVillageBrookPlanner.Create(plan));
             plan.ValidateOrThrow();
             return plan;
         }

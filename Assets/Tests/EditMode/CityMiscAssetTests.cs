@@ -695,7 +695,16 @@ namespace BarPromenade.Tests.EditMode
             // the city's composition moves, and it is expected to be
             // re-counted then - fd691b8 cut the city from four bars to one,
             // which handed three lots back to ordinary frontage dressing.
-            Assert.That(migrated, Has.Length.EqualTo(83));
+            //
+            // 83 -> 82 at 3713d2d, and nothing was lost. That commit added
+            // `ResolveFacadeCoreKind` / `ResolveRoofCoreKind`, so a core
+            // dressing is now chosen to suit the anchor it hangs on.
+            // `IndustrialStacksAndTanks` is a ROOF kind and it is wave-one;
+            // an Industrial FACADE slot used to receive it anyway, which is
+            // the bug that commit fixed, and such a slot now correctly takes
+            // `IndustrialPipeRack` instead. The prop moved onto the right
+            // anchor; its replacement simply is not in the wave-one set.
+            Assert.That(migrated, Has.Length.EqualTo(82));
 
             var parent = new GameObject("City Misc Runtime Test");
             try

@@ -2,6 +2,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Security.Cryptography;
 using BarPromenade;
 using UnityEditor;
 using UnityEngine;
@@ -40,6 +41,9 @@ namespace BarPromenade.Editor
         public const string LonePatronPrefabPath =
             "Assets/Pedestrians/Staged/Prefabs/" +
             "MountainCafeLonePatron3D.prefab";
+        public const string LonePatronAtlasPath =
+            "Assets/Pedestrians/Textures/" +
+            "MountainCafeLonePatron3DDetailAtlas.png";
 
         public const string PairManModelPath =
             "Assets/Pedestrians/Staged/Models/" +
@@ -50,6 +54,9 @@ namespace BarPromenade.Editor
         public const string PairManPrefabPath =
             "Assets/Pedestrians/Staged/Prefabs/" +
             "MountainCafeCoupleMan3D.prefab";
+        public const string PairManAtlasPath =
+            "Assets/Pedestrians/Textures/" +
+            "MountainCafeCoupleMan3DDetailAtlas.png";
 
         public const string PairWomanModelPath =
             "Assets/Pedestrians/Staged/Models/" +
@@ -60,6 +67,9 @@ namespace BarPromenade.Editor
         public const string PairWomanPrefabPath =
             "Assets/Pedestrians/Staged/Prefabs/" +
             "MountainCafeCoupleWoman3D.prefab";
+        public const string PairWomanAtlasPath =
+            "Assets/Pedestrians/Textures/" +
+            "MountainCafeCoupleWoman3DDetailAtlas.png";
 
         public const string AttendantModelPath =
             "Assets/Pedestrians/Staged/Models/" +
@@ -70,8 +80,13 @@ namespace BarPromenade.Editor
         public const string AttendantPrefabPath =
             "Assets/Pedestrians/Staged/Prefabs/" +
             "MountainCafeAttendant3D.prefab";
+        public const string AttendantAtlasPath =
+            "Assets/Pedestrians/Textures/" +
+            "MountainCafeAttendant3DDetailAtlas.png";
 
         private const string ExpectedPose = "apose";
+        private const int ExpectedAtlasSize = 256;
+        private const int ExpectedAtlasInset = 1;
         private const int ExpectedBoneCount = 31;
         private const int ExpectedAnimationFps = 24;
         private const float ExpectedHeight = 1.75f;
@@ -79,6 +94,7 @@ namespace BarPromenade.Editor
         private const float TransformAngleTolerance = 0.02f;
         private const float ClipDurationTolerance = 0.002f;
         private const float ColorTolerance = 0.0001f;
+        private const float UvTolerance = 0.0001f;
 
         private static readonly CafeCastDescriptor[] Descriptors =
         {
@@ -86,30 +102,29 @@ namespace BarPromenade.Editor
                 MountainRoadCafeCastRole.LonePatron,
                 "Cafe Lone Patron",
                 "MountainCafeLonePatron3D",
-                "cafe_lone_patron_v1",
+                "cafe_lone_patron_v2",
                 LonePatronModelPath,
                 LonePatronManifestPath,
                 LonePatronPrefabPath,
+                LonePatronAtlasPath,
                 MountainRoadCafeCastClipKind.Idle,
                 new[]
                 {
                     new CafeClipDescriptor(
                         MountainRoadCafeCastClipKind.Idle,
-                        "CafeLoneIdle", 12f, true),
-                    new CafeClipDescriptor(
-                        MountainRoadCafeCastClipKind.Drink,
-                        "CafeLoneDrink", 5f, false)
+                        "CafeLoneSleep", 12f, true)
                 },
-                900,
-                1900),
+                1800,
+                3000),
             new CafeCastDescriptor(
                 MountainRoadCafeCastRole.PairMan,
                 "Cafe Couple Man",
                 "MountainCafeCoupleMan3D",
-                "cafe_couple_man_v1",
+                "cafe_couple_man_v2",
                 PairManModelPath,
                 PairManManifestPath,
                 PairManPrefabPath,
+                PairManAtlasPath,
                 MountainRoadCafeCastClipKind.Idle,
                 new[]
                 {
@@ -120,16 +135,17 @@ namespace BarPromenade.Editor
                         MountainRoadCafeCastClipKind.Drink,
                         "CafeManDrink", 4.75f, false)
                 },
-                900,
-                1850),
+                1800,
+                3000),
             new CafeCastDescriptor(
                 MountainRoadCafeCastRole.PairWoman,
                 "Cafe Couple Woman",
                 "MountainCafeCoupleWoman3D",
-                "cafe_couple_woman_v1",
+                "cafe_couple_woman_v2",
                 PairWomanModelPath,
                 PairWomanManifestPath,
                 PairWomanPrefabPath,
+                PairWomanAtlasPath,
                 MountainRoadCafeCastClipKind.Idle,
                 new[]
                 {
@@ -140,16 +156,17 @@ namespace BarPromenade.Editor
                         MountainRoadCafeCastClipKind.Drink,
                         "CafeWomanDrink", 4.75f, false)
                 },
-                900,
-                1950),
+                1800,
+                3000),
             new CafeCastDescriptor(
                 MountainRoadCafeCastRole.Attendant,
                 "Cafe Attendant",
                 "MountainCafeAttendant3D",
-                "cafe_attendant_v1",
+                "cafe_attendant_v2",
                 AttendantModelPath,
                 AttendantManifestPath,
                 AttendantPrefabPath,
+                AttendantAtlasPath,
                 MountainRoadCafeCastClipKind.Wipe,
                 new[]
                 {
@@ -166,8 +183,8 @@ namespace BarPromenade.Editor
                         MountainRoadCafeCastClipKind.Notice,
                         "CafeAttendantNotice", 2.5f, false)
                 },
-                900,
-                2000)
+                1800,
+                3200)
         };
 
         private static bool isBuilding;
@@ -219,7 +236,8 @@ namespace BarPromenade.Editor
             {
                 CafeCastDescriptor descriptor = Descriptors[index];
                 if (!File.Exists(descriptor.ModelPath) ||
-                    !File.Exists(descriptor.ManifestPath))
+                    !File.Exists(descriptor.ManifestPath) ||
+                    !File.Exists(descriptor.AtlasPath))
                 {
                     return false;
                 }
@@ -238,6 +256,20 @@ namespace BarPromenade.Editor
             return Descriptors.Any(descriptor =>
                 string.Equals(
                     descriptor.ModelPath,
+                    path,
+                    StringComparison.OrdinalIgnoreCase));
+        }
+
+        public static bool IsDetailAtlasPath(string path)
+        {
+            if (string.IsNullOrEmpty(path))
+            {
+                return false;
+            }
+
+            return Descriptors.Any(descriptor =>
+                string.Equals(
+                    descriptor.AtlasPath,
                     path,
                     StringComparison.OrdinalIgnoreCase));
         }
@@ -274,6 +306,10 @@ namespace BarPromenade.Editor
                     StringComparison.OrdinalIgnoreCase) ||
                 string.Equals(
                     descriptor.ManifestPath,
+                    path,
+                    StringComparison.OrdinalIgnoreCase) ||
+                string.Equals(
+                    descriptor.AtlasPath,
                     path,
                     StringComparison.OrdinalIgnoreCase));
         }
@@ -329,9 +365,9 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Mountain Road cafe cast build requires all four staged " +
-                    "FBX/manifest pairs, its isolated animation FBX/manifest, " +
-                    "the production Hero/NPC V2 model and Player3DLit " +
-                    "material.");
+                    "FBX/manifest/atlas sets, its isolated animation " +
+                    "FBX/manifest, the production Hero/NPC V2 model and " +
+                    "Player3DLit material.");
             }
 
             isBuilding = true;
@@ -356,6 +392,10 @@ namespace BarPromenade.Editor
                         ImportAssetOptions.ForceSynchronousImport);
                     AssetDatabase.ImportAsset(
                         descriptor.ManifestPath,
+                        ImportAssetOptions.ForceUpdate |
+                        ImportAssetOptions.ForceSynchronousImport);
+                    AssetDatabase.ImportAsset(
+                        descriptor.AtlasPath,
                         ImportAssetOptions.ForceUpdate |
                         ImportAssetOptions.ForceSynchronousImport);
                 }
@@ -418,6 +458,7 @@ namespace BarPromenade.Editor
         {
             CafeCastModelManifest manifest =
                 LoadAndValidateModelManifest(descriptor);
+            Texture2D detailAtlas = LoadAndValidateAtlas(descriptor);
             GameObject modelAsset =
                 AssetDatabase.LoadAssetAtPath<GameObject>(
                     descriptor.ModelPath);
@@ -448,7 +489,8 @@ namespace BarPromenade.Editor
                 modelAsset,
                 sharedMaterial,
                 clipBindings,
-                manifest);
+                manifest,
+                detailAtlas);
         }
 
         private static void BuildPrefab(
@@ -456,7 +498,8 @@ namespace BarPromenade.Editor
             GameObject modelAsset,
             Material sharedMaterial,
             MountainRoadCafeCastClipBinding[] clipBindings,
-            CafeCastModelManifest manifest)
+            CafeCastModelManifest manifest,
+            Texture2D detailAtlas)
         {
             GameObject prefabRoot =
                 new GameObject(descriptor.PrefabRootName);
@@ -516,8 +559,13 @@ namespace BarPromenade.Editor
                     bindings.Add(
                         new MountainRoadCafeCastRendererBinding(
                             renderer,
-                            ParseColor(part.base_color)));
+                            ParseColor(part.base_color),
+                            !string.IsNullOrEmpty(part.atlas_region)));
                 }
+
+                ValidateUvs(
+                    manifest.texture_bindings[0],
+                    renderersByName);
 
                 if (descriptor.Role ==
                     MountainRoadCafeCastRole.Attendant)
@@ -575,7 +623,8 @@ namespace BarPromenade.Editor
                     descriptor.DefaultClipKind,
                     clipBindings,
                     model.transform,
-                    bindings.ToArray());
+                    bindings.ToArray(),
+                    detailAtlas);
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
@@ -636,6 +685,7 @@ namespace BarPromenade.Editor
         {
             CafeCastModelManifest manifest =
                 LoadAndValidateModelManifest(descriptor);
+            Texture2D detailAtlas = LoadAndValidateAtlas(descriptor);
             ValidateImportedModel(descriptor, manifest);
 
             GameObject prefab = LoadPrefab(descriptor);
@@ -683,11 +733,13 @@ namespace BarPromenade.Editor
 
             if (registry.Role != descriptor.Role ||
                 registry.DefaultClipKind != descriptor.DefaultClipKind ||
-                registry.ClipBindings.Count != descriptor.Clips.Length)
+                registry.ClipBindings.Count != descriptor.Clips.Length ||
+                registry.DetailAtlas != detailAtlas)
             {
                 throw new InvalidOperationException(
                     $"{descriptor.DisplayName} registry role/default/clip " +
-                    "count differs from its authored contract.");
+                    "count or detail atlas differs from its authored " +
+                    "contract.");
             }
 
             for (int index = 0; index < descriptor.Clips.Length; index++)
@@ -754,6 +806,8 @@ namespace BarPromenade.Editor
                         part.name,
                         StringComparison.Ordinal) ||
                     !Approximately(binding.Color, expectedColor) ||
+                    binding.UsesDetailAtlas !=
+                        !string.IsNullOrEmpty(part.atlas_region) ||
                     binding.Renderer.sharedMaterials.Length != 1 ||
                     binding.Renderer.sharedMaterial != expectedMaterial)
                 {
@@ -763,6 +817,10 @@ namespace BarPromenade.Editor
                         $"'{part.name}' or the shared Player3DLit material.");
                 }
             }
+
+            ValidateUvs(
+                manifest.texture_bindings[0],
+                IndexUniqueRenderers(prefab, descriptor.DisplayName));
 
             if (CountTriangles(renderers) != manifest.triangle_count)
             {
@@ -858,6 +916,9 @@ namespace BarPromenade.Editor
                     StringComparison.OrdinalIgnoreCase) ||
                 !descriptor.PrefabPath.StartsWith(
                     "Assets/Pedestrians/Staged/Prefabs/",
+                    StringComparison.OrdinalIgnoreCase) ||
+                !descriptor.AtlasPath.StartsWith(
+                    "Assets/Pedestrians/Textures/",
                     StringComparison.OrdinalIgnoreCase) ||
                 descriptor.PrefabPath.IndexOf(
                     "/Resources/",
@@ -967,6 +1028,7 @@ namespace BarPromenade.Editor
             }
 
             ValidateManifestHierarchy(descriptor, manifest);
+            ValidateManifestTexture(descriptor, manifest);
             ValidateManifestRigAnchors(descriptor, manifest);
             return manifest;
         }
@@ -1058,6 +1120,164 @@ namespace BarPromenade.Editor
                     throw new InvalidOperationException(
                         $"{descriptor.DisplayName} manifest contains an " +
                         "invalid renderer binding.");
+                }
+            }
+        }
+
+        private static void ValidateManifestTexture(
+            CafeCastDescriptor descriptor,
+            CafeCastModelManifest manifest)
+        {
+            CafeCastTextureBinding[] bindings =
+                manifest.texture_bindings ??
+                Array.Empty<CafeCastTextureBinding>();
+            if (bindings.Length != 1 || bindings[0] == null)
+            {
+                throw new InvalidOperationException(
+                    $"{descriptor.DisplayName} must declare exactly one " +
+                    "detail atlas binding.");
+            }
+
+            CafeCastTextureBinding binding = bindings[0];
+            if (!string.Equals(
+                    binding.texture_asset,
+                    descriptor.AtlasPath,
+                    StringComparison.Ordinal) ||
+                binding.width_px != ExpectedAtlasSize ||
+                binding.height_px != ExpectedAtlasSize ||
+                binding.materials == null ||
+                binding.materials.Length != 0 ||
+                !string.Equals(
+                    binding.shader_property,
+                    "_BaseMap",
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    binding.color_space,
+                    "sRGB",
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    binding.filter_mode,
+                    "Point",
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    binding.wrap_mode,
+                    "Clamp",
+                    StringComparison.Ordinal) ||
+                binding.mipmaps ||
+                !string.Equals(
+                    binding.compression,
+                    "Uncompressed",
+                    StringComparison.Ordinal) ||
+                binding.uv_channel != 0 ||
+                !string.Equals(
+                    binding.uv_origin,
+                    "bottom_left",
+                    StringComparison.Ordinal) ||
+                binding.uv_safe_inset_px != ExpectedAtlasInset ||
+                !string.Equals(
+                    binding.material_tint_hex,
+                    "FFFFFF",
+                    StringComparison.Ordinal) ||
+                !string.Equals(
+                    binding.tint_source,
+                    "renderer_palette",
+                    StringComparison.Ordinal) ||
+                binding.sha256 == null ||
+                binding.sha256.Length != 64 ||
+                !string.Equals(
+                    binding.sha256,
+                    FileSha(descriptor.AtlasPath),
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"{descriptor.DisplayName} detail atlas manifest " +
+                    "contract is invalid.");
+            }
+
+            CafeCastTextureRegion[] regions = binding.regions ??
+                Array.Empty<CafeCastTextureRegion>();
+            if (regions.Length == 0)
+            {
+                throw new InvalidOperationException(
+                    $"{descriptor.DisplayName} detail atlas has no " +
+                    "renderer regions.");
+            }
+
+            var partNames = new HashSet<string>(
+                manifest.parts.Select(part => part.name),
+                StringComparer.Ordinal);
+            var regionNames = new HashSet<string>(StringComparer.Ordinal);
+            var regionsByRenderer = new Dictionary<string, string>(
+                StringComparer.Ordinal);
+            for (int index = 0; index < regions.Length; index++)
+            {
+                CafeCastTextureRegion region = regions[index];
+                if (region == null ||
+                    string.IsNullOrEmpty(region.name) ||
+                    string.IsNullOrEmpty(region.renderer) ||
+                    !regionNames.Add(region.name) ||
+                    !regionsByRenderer.TryAdd(
+                        region.renderer,
+                        region.name) ||
+                    !partNames.Contains(region.renderer) ||
+                    region.width_px <= ExpectedAtlasInset * 2 ||
+                    region.height_px <= ExpectedAtlasInset * 2 ||
+                    region.x_px < 0 ||
+                    region.y_px < 0 ||
+                    region.x_px + region.width_px > ExpectedAtlasSize ||
+                    region.y_px + region.height_px > ExpectedAtlasSize ||
+                    RectsOverlap(
+                        region.x_px,
+                        region.y_px,
+                        region.width_px,
+                        region.height_px,
+                        0,
+                        0,
+                        64,
+                        64))
+                {
+                    throw new InvalidOperationException(
+                        $"{descriptor.DisplayName} has an invalid detail " +
+                        $"atlas region at index {index}.");
+                }
+
+                for (int otherIndex = 0;
+                     otherIndex < index;
+                     otherIndex++)
+                {
+                    CafeCastTextureRegion other = regions[otherIndex];
+                    if (RectsOverlap(
+                            region.x_px,
+                            region.y_px,
+                            region.width_px,
+                            region.height_px,
+                            other.x_px,
+                            other.y_px,
+                            other.width_px,
+                            other.height_px))
+                    {
+                        throw new InvalidOperationException(
+                            $"{descriptor.DisplayName} detail atlas " +
+                            $"regions '{region.name}' and '{other.name}' " +
+                            "overlap.");
+                    }
+                }
+            }
+
+            for (int index = 0; index < manifest.parts.Length; index++)
+            {
+                CafeCastManifestPart part = manifest.parts[index];
+                regionsByRenderer.TryGetValue(
+                    part.name,
+                    out string expectedRegion);
+                if (!string.Equals(
+                        part.atlas_region ?? string.Empty,
+                        expectedRegion ?? string.Empty,
+                        StringComparison.Ordinal))
+                {
+                    throw new InvalidOperationException(
+                        $"{descriptor.DisplayName} renderer " +
+                        $"'{part.name}' has a stale atlas region mapping.");
                 }
             }
         }
@@ -1159,7 +1379,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Cafe animation manifest must contain exactly the " +
-                    "approved ten cafe service clips.");
+                    "approved nine cafe tableau clips.");
             }
 
             ValidateImportedAnimationAsset(manifest);
@@ -1354,6 +1574,134 @@ namespace BarPromenade.Editor
                     $"{descriptor.DisplayName} FBX must copy the valid " +
                     "production Generic Avatar and import neither animation " +
                     "nor materials.");
+            }
+        }
+
+        private static Texture2D LoadAndValidateAtlas(
+            CafeCastDescriptor descriptor)
+        {
+            Texture2D atlas = AssetDatabase.LoadAssetAtPath<Texture2D>(
+                descriptor.AtlasPath);
+            TextureImporter importer = AssetImporter.GetAtPath(
+                descriptor.AtlasPath) as TextureImporter;
+            if (atlas == null ||
+                atlas.width != ExpectedAtlasSize ||
+                atlas.height != ExpectedAtlasSize ||
+                atlas.filterMode != FilterMode.Point ||
+                atlas.wrapMode != TextureWrapMode.Clamp ||
+                atlas.mipmapCount != 1 ||
+                importer == null ||
+                importer.textureType != TextureImporterType.Default ||
+                importer.textureShape != TextureImporterShape.Texture2D ||
+                !importer.sRGBTexture ||
+                importer.isReadable ||
+                importer.npotScale != TextureImporterNPOTScale.None ||
+                importer.filterMode != FilterMode.Point ||
+                importer.wrapMode != TextureWrapMode.Clamp ||
+                importer.anisoLevel != 1 ||
+                importer.maxTextureSize != ExpectedAtlasSize ||
+                importer.alphaSource !=
+                    TextureImporterAlphaSource.FromInput ||
+                importer.alphaIsTransparency ||
+                importer.mipmapEnabled ||
+                importer.streamingMipmaps ||
+                importer.textureCompression !=
+                    TextureImporterCompression.Uncompressed ||
+                importer.compressionQuality != 100)
+            {
+                throw new InvalidOperationException(
+                    $"{descriptor.DisplayName} detail atlas import " +
+                    "contract is invalid.");
+            }
+
+            TextureImporterPlatformSettings standalone =
+                importer.GetPlatformTextureSettings("Standalone");
+            if (!standalone.overridden ||
+                standalone.maxTextureSize != ExpectedAtlasSize ||
+                standalone.format != TextureImporterFormat.Automatic ||
+                standalone.textureCompression !=
+                    TextureImporterCompression.Uncompressed ||
+                standalone.compressionQuality != 100 ||
+                standalone.crunchedCompression)
+            {
+                throw new InvalidOperationException(
+                    $"{descriptor.DisplayName} detail atlas Standalone " +
+                    "import contract is invalid.");
+            }
+
+            return atlas;
+        }
+
+        private static void ValidateUvs(
+            CafeCastTextureBinding binding,
+            IReadOnlyDictionary<string, Renderer> renderers)
+        {
+            for (int index = 0; index < binding.regions.Length; index++)
+            {
+                CafeCastTextureRegion region = binding.regions[index];
+                if (!renderers.TryGetValue(
+                        region.renderer,
+                        out Renderer renderer))
+                {
+                    throw new InvalidOperationException(
+                        $"Missing cafe detail-atlas renderer " +
+                        $"'{region.renderer}'.");
+                }
+
+                Mesh mesh = RendererMesh(renderer);
+                Vector2[] uv = mesh?.uv;
+                if (mesh == null ||
+                    uv == null ||
+                    uv.Length == 0 ||
+                    uv.Length != mesh.vertexCount)
+                {
+                    throw new InvalidOperationException(
+                        $"Cafe renderer '{region.renderer}' has no valid " +
+                        "detail-atlas UV0.");
+                }
+
+                Vector2 minimum = new Vector2(
+                    (float)(region.x_px + binding.uv_safe_inset_px) /
+                    binding.width_px,
+                    (float)(region.y_px + binding.uv_safe_inset_px) /
+                    binding.height_px);
+                Vector2 maximum = new Vector2(
+                    (float)(region.x_px + region.width_px -
+                            binding.uv_safe_inset_px) /
+                    binding.width_px,
+                    (float)(region.y_px + region.height_px -
+                            binding.uv_safe_inset_px) /
+                    binding.height_px);
+                Vector2 observedMinimum = uv[0];
+                Vector2 observedMaximum = uv[0];
+                for (int uvIndex = 0; uvIndex < uv.Length; uvIndex++)
+                {
+                    Vector2 point = uv[uvIndex];
+                    if (point.x < minimum.x - UvTolerance ||
+                        point.x > maximum.x + UvTolerance ||
+                        point.y < minimum.y - UvTolerance ||
+                        point.y > maximum.y + UvTolerance)
+                    {
+                        throw new InvalidOperationException(
+                            $"Cafe renderer '{region.renderer}' UV0 leaves " +
+                            $"detail-atlas region '{region.name}'.");
+                    }
+
+                    observedMinimum = Vector2.Min(
+                        observedMinimum,
+                        point);
+                    observedMaximum = Vector2.Max(
+                        observedMaximum,
+                        point);
+                }
+
+                if (observedMaximum.x - observedMinimum.x <= UvTolerance ||
+                    observedMaximum.y - observedMinimum.y <= UvTolerance)
+                {
+                    throw new InvalidOperationException(
+                        $"Cafe renderer '{region.renderer}' has degenerate " +
+                        "detail-atlas UV0.");
+                }
             }
         }
 
@@ -1603,6 +1951,13 @@ namespace BarPromenade.Editor
                 $"'{name}'.");
         }
 
+        private static Mesh RendererMesh(Renderer renderer)
+        {
+            return renderer is SkinnedMeshRenderer skinned
+                ? skinned.sharedMesh
+                : renderer.GetComponent<MeshFilter>()?.sharedMesh;
+        }
+
         private static int CountTriangles(
             IReadOnlyList<Renderer> renderers)
         {
@@ -1640,6 +1995,31 @@ namespace BarPromenade.Editor
                    Mathf.Abs(left.g - right.g) <= ColorTolerance &&
                    Mathf.Abs(left.b - right.b) <= ColorTolerance &&
                    Mathf.Abs(left.a - right.a) <= ColorTolerance;
+        }
+
+        private static string FileSha(string path)
+        {
+            using SHA256 sha = SHA256.Create();
+            using FileStream stream = File.OpenRead(path);
+            return BitConverter.ToString(sha.ComputeHash(stream))
+                .Replace("-", string.Empty)
+                .ToLowerInvariant();
+        }
+
+        private static bool RectsOverlap(
+            int leftX,
+            int leftY,
+            int leftWidth,
+            int leftHeight,
+            int rightX,
+            int rightY,
+            int rightWidth,
+            int rightHeight)
+        {
+            return leftX < rightX + rightWidth &&
+                   rightX < leftX + leftWidth &&
+                   leftY < rightY + rightHeight &&
+                   rightY < leftY + leftHeight;
         }
 
         private static string NormalizeClipName(string sourceName)
@@ -1688,6 +2068,7 @@ namespace BarPromenade.Editor
                 string modelPath,
                 string manifestPath,
                 string prefabPath,
+                string atlasPath,
                 MountainRoadCafeCastClipKind defaultClipKind,
                 CafeClipDescriptor[] clips,
                 int minimumTriangleCount,
@@ -1700,6 +2081,7 @@ namespace BarPromenade.Editor
                 ModelPath = modelPath;
                 ManifestPath = manifestPath;
                 PrefabPath = prefabPath;
+                AtlasPath = atlasPath;
                 DefaultClipKind = defaultClipKind;
                 Clips = clips ??
                     throw new ArgumentNullException(nameof(clips));
@@ -1714,6 +2096,7 @@ namespace BarPromenade.Editor
             public string ModelPath { get; }
             public string ManifestPath { get; }
             public string PrefabPath { get; }
+            public string AtlasPath { get; }
             public MountainRoadCafeCastClipKind DefaultClipKind { get; }
             public CafeClipDescriptor[] Clips { get; }
             public int MinimumTriangleCount { get; }
@@ -1782,6 +2165,7 @@ namespace BarPromenade.Editor
             public CafeCastManifestBone[] bones;
             public CafeCastManifestPart[] parts;
             public CafeCastManifestRigAnchor[] rig_anchors;
+            public CafeCastTextureBinding[] texture_bindings;
         }
 
         [Serializable]
@@ -1798,7 +2182,41 @@ namespace BarPromenade.Editor
             public string role;
             public string bone;
             public string palette_name;
+            public string atlas_region;
             public float[] base_color;
+        }
+
+        [Serializable]
+        private sealed class CafeCastTextureBinding
+        {
+            public string texture_asset;
+            public int width_px;
+            public int height_px;
+            public string[] materials;
+            public string shader_property;
+            public string color_space;
+            public string filter_mode;
+            public string wrap_mode;
+            public bool mipmaps;
+            public string compression;
+            public int uv_channel;
+            public string uv_origin;
+            public int uv_safe_inset_px;
+            public string material_tint_hex;
+            public string tint_source;
+            public string sha256;
+            public CafeCastTextureRegion[] regions;
+        }
+
+        [Serializable]
+        private sealed class CafeCastTextureRegion
+        {
+            public string name;
+            public string renderer;
+            public int x_px;
+            public int y_px;
+            public int width_px;
+            public int height_px;
         }
 
         [Serializable]
@@ -2006,6 +2424,23 @@ namespace BarPromenade.Editor
                 MountainRoadCafeCastAssetSetup
                     .QueueBuildWhenSourcesExist();
                 return;
+            }
+        }
+    }
+
+    /// <summary>
+    /// Keeps the four cafe detail sheets on the shared Hero V2 atlas import
+    /// contract without broadening the ambient pedestrian texture pipeline.
+    /// </summary>
+    public sealed class MountainRoadCafeCastTextureImporter :
+        AssetPostprocessor
+    {
+        private void OnPreprocessTexture()
+        {
+            if (assetImporter is TextureImporter importer &&
+                MountainRoadCafeCastAssetSetup.IsDetailAtlasPath(assetPath))
+            {
+                Player3DV2TextureImporter.ConfigureAtlas(importer);
             }
         }
     }

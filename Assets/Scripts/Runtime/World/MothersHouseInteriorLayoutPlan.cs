@@ -77,6 +77,66 @@ namespace BarPromenade
             Bounds.height);
     }
 
+    public sealed class MothersHouseInteriorUpperFloorPlan
+    {
+        internal MothersHouseInteriorUpperFloorPlan(
+            float floorElevation,
+            float ceilingHeight,
+            StairwellFlightPlan stairFlight,
+            Rect stairOpeningBounds,
+            Rect corridorBounds,
+            Rect southRoomBounds,
+            Rect northRoomBounds,
+            float partitionX,
+            float partitionThickness,
+            float roomDividerZ,
+            float doorOpeningWidth,
+            float doorOpeningHeight,
+            float southDoorCenterZ,
+            float northDoorCenterZ)
+        {
+            FloorElevation = floorElevation;
+            CeilingHeight = ceilingHeight;
+            StairFlight = stairFlight;
+            StairOpeningBounds = stairOpeningBounds;
+            CorridorBounds = corridorBounds;
+            SouthRoomBounds = southRoomBounds;
+            NorthRoomBounds = northRoomBounds;
+            PartitionX = partitionX;
+            PartitionThickness = partitionThickness;
+            RoomDividerZ = roomDividerZ;
+            DoorOpeningWidth = doorOpeningWidth;
+            DoorOpeningHeight = doorOpeningHeight;
+            SouthDoorCenterZ = southDoorCenterZ;
+            NorthDoorCenterZ = northDoorCenterZ;
+        }
+
+        public float FloorElevation { get; }
+        public float CeilingHeight { get; }
+        public StairwellFlightPlan StairFlight { get; }
+        public Rect StairOpeningBounds { get; }
+        public Rect CorridorBounds { get; }
+        public Rect SouthRoomBounds { get; }
+        public Rect NorthRoomBounds { get; }
+        public float PartitionX { get; }
+        public float PartitionThickness { get; }
+        public float RoomDividerZ { get; }
+        public float DoorOpeningWidth { get; }
+        public float DoorOpeningHeight { get; }
+        public float SouthDoorCenterZ { get; }
+        public float NorthDoorCenterZ { get; }
+
+        public Vector3 SouthRoomCenter => new Vector3(
+            SouthRoomBounds.center.x,
+            FloorElevation + PlayerFactory.GroundedRootOffset,
+            SouthRoomBounds.center.y);
+
+        public Vector3 NorthRoomCenter => new Vector3(
+            NorthRoomBounds.center.x,
+            FloorElevation + PlayerFactory.GroundedRootOffset,
+            NorthRoomBounds.center.y);
+    }
+
     public sealed class MothersHouseInteriorLayoutPlan
     {
         internal MothersHouseInteriorLayoutPlan(
@@ -92,7 +152,8 @@ namespace BarPromenade
             Vector3 exitPosition,
             Vector3 exitTriggerSize,
             Vector3 cameraTarget,
-            HomeCameraShot cameraShot,
+            IList<HomeCameraShot> cameraShots,
+            MothersHouseInteriorUpperFloorPlan upperFloor,
             Vector3 westWindowPosition,
             Vector3 eastWindowPosition,
             Vector3 fireplacePosition,
@@ -116,7 +177,19 @@ namespace BarPromenade
             ExitPosition = exitPosition;
             ExitTriggerSize = exitTriggerSize;
             CameraTarget = cameraTarget;
-            CameraShot = cameraShot;
+            CameraShots = Copy(cameraShots, nameof(cameraShots));
+            if (!TryGetCameraShot(
+                    HomeCameraShotKind.MainRoom,
+                    out HomeCameraShot groundShot))
+            {
+                throw new ArgumentException(
+                    "The mother's house requires its ground-floor camera shot.",
+                    nameof(cameraShots));
+            }
+
+            CameraShot = groundShot;
+            UpperFloor = upperFloor ??
+                throw new ArgumentNullException(nameof(upperFloor));
             WestWindowPosition = westWindowPosition;
             EastWindowPosition = eastWindowPosition;
             FireplacePosition = fireplacePosition;
@@ -142,6 +215,8 @@ namespace BarPromenade
         public Vector3 ExitTriggerSize { get; }
         public Vector3 CameraTarget { get; }
         public HomeCameraShot CameraShot { get; }
+        public IReadOnlyList<HomeCameraShot> CameraShots { get; }
+        public MothersHouseInteriorUpperFloorPlan UpperFloor { get; }
         public Vector3 WestWindowPosition { get; }
         public Vector3 EastWindowPosition { get; }
         public Vector3 FireplacePosition { get; }
@@ -152,6 +227,23 @@ namespace BarPromenade
         public string ModelResourcePath { get; }
         public IReadOnlyList<MothersHouseInteriorPathPlan> Paths { get; }
         public IReadOnlyList<MothersHouseInteriorFixturePlan> Fixtures { get; }
+
+        public bool TryGetCameraShot(
+            HomeCameraShotKind kind,
+            out HomeCameraShot shot)
+        {
+            for (int index = 0; index < CameraShots.Count; index++)
+            {
+                if (CameraShots[index].Kind == kind)
+                {
+                    shot = CameraShots[index];
+                    return true;
+                }
+            }
+
+            shot = default;
+            return false;
+        }
 
         public bool TryGetPath(
             MothersHouseInteriorPathKind kind,

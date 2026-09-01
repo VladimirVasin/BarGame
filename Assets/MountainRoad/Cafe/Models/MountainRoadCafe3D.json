@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-mountain-road-cafe-3d-model.py",
-  "generator_version": "1.0.2",
+  "generator_version": "1.0.4",
   "blender_version": "5.0.1",
   "design_id": "mountain_road_cafe_nighthawks_v1",
   "display_name": "Bar Promenade Mountain Road Nighthawks Cafe",
@@ -37,7 +37,7 @@
     "height": 2.28
   },
   "stool_count": 7,
-  "cup_assembly_count": 3,
+  "cup_assembly_count": 2,
   "source_axes": {
     "right": "+X",
     "forward": "+Y",
@@ -92,8 +92,8 @@
     5.56,
     4.4
   ],
-  "mesh_count": 51,
-  "triangle_count": 4970,
+  "mesh_count": 48,
+  "triangle_count": 4568,
   "overlap_count": 0,
   "allowed_seam_contact_count": 33,
   "textures": [
@@ -314,11 +314,11 @@
       "shape": "capsule",
       "center": [
         -1.5,
-        0.25,
+        0.40875,
         -2.18
       ],
       "radius": 0.25,
-      "height": 0.5,
+      "height": 0.8175,
       "yaw": 0.0
     },
     {
@@ -326,11 +326,11 @@
       "shape": "capsule",
       "center": [
         -0.38,
-        0.25,
+        0.40875,
         -2.18
       ],
       "radius": 0.25,
-      "height": 0.5,
+      "height": 0.8175,
       "yaw": 0.0
     },
     {
@@ -338,11 +338,11 @@
       "shape": "capsule",
       "center": [
         0.75,
-        0.25,
+        0.40875,
         -2.18
       ],
       "radius": 0.25,
-      "height": 0.5,
+      "height": 0.8175,
       "yaw": 0.0
     },
     {
@@ -350,11 +350,11 @@
       "shape": "capsule",
       "center": [
         1.8,
-        0.25,
+        0.40875,
         -2.18
       ],
       "radius": 0.25,
-      "height": 0.5,
+      "height": 0.8175,
       "yaw": 0.0
     },
     {
@@ -362,11 +362,11 @@
       "shape": "capsule",
       "center": [
         3.0,
-        0.25,
+        0.40875,
         -2.18
       ],
       "radius": 0.25,
-      "height": 0.5,
+      "height": 0.8175,
       "yaw": 0.0
     },
     {
@@ -374,11 +374,11 @@
       "shape": "capsule",
       "center": [
         4.08,
-        0.25,
+        0.40875,
         -0.62
       ],
       "radius": 0.25,
-      "height": 0.5,
+      "height": 0.8175,
       "yaw": -81.634
     },
     {
@@ -386,11 +386,11 @@
       "shape": "capsule",
       "center": [
         4.16,
-        0.25,
+        0.40875,
         0.1
       ],
       "radius": 0.25,
-      "height": 0.5,
+      "height": 0.8175,
       "yaw": -81.634
     }
   ],
@@ -660,30 +660,6 @@
       ]
     },
     {
-      "name": "Cup.Lone",
-      "role": "cup_dock",
-      "local_position": [
-        -1.5,
-        -1.48,
-        1.035
-      ],
-      "unity_local_position": [
-        -1.5,
-        1.035,
-        -1.48
-      ],
-      "unity_local_forward": [
-        0.0,
-        0.0,
-        1.0
-      ],
-      "unity_local_up": [
-        0.0,
-        1.0,
-        0.0
-      ]
-    },
-    {
       "name": "Cup.PairMan",
       "role": "cup_dock",
       "local_position": [
@@ -804,30 +780,6 @@
       ]
     },
     {
-      "name": "Grip.Lone",
-      "role": "cup_grip",
-      "local_position": [
-        0.092,
-        0.0,
-        0.062
-      ],
-      "unity_local_position": [
-        0.092,
-        0.062,
-        0.0
-      ],
-      "unity_local_forward": [
-        1.0,
-        0.0,
-        0.0
-      ],
-      "unity_local_up": [
-        0.0,
-        1.0,
-        0.0
-      ]
-    },
-    {
       "name": "Grip.PairMan",
       "role": "cup_grip",
       "local_position": [
@@ -855,12 +807,12 @@
       "name": "Grip.PairWoman",
       "role": "cup_grip",
       "local_position": [
-        0.092,
+        -0.092,
         0.0,
         0.062
       ],
       "unity_local_position": [
-        0.092,
+        -0.092,
         0.062,
         0.0
       ],
@@ -881,11 +833,11 @@
       "local_position": [
         -0.38,
         -2.18,
-        0.4675
+        0.8175
       ],
       "unity_local_position": [
         -0.38,
-        0.4675,
+        0.8175,
         -2.18
       ],
       "unity_local_forward": [
@@ -1068,30 +1020,6 @@
       ]
     },
     {
-      "name": "PourTarget.Lone",
-      "role": "pour_target",
-      "local_position": [
-        -1.5,
-        -1.48,
-        1.13
-      ],
-      "unity_local_position": [
-        -1.5,
-        1.13,
-        -1.48
-      ],
-      "unity_local_forward": [
-        0.0,
-        0.0,
-        1.0
-      ],
-      "unity_local_up": [
-        0.0,
-        1.0,
-        0.0
-      ]
-    },
-    {
       "name": "PourTarget.PairMan",
       "role": "pour_target",
       "local_position": [
@@ -1167,14 +1095,14 @@
       "name": "ServiceRail.01",
       "role": "service_rail",
       "local_position": [
-        -1.5,
-        -0.52,
+        1.05,
+        -0.76,
         0.0
       ],
       "unity_local_position": [
-        -1.5,
+        1.05,
         0.0,
-        -0.52
+        -0.76
       ],
       "unity_local_forward": [
         0.0,
@@ -1191,38 +1119,14 @@
       "name": "ServiceRail.02",
       "role": "service_rail",
       "local_position": [
-        0.75,
-        -0.52,
+        2.1,
+        -0.76,
         0.0
       ],
       "unity_local_position": [
-        0.75,
+        2.1,
         0.0,
-        -0.52
-      ],
-      "unity_local_forward": [
-        0.0,
-        0.0,
-        1.0
-      ],
-      "unity_local_up": [
-        0.0,
-        1.0,
-        0.0
-      ]
-    },
-    {
-      "name": "ServiceRail.03",
-      "role": "service_rail",
-      "local_position": [
-        1.8,
-        -0.52,
-        0.0
-      ],
-      "unity_local_position": [
-        1.8,
-        0.0,
-        -0.52
+        -0.76
       ],
       "unity_local_forward": [
         0.0,
@@ -1241,11 +1145,11 @@
       "local_position": [
         -1.5,
         -2.18,
-        0.4675
+        0.8175
       ],
       "unity_local_position": [
         -1.5,
-        0.4675,
+        0.8175,
         -2.18
       ],
       "unity_local_forward": [
@@ -1265,11 +1169,11 @@
       "local_position": [
         -0.38,
         -2.18,
-        0.4675
+        0.8175
       ],
       "unity_local_position": [
         -0.38,
-        0.4675,
+        0.8175,
         -2.18
       ],
       "unity_local_forward": [
@@ -1289,11 +1193,11 @@
       "local_position": [
         0.75,
         -2.18,
-        0.4675
+        0.8175
       ],
       "unity_local_position": [
         0.75,
-        0.4675,
+        0.8175,
         -2.18
       ],
       "unity_local_forward": [
@@ -1313,11 +1217,11 @@
       "local_position": [
         1.8,
         -2.18,
-        0.4675
+        0.8175
       ],
       "unity_local_position": [
         1.8,
-        0.4675,
+        0.8175,
         -2.18
       ],
       "unity_local_forward": [
@@ -1337,11 +1241,11 @@
       "local_position": [
         3.0,
         -2.18,
-        0.4675
+        0.8175
       ],
       "unity_local_position": [
         3.0,
-        0.4675,
+        0.8175,
         -2.18
       ],
       "unity_local_forward": [
@@ -1361,11 +1265,11 @@
       "local_position": [
         4.08,
         -0.62,
-        0.4675
+        0.8175
       ],
       "unity_local_position": [
         4.08,
-        0.4675,
+        0.8175,
         -0.62
       ],
       "unity_local_forward": [
@@ -1385,11 +1289,11 @@
       "local_position": [
         4.16,
         0.1,
-        0.4675
+        0.8175
       ],
       "unity_local_position": [
         4.16,
-        0.4675,
+        0.8175,
         0.1
       ],
       "unity_local_forward": [
@@ -1407,14 +1311,14 @@
       "name": "WipePatch.00",
       "role": "wipe_patch",
       "local_position": [
-        -1.5,
-        -1.2,
+        2.25,
+        -0.7,
         1.03
       ],
       "unity_local_position": [
-        -1.5,
+        2.25,
         1.03,
-        -1.2
+        -0.7
       ],
       "unity_local_forward": [
         0.0,
@@ -1431,14 +1335,14 @@
       "name": "WipePatch.01",
       "role": "wipe_patch",
       "local_position": [
-        0.75,
-        -1.2,
+        2.45,
+        -0.7,
         1.03
       ],
       "unity_local_position": [
-        0.75,
+        2.45,
         1.03,
-        -1.2
+        -0.7
       ],
       "unity_local_forward": [
         0.0,
@@ -1455,14 +1359,14 @@
       "name": "WipePatch.02",
       "role": "wipe_patch",
       "local_position": [
-        1.8,
-        -1.2,
+        2.65,
+        -0.7,
         1.03
       ],
       "unity_local_position": [
-        1.8,
+        2.65,
         1.03,
-        -1.2
+        -0.7
       ],
       "unity_local_forward": [
         0.0,
@@ -1477,21 +1381,6 @@
     }
   ],
   "dynamic_props": [
-    {
-      "name": "Cup.Lone",
-      "root_name": "PROP_Cup.Lone",
-      "lift_root_name": "LIFT_Cup_Lone",
-      "role": "cup_assembly",
-      "owner": "Lone",
-      "part_names": [
-        "Cup_Lone_Ceramic",
-        "Cup_Lone_Saucer",
-        "Cup_Lone_Liquid"
-      ],
-      "liquid_part": "Cup_Lone_Liquid",
-      "empty_local_y": 0.022,
-      "full_local_y": 0.101
-    },
     {
       "name": "Cup.PairMan",
       "root_name": "PROP_Cup.PairMan",
@@ -2401,7 +2290,7 @@
       "bounds_max": [
         4.33,
         0.27,
-        0.43
+        0.78
       ]
     },
     {
@@ -2424,12 +2313,12 @@
       "bounds_min": [
         -1.74,
         -2.413983,
-        0.4125
+        0.7625
       ],
       "bounds_max": [
         4.4,
         0.333983,
-        0.4675
+        0.8175
       ]
     },
     {
@@ -2629,90 +2518,6 @@
       ]
     },
     {
-      "name": "Cup_Lone_Ceramic",
-      "role": "cup_ceramic",
-      "group": "dynamic_prop",
-      "sheet": "CafePropsDetail",
-      "base_surface": "PaleEnamel",
-      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
-      "uv_transform": {
-        "quarter_turns": 3,
-        "offset_u": 0.377157,
-        "offset_v": 0.378012
-      },
-      "emissive": false,
-      "shadows": true,
-      "initially_visible": true,
-      "vertices": 108,
-      "triangles": 222,
-      "bounds_min": [
-        -1.567,
-        -1.547,
-        1.035
-      ],
-      "bounds_max": [
-        -1.395428,
-        -1.413,
-        1.153
-      ]
-    },
-    {
-      "name": "Cup_Lone_Saucer",
-      "role": "cup_saucer",
-      "group": "dynamic_prop",
-      "sheet": "CafePropsDetail",
-      "base_surface": "PaleEnamel",
-      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
-      "uv_transform": {
-        "quarter_turns": 3,
-        "offset_u": 4.83212,
-        "offset_v": 5.282017
-      },
-      "emissive": false,
-      "shadows": true,
-      "initially_visible": true,
-      "vertices": 64,
-      "triangles": 120,
-      "bounds_min": [
-        -1.581,
-        -1.561,
-        1.035
-      ],
-      "bounds_max": [
-        -1.419,
-        -1.399,
-        1.05
-      ]
-    },
-    {
-      "name": "Cup_Lone_Liquid",
-      "role": "coffee_liquid",
-      "group": "dynamic_prop",
-      "sheet": "CafeCoffee",
-      "base_surface": "Timber",
-      "uv_strategy": "unique_clamped_0_1_with_2_percent_gutter",
-      "uv_transform": {
-        "quarter_turns": 1,
-        "offset_u": 4.032624,
-        "offset_v": 0.51783
-      },
-      "emissive": false,
-      "shadows": false,
-      "initially_visible": true,
-      "vertices": 32,
-      "triangles": 60,
-      "bounds_min": [
-        -1.5575,
-        -1.5375,
-        1.132
-      ],
-      "bounds_max": [
-        -1.4425,
-        -1.4225,
-        1.14
-      ]
-    },
-    {
       "name": "Cup_PairMan_Ceramic",
       "role": "cup_ceramic",
       "group": "dynamic_prop",
@@ -2814,12 +2619,12 @@
       "vertices": 108,
       "triangles": 222,
       "bounds_min": [
-        1.733,
+        1.695428,
         -1.547,
         1.035
       ],
       "bounds_max": [
-        1.904572,
+        1.867,
         -1.413,
         1.153
       ]
@@ -2993,5 +2798,5 @@
       ]
     }
   ],
-  "build_signature": "7034eebefe669fc19b75dc2658e7f91e338347917a01003669f1900d1bc59d94"
+  "build_signature": "1966441a1d02776c0efcd0d02c981252083780cec0189c85a2775733550d1696"
 }

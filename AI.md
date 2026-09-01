@@ -133,7 +133,7 @@ The build now has twelve explicit scenes. `MountainRoad` is appended at index
 progress-bar-only transfer boundary, `ChurchInterior` at index `9` as the
 seventh gameplay root, `AlpineVillage` at index `10` as the eighth, and
 `MothersHouseInterior` at index `11` as the ninth. The existing door of the
-house at the head of the village now enters that separate room and returns the
+house at the head of the village now enters that separate two-storey interior and returns the
 hero to a safe point outside the same threshold. The room-authored environment
 is deliberately light, clean and cared for while remaining old and modest:
 fading, repairs and soft use carry age, never dirt, damp or abandonment. Its
@@ -141,7 +141,13 @@ surfaces use the dedicated `MothersHousePositiveAtlas` and do not reuse Home or
 City albedos. The exact Kettle Hat prefab on the tea table is the explicit
 exception and keeps its original material and atlas. Inside, the entrance is
 centred in the south wall directly opposite the fireplace, and the hero appears
-there facing north. A shaded floor lamp replaces the former invisible ceiling
+there facing north. Behind the west sofa, a real straight stair rises in the
+opposite southward direction from its north-side foot through a split slab to a
+west upper corridor and exactly two separate, accessible, currently empty
+rooms. Visible Blender steps remain collider-free over one plan-owned hidden
+ramp; upper slabs, guards and partitions are runtime-owned collision. Four
+height-aware fixed shots cover the ground room, stair/corridor and both rooms,
+so overlapping `X/Z` floors cannot retain the wrong camera. A shaded floor lamp replaces the former invisible ceiling
 fill, keeping one local pool beneath the hearth key
 and restrained ambient floor. Fire, muffled wind, alternating clock ticks and
 sparse house settling form the quiet ASMR-like sound bed. City,
@@ -166,8 +172,8 @@ entry and turning pocket visible just above the shared road/plateau collision.
 The terrain margin is `76 m`; ordinary mid/far ridges ring the outer perimeter
 of the route-wide envelope, ground their bases from the minimum terrain under
 each footprint and keep those footprints clear of the road and trees. An
-enterable five-sided glass cafe with its dedicated silent four-role cast
-occupies the left side; a `230 m`
+enterable five-sided glass cafe with its dedicated four-role cast occupies the
+left side; only its drinking pair exchange a private text conversation. A `230 m`
 cableway with nine supports and eight cabins climbs from the right side into the
 haze - its far turn stands beyond the scene's `120 m` draw range and is never
 seen, and the ride cuts to black mid-span at `73 m` on nothing at all. Cafe and
@@ -183,17 +189,34 @@ becoming a second vista. Natural debris gathers into five unequal roadside
 chapters with deliberate gaps around those structural beats and a shared
 conservative footprint clearance against all existing roadside furniture.
 The cafe's visible shell, interior and furniture now come from one
-deterministic fixed-metre Blender set: `51` semantic meshes / `4,970`
-triangles, `45` anchors and six dynamic prop assemblies. The terminal plan
+deterministic fixed-metre Blender set: `48` semantic meshes / `4,568`
+triangles, `41` anchors and five dynamic prop assemblies. The terminal plan
 still owns its five-sided footprint, open `1.6 m` door, shelter, map landmark,
 three causal appliance voices and exactly `17` logical colliders. Seven stools
-follow the long counter and return: the lone visitor and synchronized pair
-occupy three, four stay empty, and the hero keeps the middle main-row seat.
+follow the long counter and return with their seat tops at `0.8175 m`: the
+sleeping lone visitor and the pair occupy three with real seat contact, four
+stay empty, and the hero keeps the designated middle main-row seat.
 Its approach remains in the aisle while its seated facing now points at the
-counter. Three environment-owned coffee cups visibly drain as their owners use
-dedicated Drink clips; at the refill threshold the attendant leaves the Wipe
-loop, walks to the cup and pours it full. The ten-clip cast stays silent and the
-attendant never serves the hero. Two visible practicals plus one shadowless
+counter. The entrance-side lone visitor rests his head on two strongly crossed,
+stacked forearms and owns no cup or attendant service. Only the pair's two
+environment-owned coffee cups visibly drain, each in a separate drink window;
+at the refill threshold the attendant leaves the Wipe loop, walks to the cup
+and pours it full. The service clock arms only once the
+player reaches the cafe's `16 m` entrance radius, which excludes every earlier
+hairpin; the first visible sip crosses the refill threshold and begins a Pour
+within one minute instead of expiring during the `620 m` approach. Completing
+the hero-stool sit switches to a bounded eye-level first-person view of the
+counter, hides head geometry, and restores the prior follow camera on exit. The
+nine-clip cast (one sleeping loop, four pair clips and four attendant clips)
+keeps the sleeping patron and attendant silent, and the attendant never serves
+the hero. Only inside the physical cafe, PairMan and PairWoman follow the fixed
+localized text cycle `Man01 -> Woman01 -> ... -> Man10 -> Woman10 -> loop`, with
+ten keys per role present in both Russian and English. A pending turn waits
+without being consumed or skipped while either patron is in Drink or the
+woman's cigarette lift/smoke window; the man's idle tapping may continue under
+his line. The active speaker turns head and neck toward the partner and uses one
+over-head text bubble, with no voice or other added audio. Two visible
+practicals plus one shadowless
 technical sulphur wash retain the light contract. Six colour-neutral semantic
 detail sheets split exterior, interior, counter, metal, props and glass without
 adding a new hue, readable text, `PHILLIES`, `5¢`, logo, price, menu or copied
@@ -227,7 +250,7 @@ shows the valley bed, the switchback he climbed and a grain of city — all
 measured from `y = 0`, the height of the tunnel mouth — with its windows lit
 after dark by the same per-minute apply that moves the sun and not one Light in
 it. One mercury practical burns over the freight dock; the brink stays dark.
-The hero can sit on the bench or on the cafe's one free stool, and the Ferryman
+The hero can sit on the bench or on the cafe's designated player stool, and the Ferryman
 answers up here at last: a repertoire and never an offer, because the road has
 ended.
 For now the City tunnel still refuses passage on foot. The Ferryman's
@@ -463,8 +486,8 @@ returns. They spawn at randomly
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a shared
   `0.835 m` rest pelvis. The five pooled and nine ordinary staged model
   manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
-  The four Mountain Road cafe models and their separate `10`-clip bank use
-  `4.1.0`; the shelter trio and isolated three-loop bank use `4.2.0`; the
+  The four Mountain Road cafe models and their separate `9`-clip bank use
+  `4.5.1`; the shelter trio and isolated three-loop bank use `4.2.0`; the
   three special manifests use `2.0.0`. Their FBXs were
   reimported and the production prefabs/provider assets rebuilt, so runtime uses
   these models rather than retaining the former bodies behind new plans.

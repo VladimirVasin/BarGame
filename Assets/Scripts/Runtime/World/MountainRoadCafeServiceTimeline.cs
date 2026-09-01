@@ -6,7 +6,6 @@ namespace BarPromenade
     public enum MountainRoadCafeServicePhase
     {
         Wiping = 0,
-        LoneDrink = 1,
         CoupleDrink = 2,
         Notice = 3,
         WalkToCup = 4,
@@ -15,9 +14,9 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Immutable view of the cafe's three-cup service state. The hero is
-    /// deliberately absent: sitting at the spare stool can earn a glance,
-    /// never a fourth cup or a place in the service queue.
+    /// Immutable view of the cafe's two-cup service state. The sleeping lone
+    /// patron and the hero are deliberately absent: sitting at the spare stool
+    /// can earn a glance, never another cup or a place in the service queue.
     /// </summary>
     public readonly struct MountainRoadCafeServiceFrame
     {
@@ -30,7 +29,6 @@ namespace BarPromenade
             bool hasServiceTarget,
             MountainRoadCafeCastRole walkOrigin,
             bool hasWalkOrigin,
-            float loneFill,
             float pairManFill,
             float pairWomanFill)
         {
@@ -42,7 +40,6 @@ namespace BarPromenade
             HasServiceTarget = hasServiceTarget;
             WalkOrigin = walkOrigin;
             HasWalkOrigin = hasWalkOrigin;
-            LoneFill = loneFill;
             PairManFill = pairManFill;
             PairWomanFill = pairWomanFill;
         }
@@ -55,7 +52,6 @@ namespace BarPromenade
         public bool HasServiceTarget { get; }
         public MountainRoadCafeCastRole WalkOrigin { get; }
         public bool HasWalkOrigin { get; }
-        public float LoneFill { get; }
         public float PairManFill { get; }
         public float PairWomanFill { get; }
         public float PhaseNormalized => PhaseDurationSeconds > 0f
@@ -66,8 +62,6 @@ namespace BarPromenade
         {
             switch (role)
             {
-                case MountainRoadCafeCastRole.LonePatron:
-                    return LoneFill;
                 case MountainRoadCafeCastRole.PairMan:
                     return PairManFill;
                 case MountainRoadCafeCastRole.PairWoman:
@@ -76,8 +70,49 @@ namespace BarPromenade
                     throw new ArgumentOutOfRangeException(
                         nameof(role),
                         role,
-                        "Only the three authored patrons own cafe cups.");
+                        "Only the authored pair own cafe cups.");
             }
+        }
+
+        public bool IsDrinking(MountainRoadCafeCastRole role)
+        {
+            if (Phase != MountainRoadCafeServicePhase.CoupleDrink)
+            {
+                return false;
+            }
+
+            float localElapsed = PhaseElapsedSeconds -
+                MountainRoadCafeServiceTimeline.GetPairDrinkStartSeconds(
+                    role);
+            return localElapsed >= 0f &&
+                   localElapsed <
+                   MountainRoadCafeServiceTimeline.PairPatronDrinkSeconds;
+        }
+
+        public float GetDrinkElapsedSeconds(
+            MountainRoadCafeCastRole role)
+        {
+            if (!IsDrinking(role))
+            {
+                return 0f;
+            }
+
+            return Mathf.Clamp(
+                PhaseElapsedSeconds -
+                MountainRoadCafeServiceTimeline
+                    .GetPairDrinkStartSeconds(role),
+                0f,
+                MountainRoadCafeServiceTimeline
+                    .PairPatronDrinkSeconds);
+        }
+
+        public float GetDrinkNormalized(MountainRoadCafeCastRole role)
+        {
+            float duration =
+                MountainRoadCafeServiceTimeline.PairPatronDrinkSeconds;
+            return duration > 0f
+                ? Mathf.Clamp01(GetDrinkElapsedSeconds(role) / duration)
+                : 0f;
         }
     }
 
@@ -88,8 +123,12 @@ namespace BarPromenade
     /// </summary>
     public sealed class MountainRoadCafeServiceTimeline
     {
-        public const float LoneDrinkSeconds = 5f;
-        public const float CoupleDrinkSeconds = 4.75f;
+        public const float PairPatronDrinkSeconds = 4.75f;
+        public const float PairDrinkGapSeconds = 0.50f;
+        public const float PairWomanDrinkStartSeconds =
+            PairPatronDrinkSeconds + PairDrinkGapSeconds;
+        public const float CoupleDrinkSeconds =
+            PairWomanDrinkStartSeconds + PairPatronDrinkSeconds;
         public const float DrinkSipStartNormalized = 0.48f;
         public const float DrinkSipEndNormalized = 0.62f;
         public const float NoticeSeconds = 2.5f;
@@ -101,14 +140,17 @@ namespace BarPromenade
         public const float MaximumWipeSeconds = 32f;
         public const float RefilledLevel = 0.90f;
         public const float RefillRequestLevel = 0.30f;
+        public const float InitialPairManFill = 0.44f;
+        public const float InitialPairWomanFill = 0.56f;
         public const bool ServesHero = false;
 
-        private const float SipConsumedAmount = 0.22f;
+        private const float PairManSipConsumedAmount = 0.16f;
+        private const float PairWomanSipConsumedAmount = 0.18f;
         private const int MaximumTransitionsPerAdvance = 4096;
 
-        private readonly float[] fills = new float[3];
-        private readonly float[] phaseStartFills = new float[3];
-        private readonly float[] phaseTargetFills = new float[3];
+        private readonly float[] fills = new float[2];
+        private readonly float[] phaseStartFills = new float[2];
+        private readonly float[] phaseTargetFills = new float[2];
         private uint randomState;
         private MountainRoadCafeServicePhase phase;
         private float phaseElapsedSeconds;
@@ -117,7 +159,6 @@ namespace BarPromenade
         private int serviceTargetIndex;
         private int queuedServiceTargetIndex;
         private int walkOriginIndex;
-        private bool nextDrinkIsCouple;
 
         public MountainRoadCafeServiceTimeline(int seed)
         {
@@ -135,8 +176,7 @@ namespace BarPromenade
                 RoleFromCupIndex(walkOriginIndex),
                 walkOriginIndex >= 0,
                 fills[0],
-                fills[1],
-                fills[2]);
+                fills[1]);
 
         public float RemainingPhaseSeconds => Mathf.Max(
             0f,
@@ -145,8 +185,7 @@ namespace BarPromenade
         public static bool IsPatronWithCup(
             MountainRoadCafeCastRole role)
         {
-            return role == MountainRoadCafeCastRole.LonePatron ||
-                   role == MountainRoadCafeCastRole.PairMan ||
+            return role == MountainRoadCafeCastRole.PairMan ||
                    role == MountainRoadCafeCastRole.PairWoman;
         }
 
@@ -182,12 +221,14 @@ namespace BarPromenade
                 randomState = 0x6D2B79F5u;
             }
 
-            fills[0] = 0.62f;
-            fills[1] = 0.78f;
-            fills[2] = 0.78f;
+            // The pair starts at different levels and drinks in separate
+            // windows. The man's first sip crosses the service threshold, so
+            // the tableau the player reaches after the climb exposes its
+            // complete drink/refill contract within the first visible loop.
+            fills[0] = InitialPairManFill;
+            fills[1] = InitialPairWomanFill;
             Array.Copy(fills, phaseStartFills, fills.Length);
             Array.Copy(fills, phaseTargetFills, fills.Length);
-            nextDrinkIsCouple = (seed & 1) != 0;
             sequence = 0;
             serviceTargetIndex = -1;
             queuedServiceTargetIndex = -1;
@@ -244,12 +285,6 @@ namespace BarPromenade
                 return false;
             }
 
-            if (role == MountainRoadCafeCastRole.LonePatron)
-            {
-                BeginLoneDrink();
-                return true;
-            }
-
             if (role == MountainRoadCafeCastRole.PairMan ||
                 role == MountainRoadCafeCastRole.PairWoman)
             {
@@ -287,35 +322,10 @@ namespace BarPromenade
             switch (phase)
             {
                 case MountainRoadCafeServicePhase.Wiping:
-                    if (nextDrinkIsCouple)
-                    {
-                        BeginCoupleDrink();
-                    }
-                    else
-                    {
-                        BeginLoneDrink();
-                    }
-                    break;
-                case MountainRoadCafeServicePhase.LoneDrink:
-                    if (fills[0] <= RefillRequestLevel)
-                    {
-                        BeginNotice(0, -1);
-                    }
-                    else
-                    {
-                        BeginWiping();
-                    }
+                    BeginCoupleDrink();
                     break;
                 case MountainRoadCafeServicePhase.CoupleDrink:
-                    if (fills[1] <= RefillRequestLevel ||
-                        fills[2] <= RefillRequestLevel)
-                    {
-                        BeginNotice(1, 2);
-                    }
-                    else
-                    {
-                        BeginWiping();
-                    }
+                    BeginCoupleRefillOrWiping();
                     break;
                 case MountainRoadCafeServicePhase.Notice:
                     if (serviceTargetIndex < 0)
@@ -362,7 +372,7 @@ namespace BarPromenade
             }
         }
 
-        private void BeginLoneDrink()
+        private void BeginCoupleDrink()
         {
             serviceTargetIndex = -1;
             queuedServiceTargetIndex = -1;
@@ -370,24 +380,10 @@ namespace BarPromenade
             CaptureCurrentFills();
             phaseTargetFills[0] = Mathf.Max(
                 0f,
-                fills[0] - SipConsumedAmount);
-            BeginPhase(
-                MountainRoadCafeServicePhase.LoneDrink,
-                LoneDrinkSeconds);
-        }
-
-        private void BeginCoupleDrink()
-        {
-            serviceTargetIndex = -1;
-            queuedServiceTargetIndex = -1;
-            walkOriginIndex = -1;
-            CaptureCurrentFills();
+                fills[0] - PairManSipConsumedAmount);
             phaseTargetFills[1] = Mathf.Max(
                 0f,
-                fills[1] - SipConsumedAmount);
-            phaseTargetFills[2] = Mathf.Max(
-                0f,
-                fills[2] - SipConsumedAmount);
+                fills[1] - PairWomanSipConsumedAmount);
             BeginPhase(
                 MountainRoadCafeServicePhase.CoupleDrink,
                 CoupleDrinkSeconds);
@@ -403,9 +399,26 @@ namespace BarPromenade
                 NoticeSeconds);
         }
 
+        private void BeginCoupleRefillOrWiping()
+        {
+            bool manNeedsRefill = fills[0] <= RefillRequestLevel;
+            bool womanNeedsRefill = fills[1] <= RefillRequestLevel;
+            if (manNeedsRefill)
+            {
+                BeginNotice(0, womanNeedsRefill ? 1 : -1);
+            }
+            else if (womanNeedsRefill)
+            {
+                BeginNotice(1, -1);
+            }
+            else
+            {
+                BeginWiping();
+            }
+        }
+
         private void BeginWiping()
         {
-            nextDrinkIsCouple = !nextDrinkIsCouple;
             serviceTargetIndex = -1;
             queuedServiceTargetIndex = -1;
             walkOriginIndex = -1;
@@ -433,24 +446,19 @@ namespace BarPromenade
                 ? Mathf.Clamp01(
                     phaseElapsedSeconds / phaseDurationSeconds)
                 : 1f;
-            if (phase == MountainRoadCafeServicePhase.LoneDrink)
+            if (phase == MountainRoadCafeServicePhase.CoupleDrink)
             {
-                amount = ResolveDrinkSipNormalized(amount);
+                amount = ResolveDrinkSipNormalized(
+                    ResolvePairDrinkNormalized(0));
                 fills[0] = Mathf.Lerp(
                     phaseStartFills[0],
                     phaseTargetFills[0],
                     amount);
-            }
-            else if (phase == MountainRoadCafeServicePhase.CoupleDrink)
-            {
-                amount = ResolveDrinkSipNormalized(amount);
+                amount = ResolveDrinkSipNormalized(
+                    ResolvePairDrinkNormalized(1));
                 fills[1] = Mathf.Lerp(
                     phaseStartFills[1],
                     phaseTargetFills[1],
-                    amount);
-                fills[2] = Mathf.Lerp(
-                    phaseStartFills[2],
-                    phaseTargetFills[2],
                     amount);
             }
             else if (phase == MountainRoadCafeServicePhase.Pour &&
@@ -462,6 +470,16 @@ namespace BarPromenade
                     phaseTargetFills[serviceTargetIndex],
                     amount);
             }
+        }
+
+        private float ResolvePairDrinkNormalized(int cupIndex)
+        {
+            float start = cupIndex == 0
+                ? 0f
+                : PairWomanDrinkStartSeconds;
+            return Mathf.Clamp01(
+                (phaseElapsedSeconds - start) /
+                PairPatronDrinkSeconds);
         }
 
         private void BeginPhase(
@@ -500,13 +518,25 @@ namespace BarPromenade
             switch (index)
             {
                 case 0:
-                    return MountainRoadCafeCastRole.LonePatron;
-                case 1:
                     return MountainRoadCafeCastRole.PairMan;
-                case 2:
+                case 1:
                     return MountainRoadCafeCastRole.PairWoman;
                 default:
                     return default;
+            }
+        }
+
+        internal static float GetPairDrinkStartSeconds(
+            MountainRoadCafeCastRole role)
+        {
+            switch (role)
+            {
+                case MountainRoadCafeCastRole.PairMan:
+                    return 0f;
+                case MountainRoadCafeCastRole.PairWoman:
+                    return PairWomanDrinkStartSeconds;
+                default:
+                    return float.PositiveInfinity;
             }
         }
     }

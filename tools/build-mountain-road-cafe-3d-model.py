@@ -46,7 +46,7 @@ import interior_kit as kit  # noqa: E402
 import bar_parts as bp  # noqa: E402
 
 
-GENERATOR_VERSION = "1.0.2"
+GENERATOR_VERSION = "1.0.4"
 DESIGN_ID = "mountain_road_cafe_nighthawks_v1"
 DISPLAY_NAME = "Bar Promenade Mountain Road Nighthawks Cafe"
 
@@ -89,10 +89,10 @@ STOOL_STATIONS = (
     (4.16, 0.10, -0.9894, 0.1455),
 )
 CUP_STATIONS = {
-    "Lone": (-1.50, 1.035, -1.48),
     "PairMan": (0.75, 1.035, -1.48),
     "PairWoman": (1.80, 1.035, -1.48),
 }
+STOOL_SEAT_TOP_Y = 0.8175
 LIQUID_EMPTY_LOCAL_Y = 0.022
 LIQUID_FULL_LOCAL_Y = 0.101
 
@@ -961,19 +961,20 @@ def build_interior(asset: AssetBuild) -> None:
     add_part(asset, "Cafe_CounterFootRail", foot_rail, "counter_rail",
              "CafeMetalDetail", group="counter")
 
-    # Seven-stool rhythm; the three canonical occupied offsets and hero seat
-    # remain untouched while two new empty seats lengthen the silhouette.
+    # Seven real bar stools. Their old 0.4675 m dining-chair height left the
+    # authored patrons visibly hovering 0.35 m above the seats; 0.8175 m meets
+    # the measured underside of all three seated coats beside the 1.02 m bar.
     stool_metal: list[kit.Geometry] = []
     stool_seats: list[kit.Geometry] = []
     for index, (x, z, forward_x, forward_z) in enumerate(STOOL_STATIONS):
         stool_metal.extend([
-            bp.u_cylinder((x, 0.215, z), (0.10, 0.215, 0.10), 10),
+            bp.u_cylinder((x, 0.390, z), (0.10, 0.390, 0.10), 10),
             bp.u_cylinder((x, 0.035, z), (0.34, 0.035, 0.34), 12),
         ])
         stool_seats.append(
-            bp.u_cylinder((x, 0.44, z), (0.48, 0.0275, 0.48), 14)
+            bp.u_cylinder((x, 0.790, z), (0.48, 0.0275, 0.48), 14)
         )
-        add_anchor(asset, f"Stool.{index:02d}", "stool", (x, 0.4675, z),
+        add_anchor(asset, f"Stool.{index:02d}", "stool", (x, STOOL_SEAT_TOP_Y, z),
                    (forward_x, 0.0, forward_z))
     add_part(asset, "Cafe_StoolMetal", merge(stool_metal), "stool_metal",
              "CafeMetalDetail", group="furniture")
@@ -1034,6 +1035,10 @@ def build_interior(asset: AssetBuild) -> None:
 
 def build_cup_props(asset: AssetBuild) -> None:
     for owner, position in CUP_STATIONS.items():
+        # User-approved reversal: both handles face the opposite side from
+        # the previous cafe build. The animated limb stays the same; the
+        # pickup/release keys are re-fitted to each new Grip position.
+        handle_negative_x = owner == "PairWoman"
         prop_name = f"Cup.{owner}"
         prop = add_prop(asset, prop_name, "cup_assembly", owner, position)
         lift = add_empty(asset, f"LIFT_Cup_{owner}", (0.0, 0.0, 0.0), prop.root)
@@ -1042,7 +1047,10 @@ def build_cup_props(asset: AssetBuild) -> None:
         ceramic_name = f"Cup_{owner}_Ceramic"
         saucer_name = f"Cup_{owner}_Saucer"
         liquid_name = f"Cup_{owner}_Liquid"
-        add_part(asset, ceramic_name, cup_geometry(), "cup_ceramic",
+        ceramic = cup_geometry()
+        if handle_negative_x:
+            ceramic = bp.u_rotated(ceramic, (0.0, 180.0, 0.0))
+        add_part(asset, ceramic_name, ceramic, "cup_ceramic",
                  "CafePropsDetail", group="dynamic_prop", parent=lift)
         add_part(asset, saucer_name, saucer_geometry(), "cup_saucer",
                  "CafePropsDetail", group="dynamic_prop", parent=prop.root)
@@ -1058,8 +1066,12 @@ def build_cup_props(asset: AssetBuild) -> None:
         add_anchor(asset, f"Cup.{owner}", "cup_dock", position)
         add_anchor(asset, f"PourTarget.{owner}", "pour_target",
                    (position[0], position[1] + 0.095, position[2]))
+        # The handle points toward the hand that actually owns this cup.
+        # Keeping the authored Grip on that handle lets the hand arrive over
+        # the saucer at pickup/release instead of visibly docking beside it.
+        grip_x = -0.092 if handle_negative_x else 0.092
         add_anchor(asset, f"Grip.{owner}", "cup_grip",
-                   (0.092, 0.062, 0.0), (1.0, 0.0, 0.0),
+                   (grip_x, 0.062, 0.0), (1.0, 0.0, 0.0),
                    parent=lift)
 
 
@@ -1102,14 +1114,21 @@ def build_service_props(asset: AssetBuild) -> None:
              casts_shadows=False, initially_visible=False)
     stream.part_names.append("Service_PourStream")
 
-    for index, x in enumerate((-1.50, 0.75, 1.80)):
+    # Reachable strip directly in front of the attendant's dock. These marks
+    # sit 10 mm above the real 1.02 m counter top; the old cup-aligned marks
+    # were more than a metre away and described a wipe no human arm could
+    # make, even though runtime did not yet consume them.
+    for index, x in enumerate((2.25, 2.45, 2.65)):
         add_anchor(asset, f"WipePatch.{index:02d}", "wipe_patch",
-                   (x, 1.03, -1.20))
+                   (x, 1.03, -0.70))
     for index, position in enumerate((
         (2.10, 0.0, -0.16),
-        (-1.50, 0.0, -0.52),
-        (0.75, 0.0, -0.52),
-        (1.80, 0.0, -0.52),
+        # A right-handed server stands 0.30 m to the cup's right, while the
+        # service mark is pulled 0.24 m toward the counter. This keeps the
+        # arm clear of the torso and puts the animated spout directly above
+        # the cup instead of asking a diagonal stream to bridge the gap.
+        (1.05, 0.0, -0.76),
+        (2.10, 0.0, -0.76),
     )):
         add_anchor(asset, f"ServiceRail.{index:02d}", "service_rail", position)
 
@@ -1128,7 +1147,7 @@ def build_anchors(asset: AssetBuild) -> None:
     add_anchor(asset, "CounterStart", "counter_start", (-2.56, 1.02, -1.15))
     add_anchor(asset, "CounterCorner", "counter_corner", (3.20, 1.02, -1.15))
     add_anchor(asset, "CounterEnd", "counter_end", (3.45, 1.02, 0.55))
-    add_anchor(asset, "HeroSeat", "hero_seat", (-0.38, 0.4675, STOOL_Z),
+    add_anchor(asset, "HeroSeat", "hero_seat", (-0.38, STOOL_SEAT_TOP_Y, STOOL_Z),
                (0.0, 0.0, 1.0))
     for name, position in (
         ("Cast.Lone", (-1.50, 0.0, STOOL_Z)),
@@ -1159,13 +1178,13 @@ COLLIDER_DESCRIPTORS = (
     {"id": "counter-return", "shape": "box", "center": [3.325, 0.447, -0.30], "size": [1.718, 0.894, 0.62], "yaw": -81.634},
     {"id": "service-cabinet", "shape": "box", "center": [2.15, 0.43, 3.90], "size": [3.65, 0.86, 0.78], "yaw": 0.0},
     {"id": "fridge", "shape": "box", "center": [-3.82, 0.98, 4.72], "size": [1.12, 1.96, 0.72], "yaw": 0.0},
-    {"id": "stool-00", "shape": "capsule", "center": [-1.50, 0.25, -2.18], "radius": 0.25, "height": 0.50, "yaw": 0.0},
-    {"id": "stool-01", "shape": "capsule", "center": [-0.38, 0.25, -2.18], "radius": 0.25, "height": 0.50, "yaw": 0.0},
-    {"id": "stool-02", "shape": "capsule", "center": [0.75, 0.25, -2.18], "radius": 0.25, "height": 0.50, "yaw": 0.0},
-    {"id": "stool-03", "shape": "capsule", "center": [1.80, 0.25, -2.18], "radius": 0.25, "height": 0.50, "yaw": 0.0},
-    {"id": "stool-04", "shape": "capsule", "center": [3.00, 0.25, -2.18], "radius": 0.25, "height": 0.50, "yaw": 0.0},
-    {"id": "stool-05", "shape": "capsule", "center": [4.08, 0.25, -0.62], "radius": 0.25, "height": 0.50, "yaw": -81.634},
-    {"id": "stool-06", "shape": "capsule", "center": [4.16, 0.25, 0.10], "radius": 0.25, "height": 0.50, "yaw": -81.634},
+    {"id": "stool-00", "shape": "capsule", "center": [-1.50, 0.40875, -2.18], "radius": 0.25, "height": 0.8175, "yaw": 0.0},
+    {"id": "stool-01", "shape": "capsule", "center": [-0.38, 0.40875, -2.18], "radius": 0.25, "height": 0.8175, "yaw": 0.0},
+    {"id": "stool-02", "shape": "capsule", "center": [0.75, 0.40875, -2.18], "radius": 0.25, "height": 0.8175, "yaw": 0.0},
+    {"id": "stool-03", "shape": "capsule", "center": [1.80, 0.40875, -2.18], "radius": 0.25, "height": 0.8175, "yaw": 0.0},
+    {"id": "stool-04", "shape": "capsule", "center": [3.00, 0.40875, -2.18], "radius": 0.25, "height": 0.8175, "yaw": 0.0},
+    {"id": "stool-05", "shape": "capsule", "center": [4.08, 0.40875, -0.62], "radius": 0.25, "height": 0.8175, "yaw": -81.634},
+    {"id": "stool-06", "shape": "capsule", "center": [4.16, 0.40875, 0.10], "radius": 0.25, "height": 0.8175, "yaw": -81.634},
 )
 
 
@@ -1381,8 +1400,8 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
 
     if len(STOOL_STATIONS) != 7:
         problems.append("the authored counter must retain exactly seven stools")
-    if len([prop for prop in asset.props.values() if prop.role == "cup_assembly"]) != 3:
-        problems.append("the cafe must expose exactly three cup assemblies")
+    if len([prop for prop in asset.props.values() if prop.role == "cup_assembly"]) != 2:
+        problems.append("the cafe must expose exactly two cup assemblies")
     if len(COLLIDER_DESCRIPTORS) != 17:
         problems.append("the passive model must publish exactly 17 collider descriptors")
 
@@ -1390,7 +1409,7 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
         "Origin", "DoorThreshold", "DoorApproach", "CanonicalCameraTarget",
         "GlassCorner",
         "CounterStart", "CounterCorner", "CounterEnd", "HeroSeat",
-        "Cup.Lone", "Cup.PairMan", "Cup.PairWoman", "PotDock", "PotSpout",
+        "Cup.PairMan", "Cup.PairWoman", "PotDock", "PotSpout",
         "Cast.Lone", "Cast.PairMan", "Cast.PairWoman", "Cast.Attendant",
         "Light.WarmCounter", "Light.ColdService", "Light.ExteriorWash",
         "Audio.Fridge", "Audio.Fixture", "Audio.Boiler",
@@ -1430,7 +1449,7 @@ def validate(asset: AssetBuild, textures: Sequence[dict]) -> dict:
             f"({overlap['overlap_area_m2']:.5f} m2)"
         )
 
-    # Three liquids are separate, bounded inside their cups and below rim.
+    # Both liquids are separate, bounded inside their cups and below rim.
     for owner in CUP_STATIONS:
         prop = asset.props[f"Cup.{owner}"]
         liquid = next(part for part in asset.parts if part.name == prop.liquid_part)
@@ -1541,7 +1560,9 @@ def manifest_for(
         "dimensions_m": {"width": 9.8, "depth": 10.0, "height": HEIGHT},
         "door_opening_m": {"width": DOOR_WIDTH, "height": DOOR_HEIGHT},
         "stool_count": len(STOOL_STATIONS),
-        "cup_assembly_count": 3,
+        "cup_assembly_count": sum(
+            prop.role == "cup_assembly" for prop in asset.props.values()
+        ),
         "source_axes": {"right": "+X", "forward": "+Y", "up": "+Z"},
         "unity_axes": {
             "right": "+X", "forward": "+Z", "up": "+Y",

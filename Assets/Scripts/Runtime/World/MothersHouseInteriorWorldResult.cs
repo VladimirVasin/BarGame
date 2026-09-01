@@ -13,6 +13,7 @@ namespace BarPromenade
             MothersHouseInteriorAssetRegistry registry,
             Transform collisionRoot,
             IList<Collider> gameplayColliders,
+            Collider stairRampCollider,
             Transform entryAnchor,
             Transform spawnAnchor,
             Transform exitAnchor,
@@ -34,6 +35,8 @@ namespace BarPromenade
                 new List<Collider>(
                     gameplayColliders ?? throw new ArgumentNullException(
                         nameof(gameplayColliders))));
+            StairRampCollider = stairRampCollider ??
+                throw new ArgumentNullException(nameof(stairRampCollider));
             EntryAnchor = entryAnchor ??
                 throw new ArgumentNullException(nameof(entryAnchor));
             SpawnAnchor = spawnAnchor ??
@@ -62,6 +65,7 @@ namespace BarPromenade
         public MothersHouseInteriorAssetRegistry Registry { get; }
         public Transform CollisionRoot { get; }
         public IReadOnlyList<Collider> GameplayColliders { get; }
+        public Collider StairRampCollider { get; }
         public Transform EntryAnchor { get; }
         public Transform SpawnAnchor { get; }
         public Transform ExitAnchor { get; }

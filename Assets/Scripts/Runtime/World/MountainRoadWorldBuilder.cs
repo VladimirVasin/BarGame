@@ -199,6 +199,10 @@ namespace BarPromenade
                 physicalRoot.transform,
                 plan.Misc,
                 semanticObjects);
+
+            // After the misc, because the culvert it crosses under is one of
+            // them and the pour has to stand in a bore that exists.
+            MountainRoadBrookBuilder.Build(physicalRoot.transform, plan);
             BuildRidges(backdropRoot.transform, plan.Ridges);
             MountainRoadVistaWorldResult vista =
                 MountainRoadVistaWorldBuilder.Build(

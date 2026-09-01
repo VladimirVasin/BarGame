@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using UnityEngine;
 using UnityEngine.Rendering;
 
@@ -138,6 +139,112 @@ namespace BarPromenade
                     triangles[triangle++] = southEast;
                     triangles[triangle++] = northWest;
                     triangles[triangle++] = northEast;
+                }
+            }
+
+            return CreateSheet(
+                name,
+                parent,
+                origin,
+                vertices,
+                normals,
+                triangles,
+                sharedMaterial);
+        }
+
+        /// <summary>
+        /// One water sheet swept along a polyline: a brook, not a rectangle.
+        ///
+        /// <see cref="CreateSlopedSurface"/> takes a <see cref="Rect"/> and a
+        /// fall along Z, which is everything the river and the sea need and
+        /// nothing a stream down a hillside can use. This sweeps the same
+        /// kind of sheet through a centreline instead - the geometry is a
+        /// ribbon, the contract is identical: TOP FACE ONLY, normals flat up
+        /// because the shader replaces them with the analytic wave normal,
+        /// and NO UVS AT ALL, because every pattern in the water shader is a
+        /// function of world XZ. That last one is why this can exist at all:
+        /// a ribbon and a grid meeting end to end agree on the wave and the
+        /// ripple without either knowing about the other.
+        ///
+        /// <paramref name="crossSteps"/> is not decoration. The lane skin
+        /// learned it the expensive way - two vertices cannot follow a curve,
+        /// and a two-vertex strip over sampled ground left 423 of 2490 probes
+        /// standing proud, the worst by 0.44 m.
+        /// </summary>
+        internal static GameObject CreateRibbonSurface(
+            string name,
+            Transform parent,
+            IReadOnlyList<Vector3> centres,
+            IReadOnlyList<Vector3> rights,
+            IReadOnlyList<float> halfWidths,
+            int crossSteps,
+            Material sharedMaterial)
+        {
+            if (parent == null)
+            {
+                throw new ArgumentNullException(nameof(parent));
+            }
+
+            if (sharedMaterial == null)
+            {
+                throw new ArgumentNullException(nameof(sharedMaterial));
+            }
+
+            if (centres == null || rights == null || halfWidths == null)
+            {
+                throw new ArgumentNullException(nameof(centres));
+            }
+
+            if (centres.Count < 2 ||
+                rights.Count != centres.Count ||
+                halfWidths.Count != centres.Count)
+            {
+                throw new ArgumentException(
+                    "A water ribbon needs at least two matched sections.",
+                    nameof(centres));
+            }
+
+            int across = Mathf.Max(1, crossSteps) + 1;
+            var vertices = new Vector3[centres.Count * across];
+            var normals = new Vector3[vertices.Length];
+            var triangles = new int[(centres.Count - 1) * (across - 1) * 6];
+
+            Vector3 origin = centres[centres.Count / 2];
+
+            for (int index = 0; index < centres.Count; index++)
+            {
+                Vector3 centre = centres[index];
+                Vector3 right = rights[index];
+                right.y = 0f;
+                right = right.sqrMagnitude <= 0.000001f
+                    ? Vector3.right
+                    : right.normalized;
+
+                for (int step = 0; step < across; step++)
+                {
+                    float side = Mathf.Lerp(
+                        -halfWidths[index],
+                        halfWidths[index],
+                        step / (float)(across - 1));
+                    int vertex = index * across + step;
+                    vertices[vertex] = centre + right * side - origin;
+                    normals[vertex] = Vector3.up;
+                }
+            }
+
+            int triangle = 0;
+            for (int index = 0; index < centres.Count - 1; index++)
+            {
+                for (int step = 0; step < across - 1; step++)
+                {
+                    int here = index * across + step;
+                    int ahead = here + across;
+                    triangles[triangle++] = here;
+                    triangles[triangle++] = ahead;
+                    triangles[triangle++] = here + 1;
+                    triangles[triangle++] = here + 1;
+                    triangles[triangle++] = ahead;
+                    triangles[triangle++] = ahead + 1;
                 }
             }
 

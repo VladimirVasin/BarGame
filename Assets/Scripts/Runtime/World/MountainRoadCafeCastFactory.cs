@@ -113,6 +113,14 @@ namespace BarPromenade
                         registry,
                         member.Role,
                         member.IdlePhaseSeconds);
+                    if (member.Role ==
+                        MountainRoadCafeCastRole.PairWoman)
+                    {
+                        var cigarette = instance.AddComponent<
+                            MountainRoadCafeCigaretteEffect>();
+                        cigarette.Initialize(presentation, registry);
+                    }
+
                     presentations.Add(presentation);
                 }
 
@@ -167,15 +175,20 @@ namespace BarPromenade
                 registry.ModelRoot == null ||
                 registry.Role != role ||
                 registry.IdleClip == null ||
-                registry.BeatClip == null)
+                (role != MountainRoadCafeCastRole.LonePatron &&
+                 registry.BeatClip == null))
             {
                 throw new InvalidOperationException(
                     "The " + role +
                     " prefab has an incomplete cafe cast registry.");
             }
 
-            int expectedClipCount =
-                role == MountainRoadCafeCastRole.Attendant ? 4 : 2;
+            int expectedClipCount = role switch
+            {
+                MountainRoadCafeCastRole.LonePatron => 1,
+                MountainRoadCafeCastRole.Attendant => 4,
+                _ => 2
+            };
             if (registry.ClipBindings.Count != expectedClipCount)
             {
                 throw new InvalidOperationException(

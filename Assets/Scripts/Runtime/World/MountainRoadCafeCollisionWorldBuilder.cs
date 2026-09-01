@@ -62,8 +62,8 @@ namespace BarPromenade
 
         public const float StoolForward = -2.18f;
         public const float StoolColliderRadius = 0.25f;
-        public const float StoolColliderHeight = 0.50f;
-        public const float StoolColliderCenterAboveFloor = 0.25f;
+        public const float StoolColliderHeight = 0.8175f;
+        public const float StoolColliderCenterAboveFloor = 0.40875f;
 
         /// <summary>
         /// The established five-seat row. Index one remains the hero's

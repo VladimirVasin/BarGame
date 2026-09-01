@@ -204,19 +204,10 @@ namespace BarPromenade
 
         internal static int GarlandSpanCount => GarlandDistanceBeats.Length;
 
-        /// <summary>Ground the spring keeps too wet to whiten - the one dark
-        /// patch in a village that is otherwise all snow.</summary>
-        private static readonly Color SpringWetColor =
-            new Color(0.205f, 0.215f, 0.220f, 1f);
-
-        /// <summary>
-        /// Standing water in the catch and in the runnel. Flat and cold for
-        /// now: the MOVING surface, its sound and the chapel outlet answering
-        /// it are the next step, and faking them with a stone sheet would be
-        /// a thing to unpick rather than build on.
-        /// </summary>
-        private static readonly Color SpringWaterColor =
-            new Color(0.150f, 0.180f, 0.205f, 1f);
+        // The spring's wet ground and its water moved to
+        // `AlpineVillageBrookBuilder` when the water stopped being a stone
+        // box and became a real surface: both belong to the brook, which
+        // runs the length of the village and never fitted in a plot.
 
         private static readonly Color GarlandWireColor =
             new Color(0.085f, 0.075f, 0.062f, 1f);
@@ -259,6 +250,14 @@ namespace BarPromenade
             GameObject terrainRoot = BuildTerrain(root.transform, plan);
             GameObject laneSurface = BuildLane(root.transform, plan);
             BuildPathSurfaces(root.transform, plan);
+
+            // Before the snow, so the drifts can be told where the open
+            // water is and keep off it.
+            AlpineVillageBrookBuilder.Build(
+                root.transform,
+                plan,
+                kit,
+                semanticObjects);
             AlpineVillageSnowTreading snowTreading =
                 BuildSnowDrifts(root.transform, plan);
 
@@ -1195,7 +1194,7 @@ namespace BarPromenade
         /// lift - no measuring, and nothing that can drift when the kit is
         /// re-authored.
         /// </summary>
-        private static void PlaceKitAssembly(
+        internal static void PlaceKitAssembly(
             Transform parent,
             VillageAssetProvider kit,
             VillageAssetKind kind,
@@ -2070,80 +2069,39 @@ namespace BarPromenade
         /// chapel's catch basin is made of. One spring, two places it is
         /// visible, one asset.
         /// </summary>
+        /// <summary>
+        /// The spring's plot: the stone the water comes out from under.
+        ///
+        /// THE WATER ITSELF IS NO LONGER HERE. It used to be: a wet apron, a
+        /// catch and a runnel, the last two drawn as boxes tinted
+        /// `SpringWaterColor` and textured as LAYERED STONE, and this file
+        /// said so plainly - "flat and cold for now: the MOVING surface, its
+        /// sound and the chapel outlet answering it are the next step, and
+        /// faking them with a stone sheet would be a thing to unpick rather
+        /// than build on". So it was unpicked rather than built on.
+        ///
+        /// Water is now a plan - <see cref="AlpineVillageBrookPlan"/>, traced
+        /// down the real fall line and cut into the terrain sampler - and is
+        /// drawn in one place, by <see cref="AlpineVillageBrookBuilder"/>,
+        /// against the whole village rather than inside one plot's local
+        /// space. A brook that ran `97 m` could not have lived in a `6 x 5 m`
+        /// footprint anyway.
+        /// </summary>
         private static void BuildSpring(
             Transform parent,
             AlpineVillagePlotDescriptor plot,
             VillageAssetProvider kit)
         {
-            // The wet apron. Low enough to be a step, dark enough to read as
-            // ground that never dries rather than as a pool.
-            Texture(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Spring Wet Ground",
-                    parent,
-                    new Vector3(0f, 0.05f, 0f),
-                    new Vector3(
-                        plot.FootprintSize.x * 0.72f,
-                        0.10f,
-                        plot.FootprintSize.y * 0.72f),
-                    SpringWetColor,
-                    true),
-                MountainRoadSurfaceKind.ForestFloor,
-                SpringWetColor);
-
-            if (kit != null)
-            {
-                var head = new GameObject("Spring Head");
-                head.transform.SetParent(parent, false);
-                head.transform.localPosition = new Vector3(
-                    0f,
-                    0.10f,
-                    plot.FootprintSize.y * 0.16f);
-                PlaceKitAssembly(
-                    head.transform,
-                    kit,
-                    VillageAssetKind.SourceBowl,
-                    0,
-                    new Vector2(1.35f, 0.95f),
-                    0.62f,
-                    _ => StoneColor);
-                BoxCollider stone = head.AddComponent<BoxCollider>();
-                stone.center = new Vector3(0f, 0.30f, 0f);
-                stone.size = new Vector3(1.2f, 0.6f, 0.8f);
-            }
-
-            // The water itself, sitting in the catch. A separate surface
-            // rather than a tint on the stone, because the next step gives it
-            // movement and it has to be a thing that can be handed one.
-            Texture(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Spring Water",
-                    parent,
-                    new Vector3(
-                        0f,
-                        0.16f,
-                        plot.FootprintSize.y * 0.16f),
-                    new Vector3(0.95f, 0.06f, 0.62f),
-                    SpringWaterColor,
-                    false),
-                MountainRoadSurfaceKind.LayeredStone,
-                SpringWaterColor);
-
-            // And the runnel leaving downhill, which is all the flow this MVP
-            // claims: the water goes somewhere, and the ground says so.
-            Texture(
-                RuntimePrimitiveFactory.CreateBox(
-                    "Spring Runnel",
-                    parent,
-                    new Vector3(
-                        0f,
-                        0.04f,
-                        -plot.FootprintSize.y * 0.34f),
-                    new Vector3(0.55f, 0.05f, plot.FootprintSize.y * 0.58f),
-                    SpringWaterColor,
-                    false),
-                MountainRoadSurfaceKind.LayeredStone,
-                SpringWaterColor);
+            // Nothing. The plot is the SITE of the spring, not its contents:
+            // the ledge, the catch, the water and the wet ground are all one
+            // feature that runs the length of the village, and it is built
+            // once, in world space, by `AlpineVillageBrookBuilder`.
+            //
+            // The stone catch stood here until the water became real, placed
+            // at a local offset while the water was placed from the brook
+            // plan - and the first capture showed the result plainly: an
+            // EMPTY basin with its water lying in the snow beside it. Two
+            // owners of one position is how that happens.
         }
 
         /// <summary>

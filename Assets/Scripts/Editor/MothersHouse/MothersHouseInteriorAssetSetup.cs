@@ -24,7 +24,7 @@ namespace BarPromenade.Editor
         public const string SharedEmissionMaterialPath = "Assets/Resources/Materials/CityNoirEmission.mat";
 
         private const string ExpectedDesignId = "mothers_house_interior_v1";
-        private const string ExpectedGeneratorVersion = "1.3.0";
+        private const string ExpectedGeneratorVersion = "1.4.1";
         private const int ExpectedAnchorCount = 10;
         private const int MaximumRenderers = 64;
         private const int MaximumTriangles = 14000;
@@ -70,6 +70,18 @@ namespace BarPromenade.Editor
             "DRESS_FloorLamp.Frame",
             "DRESS_FloorLamp.Shade",
             "DRESS_FloorLamp.Bulb"
+        };
+
+        private static readonly string[] RequiredUpperParts = {
+            "FIX_InterstoreyCeiling",
+            "FIX_UpperFloor",
+            "FIX_Stair.Steps",
+            "FIX_Stair.Rail",
+            "FIX_UpperWalls",
+            "FIX_UpperPartitions",
+            "FIX_UpperDoorFrames",
+            "FIX_UpperStairGuards",
+            "FIX_UpperCeiling"
         };
 
         private static readonly HashSet<string> AllowedSheets = new HashSet<string>(StringComparer.Ordinal)
@@ -659,6 +671,42 @@ namespace BarPromenade.Editor
             RequireClose(manifest.dimensions_m.width, 10f, "room width");
             RequireClose(manifest.dimensions_m.depth, 8f, "room depth");
             RequireClose(manifest.dimensions_m.height, 3.4f, "room height");
+            if (manifest.upper_storey_m == null)
+            {
+                throw new InvalidOperationException(
+                    "The manifest is missing its traversable upper storey.");
+            }
+            RequireClose(
+                manifest.upper_storey_m.floor_elevation,
+                3.54f,
+                "upper floor elevation");
+            RequireClose(
+                manifest.upper_storey_m.ceiling_height,
+                5.90f,
+                "upper ceiling height");
+            RequireClose(
+                manifest.upper_storey_m.stair_width,
+                1.30f,
+                "stair width");
+            RequireClose(
+                manifest.upper_storey_m.door_width,
+                1.20f,
+                "upper door width");
+            RequireClose(
+                manifest.upper_storey_m.door_height,
+                2.20f,
+                "upper door height");
+            if (manifest.upper_storey_m.stair_step_count != 19 ||
+                manifest.upper_storey_m.room_count != 2 ||
+                manifest.upper_storey_m.furnished ||
+                manifest.upper_storey_m.stair_opening == null ||
+                manifest.upper_storey_m.stair_opening.Length != 4 ||
+                manifest.upper_storey_m.door_centers_z == null ||
+                manifest.upper_storey_m.door_centers_z.Length != 2)
+            {
+                throw new InvalidOperationException(
+                    "The upper-storey circulation contract drifted.");
+            }
             RequireClose(
                 manifest.wall_thickness_m,
                 0.24f,
@@ -797,13 +845,15 @@ namespace BarPromenade.Editor
                 triangleTotal += part.triangles;
             }
 
-            foreach (string lightPart in
-                     RequiredFireParts.Concat(RequiredPracticalParts))
+            foreach (string requiredPart in
+                     RequiredFireParts
+                         .Concat(RequiredPracticalParts)
+                         .Concat(RequiredUpperParts))
             {
-                if (!names.Contains(lightPart))
+                if (!names.Contains(requiredPart))
                 {
                     throw new InvalidOperationException(
-                        $"Required light renderer '{lightPart}' is " +
+                        $"Required renderer '{requiredPart}' is " +
                         "missing.");
                 }
             }
@@ -1456,6 +1506,7 @@ namespace BarPromenade.Editor
             public string generator_version;
             public string design_id;
             public MothersHouseDimensions dimensions_m;
+            public MothersHouseUpperStorey upper_storey_m;
             public float wall_thickness_m;
             public MothersHouseDoor door_opening_m;
             public bool colliders;
@@ -1478,6 +1529,21 @@ namespace BarPromenade.Editor
             public float width;
             public float depth;
             public float height;
+        }
+
+        [Serializable]
+        private sealed class MothersHouseUpperStorey
+        {
+            public float floor_elevation;
+            public float ceiling_height;
+            public float stair_width;
+            public int stair_step_count;
+            public float[] stair_opening;
+            public float door_width;
+            public float door_height;
+            public float[] door_centers_z;
+            public int room_count;
+            public bool furnished;
         }
 
         [Serializable]

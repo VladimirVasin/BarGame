@@ -42,22 +42,27 @@ namespace BarPromenade
     {
         [SerializeField] private Renderer renderer;
         [SerializeField] private Color color = Color.white;
+        [SerializeField] private bool usesDetailAtlas;
 
         public MountainRoadCafeCastRendererBinding(
             Renderer configuredRenderer,
-            Color configuredColor)
+            Color configuredColor,
+            bool configuredUsesDetailAtlas)
         {
             renderer = configuredRenderer;
             color = configuredColor;
+            usesDetailAtlas = configuredUsesDetailAtlas;
         }
 
         public Renderer Renderer => renderer;
         public Color Color => color;
+        public bool UsesDetailAtlas => usesDetailAtlas;
     }
 
     /// <summary>
     /// Authored animation and renderer contract carried by one of the four
-    /// staged cafe prefabs. Across the set it owns exactly ten named clips.
+    /// staged cafe prefabs. Across the set it owns exactly nine named clips:
+    /// one sleeping loop, four pair clips and four attendant clips.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MountainRoadCafeCastAssetRegistry : MonoBehaviour
@@ -66,6 +71,10 @@ namespace BarPromenade
             Shader.PropertyToID("_BaseColor");
         private static readonly int LegacyColorId =
             Shader.PropertyToID("_Color");
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
+        private static readonly int LegacyMapId =
+            Shader.PropertyToID("_MainTex");
 
         [SerializeField] private Animator animator;
         [SerializeField] private MountainRoadCafeCastRole role;
@@ -76,6 +85,7 @@ namespace BarPromenade
         [SerializeField] private MountainRoadCafeCastRendererBinding[]
             rendererBindings =
                 Array.Empty<MountainRoadCafeCastRendererBinding>();
+        [SerializeField] private Texture2D detailAtlas;
 
         public Animator Animator => animator;
         public MountainRoadCafeCastRole Role => role;
@@ -84,14 +94,18 @@ namespace BarPromenade
         public IReadOnlyList<MountainRoadCafeCastClipBinding> ClipBindings =>
             clipBindings ?? Array.Empty<MountainRoadCafeCastClipBinding>();
         public AnimationClip IdleClip => GetClip(defaultClipKind);
-        public AnimationClip BeatClip => GetClip(
-            role == MountainRoadCafeCastRole.Attendant
-                ? MountainRoadCafeCastClipKind.Notice
-                : MountainRoadCafeCastClipKind.Drink);
+        public AnimationClip BeatClip => role switch
+        {
+            MountainRoadCafeCastRole.Attendant => GetClip(
+                MountainRoadCafeCastClipKind.Notice),
+            MountainRoadCafeCastRole.LonePatron => null,
+            _ => GetClip(MountainRoadCafeCastClipKind.Drink)
+        };
         public Transform ModelRoot => modelRoot;
         public IReadOnlyList<MountainRoadCafeCastRendererBinding>
             RendererBindings => rendererBindings ??
                 Array.Empty<MountainRoadCafeCastRendererBinding>();
+        public Texture2D DetailAtlas => detailAtlas;
 
         public void Configure(
             Animator configuredAnimator,
@@ -100,7 +114,8 @@ namespace BarPromenade
             MountainRoadCafeCastClipBinding[] configuredClipBindings,
             Transform configuredModelRoot,
             MountainRoadCafeCastRendererBinding[]
-                configuredRendererBindings)
+                configuredRendererBindings,
+            Texture2D configuredDetailAtlas)
         {
             animator = configuredAnimator ??
                 throw new ArgumentNullException(nameof(configuredAnimator));
@@ -113,6 +128,9 @@ namespace BarPromenade
                 throw new ArgumentNullException(nameof(configuredModelRoot));
             rendererBindings = configuredRendererBindings ??
                 Array.Empty<MountainRoadCafeCastRendererBinding>();
+            detailAtlas = configuredDetailAtlas ??
+                throw new ArgumentNullException(
+                    nameof(configuredDetailAtlas));
             ValidateClipContract();
             ApplyBaseColors();
             SetCoffeePotVisible(false);
@@ -215,20 +233,32 @@ namespace BarPromenade
                 }
             }
 
-            MountainRoadCafeCastClipKind[] expected =
-                role == MountainRoadCafeCastRole.Attendant
-                    ? new[]
+            MountainRoadCafeCastClipKind[] expected;
+            if (role == MountainRoadCafeCastRole.Attendant)
+            {
+                expected = new[]
                     {
                         MountainRoadCafeCastClipKind.Wipe,
                         MountainRoadCafeCastClipKind.Walk,
                         MountainRoadCafeCastClipKind.Pour,
                         MountainRoadCafeCastClipKind.Notice
-                    }
-                    : new[]
+                    };
+            }
+            else if (role == MountainRoadCafeCastRole.LonePatron)
+            {
+                expected = new[]
+                {
+                    MountainRoadCafeCastClipKind.Idle
+                };
+            }
+            else
+            {
+                expected = new[]
                     {
                         MountainRoadCafeCastClipKind.Idle,
                         MountainRoadCafeCastClipKind.Drink
                     };
+            }
             if (clipBindings.Length != expected.Length)
             {
                 throw new InvalidOperationException(
@@ -258,7 +288,8 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// Reapplies authored manifest colours without material instances.
+        /// Reapplies authored manifest colours and detail atlas without
+        /// material instances.
         /// </summary>
         public void ApplyBaseColors()
         {
@@ -281,6 +312,12 @@ namespace BarPromenade
                 target.GetPropertyBlock(properties);
                 properties.SetColor(BaseColorId, binding.Color);
                 properties.SetColor(LegacyColorId, binding.Color);
+                if (binding.UsesDetailAtlas && detailAtlas != null)
+                {
+                    properties.SetTexture(BaseMapId, detailAtlas);
+                    properties.SetTexture(LegacyMapId, detailAtlas);
+                }
+
                 target.SetPropertyBlock(properties);
                 properties.Clear();
             }

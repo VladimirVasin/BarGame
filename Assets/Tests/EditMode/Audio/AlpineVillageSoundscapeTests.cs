@@ -9,7 +9,7 @@ namespace BarPromenade.Tests.EditMode
     {
         [Test]
         [Category("AlpineVillage")]
-        public void DefaultPlan_BuildsFiveDeterministicCausalSpatialVoices()
+        public void DefaultPlan_BuildsEightDeterministicCausalSpatialVoices()
         {
             AlpineVillagePlan village = AlpineVillagePlanner.Create(
                 GameSessionState.DefaultCitySeed);
@@ -20,8 +20,13 @@ namespace BarPromenade.Tests.EditMode
                     AlpineVillagePlanner.Create(
                         GameSessionState.DefaultCitySeed));
 
-            Assert.That(first.Anchors, Has.Count.EqualTo(5));
-            Assert.That(first.LoopingAnchors, Has.Count.EqualTo(4));
+            // Eight since the spring gained real water: the catch under the
+            // ledge, one riffle at the middle of the brook and the loudest
+            // step joined the five the village already had. Each is a
+            // separate KIND because this plan indexes its voices by kind and
+            // holds exactly one of each.
+            Assert.That(first.Anchors, Has.Count.EqualTo(8));
+            Assert.That(first.LoopingAnchors, Has.Count.EqualTo(7));
             // The dog behind the fence is the only scheduled one-shot left:
             // the firewood settling in the mine cart went out of the village
             // with the adit.

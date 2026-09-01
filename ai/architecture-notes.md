@@ -275,6 +275,28 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   where the cabin goes. `10f` is amended from «Единственная зона за пределами
   города» to name both, and a new `§10g` states the village's form.
 - **Accepted architecture exception — 2026-09-01, explicit user request — the
+  mother is present, seated, and the chair rocks:** This supersedes the art
+  bible's §10g clause «Кресло пусто и неподвижно», story-bible §25's «в доме
+  нет персонажа» and the mother's own absence in the §6 registry's level `0`
+  row; a new registry row records the lift, and the level-`0` row that stated
+  the opposite is amended rather than left standing. She sits in the rocking
+  chair from the first visit, at hero-level fidelity on the shared `NpcHumanV2`
+  substrate, and is the first NPC to carry the hero's 4×4 facial atlas.
+  **What is lifted is her presence, not the unwritten event:** she has no
+  name, no line, no reaction to the hero's arrival and no gaze that follows
+  him; the Cat, the dinner, the news and every piece of dialogue remain
+  absent, and the hero still does not react to her. She is not interactive and
+  carries no prompt. The chair's rock is even, slow and indifferent — it does
+  not start, stop or change when he enters, because a chair that answered the
+  door would be the reaction §25 keeps unwritten. Her age is carried by pose,
+  hands and mended clothing; medicines, photographs, the bidon and readable
+  text stay on the room manifest's excluded list. **The facial atlas ships
+  complete but undriven:** all five expressions exist and `SetExpression` is
+  public, and nothing calls it, exactly as `StairwellCatGrin` ships with no
+  scheduler by the same author's decision. The room's fixed camera,
+  composition, four shots and three audio sources are untouched.
+
+- **Accepted architecture exception — 2026-09-01, explicit user request — the
   mother's house is enterable from the village:** This supersedes only the
   2026-08-28 clause that its lit door refuses and story-bible §25's matching
   prohibition. The already built threshold becomes a two-way residential
@@ -294,6 +316,32 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   authored for the room uses the dedicated `MothersHousePositiveAtlas` instead
   of a Home or City albedo; the exact NPC kettle is the deliberate exception,
   not an environment-sheet dependency.
+- **Accepted architecture exception — 2026-09-01, explicit user request — the
+  mother's-house fixed camera is lowered:** This supersedes only art-bible
+  §10g's acceptance wording that the previously approved camera must not move.
+  The camera anchor moves from `(5.8, 3.15, -2.8)` to
+  `(5.8, 2.75, -2.8)` so its upper frustum remains below the ceiling slab. Its
+  southeast side, target `(-0.2, 0.8, 1.0)`, `60°` vertical FOV and required
+  fireplace/windows/table/rocker/sofa composition remain unchanged. The finer
+  floor planks alter surface scale only and add no world or story fact.
+- **Accepted architecture exception — 2026-09-01, explicit user request — the
+  mother's house gains a traversable upper storey:** This supersedes only art-
+  bible §10g's one-useful-room and single-fixed-camera wording. The existing
+  west sofa remains; its blank back wall opens onto a real straight stair whose
+  north end is low and whose south end reaches the upper landing inside the
+  summit house's existing opaque envelope. The landing joins a west corridor
+  and exactly two separate, accessible, currently unfurnished rooms. The
+  visible stair body closes its narrow west seam and continues its solid south
+  end to the exterior wall without moving the flight; runtime mirrors that
+  south closure with plan-derived collision.
+  Blender owns the visible steps, slab opening, guards, walls and reveals;
+  pure plans own one continuous hidden walkable ramp, split structural slabs,
+  barriers, capsule clearance and height-aware fixed-camera zones. The
+  established
+  southeast ground-floor shot and its hearth/windows/table/rocker/sofa
+  composition remain. This lifts form and circulation only: no mother, Cat,
+  dinner, news, dialogue, reaction, room function, family clue, readable text
+  or new lore is inferred.
 - **Accepted architecture exception — 2026-08-29, explicit user request —
   Alpine Village always carries very heavy snow and very strong wind:** This
   supersedes story-bible §6 level `0` «Ясно», the §12 / art-bible §10g ban on
@@ -1839,12 +1887,25 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Spot with no third visible fixture. Its tableau is a dedicated staged
   subsystem rather than part of the pedestrian pool: one lone patron, one
   couple and one attendant use four distinct Generic prefabs and an isolated
-  ten-clip cafe library. Seven stools are modeled; three are occupied and four
-  stay deliberately empty. A pure service clock holds `18-32 s` Wipe loops,
-  permits at most one drink/refill episode and starts the couple's Drink beat
-  together. Three authored cups visibly drain; below the refill threshold the
-  attendant walks to the owning cup and pours it full. NPC voices and free
-  ambience are deliberately absent, and the hero is never a service target.
+  nine-clip cafe library: one sleeping loop for the lone patron, two clips for
+  each member of the pair and four attendant clips. Seven stools are modeled
+  with their seat tops at `0.8175 m`; three are occupied with real butt contact
+  and four stay deliberately empty. The lone patron nearest the entrance sleeps
+  with his head on strongly crossed forearms stacked without intersection on
+  the counter and owns no cup or service
+  state. A pure service clock, armed on the player's first entry into the
+  cafe's `16 m` entrance radius, holds `18-32 s` Wipe loops, permits at most one
+  drink/refill episode and derives two non-overlapping role-local Drink windows
+  for the pair. That radius excludes every earlier hairpin; the initial
+  `0.44/0.56` fills make the first visible sip cross the refill threshold and
+  start a Pour within one minute. Two authored cups visibly drain at different
+  rates; below the threshold only the owning cup enters the service queue and
+  receives a refill. Completing the sit on
+  the hero's stool gives a bounded eye-level first-person view of the counter;
+  the owner hides head geometry for the seated interval and restores the exact
+  prior camera mode, pose, FOV and cinematic-motion state on exit or teardown.
+  The pair's conversation is text-only; NPC voice audio and free ambience are
+  deliberately absent, and the hero is never a service target or addressee.
   The
   right landmark is a `230 m` cableway: eight colliderless cabins traverse one
   continuous loop over nine supports, while the far turn stands beyond the
@@ -1867,20 +1928,83 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
 - **Accepted and implemented — The terminal cafe is a bounded Blender
   migration, not a rewrite of the whole terminal:** the cafe's visible
   runtime-primitive shell, interior and furniture were replaced by one
-  fixed-metre deterministic Blender-authored set and measured manifest (`51`
-  meshes / `4,970` triangles / `45` anchors / six dynamic props). The terminal
+  fixed-metre deterministic Blender-authored set and measured manifest (`48`
+  meshes / `4,568` triangles / `41` anchors / five dynamic props). The terminal
   plan continues to own the five-sided
   footprint, `4.4 m` height, `2.8 m` chamfer, open `1.6 m` door, walkability,
   logical collision, shelter, map landmark, semantic/audio anchors and
   lighting; imported geometry brings no collider, Light, camera or material.
-  The counter has seven stools: the lone visitor and synchronized pair
-  occupy three, four remain empty, and the existing hero seat stays on one of
-  those empty positions. The attendant remains the fourth silent figure behind
-  the counter. Sitting may keep the existing bounded tableau notice, but it
-  creates no order, item, service, dialogue or new gameplay transaction.
+  The counter has seven `0.8175 m`-high stools: the sleeping lone visitor and
+  visually grouped pair occupy three with grounded seat contact, four remain
+  empty, and the existing hero seat stays on one of those empty positions. The
+  attendant remains the fourth silent figure behind the counter. Sitting may
+  keep the existing bounded tableau notice, but it creates no order, item,
+  service, dialogue with the hero or new gameplay transaction.
   The two visible practicals plus one shadowless technical sulphur spill proxy
   with no third visible fixture remain the complete cafe-light contract; the
   proxy reaches only the threshold and near apron, never the terrace or brink.
+
+  **Accepted exception — role-staggered cafe drinking:** on `2026-09-01` the
+  user explicitly replaced the earlier synchronized-pair beat. The pair stays
+  grouped in the composition, but its two members own distinct visible fill
+  levels, sip amounts and non-overlapping deterministic drink windows. Only
+  either of those two cups can enter the attendant's queue after actually
+  crossing the refill threshold, so service cannot silently synchronize the
+  levels again. The sleeping lone patron owns no cup and never enters this
+  clock. This decision updates the cafe contracts in story bible §17 and art
+  bible §10f; silence, the closed household loop and the hero's exclusion from
+  service remain unchanged.
+
+  **Accepted exception — sleeping lone patron, opposite cup grips and real
+  stool contact:** on `2026-09-01` the user explicitly replaced the lone
+  patron's coffee loop with a seated sleep: head on strongly crossed forearms,
+  one visibly stacked above the other without mesh intersection, on the
+  counter, no cup and no attendant service. The other two cup handles face the
+  side opposite the previous build, with their authored Grip anchors and hand
+  poses refitted rather than leaving the actors to grab empty air. All seven
+  stool tops move from the superseded `0.4675 m` dining-chair height to
+  `0.8175 m`, while cast roots and stations stay fixed; the visual contract is
+  butt-on-seat contact rather than a crouch hovering above a short stool. The
+  isolated bank consequently contains nine clips: `1 + 2 + 2 + 4`. This is a
+  user-approved change to the cafe tableau, not permission to add dialogue,
+  sound, an order or hero service.
+
+  **Accepted implementation — exact cafe contacts and phase-owned silent
+  idles:** each member of the pair keeps the cup in the live hand until that
+  hand reaches the authored dock grip; release restores the cup at the exact
+  centre of its own saucer rather than hiding a bad last frame with an
+  independent prop slide.
+  The attendant's continuous Walk/Pour carry path must keep the right hand and
+  complete coffee-pot geometry clear of the counter volume while preserving
+  the already measured spout-over-cup endpoint. The couple's default loops now
+  carry the two readable role gestures: the man makes three uneven contacts
+  with his free left hand, and the woman raises a visible cigarette for one
+  drag and exhale. `MountainRoadCafeCigaretteEffect` reads
+  `DefaultClipNormalizedTime` from the same live idle Playable for both ember
+  and plume envelopes; it owns no independent timer, Light or AudioSource.
+  The man's contacts likewise own no impact sound. This is an implementation
+  of the existing silent-cafe contract, not a new story exception.
+
+  **Accepted architecture exception — 2026-09-02, explicit user request —
+  private adult banter for the mountain-cafe pair:** this supersedes only the
+  cafe's absolute silent/no-dialogue clauses. The unambiguously adult PairMan
+  and PairWoman own two initial ten-line localized pools arranged as a fixed
+  authored exchange: Man `01`, Woman `01`, through `10`, then repeat. A cue
+  peeks rather than consumes that next entry while blocked, so a Drink clip or
+  the woman's cigarette lift/drag/exhale delays the same pending speaker and
+  line instead of skipping, replacing or reordering it. The service clock
+  reserves a long enough Wipe window for turn-in, the four-second bubble and
+  turn-out; the man's silent counter tapping is the sole allowed overlap. On
+  an actual line the speaker turns the head smoothly toward the other member,
+  holds through the bubble and returns afterward. The exchange stays private:
+  it never names, addresses, notices or awaits the hero; never exposes plot,
+  crime, water or world oddities; and never creates an order, service or
+  economy. The sleeper and attendant remain silent. Dialogue adds no
+  AudioSource or voice bed, so the three-appliance sound budget and the silent
+  tapping/smoking contracts remain unchanged. No signage, menu, price or other
+  world-surface text is added. The deliberately coarse sexual language and
+  limited profanity are a one-location voice exception, not a global text
+  register change; these two pools become the §21 baseline for later additions.
 
   The user's detailed-texture implementation request accepts one recorded
   exception to the earlier one-sheet target: the set owns six `512 x 512`

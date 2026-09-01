@@ -41,3 +41,22 @@ The top three visual rows map to the twelve authored room sheets:
 
 Unity addresses rows from the bottom. The importer therefore reverses the
 visual row index and applies a two-pixel inset; the PNG itself is not reordered.
+
+## 2026-09-01 floor-scale refinement
+
+- Mode: built-in ImageGen edit
+- Edit target: visual row 1, column 3 (`PlankFloor`)
+- Delivery: the selected `1254 x 1254` result contributed only pixel rectangle
+  `[627, 941) x [0, 314)` to the runtime atlas; all pixels outside that cell
+  remain identical to the preceding atlas.
+
+### Exact refinement prompt used
+
+```text
+Use case: precise-object-edit
+Asset type: 4 by 4 tileable game texture atlas for a low-poly PS1-style Unity interior
+Input image: the supplied atlas is the edit target.
+Primary request: Edit only the light honey-oak plank-floor swatch in visual row 1, column 3. Make its plank pattern exactly twice as fine: about twice as many, half-width floorboards and shorter staggered plank lengths, while preserving the same light honey-oak color, clean cared-for surface, grain, brightness, and hand-painted PS1-era albedo style.
+Composition/framing: preserve the exact edge-to-edge 4 columns by 4 rows grid and every cell boundary.
+Constraints: change only visual row 1 column 3; keep all other 15 cells pixel-for-pixel unchanged if possible; the edited cell remains seamless/tileable; no gutters, borders, labels, objects, perspective, highlights, cast shadows, text, logos, or watermark; do not reorder cells; preserve square atlas framing.
+```

@@ -64,7 +64,10 @@ namespace BarPromenade
                     CollisionRootName).transform;
                 collisionRoot.SetParent(root, false);
                 var colliders = new List<Collider>();
-                BuildRoomCollision(collisionRoot, plan, colliders);
+                Collider stairRamp = BuildRoomCollision(
+                    collisionRoot,
+                    plan,
+                    colliders);
                 BuildFixtureCollision(collisionRoot, plan, colliders);
                 return new MothersHouseInteriorWorldResult(
                     root,
@@ -72,6 +75,7 @@ namespace BarPromenade
                     registry,
                     collisionRoot,
                     colliders,
+                    stairRamp,
                     anchors.Entry,
                     anchors.Spawn,
                     anchors.Exit,
@@ -253,14 +257,14 @@ namespace BarPromenade
             }
         }
 
-        private static void BuildRoomCollision(
+        private static Collider BuildRoomCollision(
             Transform parent,
             MothersHouseInteriorLayoutPlan plan,
             ICollection<Collider> colliders)
         {
             Rect room = plan.RoomBounds;
             float thickness = plan.WallThickness;
-            float wallHeight = plan.RoomHeight;
+            float wallHeight = plan.UpperFloor.CeilingHeight;
             AddCollider(
                 parent,
                 "Floor",
@@ -316,6 +320,325 @@ namespace BarPromenade
                 wallHeight,
                 doorMax,
                 room.xMax,
+                colliders);
+
+            float lintelHeight = wallHeight -
+                MothersHouseInteriorLayoutPlanner.DoorOpeningHeight;
+            AddCollider(
+                parent,
+                "South Door Lintel",
+                new Vector3(
+                    plan.EntryPosition.x,
+                    MothersHouseInteriorLayoutPlanner.DoorOpeningHeight +
+                        lintelHeight * 0.5f,
+                    room.yMin + thickness * 0.5f),
+                new Vector3(
+                    plan.DoorOpeningWidth,
+                    lintelHeight,
+                    thickness),
+                colliders);
+
+            BuildUpperFloorCollision(parent, plan, colliders);
+            BuildStairSouthClosure(parent, plan, colliders);
+            Collider stairRamp = BuildStairRamp(
+                parent,
+                plan.UpperFloor.StairFlight,
+                colliders);
+            BuildUpperPartitionCollision(parent, plan, colliders);
+            BuildStairGuards(parent, plan, colliders);
+            AddCollider(
+                parent,
+                "Upper Ceiling",
+                new Vector3(
+                    room.center.x,
+                    plan.UpperFloor.CeilingHeight + 0.07f,
+                    room.center.y),
+                new Vector3(room.width, 0.14f, room.height),
+                colliders);
+            return stairRamp;
+        }
+
+        private static void BuildStairSouthClosure(
+            Transform parent,
+            MothersHouseInteriorLayoutPlan plan,
+            ICollection<Collider> colliders)
+        {
+            StairwellFlightPlan flight = plan.UpperFloor.StairFlight;
+            Vector2 top = flight.Start +
+                flight.Direction * flight.RunLength;
+            float west = plan.RoomBounds.xMin + plan.WallThickness;
+            float east = flight.Start.x + flight.Width * 0.5f;
+            float south = plan.RoomBounds.yMin + plan.WallThickness;
+            const float overlap = 0.015f;
+            float north = top.y + overlap;
+            AddCollider(
+                parent,
+                "Stair South Closure",
+                new Vector3(
+                    (west + east) * 0.5f,
+                    plan.UpperFloor.FloorElevation * 0.5f,
+                    (south + north) * 0.5f),
+                new Vector3(
+                    east - west,
+                    plan.UpperFloor.FloorElevation,
+                    north - south),
+                colliders);
+        }
+
+        private static void BuildUpperFloorCollision(
+            Transform parent,
+            MothersHouseInteriorLayoutPlan plan,
+            ICollection<Collider> colliders)
+        {
+            Rect room = plan.RoomBounds;
+            Rect opening = plan.UpperFloor.StairOpeningBounds;
+            const float slabThickness = 0.18f;
+            float centerY = plan.UpperFloor.FloorElevation -
+                slabThickness * 0.5f;
+            AddHorizontalSlab(
+                parent,
+                "Upper Floor East Slab",
+                opening.xMax,
+                room.xMax,
+                room.yMin,
+                room.yMax,
+                centerY,
+                slabThickness,
+                colliders);
+            AddHorizontalSlab(
+                parent,
+                "Upper Floor North Landing",
+                room.xMin,
+                opening.xMax,
+                opening.yMax,
+                room.yMax,
+                centerY,
+                slabThickness,
+                colliders);
+            AddHorizontalSlab(
+                parent,
+                "Upper Floor South Cap",
+                room.xMin,
+                opening.xMax,
+                room.yMin,
+                opening.yMin,
+                centerY,
+                slabThickness,
+                colliders);
+        }
+
+        private static void AddHorizontalSlab(
+            Transform parent,
+            string name,
+            float minimumX,
+            float maximumX,
+            float minimumZ,
+            float maximumZ,
+            float centerY,
+            float thickness,
+            ICollection<Collider> colliders)
+        {
+            AddCollider(
+                parent,
+                name,
+                new Vector3(
+                    (minimumX + maximumX) * 0.5f,
+                    centerY,
+                    (minimumZ + maximumZ) * 0.5f),
+                new Vector3(
+                    maximumX - minimumX,
+                    thickness,
+                    maximumZ - minimumZ),
+                colliders);
+        }
+
+        private static Collider BuildStairRamp(
+            Transform parent,
+            StairwellFlightPlan flight,
+            ICollection<Collider> colliders)
+        {
+            Vector3 slopeDirection = new Vector3(
+                flight.Direction.x * flight.RunLength,
+                flight.TopElevation - flight.BaseElevation,
+                flight.Direction.y * flight.RunLength);
+            Quaternion rotation = Quaternion.LookRotation(
+                slopeDirection.normalized,
+                Vector3.up);
+            Vector3 upperNormal = rotation * Vector3.up;
+            const float rampThickness = 0.12f;
+            Vector2 planarCenter = flight.Start +
+                flight.Direction * (flight.RunLength * 0.5f);
+            Vector3 surfaceCenter = new Vector3(
+                planarCenter.x,
+                (flight.BaseElevation + flight.TopElevation) * 0.5f,
+                planarCenter.y);
+
+            GameObject holder = new GameObject("Stair Walkable Ramp");
+            holder.transform.SetParent(parent, false);
+            holder.transform.localPosition = surfaceCenter -
+                upperNormal * (rampThickness * 0.5f);
+            holder.transform.localRotation = rotation;
+            BoxCollider collider = holder.AddComponent<BoxCollider>();
+            collider.size = new Vector3(
+                flight.Width,
+                rampThickness,
+                slopeDirection.magnitude);
+            colliders.Add(collider);
+            return collider;
+        }
+
+        private static void BuildUpperPartitionCollision(
+            Transform parent,
+            MothersHouseInteriorLayoutPlan plan,
+            ICollection<Collider> colliders)
+        {
+            MothersHouseInteriorUpperFloorPlan upper = plan.UpperFloor;
+            float wallHeight = upper.CeilingHeight - upper.FloorElevation;
+            float centerY = upper.FloorElevation + wallHeight * 0.5f;
+            float halfDoor = upper.DoorOpeningWidth * 0.5f;
+            float southDoorMin = upper.SouthDoorCenterZ - halfDoor;
+            float southDoorMax = upper.SouthDoorCenterZ + halfDoor;
+            float northDoorMin = upper.NorthDoorCenterZ - halfDoor;
+            float northDoorMax = upper.NorthDoorCenterZ + halfDoor;
+            AddVerticalPartitionSegment(
+                parent,
+                "Upper Partition South End",
+                upper,
+                plan.RoomBounds.yMin,
+                southDoorMin,
+                centerY,
+                wallHeight,
+                colliders);
+            AddVerticalPartitionSegment(
+                parent,
+                "Upper Partition Between Doors",
+                upper,
+                southDoorMax,
+                northDoorMin,
+                centerY,
+                wallHeight,
+                colliders);
+            AddVerticalPartitionSegment(
+                parent,
+                "Upper Partition North End",
+                upper,
+                northDoorMax,
+                plan.RoomBounds.yMax,
+                centerY,
+                wallHeight,
+                colliders);
+
+            float lintelHeight = wallHeight - upper.DoorOpeningHeight;
+            AddUpperDoorLintel(
+                parent,
+                "Upper South Door Lintel",
+                upper,
+                upper.SouthDoorCenterZ,
+                lintelHeight,
+                colliders);
+            AddUpperDoorLintel(
+                parent,
+                "Upper North Door Lintel",
+                upper,
+                upper.NorthDoorCenterZ,
+                lintelHeight,
+                colliders);
+
+            float dividerMinimumX = upper.PartitionX +
+                upper.PartitionThickness * 0.5f;
+            AddCollider(
+                parent,
+                "Upper Room Divider",
+                new Vector3(
+                    (dividerMinimumX + plan.RoomBounds.xMax) * 0.5f,
+                    centerY,
+                    upper.RoomDividerZ),
+                new Vector3(
+                    plan.RoomBounds.xMax - dividerMinimumX,
+                    wallHeight,
+                    upper.PartitionThickness),
+                colliders);
+        }
+
+        private static void AddVerticalPartitionSegment(
+            Transform parent,
+            string name,
+            MothersHouseInteriorUpperFloorPlan upper,
+            float minimumZ,
+            float maximumZ,
+            float centerY,
+            float wallHeight,
+            ICollection<Collider> colliders)
+        {
+            AddCollider(
+                parent,
+                name,
+                new Vector3(
+                    upper.PartitionX,
+                    centerY,
+                    (minimumZ + maximumZ) * 0.5f),
+                new Vector3(
+                    upper.PartitionThickness,
+                    wallHeight,
+                    maximumZ - minimumZ),
+                colliders);
+        }
+
+        private static void AddUpperDoorLintel(
+            Transform parent,
+            string name,
+            MothersHouseInteriorUpperFloorPlan upper,
+            float centerZ,
+            float lintelHeight,
+            ICollection<Collider> colliders)
+        {
+            AddCollider(
+                parent,
+                name,
+                new Vector3(
+                    upper.PartitionX,
+                    upper.FloorElevation + upper.DoorOpeningHeight +
+                        lintelHeight * 0.5f,
+                    centerZ),
+                new Vector3(
+                    upper.PartitionThickness,
+                    lintelHeight,
+                    upper.DoorOpeningWidth),
+                colliders);
+        }
+
+        private static void BuildStairGuards(
+            Transform parent,
+            MothersHouseInteriorLayoutPlan plan,
+            ICollection<Collider> colliders)
+        {
+            Rect opening = plan.UpperFloor.StairOpeningBounds;
+            const float guardHeight = 1f;
+            const float guardThickness = 0.12f;
+            const float eastGuardStartZ = -2.30f;
+            AddCollider(
+                parent,
+                "Upper Stair East Guard",
+                new Vector3(
+                    opening.xMax,
+                    plan.UpperFloor.FloorElevation + guardHeight * 0.5f,
+                    (eastGuardStartZ + opening.yMax) * 0.5f),
+                new Vector3(
+                    guardThickness,
+                    guardHeight,
+                    opening.yMax - eastGuardStartZ),
+                colliders);
+            AddCollider(
+                parent,
+                "Upper Stair North Guard",
+                new Vector3(
+                    opening.center.x,
+                    plan.UpperFloor.FloorElevation + guardHeight * 0.5f,
+                    opening.yMax),
+                new Vector3(
+                    opening.width,
+                    guardHeight,
+                    guardThickness),
                 colliders);
         }
 

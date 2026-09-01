@@ -1,0 +1,1207 @@
+{
+  "generator": "tools/build-city-pedestrian-3d-model.py",
+  "generator_version": "4.5.1",
+  "blender_version": "5.0.1",
+  "design_id": "mother_v1",
+  "display_name": "Mother",
+  "seed": 401882,
+  "height_m": 1.75,
+  "anatomy_standard": "NpcHumanV2",
+  "rest_pelvis_height_m": 0.835,
+  "shoulder_joint_width_m": 0.418,
+  "hip_joint_width_m": 0.184,
+  "head_height_m": 0.230858,
+  "head_width_m": 0.16856,
+  "heads_tall": 7.580411,
+  "shoulder_to_head_width": 2.479829,
+  "signature_anatomy": [],
+  "pose": "apose",
+  "forward_axis": "-Y",
+  "anatomical_left_axis": "+X",
+  "mesh_count": 45,
+  "triangle_count": 1892,
+  "triangle_budget": [
+    1700,
+    2500
+  ],
+  "staged": true,
+  "pool_eligible": false,
+  "wheel_radius_m": 0.0,
+  "pivot_names": [],
+  "bounds_min": [
+    -0.754882,
+    -0.213303,
+    0.0
+  ],
+  "bounds_max": [
+    0.756882,
+    0.210311,
+    1.75
+  ],
+  "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
+  "emissive": false,
+  "colliders": false,
+  "animation_count": 0,
+  "animations": [],
+  "shared_animation_source": "Assets/Pedestrians/Animations/MothersHouseMother.fbx",
+  "shared_clips": [
+    "MotherRock"
+  ],
+  "rides_bus": false,
+  "seated_clearance_m": null,
+  "perch_seat_height_m": [
+    0.555,
+    0.585
+  ],
+  "perch_support_contact_m": null,
+  "perch_support_radius_m": null,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "a7283405ac08d7f79fa11daf804bae1cfa94e9b2bc5b8caab10d0195aed91e46",
+  "bones": [
+    {
+      "name": "root",
+      "parent": "",
+      "head": [
+        0,
+        0,
+        0
+      ],
+      "tail": [
+        0,
+        0,
+        0.18
+      ],
+      "deform": false
+    },
+    {
+      "name": "pelvis",
+      "parent": "root",
+      "head": [
+        0,
+        0.008,
+        0.835
+      ],
+      "tail": [
+        0,
+        0.004,
+        1.015
+      ],
+      "deform": true
+    },
+    {
+      "name": "spine",
+      "parent": "pelvis",
+      "head": [
+        0,
+        0.004,
+        1.015
+      ],
+      "tail": [
+        0,
+        0,
+        1.205
+      ],
+      "deform": true
+    },
+    {
+      "name": "chest",
+      "parent": "spine",
+      "head": [
+        0,
+        0,
+        1.205
+      ],
+      "tail": [
+        0,
+        -0.01,
+        1.41
+      ],
+      "deform": true
+    },
+    {
+      "name": "neck",
+      "parent": "chest",
+      "head": [
+        0,
+        -0.01,
+        1.41
+      ],
+      "tail": [
+        0,
+        -0.025,
+        1.485
+      ],
+      "deform": true
+    },
+    {
+      "name": "head",
+      "parent": "neck",
+      "head": [
+        0,
+        -0.025,
+        1.485
+      ],
+      "tail": [
+        0,
+        -0.047,
+        1.675
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.eye.L",
+      "parent": "head",
+      "head": [
+        0.039,
+        -0.122,
+        1.606
+      ],
+      "tail": [
+        0.039,
+        -0.122,
+        1.62
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.eye.R",
+      "parent": "head",
+      "head": [
+        -0.039,
+        -0.122,
+        1.606
+      ],
+      "tail": [
+        -0.039,
+        -0.122,
+        1.62
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.brow.L",
+      "parent": "head",
+      "head": [
+        0.066,
+        -0.119,
+        1.644
+      ],
+      "tail": [
+        0.018,
+        -0.127,
+        1.642
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.brow.R",
+      "parent": "head",
+      "head": [
+        -0.066,
+        -0.119,
+        1.642
+      ],
+      "tail": [
+        -0.018,
+        -0.127,
+        1.641
+      ],
+      "deform": true
+    },
+    {
+      "name": "face.mouth",
+      "parent": "head",
+      "head": [
+        -0.032,
+        -0.133,
+        1.538
+      ],
+      "tail": [
+        0.036,
+        -0.133,
+        1.537
+      ],
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Mouth",
+      "parent": "head",
+      "head": [
+        0.002,
+        -0.141,
+        1.538
+      ],
+      "tail": [
+        0.002,
+        -0.201,
+        1.538
+      ],
+      "deform": false
+    },
+    {
+      "name": "clavicle.L",
+      "parent": "chest",
+      "head": [
+        0,
+        -0.008,
+        1.41
+      ],
+      "tail": [
+        0.21,
+        -0.004,
+        1.424
+      ],
+      "deform": false
+    },
+    {
+      "name": "upper_arm.L",
+      "parent": "clavicle.L",
+      "head": [
+        0.21,
+        -0.004,
+        1.424
+      ],
+      "tail": [
+        0.455,
+        -0.012,
+        1.25
+      ],
+      "deform": true
+    },
+    {
+      "name": "forearm.L",
+      "parent": "upper_arm.L",
+      "head": [
+        0.455,
+        -0.012,
+        1.25
+      ],
+      "tail": [
+        0.68,
+        -0.02,
+        1.075
+      ],
+      "deform": true
+    },
+    {
+      "name": "hand.L",
+      "parent": "forearm.L",
+      "head": [
+        0.68,
+        -0.02,
+        1.075
+      ],
+      "tail": [
+        0.763,
+        -0.024,
+        1.025
+      ],
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Grip.L",
+      "parent": "hand.L",
+      "head": [
+        0.7397600412368774,
+        -0.02288000099360943,
+        1.0390000343322754
+      ],
+      "tail": [
+        0.7397600412368774,
+        -0.07788000255823135,
+        1.0390000343322754
+      ],
+      "deform": false
+    },
+    {
+      "name": "SOCKET_Vessel.L",
+      "parent": "hand.L",
+      "head": [
+        0.7397600412368774,
+        -0.02288000099360943,
+        1.0390000343322754
+      ],
+      "tail": [
+        0.7397600412368774,
+        -0.02288000099360943,
+        0.9540000557899475
+      ],
+      "deform": false
+    },
+    {
+      "name": "clavicle.R",
+      "parent": "chest",
+      "head": [
+        0,
+        -0.008,
+        1.41
+      ],
+      "tail": [
+        -0.208,
+        0.005,
+        1.418
+      ],
+      "deform": false
+    },
+    {
+      "name": "upper_arm.R",
+      "parent": "clavicle.R",
+      "head": [
+        -0.208,
+        0.005,
+        1.418
+      ],
+      "tail": [
+        -0.453,
+        -0.008,
+        1.244
+      ],
+      "deform": true
+    },
+    {
+      "name": "forearm.R",
+      "parent": "upper_arm.R",
+      "head": [
+        -0.453,
+        -0.008,
+        1.244
+      ],
+      "tail": [
+        -0.678,
+        -0.016,
+        1.069
+      ],
+      "deform": true
+    },
+    {
+      "name": "hand.R",
+      "parent": "forearm.R",
+      "head": [
+        -0.678,
+        -0.016,
+        1.069
+      ],
+      "tail": [
+        -0.761,
+        -0.02,
+        1.019
+      ],
+      "deform": true
+    },
+    {
+      "name": "SOCKET_Grip.R",
+      "parent": "hand.R",
+      "head": [
+        -0.7377599477767944,
+        -0.018880000337958336,
+        1.0329999923706055
+      ],
+      "tail": [
+        -0.7377599477767944,
+        -0.07388000190258026,
+        1.0329999923706055
+      ],
+      "deform": false
+    },
+    {
+      "name": "SOCKET_Cigarette.R",
+      "parent": "hand.R",
+      "head": [
+        -0.7377599477767944,
+        -0.028880000114440918,
+        1.0449999570846558
+      ],
+      "tail": [
+        -0.7377599477767944,
+        -0.10388000309467316,
+        1.0449999570846558
+      ],
+      "deform": false
+    },
+    {
+      "name": "SOCKET_Bottle.R",
+      "parent": "hand.R",
+      "head": [
+        -0.7377599477767944,
+        -0.018880000337958336,
+        1.0329999923706055
+      ],
+      "tail": [
+        -0.7377599477767944,
+        -0.018880000337958336,
+        0.9480000138282776
+      ],
+      "deform": false
+    },
+    {
+      "name": "thigh.L",
+      "parent": "pelvis",
+      "head": [
+        0.092,
+        0.01,
+        0.878
+      ],
+      "tail": [
+        0.088,
+        -0.014,
+        0.485
+      ],
+      "deform": true
+    },
+    {
+      "name": "shin.L",
+      "parent": "thigh.L",
+      "head": [
+        0.088,
+        -0.014,
+        0.485
+      ],
+      "tail": [
+        0.096,
+        -0.022,
+        0.095
+      ],
+      "deform": true
+    },
+    {
+      "name": "foot.L",
+      "parent": "shin.L",
+      "head": [
+        0.096,
+        -0.022,
+        0.095
+      ],
+      "tail": [
+        0.096,
+        -0.212,
+        0.045
+      ],
+      "deform": true
+    },
+    {
+      "name": "thigh.R",
+      "parent": "pelvis",
+      "head": [
+        -0.092,
+        -0.004,
+        0.878
+      ],
+      "tail": [
+        -0.088,
+        0.01,
+        0.485
+      ],
+      "deform": true
+    },
+    {
+      "name": "shin.R",
+      "parent": "thigh.R",
+      "head": [
+        -0.088,
+        0.01,
+        0.485
+      ],
+      "tail": [
+        -0.096,
+        0.014,
+        0.095
+      ],
+      "deform": true
+    },
+    {
+      "name": "foot.R",
+      "parent": "shin.R",
+      "head": [
+        -0.096,
+        0.014,
+        0.095
+      ],
+      "tail": [
+        -0.096,
+        -0.18,
+        0.045
+      ],
+      "deform": true
+    }
+  ],
+  "parts": [
+    {
+      "name": "ACC_Button.01",
+      "role": "clothing_detail",
+      "bone": "spine",
+      "palette_name": "mother_cardigan_dark",
+      "base_color": [
+        0.205,
+        0.212,
+        0.192,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Button.02",
+      "role": "clothing_detail",
+      "bone": "chest",
+      "palette_name": "mother_cardigan_dark",
+      "base_color": [
+        0.205,
+        0.212,
+        0.192,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Button.03",
+      "role": "clothing_detail",
+      "bone": "chest",
+      "palette_name": "mother_cardigan_dark",
+      "base_color": [
+        0.205,
+        0.212,
+        0.192,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Thumb.L",
+      "role": "body_detail",
+      "bone": "hand.L",
+      "palette_name": "mother_skin_shadow",
+      "base_color": [
+        0.36,
+        0.268,
+        0.235,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "ACC_Thumb.R",
+      "role": "body_detail",
+      "bone": "hand.R",
+      "palette_name": "mother_skin_shadow",
+      "base_color": [
+        0.36,
+        0.268,
+        0.235,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_Blanket.L",
+      "role": "clothing",
+      "bone": "thigh.L",
+      "palette_name": "mother_blanket",
+      "base_color": [
+        0.352,
+        0.218,
+        0.17,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_Blanket.R",
+      "role": "clothing",
+      "bone": "thigh.R",
+      "palette_name": "mother_blanket",
+      "base_color": [
+        0.352,
+        0.218,
+        0.17,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BlanketHem.L",
+      "role": "clothing",
+      "bone": "thigh.L",
+      "palette_name": "mother_blanket_dark",
+      "base_color": [
+        0.215,
+        0.13,
+        0.104,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BlanketHem.R",
+      "role": "clothing",
+      "bone": "thigh.R",
+      "palette_name": "mother_blanket_dark",
+      "base_color": [
+        0.215,
+        0.13,
+        0.104,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_BlanketLap",
+      "role": "clothing",
+      "bone": "pelvis",
+      "palette_name": "mother_blanket",
+      "base_color": [
+        0.352,
+        0.218,
+        0.17,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_Bodice",
+      "role": "clothing",
+      "bone": "chest",
+      "palette_name": "mother_dress",
+      "base_color": [
+        0.268,
+        0.232,
+        0.248,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_Cardigan",
+      "role": "clothing",
+      "bone": "chest",
+      "palette_name": "mother_cardigan",
+      "base_color": [
+        0.352,
+        0.36,
+        0.335,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_CardiganPanel.L",
+      "role": "clothing",
+      "bone": "chest",
+      "palette_name": "mother_cardigan_panel",
+      "base_color": [
+        0.318,
+        0.328,
+        0.302,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_CardiganPanel.R",
+      "role": "clothing",
+      "bone": "chest",
+      "palette_name": "mother_cardigan_panel",
+      "base_color": [
+        0.318,
+        0.328,
+        0.302,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_Collar",
+      "role": "clothing",
+      "bone": "chest",
+      "palette_name": "mother_cardigan_dark",
+      "base_color": [
+        0.205,
+        0.212,
+        0.192,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_Cuff.L",
+      "role": "clothing",
+      "bone": "forearm.L",
+      "palette_name": "mother_cardigan_dark",
+      "base_color": [
+        0.205,
+        0.212,
+        0.192,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "CLO_Cuff.R",
+      "role": "clothing",
+      "bone": "forearm.R",
+      "palette_name": "mother_cardigan_dark",
+      "base_color": [
+        0.205,
+        0.212,
+        0.192,
+        1.0
+      ],
+      "vertices": 20,
+      "triangles": 36
+    },
+    {
+      "name": "CLO_Skirt",
+      "role": "clothing",
+      "bone": "pelvis",
+      "palette_name": "mother_dress",
+      "base_color": [
+        0.268,
+        0.232,
+        0.248,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_SkirtDrape.L",
+      "role": "clothing",
+      "bone": "thigh.L",
+      "palette_name": "mother_dress",
+      "base_color": [
+        0.268,
+        0.232,
+        0.248,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_SkirtDrape.R",
+      "role": "clothing",
+      "bone": "thigh.R",
+      "palette_name": "mother_dress",
+      "base_color": [
+        0.268,
+        0.232,
+        0.248,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_SkirtHem.L",
+      "role": "clothing",
+      "bone": "thigh.L",
+      "palette_name": "mother_dress_faded",
+      "base_color": [
+        0.335,
+        0.302,
+        0.312,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_SkirtHem.R",
+      "role": "clothing",
+      "bone": "thigh.R",
+      "palette_name": "mother_dress_faded",
+      "base_color": [
+        0.335,
+        0.302,
+        0.312,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "CLO_Sleeve.L",
+      "role": "clothing",
+      "bone": "upper_arm.L",
+      "palette_name": "mother_cardigan",
+      "base_color": [
+        0.352,
+        0.36,
+        0.335,
+        1.0
+      ],
+      "vertices": 28,
+      "triangles": 52
+    },
+    {
+      "name": "CLO_Sleeve.R",
+      "role": "clothing",
+      "bone": "upper_arm.R",
+      "palette_name": "mother_cardigan",
+      "base_color": [
+        0.352,
+        0.36,
+        0.335,
+        1.0
+      ],
+      "vertices": 28,
+      "triangles": 52
+    },
+    {
+      "name": "CLO_Waist",
+      "role": "clothing",
+      "bone": "spine",
+      "palette_name": "mother_dress_faded",
+      "base_color": [
+        0.335,
+        0.302,
+        0.312,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_FaceSurface",
+      "role": "facial_atlas",
+      "bone": "head",
+      "palette_name": "mother_face_atlas",
+      "base_color": [
+        1.0,
+        1.0,
+        1.0,
+        1.0
+      ],
+      "vertices": 49,
+      "triangles": 72
+    },
+    {
+      "name": "GEO_Forearm.L",
+      "role": "body",
+      "bone": "forearm.L",
+      "palette_name": "mother_skin",
+      "base_color": [
+        0.52,
+        0.4,
+        0.345,
+        1.0
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Forearm.R",
+      "role": "body",
+      "bone": "forearm.R",
+      "palette_name": "mother_skin",
+      "base_color": [
+        0.52,
+        0.4,
+        0.345,
+        1.0
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Hand.L",
+      "role": "body",
+      "bone": "hand.L",
+      "palette_name": "mother_skin",
+      "base_color": [
+        0.52,
+        0.4,
+        0.345,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Hand.R",
+      "role": "body",
+      "bone": "hand.R",
+      "palette_name": "mother_skin",
+      "base_color": [
+        0.52,
+        0.4,
+        0.345,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Head",
+      "role": "body",
+      "bone": "head",
+      "palette_name": "mother_skin",
+      "base_color": [
+        0.52,
+        0.4,
+        0.345,
+        1.0
+      ],
+      "vertices": 182,
+      "triangles": 360
+    },
+    {
+      "name": "GEO_Neck",
+      "role": "body",
+      "bone": "neck",
+      "palette_name": "mother_skin_shadow",
+      "base_color": [
+        0.36,
+        0.268,
+        0.235,
+        1.0
+      ],
+      "vertices": 28,
+      "triangles": 52
+    },
+    {
+      "name": "GEO_Shin.L",
+      "role": "body",
+      "bone": "shin.L",
+      "palette_name": "mother_dress_faded",
+      "base_color": [
+        0.335,
+        0.302,
+        0.312,
+        1.0
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Shin.R",
+      "role": "body",
+      "bone": "shin.R",
+      "palette_name": "mother_dress_faded",
+      "base_color": [
+        0.335,
+        0.302,
+        0.312,
+        1.0
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Slipper.L",
+      "role": "body",
+      "bone": "foot.L",
+      "palette_name": "mother_slipper",
+      "base_color": [
+        0.2,
+        0.176,
+        0.166,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Slipper.R",
+      "role": "body",
+      "bone": "foot.R",
+      "palette_name": "mother_slipper",
+      "base_color": [
+        0.2,
+        0.176,
+        0.166,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_SlipperSole.L",
+      "role": "body",
+      "bone": "foot.L",
+      "palette_name": "sole",
+      "base_color": [
+        0.018,
+        0.019,
+        0.017,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_SlipperSole.R",
+      "role": "body",
+      "bone": "foot.R",
+      "palette_name": "sole",
+      "base_color": [
+        0.018,
+        0.019,
+        0.017,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "GEO_Thigh.L",
+      "role": "body",
+      "bone": "thigh.L",
+      "palette_name": "mother_dress_faded",
+      "base_color": [
+        0.335,
+        0.302,
+        0.312,
+        1.0
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "GEO_Thigh.R",
+      "role": "body",
+      "bone": "thigh.R",
+      "palette_name": "mother_dress_faded",
+      "base_color": [
+        0.335,
+        0.302,
+        0.312,
+        1.0
+      ],
+      "vertices": 24,
+      "triangles": 44
+    },
+    {
+      "name": "HAIR_Bun",
+      "role": "hair",
+      "bone": "head",
+      "palette_name": "mother_hair_dark",
+      "base_color": [
+        0.36,
+        0.348,
+        0.33,
+        1.0
+      ],
+      "vertices": 86,
+      "triangles": 168
+    },
+    {
+      "name": "HAIR_BunKnot",
+      "role": "hair",
+      "bone": "head",
+      "palette_name": "mother_hair_dark",
+      "base_color": [
+        0.36,
+        0.348,
+        0.33,
+        1.0
+      ],
+      "vertices": 8,
+      "triangles": 12
+    },
+    {
+      "name": "HAIR_Cap",
+      "role": "hair",
+      "bone": "head",
+      "palette_name": "mother_hair",
+      "base_color": [
+        0.545,
+        0.53,
+        0.505,
+        1.0
+      ],
+      "vertices": 114,
+      "triangles": 224
+    },
+    {
+      "name": "HAIR_Temple.L",
+      "role": "hair",
+      "bone": "head",
+      "palette_name": "mother_hair",
+      "base_color": [
+        0.545,
+        0.53,
+        0.505,
+        1.0
+      ],
+      "vertices": 62,
+      "triangles": 120
+    },
+    {
+      "name": "HAIR_Temple.R",
+      "role": "hair",
+      "bone": "head",
+      "palette_name": "mother_hair",
+      "base_color": [
+        0.545,
+        0.53,
+        0.505,
+        1.0
+      ],
+      "vertices": 62,
+      "triangles": 120
+    }
+  ],
+  "face_atlas": {
+    "texture_asset": "Assets/Pedestrians/Textures/MotherFaceAtlas.png",
+    "renderer": "GEO_FaceSurface",
+    "columns": 4,
+    "rows": 4,
+    "cell_size_px": 64,
+    "width_px": 256,
+    "height_px": 256,
+    "sha256": "936a3ca59fa7465c57829e124b666034b928f76a474db2728319bab45732bf52",
+    "color_space": "sRGB",
+    "filter_mode": "Point",
+    "wrap_mode": "Clamp",
+    "mipmaps": false,
+    "compression": "Uncompressed",
+    "uv_channel": 0,
+    "uv_origin": "bottom_left",
+    "material_tint_hex": "FFFFFF",
+    "uv_contract": "local_0_1_runtime_cell_scale_offset",
+    "cells": [
+      {
+        "expression": "Neutral",
+        "column": 0,
+        "row": 3
+      },
+      {
+        "expression": "HalfBlink",
+        "column": 1,
+        "row": 3
+      },
+      {
+        "expression": "ClosedBlink",
+        "column": 2,
+        "row": 3
+      },
+      {
+        "expression": "Watchful",
+        "column": 0,
+        "row": 2
+      },
+      {
+        "expression": "Tense",
+        "column": 1,
+        "row": 2
+      }
+    ]
+  }
+}
