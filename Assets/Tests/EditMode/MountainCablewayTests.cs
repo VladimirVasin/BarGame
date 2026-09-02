@@ -84,6 +84,41 @@ namespace BarPromenade.Tests.EditMode
                 Assert.That(
                     result.Root.GetComponentsInChildren<Light>(true),
                     Has.Length.EqualTo(3));
+
+                // And each of those three is a lamp you can SEE, not just a
+                // pool of light on the ground under it. The station stands
+                // over twenty metres from the vehicle apron through Exp2 fog
+                // at `0.026`, which eats a `0.07 m` emissive lens long before
+                // that: every fixed lamp in the City carries a halo for
+                // exactly this reason and not one fixture on this mountain
+                // did, which is most of why the entrance did not read.
+                Assert.That(
+                    result.Root.GetComponentsInChildren<CityLightHalo>(true),
+                    Has.Length.EqualTo(3),
+                    "A station lamp with no halo is invisible from the pad.");
+
+                // They must also be OUTSIDE the night registry. Its factor is
+                // a process-wide static only the City writes, so a halo
+                // registered here rides whatever the City last left - dimmed
+                // to two thirds for a whole visit if the hero travelled at
+                // noon. Pushing the registry to full day must not move them.
+                CityNightGlowRegistry.SetNightFactor(0f);
+                try
+                {
+                    foreach (CityLightHalo halo in result.Root
+                                 .GetComponentsInChildren<CityLightHalo>(true))
+                    {
+                        Assert.That(
+                            halo.IntensityFactor,
+                            Is.EqualTo(1f).Within(0.0001f),
+                            "A station halo is following the City's night " +
+                            "factor, which nothing on this mountain writes.");
+                    }
+                }
+                finally
+                {
+                    CityNightGlowRegistry.SetNightFactor(1f);
+                }
                 // The motor, the lower bullwheel's clack and one clack per
                 // tower's rollers: every voice a visible machine's.
                 Assert.That(result.Controller.AudioSources,

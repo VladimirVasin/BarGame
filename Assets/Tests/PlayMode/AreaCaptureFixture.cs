@@ -678,6 +678,91 @@ namespace BarPromenade.Tests.PlayMode
                 () => MountainRoadShots(mountainRoot));
         }
 
+        /// <summary>
+        /// The summit after dark, which nothing in this repository had ever
+        /// photographed.
+        ///
+        /// Every mountain sheet is shot at `07:30` or `12:40`, so the one
+        /// hour at which the pad's practicals are the picture had no frame at
+        /// all - which is exactly how a car standing dead centre of the yard
+        /// with no Light on it, and a station whose lamps carried no fog
+        /// halo, stayed invisible as defects. `20:00` is past `DuskEnd`, so
+        /// the night factor is a hard `1` rather than a point on the dusk
+        /// ramp, and the clock is seeded BEFORE the load because the root
+        /// applies the sample in `Initialize`.
+        ///
+        /// The three frames are the user's own complaint, in order: the yard
+        /// as you meet it, the car in the middle of it, and the way in to the
+        /// cableway seen from where the car stands.
+        /// </summary>
+        [UnityTest]
+        [Explicit("Capture, not a test. Run one area at a time.")]
+        public IEnumerator MountainRoadSummitNight()
+        {
+            GameSessionState.TryStartGameTimeFromWake();
+            GameSessionState.AdvanceGameTime(14f * 60f);
+            Assert.That(
+                GameSessionState.GameHour,
+                Is.EqualTo(20),
+                "The night sheet must be shot at night.");
+
+            MountainRoadRoot mountainRoot = null;
+            yield return Capture(
+                SceneIds.MountainRoad,
+                () =>
+                {
+                    mountainRoot = Object.FindAnyObjectByType<
+                        MountainRoadRoot>();
+                    return mountainRoot;
+                },
+                () => MountainRoadSummitNightShots(mountainRoot));
+        }
+
+        private static Shot[] MountainRoadSummitNightShots(
+            MountainRoadRoot root)
+        {
+            Assert.That(root, Is.Not.Null);
+            Assert.That(
+                root.Atmosphere.CurrentSample.NightFactor,
+                Is.EqualTo(1f).Within(0.001f),
+                "The area is not actually at its night grade.");
+
+            MountainRoadPlateauDescriptor plateau = root.Plan.Plateau;
+            MountainRoadVehicleApronPlan apron =
+                root.Plan.Terminal.VehicleApron;
+            MountainRoadCablewayPlan cableway =
+                root.Plan.Terminal.Cableway;
+
+            // Every pose comes off the plan. Invented absolute coordinates
+            // are how this fixture produced a folder of pictures of the
+            // inside of a wall.
+            return new[]
+            {
+                Shot.At(
+                    "n0-yard-from-the-approach",
+                    plateau.Center - plateau.Forward * 8f +
+                    plateau.Right * 14f + Vector3.up * 3.2f,
+                    plateau.Center + plateau.Forward * 6f +
+                    Vector3.up * 1.25f,
+                    64f),
+                Shot.At(
+                    "n1-car-on-the-apron",
+                    apron.Center - apron.Forward * 11f +
+                    Vector3.up * 2.1f,
+                    apron.Center + apron.Forward * 4f +
+                    Vector3.up * 0.9f,
+                    62f),
+                // The boarding dock, not the station's middle: the dock is
+                // the "вход" the complaint is about, and it is the corner the
+                // canopy fixtures were both aimed away from.
+                Shot.At(
+                    "n2-cableway-entrance-from-the-apron",
+                    apron.Center + Vector3.up * EyeHeight,
+                    cableway.BoardingDockPosition + Vector3.up * 1.6f,
+                    62f),
+            };
+        }
+
         [UnityTest]
         [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator AlpineVillage()

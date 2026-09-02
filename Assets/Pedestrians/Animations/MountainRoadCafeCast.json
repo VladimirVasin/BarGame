@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.5.1",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
   "anatomy_standard": "NpcHumanV2",
@@ -9,7 +9,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 9,
+  "clip_count": 10,
   "clips": [
     {
       "name": "CafeLoneSleep",
@@ -93,6 +93,88 @@
       "animated_local_xz_size_m": [
         0.564292,
         0.884257
+      ]
+    },
+    {
+      "name": "CafeLoneInterject",
+      "archetype": "cafe_lone_patron_v2",
+      "duration_seconds": 6.0,
+      "frame_start": 0,
+      "frame_end": 144,
+      "loop": false,
+      "one_shot": true,
+      "in_place": true,
+      "authored_posture": "seated on the door-side bar stool, beginning and ending with his cheek on the crossed-arm pillow",
+      "gait": "drunkenly raises his head, reaches his right hand toward the couple and waves twice before collapsing back to sleep",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "motion_beats": [
+        {
+          "name": "head_rise",
+          "normalized_time": 0.22
+        },
+        {
+          "name": "right_hand_reach",
+          "normalized_time": 0.36
+        },
+        {
+          "name": "right_hand_wave_out",
+          "normalized_time": 0.46
+        },
+        {
+          "name": "right_hand_wave_back",
+          "normalized_time": 0.56
+        },
+        {
+          "name": "right_hand_wave_out",
+          "normalized_time": 0.66
+        },
+        {
+          "name": "return_to_sleep",
+          "normalized_time": 0.84
+        }
+      ],
+      "seated": true,
+      "perched": true,
+      "perch_seat_height_min_m": 0.48884,
+      "perch_seat_height_max_m": 0.48884,
+      "perch_support_contact_min_m": 0.817495,
+      "perch_support_contact_max_m": 0.817495,
+      "perch_support_radius_m": 0.201038,
+      "perch_pelvis_lift_m": 0.02284,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.019884
+      ],
+      "perch_contact_parts": [
+        "GEO_Shoe.R"
+      ],
+      "seated_drop_m": 0.51168,
+      "sleep_base_endpoints": true,
+      "sleep_base_endpoint_error_max_m": 0.0,
+      "seated_pelvis_travel_m": 0.0,
+      "head_rise_m": 0.227008,
+      "right_hand_travel_m": 0.517431,
+      "right_hand_toward_couple_x_m": 0.207921,
+      "right_hand_toward_couple_alignment": 0.42166,
+      "right_hand_wave_sweep_m": 0.231033,
+      "motion_frames_sampled": 145,
+      "animated_local_xz_min_m": [
+        -0.274358,
+        -0.133327
+      ],
+      "animated_local_xz_max_m": [
+        0.445424,
+        0.742657
+      ],
+      "animated_local_xz_size_m": [
+        0.719781,
+        0.875984
       ]
     },
     {
@@ -247,29 +329,34 @@
         "GEO_Shoe.R"
       ],
       "seated_drop_m": 0.509617,
-      "cigarette_drag_filter_lip_surface_gap_min_m": 0.003637,
-      "cigarette_drag_filter_lip_surface_gap_max_m": 0.003637,
-      "cigarette_drag_filter_lip_center_distance_min_m": 0.012471,
-      "cigarette_drag_filter_lip_center_distance_max_m": 0.012471,
-      "cigarette_drag_axis_angle_max_degrees": 0.028397,
-      "cigarette_drag_socket_lip_alignment_min": 0.944842,
-      "cigarette_drag_ember_lip_distance_min_m": 0.092005,
-      "cigarette_drag_ember_farther_margin_min_m": 0.079534,
-      "cigarette_idle_cigarette_head_gap_min_m": 0.003616,
-      "cigarette_idle_hand_head_gap_min_m": 0.054593,
+      "cigarette_filter_length_m": 0.0344,
+      "cigarette_total_length_m": 0.0944,
+      "cigarette_drag_filter_lip_surface_gap_min_m": 0.001744,
+      "cigarette_drag_filter_lip_surface_gap_max_m": 0.001744,
+      "cigarette_drag_filter_lip_center_distance_min_m": 0.01051,
+      "cigarette_drag_filter_lip_center_distance_max_m": 0.01051,
+      "cigarette_drag_axis_angle_max_degrees": 29.209554,
+      "cigarette_drag_socket_lip_alignment_min": 0.888622,
+      "cigarette_drag_ember_lip_distance_min_m": 0.094672,
+      "cigarette_drag_ember_farther_margin_min_m": 0.084162,
+      "cigarette_filter_hand_gap_max_m": 0.000314,
+      "cigarette_ember_hand_gap_min_m": 0.011983,
+      "cigarette_ember_filter_grip_margin_min_m": 0.011669,
+      "cigarette_idle_cigarette_head_gap_min_m": 0.042358,
+      "cigarette_idle_hand_head_gap_min_m": 0.032209,
       "cigarette_drag_frames_sampled": 27,
       "cigarette_idle_frames_sampled": 265,
       "animated_local_xz_min_m": [
-        -0.371593,
+        -0.371606,
         -0.168243
       ],
       "animated_local_xz_max_m": [
         0.400168,
-        0.481497
+        0.483304
       ],
       "animated_local_xz_size_m": [
-        0.771762,
-        0.64974
+        0.771775,
+        0.651547
       ]
     },
     {
@@ -452,5 +539,5 @@
       ]
     }
   ],
-  "build_signature": "c015c05279f54feed7e39134f8e5616769ce6d7326e509224e6e93b2754264c0"
+  "build_signature": "67c3b9db04d64c10ce61bc153a6f300c4f529bc60a8b07733eb0859c469298aa"
 }

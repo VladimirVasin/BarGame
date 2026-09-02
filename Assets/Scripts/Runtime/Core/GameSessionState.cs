@@ -187,9 +187,9 @@ namespace BarPromenade
             graveWork.FirstSealedPlotId;
 
         /// <summary>
-        /// How far the one journey out of the city has got. Both areas build
-        /// the Ferryman and his car from this and nothing else, so he is never
-        /// in two places and never in none.
+        /// Where the Ferryman and his car are, and which way they are going.
+        /// Both areas build him from this and nothing else, so he is never in
+        /// two places and never in none.
         /// </summary>
         public static LastRouteFerrymanRideStage FerrymanRide
         {
@@ -207,7 +207,8 @@ namespace BarPromenade
         /// journey behind without him.
         /// </summary>
         public static bool IsRidingTheFerryman =>
-            FerrymanRide == LastRouteFerrymanRideStage.InTransit;
+            FerrymanRide == LastRouteFerrymanRideStage.InTransit ||
+            FerrymanRide == LastRouteFerrymanRideStage.Returning;
 
         /// <summary>
         /// True while the hero is on a cableway cabin's bench and the line is
@@ -492,15 +493,24 @@ namespace BarPromenade
 
         /// <summary>
         /// Moves the one journey out of the city one rung up its ladder.
-        /// Refuses anything that is not forward, for the graves' own reason:
-        /// both areas are rebuilt from this value alone, so a stage that could
-        /// go back would be a car that arrives at the cafe and then reappears
-        /// on the island it left.
+        /// Refuses anything that is not the next thing that can happen. Both
+        /// areas are rebuilt from this value alone, so a stage that could be
+        /// set to anything would be a car that arrives at the cafe and then
+        /// reappears on the island it left.
+        ///
+        /// The ring closes at exactly one place and it is the only step that
+        /// is not an increment: <see cref="LastRouteFerrymanRideStage.Returning"/>
+        /// back to <see cref="LastRouteFerrymanRideStage.NotTaken"/>, which is
+        /// the car reaching the island again. Everything else still only ever
+        /// goes forwards.
         /// </summary>
         public static bool TryAdvanceFerrymanRide(
             LastRouteFerrymanRideStage stage)
         {
-            if (stage <= FerrymanRide)
+            bool closesTheRing =
+                stage == LastRouteFerrymanRideStage.NotTaken &&
+                FerrymanRide == LastRouteFerrymanRideStage.Returning;
+            if (!closesTheRing && stage <= FerrymanRide)
             {
                 return false;
             }

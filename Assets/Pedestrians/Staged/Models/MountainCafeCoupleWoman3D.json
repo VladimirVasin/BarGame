@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.5.1",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "cafe_couple_woman_v2",
   "display_name": "Cafe Couple Woman",
@@ -18,8 +18,8 @@
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 40,
-  "triangle_count": 2220,
+  "mesh_count": 41,
+  "triangle_count": 2240,
   "triangle_budget": [
     1800,
     3000
@@ -62,7 +62,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "3372e4acdcf99f766b7eb23156a7101fc6c4f27e4b2a82bb41daa5b56439d49c",
+  "build_signature": "c925c8d3a7da4987a49adb503696a788a35e777650b37c7e6694a4853fc3f73c",
   "bones": [
     {
       "name": "root",
@@ -535,11 +535,11 @@
       "name": "ACC_CafeCigarette",
       "role": "held_prop",
       "bone": "hand.R",
-      "palette_name": "cafe_paper",
+      "palette_name": "cafe_ivory_light",
       "base_color": [
-        0.625,
-        0.54,
-        0.33,
+        0.755,
+        0.72,
+        0.57,
         1.0
       ],
       "vertices": 12,
@@ -558,6 +558,20 @@
       ],
       "vertices": 8,
       "triangles": 12
+    },
+    {
+      "name": "ACC_CafeCigaretteFilter",
+      "role": "held_prop",
+      "bone": "hand.R",
+      "palette_name": "cafe_paper",
+      "base_color": [
+        0.625,
+        0.54,
+        0.33,
+        1.0
+      ],
+      "vertices": 12,
+      "triangles": 20
     },
     {
       "name": "ACC_CopperHairCap",

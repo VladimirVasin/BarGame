@@ -1,13 +1,15 @@
 namespace BarPromenade
 {
     /// <summary>
-    /// The two localized cafe repertoires and their deterministic fixed
-    /// authored order. Text lives in the ordinary localization catalogs;
-    /// this class owns only the stable keys and their ten response pairs.
+    /// The localized cafe repertoires and their deterministic fixed authored
+    /// order. Text lives in the ordinary localization catalogs; this class
+    /// owns only the stable keys, the ten response pairs and the sleeping
+    /// husband's short interruption pool.
     /// </summary>
     public static class MountainRoadCafeConversationLines
     {
         public const int LinesPerSpeaker = 10;
+        public const int LonePatronLineCount = 4;
         public const int MaximumLineLength = 48;
 
         public static readonly string[] PairManLineKeys =
@@ -38,6 +40,14 @@ namespace BarPromenade
             "mountain.cafe.pair.woman.line.10"
         };
 
+        public static readonly string[] LonePatronLineKeys =
+        {
+            "mountain.cafe.lone.line.01",
+            "mountain.cafe.lone.line.02",
+            "mountain.cafe.lone.line.03",
+            "mountain.cafe.lone.line.04"
+        };
+
         public static string[] LineKeysFor(
             MountainRoadCafeConversationSpeaker speaker)
         {
@@ -64,6 +74,65 @@ namespace BarPromenade
             }
 
             return keys[wrapped];
+        }
+    }
+
+    /// <summary>
+    /// Counts fully displayed Man/Woman exchanges. Every third completed
+    /// exchange admits one lone-patron interruption and advances its own
+    /// four-line pool. Blocked or rolled-back bubbles never reach this clock.
+    /// </summary>
+    public sealed class MountainRoadCafeLonePatronInterjectionSchedule
+    {
+        public const int PairExchangesPerInterjection = 3;
+
+        private int completedPairExchanges;
+        private int nextLineIndex;
+        private bool hasCompletedManLine;
+
+        public int CompletedPairExchanges => completedPairExchanges;
+        public int NextLineIndex => nextLineIndex;
+
+        public bool RecordCompletedLine(
+            MountainRoadCafeConversationSpeaker speaker)
+        {
+            if (speaker == MountainRoadCafeConversationSpeaker.PairMan)
+            {
+                hasCompletedManLine = true;
+                return false;
+            }
+
+            if (!hasCompletedManLine)
+            {
+                return false;
+            }
+
+            hasCompletedManLine = false;
+            completedPairExchanges++;
+            return completedPairExchanges %
+                   PairExchangesPerInterjection == 0;
+        }
+
+        public string ConsumeLonePatronLineKey()
+        {
+            string[] keys = MountainRoadCafeConversationLines
+                .LonePatronLineKeys;
+            if (keys.Length == 0)
+            {
+                throw new System.InvalidOperationException(
+                    "The mountain cafe lone patron has no lines.");
+            }
+
+            string key = keys[nextLineIndex];
+            nextLineIndex = (nextLineIndex + 1) % keys.Length;
+            return key;
+        }
+
+        public void Reset()
+        {
+            completedPairExchanges = 0;
+            nextLineIndex = 0;
+            hasCompletedManLine = false;
         }
     }
 

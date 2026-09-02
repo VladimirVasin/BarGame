@@ -5,8 +5,16 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// The first half of the journey: off the last route island, through the
-    /// city's own streets, across the tunnel forecourt and into the dark.
+    /// The city's half of the journey, in both directions: off the last route
+    /// island, through the city's own streets, across the tunnel forecourt and
+    /// into the dark - and, on the way home, exactly that road read backwards.
+    ///
+    /// The return is not a second road. It is this one with the lane put on
+    /// the other side of the crown and the points handed over end for end,
+    /// which is the whole of what changes when a car drives a street the other
+    /// way: same junctions, same turning, other half of the carriageway. See
+    /// <see cref="CreateReturn"/> for the one thing that is genuinely
+    /// different, which is where it stops.
     ///
     /// The middle of it is a Dijkstra over <see cref="CityLayout.RoadEdges"/> -
     /// the city's own undirected street grid - and NOT over
@@ -27,7 +35,7 @@ namespace BarPromenade
     /// graph cannot be walked falls back to driving straight at the portal
     /// rather than leaving the hero sitting in a car that will not start.
     /// </summary>
-    public static class LastRouteCityDeparturePlanner
+    public static class LastRouteCityDrivePlanner
     {
         /// <summary>
         /// How far past the portal the car is driven before the screen is
@@ -47,6 +55,11 @@ namespace BarPromenade
         /// the `6 m` between kerbs, which is the bus's own rule
         /// (`CityBusPlanner`: `carriagewayWidth * 0.25`) and puts him on his
         /// own side of the road rather than down the crown of it.
+        ///
+        /// It is applied to the RIGHT of the direction the points are laid in,
+        /// so the return leg - which is laid outbound and then handed over end
+        /// for end - has to negate it. Reversing a right-hand lane without
+        /// negating it is a car driving home down the oncoming side.
         /// </summary>
         public const float LaneCenterOffsetMeters = 1.5f;
 
@@ -91,11 +104,87 @@ namespace BarPromenade
         /// </summary>
         public const float MaximumDrivableGrade = 0.25f;
 
-        public static LastRouteCarDrivePath Create(
+        /// <summary>
+        /// The way out: the island, the streets, the forecourt, the dark.
+        /// </summary>
+        public static LastRouteCarDrivePath CreateDeparture(
             LastRouteCarPlan carPlan,
             CityLayout layout,
             CityTunnelForecourtDescriptor forecourt,
             float tunnelFloorSurfaceY)
+        {
+            return Create(
+                carPlan,
+                layout,
+                forecourt,
+                tunnelFloorSurfaceY,
+                true);
+        }
+
+        /// <summary>
+        /// The way home: out of the same portal, back across the forecourt and
+        /// down the same streets to the island he left from.
+        ///
+        /// <paramref name="carPlan"/> is still the ISLAND's stance rather than
+        /// wherever the car happens to be sitting when this is called, because
+        /// what it names here is the destination: the road is laid outbound
+        /// from the bay exactly as the departure lays it, and then turned
+        /// round.
+        ///
+        /// **It ends nose-in, and that is a deliberate answer rather than an
+        /// oversight.** The bay is a slot on open paving whose nose points at
+        /// the way in; a car can only be put back into it pointing that way by
+        /// reversing in from behind it, and behind it is the island's own
+        /// paving circle and its route mast. So the car comes in off the
+        /// street the way it went out and stops in its own place turned round,
+        /// which is what the bay's clearance test measures anyway - the box it
+        /// checks is the same box either way about. The canonical stance comes
+        /// back with the next city build, because the city always raises him
+        /// from the layout rather than from where he was left.
+        /// </summary>
+        public static LastRouteCarDrivePath CreateReturn(
+            LastRouteCarPlan carPlan,
+            CityLayout layout,
+            CityTunnelForecourtDescriptor forecourt,
+            float tunnelFloorSurfaceY)
+        {
+            return Create(
+                carPlan,
+                layout,
+                forecourt,
+                tunnelFloorSurfaceY,
+                false);
+        }
+
+        /// <summary>
+        /// Where the car is standing the moment the City finishes loading a
+        /// homecoming - inside its own south portal, pointing out of it.
+        ///
+        /// It is the departure's last point read back, which is the whole
+        /// contract between the two halves: the car goes into the dark at one
+        /// place and comes out of it at the same one, so nothing can drift
+        /// between them. <see cref="LastRouteMountainDrivePlanner"/> keeps the
+        /// same promise at the other end.
+        /// </summary>
+        public static void ResolveReturnEntryPose(
+            CityTunnelForecourtDescriptor forecourt,
+            float tunnelFloorSurfaceY,
+            out Vector3 position,
+            out Vector3 facing)
+        {
+            Vector3 axis = forecourt.Axis.normalized;
+            Vector3 mouth = forecourt.PortalAnchor;
+            mouth.y = tunnelFloorSurfaceY;
+            position = mouth + (axis * TunnelBlackoutDepth);
+            facing = -axis;
+        }
+
+        private static LastRouteCarDrivePath Create(
+            LastRouteCarPlan carPlan,
+            CityLayout layout,
+            CityTunnelForecourtDescriptor forecourt,
+            float tunnelFloorSurfaceY,
+            bool outbound)
         {
             if (carPlan == null || !carPlan.IsPresent)
             {
@@ -104,6 +193,7 @@ namespace BarPromenade
                     nameof(carPlan));
             }
 
+            float laneSign = outbound ? 1f : -1f;
             var points = new List<Vector3> { carPlan.Position };
             Vector3 streetAnchor = forecourt.StreetAnchor;
             bool hasTurn = TryAppendStreets(
@@ -111,6 +201,7 @@ namespace BarPromenade
                 carPlan,
                 layout,
                 streetAnchor,
+                laneSign,
                 out Vector3 turnFrom,
                 out Vector3 laneDirection,
                 out float laneRun);
@@ -143,6 +234,16 @@ namespace BarPromenade
             Append(points, mouth);
             Append(points, mouth + (axis * TunnelBlackoutDepth));
 
+            // End for end. Everything above is laid in the outbound order
+            // because that is the order the two ends are known in - the lot
+            // exit needs the car's own nose, the forecourt run needs the
+            // portal - and none of it is direction-dependent once the lane has
+            // been put on the correct side of the crown.
+            if (!outbound)
+            {
+                points.Reverse();
+            }
+
             // Straightened, then rounded, then cut fine, and the order is the
             // whole reason the turn into the forecourt reads as a turn.
             //
@@ -156,7 +257,12 @@ namespace BarPromenade
             // already been bent.
             var road = new LastRouteCarDrivePath(
                 Subdivide(RoundCorners(Straighten(points))));
-            if (hasTurn)
+            if (!hasTurn)
+            {
+                return road;
+            }
+
+            if (outbound)
             {
                 road.DeclareGiveWay(
                     ResolveGiveWay(
@@ -165,8 +271,31 @@ namespace BarPromenade
                         laneDirection,
                         laneRun,
                         streetAnchor));
+                return road;
             }
 
+            // Homebound the same junction is taken the other way: he is the
+            // one coming OUT of the forecourt, so he waits on the forecourt's
+            // own run rather than in the street's lane, and the crossing he is
+            // waiting to take is the same segment read the other way. The
+            // stand-off is measured back up the run he is on, and never
+            // further than that run is long, for the reason
+            // <see cref="ResolveGiveWay"/> gives.
+            Vector3 approach = Flatten(turnFrom - streetAnchor);
+            float approachRun = approach.magnitude;
+            if (approachRun < 0.001f)
+            {
+                return road;
+            }
+
+            Vector3 stopLine = turnFrom -
+                               (approach / approachRun *
+                                Mathf.Min(GiveWayStandoffMeters, approachRun));
+            road.DeclareGiveWay(
+                new LastRouteCarGiveWayPoint(
+                    road.FindNearestDistance(stopLine),
+                    streetAnchor,
+                    turnFrom));
             return road;
         }
 
@@ -223,6 +352,7 @@ namespace BarPromenade
             LastRouteCarPlan carPlan,
             CityLayout layout,
             Vector3 streetAnchor,
+            float laneSign,
             out Vector3 turnFrom,
             out Vector3 laneDirection,
             out float laneRun)
@@ -292,7 +422,7 @@ namespace BarPromenade
             var laneRoute = new List<Vector2Int>(route.Count + 1);
             laneRoute.AddRange(route);
             laneRoute.Add(exit);
-            IReadOnlyList<Vector3> lane = BuildLane(layout, laneRoute);
+            IReadOnlyList<Vector3> lane = BuildLane(layout, laneRoute, laneSign);
             if (lane.Count < 2)
             {
                 return false;
@@ -300,7 +430,7 @@ namespace BarPromenade
 
             turnFrom = foot +
                        (Vector3.Cross(Vector3.up, laneDirection) *
-                        LaneCenterOffsetMeters);
+                        (LaneCenterOffsetMeters * laneSign));
 
             // How much lane there is behind the turning, which is all the
             // room a car waiting to take it has.
@@ -641,7 +771,8 @@ namespace BarPromenade
         /// </summary>
         private static IReadOnlyList<Vector3> BuildLane(
             CityLayout layout,
-            IReadOnlyList<Vector2Int> route)
+            IReadOnlyList<Vector2Int> route,
+            float laneSign)
         {
             var centres = new List<Vector3>(route.Count);
             for (int index = 0; index < route.Count; index++)
@@ -689,7 +820,7 @@ namespace BarPromenade
                 bisector = bisector.normalized;
                 float scale = LaneCenterOffsetMeters /
                               Mathf.Max(0.35f, Vector3.Dot(bisector, rightIn));
-                lane.Add(centres[index] + (bisector * scale));
+                lane.Add(centres[index] + (bisector * (scale * laneSign)));
             }
 
             return lane;

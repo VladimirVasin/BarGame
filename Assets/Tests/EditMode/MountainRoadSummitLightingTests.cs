@@ -1,4 +1,5 @@
 using System.Collections.Generic;
+using System.Linq;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -17,14 +18,17 @@ namespace BarPromenade.Tests.EditMode
     public sealed class MountainRoadSummitLightingTests
     {
         /// <summary>
-        /// This area's own band. The documented CITY practicals run `31`
-        /// to `240` and are a different scale entirely: a number carried
-        /// across from that list once put the yard lamp at `38`, three and
-        /// a half times the brightest thing up here.
+        /// This area's exterior band. The two interior cafe keys need larger
+        /// raw values because they throw across the room onto near-black
+        /// clothing; their cones remain inside the cafe. A city value carried
+        /// over to an exterior yard lamp once made that lamp three and a half
+        /// times brighter than the rest of the summit.
         /// </summary>
         private const float MinimumIntensity = 1.5f;
 
         private const float MaximumIntensity = 18f;
+
+        private const float MaximumCafeKeyIntensity = 60f;
 
         [Test]
         [Category("MountainRoad")]
@@ -67,9 +71,15 @@ namespace BarPromenade.Tests.EditMode
                 for (int index = 0; index < onTheSummit.Count; index++)
                 {
                     Light light = onTheSummit[index];
+                    bool isCafeInteriorKey =
+                        light.name == "Sulphur Counter Light" ||
+                        light.name == "Cold Service Light";
+                    float maximumIntensity = isCafeInteriorKey
+                        ? MaximumCafeKeyIntensity
+                        : MaximumIntensity;
                     Assert.That(
                         light.intensity,
-                        Is.InRange(MinimumIntensity, MaximumIntensity),
+                        Is.InRange(MinimumIntensity, maximumIntensity),
                         $"'{light.name}' burns at {light.intensity:0.00}, " +
                         "outside this area's own scale.");
                     Assert.That(light.type, Is.EqualTo(LightType.Spot));
@@ -103,6 +113,108 @@ namespace BarPromenade.Tests.EditMode
                     Is.EqualTo(LightShadows.None),
                     "A wash that silhouettes its own cafe is wrong and " +
                     "expensive.");
+
+                Light warm = cafeLights.Single(light =>
+                    light.name == "Sulphur Counter Light");
+                Light cold = cafeLights.Single(light =>
+                    light.name == "Cold Service Light");
+                Assert.That(
+                    warm.shadows,
+                    Is.EqualTo(LightShadows.None),
+                    "The sleeping head and folded forearms self-occlude " +
+                    "under the warm key when it casts a hard shadow.");
+                MountainRoadCafeCastPlan castPlan =
+                    MountainRoadCafeCastPlan.Create(plan.Terminal.Cafe);
+                foreach (MountainRoadCafeCastMemberPlan member in
+                         castPlan.Members)
+                {
+                    float readingHeight =
+                        member.Role == MountainRoadCafeCastRole.LonePatron
+                            ? 1.13f
+                            : 1.25f;
+                    Vector3 readingPoint =
+                        member.Position + Vector3.up * readingHeight;
+                    Assert.That(
+                        IsInsideInnerCone(cold, readingPoint),
+                        Is.True,
+                        $"The service practical misses {member.Role} at " +
+                        "counter-reading height.");
+                    Assert.That(
+                        IsInsideInnerCone(wash, readingPoint),
+                        Is.True,
+                        $"The shadowless wash leaves {member.Role} without " +
+                        "the cafe's common fill.");
+
+                    // The pair and sleeper face the service side; the
+                    // attendant faces them from behind the counter. A point
+                    // can sit inside a cone and remain black if that light is
+                    // behind its visible surfaces, so pin the useful frontal
+                    // source and a bounded incident-light proxy as well.
+                    Light frontalFill =
+                        member.Role == MountainRoadCafeCastRole.Attendant
+                            ? wash
+                            : cold;
+                    Vector3 toLight =
+                        frontalFill.transform.position - readingPoint;
+                    float incidence = Vector3.Dot(
+                        member.Facing,
+                        toLight.normalized);
+                    Assert.That(
+                        incidence,
+                        Is.GreaterThan(0.45f),
+                        $"{member.Role} is inside a cone but turns away from " +
+                        "its useful fill.");
+                    Assert.That(
+                        toLight.magnitude / frontalFill.range,
+                        Is.LessThanOrEqualTo(0.65f),
+                        $"{member.Role} sits in the steep end-of-range fade " +
+                        "of its useful fill.");
+                    float frontalFillLevel =
+                        frontalFill.intensity * incidence /
+                        Mathf.Max(0.01f, toLight.sqrMagnitude);
+                    float minimumFillLevel =
+                        member.Role == MountainRoadCafeCastRole.Attendant
+                            ? 0.18f
+                            : 0.75f;
+                    float maximumFillLevel =
+                        member.Role == MountainRoadCafeCastRole.Attendant
+                            ? 0.40f
+                            : 1.50f;
+                    Assert.That(
+                        frontalFillLevel,
+                        Is.InRange(minimumFillLevel, maximumFillLevel),
+                        $"{member.Role} receives {frontalFillLevel:0.000} " +
+                        "from its useful fill, outside the role's authored " +
+                        "dark-clothing/light-uniform compensation band.");
+                }
+
+                MountainRoadCafeCastMemberPlan lonePatron =
+                    castPlan.Members.Single(member =>
+                        member.Role == MountainRoadCafeCastRole.LonePatron);
+                Vector3 sleepingHead =
+                    lonePatron.Position + Vector3.up * 1.13f;
+                Assert.That(
+                    IsInsideInnerCone(warm, sleepingHead),
+                    Is.True,
+                    "The warm practical no longer reads the sleeping " +
+                    "patron in his contact-frame pose.");
+
+                Assert.That(
+                    IsInsideInnerCone(wash, apron),
+                    Is.True,
+                    "The technical wash no longer covers the arrival apron.");
+                float closestDarkBandMargin = plan.Terminal.Site.Parts
+                    .Where(part =>
+                        part.Group == MountainRoadSiteGroup.Terrace ||
+                        part.Group == MountainRoadSiteGroup.Brink)
+                    .Min(part =>
+                        ConeAngleDegrees(wash, part.Center) -
+                        wash.spotAngle * 0.5f);
+                Assert.That(
+                    closestDarkBandMargin,
+                    Is.GreaterThanOrEqualTo(3f),
+                    "The cafe wash reaches the terrace or the black brink " +
+                    $"(nearest cone margin {closestDarkBandMargin:0.00} deg).");
 
                 // And the station is the other half of the pair, cold
                 // against the cafe's sulphur, reaching its own dock.
@@ -144,6 +256,25 @@ namespace BarPromenade.Tests.EditMode
                 Object.DestroyImmediate(parent);
                 Object.DestroyImmediate(cameraObject);
             }
+        }
+
+        private static bool IsInsideInnerCone(
+            Light light,
+            Vector3 point)
+        {
+            return Vector3.Distance(light.transform.position, point) <=
+                       light.range &&
+                   ConeAngleDegrees(light, point) <=
+                       light.innerSpotAngle * 0.5f;
+        }
+
+        private static float ConeAngleDegrees(
+            Light light,
+            Vector3 point)
+        {
+            return Vector3.Angle(
+                light.transform.forward,
+                point - light.transform.position);
         }
 
         [Test]

@@ -11,7 +11,8 @@ namespace BarPromenade
         Wipe = 2,
         Walk = 3,
         Pour = 4,
-        Notice = 5
+        Notice = 5,
+        Interject = 6
     }
 
     [Serializable]
@@ -61,8 +62,9 @@ namespace BarPromenade
 
     /// <summary>
     /// Authored animation and renderer contract carried by one of the four
-    /// staged cafe prefabs. Across the set it owns exactly nine named clips:
-    /// one sleeping loop, four pair clips and four attendant clips.
+    /// staged cafe prefabs. Across the set it owns exactly ten named clips:
+    /// one sleeping loop and one lone-patron interjection, four pair clips,
+    /// and four attendant clips.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MountainRoadCafeCastAssetRegistry : MonoBehaviour
@@ -98,7 +100,8 @@ namespace BarPromenade
         {
             MountainRoadCafeCastRole.Attendant => GetClip(
                 MountainRoadCafeCastClipKind.Notice),
-            MountainRoadCafeCastRole.LonePatron => null,
+            MountainRoadCafeCastRole.LonePatron => GetClip(
+                MountainRoadCafeCastClipKind.Interject),
             _ => GetClip(MountainRoadCafeCastClipKind.Drink)
         };
         public Transform ModelRoot => modelRoot;
@@ -248,7 +251,8 @@ namespace BarPromenade
             {
                 expected = new[]
                 {
-                    MountainRoadCafeCastClipKind.Idle
+                    MountainRoadCafeCastClipKind.Idle,
+                    MountainRoadCafeCastClipKind.Interject
                 };
             }
             else

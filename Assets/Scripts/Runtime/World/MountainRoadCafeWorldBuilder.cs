@@ -202,9 +202,38 @@ namespace BarPromenade
             Transform warm = RequireAnchor(model, "Light.WarmCounter");
             Transform cold = RequireAnchor(model, "Light.ColdService");
             Transform wash = RequireAnchor(model, "Light.ExteriorWash");
-            Vector3 outward = (
-                plan.Right * 0.707f -
-                plan.Forward * 0.707f).normalized;
+
+            // The fixtures are authored data; these are the points their
+            // cones have to serve. The old almost-vertical aims left every
+            // seated figure outside an inner cone, and put the sleeping
+            // patron just five degrees inside the warm light's OUTER edge.
+            // Aim the warm practical at the exact sleeping-head contact
+            // frame, and let the shadowless service light cover the complete
+            // four-person counter composition. Its longer range keeps the
+            // dark-clothed seated figures out of the steep end-of-range fade;
+            // the rear wash is reduced so the white attendant no longer
+            // dominates the same shot. The warm key is shadowless because the
+            // sleeper's folded forearms otherwise occlude almost his complete
+            // face in the authored contact pose.
+            Vector3 lonePatronReadingPoint =
+                plan.Center -
+                plan.Right * 1.50f -
+                plan.Forward * 2.18f +
+                Vector3.up * 1.13f;
+            Vector3 castFillPoint =
+                plan.Center +
+                plan.Right * 0.76f -
+                plan.Forward * 1.68f +
+                Vector3.up * 1.25f;
+
+            // The invisible sulphur wash now fills the same counter band as
+            // well as the apron. Its slight forward bias is deliberate: a
+            // broader vertical cone would also catch the raised terrace and
+            // erase the summit's black back edge.
+            Vector3 washDirection = (
+                plan.Right * 0.04f -
+                Vector3.up -
+                plan.Forward * 0.19f).normalized;
 
             return new List<Light>(MaximumRealtimeLights)
             {
@@ -212,34 +241,34 @@ namespace BarPromenade
                     "Sulphur Counter Light",
                     parent,
                     warm.position,
-                    (Vector3.down + plan.Forward * 0.05f).normalized,
+                    (lonePatronReadingPoint - warm.position).normalized,
                     new Color(1f, 0.72f, 0.32f),
-                    11.5f,
+                    60f,
                     11f,
-                    108f,
-                    68f,
-                    true),
+                    110f,
+                    42f,
+                    false),
                 CreateSpotLight(
                     "Cold Service Light",
                     parent,
                     cold.position,
-                    (Vector3.down - plan.Forward * 0.22f).normalized,
+                    (castFillPoint - cold.position).normalized,
                     new Color(0.46f, 0.77f, 0.71f),
-                    6.5f,
-                    5.8f,
-                    78f,
-                    42f,
+                    48f,
+                    14f,
+                    96f,
+                    68f,
                     false),
                 CreateSpotLight(
                     "Sulphur Facade Wash",
                     parent,
                     wash.position,
-                    (Vector3.down * 0.92f + outward * 0.39f).normalized,
+                    washDirection,
                     new Color(1f, 0.78f, 0.45f),
-                    15f,
+                    8.5f,
                     20f,
-                    138f,
-                    76f,
+                    128f,
+                    122f,
                     false)
             };
         }

@@ -1353,6 +1353,10 @@
       "value": "Leave the city?"
     },
     {
+      "key": "lastroute.ferryman.confirm.return",
+      "value": "Back to the city?"
+    },
+    {
       "key": "lastroute.ferryman.line.01",
       "value": "Early."
     },
@@ -1450,19 +1454,19 @@
     },
     {
       "key": "mountain.cafe.pair.man.line.01",
-      "value": "Take off your coat. I'll take off the rest."
+      "value": "Take off your coat. Leave the rest to me."
     },
     {
       "key": "mountain.cafe.pair.man.line.02",
-      "value": "Smoke like that and my trousers get tight."
+      "value": "Take another drag. I like watching."
     },
     {
       "key": "mountain.cafe.pair.man.line.03",
-      "value": "I don't need a room. I need your mouth."
+      "value": "Kiss me. Right now."
     },
     {
       "key": "mountain.cafe.pair.man.line.04",
-      "value": "After you, the sheets go straight in the bin."
+      "value": "You won't sleep tonight."
     },
     {
       "key": "mountain.cafe.pair.man.line.05",
@@ -1470,15 +1474,15 @@
     },
     {
       "key": "mountain.cafe.pair.man.line.06",
-      "value": "Bullshit. I remember you under this table."
+      "value": "I remember: you teased me all evening."
     },
     {
       "key": "mountain.cafe.pair.man.line.07",
-      "value": "I won't make it to the bed with you tonight."
+      "value": "One more minute and I stop holding back."
     },
     {
       "key": "mountain.cafe.pair.man.line.08",
-      "value": "No knickers again. I can see how you sit."
+      "value": "You decided to provoke me again."
     },
     {
       "key": "mountain.cafe.pair.man.line.09",
@@ -1490,43 +1494,59 @@
     },
     {
       "key": "mountain.cafe.pair.woman.line.01",
-      "value": "Coat off. Tear the rest away with your teeth."
+      "value": "Take it off yourself. Don't be slow."
     },
     {
       "key": "mountain.cafe.pair.woman.line.02",
-      "value": "Trousers tight: take the fucking things off."
+      "value": "Then watch. Keep your hands to yourself."
     },
     {
       "key": "mountain.cafe.pair.woman.line.03",
-      "value": "You'll get my mouth if you don't finish first."
+      "value": "Wait. I'll make the first move."
     },
     {
       "key": "mountain.cafe.pair.woman.line.04",
-      "value": "No sheets. This wall will do."
+      "value": "The bed is far. I won't wait that long."
     },
     {
       "key": "mountain.cafe.pair.woman.line.05",
-      "value": "Drink the coffee. You'll need the heart tonight."
+      "value": "Finish the coffee. You'll need strength."
     },
     {
       "key": "mountain.cafe.pair.woman.line.06",
-      "value": "You didn't last long under the table."
+      "value": "You gave in too quickly that night."
     },
     {
       "key": "mountain.cafe.pair.woman.line.07",
-      "value": "Can't carry me: take me right here."
+      "value": "Don't wait. I'm tired of holding back too."
     },
     {
       "key": "mountain.cafe.pair.woman.line.08",
-      "value": "Look closer. My legs aren't even open yet."
+      "value": "I haven't even started trying."
     },
     {
       "key": "mountain.cafe.pair.woman.line.09",
-      "value": "I left nothing but my coat at the door."
+      "value": "About time. Don't be shy with me."
     },
     {
       "key": "mountain.cafe.pair.woman.line.10",
-      "value": "The bed kept squeaking. You finished first."
+      "value": "Yes. You were tired long before dawn."
+    },
+    {
+      "key": "mountain.cafe.lone.line.01",
+      "value": "Darling… let's go home."
+    },
+    {
+      "key": "mountain.cafe.lone.line.02",
+      "value": "Take your coat. It's warmer at home."
+    },
+    {
+      "key": "mountain.cafe.lone.line.03",
+      "value": "I'm not asleep. I'm waiting for you."
+    },
+    {
+      "key": "mountain.cafe.lone.line.04",
+      "value": "It's time to go home. I'm here."
     },
     {
       "key": "park.quarrel.chess.line.01",

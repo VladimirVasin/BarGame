@@ -655,9 +655,15 @@ namespace BarPromenade.Tests.PlayMode
                     Is.True);
                 Assert.That(
                     harness.Ferryman.TryBeginBoarding(),
+                    Is.True,
+                    "He can be asked again, because the road runs both ways " +
+                    "now. What used to refuse here was HIM; what refuses now " +
+                    "is the SCENE, by handing him no menu where it has armed " +
+                    "no ride - see LastRouteFerrymanFactory's fork.");
+                Assert.That(
+                    harness.Ferryman.TryBeginBoarding(),
                     Is.False,
-                    "The wait loop coming back must not put the offer back " +
-                    "up. That was the last route.");
+                    "But once, and not twice: he is already off the bonnet.");
 
                 float overBumper = Vector3.Distance(
                     harness.Ferryman.transform.position,
@@ -871,7 +877,11 @@ namespace BarPromenade.Tests.PlayMode
                 Assert.That(
                     dashboard.Speed01,
                     Is.GreaterThan(0.05f),
-                    "The speedometer reads a car that is actually moving.");
+                    "The speedometer reads a car that is actually moving - " +
+                    "the needle is the one thing on this dash that nothing " +
+                    "else on it would notice being dead. " +
+                    $"driving={harness.Driver.IsDriving} " +
+                    $"speed={harness.Driver.Speed:0.000} m/s");
 
                 harness.Seat.LookAtForTests(
                     harness.Player.GameObject.transform.position +
@@ -948,14 +958,15 @@ namespace BarPromenade.Tests.PlayMode
             var driver = carRoot.GetComponent<LastRouteCarDriver>();
             Assert.That(driver, Is.Not.Null, "The car has no engine.");
 
-            // No talk menu, exactly as the mountain terrace raises him.
+            // No menu: this fixture drives the beat by hand.
             LastRouteFerrymanPresentation ferryman =
                 LastRouteFerrymanFactory.Create(
                     parent,
                     LastRouteFerrymanPlan.Create(car),
                     car,
                     null,
-                    GameSessionState.DefaultCitySeed);
+                    LastRouteFerrymanVoice.Mountain(
+                        GameSessionState.DefaultCitySeed));
             Assert.That(ferryman, Is.Not.Null, "The Ferryman failed to spawn.");
             seat.AttachFerryman(ferryman);
 
@@ -966,7 +977,7 @@ namespace BarPromenade.Tests.PlayMode
             }
 
             LastRouteRideController ride =
-                LastRouteRideController.CreateForMountain(
+                LastRouteRideController.CreateForMountainArrival(
                     parent,
                     seat,
                     driver,

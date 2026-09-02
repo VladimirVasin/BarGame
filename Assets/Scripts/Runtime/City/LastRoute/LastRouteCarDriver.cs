@@ -281,8 +281,14 @@ namespace BarPromenade
             float radius = registry.Dimensions.WheelRadius;
             if (radius > 0.001f)
             {
-                wheelRollDegrees += (model.Speed * step) / radius *
-                                    Mathf.Rad2Deg;
+                // Distance along the road always runs forwards; the tyres do
+                // not. On the reverse leg of a manoeuvre they turn the other
+                // way, which is the only thing on the whole car that says out
+                // loud which way it is going.
+                float travelled = model.IsReversing
+                    ? -(model.Speed * step)
+                    : model.Speed * step;
+                wheelRollDegrees += travelled / radius * Mathf.Rad2Deg;
                 wheelRollDegrees = Mathf.Repeat(wheelRollDegrees, 360f);
             }
 
@@ -365,6 +371,13 @@ namespace BarPromenade
         /// is already in - the bus's own arrangement
         /// (<c>CityBusActor.ResolveSteeringAngle</c>), and the difference
         /// between wheels that lead a corner and wheels that report it.
+        ///
+        /// The sign FLIPS in reverse, and it is a fact about steering rather
+        /// than a fudge. Heading turns at `tan(lock) / wheelbase` per metre
+        /// TRAVELLED, and a reversing car travels backwards through the road
+        /// it is covering, so producing a given swing of the body needs the
+        /// front wheels turned the opposite way. Left the same, the car backs
+        /// round its corner with the wheels visibly steering out of it.
         /// </summary>
         private float ResolveSteeringTarget()
         {
@@ -381,8 +394,14 @@ namespace BarPromenade
                 return 0f;
             }
 
+            float turn = Vector3.SignedAngle(facing, ahead, Vector3.up);
+            if (model.IsReversing)
+            {
+                turn = -turn;
+            }
+
             return Mathf.Clamp(
-                Vector3.SignedAngle(facing, ahead, Vector3.up),
+                turn,
                 -MaximumSteeringDegrees,
                 MaximumSteeringDegrees);
         }

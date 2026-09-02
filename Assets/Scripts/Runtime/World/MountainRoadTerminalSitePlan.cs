@@ -305,9 +305,14 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// The one practical the yard owns. It is described here and built by
+    /// A practical the yard owns. Described here and built by
     /// <see cref="MountainRoadAtmosphere"/>, so every real light on the
     /// mountain still has a single owner.
+    ///
+    /// There are two: the mercury lamp over the freight dock, which points
+    /// straight down at the yard it hangs over, and the floodlight on the
+    /// apron, which is AIMED - it stands in front of where the car parks and
+    /// rakes back down over it.
     /// </summary>
     public readonly struct MountainRoadSitePracticalDescriptor
     {
@@ -357,7 +362,8 @@ namespace BarPromenade
             float terraceTopY,
             MountainRoadSiteSeatDescriptor brinkSeat,
             MountainRoadSiteSeatDescriptor counterSeat,
-            MountainRoadSitePracticalDescriptor yardLamp)
+            MountainRoadSitePracticalDescriptor yardLamp,
+            MountainRoadSitePracticalDescriptor apronFloodlight)
         {
             if (sourceParts == null)
             {
@@ -375,6 +381,7 @@ namespace BarPromenade
             BrinkSeat = brinkSeat;
             CounterSeat = counterSeat;
             YardLamp = yardLamp;
+            ApronFloodlight = apronFloodlight;
         }
 
         public IReadOnlyList<MountainRoadSitePartDescriptor> Parts => parts;
@@ -392,6 +399,15 @@ namespace BarPromenade
         public MountainRoadSiteSeatDescriptor BrinkSeat { get; }
         public MountainRoadSiteSeatDescriptor CounterSeat { get; }
         public MountainRoadSitePracticalDescriptor YardLamp { get; }
+
+        /// <summary>
+        /// The floodlight over the vehicle apron, on the island's own
+        /// arrangement: a post in FRONT of where the car stops with its head
+        /// turned back down the bonnet. Its <see cref="
+        /// MountainRoadSitePracticalDescriptor.Direction"/> is a real aim, not
+        /// the yard lamp's plain "down".
+        /// </summary>
+        public MountainRoadSitePracticalDescriptor ApronFloodlight { get; }
 
         public int GetCount(MountainRoadSiteGroup group)
         {

@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.5.1",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "cafe_couple_man_v2",
   "display_name": "Cafe Couple Man",
@@ -62,7 +62,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "21d8256f75338bdce27df073c215a07cdbc039cb1a5c3551ec6f7ae73108abaa",
+  "build_signature": "2434fbcd8b52955c500149fe56ad9288906710508debe975c19c567e178a9968",
   "bones": [
     {
       "name": "root",

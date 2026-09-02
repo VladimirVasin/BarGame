@@ -1353,6 +1353,10 @@
       "value": "Уехать из города?"
     },
     {
+      "key": "lastroute.ferryman.confirm.return",
+      "value": "Вернуться в город?"
+    },
+    {
       "key": "lastroute.ferryman.line.01",
       "value": "Рано."
     },
@@ -1450,83 +1454,99 @@
     },
     {
       "key": "mountain.cafe.pair.man.line.01",
-      "value": "Сними пальто. Остальное я сниму сам."
+      "value": "Сними пальто. Остальное оставь мне."
     },
     {
       "key": "mountain.cafe.pair.man.line.02",
-      "value": "Ты так куришь, что мне уже тесно в брюках."
+      "value": "Затянись ещё раз. Мне нравится смотреть."
     },
     {
       "key": "mountain.cafe.pair.man.line.03",
-      "value": "Мне нужен не номер. Мне нужен твой рот."
+      "value": "Поцелуй меня. Прямо сейчас."
     },
     {
       "key": "mountain.cafe.pair.man.line.04",
-      "value": "После тебя простыни можно сразу выбрасывать."
+      "value": "Сегодня я тебе уснуть не дам."
     },
     {
       "key": "mountain.cafe.pair.man.line.05",
-      "value": "Сядешь ближе — кофе нам больше не понадобится."
+      "value": "Подвинься ближе. Кофе мне больше не нужен."
     },
     {
       "key": "mountain.cafe.pair.man.line.06",
-      "value": "Не пизди: я помню, что ты делала под столом."
+      "value": "Я всё помню: весь вечер ты меня дразнила."
     },
     {
       "key": "mountain.cafe.pair.man.line.07",
-      "value": "До кровати я тебя сегодня не донесу."
+      "value": "Ещё минута — и я перестану сдерживаться."
     },
     {
       "key": "mountain.cafe.pair.man.line.08",
-      "value": "Ты опять без белья. Я вижу, как ты сидишь."
+      "value": "Ты опять решила меня провоцировать."
     },
     {
       "key": "mountain.cafe.pair.man.line.09",
-      "value": "С тобой приличия заканчиваются у двери."
+      "value": "С тобой о приличиях можно забыть."
     },
     {
       "key": "mountain.cafe.pair.man.line.10",
-      "value": "Кровать скрипела до рассвета. Я тут ни при чём."
+      "value": "В прошлый раз кровать до утра скрипела."
     },
     {
       "key": "mountain.cafe.pair.woman.line.01",
-      "value": "Пальто сниму. Остальное сорвёшь зубами."
+      "value": "Сам и снимешь. Только не тяни."
     },
     {
       "key": "mountain.cafe.pair.woman.line.02",
-      "value": "В брюках тесно — снимай их, блядь."
+      "value": "Смотри. Только руки держи при себе."
     },
     {
       "key": "mountain.cafe.pair.woman.line.03",
-      "value": "Рот получишь. Если не кончишь раньше."
+      "value": "Потерпи. Я сама начну."
     },
     {
       "key": "mountain.cafe.pair.woman.line.04",
-      "value": "Простыни не нужны. Мне хватит этой стены."
+      "value": "До кровати далеко. Я ждать не стану."
     },
     {
       "key": "mountain.cafe.pair.woman.line.05",
-      "value": "Кофе пей. Ночью тебе понадобится сердце."
+      "value": "Допей сначала. Ночью силы понадобятся."
     },
     {
       "key": "mountain.cafe.pair.woman.line.06",
-      "value": "Под столом ты тогда продержался недолго."
+      "value": "А ты тогда слишком быстро сдался."
     },
     {
       "key": "mountain.cafe.pair.woman.line.07",
-      "value": "Не донесёшь — возьмёшь прямо здесь."
+      "value": "Не жди. Я тоже устала сдерживаться."
     },
     {
       "key": "mountain.cafe.pair.woman.line.08",
-      "value": "Смотри внимательнее. Я ещё ноги не раздвинула."
+      "value": "А я ведь ещё даже не старалась."
     },
     {
       "key": "mountain.cafe.pair.woman.line.09",
-      "value": "У двери я оставила только пальто."
+      "value": "Давно пора. Со мной робость ни к чему."
     },
     {
       "key": "mountain.cafe.pair.woman.line.10",
-      "value": "Кровать ещё скрипела. Ты кончил раньше."
+      "value": "Ага. Только ты выдохся гораздо раньше."
+    },
+    {
+      "key": "mountain.cafe.lone.line.01",
+      "value": "Дорогая… пойдём домой."
+    },
+    {
+      "key": "mountain.cafe.lone.line.02",
+      "value": "Пальто возьми. Дома теплее."
+    },
+    {
+      "key": "mountain.cafe.lone.line.03",
+      "value": "Я не сплю. Я тебя жду."
+    },
+    {
+      "key": "mountain.cafe.lone.line.04",
+      "value": "Дорогая… давай уже домой."
     },
     {
       "key": "park.quarrel.chess.line.01",

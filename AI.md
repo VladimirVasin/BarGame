@@ -207,17 +207,29 @@ hairpin; the first visible sip crosses the refill threshold and begins a Pour
 within one minute instead of expiring during the `620 m` approach. Completing
 the hero-stool sit switches to a bounded eye-level first-person view of the
 counter, hides head geometry, and restores the prior follow camera on exit. The
-nine-clip cast (one sleeping loop, four pair clips and four attendant clips)
-keeps the sleeping patron and attendant silent, and the attendant never serves
+ten-clip cast (one sleeping loop plus one lone-patron interjection, four pair
+clips and four attendant clips) keeps the attendant silent and never serves
 the hero. Only inside the physical cafe, PairMan and PairWoman follow the fixed
 localized text cycle `Man01 -> Woman01 -> ... -> Man10 -> Woman10 -> loop`, with
 ten keys per role present in both Russian and English. A pending turn waits
 without being consumed or skipped while either patron is in Drink or the
 woman's cigarette lift/smoke window; the man's idle tapping may continue under
 his line. The active speaker turns head and neck toward the partner and uses one
-over-head text bubble, with no voice or other added audio. Two visible
-practicals plus one shadowless
-technical sulphur wash retain the light contract. Six colour-neutral semantic
+over-head text bubble. A PairMan -> PairWoman exchange completes only when both
+lines have been fully displayed. After every third completed exchange
+(`3/6/9...`, continuously across the ten-pair pool wrap), and only after both
+mutual looks have returned to idle, the strongly drunk lone patron
+— the woman's husband — raises his head, waves his right hand toward the pair,
+calls her home through one line from a four-key RU/EN pool and returns to
+sleep. The pair gives him no look, answer or reaction gesture; its pending
+order is unchanged, so Woman03 is followed by Man04 and Woman10 by Man01.
+Neither conversation has voice or other added audio.
+The cigarette's filter is held at the woman's fingers and reaches her mouth;
+the ember points away from both hand and face. The same two visible practicals
+and one shadowless technical sulphur wash now share the counter more evenly:
+the warm key reaches the sleeping husband, while the cold practical and wash
+keep all four figures readable without reaching the terrace, parapet or dark
+brink. Six colour-neutral semantic
 detail sheets split exterior, interior, counter, metal, props and glass without
 adding a new hue, readable text, `PHILLIES`, `5¢`, logo, price, menu or copied
 city background; authored UV regions and a zero-overlap validator prevent
@@ -251,11 +263,23 @@ measured from `y = 0`, the height of the tunnel mouth — with its windows lit
 after dark by the same per-minute apply that moves the sun and not one Light in
 it. One mercury practical burns over the freight dock; the brink stays dark.
 The hero can sit on the bench or on the cafe's designated player stool, and the Ferryman
-answers up here at last: a repertoire and never an offer, because the road has
-ended.
+answers up here as well as on the island — his own pool of small talk, and the
+same two-choice menu whose second line is the island's mirrored:
+`Вернуться в город?`.
 For now the City tunnel still refuses passage on foot. The Ferryman's
 LastRouteCar crosses it as the story-owned transition and drives the same
 planned road to the terminal; the map remains the ordinary area transfer.
+**The road runs both ways.** Saying yes on the terrace backs the car round the
+apron in a two-point turn — the pocket has no room for a U-turn of any usable
+radius, so the reverse leg is part of the planned road rather than a mode on
+the car — and drives the whole `620 m` back down into the tunnel; the City then
+brings it out of its own south portal still moving and home to the island. The
+ride stage is a ring rather than a one-way ladder, and both halves still build
+the man and the car from that one value, so he is never in two places and never
+in none. Arriving on the mountain any other way — the area tab, or a point
+picked on the chart — brings the car up with the hero, because a mountain with
+no road down and a cableway that only goes up is otherwise a place the chart
+can strand him in.
 The car has a voice of its own (`LastRouteCarAudio` over the pure
 `LastRouteCarEngineModel`): a petrol four with a three-speed box, so the climb
 is heard as the drop into second before each hairpin and the load of the grade
@@ -486,8 +510,8 @@ returns. They spawn at randomly
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a shared
   `0.835 m` rest pelvis. The five pooled and nine ordinary staged model
   manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
-  The four Mountain Road cafe models and their separate `9`-clip bank use
-  `4.5.1`; the shelter trio and isolated three-loop bank use `4.2.0`; the
+  The four Mountain Road cafe models and their separate `10`-clip bank use
+  `4.5.2`; the shelter trio and isolated three-loop bank use `4.2.0`; the
   three special manifests use `2.0.0`. Their FBXs were
   reimported and the production prefabs/provider assets rebuilt, so runtime uses
   these models rather than retaining the former bodies behind new plans.

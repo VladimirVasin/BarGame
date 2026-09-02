@@ -73,6 +73,40 @@ namespace BarPromenade
             return halo;
         }
 
+        /// <summary>
+        /// The same halo for a fixture that burns at every hour, deliberately
+        /// OUTSIDE <see cref="CityNightGlowRegistry"/>.
+        ///
+        /// That registry's night factor is a process-wide static only the City
+        /// ever writes, so a lamp registered into it from anywhere else rides
+        /// whatever the City last left there - dimmed to
+        /// <see cref="CityNightGlowRegistry.DeadGlowFraction"/> for a whole
+        /// visit if the hero travelled at noon. Every always-burning fixture
+        /// was already open-coding these six lines to avoid exactly that; this
+        /// is that idiom with a name on it.
+        /// </summary>
+        public static CityLightHalo CreateAlwaysBurning(
+            Transform parent,
+            Vector3 localPosition,
+            float innerSize,
+            float outerSize,
+            Color innerColor,
+            Color outerColor)
+        {
+            var haloObject = new GameObject("Fog Light Halo");
+            haloObject.transform.SetParent(parent, false);
+            haloObject.transform.localPosition = localPosition;
+            CityLightHalo halo =
+                haloObject.AddComponent<CityLightHalo>();
+            halo.Initialize(
+                CityNightResources.AtmosphereMaterial,
+                innerSize,
+                outerSize,
+                innerColor,
+                outerColor);
+            return halo;
+        }
+
         public void Initialize(
             Material sharedMaterial,
             float innerSize,

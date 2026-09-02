@@ -174,6 +174,38 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void LoneLines_OwnFourStableKeysOutsideThePairPool()
+        {
+            string[] lone =
+                MountainRoadCafeConversationLines.LonePatronLineKeys;
+            string[] pair = MountainRoadCafeConversationLines
+                .PairManLineKeys
+                .Concat(MountainRoadCafeConversationLines.PairWomanLineKeys)
+                .ToArray();
+
+            Assert.That(
+                lone.Length,
+                Is.EqualTo(
+                    MountainRoadCafeConversationLines.LonePatronLineCount));
+            CollectionAssert.AreEqual(
+                new[]
+                {
+                    "mountain.cafe.lone.line.01",
+                    "mountain.cafe.lone.line.02",
+                    "mountain.cafe.lone.line.03",
+                    "mountain.cafe.lone.line.04"
+                },
+                lone);
+            Assert.That(lone.Distinct().Count(), Is.EqualTo(lone.Length));
+            Assert.That(lone.Intersect(pair), Is.Empty);
+            Assert.That(
+                lone.All(key => key.StartsWith(
+                    "mountain.cafe.lone.line.",
+                    StringComparison.Ordinal)),
+                Is.True);
+        }
+
+        [Test]
         public void Lines_ResolveInBothCatalogsAndKeepTextRegister()
         {
             string[] resourcePaths =
@@ -184,12 +216,14 @@ namespace BarPromenade.Tests.EditMode
             string[] keys = MountainRoadCafeConversationLines
                 .PairManLineKeys
                 .Concat(MountainRoadCafeConversationLines.PairWomanLineKeys)
+                .Concat(MountainRoadCafeConversationLines.LonePatronLineKeys)
                 .ToArray();
 
             Assert.That(
                 keys.Length,
                 Is.EqualTo(
-                    MountainRoadCafeConversationLines.LinesPerSpeaker * 2));
+                    MountainRoadCafeConversationLines.LinesPerSpeaker * 2 +
+                    MountainRoadCafeConversationLines.LonePatronLineCount));
 
             for (int catalogIndex = 0;
                  catalogIndex < resourcePaths.Length;
@@ -237,6 +271,266 @@ namespace BarPromenade.Tests.EditMode
                         $"{resourcePath} '{key}' must stay within one or " +
                         "two short sentences.");
                 }
+            }
+        }
+
+        [Test]
+        public void ConversationSpeaker_RemainsTheMutualPairOnly()
+        {
+            var speakers =
+                (MountainRoadCafeConversationSpeaker[])Enum.GetValues(
+                    typeof(MountainRoadCafeConversationSpeaker));
+
+            CollectionAssert.AreEquivalent(
+                new[]
+                {
+                    MountainRoadCafeConversationSpeaker.PairMan,
+                    MountainRoadCafeConversationSpeaker.PairWoman
+                },
+                speakers);
+            Assert.That(
+                Enum.IsDefined(
+                    typeof(MountainRoadCafeConversationSpeaker),
+                    "LonePatron"),
+                Is.False,
+                "The pair never treats the lone patron as a reply target.");
+        }
+
+        [Test]
+        public void LoneSchedule_FiresEveryThirdCompletedExchangeAcrossLoop()
+        {
+            var schedule =
+                new MountainRoadCafeLonePatronInterjectionSchedule();
+            var firedExchanges = new List<int>();
+
+            Assert.That(
+                schedule.RecordCompletedLine(
+                    MountainRoadCafeConversationSpeaker.PairWoman),
+                Is.False,
+                "A woman line without its preceding completed man line is " +
+                "not a completed exchange.");
+            Assert.That(schedule.CompletedPairExchanges, Is.Zero);
+
+            for (int exchange = 1; exchange <= 12; exchange++)
+            {
+                Assert.That(
+                    schedule.RecordCompletedLine(
+                        MountainRoadCafeConversationSpeaker.PairMan),
+                    Is.False);
+                if (schedule.RecordCompletedLine(
+                        MountainRoadCafeConversationSpeaker.PairWoman))
+                {
+                    firedExchanges.Add(exchange);
+                }
+
+                Assert.That(
+                    schedule.CompletedPairExchanges,
+                    Is.EqualTo(exchange));
+            }
+
+            CollectionAssert.AreEqual(
+                new[] { 3, 6, 9, 12 },
+                firedExchanges,
+                "Cadence continues through the ten-pair authored wrap.");
+            Assert.That(schedule.NextLineIndex, Is.Zero);
+
+            string[] lone =
+                MountainRoadCafeConversationLines.LonePatronLineKeys;
+            string[] consumed = new string[lone.Length + 1];
+            for (int index = 0; index < consumed.Length; index++)
+            {
+                consumed[index] = schedule.ConsumeLonePatronLineKey();
+            }
+
+            CollectionAssert.AreEqual(
+                lone.Concat(new[] { lone[0] }).ToArray(),
+                consumed,
+                "The four lone lines keep authored order and wrap once.");
+            Assert.That(schedule.NextLineIndex, Is.EqualTo(1));
+
+            schedule.RecordCompletedLine(
+                MountainRoadCafeConversationSpeaker.PairMan);
+            schedule.Reset();
+            Assert.That(schedule.CompletedPairExchanges, Is.Zero);
+            Assert.That(schedule.NextLineIndex, Is.Zero);
+            Assert.That(
+                schedule.RecordCompletedLine(
+                    MountainRoadCafeConversationSpeaker.PairWoman),
+                Is.False,
+                "Leaving or disabling the cafe clears an unfinished " +
+                "half-exchange.");
+            Assert.That(schedule.CompletedPairExchanges, Is.Zero);
+        }
+
+        [Test]
+        [Category("MountainRoad")]
+        public void ThirdExchange_InterjectsThenResumesWithMan04WithoutPairReaction()
+        {
+            var root = new GameObject("Cafe Interjection Contract Test");
+            var player = new GameObject("Cafe Interjection Test Player");
+            var cameraObject = new GameObject("Cafe Interjection Test Camera");
+            player.transform.SetParent(root.transform, false);
+            cameraObject.transform.SetParent(root.transform, false);
+            Camera camera = cameraObject.AddComponent<Camera>();
+            try
+            {
+                MountainRoadCafePlan cafePlan = MountainRoadPlanner.Create(
+                    Seed).Terminal.Cafe;
+                MountainRoadCafeWorldResult cafe =
+                    MountainRoadCafeWorldBuilder.Build(
+                        root.transform,
+                        cafePlan);
+                player.transform.position = cafePlan.Center;
+                MountainRoadCafeConversationController controller =
+                    MountainRoadCafeConversationController.Create(
+                        root.transform,
+                        cafePlan,
+                        cafe.Cast,
+                        player.transform,
+                        camera,
+                        Seed);
+
+                Assert.That(controller, Is.Not.Null);
+                Transform loneRoot = cafe.Cast.GetPresentationRoot(
+                    MountainRoadCafeCastRole.LonePatron);
+                MountainRoadCafeCastPresentation lonePresentation = loneRoot
+                    .GetComponent<MountainRoadCafeCastPresentation>();
+                Transform manRoot = cafe.Cast.GetPresentationRoot(
+                    MountainRoadCafeCastRole.PairMan);
+                Transform womanRoot = cafe.Cast.GetPresentationRoot(
+                    MountainRoadCafeCastRole.PairWoman);
+                MountainRoadCafeCastPresentation manPresentation = manRoot
+                    .GetComponent<MountainRoadCafeCastPresentation>();
+                MountainRoadCafeCastPresentation womanPresentation = womanRoot
+                    .GetComponent<MountainRoadCafeCastPresentation>();
+                Transform manHead = manPresentation.Registry
+                    .FindModelTransform("head");
+                Transform womanHead = womanPresentation.Registry
+                    .FindModelTransform("head");
+
+                Assert.That(
+                    loneRoot.GetComponent<MountainRoadCafeConversationLook>(),
+                    Is.Null,
+                    "The husband never receives the pair's look/reply state.");
+                Assert.That(
+                    controller.ManLook.TargetHead,
+                    Is.SameAs(womanHead));
+                Assert.That(
+                    controller.WomanLook.TargetHead,
+                    Is.SameAs(manHead));
+                Assert.That(controller.ManLook.IsSpeaking, Is.False);
+                Assert.That(controller.WomanLook.IsSpeaking, Is.False);
+
+                Assert.That(
+                    cafe.Cast.BindActivationObserver(
+                        player.transform,
+                        cafePlan.Center),
+                    Is.True);
+                const float stepSeconds = 0.1f;
+                for (int step = 0;
+                     step < 3600 &&
+                     !controller.IsLonePatronInterjecting;
+                     step++)
+                {
+                    cafe.Cast.Advance(stepSeconds);
+                    controller.Advance(stepSeconds);
+                }
+
+                Assert.That(
+                    controller.IsLonePatronInterjecting,
+                    Is.True,
+                    "The actual controller must reach the husband's beat " +
+                    "after three exchanges, not merely arm a pure clock. " +
+                    $"Last={controller.LastLineKey}, " +
+                    $"exchanges={controller.CompletedPairExchanges}, " +
+                    $"pending={controller.HasPendingLine}, " +
+                    $"active={controller.HasActiveLine}, " +
+                    $"timeline={controller.Timeline.LineCount}, " +
+                    $"reservation={cafe.Cast.IsPairConversationReserved}, " +
+                    $"manClip={manPresentation.CurrentClipKind}, " +
+                    $"womanClip={womanPresentation.CurrentClipKind}.");
+                Assert.That(
+                    controller.CompletedPairExchanges,
+                    Is.EqualTo(3));
+                Assert.That(
+                    controller.LastLineKey,
+                    Is.EqualTo("mountain.cafe.pair.woman.line.03"));
+                Assert.That(controller.ManLook.IsSpeaking, Is.False);
+                Assert.That(controller.WomanLook.IsSpeaking, Is.False);
+
+                cafe.Cast.Advance(60f);
+                controller.Advance(60f);
+                Assert.That(
+                    cafe.Cast.LonePatronInterjectionElapsedSeconds,
+                    Is.EqualTo(
+                        MountainRoadCafeConversationController
+                            .MaximumLonePatronVisualStepSeconds)
+                        .Within(0.0001f),
+                    "A hitch cannot jump over the delayed speech cue and " +
+                    "complete the whole visible beat offscreen.");
+                Assert.That(
+                    controller.LastLonePatronLineKey,
+                    Is.Empty);
+
+                for (int step = 0;
+                     step < 120 &&
+                     string.IsNullOrEmpty(
+                         controller.LastLonePatronLineKey);
+                     step++)
+                {
+                    cafe.Cast.Advance(stepSeconds);
+                    controller.Advance(stepSeconds);
+                }
+
+                Assert.That(
+                    controller.LastLonePatronLineKey,
+                    Is.EqualTo("mountain.cafe.lone.line.01"));
+                Assert.That(
+                    controller.Bubbles.IsShowing(lonePresentation),
+                    Is.True,
+                    "The husband's localized line uses his own visible " +
+                    "over-head bubble.");
+
+                for (int step = 0;
+                     step < 120 &&
+                     controller.IsLonePatronInterjecting;
+                     step++)
+                {
+                    cafe.Cast.Advance(stepSeconds);
+                    controller.Advance(stepSeconds);
+                }
+
+                Assert.That(controller.IsLonePatronInterjecting, Is.False);
+                for (int step = 0;
+                     step < 1200 &&
+                     !string.Equals(
+                         controller.LastLineKey,
+                         "mountain.cafe.pair.man.line.04",
+                         StringComparison.Ordinal);
+                     step++)
+                {
+                    cafe.Cast.Advance(stepSeconds);
+                    controller.Advance(stepSeconds);
+                }
+
+                Assert.That(
+                    controller.LastLineKey,
+                    Is.EqualTo("mountain.cafe.pair.man.line.04"),
+                    "The ignored interruption cannot consume or rewind the " +
+                    "pair's next authored message.");
+
+                // The husband's own pool does not mutate either pair cursor
+                // and there is still no look target other than the partner.
+                Assert.That(
+                    controller.ManLook.TargetHead,
+                    Is.SameAs(womanHead));
+                Assert.That(
+                    controller.WomanLook.TargetHead,
+                    Is.SameAs(manHead));
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(root);
             }
         }
 

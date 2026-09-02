@@ -125,7 +125,13 @@ namespace BarPromenade
             }
 
             registry = carRegistry;
-            driver = GetComponent<LastRouteCarDriver>();
+            // NOT resolved here. The factory raises this dash BEFORE the
+            // engine, deliberately, and a `GetComponent` at this moment
+            // therefore always answered null - so `wanted` below was always
+            // zero and the speedometer needle never left its stop, on a car
+            // doing five and a half metres a second. It reads as a dead
+            // instrument rather than as an error, and every other thing on
+            // the dash went on working. Resolved on first use instead.
 
             // Rest poses are captured AFTER the suspension has re-parented
             // the body under its sprung empty - the factory installs the
@@ -326,8 +332,9 @@ namespace BarPromenade
             // it - the doors are written the same way.
             ApplyLid(gloveboxOpenness);
 
-            float wanted = driver != null && driver.IsDriving
-                ? LastRouteCarRadioModel.Speedometer01(driver.Speed)
+            LastRouteCarDriver engine = ResolveDriver();
+            float wanted = engine != null && engine.IsDriving
+                ? LastRouteCarRadioModel.Speedometer01(engine.Speed)
                 : 0f;
             speed01 = Mathf.MoveTowards(
                 speed01,
@@ -335,6 +342,25 @@ namespace BarPromenade
                 step * SpeedoResponsePerSecond);
             ApplySpeedometer(speed01);
             ApplyRadioPose();
+        }
+
+        /// <summary>
+        /// The engine, found the first frame anything asks for it.
+        ///
+        /// It cannot be found at <see cref="Initialize"/>: the factory raises
+        /// the dash before the driver on purpose, so at that moment the
+        /// component does not exist yet. Looking again each frame until one
+        /// turns up costs a `GetComponent` on a car with no engine, which is
+        /// a car that is never going to drive anyway.
+        /// </summary>
+        private LastRouteCarDriver ResolveDriver()
+        {
+            if (driver == null)
+            {
+                driver = GetComponent<LastRouteCarDriver>();
+            }
+
+            return driver;
         }
 
         private void ApplyRadio()

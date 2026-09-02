@@ -15,9 +15,17 @@ namespace BarPromenade
     /// inventory step for it. Nothing here can take, refund or complain
     /// about an item.
     ///
-    /// Saying yes is not reversible and is not meant to be. He gets off the
+    /// Saying yes is not reversible on the leg it starts. He gets off the
     /// bonnet and into the car, and from then on <see cref="CanInteract"/>
     /// is false: there is nobody on the bonnet to talk to any more.
+    ///
+    /// **One component, both ends of the road.** The island asks "уехать из
+    /// города?" and the terrace by the cafe asks "вернуться в город?", from a
+    /// different pool of small talk and a different seeded stream, and that is
+    /// the whole difference between them. It is deliberately not two classes:
+    /// which way the car is pointing is the scene's business, and the beat -
+    /// draw a line, open the menu, watch for his boots hitting the ground,
+    /// close it - is the same beat either way.
     /// </summary>
     [DefaultExecutionOrder(10)]
     [DisallowMultipleComponent]
@@ -28,9 +36,15 @@ namespace BarPromenade
     {
         public const string DefaultPromptKey = "interaction.ferryman";
 
-        /// <summary>"Уехать из города?" - the whole interaction.</summary>
+        /// <summary>"Уехать из города?" - the whole interaction, on the
+        /// island.</summary>
         public const string LeaveConfirmationPromptKey =
             "lastroute.ferryman.confirm.leave";
+
+        /// <summary>And "Вернуться в город?" at the other end of the same
+        /// road.</summary>
+        public const string ReturnConfirmationPromptKey =
+            "lastroute.ferryman.confirm.return";
 
         /// <summary>A shade longer than the watchman's three seconds, as
         /// with the fisherman: the lines are short but meant to sit.
@@ -38,6 +52,8 @@ namespace BarPromenade
         public const float ResponseDurationSeconds = 3.4f;
 
         private Vector3 standPosition;
+        private string[] repertoire;
+        private string confirmationKey;
         private uint quipState;
         private int lastLineIndex = -1;
         private bool isInitialized;
@@ -58,11 +74,22 @@ namespace BarPromenade
         public InventoryTargetInteractionDefinition Definition =>
             interactionDefinition;
 
+        /// <summary>
+        /// Whichever pool he is speaking from, whichever question is on the
+        /// second line, and the stream that pool walks - all three chosen
+        /// together, in <see cref="LastRouteFerrymanVoice"/>, because they
+        /// have to agree. The stream in particular is passed in rather than
+        /// derived from the seed here: the two pools must not march in step
+        /// off one seed, or the same ordinal answer comes up at both ends of
+        /// the road on the same visit.
+        /// </summary>
         public void Initialize(
             Vector3 configuredStandPosition,
-            int citySeed,
             LastRouteFerrymanPresentation ferrymanPresentation,
-            InventoryTargetInteractionController interactionController)
+            InventoryTargetInteractionController interactionController,
+            string[] lineKeys,
+            string confirmationPromptKey,
+            uint quipStream)
         {
             if (ferrymanPresentation == null)
             {
@@ -79,22 +106,37 @@ namespace BarPromenade
                     nameof(interactionController));
             }
 
+            if (lineKeys == null || lineKeys.Length == 0)
+            {
+                throw new ArgumentException(
+                    "The Ferryman has no lines to speak.",
+                    nameof(lineKeys));
+            }
+
+            if (string.IsNullOrEmpty(confirmationPromptKey))
+            {
+                throw new ArgumentException(
+                    "The Ferryman's menu has to ask something.",
+                    nameof(confirmationPromptKey));
+            }
+
             standPosition = configuredStandPosition;
-            quipState = LastRouteFerrymanQuips.CreateState(citySeed);
+            repertoire = lineKeys;
+            confirmationKey = confirmationPromptKey;
+            quipState = quipStream;
             lastLineIndex = -1;
             presentation = ferrymanPresentation;
             targetInteraction = interactionController;
-            interactionDefinition = BuildDefinition(
-                LastRouteFerrymanQuips.LineKeys[0]);
+            interactionDefinition = BuildDefinition(repertoire[0]);
             isInitialized = true;
         }
 
-        private static InventoryTargetInteractionDefinition BuildDefinition(
+        private InventoryTargetInteractionDefinition BuildDefinition(
             string talkResponseKey)
         {
             return InventoryTargetInteractionDefinition.WithoutRequirement(
                 talkResponseKey,
-                LeaveConfirmationPromptKey,
+                confirmationKey,
                 ResponseDurationSeconds);
         }
 
@@ -133,9 +175,10 @@ namespace BarPromenade
             // that shows the same line every time.
             lastLineIndex = LastRouteFerrymanQuips.NextIndex(
                 ref quipState,
-                lastLineIndex);
+                lastLineIndex,
+                repertoire);
             interactionDefinition = BuildDefinition(
-                LastRouteFerrymanQuips.LineKeys[lastLineIndex]);
+                repertoire[lastLineIndex]);
             return targetInteraction.Open(
                 interactor,
                 interactionDefinition,

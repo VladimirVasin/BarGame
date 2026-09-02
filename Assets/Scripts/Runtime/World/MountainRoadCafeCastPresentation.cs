@@ -24,6 +24,7 @@ namespace BarPromenade
         private AnimationClipPlayable actionPlayable;
         private AnimationClip actionClip;
         private float initialIdlePhaseSeconds;
+        private float fallbackDefaultClipElapsedSeconds;
         private bool hasGraph;
         private bool hasActionPlayable;
         private bool actionStartedFromServiceCarry;
@@ -55,7 +56,8 @@ namespace BarPromenade
 
                 double time = hasGraph && defaultPlayable.IsValid()
                     ? defaultPlayable.GetTime()
-                    : initialIdlePhaseSeconds;
+                    : initialIdlePhaseSeconds +
+                      fallbackDefaultClipElapsedSeconds;
                 return Mathf.Repeat((float)(time / length), 1f);
             }
         }
@@ -104,6 +106,7 @@ namespace BarPromenade
             registry = assetRegistry;
             Role = role;
             initialIdlePhaseSeconds = Mathf.Max(0f, idlePhaseSeconds);
+            fallbackDefaultClipElapsedSeconds = 0f;
             currentClipKind = registry.DefaultClipKind;
             currentClipTimeSeconds = initialIdlePhaseSeconds;
             IsInitialized = true;
@@ -137,6 +140,14 @@ namespace BarPromenade
             currentClipTimeSeconds = loop
                 ? Mathf.Repeat(elapsedSeconds, Mathf.Max(0.0001f, clip.length))
                 : Mathf.Min(elapsedSeconds, clip.length);
+            if (kind == registry.DefaultClipKind)
+            {
+                // EditMode has no PlayableGraph/LateUpdate. Retain the same
+                // deterministic absolute idle phase there so pure controller
+                // stepping exercises smoke-window gates without changing the
+                // graph-owned PlayMode clock.
+                fallbackDefaultClipElapsedSeconds = elapsedSeconds;
+            }
             if (Role == MountainRoadCafeCastRole.Attendant)
             {
                 registry.SetCoffeePotVisible(

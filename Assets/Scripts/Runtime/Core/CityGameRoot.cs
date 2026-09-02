@@ -694,6 +694,17 @@ namespace BarPromenade
             // pure function of one stage on the session, and once that journey
             // is made they stand on the terrace by the mountain cafe instead.
             // Nothing is left behind on the island - he drove away in it.
+            //
+            // And unless he is on his way back down it, which is the same
+            // stage read one value further round: the car is then built inside
+            // the city's own south portal, still moving, with the hero in the
+            // passenger seat. Everything after that is the departure's
+            // arrangement mirrored, and it is armed below beside it.
+            bool arrivingByCar =
+                hasAreaArrival &&
+                areaArrivalToken == AreaArrivalToken.FerrymanReturn &&
+                GameSessionState.FerrymanRide ==
+                LastRouteFerrymanRideStage.Returning;
             if (GameSessionState.FerrymanRide ==
                 LastRouteFerrymanRideStage.NotTaken)
             {
@@ -702,6 +713,22 @@ namespace BarPromenade
                     LastRouteCarPlan.Create(Layout),
                     Player,
                     camera);
+            }
+            else if (arrivingByCar &&
+                     hasTunnelTravel &&
+                     World.FringeYardPlan.HasTunnelForecourt)
+            {
+                LastRouteCityDrivePlanner.ResolveReturnEntryPose(
+                    World.FringeYardPlan.TunnelForecourt,
+                    tunnelTravelPlan.FloorSurfaceY,
+                    out Vector3 entryPosition,
+                    out Vector3 entryFacing);
+                LastRouteCar = LastRouteCarFactory.Create(
+                    transform,
+                    LastRouteCarPlan.At(entryPosition, entryFacing),
+                    Player,
+                    camera,
+                    LastRouteCarLamps.RideOnly);
             }
             // The park kept a place for company and two men still keep
             // it: an old player at each of the two chess tables, on
@@ -790,14 +817,20 @@ namespace BarPromenade
             // on the bumper, throwing a coin, facing whoever walks up. He
             // comes after the car because his whole stance is read off it,
             // and after the menu above because saying yes to him opens it.
+            //
+            // A car that has just been driven home is handed NO menu: the
+            // offer is a journey, and this one ends with the car turned round
+            // in its own bay, which is a pose it cannot pull out of. He talks,
+            // and the offer comes back with the next city build, which raises
+            // him from the layout in his own stance again.
             if (LastRouteCar != null)
             {
                 LastRouteFerryman = LastRouteFerrymanFactory.Create(
                     transform,
                     LastRouteFerrymanPlan.Create(LastRouteCar),
                     LastRouteCar,
-                    TargetInteraction,
-                    GameSessionState.CitySeed);
+                    arrivingByCar ? null : TargetInteraction,
+                    LastRouteFerrymanVoice.Island(GameSessionState.CitySeed));
             }
             // The passenger seat is his to offer, so it only opens once he
             // has taken the driver's. It cannot be told at construction -
@@ -825,28 +858,50 @@ namespace BarPromenade
                 if (carSeat != null && hasTunnelTravel &&
                     World.FringeYardPlan.HasTunnelForecourt)
                 {
+                    CityTunnelForecourtDescriptor forecourt =
+                        World.FringeYardPlan.TunnelForecourt;
+                    float tunnelFloorY = tunnelTravelPlan.FloorSurfaceY;
+
+                    // Homebound the road is laid from the ISLAND's own stance
+                    // rather than from where the car is standing, because what
+                    // that stance names here is the destination - see
+                    // LastRouteCityDrivePlanner.CreateReturn. Outbound it is
+                    // read off the car, which is the same thing on a car that
+                    // has not moved and the right thing on one that has.
+                    LastRouteCarPlan islandPlan =
+                        LastRouteCarPlan.Create(Layout);
                     LastRouteCarPlan departurePlan =
                         LastRouteCarPlan.At(
                             carRoot.position,
                             carRoot.forward);
-                    CityTunnelForecourtDescriptor forecourt =
-                        World.FringeYardPlan.TunnelForecourt;
-                    float tunnelFloorY = tunnelTravelPlan.FloorSurfaceY;
-                    Ride = LastRouteRideController.CreateForCity(
-                        transform,
-                        carSeat,
-                        carRoot.GetComponent<LastRouteCarDriver>(),
-                        LastRouteFerryman,
-                        () => LastRouteCityDeparturePlanner.Create(
-                            departurePlan,
-                            Layout,
-                            forecourt,
-                            tunnelFloorY),
-                        // The traffic he turns across. Both directors are
-                        // already up by here - the bus and the walkers are
-                        // raised long before the man on the bonnet is.
-                        Bus,
-                        Pedestrians);
+                    Ride = arrivingByCar
+                        ? LastRouteRideController.CreateForCityArrival(
+                            transform,
+                            carSeat,
+                            carRoot.GetComponent<LastRouteCarDriver>(),
+                            LastRouteFerryman,
+                            () => LastRouteCityDrivePlanner.CreateReturn(
+                                islandPlan,
+                                Layout,
+                                forecourt,
+                                tunnelFloorY),
+                            Bus,
+                            Pedestrians)
+                        : LastRouteRideController.CreateForCityDeparture(
+                            transform,
+                            carSeat,
+                            carRoot.GetComponent<LastRouteCarDriver>(),
+                            LastRouteFerryman,
+                            () => LastRouteCityDrivePlanner.CreateDeparture(
+                                departurePlan,
+                                Layout,
+                                forecourt,
+                                tunnelFloorY),
+                            // The traffic he turns across. Both directors are
+                            // already up by here - the bus and the walkers are
+                            // raised long before the man on the bonnet is.
+                            Bus,
+                            Pedestrians);
                 }
 
                 // The engine under the bonnet he is sitting on. It turns

@@ -7,6 +7,19 @@ namespace BarPromenade
     public static class MountainRoadTerminalPlanner
     {
         public const float VehicleTurningRadius = 7.5f;
+
+        /// <summary>
+        /// How far up the pad the vehicle apron's centre sits, in the
+        /// plateau's own frame - and therefore where the car stops, since the
+        /// parked pose is the apron centre exactly.
+        ///
+        /// Named because a second thing now measures itself from it: the
+        /// apron floodlight stands in front of this point and aims back at it
+        /// (<c>MountainRoadTerminalSitePlanner.CreateApronFloodlight</c>). A
+        /// bare `1.5f` in two files is how a lamp ends up pointing at bare
+        /// asphalt after somebody nudges the apron.
+        /// </summary>
+        public const float ApronForwardOffset = 1.5f;
         public const float CafeHeight = 4.4f;
         public const float CafeDoorWidth = 1.6f;
         /// <summary>
@@ -44,7 +57,7 @@ namespace BarPromenade
             MountainRoadRouteSample entry = route.Sample(
                 plateau.EntryDistance);
             var vehicle = new MountainRoadVehicleApronPlan(
-                LocalToWorld(plateau, 0f, 0f, 1.5f),
+                LocalToWorld(plateau, 0f, 0f, ApronForwardOffset),
                 entry.Position,
                 plateau.Forward,
                 MountainRoadPlanner.RoadWidth,

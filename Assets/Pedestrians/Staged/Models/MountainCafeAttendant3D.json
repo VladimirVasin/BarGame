@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.5.1",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "cafe_attendant_v2",
   "display_name": "Cafe Attendant",
@@ -58,7 +58,7 @@
   "floor_seated_contact_m": null,
   "lying_height_m": null,
   "lying_support_plane_offset_m": 0.0,
-  "build_signature": "8c7cad1fb8bc563a24685ccb8cd143be0936f44c64579e4ce5d176e94804d7d9",
+  "build_signature": "a5003900b422800a09fad2401b0fba489188aa6a8654d7ffb6c429f1b173c8f1",
   "bones": [
     {
       "name": "root",

@@ -173,9 +173,17 @@ namespace BarPromenade
         public bool IsDriving => Phase == LastRouteFerrymanPhase.Driving;
 
         /// <summary>
-        /// True from the moment he starts climbing back out at the far end.
-        /// He waits on his bonnet again afterwards, but he does not take
-        /// anybody anywhere a second time.
+        /// True from the moment he starts climbing back out at the far end of
+        /// a leg he has driven.
+        ///
+        /// It used to be the reason he could never be asked again, and it is
+        /// not any more: the road runs both ways now, and whether there is
+        /// anywhere to go is a question about the SCENE rather than about him.
+        /// Each root hands him a menu only where it has armed a ride, and a
+        /// plain repertoire everywhere else - see
+        /// <see cref="LastRouteFerrymanFactory"/> for the fork. What this
+        /// still says, and what tests and logs read it for, is that this
+        /// particular man has already driven once.
         /// </summary>
         public bool HasCompletedJourney { get; private set; }
 
@@ -344,20 +352,26 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// He said yes. Off the bonnet, round the car and into it - once; a
-        /// second call is ignored rather than restarting the walk.
+        /// He said yes. Off the bonnet, round the car and into it - once per
+        /// leg; a second call while he is already moving is ignored rather
+        /// than restarting the walk.
+        ///
+        /// The walk is re-solved off the car every time rather than kept from
+        /// the last one, because the car is not where it was: the landing
+        /// point, the corner he rounds and the door dock were all worked out
+        /// on the island and the car is now on a mountain terrace.
+        /// <see cref="TryBeginAlighting"/> already did that re-solve on the way
+        /// out of the seat, and this leans on it.
         /// </summary>
         public bool TryBeginBoarding()
         {
             if (!IsInitialized ||
-                Phase != LastRouteFerrymanPhase.Waiting ||
-                HasCompletedJourney)
+                Phase != LastRouteFerrymanPhase.Waiting)
             {
-                // He is back on a bonnet, but it is the bonnet at the cafe and
-                // the route he ran is over. Without this the wait loop coming
-                // back would put the offer back up with it, and answering it
-                // would drive him off the mountain terrace to a tunnel that is
-                // six hundred metres downhill.
+                // Only off a bonnet, and only from a standstill. Everything
+                // else - already walking, already at the wheel, halfway out of
+                // it - is a second answer to a question that has been
+                // answered.
                 return false;
             }
 

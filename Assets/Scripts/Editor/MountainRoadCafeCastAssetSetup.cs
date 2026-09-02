@@ -112,7 +112,10 @@ namespace BarPromenade.Editor
                 {
                     new CafeClipDescriptor(
                         MountainRoadCafeCastClipKind.Idle,
-                        "CafeLoneSleep", 12f, true)
+                        "CafeLoneSleep", 12f, true),
+                    new CafeClipDescriptor(
+                        MountainRoadCafeCastClipKind.Interject,
+                        "CafeLoneInterject", 6f, false)
                 },
                 1800,
                 3000),
@@ -1379,7 +1382,7 @@ namespace BarPromenade.Editor
             {
                 throw new InvalidOperationException(
                     "Cafe animation manifest must contain exactly the " +
-                    "approved nine cafe tableau clips.");
+                    "approved ten cafe tableau clips.");
             }
 
             ValidateImportedAnimationAsset(manifest);

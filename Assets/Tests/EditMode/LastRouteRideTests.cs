@@ -81,7 +81,7 @@ namespace BarPromenade.Tests.EditMode
         {
             MountainRoadPlan plan = BuildMountainPlan();
             LastRouteCarDrivePath path =
-                LastRouteMountainDrivePlanner.Create(plan);
+                LastRouteMountainDrivePlanner.CreateArrival(plan);
 
             Assert.That(
                 Vector3.Distance(path.Start, plan.Tunnel.SpawnPosition),
@@ -106,7 +106,7 @@ namespace BarPromenade.Tests.EditMode
         {
             MountainRoadPlan plan = BuildMountainPlan();
             LastRouteCarDrivePath path =
-                LastRouteMountainDrivePlanner.Create(plan);
+                LastRouteMountainDrivePlanner.CreateArrival(plan);
             var walkable = new MountainRoadWalkableArea(plan);
 
             // The tunnel lead-in and the last few metres onto the apron are
@@ -130,7 +130,7 @@ namespace BarPromenade.Tests.EditMode
         {
             MountainRoadPlan plan = BuildMountainPlan();
             LastRouteCarDrivePath path =
-                LastRouteMountainDrivePlanner.Create(plan);
+                LastRouteMountainDrivePlanner.CreateArrival(plan);
             LastRouteMountainDrivePlanner.ResolveParkedPose(
                 plan,
                 out Vector3 parked,
@@ -157,7 +157,7 @@ namespace BarPromenade.Tests.EditMode
             MountainRoadPlan plan = BuildMountainPlan();
             MountainRoadVehicleApronPlan apron = plan.Terminal.VehicleApron;
             LastRouteCarDrivePath path =
-                LastRouteMountainDrivePlanner.Create(plan);
+                LastRouteMountainDrivePlanner.CreateArrival(plan);
 
             // Once it is inside the pocket it stays inside it. That ring is
             // the only ground up here the terminal validator actually proves
@@ -186,7 +186,7 @@ namespace BarPromenade.Tests.EditMode
             MountainRoadPlan plan = BuildMountainPlan();
             MountainRoadCafePlan cafe = plan.Terminal.Cafe;
             LastRouteCarDrivePath path =
-                LastRouteMountainDrivePlanner.Create(plan);
+                LastRouteMountainDrivePlanner.CreateArrival(plan);
 
             // The whole reason the arrival is a straight run and not a turn
             // in the turning pocket. Walked at a quarter of a metre over the
@@ -224,7 +224,7 @@ namespace BarPromenade.Tests.EditMode
                 out LastRouteCarPlan carPlan);
 
             LastRouteCarDrivePath path =
-                LastRouteCityDeparturePlanner.Create(
+                LastRouteCityDrivePlanner.CreateDeparture(
                     carPlan,
                     layout,
                     forecourt,
@@ -239,7 +239,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 depth,
                 Is.EqualTo(
-                        LastRouteCityDeparturePlanner.TunnelBlackoutDepth)
+                        LastRouteCityDrivePlanner.TunnelBlackoutDepth)
                     .Within(0.2f),
                 "And ends inside the mountain, past the twelve metres of " +
                 "collidered throat, where the screen has somewhere dark to " +
@@ -264,7 +264,7 @@ namespace BarPromenade.Tests.EditMode
                 out LastRouteCarPlan carPlan);
 
             LastRouteCarDrivePath path =
-                LastRouteCityDeparturePlanner.Create(
+                LastRouteCityDrivePlanner.CreateDeparture(
                     carPlan,
                     layout,
                     forecourt,
@@ -317,7 +317,7 @@ namespace BarPromenade.Tests.EditMode
                 out LastRouteCarPlan carPlan);
 
             LastRouteCarDrivePath path =
-                LastRouteCityDeparturePlanner.Create(
+                LastRouteCityDrivePlanner.CreateDeparture(
                     carPlan,
                     layout,
                     forecourt,
@@ -407,7 +407,7 @@ namespace BarPromenade.Tests.EditMode
                 out LastRouteCarPlan carPlan);
 
             LastRouteCarDrivePath path =
-                LastRouteCityDeparturePlanner.Create(
+                LastRouteCityDrivePlanner.CreateDeparture(
                     carPlan,
                     layout,
                     forecourt,
@@ -478,7 +478,7 @@ namespace BarPromenade.Tests.EditMode
                 out LastRouteCarPlan carPlan);
 
             LastRouteCarDrivePath path =
-                LastRouteCityDeparturePlanner.Create(
+                LastRouteCityDrivePlanner.CreateDeparture(
                     carPlan,
                     layout,
                     forecourt,
@@ -581,7 +581,7 @@ namespace BarPromenade.Tests.EditMode
                 out LastRouteCarPlan carPlan);
 
             LastRouteCarDrivePath path =
-                LastRouteCityDeparturePlanner.Create(
+                LastRouteCityDrivePlanner.CreateDeparture(
                     carPlan,
                     layout,
                     forecourt,
@@ -633,7 +633,7 @@ namespace BarPromenade.Tests.EditMode
                 out LastRouteCarPlan carPlan);
 
             LastRouteCarDrivePath path =
-                LastRouteCityDeparturePlanner.Create(
+                LastRouteCityDrivePlanner.CreateDeparture(
                     carPlan,
                     layout,
                     forecourt,
@@ -703,7 +703,7 @@ namespace BarPromenade.Tests.EditMode
             // already off his bonnet - so the degenerate case has to be a
             // worse drive, never no drive.
             LastRouteCarDrivePath path =
-                LastRouteCityDeparturePlanner.Create(
+                LastRouteCityDrivePlanner.CreateDeparture(
                     carPlan,
                     null,
                     forecourt,
@@ -713,7 +713,7 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 tunnelPlan.GetSignedDistance(path.End),
                 Is.EqualTo(
-                        LastRouteCityDeparturePlanner.TunnelBlackoutDepth)
+                        LastRouteCityDrivePlanner.TunnelBlackoutDepth)
                     .Within(0.2f),
                 "It still ends in the tunnel with the load to ask for.");
         }

@@ -73,21 +73,70 @@ namespace BarPromenade
         private readonly float[] distances;
         private readonly Vector3[] forwards;
         private readonly float[] turnRates;
+        private readonly int reverseCuspIndex;
 
         public LastRouteCarDrivePath(IReadOnlyList<Vector3> sourcePoints)
+            : this(sourcePoints, 0)
+        {
+        }
+
+        /// <summary>
+        /// A road whose first <paramref name="sourceReversePointCount"/>
+        /// points are driven BACKWARDS, the rest forwards.
+        ///
+        /// One caller: the Ferryman leaving the mountain terrace, where the
+        /// car is parked nose-in against a pocket too tight for a U-turn of
+        /// any usable radius and the only honest way out is the one a driver
+        /// would use - back round on lock, then away. See
+        /// <see cref="LastRouteMountainDeparturePlanner"/> for the measured
+        /// geometry.
+        ///
+        /// The count is the number of SOURCE points on the reverse leg, its
+        /// last one being the cusp the car stops and changes direction at. It
+        /// is expressed in source points rather than metres because welding
+        /// may drop a duplicate at a seam and a distance would then name a
+        /// vertex that no longer exists.
+        /// </summary>
+        public LastRouteCarDrivePath(
+            IReadOnlyList<Vector3> sourcePoints,
+            int sourceReversePointCount)
         {
             if (sourcePoints == null)
             {
                 throw new ArgumentNullException(nameof(sourcePoints));
             }
 
-            points = Weld(sourcePoints);
+            if (sourceReversePointCount < 0 ||
+                sourceReversePointCount == 1 ||
+                sourceReversePointCount > sourcePoints.Count)
+            {
+                // One point is not a leg: a reverse lead needs a start and a
+                // cusp, and a cusp with nothing after it is the whole road.
+                throw new ArgumentOutOfRangeException(
+                    nameof(sourceReversePointCount),
+                    sourceReversePointCount,
+                    "A reverse lead is either absent or at least two points " +
+                    "of the road it leads.");
+            }
+
+            points = Weld(
+                sourcePoints,
+                sourceReversePointCount,
+                out int weldedReverseCount);
             if (points.Length < 2)
             {
                 throw new ArgumentException(
                     "A drivable path needs at least two distinct points.",
                     nameof(sourcePoints));
             }
+
+            // The cusp is the LAST point of the reverse leg, and it has to
+            // keep road on both sides of it: a lead welded down to one point,
+            // or one that swallowed the whole road, is no manoeuvre at all.
+            reverseCuspIndex = weldedReverseCount >= 2 &&
+                               weldedReverseCount < points.Length
+                ? weldedReverseCount - 1
+                : 0;
 
             distances = new float[points.Length];
             for (int index = 1; index < points.Length; index++)
@@ -98,14 +147,39 @@ namespace BarPromenade
                                        points[index]);
             }
 
-            forwards = BuildVertexForwards(points);
-            turnRates = BuildTurnRates(points, distances);
+            forwards = BuildVertexForwards(points, reverseCuspIndex);
+            turnRates = BuildTurnRates(points, distances, reverseCuspIndex);
         }
 
         public float Length => distances[distances.Length - 1];
         public int PointCount => points.Length;
         public Vector3 Start => points[0];
         public Vector3 End => points[points.Length - 1];
+
+        /// <summary>True when this road opens with a leg driven backwards.
+        /// </summary>
+        public bool HasReverseLead => reverseCuspIndex > 0;
+
+        /// <summary>
+        /// How far along the road the car stops and changes direction, or
+        /// zero on a road driven forwards from end to end.
+        /// </summary>
+        public float ReverseLength =>
+            reverseCuspIndex > 0 ? distances[reverseCuspIndex] : 0f;
+
+        /// <summary>
+        /// Whether the car is going backwards at a distance along the road.
+        ///
+        /// Only the wheels and the engine ask. The POSE does not: what
+        /// <see cref="Sample"/> hands back is the car's heading rather than
+        /// its direction of travel, so a reverse leg is drawn by a body
+        /// pointing the way it came, which is what reversing looks like.
+        /// </summary>
+        public bool IsReversingAt(float distance)
+        {
+            return reverseCuspIndex > 0 &&
+                   Sanitize(distance) < ReverseLength;
+        }
 
         /// <summary>
         /// The one place on this road where the car gives way, or
@@ -301,9 +375,13 @@ namespace BarPromenade
             return low;
         }
 
-        private static Vector3[] Weld(IReadOnlyList<Vector3> sourcePoints)
+        private static Vector3[] Weld(
+            IReadOnlyList<Vector3> sourcePoints,
+            int sourceReversePointCount,
+            out int weldedReverseCount)
         {
             var welded = new List<Vector3>(sourcePoints.Count);
+            weldedReverseCount = 0;
             for (int index = 0; index < sourcePoints.Count; index++)
             {
                 Vector3 candidate = sourcePoints[index];
@@ -322,6 +400,10 @@ namespace BarPromenade
                 }
 
                 welded.Add(candidate);
+                if (index < sourceReversePointCount)
+                {
+                    weldedReverseCount = welded.Count;
+                }
             }
 
             return welded.ToArray();
@@ -332,14 +414,27 @@ namespace BarPromenade
         /// segments that meet there. Per-segment forwards make the car snap
         /// through every join; the bus's own path sampler carries a forward on
         /// each sample for exactly this reason.
+        ///
+        /// What is averaged is the car's HEADING, not the direction it is
+        /// travelling, and on a reverse leg those are opposites. Negating the
+        /// reverse segments here is what makes the cusp survive at all: the
+        /// travel directions either side of it are a perfect reversal, which
+        /// averages to nothing and would slew the car through a hundred and
+        /// eighty degrees over the two segments around it. As headings they
+        /// simply agree - a car that backs round and then drives away never
+        /// changes which way it is pointing at the moment it changes gear.
         /// </summary>
-        private static Vector3[] BuildVertexForwards(Vector3[] points)
+        private static Vector3[] BuildVertexForwards(
+            Vector3[] points,
+            int reverseCuspIndex)
         {
             var segmentForwards = new Vector3[points.Length - 1];
             for (int index = 0; index < segmentForwards.Length; index++)
             {
-                segmentForwards[index] =
-                    (points[index + 1] - points[index]).normalized;
+                Vector3 run = points[index + 1] - points[index];
+                segmentForwards[index] = index < reverseCuspIndex
+                    ? (-run).normalized
+                    : run.normalized;
             }
 
             var vertexForwards = new Vector3[points.Length];
@@ -362,15 +457,29 @@ namespace BarPromenade
             return vertexForwards;
         }
 
+        /// <summary>
+        /// Degrees of HEADING change per metre of road at each vertex - which
+        /// on a reverse leg is not the same as the angle between successive
+        /// segments, for the reason
+        /// <see cref="BuildVertexForwards"/> records. Measuring the heading is
+        /// also the right question for the drive model: what limits the speed
+        /// through a bend is how fast the body has to swing, and a car takes a
+        /// given radius no more happily backwards than forwards.
+        /// </summary>
         private static float[] BuildTurnRates(
             Vector3[] points,
-            float[] distances)
+            float[] distances,
+            int reverseCuspIndex)
         {
             var turnRates = new float[points.Length];
             for (int index = 1; index < points.Length - 1; index++)
             {
-                Vector3 incoming = Flatten(points[index] - points[index - 1]);
-                Vector3 outgoing = Flatten(points[index + 1] - points[index]);
+                float incomingSign = index - 1 < reverseCuspIndex ? -1f : 1f;
+                float outgoingSign = index < reverseCuspIndex ? -1f : 1f;
+                Vector3 incoming = Flatten(
+                    (points[index] - points[index - 1]) * incomingSign);
+                Vector3 outgoing = Flatten(
+                    (points[index + 1] - points[index]) * outgoingSign);
                 if (incoming.sqrMagnitude < 0.000001f ||
                     outgoing.sqrMagnitude < 0.000001f)
                 {

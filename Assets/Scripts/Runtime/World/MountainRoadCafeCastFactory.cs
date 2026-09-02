@@ -175,8 +175,7 @@ namespace BarPromenade
                 registry.ModelRoot == null ||
                 registry.Role != role ||
                 registry.IdleClip == null ||
-                (role != MountainRoadCafeCastRole.LonePatron &&
-                 registry.BeatClip == null))
+                registry.BeatClip == null)
             {
                 throw new InvalidOperationException(
                     "The " + role +
@@ -185,7 +184,7 @@ namespace BarPromenade
 
             int expectedClipCount = role switch
             {
-                MountainRoadCafeCastRole.LonePatron => 1,
+                MountainRoadCafeCastRole.LonePatron => 2,
                 MountainRoadCafeCastRole.Attendant => 4,
                 _ => 2
             };

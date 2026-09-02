@@ -123,9 +123,10 @@ The vertical slice contains:
   route bounds, ground their bases against the minimum sampled terrain beneath
   each oriented footprint and reserve those footprints from both the road
   corridor and tree crowns. The left side owns an enterable glass cafe with a
-  bespoke four-role cast: its lone patron and attendant stay silent while the
-  drinking couple share a private localized text conversation, four deliberate
-  stools remain empty and rare deterministic gesture beats continue. The right
+  bespoke four-role cast: its attendant stays silent, the drinking couple share
+  a private localized text conversation, and the lone patron intermittently
+  wakes to call his wife home without a response. Four deliberate stools remain
+  empty and rare deterministic gesture beats continue. The right
   side owns an operating `230 m` cableway with nine supports and eight cabins,
   with every cable height rebased from the raised terminal rather than old
   absolute world heights. At the normal `2.6 m/s`
@@ -613,8 +614,8 @@ The vertical slice contains:
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
   `0.835 m` rest pelvis. The five pooled and nine ordinary staged model
   manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
-  The four Mountain Road cafe models and their separate `9`-clip bank use
-  `4.5.1`; the shelter trio and dedicated three-loop bank use `4.2.0`; the
+  The four Mountain Road cafe models and their separate `10`-clip bank use
+  `4.5.2`; the shelter trio and dedicated three-loop bank use `4.2.0`; the
   three special manifests use `2.0.0`. The generated FBXs were
   reimported and every production prefab/provider output rebuilt; runtime
   therefore consumes the replaced models, not legacy prefabs behind revised
@@ -1468,26 +1469,39 @@ The vertical slice contains:
   two cups crosses that threshold. Completing
   the hero-stool sit switches to a bounded eye-level first-person view of the
   counter and restores the exact prior follow-camera state on exit. The
-  nine-clip cast (`1` sleeping loop, `2 + 2` pair clips, `4` attendant clips)
-  has no NPC voice bed and never services the hero. Only while the player is
+  ten-clip cast (`2` lone-patron clips, `2 + 2` pair clips, `4` attendant
+  clips) has no NPC voice bed and never services the hero. Only while the player is
   inside the plan's physical cafe volume, the pair follows the fixed localized
   text order `Man01 -> Woman01 -> ... -> Man10 -> Woman10 -> loop`; each role
   owns ten stable keys in both Russian and English. A queued turn survives
   either patron's Drink and the woman's cigarette lift/smoke window without
   consuming or skipping its key, then resumes after the authored action. One over-head bubble
   belongs to the active speaker, whose additive neck/head look turns toward the
-  partner before the line appears. The sleeping patron and attendant have no
-  lines. The pair's default seated idles remain legible around the conversation:
+  partner before the line appears. A PairMan -> PairWoman exchange completes
+  only when both lines have been fully displayed. After every third completed
+  exchange (`3/6/9...`, continuously across the ten-pair pool wrap), and once
+  both mutual looks have returned to idle, the lone patron — the
+  woman's strongly drunk husband — raises his head, waves his right hand toward
+  the pair, shows one line from a separate four-key RU/EN pool and returns to
+  the exact sleeping seam. The pair completely ignores him: it receives no
+  look, answer or reaction gesture, and its pending ManNN key is unchanged
+  (`Man04` after `Woman03`, `Man01` after `Woman10`).
+  The attendant has no lines. The pair's default seated idles remain legible around the conversation:
   the man makes
   three uneven left-hand taps with no impact sound and may continue tapping
   beneath his text, while the woman takes one cigarette drag and settles into a
   restrained exhale. The authored ember and
   its smoke envelope read the same live normalized idle phase and own no
   separate timer, Light or AudioSource. The bubbles likewise add no voice or
-  other AudioSource. The
+  other AudioSource. Her fingers hold the filter rather than the ember; the
+  filter still reaches the mouth and the burning tip points clear of hand and
+  face. The
   plan continues to own entry,
-  shelter, anchors, lighting and exactly `17` logical colliders. Two visible
-  practicals and one shadowless technical wash remain. Six neutral semantic
+  shelter, anchors, lighting and exactly `17` logical colliders. The existing
+  two visible practicals and one shadowless technical wash are redistributed,
+  not multiplied: the warm key reaches the sleeping husband, while the cold
+  practical and wash keep all four figures readable and still miss the terrace,
+  parapet and black brink. Six neutral semantic
   detail sheets partition exterior, interior, counter, metal, props and glass;
   authored UV regions and a zero-overlap validator prevent repeated samples,
   stretching and flicker without a new base hue, readable brand, `PHILLIES`,

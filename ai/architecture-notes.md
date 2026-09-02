@@ -1887,7 +1887,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   Spot with no third visible fixture. Its tableau is a dedicated staged
   subsystem rather than part of the pedestrian pool: one lone patron, one
   couple and one attendant use four distinct Generic prefabs and an isolated
-  nine-clip cafe library: one sleeping loop for the lone patron, two clips for
+  ten-clip cafe library: one sleeping loop and one interjection for the lone
+  patron, two clips for
   each member of the pair and four attendant clips. Seven stools are modeled
   with their seat tops at `0.8175 m`; three are occupied with real butt contact
   and four stay deliberately empty. The lone patron nearest the entrance sleeps
@@ -1941,8 +1942,12 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   keep the existing bounded tableau notice, but it creates no order, item,
   service, dialogue with the hero or new gameplay transaction.
   The two visible practicals plus one shadowless technical sulphur spill proxy
-  with no third visible fixture remain the complete cafe-light contract; the
-  proxy reaches only the threshold and near apron, never the terrace or brink.
+  with no third visible fixture remain the complete cafe-light contract. The
+  warm key aims at the sleeping contact pose without self-shadowing the folded
+  arms across the face; the longer cold key holds the dark-clothed seated line
+  before its range fade, while the reduced common wash keeps the pale attendant
+  from owning the whole shot. The proxy reaches only the threshold and near
+  apron, never the terrace or brink.
 
   **Accepted exception — role-staggered cafe drinking:** on `2026-09-01` the
   user explicitly replaced the earlier synchronized-pair beat. The pair stays
@@ -2005,6 +2010,39 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   world-surface text is added. The deliberately coarse sexual language and
   limited profanity are a one-location voice exception, not a global text
   register change; these two pools become the §21 baseline for later additions.
+
+  **Accepted architecture exception — 2026-09-02, explicit user request —
+  the sleeping patron is the ignored husband and interrupts after every third
+  completed pair exchange:** this supersedes the immediately preceding
+  exception only where it leaves the sleeper silent. The lone patron is
+  PairWoman's strongly drunk husband; PairMan has already picked her up, while
+  the husband does not understand what has happened. One exchange completes
+  only after the fully displayed PairMan `NN` line and its matching PairWoman
+  `NN` reply. The husband interrupts after exchanges `3/6/9...`; that counter
+  continues uninterrupted when the ten-pair pool wraps from `10` to `01`.
+  Strictly after the Woman bubble has closed and both pair looks have returned
+  to idle, he raises his head from the crossed-arm sleep, waves his right hand
+  toward the pair, owns one four-second localized bubble from a separate short
+  pool, and returns to the exact sleep seam. His one-shot grows the isolated
+  cafe bank from the prior nine clips to ten (`2 + 2 + 2 + 4`). A blocked or
+  rolled-back pair bubble does not complete its half of an exchange. The pair's
+  pending order and indices remain unchanged: Woman `03` is followed by Man
+  `04`, while Woman `10` is followed by Man `01`.
+  PairMan and PairWoman completely ignore the interruption: neither receives a
+  look target, answer, pause pose or reaction gesture; their ordinary idles may
+  continue underneath it. The husband never explains the relationship,
+  infidelity or his drunkenness in text, never addresses the hero, owns no cup,
+  enters no service queue and adds no voice or AudioSource. The attendant stays
+  silent. This is the separate §6/§21 decision required to give a formerly
+  silent NPC his first text pool; it does not authorize any other silent NPC.
+
+  **Accepted correction — the cigarette is gripped by its filter, never its
+  ember:** the user's 2026-09-02 visual correction makes the non-burning start
+  of the cigarette the right-hand grip and points the burning tip away from the
+  fingers and face in rest, drag and exhale. The filter still reaches the live
+  mouth during the drag. The generator and shipped-asset checks distinguish
+  the two ends geometrically; whole-prop/hand overlap alone is no longer proof
+  of a valid grip. Ember and smoke remain phase-owned, silent and light-free.
 
   The user's detailed-texture implementation request accepts one recorded
   exception to the earlier one-sheet target: the set owns six `512 x 512`
@@ -2429,18 +2467,47 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   still true, and `PlayerAnimatedInteractionController.Update` force-completes
   every running interaction while it is. Anything an arrival wants to START —
   and a contextual interaction above all — must wait for it to clear rather
-  than run in `Awake`. `LastRouteRideController.AwaitMountainStart` is the
-  worked example; it holds under a black screen for the frame or two involved.
-- **Accepted — The Ferryman's journey is one session stage, not two worlds:**
-  `LastRouteFerrymanRideStage` (`NotTaken -> InTransit -> Arrived`) is a
-  monotone ladder on `GameSessionState`, the cemetery ladder's own shape, and
-  both areas build the car and the man from it and from nothing else. So he is
-  never in two places and never in none: the City raises him only while the
-  stage is `NotTaken`, and `MountainRoadRoot` raises him parked on the terminal
-  apron once it is `Arrived`. `CityMapController.Open` refuses while the stage
-  is `InTransit` for the same reason it refuses while the area service is
+  than run in `Awake`. `LastRouteRideController.AwaitArrivalStart` is the
+  worked example; it holds under a black screen for the frame or two involved,
+  and both arrivals — the climb's and the homecoming's — go through it.
+- **Accepted — The Ferryman's journey is one session stage, not two worlds,
+  and that stage is a RING:** `LastRouteFerrymanRideStage`
+  (`NotTaken -> InTransit -> Arrived -> Returning -> NotTaken`) lives on
+  `GameSessionState`, and both areas build the car and the man from it and from
+  nothing else. So he is never in two places and never in none: the City raises
+  him on the island while the stage is `NotTaken`, `MountainRoadRoot` raises
+  him parked on the terminal apron once it is `Arrived`, and the two moving
+  values are read by nothing but an arrival. `TryAdvanceFerrymanRide` still
+  refuses everything that is not the next thing that can happen; exactly one
+  step is not an increment (`Returning -> NotTaken`, the car reaching the
+  island again), so a car parked on the mountain can never reappear in the city
+  without being driven there. `CityMapController.Open` refuses while either
+  moving value is set, for the reason it refuses while the area service is
   travelling — the hero is between two places rather than standing in either,
   and a chart with a teleport on it would let him step out of a moving car.
+- **Accepted — the chart bringing the hero to the mountain brings the car with
+  him:** every way into `MountainRoad` that is not the ride and not the
+  cableway is the map, and a map that can put the hero on a mountain six
+  hundred metres above a car he never took would strand him — there is no road
+  down on foot and the cableway only goes up. So `MountainRoadRoot.BuildLastRoute`
+  advances the stage to `Arrived` itself on such an arrival and parks the car on
+  the apron waiting. It costs the island its car, which is the invariant being
+  honoured rather than broken: he is in exactly one place, and the way back is
+  the ride he can now ask for.
+- **Accepted — a car parked nose-in leaves by backing round, not by turning:**
+  the terminal apron is a `7.5 m` pocket whose cafe corner stands `8.24 m` from
+  its centre, so no U-turn of a usable radius fits (this is why the arrival
+  parks nose-in in the first place). `LastRouteMountainDrivePlanner.CreateDeparture`
+  therefore opens with a two-point turn — a quarter-circle backed on lock and a
+  quarter-circle driven off it, both at `5 m` — and `LastRouteCarDrivePath`
+  carries the reverse leg as a first-class part of the road. What it stores per
+  vertex is the car's HEADING and not its direction of travel, so the cusp is
+  continuous in the body and discontinuous only in the gear; the drive model
+  brakes to the cusp exactly as it brakes to a terminus, pauses `0.9 s`, and
+  pulls away. The city end takes the mirror answer and does NOT reverse: its bay
+  can be driven into and only backed out of, because behind it stand the
+  island's paving circle and its route mast, so the homecoming parks turned
+  round and the canonical stance returns with the next city build.
 - **Accepted — Compact separate home interior:** `HomeInterior` owns a
   validated `10 x 8 x 3.4 m` runtime-composed main room and bathroom with six
   main-room furniture footprints plus toilet, shower and sink, protected

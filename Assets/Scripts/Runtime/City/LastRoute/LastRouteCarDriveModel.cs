@@ -132,11 +132,32 @@ namespace BarPromenade
         /// </summary>
         public const float StoppedSpeed = 0.02f;
 
+        /// <summary>
+        /// How fast anybody reverses. It belongs here rather than on the
+        /// profile because it is a fact about looking over your shoulder, not
+        /// about the road: the one leg in the game that is driven backwards
+        /// is a manoeuvre in a pocket, and a man doing it at street speed is
+        /// a man who is about to hit something.
+        /// </summary>
+        public const float ReverseSpeed = 1.9f;
+
+        /// <summary>
+        /// How long the car stands still at the cusp between the two legs.
+        ///
+        /// Without it the speed curve brakes to zero and leaves again inside
+        /// one step, so the car changes direction without ever having
+        /// stopped - which reads as the road bending through a hundred and
+        /// eighty degrees rather than as a driver finding first gear.
+        /// </summary>
+        public const float DirectionChangePauseSeconds = 0.9f;
+
         private const float DegreesToRadians = Mathf.PI / 180f;
 
         private readonly LastRouteCarDrivePath path;
         private readonly LastRouteCarDriveProfile profile;
         private float holdDistance = float.PositiveInfinity;
+        private float directionChangePause;
+        private bool hasChangedDirection;
 
         public LastRouteCarDriveModel(
             LastRouteCarDrivePath drivePath,
@@ -153,9 +174,21 @@ namespace BarPromenade
         /// <summary>Metres covered from the start of the path.</summary>
         public float Distance { get; private set; }
 
-        /// <summary>Metres per second, never negative - this car does not
-        /// reverse anywhere in the beat.</summary>
+        /// <summary>
+        /// Metres per second along the road, never negative: distance always
+        /// runs forwards even where the car does not.
+        /// <see cref="IsReversing"/> says which of the two is happening.
+        /// </summary>
         public float Speed { get; private set; }
+
+        /// <summary>True while the car is backing up rather than driving.
+        /// </summary>
+        public bool IsReversing =>
+            !hasChangedDirection && path.IsReversingAt(Distance);
+
+        /// <summary>True while the car is standing at the cusp with the
+        /// engine running, between the two legs of a manoeuvre.</summary>
+        public bool IsChangingDirection => directionChangePause > 0f;
 
         /// <summary>
         /// Metres per second squared along the path over the last step.
@@ -232,6 +265,10 @@ namespace BarPromenade
         public void Resume(float speed, float distance = 0f)
         {
             Distance = Mathf.Clamp(Sanitize(distance), 0f, path.Length);
+            // A skip that lands past the cusp has done the manoeuvre, so the
+            // gear is already forward and must not be found again.
+            hasChangedDirection = Distance >= path.ReverseLength;
+            directionChangePause = 0f;
             Speed = Mathf.Clamp(
                 Sanitize(speed),
                 0f,
@@ -280,10 +317,31 @@ namespace BarPromenade
         /// </summary>
         public float EvaluateTargetSpeed()
         {
+            if (directionChangePause > 0f)
+            {
+                return 0f;
+            }
+
             // The end of the road is a corner with no exit.
             float limit = Mathf.Sqrt(
                 Mathf.Max(0f, 2f * profile.Braking * Remaining));
             limit = Mathf.Min(limit, profile.CruiseSpeed);
+
+            // And so is the cusp of a manoeuvre: the car has to be stopped
+            // before it can be in a different gear. Same arithmetic as the
+            // terminus and the give-way line, so it settles onto the cusp the
+            // same way it settles onto either of those.
+            if (!hasChangedDirection && path.HasReverseLead)
+            {
+                limit = Mathf.Min(limit, ReverseSpeed);
+                limit = Mathf.Min(
+                    limit,
+                    Mathf.Sqrt(
+                        Mathf.Max(
+                            0f,
+                            2f * profile.Braking *
+                            (path.ReverseLength - Distance))));
+            }
 
             // And so is a give-way line, for as long as it is down. Same
             // arithmetic, so a car braking to a stop line settles onto it
@@ -352,6 +410,16 @@ namespace BarPromenade
 
         private void Step(float step)
         {
+            if (directionChangePause > 0f)
+            {
+                directionChangePause = Mathf.Max(
+                    0f,
+                    directionChangePause - step);
+                Speed = 0f;
+                TargetSpeed = 0f;
+                return;
+            }
+
             TargetSpeed = EvaluateTargetSpeed();
             Speed = Speed < TargetSpeed
                 ? Mathf.Min(TargetSpeed, Speed + (profile.Acceleration * step))
@@ -359,6 +427,21 @@ namespace BarPromenade
             Speed = Mathf.Max(0f, Speed);
 
             Distance = Mathf.Min(path.Length, Distance + (Speed * step));
+            if (!hasChangedDirection &&
+                path.HasReverseLead &&
+                Distance >= path.ReverseLength - 0.0001f)
+            {
+                // Backed as far as he means to. Stop dead on the cusp - the
+                // approach has already brought the speed down to nearly
+                // nothing - find the other gear, and pull away from there.
+                Distance = path.ReverseLength;
+                Speed = 0f;
+                TargetSpeed = 0f;
+                hasChangedDirection = true;
+                directionChangePause = DirectionChangePauseSeconds;
+                return;
+            }
+
             if (Remaining <= 0.0001f)
             {
                 // The road has run out. Whatever rounding is left in the

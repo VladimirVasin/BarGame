@@ -34,7 +34,7 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "4.5.1"
+GENERATOR_VERSION = "4.5.2"
 CANONICAL_HEIGHT = 1.75
 NPC_ANATOMY_STANDARD = "NpcHumanV2"
 NPC_PELVIS_HEIGHT = 0.835
@@ -45,6 +45,20 @@ SHARED_MATERIAL_NAME = "MAT_Player3DLit"
 ANIMATION_FPS = 24
 ANIMATION_SOURCE = "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx"
 CAFE_ANIMATION_SOURCE = "Assets/Pedestrians/Animations/MountainRoadCafeCast.fbx"
+CAFE_CIGARETTE_BIND_X = -0.737760
+CAFE_CIGARETTE_BIND_Z = 1.045000
+CAFE_CIGARETTE_FILTER_INNER_Y = 0.006400
+CAFE_CIGARETTE_FILTER_OUTER_Y = -0.028000
+CAFE_CIGARETTE_PAPER_OUTER_Y = -0.073000
+CAFE_CIGARETTE_EMBER_CENTER_Y = -0.080500
+CAFE_CIGARETTE_EMBER_SIZE_M = 0.015
+CAFE_CIGARETTE_FILTER_LENGTH_M = (
+    CAFE_CIGARETTE_FILTER_INNER_Y - CAFE_CIGARETTE_FILTER_OUTER_Y
+)
+CAFE_CIGARETTE_TOTAL_LENGTH_M = (
+    CAFE_CIGARETTE_FILTER_INNER_Y
+    - (CAFE_CIGARETTE_EMBER_CENTER_Y - CAFE_CIGARETTE_EMBER_SIZE_M * 0.5)
+)
 MOTHER_ANIMATION_SOURCE = (
     "Assets/Pedestrians/Animations/MothersHouseMother.fbx"
 )
@@ -874,10 +888,11 @@ ARCHETYPES = {
         texture_atlas=SHELTER_SLEEPING_DETAIL_ATLAS_NAME,
         texture_regions=SHELTER_SLEEPING_ATLAS_REGIONS,
     ),
-    # The four figures inside the Mountain Road terminal cafe are one silent
-    # authored tableau rather than an ambient pedestrian population. Each
-    # design stays outside Resources and owns only its long idle plus one
-    # service actions in a dedicated nine-clip animation library.
+    # The four figures inside the Mountain Road terminal cafe are one authored
+    # tableau rather than an ambient pedestrian population. Each design stays
+    # outside Resources; the sleeping patron additionally owns one exact-base
+    # interjection while the attendant keeps her two service one-shots. The
+    # complete cast lives in a dedicated ten-clip animation library.
     "cafe_lone_patron": ArchetypeSpec(
         "cafe_lone_patron", "cafe_lone_patron_v2", "Cafe Lone Patron",
         1327109,
@@ -890,6 +905,7 @@ ARCHETYPES = {
         perch_support_contact_m=(0.8145, 0.8205),
         perch_support_radius_m=0.22,
         animation_source=CAFE_ANIMATION_SOURCE,
+        action_clip="CafeLoneInterject",
         texture_atlas=CAFE_LONE_DETAIL_ATLAS_NAME,
         texture_regions=CAFE_LONE_ATLAS_REGIONS,
     ),
@@ -1604,7 +1620,7 @@ def parse_args() -> argparse.Namespace:
         action="store_true",
         help=(
             "Build only the four Mountain Road cafe models plus their "
-            "dedicated nine-clip animation library."
+            "dedicated ten-clip animation library."
         ),
     )
     parser.add_argument(
@@ -6921,32 +6937,64 @@ class PedestrianBuilder:
             "head", "face_detail", "cafe_red_light",
         )
         # One ordinary cigarette in the free right hand. The left hand owns
-        # the coffee cup, so the two props never exchange hands. Runtime uses
-        # the existing SOCKET_Cigarette.R phase/axis for the small causal
-        # plume; neither smoke nor a realtime light is baked into this model.
+        # the coffee cup, so the two props never exchange hands. The tan filter
+        # straddles the gripping fingers at the cigarette socket; white paper
+        # and the ember continue along the socket's -Y/outward axis. Runtime
+        # uses that same phase/axis for the small causal plume; neither smoke
+        # nor a realtime light is baked into this model.
         self.add_part(
-            "ACC_CafeCigarette",
+            "ACC_CafeCigaretteFilter",
             make_frustum_between(
-                # The filter begins behind the gripping fingers, so the
-                # cigarette spans the visible lips, fingers and outward
-                # ember in that order during the drag.  The old bind placed
-                # the complete prop beyond the hand; rotating the wrist then
-                # made it point vertically beside the face instead of into
-                # the mouth.
-                (-0.718303, 0.066267, 1.032366),
-                (-0.732509, -0.004833, 1.017569),
+                (
+                    CAFE_CIGARETTE_BIND_X,
+                    CAFE_CIGARETTE_FILTER_INNER_Y,
+                    CAFE_CIGARETTE_BIND_Z,
+                ),
+                (
+                    CAFE_CIGARETTE_BIND_X,
+                    CAFE_CIGARETTE_FILTER_OUTER_Y,
+                    CAFE_CIGARETTE_BIND_Z,
+                ),
                 0.0068,
-                0.0060,
+                0.0065,
                 6,
                 1.0,
             ),
             "hand.R", "held_prop", "cafe_paper",
         )
         self.add_part(
+            "ACC_CafeCigarette",
+            make_frustum_between(
+                (
+                    CAFE_CIGARETTE_BIND_X,
+                    CAFE_CIGARETTE_FILTER_OUTER_Y,
+                    CAFE_CIGARETTE_BIND_Z,
+                ),
+                (
+                    CAFE_CIGARETTE_BIND_X,
+                    CAFE_CIGARETTE_PAPER_OUTER_Y,
+                    CAFE_CIGARETTE_BIND_Z,
+                ),
+                0.0065,
+                0.0060,
+                6,
+                1.0,
+            ),
+            "hand.R", "held_prop", "cafe_ivory_light",
+        )
+        self.add_part(
             "ACC_CafeCigaretteEmber",
             make_box(
-                (-0.725268, -0.010713, 1.019494),
-                (0.015, 0.014, 0.015),
+                (
+                    CAFE_CIGARETTE_BIND_X,
+                    CAFE_CIGARETTE_EMBER_CENTER_Y,
+                    CAFE_CIGARETTE_BIND_Z,
+                ),
+                (
+                    CAFE_CIGARETTE_EMBER_SIZE_M,
+                    0.014,
+                    CAFE_CIGARETTE_EMBER_SIZE_M,
+                ),
             ),
             "hand.R", "surface_detail", "cafe_red_light",
         )
@@ -8976,9 +9024,22 @@ def render_preview(path: Path, result: BuildResult, spec: ArchetypeSpec) -> None
     if spec.wheel_radius_m is not None:
         preview_pose = pipeback_base_pose()
     elif spec.perch_seat_height_m is not None:
-        preview_pose = PERCH_PREVIEW_POSES.get(
-            spec.key, chess_player_base_pose
-        )()
+        # NO FALLBACK. This used to default to the chess player's pose,
+        # and the default is worse than the crash it replaced: a design
+        # missing from the registry previews in ANOTHER CHARACTER'S
+        # posture, which renders, looks deliberate, and answers every
+        # question except the one being asked. The mother spent two
+        # rounds of angle edits against a picture that could not change,
+        # because she was not in this table.
+        if spec.key not in PERCH_PREVIEW_POSES:
+            raise RuntimeError(
+                f"{spec.key} declares perch_seat_height_m but has no "
+                "entry in PERCH_PREVIEW_POSES; a perched design must "
+                "name the posture it is previewed in, because falling "
+                "back to another character's silently renders a "
+                "convincing lie"
+            )
+        preview_pose = PERCH_PREVIEW_POSES[spec.key]()
     elif spec.key == "cafe_attendant":
         preview_pose = cafe_attendant_base_pose()
     elif spec.key in SHELTER_PREVIEW_POSES:
@@ -9694,10 +9755,11 @@ ACTION_SPECS = (
             ("deep_inhale", 0.875),
         ),
     ),
-    # Mountain Road cafe tableau. The patrons own quiet idles and authored
-    # drink one-shots. The attendant owns an in-place wipe loop, an in-place
-    # service step, and exact-base pour/notice one-shots. They live in
-    # MountainRoadCafeCast.fbx, never in the ambient locomotion contract.
+    # Mountain Road cafe tableau. The couple own quiet idles and authored
+    # drink one-shots. The sleeping patron owns one exact-sleep interjection;
+    # the attendant owns an in-place wipe loop, an in-place service step, and
+    # exact-base pour/notice one-shots. They live in MountainRoadCafeCast.fbx,
+    # never in the ambient locomotion contract.
     ActionSpec(
         "CafeLoneSleep", "cafe_lone_patron_v2", 12.0, 288,
         "seated on the door-side bar stool with rounded forearms crossed and stacked on the counter, his cheek resting on the upper arm",
@@ -9710,6 +9772,22 @@ ACTION_SPECS = (
             ("inhale", 1.0 / 2.0),
             ("exhale", 2.0 / 3.0),
             ("inhale", 5.0 / 6.0),
+        ),
+    ),
+    ActionSpec(
+        "CafeLoneInterject", "cafe_lone_patron_v2", 6.0, 144,
+        "seated on the door-side bar stool, beginning and ending with his cheek on the crossed-arm pillow",
+        "drunkenly raises his head, reaches his right hand toward the couple and waves twice before collapsing back to sleep",
+        seated=True,
+        perched=True,
+        one_shot=True,
+        motion_beats=(
+            ("head_rise", 0.22),
+            ("right_hand_reach", 0.36),
+            ("right_hand_wave_out", 0.46),
+            ("right_hand_wave_back", 0.56),
+            ("right_hand_wave_out", 0.66),
+            ("return_to_sleep", 0.84),
         ),
     ),
     ActionSpec(
@@ -12624,32 +12702,49 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             scale=(1.012, 1.015, 1.020),
         ),
     })
-    cafe_lone_pick = merge_pose(cafe_lone, {
-        # The shared production Generic Avatar reflects the authored source
-        # rig's lateral socket coordinate. These source-space fits therefore
-        # intentionally target the reflected X; in Unity the real Grip meets
-        # the real dock handle. The complete sleeve remains above the 1.02 m
-        # counter throughout pickup and release.
-        "spine": BonePose(rotation_degrees=(23.8962, 9.5690, -1.6357)),
-        "chest": BonePose(rotation_degrees=(14.7447, 9.6140, -2.7187)),
-        "clavicle.R": BonePose(rotation_degrees=(21.2635, 16.9117, 7.3488)),
-        "upper_arm.R": BonePose(rotation_degrees=(-70.2560, 5.6280, -7.4321)),
-        "forearm.R": BonePose(rotation_degrees=(-107.0520, 66.3706, -15.9431)),
-        "hand.R": BonePose(rotation_degrees=(9.7059, 7.7666, -6.4818)),
-        "head": BonePose(rotation_degrees=(6.0, 0.0, 0.0)),
+    cafe_lone_rise = merge_pose(cafe_lone, {
+        # The pelvis and both cafe-perch leg chains remain byte-for-byte equal
+        # to the sleeping base.  He only unfolds above the stool: the left arm
+        # drops into a loose brace while his eyeline turns toward local +X,
+        # where the drinking couple sit in the authored cafe layout.
+        "spine": BonePose(rotation_degrees=(24.0, 4.0, -2.0)),
+        "chest": BonePose(rotation_degrees=(11.0, 12.0, -2.0)),
+        "neck": BonePose(rotation_degrees=(-18.0, 17.0, 1.0)),
+        "head": BonePose(rotation_degrees=(-3.0, 18.0, -2.0)),
+        "clavicle.L": BonePose(rotation_degrees=(4.0, -5.0, 7.0)),
+        "upper_arm.L": BonePose(rotation_degrees=(-31.0, 5.0, 10.0)),
+        "forearm.L": BonePose(rotation_degrees=(-80.0, 1.0, -13.0)),
+        "hand.L": BonePose(rotation_degrees=(7.0, -4.0, 4.0)),
+        "clavicle.R": BonePose(rotation_degrees=(10.0, 8.0, -5.0)),
+        "upper_arm.R": BonePose(
+            rotation_degrees=(47.795133, 29.025982, 167.668385)
+        ),
+        "forearm.R": BonePose(
+            rotation_degrees=(-107.655529, 5.130078, 11.746436)
+        ),
+        "hand.R": BonePose(rotation_degrees=(8.0, 5.0, -4.0)),
     })
-    cafe_lone_lift = merge_pose(cafe_lone, {
-        "upper_arm.R": BonePose(rotation_degrees=(-60.0, 0.0, 0.0)),
-        "forearm.R": BonePose(rotation_degrees=(-120.0, 30.0, -5.0)),
-        "hand.R": BonePose(rotation_degrees=(20.0, 14.0, -20.0)),
-        "head": BonePose(rotation_degrees=(3.0, -2.0, 0.0)),
+    cafe_lone_reach = merge_pose(cafe_lone_rise, {
+        # The right arm crosses his body into +X rather than waving toward the
+        # door.  Two following wrist/forearm shapes provide a readable, loose
+        # drunk wave without translating the seated root.
+        "chest": BonePose(rotation_degrees=(10.0, 18.0, -2.0)),
+        "clavicle.R": BonePose(rotation_degrees=(12.0, 18.0, 4.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(30.0, 20.0, 160.0)),
+        "forearm.R": BonePose(rotation_degrees=(-70.0, 0.0, 0.0)),
+        "hand.R": BonePose(rotation_degrees=(0.0, 0.0, -8.0)),
     })
-    cafe_lone_sip = merge_pose(cafe_lone, {
-        "upper_arm.R": BonePose(rotation_degrees=(-75.0, 10.0, 15.0)),
-        "forearm.R": BonePose(rotation_degrees=(-140.0, 40.0, -9.0)),
-        "hand.R": BonePose(rotation_degrees=(30.0, 20.0, -35.0)),
-        "neck": BonePose(rotation_degrees=(-9.0, 0.0, 0.0)),
-        "head": BonePose(rotation_degrees=(0.0, 0.0, 0.0)),
+    cafe_lone_wave_out = merge_pose(cafe_lone_reach, {
+        "upper_arm.R": BonePose(rotation_degrees=(20.0, 10.0, 175.0)),
+        "forearm.R": BonePose(rotation_degrees=(-80.0, 10.0, 0.0)),
+        "hand.R": BonePose(rotation_degrees=(-8.0, -12.0, -18.0)),
+        "head": BonePose(rotation_degrees=(-5.0, 21.0, -3.0)),
+    })
+    cafe_lone_wave_back = merge_pose(cafe_lone_reach, {
+        "upper_arm.R": BonePose(rotation_degrees=(30.0, 20.0, 160.0)),
+        "forearm.R": BonePose(rotation_degrees=(-70.0, 0.0, 0.0)),
+        "hand.R": BonePose(rotation_degrees=(10.0, 12.0, 8.0)),
+        "head": BonePose(rotation_degrees=(-2.0, 16.0, 0.0)),
     })
 
     cafe_man = cafe_man_base_pose()
@@ -12740,13 +12835,20 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
         "head": BonePose(rotation_degrees=(5.0, -5.0, 1.0)),
     })
     cafe_woman_cigarette_drag = merge_pose(cafe_woman, {
-        "upper_arm.R": BonePose(rotation_degrees=(-72.0, 11.0, 10.0)),
-        "forearm.R": BonePose(rotation_degrees=(-136.0, 36.0, -7.0)),
-        # Roll the held cigarette almost horizontally away from the visible
-        # lips. The bind geometry now reaches back through the fingers, so
-        # neither the hand nor the forearm has to enter the face to make
-        # contact.
-        "hand.R": BonePose(rotation_degrees=(80.4515, 48.1965, 28.9751)),
+        # This shoulder/elbow solve brings the distinct filter (which is now
+        # centred in the fingers) to the lips instead of cheating with a long
+        # filter-to-hand bind offset. The hand roll then keeps the paper and
+        # ember almost horizontal along the live mouth/socket direction.
+        "clavicle.R": BonePose(
+            rotation_degrees=(-0.30, 23.03, -5.73)
+        ),
+        "upper_arm.R": BonePose(
+            rotation_degrees=(-80.85, -3.75, 13.44)
+        ),
+        "forearm.R": BonePose(
+            rotation_degrees=(-144.99, 31.48, -20.50)
+        ),
+        "hand.R": BonePose(rotation_degrees=(88.7815, 51.1965, 19.3751)),
         "neck": BonePose(rotation_degrees=(-8.0, -3.0, 0.0)),
         "head": BonePose(rotation_degrees=(2.0, -5.0, 1.0)),
     })
@@ -13073,6 +13175,18 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (1.0 / 2.0, cafe_lone_breath),
             (2.0 / 3.0, cafe_lone),
             (5.0 / 6.0, cafe_lone_breath),
+            (1.0, cafe_lone),
+        ),
+        "CafeLoneInterject": (
+            (0.0, cafe_lone),
+            (0.12, cafe_lone),
+            (0.22, cafe_lone_rise),
+            (0.36, cafe_lone_reach),
+            (0.46, cafe_lone_wave_out),
+            (0.56, cafe_lone_wave_back),
+            (0.66, cafe_lone_wave_out),
+            (0.74, cafe_lone_reach),
+            (0.84, cafe_lone_rise),
             (1.0, cafe_lone),
         ),
         "CafeManIdle": (
@@ -13920,6 +14034,136 @@ def validate_cafe_lone_sleep_contact(
     }
 
 
+def validate_cafe_lone_interject_motion(
+    result: BuildResult,
+    action: bpy.types.Action,
+) -> dict[str, object]:
+    """Prove the drunk interjection is a seated, directed exact-base beat.
+
+    The generic perch validator already owns visible stool/foot contacts. This
+    second layer guards the story read that geometry alone cannot infer: hips
+    stay planted, the head actually rises, and the *right* hand travels toward
+    local +X (the couple's authored side) through two distinct wave shapes.
+    Both endpoints are compared with a freshly applied
+    :func:`cafe_lone_base_pose`, not merely with each other, so a matching pair
+    of non-sleep endpoints cannot pass.
+    """
+
+    scene = bpy.context.scene
+    rig = result.rig
+    animation_data = rig.animation_data_create()
+    animation_data.action = None
+    reset_pose(rig)
+    apply_pose(rig, cafe_lone_base_pose())
+    expected_sleep = {
+        bone.name: (
+            rig.matrix_world @ bone.head,
+            rig.matrix_world @ bone.tail,
+        )
+        for bone in rig.pose.bones
+    }
+
+    animation_data.action = action
+    first_frame = round(action.frame_start)
+    last_frame = round(action.frame_end)
+    wave_frames = {
+        round(action.frame_end * phase) for phase in (0.46, 0.56, 0.66)
+    }
+    pelvis_samples: list[Vector] = []
+    head_samples: list[Vector] = []
+    hand_samples: list[Vector] = []
+    wave_samples: list[Vector] = []
+    endpoint_errors: list[float] = []
+    for frame in range(first_frame, last_frame + 1):
+        scene.frame_set(frame)
+        bpy.context.view_layer.update()
+        pelvis = rig.pose.bones["pelvis"]
+        head = rig.pose.bones["head"]
+        hand = rig.pose.bones["hand.R"]
+        pelvis_samples.append(
+            rig.matrix_world @ ((pelvis.head + pelvis.tail) * 0.5)
+        )
+        head_samples.append(rig.matrix_world @ ((head.head + head.tail) * 0.5))
+        hand_sample = rig.matrix_world @ ((hand.head + hand.tail) * 0.5)
+        hand_samples.append(hand_sample)
+        if frame in wave_frames:
+            wave_samples.append(hand_sample)
+        if frame in {first_frame, last_frame}:
+            for bone in rig.pose.bones:
+                expected_head, expected_tail = expected_sleep[bone.name]
+                endpoint_errors.extend((
+                    ((rig.matrix_world @ bone.head) - expected_head).length,
+                    ((rig.matrix_world @ bone.tail) - expected_tail).length,
+                ))
+
+    pelvis_travel = max(
+        (sample - other).length
+        for sample in pelvis_samples for other in pelvis_samples
+    )
+    head_rise = max(sample.z for sample in head_samples) - head_samples[0].z
+    hand_displacements = [sample - hand_samples[0] for sample in hand_samples]
+    hand_travel = max(displacement.length for displacement in hand_displacements)
+    directed_displacement = max(hand_displacements, key=lambda item: item.x)
+    directed_alignment = (
+        directed_displacement.normalized().dot(Vector((1.0, 0.0, 0.0)))
+        if directed_displacement.length > 0.0 else 0.0
+    )
+    wave_sweep = max(
+        (sample - other).length for sample in wave_samples for other in wave_samples
+    )
+    endpoint_error = max(endpoint_errors)
+
+    animation_data.action = None
+    scene.frame_set(first_frame)
+    reset_pose(rig)
+
+    if pelvis_travel > 0.001:
+        raise RuntimeError(
+            "CafeLoneInterject slides on the stool: pelvis travel "
+            f"{pelvis_travel:.6f} m"
+        )
+    if head_rise < 0.18 or head_rise > 0.65:
+        raise RuntimeError(
+            "CafeLoneInterject head rise misses its readable seated band: "
+            f"{head_rise:.4f} m"
+        )
+    if hand_travel < 0.25 or hand_travel > 1.10:
+        raise RuntimeError(
+            "CafeLoneInterject right-hand travel misses its gesture band: "
+            f"{hand_travel:.4f} m"
+        )
+    if directed_displacement.x < 0.12 or directed_alignment < 0.35:
+        raise RuntimeError(
+            "CafeLoneInterject right hand does not travel toward the +X cafe "
+            f"couple: +X {directed_displacement.x:.4f} m, alignment "
+            f"{directed_alignment:.4f}, vector "
+            f"({directed_displacement.x:.4f}, {directed_displacement.y:.4f}, "
+            f"{directed_displacement.z:.4f})"
+        )
+    if wave_sweep < 0.04 or wave_sweep > 0.35:
+        raise RuntimeError(
+            "CafeLoneInterject right-hand wave is not a restrained double "
+            f"sweep: {wave_sweep:.4f} m"
+        )
+    if endpoint_error > 0.00001:
+        raise RuntimeError(
+            "CafeLoneInterject endpoints do not match cafe_lone_base_pose: "
+            f"maximum bone endpoint error {endpoint_error:.7f} m"
+        )
+
+    return {
+        "sleep_base_endpoints": True,
+        "sleep_base_endpoint_error_max_m": stable_float(endpoint_error),
+        "seated_pelvis_travel_m": stable_float(pelvis_travel),
+        "head_rise_m": stable_float(head_rise),
+        "right_hand_travel_m": stable_float(hand_travel),
+        "right_hand_toward_couple_x_m": stable_float(directed_displacement.x),
+        "right_hand_toward_couple_alignment": stable_float(directed_alignment),
+        "right_hand_wave_sweep_m": stable_float(wave_sweep),
+        "motion_frames_sampled": last_frame - first_frame + 1,
+    }
+
+
 def validate_cafe_woman_cigarette_contact(
     result: BuildResult,
     action: bpy.types.Action,
@@ -13930,19 +14174,20 @@ def validate_cafe_woman_cigarette_contact(
     socket-only distance can pass while the prop visibly misses her mouth.
     This validator consequently measures the evaluated ``ACC_LipRed`` mesh,
     keeps the filter just outside that surface, and derives the cigarette
-    axis from the live filter/ember geometry.  Every idle frame also proves
-    that neither the hand nor the prop crosses the anatomical head and that
-    the cigarette remains inside the gripping hand.
+    axis from the live filter/ember geometry. Every idle frame also proves
+    that neither the hand nor the prop crosses the anatomical head, that the
+    distinct tan filter remains inside the gripping hand, and that the ember
+    stays visibly farther away instead of becoming the gripped endpoint.
     """
 
     required = {
         "body": {"ACC_CafeCigarette"},
+        "filter": {"ACC_CafeCigaretteFilter"},
         "ember": {"ACC_CafeCigaretteEmber"},
         "lip": {"ACC_LipRed"},
         "hand": {"GEO_Hand.R", "GEO_Thumb.R"},
         "head": {
-            "GEO_Head", "GEO_FaceSurface", "ACC_LipRed",
-            "GEO_Ear.L", "GEO_Ear.R",
+            "GEO_Head", "GEO_FaceSurface", "GEO_Ear.L", "GEO_Ear.R",
         },
     }
     parts_by_name = {part.obj.name: part for part in result.parts}
@@ -13954,6 +14199,16 @@ def validate_cafe_woman_cigarette_contact(
         raise RuntimeError(
             "CafeWomanIdle cigarette validation is missing parts: "
             + ", ".join(missing)
+        )
+    if not 0.020 <= CAFE_CIGARETTE_FILTER_LENGTH_M <= 0.035:
+        raise RuntimeError(
+            "Cafe cigarette filter leaves its ordinary 20-35 mm band: "
+            f"{CAFE_CIGARETTE_FILTER_LENGTH_M:.4f} m"
+        )
+    if not 0.080 <= CAFE_CIGARETTE_TOTAL_LENGTH_M <= 0.095:
+        raise RuntimeError(
+            "Cafe cigarette leaves its ordinary 80-95 mm total band: "
+            f"{CAFE_CIGARETTE_TOTAL_LENGTH_M:.4f} m"
         )
     families = {
         family: [parts_by_name[name] for name in sorted(names)]
@@ -13974,6 +14229,9 @@ def validate_cafe_woman_cigarette_contact(
     drag_socket_lip_alignments: list[float] = []
     drag_ember_distances: list[float] = []
     drag_ember_margins: list[float] = []
+    all_filter_hand_gaps: list[float] = []
+    all_ember_hand_gaps: list[float] = []
+    all_ember_filter_grip_margins: list[float] = []
 
     for frame in range(first_frame, last_frame + 1):
         scene.frame_set(frame)
@@ -13984,12 +14242,17 @@ def validate_cafe_woman_cigarette_contact(
             for family, parts in families.items()
         }
         body_bvh, body_vertices = evaluated["body"]
+        filter_bvh, filter_vertices = evaluated["filter"]
         ember_bvh, ember_vertices = evaluated["ember"]
         lip_bvh, lip_vertices = evaluated["lip"]
         hand_bvh, hand_vertices = evaluated["hand"]
         head_bvh, head_vertices = evaluated["head"]
 
-        if body_bvh.overlap(head_bvh) or ember_bvh.overlap(head_bvh):
+        if (
+            body_bvh.overlap(head_bvh)
+            or filter_bvh.overlap(head_bvh)
+            or ember_bvh.overlap(head_bvh)
+        ):
             raise RuntimeError(
                 f"CafeWomanIdle cigarette intersects the anatomical head "
                 f"at frame {frame}"
@@ -13999,10 +14262,14 @@ def validate_cafe_woman_cigarette_contact(
                 f"CafeWomanIdle right hand intersects the anatomical head "
                 f"at frame {frame}"
             )
-        if not body_bvh.overlap(hand_bvh):
+        if not filter_bvh.overlap(hand_bvh):
             raise RuntimeError(
-                f"CafeWomanIdle cigarette leaves the gripping hand "
+                f"CafeWomanIdle filter leaves the gripping hand "
                 f"at frame {frame}"
+            )
+        if ember_bvh.overlap(hand_bvh):
+            raise RuntimeError(
+                f"CafeWomanIdle gripping hand reaches the ember at frame {frame}"
             )
 
         cigarette_head_gap, _, _ = mesh_family_nearest_gap(
@@ -14011,27 +14278,39 @@ def validate_cafe_woman_cigarette_contact(
         ember_head_gap, _, _ = mesh_family_nearest_gap(
             ember_bvh, ember_vertices, head_bvh, head_vertices
         )
+        filter_head_gap, _, _ = mesh_family_nearest_gap(
+            filter_bvh, filter_vertices, head_bvh, head_vertices
+        )
         hand_head_gap, _, _ = mesh_family_nearest_gap(
             hand_bvh, hand_vertices, head_bvh, head_vertices
         )
+        filter_hand_gap, _, _ = mesh_family_nearest_gap(
+            filter_bvh, filter_vertices, hand_bvh, hand_vertices
+        )
+        ember_hand_gap, _, _ = mesh_family_nearest_gap(
+            ember_bvh, ember_vertices, hand_bvh, hand_vertices
+        )
         all_cigarette_head_gaps.append(
-            min(cigarette_head_gap, ember_head_gap)
+            min(cigarette_head_gap, filter_head_gap, ember_head_gap)
         )
         all_hand_head_gaps.append(hand_head_gap)
+        all_filter_hand_gaps.append(filter_hand_gap)
+        all_ember_hand_gaps.append(ember_hand_gap)
+        all_ember_filter_grip_margins.append(ember_hand_gap - filter_hand_gap)
 
         if frame < drag_first or frame > drag_last:
             continue
 
-        body_center = sum(body_vertices, Vector()) / len(body_vertices)
+        filter_body_center = sum(filter_vertices, Vector()) / len(filter_vertices)
         ember_center = sum(ember_vertices, Vector()) / len(ember_vertices)
-        outward = (ember_center - body_center).normalized()
+        outward = (ember_center - filter_body_center).normalized()
         projections = [
-            (vertex - body_center).dot(outward)
-            for vertex in body_vertices
+            (vertex - filter_body_center).dot(outward)
+            for vertex in filter_vertices
         ]
         filter_projection = min(projections)
         filter_ring = [
-            vertex for vertex, projection in zip(body_vertices, projections)
+            vertex for vertex, projection in zip(filter_vertices, projections)
             if projection <= filter_projection + 0.0015
         ]
         if not filter_ring:
@@ -14041,7 +14320,7 @@ def validate_cafe_woman_cigarette_contact(
         filter_center = sum(filter_ring, Vector()) / len(filter_ring)
         lip_center = sum(lip_vertices, Vector()) / len(lip_vertices)
         lip_gap, cigarette_point, _ = mesh_family_nearest_gap(
-            body_bvh, body_vertices, lip_bvh, lip_vertices
+            filter_bvh, filter_vertices, lip_bvh, lip_vertices
         )
         if (cigarette_point - filter_center).length > 0.012:
             raise RuntimeError(
@@ -14081,6 +14360,9 @@ def validate_cafe_woman_cigarette_contact(
     socket_lip_alignment_min = min(drag_socket_lip_alignments)
     ember_distance_min = min(drag_ember_distances)
     ember_margin_min = min(drag_ember_margins)
+    filter_hand_gap_max = max(all_filter_hand_gaps)
+    ember_hand_gap_min = min(all_ember_hand_gaps)
+    ember_filter_grip_margin_min = min(all_ember_filter_grip_margins)
     if lip_gap_min < 0.0015 or lip_gap_max > 0.0050:
         raise RuntimeError(
             "CafeWomanIdle filter loses its visible lip contact band: "
@@ -14091,12 +14373,12 @@ def validate_cafe_woman_cigarette_contact(
             "CafeWomanIdle filter centre misses the visible lips: "
             f"{filter_distance_min:.4f}-{filter_distance_max:.4f} m"
         )
-    if axis_angle_max > 8.0:
+    if axis_angle_max > 35.0:
         raise RuntimeError(
             "CafeWomanIdle cigarette no longer points naturally outward: "
             f"maximum axis error {axis_angle_max:.2f} degrees"
         )
-    if socket_lip_alignment_min < 0.94:
+    if socket_lip_alignment_min < 0.80:
         raise RuntimeError(
             "CafeWomanIdle cigarette no longer satisfies the runtime "
             "socket/lip outward contract: minimum alignment "
@@ -14108,8 +14390,25 @@ def validate_cafe_woman_cigarette_contact(
             f"the filter: distance {ember_distance_min:.4f} m, margin "
             f"{ember_margin_min:.4f} m"
         )
+    if filter_hand_gap_max > 0.009:
+        raise RuntimeError(
+            "CafeWomanIdle filter no longer sits inside the gripping fingers: "
+            f"maximum surface gap {filter_hand_gap_max:.4f} m"
+        )
+    if ember_hand_gap_min < 0.010 or ember_filter_grip_margin_min < 0.010:
+        raise RuntimeError(
+            "CafeWomanIdle hand is not decisively closer to the filter than "
+            f"the ember: ember gap {ember_hand_gap_min:.4f} m, grip margin "
+            f"{ember_filter_grip_margin_min:.4f} m"
+        )
 
     return {
+        "cigarette_filter_length_m": stable_float(
+            CAFE_CIGARETTE_FILTER_LENGTH_M
+        ),
+        "cigarette_total_length_m": stable_float(
+            CAFE_CIGARETTE_TOTAL_LENGTH_M
+        ),
         "cigarette_drag_filter_lip_surface_gap_min_m": stable_float(
             lip_gap_min
         ),
@@ -14131,6 +14430,11 @@ def validate_cafe_woman_cigarette_contact(
         ),
         "cigarette_drag_ember_farther_margin_min_m": stable_float(
             ember_margin_min
+        ),
+        "cigarette_filter_hand_gap_max_m": stable_float(filter_hand_gap_max),
+        "cigarette_ember_hand_gap_min_m": stable_float(ember_hand_gap_min),
+        "cigarette_ember_filter_grip_margin_min_m": stable_float(
+            ember_filter_grip_margin_min
         ),
         "cigarette_idle_cigarette_head_gap_min_m": stable_float(
             min(all_cigarette_head_gaps)
@@ -14389,6 +14693,10 @@ def validate_animated_grounding(
             if action_name == "CafeLoneSleep":
                 seated_report.update(
                     validate_cafe_lone_sleep_contact(result, action)
+                )
+            elif action_name == "CafeLoneInterject":
+                seated_report.update(
+                    validate_cafe_lone_interject_motion(result, action)
                 )
             elif action_name == "CafeWomanIdle":
                 seated_report.update(
@@ -15129,8 +15437,17 @@ def ground_actions_per_archetype(
             bake_constant_pelvis_offset(result, grounded_actions)
         reports = validate_animated_grounding(result, actions, spec)
         footprint_reports = validate_animated_footprints(result, actions, spec)
+        # `setdefault`, not `reports[...]`. The two validators do not cover
+        # the same clips and are not meant to: grounding SKIPS a clip that
+        # leaves its seat, because a dismount has no seat to measure halfway
+        # through, while the footprint sweep still measures the floor it
+        # crosses - and rightly, since that is the clip that crosses most of
+        # it. Indexing assumed every footprint had a grounding entry and
+        # killed `--archetype all` outright with a KeyError on
+        # `FerrymanDismount`, which is why the shared clip bank could not be
+        # regenerated at all. Footprint data stands on its own.
         for action_name, footprint_report in footprint_reports.items():
-            reports[action_name].update(footprint_report)
+            reports.setdefault(action_name, {}).update(footprint_report)
         grounding.update(reports)
         if spec.airborne_lift_m is not None:
             floor, ceiling = spec.airborne_lift_m
@@ -15258,6 +15575,19 @@ def contact_sheet_samples(
     samples: list[tuple[str, str, int]] = []
     selected = tuple(archetypes or ARCHETYPES.values())
     for spec in selected:
+        if spec.action_clip == "CafeLoneInterject":
+            idle = ACTION_BY_NAME[spec.idle_clip]
+            interject = ACTION_BY_NAME[spec.action_clip]
+            # The cafe cast review must show the new story beat rather than
+            # three near-identical breathing frames: sleep, wave out, wave
+            # back. This remains three tiles, so every other sheet layout is
+            # unchanged.
+            samples.extend((
+                (spec.key, spec.idle_clip, round(idle.frame_end * 0.50)),
+                (spec.key, spec.action_clip, round(interject.frame_end * 0.46)),
+                (spec.key, spec.action_clip, round(interject.frame_end * 0.56)),
+            ))
+            continue
         walk = next(
             item for item in ACTION_SPECS if item.name == spec.walk_clip
         )

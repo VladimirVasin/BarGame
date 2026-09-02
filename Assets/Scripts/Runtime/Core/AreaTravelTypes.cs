@@ -56,7 +56,20 @@ namespace BarPromenade
         /// raises the cabin before it decides where to put him and hands him
         /// straight back to it.
         /// </summary>
-        Cableway = 5
+        Cableway = 5,
+
+        /// <summary>
+        /// The same car coming the other way. The hero is in the passenger
+        /// seat, the Ferryman has driven him off the mountain terrace and
+        /// through the tunnel, and the City has to bring that car out of its
+        /// own south portal still moving.
+        ///
+        /// It is a separate token from <see cref="Ferryman"/> rather than the
+        /// same one read against the ride stage, because the two arrivals are
+        /// answered by different roots and each of them has exactly one
+        /// question to ask of the token it is handed.
+        /// </summary>
+        FerrymanReturn = 6
     }
 
     public readonly struct AreaTravelRequest : IEquatable<AreaTravelRequest>

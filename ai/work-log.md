@@ -6,6 +6,309 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-02 — The cafe husband interrupts the exchange, and the dark counter reads
+
+The first husband pass counted complete ten-pair LOOPS, so its advertised
+"every three" meant sixty pair lines before the sleeping man could move. The
+schedule now counts only completed `PairMan NN -> PairWoman NN` exchanges. It
+fires after `3/6/9/12...`, carries that count through the `10 -> 01` pool wrap,
+and clears an unmatched half-exchange on lifecycle reset. The controller waits
+for Woman03's bubble to close and both pair looks to settle, keeps the pair
+reservation, then runs the husband's six-second head-rise/right-wave one-shot
+and one line. Neither member of the pair receives a look, reply or reaction
+state; the saved next key remains Man04 (and Man01 after Woman10).
+
+The controller regression exposed a real EditMode-only blind spot: without a
+live `PlayableGraph`, an Idle presentation reported one frozen normalized phase,
+so the returning look could never finish. Its deterministic fallback now
+advances from the same absolute cast clock; PlayMode still reads the graph's
+actual time. A visible-beat step is capped at `0.25 s`, so a hitch cannot cross
+both the delayed speech cue and the return-to-sleep endpoint without rendering
+the husband's line.
+
+The bilingual pair pool was rewritten as ten connected, colloquial exchanges,
+then toned down at the user's request. Profanity, direct anatomy and explicit
+acts are gone; the linked exchanges retain adult innuendo, mutual impatience
+and distinct voices. Three remaining Russian subordinate constructions were
+removed to satisfy story-bible §21. The husband's four lines stay short,
+domestic, repetitive and too drunk to recognise what is happening.
+
+The first two lighting captures rejected otherwise green cone geometry: the
+sleeper and PairMan were still black against the window, while the attendant's
+white uniform carried the shot. No light or visible fixture was added. The warm
+key now aims at the exact sleeping contact pose, runs shadowless at `60` over
+`11 m`, and exposes the head and folded hands. The cold key uses `48` over
+`14 m`, keeping the dark-clothed seated line ahead of range fade; the common
+sulphur wash was reduced to `8.5`. Its cone still covers the threshold and near
+apron while missing the terrace, parapet and black brink. The exterior summit
+band remains capped at `18`; only the two bounded, across-room cafe keys use the
+separate interior ceiling.
+
+Verification: the exact cadence/controller, RU+EN text-register and lone-shot
+tests passed together (`3/3`); after replacing a material-blind equal-light
+ratio with role-specific dark-clothing/light-uniform delivery bands, the exact
+summit-light test passed (`1/1`). The explicit PlayMode cafe contact capture
+passed (`1/1`), and all four fresh frames were reviewed after the third light
+iteration. Full suites and a player build were intentionally not run in fast
+mode.
+
+## 2026-09-02 — A floodlight over the apron, on the island's terms
+
+Follow-up to the entry below, on the user's instruction: put a floodlight on
+where the car stands, lit "примерно так же как в городской сцене на островке
+последнего рейса где перевозчик ждет".
+
+**The apron's reserved disc is what shaped the fixture.** The island's lamp
+stands `3.5 m` from its car; here `MountainRoadTerminalSiteValidator` refuses
+any site part whose footprint corner comes within `VehicleTurningRadius + 0.55
+= 8.05 m` of the apron centre — the rule that pushed the cafe out to `8.24 m`
+in the first place. The first attempt put the post where the island puts it and
+took twelve validator problems for it. The rule was not weakened: it guards the
+one drivable vehicle in the game, and it is deliberately more conservative than
+the two-point turn actually needs. So the post went outside the disc, `8.9 m`
+out on the apron's own forward — which is also the one sector the departure
+never sweeps, since the manoeuvre lives entirely at negative forward.
+
+**Distance was paid for in height and wattage, by the island's own method.**
+That lamp was never sized by arithmetic either; it was calibrated against the
+drying yard's communal floodlight (`150` over `16 m`, landing about `3.1` on
+things `7 m` out). The island's `45` over its `3.7 m` slant delivers `3.3`;
+from this post's `9.8 m` slant the same arrival needs `300`. Head at `5.4 m`,
+level with the yard lamp's mast so the two read as one kind of service fitting,
+which also keeps the rake down over the Ferryman's cap brim — the angle his
+eyeless face depends on. Cone `34°/16°` rather than the island's `44/22`,
+because two and a half times the distance wants a narrower cone to land the
+same size of pool: this is a spot on one car, not a second wash over a yard the
+bible gives exactly one.
+
+`200`/`300` is §20's two-thirds floor exactly, and it is also the island's real
+ladder — that fixture authors `45` night over a `15` day floor, and
+`CityNightSiteLightRegistry.Apply` lifts the floor to `night * 2/3 = 30` before
+it lerps, so the authored `15` never reaches a frame.
+
+It is built by `MountainRoadAtmosphere` beside the yard lamp, so the summit's
+"exactly six" count is untouched — the test walks what `MountainRoadWorldBuilder`
+builds and says so. That does mean nothing else asserts it, hence
+`MountainRoadApronFloodlightTests`: the post stands clear of the turning disc
+and forward of the car, the beam lands within `1.2 m` of where the car actually
+stops, the ladder is `200`/`300` at the two ends, and the halo does not follow
+the City's night factor.
+
+**The halo had to move to the shade's mouth.** Put at the head's centre it sat
+inside its own opaque shade box, and the capture came back with a lit car under
+an unlit lamp. `0.26 m` down the beam fixes it; it is also scaled up from the
+island's `0.52`/`1.55` to `0.66`/`1.95`, on the same argument as the beam — a
+halo is only a halo at the distance it is actually seen from, and this one is
+read from twenty metres.
+
+**Verified:** 33/33 across `MountainRoadApronFloodlightTests`,
+`MountainRoadSummitLightingTests`, `MountainRoadTerminalSiteTests`,
+`MountainRoadTerminalTests`, `MountainCablewayTests`, `AlwaysLitLawTests`,
+`LastRouteCarPlacementTests`, `MountainRoadTests`; plus the night sheet, which
+is what actually settles it — the car is now picked out of the yard with the
+Ferryman a readable silhouette on the bonnet, where before it was a dark lump.
+
+## 2026-09-02 — The summit gets its lamps back, and its first night photograph
+
+On the user's report that the mountain pad is "совсем как-то темно" and that
+neither the car in the middle nor the way into the cableway reads. Their three
+decisions framed it: night and dusk only, the parked car's headlights burning
+always on dipped beam, and only the key points lit — the yard, not the brink.
+
+**The parked car had no lights at all, and nothing could have caught it.**
+`LastRouteCarFactory.InstallHeadlights` took the city's branch for every arrival
+that was not the ride itself — the area tab, a point picked on the chart — and
+that branch RETURNS before `LastRouteCarHeadlights` is added. So the one object
+standing dead centre of a `42 x 27 m` yard contributed nothing, and its two
+billboard halos rode `CityNightGlowRegistry.nightFactor`, a process-wide static
+that only `CityNightWorldResult` ever writes. The only headlight test there was
+built the car `burning: true`, so it exercised the other branch.
+
+`bool burningHeadlights` is now `LastRouteCarLamps` — `CityHalos` (no Light at
+all, the island's twelve-light budget untouched), `RideOnly` (real lamps that
+rest dark; the car that drives itself home into the city) and `AlwaysDipped`
+(real lamps resting on dipped beam). Both mountain branches pass `AlwaysDipped`:
+the arriving car needs no mode of its own, because `Follow` still takes it to
+full beam under the black screen and it now settles onto the standing beam
+instead of going out. `StandingBeamIntensity = 16` is by throw — the lamps sit
+`~0.75 m` up raked `5.5°`, so the pool centres near `8 m` and `16 / 8² = 0.25`
+arrives — and it agrees with the bus's own `14 @ 22 m` and with this mountain's
+`1.65`-`16` band rather than the city's `31`-`240`. `SetPower`'s "is it burning"
+test had to move from `power > 0.004` to delivered intensity, or a dipped lamp at
+`16 / 6000` switches itself off as rounding error.
+
+**The mountain now owns its own emission.** `MountainRoadAtmosphere.ApplyCurrentTime`
+writes `CityNightGlowRegistry.SetNightFactor` from the sample it already holds.
+Before this, travelling up from a City at noon froze every emissive thing on the
+pad — the cafe's lit lenses included — at `DeadGlowFraction` for the whole visit,
+at any hour, midnight included. Safe because the three exterior areas are
+Single-mode loads and are never resident together.
+
+**Not one fixture on this mountain had a fog halo** while every fixed lamp in the
+City does, and the City's stated reason applies here with more force: an emissive
+lens is a couple of pixels ExpSquared fog eats, and this pad is `42 m` long. The
+three station lamps and the yard lamp now carry one, through a new
+`CityLightHalo.CreateAlwaysBurning` that names the "initialize directly, stay out
+of the night registry" idiom three call sites were already open-coding.
+Intensities went up inside the existing band: dock lamp `7 → 15`, boarding flood
+`6.5 → 13`, station practical `7.2 → 14`, yard lamp `9.5 → 11.5` (its night boost
+was already at the §20 ceiling, so a brighter night had to be bought with a
+brighter day).
+
+**Verified:** `MountainRoadSummitLightingTests`, `MountainCablewayTests`,
+`MountainCablewayRideTests`, `AlwaysLitLawTests`, `LastRouteCarPlacementTests` —
+43/43. Four new cases: the parked mountain car burns three real lamps (it would
+have failed outright before), the island car still carries no `Light` at all, the
+standing beam is on this area's scale and under the full beam, and no station
+halo follows the City's night factor.
+
+**And the summit had never been photographed at night** — every mountain sheet is
+shot at `07:30` or `12:40`, which is exactly how a dark car and haloless lamps
+survived. `AreaCaptureFixture.MountainRoadSummitNight` seeds `20:00` before the
+load and takes the yard, the car and the cableway entrance from the apron.
+
+**What that photograph says, and it is not a success report.** The frames are
+still very dark and the key points still do not separate. Everything that reads
+is emissive: the cafe's window band, the station's lens bars, the lamp heads.
+Almost nothing reads as *lit* ground. The reason is now measurable rather than a
+guess — a fixture at `13`-`17` over `4`-`5.5 m` delivers `0.5`-`0.8`, which is
+the same order as this area's own night floor (moon `0.648` after the `x0.90`
+cold grade, plus a flat `~0.22` ambient), so a pool cannot out-read the ground
+beside it. The `[1.5, 18]` band was chosen to stop a city number (`38`) blowing
+the yard out, and that judgement was made without a night frame because none
+existed. Raising the band is a design decision and is left to the user; the
+change above is the mechanical half, and it is complete and green.
+
+## 2026-09-02 — The road runs both ways, and the chart no longer strands him
+
+The Ferryman can be asked a second time. On the terrace by the mountain cafe he
+now carries the island's own two-choice menu instead of a bare repertoire — his
+own pool of small talk on its own seeded stream, and a second line that is the
+island's mirrored, `Вернуться в город?`. Saying yes plays the same boarding beat
+he played on the island, the hero takes the passenger seat through the same
+clips, and the car drives the whole `620 m` back down and into the tunnel, where
+`AreaArrivalToken.FerrymanReturn` asks for the City. The City brings it out of
+its own south portal still moving and home to the island. `F10` skips either
+descent or climb, unchanged.
+
+**The manoeuvre is the design.** The apron is a `7.5 m` pocket whose cafe corner
+stands `8.24 m` from its centre, so no U-turn of a usable radius fits — which is
+why the arrival parks nose-in in the first place. The departure therefore opens
+with the move a driver actually makes: a two-point turn at `5 m`, one
+quarter-circle backed on lock and one driven off it, ending on the road's own
+centreline `8.5 m` below the plateau centre, inside the level `25 m` straight the
+terrace run already guarantees. `5 m` was measured on both sides: the car turns
+inside `4.16 m` at the drive model's `33°` lock on a `2.7 m` wheelbase, and at
+`5 m` the cusp lands `7.07 m` from the apron centre — inside its own validated
+disc — while the second arc crosses the rim exactly where the road leaves it.
+
+The reverse leg belongs to the ROAD, not to a mode on the car.
+`LastRouteCarDrivePath` takes a reverse lead and stores the car's HEADING per
+vertex rather than its direction of travel, so the cusp is continuous in the body
+and only the gear changes; its turn rates are measured in those headings, which
+is what stops a `180°` travel reversal reading as an infinite corner and braking
+the car to a permanent halt in the middle of the pocket. The drive model brakes
+to the cusp exactly as it brakes to a terminus, caps the reverse at `1.9 m/s`,
+stands still `0.9 s` finding the gear, and pulls away. The driver negates the
+wheel roll and the steering sign while reversing, because heading turns at
+`tan(lock)/wheelbase` per metre TRAVELLED and a reversing car travels backwards
+through the road it is covering.
+
+The city half is the departure's own road with the lane negated and the points
+handed over end for end — same junctions, same turning, the other half of the
+crown — and it gives way coming OUT of the forecourt the way the departure gives
+way going in. It parks in the island bay turned round. That is the one asymmetry
+of the round trip and it is an answer rather than an oversight: the bay's nose
+points at the way in, a car can only be put back into it that way round by
+reversing in from behind it, and behind it stand the island's paving circle and
+its route mast. The bay's clearance test measures the same box either way about,
+the canonical stance returns with the next city build, and a car that has just
+been driven home is handed no menu — he talks, and the offer belongs to the next
+visit.
+
+**Arriving on the mountain any other way now brings the car with him.** Every
+route into that area which is not the ride and not the cableway is the chart, and
+a chart that can put the hero six hundred metres above a car he never took would
+strand him: there is no road down on foot and the cableway only goes up. So
+`MountainRoadRoot.BuildLastRoute` advances the stage itself on such an arrival
+and parks the car on the apron waiting. It costs the island its car, which is the
+invariant being honoured rather than broken.
+
+`LastRouteFerrymanRideStage` stops being a monotone ladder and becomes a ring
+(`NotTaken → InTransit → Arrived → Returning → NotTaken`); `TryAdvanceFerrymanRide`
+still refuses everything that is not the next thing that can happen, and exactly
+one step is not an increment. Both roots and both planners were reorganised
+around the pairing rather than around the areas: `LastRouteRideController` has
+two KINDS of leg (departing, arriving) and four uses of them, an arriving leg on
+the mountain turns into the departing one when the car stops so there is one fade
+and one skip hint over one car, `LastRouteCityDeparturePlanner` became
+`LastRouteCityDrivePlanner` with `CreateDeparture`/`CreateReturn`,
+`LastRouteMountainDrivePlanner` gained `CreateDeparture` beside `CreateArrival`,
+and `LastRouteFerrymanVoice` puts the two ends' pools, streams and questions in
+one place so they cannot drift into one stream and start answering in step.
+
+Fixed on the way past, and unrelated to the road: `LastRouteCarDashboard`
+resolved its driver with a `GetComponent` in `Initialize`, but the factory raises
+the dash BEFORE the engine on purpose — so the field was always null, the
+speedometer needle never left its stop on a car doing five and a half metres a
+second, and every other thing on the dash went on working. It resolves on first
+use now.
+
+Verification: EditMode `88/88` across `LastRouteReturnRideTests` (new, 14 tests),
+`LastRouteRideTests`, `MountainRoadFerrymanTests`, `LastRouteCarDriveTests`,
+`LastRouteFerrymanTests` and `MountainRoadTerminalTests`. The manoeuvre is
+asserted against the ground the arrival is asserted against — the walkable
+corridor at the car's own half-width, the apron's validated disc, and the four
+corners of the body swept clear of the cafe footprint and the cableway station.
+PlayMode `17/18` on `LastRouteCarRidePlayModeTests` and
+`LastRouteFerrymanPlayModeTests`. **The one red is pre-existing and is not this
+work:** `Ferryman_PerchesOnTheBonnetWithHisCoinAndHisCoat` wants his lowest ankle
+within `0.20 m` of the car's soles anchor and measures `0.254`. Its threshold was
+last written on 2026-08-29 (`f6dc86d`) and the Ferryman's staged FBX was rebuilt
+the next day by `e7f1844`, the adult-anatomy pass, which did not touch the test;
+his pelvis still lands on the bonnet to within `0.06 m`, so it is the legs below
+it that moved. Re-posing the perch is Blender work on the pedestrian generator
+and was deliberately left alone — the neighbouring session is rebuilding those
+models right now.
+
+No scene dressing was added or moved, so no capture was taken: the car and the
+man appear on the mountain in the pose the terminal already validated and the
+arrival already drove to.
+
+## 2026-09-02 — The sleeping husband interrupts the mountain cafe
+
+The lone patron is now the woman's very drunk husband. After every third
+complete ten-pair conversation run he lifts his head, reaches and waves twice
+with his right hand toward the drinking pair, delivers one short localized
+text line, and collapses back onto his crossed arms. The pair fully ignore him:
+their look targets remain each other, they receive no reply or reaction state,
+and the following loop starts with the man's first line. This changes the
+earlier silent-sleeper canon, so the level-0 registry, both world bibles and an
+accepted architecture exception were updated together. The four husband lines
+are text-only and have no NPC audio.
+
+The cafe animation bank now carries ten clips. `CafeLoneInterject` is a
+six-second, 144-frame in-place one-shot with exact sleeping endpoints; its
+generated measurements pin a `0.227008 m` head rise, `0.517431 m` right-hand
+travel and two wave sweeps. Conversation lifecycle cleanup now resets the
+whole state on exit/disable, retries a due third-cycle interruption instead of
+dropping it, and limits hitch advance so a line cannot be consumed and hidden
+in one delayed frame.
+
+The cigarette was split into filter, paper and ember geometry. Its ordinary
+`34.4 mm` filter and `94.4 mm` total length are now validated separately:
+every idle sample keeps the filter in the woman's fingers, the ember at least
+`11.983 mm` clear of her hand, and the lit end farther from her lips. The
+generator also distinguishes real head collision from the separate lip
+surface, avoiding the old false positive at the smoking contact pose.
+
+Verification: two consecutive Blender `--cafe-cast` builds passed with the
+same ten-action signature
+`67c3b9db04d64c10ce61bc153a6f300c4f529bc60a8b07733eb0859c469298aa`;
+the generated contact sheet was reviewed; and the focused cafe EditMode
+selection passed `39/39` (`23` cast and `16` conversation tests). Full suites,
+PlayMode and a player build were intentionally not run in fast mode.
+
 ## 2026-09-02 — The mother is in the chair, and the chair rocks
 
 Her absence was written down three times and the geometry followed the writing,
@@ -132,6 +435,43 @@ downstream of that rebuild. Fixing it means choosing between skipping the cafe
 root the way `Silent Cafe Tableau` is skipped and folding the cafe sheets into
 the road's sweep, and that is a design decision belonging to the work in
 flight.
+
+Two traps in the generator were then closed, on the user's confirmation that
+silent fallbacks - not file size - are what actually cost time here.
+
+- `PERCH_PREVIEW_POSES.get(spec.key, chess_player_base_pose)` handed a design
+  missing from the table ANOTHER CHARACTER'S posture. That is worse than the
+  crash it replaced: the preview renders, looks deliberate, and answers every
+  question except the one being asked - the mother cost two rounds of angle
+  edits against a picture that could not change. It now raises, and the table
+  was verified complete in both directions: seven perched archetypes, seven
+  entries, no design broken by the change.
+- `--archetype all` had been dead since the footprint sweep was added, which is
+  why the shared clip bank could not be regenerated at all - the reason the
+  mother needed a bank of her own and the reason fourteen pedestrian manifests
+  sit at generator `4.0.0` against a `4.5.0` tool. Grounding deliberately SKIPS
+  a clip that leaves its seat, because a dismount has no seat to measure
+  halfway through; the footprint sweep still measures the floor it crosses,
+  and rightly. The merge assumed every footprint had a grounding entry and died
+  on `FerrymanDismount`. It now uses `setdefault`, and the two clips gain
+  exactly their three `animated_local_xz_*` fields and no fabricated grounding.
+
+Both were verified without touching the repository: the full bank was built
+with every output directory redirected into a scratch tree - fourteen designs,
+thirty-seven clips, determinism confirmed, `git status` clean afterwards - and
+the mother rebuilt to the same two signatures as before the change. Regenerating
+the fourteen committed designs at `4.5.0` IN the repository is left as the
+user's decision; it is a separate, outward-facing change.
+
+A sweep for the same shape elsewhere found nothing further worth changing, and
+that is worth recording as a result rather than a gap. In the generator,
+`NPC_HEAD_SCALES["default"]`, the anatomy profile key and the preview camera
+are honest defaults with per-design overrides, not substitutions of another
+design's data, and `bp_emissive` defaults to `True` into a REJECTION, which
+already fails safe. In C#, none of the 68 `default:` branches substitutes
+another member of its own family: the hero-variant and shelter-role resolvers
+throw `ArgumentOutOfRangeException`, and the stairwell cat's pivot lookup
+returns null rather than a neighbouring pivot.
 
 Known and deliberate: her face carries all five canonical expressions and
 nothing drives them, on the user's decision - the atlas ships complete and

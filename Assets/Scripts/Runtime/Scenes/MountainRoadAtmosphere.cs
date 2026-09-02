@@ -26,21 +26,109 @@ namespace BarPromenade
         /// is lit because somebody still pays for it to be, not because it
         /// is dark.
         ///
-        /// The number is on THIS AREA's scale, which is not the city's.
-        /// The documented city practicals run `31` to `240`; every fixture
-        /// on this mountain runs `1.65` to `16` — the tunnel lamp at
-        /// `2.15`, the cafe counter at `10.5`. Set from the city list this
-        /// lamp stood at `38`, three and a half times the brightest thing
-        /// up here, and blew the yard out.
+        /// The number is on THIS AREA's EXTERIOR scale, which is not the
+        /// city's. The documented city practicals run `31` to `240`; exterior
+        /// mountain fixtures stay at or below `18`. The cafe's two bounded
+        /// interior keys are the deliberate exception: their larger raw
+        /// values cross a room onto near-black clothing without reaching the
+        /// yard. Set from the city list this lamp once stood at `38`, three
+        /// and a half times brighter than the rest of the summit, and blew the
+        /// yard out.
+        ///
+        /// Raised `9.5 → 11.5` (2026-09-02, the user's "совсем как-то
+        /// темно"): the yard is the one place §10f says IS lit, and one
+        /// lamp `5.5 m` up delivered `9.5 / 5.5² = 0.31` under itself over
+        /// a `42 x 27 m` pad. `11.5` puts the night end at `17.25`, still
+        /// under the `18` the summit tests refuse above. The night could
+        /// not be raised on the boost instead: see
+        /// <see cref="YardLampNightBoost"/>.
         /// </summary>
-        private const float YardLampDayIntensity = 9.5f;
+        private const float YardLampDayIntensity = 11.5f;
 
         /// <summary>
         /// Was `0.55`, which put the day at `64.5%` of the night - two
         /// points under the §20 floor of two thirds. At `0.5` the day is
-        /// the floor exactly: `9.5 / 14.25 = 2/3`.
+        /// the floor exactly: `11.5 / 17.25 = 2/3`.
+        ///
+        /// This is therefore the CEILING, not a dial: §20 forbids the day
+        /// dropping below two thirds of the night, so a brighter night has
+        /// to be bought with a brighter day
+        /// (<see cref="YardLampDayIntensity"/>) and never with a bigger
+        /// boost. `AlwaysLitLawTests` pins it.
         /// </summary>
         private const float YardLampNightBoost = 0.5f;
+
+        /// <summary>
+        /// The mercury lamp's own blurred ball in the fog. Every fixed lamp
+        /// in the City carries one and not one fixture on this mountain did,
+        /// which is most of why the yard read as flat dark: at Exp2 `0.026`
+        /// a `0.07 m` lens has lost a third of its contrast by thirty
+        /// metres, and the pad is `42 m` long. Cold, to match the lamp.
+        /// </summary>
+        private const float YardLampHaloInnerSize = 0.62f;
+
+        private const float YardLampHaloOuterSize = 2.35f;
+
+        /// <summary>
+        /// The floodlight over the apron, and the one fixture on this mountain
+        /// sized on the CITY's scale rather than this area's.
+        ///
+        /// Added 2026-09-02 on the user's instruction: light the parked car
+        /// "примерно так же как в городской сцене на островке последнего
+        /// рейса". So the target is the island lamp's DELIVERED light, not its
+        /// wattage — it gets to stand `3.5 m` from its car and this one is
+        /// held `8.9 m` back by the apron's reserved turning disc, and a spot
+        /// falls off with the square of that.
+        ///
+        /// The island's own number was arrived at by calibration rather than
+        /// arithmetic, and this follows the same chain: the drying yard's
+        /// communal floodlight is `150` over `16 m` landing on things about
+        /// `7 m` out, i.e. about `3.1` arriving; the island's `45` over its
+        /// `3.7 m` slant delivers `3.3`; and from this post's `9.8 m` slant
+        /// the same `3.1` needs `300`. That is why the number looks nothing
+        /// like its neighbours and means the same thing.
+        ///
+        /// It therefore leaves the documented `1.65`-`16` band, deliberately.
+        /// That band exists so nobody imports a city number for a WASH over
+        /// the yard — `38` once did and blew it out — and it is still right
+        /// for one. This is a `34°` cone on a single car, and the first night
+        /// photograph of this pad is what showed the band could not do the
+        /// job at all: fixtures at `13`-`17` over `4`-`5.5 m` deliver `0.5` to
+        /// `0.8`, the same order as the moon and ambient they are supposed to
+        /// be seen against.
+        ///
+        /// The `2/3` day floor is §20's and is met exactly at `200`/`300`,
+        /// which is also the island's own effective ladder shape: it authors
+        /// `45` night over a `15` day floor and `CityNightSiteLightRegistry`
+        /// lifts that floor to `night * 2/3` before it lerps.
+        /// </summary>
+        private const float ApronFloodDayIntensity = 200f;
+
+        private const float ApronFloodNightBoost = 0.5f;
+
+        /// <summary>Warm, and the island's exact colour: this lamp and that
+        /// one are the same fixture doing the same job at the two ends of the
+        /// same journey.</summary>
+        private static readonly Color ApronFloodColor =
+            new Color(1.00f, 0.87f, 0.66f);
+
+        /// <summary>Half the outer cone, as the island holds it.</summary>
+        private const float ApronFloodInnerSpotAngle = 16f;
+
+        /// <summary>
+        /// The island's halo is `0.52` / `1.55`, sized for a lamp you stand
+        /// next to. This one is read from across the pad - from the road
+        /// approach it is over twenty metres off - so it is scaled up by the
+        /// same argument that sized the beam: a halo is only a halo at the
+        /// distance it is actually seen from.
+        /// </summary>
+        private const float ApronFloodHaloInnerSize = 0.66f;
+
+        private const float ApronFloodHaloOuterSize = 1.95f;
+
+        /// <summary>How far down the beam the halo sits, clear of the shade's
+        /// own box.</summary>
+        private const float ApronFloodHaloStandoff = 0.26f;
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
         private static readonly int ColorId =
@@ -52,6 +140,7 @@ namespace BarPromenade
         private VolumeProfile runtimeProfile;
         private Renderer tunnelLampLens;
         private Light yardLamp;
+        private Light apronFlood;
         private MountainRoadVistaLightsController vista;
         private MaterialPropertyBlock tunnelLampProperties;
         private int appliedDay = int.MinValue;
@@ -64,6 +153,9 @@ namespace BarPromenade
 
         /// <summary>The yard practical over the freight dock.</summary>
         public Light YardLamp => yardLamp;
+
+        /// <summary>The floodlight aimed at where the car parks.</summary>
+        public Light ApronFloodlight => apronFlood;
         public DayNightVisualSample CurrentSample { get; private set; }
         public float TunnelLampPower { get; private set; } = 1f;
 
@@ -94,6 +186,7 @@ namespace BarPromenade
             BuildGlobalVolume();
             BuildTunnelLamp(world);
             BuildYardLamp();
+            BuildApronFloodlight();
             ApplyCurrentTime(true);
             IsInitialized = true;
         }
@@ -121,7 +214,23 @@ namespace BarPromenade
             appliedMinute = minute;
             ApplyTunnelLamp();
             ApplyYardLamp();
+            ApplyApronFloodlight();
             vista?.Apply(CurrentSample.NightFactor);
+
+            // THE MOUNTAIN OWNS ITS OWN EMISSION WHILE IT IS THE LOADED
+            // AREA, and until now nothing did. `CityNightGlowRegistry` is a
+            // process-wide static written ONLY by `CityNightWorldResult`, and
+            // the cafe's lit lenses register into it
+            // (`MountainRoadCafeSurfaceAppearance`). So travelling up from a
+            // City at noon froze every emissive thing on this pad at
+            // `DeadGlowFraction` (two thirds) for the whole visit - at any
+            // hour, midnight included - and travelling up at night left it at
+            // full even at midday. It is safe to write from here because the
+            // three exterior areas are Single-mode loads and are never
+            // resident together, so exactly one of them owns the static at a
+            // time; this is simply the mountain taking its turn, from the one
+            // call that already holds the hour.
+            CityNightGlowRegistry.SetNightFactor(CurrentSample.NightFactor);
         }
 
         /// <summary>
@@ -321,6 +430,18 @@ namespace BarPromenade
             yardLamp.shadowNearPlane =
                 RuntimeSceneSetup.PlayerMeshShadowNearPlane;
             yardLamp.renderMode = LightRenderMode.ForcePixel;
+
+            // And the ball of light the lamp is in fog. Always-burning, so
+            // it is initialized directly and stays out of the night
+            // registry - see CityLightHalo.CreateAlwaysBurning for why that
+            // matters on a mountain the City's static does not follow.
+            CityLightHalo.CreateAlwaysBurning(
+                lampObject.transform,
+                Vector3.zero,
+                YardLampHaloInnerSize,
+                YardLampHaloOuterSize,
+                new Color(0.80f, 0.88f, 0.94f, 0.82f),
+                new Color(0.52f, 0.64f, 0.72f, 0f));
         }
 
         private void ApplyYardLamp()
@@ -332,6 +453,81 @@ namespace BarPromenade
 
             yardLamp.intensity = YardLampDayIntensity *
                 (1f + CurrentSample.NightFactor * YardLampNightBoost);
+        }
+
+        /// <summary>
+        /// The floodlight over the apron, built here for the same reason the
+        /// yard lamp is: every real light outside a building on this mountain
+        /// has one owner, and that owner is the thing already holding the
+        /// hour.
+        ///
+        /// It also means this fixture is not part of the six the summit
+        /// lighting test counts. That is not a way round the test - the test
+        /// walks what `MountainRoadWorldBuilder` builds, and says so - but it
+        /// does mean this lamp's own numbers are pinned by
+        /// `MountainRoadApronFloodlightTests` instead, because a light nobody
+        /// asserts is a light that drifts.
+        ///
+        /// Shadows are OFF, as on the island. The pool has one car in it and a
+        /// man on its bonnet; a hard shadow from a `44°` cone this close puts
+        /// the car's own silhouette across the ground the beam exists to show.
+        /// </summary>
+        private void BuildApronFloodlight()
+        {
+            MountainRoadTerminalSitePlan site = plan.Terminal.Site;
+            if (site == null)
+            {
+                return;
+            }
+
+            MountainRoadSitePracticalDescriptor practical =
+                site.ApronFloodlight;
+            var lampObject = new GameObject("Mountain Apron Floodlight");
+            lampObject.transform.SetParent(transform, false);
+            lampObject.transform.position = practical.Position;
+            lampObject.transform.rotation = Quaternion.LookRotation(
+                practical.Direction,
+                Vector3.up);
+            apronFlood = lampObject.AddComponent<Light>();
+            apronFlood.type = LightType.Spot;
+            apronFlood.color = ApronFloodColor;
+            apronFlood.range = practical.Range;
+            apronFlood.spotAngle = practical.SpotAngle;
+            apronFlood.innerSpotAngle = ApronFloodInnerSpotAngle;
+            apronFlood.shadows = LightShadows.None;
+            apronFlood.renderMode = LightRenderMode.ForcePixel;
+            apronFlood.lightmapBakeType = LightmapBakeType.Realtime;
+
+            // Down the beam, not at the head's own centre. The island can put
+            // its halo on the emitter because its housing is built around
+            // that point; here the head is a solid shade box and a halo
+            // inside it is a lamp with its own lid on. This is the aperture.
+            CityLightHalo.CreateAlwaysBurning(
+                lampObject.transform,
+                Vector3.forward * ApronFloodHaloStandoff,
+                ApronFloodHaloInnerSize,
+                ApronFloodHaloOuterSize,
+                new Color(
+                    ApronFloodColor.r * 4.2f,
+                    ApronFloodColor.g * 4.2f,
+                    ApronFloodColor.b * 4.2f,
+                    0.18f),
+                new Color(
+                    ApronFloodColor.r * 2.1f,
+                    ApronFloodColor.g * 2.1f,
+                    ApronFloodColor.b * 2.1f,
+                    0.05f));
+        }
+
+        private void ApplyApronFloodlight()
+        {
+            if (apronFlood == null)
+            {
+                return;
+            }
+
+            apronFlood.intensity = ApronFloodDayIntensity *
+                (1f + CurrentSample.NightFactor * ApronFloodNightBoost);
         }
 
         private void ApplyTunnelLamp()

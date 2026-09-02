@@ -43,9 +43,10 @@ namespace BarPromenade
         /// The same man one chapter later, at the far end of the road he
         /// was waiting to drive. The rules do not relax, they move:
         ///
-        /// * he still NEVER offers to take anybody anywhere. On the island
-        ///   that was the joke; here it is simply true, because the road
-        ///   has ended and there is nothing left to offer;
+        /// * he still NEVER offers to take anybody anywhere, and up here
+        ///   that matters more rather than less: there IS a way back down
+        ///   now, and it is on the menu and only on the menu, exactly as
+        ///   the way up is on the island. Nothing in his mouth sells it;
         /// * still "ты", still two short clauses, still level;
         /// * and still not one word about where the route goes. He has
         ///   arrived and he says nothing about what he arrived at - what
@@ -133,5 +134,56 @@ namespace BarPromenade
 
             return index;
         }
+    }
+
+    /// <summary>
+    /// Everything about how one instance of the Ferryman answers: which pool
+    /// of small talk he draws from, which stream he draws it on, and what the
+    /// second line of his menu asks.
+    ///
+    /// It exists so the two ends of his road are chosen in ONE place. They are
+    /// the same problem seen from opposite sides - the island asks whether you
+    /// want to leave the city and the terrace asks whether you want to go back
+    /// to it - and the thing that must never drift between them is that the
+    /// two pools walk separate streams. Off one stream they march in step and
+    /// the same ordinal answer comes up in both places on the same visit.
+    /// </summary>
+    public readonly struct LastRouteFerrymanVoice
+    {
+        private LastRouteFerrymanVoice(
+            string[] lineKeys,
+            string confirmationPromptKey,
+            uint quipStream)
+        {
+            LineKeys = lineKeys;
+            ConfirmationPromptKey = confirmationPromptKey;
+            QuipStream = quipStream;
+        }
+
+        /// <summary>On the bonnet on the last route island, with the whole
+        /// road still in front of him.</summary>
+        public static LastRouteFerrymanVoice Island(int citySeed)
+        {
+            return new LastRouteFerrymanVoice(
+                LastRouteFerrymanQuips.LineKeys,
+                LastRouteFerrymanInteraction.LeaveConfirmationPromptKey,
+                LastRouteFerrymanQuips.CreateState(citySeed));
+        }
+
+        /// <summary>On the same bonnet on the terrace by the mountain cafe,
+        /// with the same road behind him.</summary>
+        public static LastRouteFerrymanVoice Mountain(int citySeed)
+        {
+            return new LastRouteFerrymanVoice(
+                LastRouteFerrymanQuips.MountainLineKeys,
+                LastRouteFerrymanInteraction.ReturnConfirmationPromptKey,
+                LastRouteFerrymanQuips.CreateMountainState(citySeed));
+        }
+
+        public string[] LineKeys { get; }
+        public string ConfirmationPromptKey { get; }
+        public uint QuipStream { get; }
+
+        public bool IsPresent => LineKeys != null && LineKeys.Length > 0;
     }
 }

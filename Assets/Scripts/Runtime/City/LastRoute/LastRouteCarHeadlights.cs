@@ -76,6 +76,33 @@ namespace BarPromenade
         public const float SpillInnerSpotAngle = 40f;
 
         /// <summary>
+        /// The dipped beam of a car STANDING on the mountain apron, which is
+        /// a different fixture from the one above even though it is the same
+        /// three lamps.
+        ///
+        /// <see cref="BeamIntensity"/> is sized to throw twenty metres down a
+        /// moving road. A parked car has to mark the middle of a yard eight
+        /// metres in front of its own bumper, and this is that number by
+        /// throw: the lamps sit about `0.75 m` up raked `5.5°` down, so the
+        /// pool centres near `8 m` and `16 / 8² = 0.25` arrives - against the
+        /// `17.25 / 5.5² = 0.57` the mercury yard lamp lays under itself.
+        /// Half the yard fixture is a mark; six thousand would be the blown
+        /// white pool that got a whole feature pulled.
+        ///
+        /// It also agrees with this project's own precedent for a vehicle
+        /// lamp seen in a scene rather than driven behind - the bus runs its
+        /// headlights at `14` over `22 m` - and it sits inside the mountain's
+        /// documented `1.65`-`16` fixture band, which the city's `31`-`240`
+        /// scale does not.
+        /// </summary>
+        public const float StandingBeamIntensity = 16f;
+
+        /// <summary>The wide filler, at the same ratio to the standing beam
+        /// that <see cref="SpillIntensity"/> holds to the full one.</summary>
+        public const float StandingSpillIntensity =
+            SpillIntensity * (StandingBeamIntensity / BeamIntensity);
+
+        /// <summary>
         /// How far PROUD of the lamp's own front face each emitter sits.
         /// Forward, and small: a headlight is a thing on the outside of a
         /// car and its light starts at the glass.
@@ -113,10 +140,23 @@ namespace BarPromenade
 
         public const float SwitchOffSeconds = 2.5f;
 
+        /// <summary>
+        /// <see cref="Power"/> is a fraction of the FULL beam, so a dipped
+        /// lamp sits at `16 / 6000`, and the old "is it burning" test of
+        /// `power > 0.004` would have switched it off as rounding error. The
+        /// question is about delivered light, so ask it in intensity.
+        /// </summary>
+        private const float MinimumBurningIntensity = 0.01f;
+
+        /// <summary>What a dipped lamp is as a fraction of full beam.</summary>
+        public const float StandingPower =
+            StandingBeamIntensity / BeamIntensity;
+
         private Light leftBeam;
         private Light rightBeam;
         private Light spill;
         private float appliedPower = -1f;
+        private LastRouteCarLamps lamps = LastRouteCarLamps.RideOnly;
         private LastRouteRideController ride;
 
         public bool IsInitialized { get; private set; }
@@ -124,6 +164,13 @@ namespace BarPromenade
         public Light RightBeam => rightBeam;
         public Light Spill => spill;
         public float Power => appliedPower < 0f ? 0f : appliedPower;
+
+        /// <summary>
+        /// What these lamps fall back to with no journey running: dipped on
+        /// the mountain apron, dark on a car that only lights its own trip.
+        /// </summary>
+        public float RestingPower =>
+            lamps == LastRouteCarLamps.AlwaysDipped ? StandingPower : 0f;
 
         /// <summary>
         /// Builds the three lamps under <paramref name="carrier"/>, aimed
@@ -150,7 +197,8 @@ namespace BarPromenade
             Transform carrier,
             Vector3 lensCenterWorld,
             float lensHalfWidth,
-            float lensHalfDepth)
+            float lensHalfDepth,
+            LastRouteCarLamps lamps = LastRouteCarLamps.RideOnly)
         {
             if (IsInitialized)
             {
@@ -205,8 +253,14 @@ namespace BarPromenade
                     BeamPitchDegrees * 1.6f,
                     0f,
                     0f));
+            this.lamps = lamps;
             IsInitialized = true;
-            SetPower(0f);
+
+            // Straight to the resting level, not a ramp up to it. A parked
+            // car's lamps are already on when you walk round the corner; a
+            // fade-in on scene load would read as the lights coming on
+            // because the hero arrived.
+            SetPower(RestingPower);
         }
 
         /// <summary>
@@ -253,7 +307,8 @@ namespace BarPromenade
             }
 
             appliedPower = clamped;
-            bool burning = clamped > 0.004f;
+            bool burning =
+                clamped * BeamIntensity > MinimumBurningIntensity;
             ApplyPower(leftBeam, BeamIntensity, clamped, burning);
             ApplyPower(rightBeam, BeamIntensity, clamped, burning);
             ApplyPower(spill, SpillIntensity, clamped, burning);
@@ -267,7 +322,14 @@ namespace BarPromenade
             }
 
             bool driving = ride.IsRiding || ride.IsAwaitingStart;
-            float target = driving ? 1f : 0f;
+
+            // Not `0f` any more: a car that has finished its journey on the
+            // mountain apron is a PARKED car there, and parked is dipped
+            // rather than dark. The arriving leg therefore needs no separate
+            // mode - it comes up full under the black screen, drives, and
+            // settles onto the same standing beam the chart-arrival car
+            // already burns.
+            float target = driving ? 1f : RestingPower;
             if (Mathf.Approximately(Power, target))
             {
                 return;

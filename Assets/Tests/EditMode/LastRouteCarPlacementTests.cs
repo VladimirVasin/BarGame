@@ -652,7 +652,7 @@ namespace BarPromenade.Tests.EditMode
                     LastRouteCarPlan.At(new Vector3(12f, 0f, -30f), facing),
                     default,
                     null,
-                    true);
+                    LastRouteCarLamps.AlwaysDipped);
                 Assert.That(car, Is.Not.Null, "The car failed to spawn.");
 
                 Transform root = car.transform.parent != null
@@ -786,6 +786,145 @@ namespace BarPromenade.Tests.EditMode
             {
                 Object.DestroyImmediate(parent);
             }
+        }
+
+        /// <summary>
+        /// A car standing on the mountain apron burns, and for a whole build
+        /// it did not.
+        ///
+        /// `InstallHeadlights` took the city's branch for every arrival that
+        /// was not the ride itself - the area tab, a point picked on the
+        /// chart - and that branch RETURNS before the component is added. So
+        /// the one object in the middle of a `42 x 27 m` yard contributed no
+        /// light at all, and its two halos rode a night factor only the City
+        /// ever writes. Nothing threw, nothing logged, and no test looked:
+        /// the only headlight test there was built the car `burning`.
+        /// </summary>
+        [Test]
+        public void ParkedCar_OnTheMountainBurnsRealDippedLamps()
+        {
+            var parent = new GameObject("Parked Headlight Test");
+            try
+            {
+                LastRouteCarAssetRegistry car = LastRouteCarFactory.Create(
+                    parent.transform,
+                    LastRouteCarPlan.At(Vector3.zero, Vector3.forward),
+                    default,
+                    null,
+                    LastRouteCarLamps.AlwaysDipped);
+                Assert.That(car, Is.Not.Null, "The car failed to spawn.");
+
+                Transform root = car.transform.parent != null
+                    ? car.transform.parent
+                    : car.transform;
+                var headlights = root.GetComponent<LastRouteCarHeadlights>();
+                Assert.That(
+                    headlights,
+                    Is.Not.Null,
+                    "A car parked on the apron has no headlights at all.");
+
+                foreach (Light lamp in new[]
+                         {
+                             headlights.LeftBeam,
+                             headlights.RightBeam,
+                             headlights.Spill
+                         })
+                {
+                    Assert.That(lamp, Is.Not.Null);
+                    Assert.That(
+                        lamp.enabled,
+                        Is.True,
+                        $"'{lamp.name}' is a real Light that is switched " +
+                        "off, which is the fake headlight again.");
+                    Assert.That(
+                        lamp.intensity,
+                        Is.GreaterThan(0f),
+                        $"'{lamp.name}' delivers nothing.");
+                }
+
+                // Dipped, not full beam: it stands eight metres from what it
+                // marks, and six thousand is sized to throw twenty.
+                Assert.That(
+                    headlights.LeftBeam.intensity,
+                    Is.EqualTo(LastRouteCarHeadlights.StandingBeamIntensity)
+                        .Within(0.01f));
+                Assert.That(
+                    headlights.RightBeam.intensity,
+                    Is.EqualTo(LastRouteCarHeadlights.StandingBeamIntensity)
+                        .Within(0.01f));
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
+
+        /// <summary>
+        /// And the city's car is untouched by that, which is the whole reason
+        /// the flag became three-valued rather than being flipped to `true`.
+        ///
+        /// `CityNightAtmosphere` owns exactly twelve realtime lights and the
+        /// budget belongs to the street masts; down there a car on a lot is a
+        /// lamp you LOOK AT, and the lighthouse set the precedent that a
+        /// beacon needs no Light to be seen. Turning the mountain's lamps on
+        /// must not quietly hand the island three more.
+        /// </summary>
+        [Test]
+        public void CityIslandCar_StillCarriesNoLightOfItsOwn()
+        {
+            var parent = new GameObject("City Lamp Budget Test");
+            try
+            {
+                LastRouteCarAssetRegistry car = LastRouteCarFactory.Create(
+                    parent.transform,
+                    LastRouteCarPlan.At(Vector3.zero, Vector3.forward));
+                Assert.That(car, Is.Not.Null, "The car failed to spawn.");
+
+                Transform root = car.transform.parent != null
+                    ? car.transform.parent
+                    : car.transform;
+                Assert.That(
+                    root.GetComponent<LastRouteCarHeadlights>(),
+                    Is.Null,
+                    "The island car has grown real headlights.");
+                Assert.That(
+                    root.GetComponentsInChildren<Light>(true),
+                    Is.Empty,
+                    "The island car is spending the city's twelve-light " +
+                    "budget, which belongs to the street masts.");
+            }
+            finally
+            {
+                Object.DestroyImmediate(parent);
+            }
+        }
+
+        /// <summary>
+        /// The dipped beam is on the MOUNTAIN's scale, not the city's.
+        ///
+        /// Every fixture up there runs `1.65` to `16` and the summit tests
+        /// refuse anything over `18`; the city's practicals run `31` to `240`
+        /// and a number carried across from that list has already blown the
+        /// yard out once. A parked car is a fixture in that yard.
+        /// </summary>
+        [Test]
+        public void StandingBeam_IsOnTheMountainsScaleAndUnderTheFullBeam()
+        {
+            Assert.That(
+                LastRouteCarHeadlights.StandingBeamIntensity,
+                Is.InRange(1.5f, 18f),
+                "The standing beam has left this area's own scale.");
+            Assert.That(
+                LastRouteCarHeadlights.StandingBeamIntensity,
+                Is.LessThan(LastRouteCarHeadlights.BeamIntensity),
+                "A dipped beam that is not dimmer than the full one is not " +
+                "a dipped beam.");
+            Assert.That(
+                LastRouteCarHeadlights.StandingPower *
+                LastRouteCarHeadlights.BeamIntensity,
+                Is.GreaterThan(0.01f),
+                "The dipped level rounds to nothing against the full beam, " +
+                "so SetPower's own 'is it burning' test switches it off.");
         }
 
         /// <summary>

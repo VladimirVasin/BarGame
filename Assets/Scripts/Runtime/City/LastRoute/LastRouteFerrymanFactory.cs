@@ -44,17 +44,15 @@ namespace BarPromenade
             LastRouteFerrymanPlan plan,
             LastRouteCarAssetRegistry car,
             InventoryTargetInteractionController targetInteraction,
-            int citySeed,
-            string[] talkRepertoire = null)
+            LastRouteFerrymanVoice voice)
         {
             return Create(
                 parent,
                 plan,
                 car,
                 targetInteraction,
-                citySeed,
-                LastRouteFerrymanProvider.Load(),
-                talkRepertoire);
+                voice,
+                LastRouteFerrymanProvider.Load());
         }
 
         public static LastRouteFerrymanPresentation Create(
@@ -62,9 +60,8 @@ namespace BarPromenade
             LastRouteFerrymanPlan plan,
             LastRouteCarAssetRegistry car,
             InventoryTargetInteractionController targetInteraction,
-            int citySeed,
-            LastRouteFerrymanProvider provider,
-            string[] talkRepertoire = null)
+            LastRouteFerrymanVoice voice,
+            LastRouteFerrymanProvider provider)
         {
             if (parent == null)
             {
@@ -172,13 +169,15 @@ namespace BarPromenade
             // side the player arrives on.
             //
             // The same box and the same dock either way; what changes is
-            // what is behind it. A menu belongs to the island, where its
-            // second option - leave the city? - is the whole point of him.
-            // At the far end of that road there is no honest second
-            // option, so the mountain hands a REPERTOIRE instead and he
-            // answers without offering anything. Hand in neither and he
-            // is silent, which is what he was up here until now.
-            if (targetInteraction != null || talkRepertoire != null)
+            // what is behind it. A MENU belongs wherever this scene has armed
+            // a ride for him to drive - the island going up, the terrace by
+            // the cafe coming back down - and its second option is the
+            // question that end of the road asks. Where nothing is armed he
+            // gets the plain repertoire instead and answers without offering
+            // anything, which is what he does in the city once he has been
+            // driven home and the offer belongs to the next visit. Hand in
+            // no voice at all and he is silent.
+            if (voice.IsPresent)
             {
                 var trigger = new GameObject("Ferryman Talk Trigger");
                 trigger.transform.SetParent(root, false);
@@ -199,9 +198,11 @@ namespace BarPromenade
                         .AddComponent<LastRouteFerrymanInteraction>()
                         .Initialize(
                             stance.Position,
-                            citySeed,
                             presentation,
-                            targetInteraction);
+                            targetInteraction,
+                            voice.LineKeys,
+                            voice.ConfirmationPromptKey,
+                            voice.QuipStream);
                 }
                 else
                 {
@@ -209,9 +210,9 @@ namespace BarPromenade
                         .AddComponent<LastRouteFerrymanTalkInteraction>()
                         .Initialize(
                             stance.Position,
-                            citySeed,
                             presentation,
-                            talkRepertoire);
+                            voice.LineKeys,
+                            voice.QuipStream);
                 }
             }
 

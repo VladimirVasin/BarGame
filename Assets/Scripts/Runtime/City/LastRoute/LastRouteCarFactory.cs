@@ -4,6 +4,41 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
+    /// What the car's lamps do WHEN IT IS NOT DRIVING. Every mode burns full
+    /// beam while a journey is actually running; they differ only in what
+    /// they rest at, which is the whole question a parked car asks.
+    ///
+    /// This was a `bool burningHeadlights` and two states were one too few.
+    /// The city lot and the mountain apron are BOTH "parked", and they want
+    /// opposite things: down there the night light budget belongs to the
+    /// street masts and a car is a lamp you look at, while up on the pad
+    /// there are no masts, the yard has one fixture, and the car standing
+    /// dead centre was the darkest thing on it.
+    /// </summary>
+    public enum LastRouteCarLamps
+    {
+        /// <summary>
+        /// No <see cref="Light"/> at all - halos only, night-registered. The
+        /// city island's arrangement, unchanged: `CityNightAtmosphere` owns
+        /// exactly twelve realtime lights and this car is not one of them.
+        /// </summary>
+        CityHalos = 0,
+
+        /// <summary>
+        /// Real lamps that rest DARK: they burn for the journey and go out
+        /// when it ends. The car that drives itself home into the city.
+        /// </summary>
+        RideOnly = 1,
+
+        /// <summary>
+        /// Real lamps that rest on DIPPED beam, burning at every hour. The
+        /// car on the mountain apron - the one thing standing in the middle
+        /// of the yard §10f says IS lit.
+        /// </summary>
+        AlwaysDipped = 2,
+    }
+
+    /// <summary>
     /// Stands the Ferryman's car beside the last route island.
     ///
     /// The art prefab is validated pure presentation - no collider, no
@@ -40,7 +75,7 @@ namespace BarPromenade
             LastRouteCarPlan plan,
             PlayerRuntime player,
             Camera camera,
-            bool burningHeadlights = false)
+            LastRouteCarLamps lamps = LastRouteCarLamps.CityHalos)
         {
             if (parent == null)
             {
@@ -81,7 +116,7 @@ namespace BarPromenade
             ValidatePassivePresentation(instance);
             AddObstacleCollider(root.gameObject, registry);
             InstallMechanisms(root, registry);
-            InstallHeadlights(root, registry, burningHeadlights);
+            InstallHeadlights(root, registry, lamps);
             InstallPassengerSeat(root, registry, plan, player, camera);
 
             GameLog.Info(
@@ -160,7 +195,8 @@ namespace BarPromenade
         /// A car standing on a lot is a lamp you look at.
         ///
         /// A car CLIMBING A MOUNTAIN IN THE DARK is a lamp you see by, and
-        /// that is a different job. `burning` adds
+        /// that is a different job. Any mode but
+        /// <see cref="LastRouteCarLamps.CityHalos"/> adds
         /// <see cref="LastRouteCarHeadlights"/> on top - the halos are not
         /// replaced, because the bloom was never the thing that was missing.
         /// It also takes the halos out of the night registry, which is a real
@@ -169,12 +205,23 @@ namespace BarPromenade
         /// in daylight leaves it near zero and the mountain car's lenses would
         /// arrive dead while its beams blazed. Always-burning fixtures
         /// initialize their halo directly for exactly this reason.
+        ///
+        /// AND A CAR PARKED ON THE MOUNTAIN IS ALSO A LAMP YOU SEE BY
+        /// (2026-09-02, the user's "её фары должны быть реальным источником
+        /// света а не фейковым"). For a build this took the city's branch,
+        /// which returns HERE, before the component is added - so every
+        /// arrival that was not the ride itself put the car dead centre of a
+        /// `42 x 27 m` yard contributing no light at all, its lenses riding a
+        /// static nothing on this mountain writes. Nothing threw and no test
+        /// saw it. <see cref="LastRouteCarLamps.AlwaysDipped"/> is that case:
+        /// real lamps, dipped, burning at every hour.
         /// </summary>
         private static void InstallHeadlights(
             Transform root,
             LastRouteCarAssetRegistry registry,
-            bool burning)
+            LastRouteCarLamps lamps)
         {
+            bool burning = lamps != LastRouteCarLamps.CityHalos;
             Transform lens = null;
             for (int index = 0; index < registry.Bindings.Count; index++)
             {
@@ -215,11 +262,9 @@ namespace BarPromenade
                     continue;
                 }
 
-                var haloObject = new GameObject("Fog Light Halo");
-                haloObject.transform.SetParent(root, false);
-                haloObject.transform.localPosition = local;
-                haloObject.AddComponent<CityLightHalo>().Initialize(
-                    CityNightResources.AtmosphereMaterial,
+                CityLightHalo.CreateAlwaysBurning(
+                    root,
+                    local,
                     HeadlightHaloInnerSize,
                     HeadlightHaloOuterSize,
                     inner,
@@ -254,7 +299,7 @@ namespace BarPromenade
                 (Mathf.Abs(heading.z) * bounds.extents.z);
             root.gameObject
                 .AddComponent<LastRouteCarHeadlights>()
-                .Initialize(root, carrier, centre, lateral, halfDepth);
+                .Initialize(root, carrier, centre, lateral, halfDepth, lamps);
         }
 
         /// <summary>

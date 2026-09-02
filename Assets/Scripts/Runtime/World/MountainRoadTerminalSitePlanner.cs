@@ -99,6 +99,7 @@ namespace BarPromenade
             var chains = new List<MountainRoadSiteChainDescriptor>(3);
 
             AppendPloughing(plateau, yardTop, parts);
+            AppendApronFloodlight(plateau, yardTop, parts);
             AppendRoadEnd(plateau, yardTop, parts);
             AppendCafeThreshold(plateau, cafe, yardTop, parts);
             AppendServiceYard(plateau, yardTop, parts, cloth, chains);
@@ -116,7 +117,8 @@ namespace BarPromenade
                 terraceTop,
                 CreateBrinkSeat(plateau, terraceTop),
                 CreateCounterSeat(plateau, cafe, yardTop),
-                CreateYardLamp(plateau, yardTop));
+                CreateYardLamp(plateau, yardTop),
+                CreateApronFloodlight(plateau, yardTop));
         }
 
         /// <summary>
@@ -1161,6 +1163,170 @@ namespace BarPromenade
                 yardTop,
                 cafe.Forward,
                 -cafe.Forward);
+        }
+
+        /// <summary>
+        /// Where the apron floodlight stands, in the plateau's own frame.
+        ///
+        /// THE WHOLE `8.05 m` DISC AROUND THE APRON IS RESERVED and this is
+        /// the constraint that shaped the fixture. The island's lamp gets to
+        /// stand `3.5 m` from its car; here `MountainRoadTerminalSiteValidator`
+        /// refuses any part whose footprint corner comes within
+        /// `VehicleTurningRadius + 0.55` of the apron centre, which is why the
+        /// cafe had to be pushed to `8.24 m` in the first place. The rule is
+        /// deliberately more conservative than the two-point turn actually
+        /// needs, and it is not weakened for a lamp: it guards the one
+        /// drivable vehicle in the game, and a post inside that disc is a post
+        /// the car can hit.
+        ///
+        /// So the lamp stands OUTSIDE it, `8.9 m` out on the apron's own
+        /// forward, and pays for the distance in height and wattage instead
+        /// (see <c>MountainRoadAtmosphere.ApronFloodNightIntensity</c>). Dead
+        /// in front of where the car stops is still the island's arrangement -
+        /// head turned back down the bonnet - and forward is also the one
+        /// sector the departure never sweeps: the two-point turn backs to
+        /// `(R, -R)` and pulls away to `(0, -2R)` in the apron's frame, so
+        /// every part of it lives at negative forward.
+        ///
+        /// Offset `2.2 m` to the right of dead centre so the post does not
+        /// stand in the sightline straight up the pad from the road, and so
+        /// the beam rakes across the passenger door rather than square onto
+        /// the bonnet. Neighbours clear it comfortably: the yard lamp's pole
+        /// `4.5 m`, the load tarp `3.6 m`, the cafe `12.6 m`, the cable
+        /// station `7.2 m`.
+        /// </summary>
+        private const float ApronFloodlightRight = 2.2f;
+
+        private const float ApronFloodlightForward = 10.1f;
+
+        /// <summary>
+        /// Head height. The island rakes down from `3.30 m` at `3.5 m` out;
+        /// from `8.9 m` out that same angle onto the bonnet needs `5.4`, which
+        /// also puts it on the yard lamp's own `5.5 m` mast height so the two
+        /// read as the same kind of service fitting rather than a lamp and an
+        /// intruder. The rake is the load-bearing part: the design draws the
+        /// Ferryman no eyes and leans on his cap brim's shadow, and lighting a
+        /// face with no eyes from below is the one angle that argues with it.
+        /// </summary>
+        private const float ApronFloodlightHeadHeight = 5.4f;
+
+        /// <summary>How far the head hangs off the post toward the car.</summary>
+        private const float ApronFloodlightBracketReach = 0.5f;
+
+        /// <summary>
+        /// How high up the car the beam is aimed. The island points at
+        /// `1.25 m` - the bonnet line and the perched man above it - and this
+        /// is the same target on the same car.
+        /// </summary>
+        private const float ApronFloodlightAimHeight = 1.25f;
+
+        private static void AppendApronFloodlight(
+            MountainRoadPlateauDescriptor plateau,
+            float yardTop,
+            ICollection<MountainRoadSitePartDescriptor> parts)
+        {
+            ResolveApronFloodlightHead(
+                out float headRight,
+                out float headForward,
+                out float bearingDegrees);
+            parts.Add(Part(
+                plateau,
+                "site-apron-flood-post",
+                MountainRoadSiteGroup.ServiceYard,
+                MountainRoadSiteStyle.Timber,
+                ApronFloodlightRight,
+                yardTop + (ApronFloodlightHeadHeight * 0.5f),
+                ApronFloodlightForward,
+                new Vector3(0.26f, ApronFloodlightHeadHeight, 0.26f),
+                0f,
+                true));
+            parts.Add(Part(
+                plateau,
+                "site-apron-flood-bracket",
+                MountainRoadSiteGroup.ServiceYard,
+                MountainRoadSiteStyle.RustedIron,
+                (ApronFloodlightRight + headRight) * 0.5f,
+                yardTop + ApronFloodlightHeadHeight,
+                (ApronFloodlightForward + headForward) * 0.5f,
+                new Vector3(0.09f, 0.09f, ApronFloodlightBracketReach),
+                bearingDegrees,
+                false));
+            parts.Add(Part(
+                plateau,
+                "site-apron-flood-shade",
+                MountainRoadSiteGroup.ServiceYard,
+                MountainRoadSiteStyle.PaintedSteel,
+                headRight,
+                yardTop + ApronFloodlightHeadHeight - 0.06f,
+                headForward,
+                new Vector3(0.42f, 0.28f, 0.38f),
+                bearingDegrees,
+                false));
+        }
+
+        /// <summary>
+        /// The head hangs off the post on the bearing to the car, so the
+        /// shade, the bracket and the beam all agree without three authored
+        /// numbers that can drift apart.
+        /// </summary>
+        private static void ResolveApronFloodlightHead(
+            out float headRight,
+            out float headForward,
+            out float bearingDegrees)
+        {
+            float toRight = -ApronFloodlightRight;
+            float toForward =
+                MountainRoadTerminalPlanner.ApronForwardOffset -
+                ApronFloodlightForward;
+            float length = Mathf.Sqrt(
+                (toRight * toRight) + (toForward * toForward));
+            headRight = ApronFloodlightRight +
+                        (toRight / length * ApronFloodlightBracketReach);
+            headForward = ApronFloodlightForward +
+                          (toForward / length * ApronFloodlightBracketReach);
+            bearingDegrees =
+                Mathf.Atan2(toRight, toForward) * Mathf.Rad2Deg;
+        }
+
+        /// <summary>
+        /// The floodlight that finally puts light on the car.
+        ///
+        /// Added 2026-09-02 on the user's instruction to light the parked car
+        /// "примерно так же как в городской сцене на островке последнего
+        /// рейса". Its cone is narrower than the island's `44°` because it
+        /// stands two and a half times further back, which lands the same size
+        /// of pool on the same car; the wattage that goes with that distance
+        /// lives on the atmosphere.
+        ///
+        /// The aim is computed, not authored: head to a point
+        /// <see cref="ApronFloodlightAimHeight"/> above the apron centre, so
+        /// moving either the post or the apron keeps the beam on the car.
+        /// </summary>
+        private static MountainRoadSitePracticalDescriptor
+            CreateApronFloodlight(
+                MountainRoadPlateauDescriptor plateau,
+                float yardTop)
+        {
+            ResolveApronFloodlightHead(
+                out float headRight,
+                out float headForward,
+                out float _);
+            Vector3 head = Point(
+                plateau,
+                headRight,
+                yardTop + ApronFloodlightHeadHeight - 0.06f,
+                headForward);
+            Vector3 aim = Point(
+                plateau,
+                0f,
+                yardTop + ApronFloodlightAimHeight,
+                MountainRoadTerminalPlanner.ApronForwardOffset);
+            return new MountainRoadSitePracticalDescriptor(
+                "site-apron-flood-shade",
+                head,
+                aim - head,
+                14f,
+                34f);
         }
 
         private static MountainRoadSitePracticalDescriptor CreateYardLamp(

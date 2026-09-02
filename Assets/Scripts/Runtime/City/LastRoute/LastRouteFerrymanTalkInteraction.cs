@@ -3,15 +3,15 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// What the Ferryman has to say once he has arrived.
+    /// What the Ferryman has to say where he has nothing to offer.
     ///
-    /// It is the fisherman's stub, not the island's menu, and the reason
-    /// is the menu's second option. In the city that option is "leave
-    /// town?" and everything behind it — the boarding, the coin, the ride
-    /// stage — is the whole point of him. Up here the town is behind us,
-    /// the road has ended, and a menu that offers a journey the game does
-    /// not have would be the one dishonest thing about the character.
-    /// So he answers, and that is all he does.
+    /// It is the fisherman's stub, not the menu, and the reason is the menu's
+    /// second option: that option is a journey, and a menu that offers one the
+    /// scene has not armed would be the one dishonest thing about the
+    /// character. So where no ride is armed he answers, and that is all he
+    /// does — which as of the road running both ways means the city on the
+    /// evening he has just driven the hero home, his car standing turned round
+    /// in its own bay. Both ends of the road itself hand him the menu.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class LastRouteFerrymanTalkInteraction :
@@ -39,16 +39,22 @@ namespace BarPromenade
         /// he has said anything.</summary>
         public int LastLineIndex => lastLineIndex;
 
+        /// <summary>
+        /// The stream is handed in rather than derived here, for the reason
+        /// <see cref="LastRouteFerrymanVoice"/> gives: which pool he is
+        /// speaking from and which stream it walks are one decision, taken
+        /// once, in one place.
+        /// </summary>
         public void Initialize(
             Vector3 configuredStandPosition,
-            int citySeed,
             LastRouteFerrymanPresentation configuredPresentation,
-            string[] configuredRepertoire)
+            string[] configuredRepertoire,
+            uint quipStream)
         {
             standPosition = configuredStandPosition;
             presentation = configuredPresentation;
             repertoire = configuredRepertoire;
-            quipState = LastRouteFerrymanQuips.CreateMountainState(citySeed);
+            quipState = quipStream;
             lastLineIndex = -1;
             isInitialized = repertoire != null && repertoire.Length > 0;
         }

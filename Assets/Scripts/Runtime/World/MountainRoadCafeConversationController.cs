@@ -4,11 +4,12 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// The private conversation between the two drinking patrons. It exists
-    /// only while the hero is physically inside the cafe, preserves the ten
-    /// authored statement/response pairs, and uses the same overhead bubble
-    /// channel as the park chess-set quarrel. The active speaker turns to the
-    /// other patron before the line appears and returns to Idle afterward.
+    /// The private conversation between the two drinking patrons, plus the
+    /// sleeping husband's rare unanswered interruption. It exists only while
+    /// the hero is physically inside the cafe, preserves the ten authored
+    /// statement/response pairs, and uses the same overhead bubble channel as
+    /// the park chess-set quarrel. The pair turn only toward each other; both
+    /// completely ignore the husband while he raises his head and right hand.
     /// </summary>
     [DefaultExecutionOrder(330)]
     [DisallowMultipleComponent]
@@ -23,17 +24,23 @@ namespace BarPromenade
         public const float WomanRestStartNormalized = 0.68f;
         public const float WomanNextLiftNormalized = 0.16f;
         public const float WomanWindowSafetySeconds = 0.12f;
+        public const float LonePatronSpeechDelaySeconds = 1.2f;
+        public const float MaximumLonePatronVisualStepSeconds = 0.25f;
 
         private MountainRoadCafePlan plan;
         private Transform player;
         private NpcSpeechBubbleView bubbles;
         private MountainRoadCafeCastController cast;
+        private MountainRoadCafeCastPresentation lonePatron;
         private MountainRoadCafeCastPresentation pairMan;
         private MountainRoadCafeCastPresentation pairWoman;
+        private Transform lonePatronSpeechAnchor;
         private MountainRoadCafeConversationLook manLook;
         private MountainRoadCafeConversationLook womanLook;
         private MountainRoadCafeConversationTimeline timeline;
         private MountainRoadCafeConversationOrder lineOrder;
+        private MountainRoadCafeLonePatronInterjectionSchedule
+            lonePatronSchedule;
 
         private MountainRoadCafeConversationSpeaker pendingSpeaker;
         private MountainRoadCafeConversationSpeaker activeSpeaker;
@@ -42,6 +49,9 @@ namespace BarPromenade
         private bool hasActiveLine;
         private bool isReturningLine;
         private bool hasPairReservation;
+        private bool isLonePatronInterjectionPending;
+        private bool isLonePatronInterjecting;
+        private bool hasShownLonePatronLine;
         private bool isEngaged;
         private float preparationElapsedSeconds;
         private float activeLineElapsedSeconds;
@@ -51,6 +61,12 @@ namespace BarPromenade
         public bool IsEngaged => isEngaged;
         public bool HasPendingLine => hasPendingLine || isPreparingLine;
         public bool HasActiveLine => hasActiveLine;
+        public bool IsLonePatronInterjectionPending =>
+            isLonePatronInterjectionPending;
+        public bool IsLonePatronInterjecting =>
+            isLonePatronInterjecting;
+        public int CompletedPairExchanges =>
+            lonePatronSchedule?.CompletedPairExchanges ?? 0;
         public MountainRoadCafeConversationSpeaker ActiveSpeaker =>
             activeSpeaker;
         public MountainRoadCafeConversationSpeaker LastSpeaker
@@ -59,6 +75,8 @@ namespace BarPromenade
             private set;
         }
         public string LastLineKey { get; private set; } = string.Empty;
+        public string LastLonePatronLineKey { get; private set; } =
+            string.Empty;
         public NpcSpeechBubbleView Bubbles => bubbles;
         public MountainRoadCafeConversationTimeline Timeline => timeline;
         public MountainRoadCafeConversationLook ManLook => manLook;
@@ -86,25 +104,32 @@ namespace BarPromenade
                 return null;
             }
 
+            Transform loneRoot = cast.GetPresentationRoot(
+                MountainRoadCafeCastRole.LonePatron);
             Transform manRoot = cast.GetPresentationRoot(
                 MountainRoadCafeCastRole.PairMan);
             Transform womanRoot = cast.GetPresentationRoot(
                 MountainRoadCafeCastRole.PairWoman);
+            MountainRoadCafeCastPresentation lone = loneRoot != null
+                ? loneRoot.GetComponent<MountainRoadCafeCastPresentation>()
+                : null;
             MountainRoadCafeCastPresentation man = manRoot != null
                 ? manRoot.GetComponent<MountainRoadCafeCastPresentation>()
                 : null;
             MountainRoadCafeCastPresentation woman = womanRoot != null
                 ? womanRoot.GetComponent<MountainRoadCafeCastPresentation>()
                 : null;
-            if (man == null || woman == null ||
-                !man.IsInitialized || !woman.IsInitialized)
+            if (lone == null || man == null || woman == null ||
+                !lone.IsInitialized || !man.IsInitialized ||
+                !woman.IsInitialized)
             {
                 return null;
             }
 
+            Transform loneHead = lone.Registry.FindModelTransform("head");
             Transform manHead = man.Registry.FindModelTransform("head");
             Transform womanHead = woman.Registry.FindModelTransform("head");
-            if (manHead == null || womanHead == null)
+            if (loneHead == null || manHead == null || womanHead == null)
             {
                 return null;
             }
@@ -128,14 +153,18 @@ namespace BarPromenade
                 controller.player = playerTransform;
                 controller.bubbles = bubbleView;
                 controller.cast = cast;
+                controller.lonePatron = lone;
                 controller.pairMan = man;
                 controller.pairWoman = woman;
+                controller.lonePatronSpeechAnchor = loneHead;
                 controller.manLook = configuredManLook;
                 controller.womanLook = configuredWomanLook;
                 controller.timeline =
                     new MountainRoadCafeConversationTimeline(seed);
                 controller.lineOrder =
                     new MountainRoadCafeConversationOrder();
+                controller.lonePatronSchedule =
+                    new MountainRoadCafeLonePatronInterjectionSchedule();
                 controller.IsInitialized = true;
                 return controller;
             }
@@ -224,6 +253,21 @@ namespace BarPromenade
                 timeline.Reset();
             }
 
+            if (isLonePatronInterjecting)
+            {
+                AdvanceLonePatronInterjection(deltaSeconds);
+                return;
+            }
+
+            // A due third-exchange beat is exact, not best-effort. If another
+            // authored state briefly prevents its start, retain ownership of
+            // the pair's pause and retry before any new pair cue can begin.
+            if (isLonePatronInterjectionPending && !isReturningLine)
+            {
+                TryBeginLonePatronInterjection();
+                return;
+            }
+
             if (!PairIsIdle())
             {
                 InterruptForAuthoredAction();
@@ -239,6 +283,12 @@ namespace BarPromenade
                 {
                     isReturningLine = false;
                     returnElapsedSeconds = 0f;
+                    if (isLonePatronInterjectionPending)
+                    {
+                        TryBeginLonePatronInterjection();
+                        return;
+                    }
+
                     ReleasePairReservation();
                 }
                 else
@@ -369,10 +419,89 @@ namespace BarPromenade
 
             bubbles.Dismiss(OwnerOf(activeSpeaker));
             LookOf(activeSpeaker).SetSpeaking(false);
+            if (lonePatronSchedule.RecordCompletedLine(activeSpeaker))
+            {
+                isLonePatronInterjectionPending = true;
+            }
             activeLineElapsedSeconds = 0f;
             hasActiveLine = false;
             returnElapsedSeconds = 0f;
             isReturningLine = true;
+        }
+
+        private void TryBeginLonePatronInterjection()
+        {
+            if (!isLonePatronInterjectionPending ||
+                isLonePatronInterjecting)
+            {
+                return;
+            }
+
+            if (cast.IsPairConversationReserved)
+            {
+                hasPairReservation = true;
+            }
+            else if (hasPairReservation)
+            {
+                hasPairReservation = false;
+            }
+
+            if (!hasPairReservation &&
+                !cast.TryReservePairConversation())
+            {
+                return;
+            }
+
+            hasPairReservation = true;
+            if (!cast.TryBeginLonePatronInterjection())
+            {
+                // The exact ten-clip contract makes this exceptional in
+                // production, but a transient presentation state must delay
+                // the beat rather than silently discard every-third cadence.
+                return;
+            }
+
+            // The drinking pair have already returned from their mutual look.
+            // They receive no target, no bubble and no reaction state here.
+            isLonePatronInterjectionPending = false;
+            isLonePatronInterjecting = true;
+            hasShownLonePatronLine = false;
+        }
+
+        private void AdvanceLonePatronInterjection(float deltaSeconds)
+        {
+            // This is a visible story beat, not an absolute service clock.
+            // Discard hitch overflow so one delayed frame cannot cross both
+            // the speech cue and the exact sleep endpoint, consuming a line
+            // that was never rendered.
+            float visualStep = Mathf.Min(
+                deltaSeconds,
+                MaximumLonePatronVisualStepSeconds);
+            bool remainsActive =
+                cast.AdvanceLonePatronInterjection(visualStep);
+            if (!hasShownLonePatronLine &&
+                remainsActive &&
+                cast.LonePatronInterjectionElapsedSeconds >=
+                    LonePatronSpeechDelaySeconds)
+            {
+                LastLonePatronLineKey =
+                    lonePatronSchedule.ConsumeLonePatronLineKey();
+                bubbles.Show(
+                    lonePatron,
+                    lonePatronSpeechAnchor,
+                    LocalizationService.Get(LastLonePatronLineKey));
+                hasShownLonePatronLine = true;
+            }
+
+            if (remainsActive)
+            {
+                return;
+            }
+
+            bubbles.Dismiss(lonePatron);
+            isLonePatronInterjecting = false;
+            hasShownLonePatronLine = false;
+            ReleasePairReservation();
         }
 
         private void InterruptForAuthoredAction()
@@ -442,6 +571,11 @@ namespace BarPromenade
             }
 
             isEngaged = false;
+            ResetConversationState();
+        }
+
+        private void ResetConversationState()
+        {
             hasPendingLine = false;
             isPreparingLine = false;
             hasActiveLine = false;
@@ -450,10 +584,18 @@ namespace BarPromenade
             activeLineElapsedSeconds = 0f;
             returnElapsedSeconds = 0f;
             lineOrder.Reset();
+            lonePatronSchedule.Reset();
             timeline.Reset();
             bubbles.DismissAll();
             manLook.CancelImmediately();
             womanLook.CancelImmediately();
+            if (cast != null)
+            {
+                cast.CancelLonePatronInterjection();
+            }
+            isLonePatronInterjectionPending = false;
+            isLonePatronInterjecting = false;
+            hasShownLonePatronLine = false;
             ReleasePairReservation();
         }
 
@@ -464,11 +606,8 @@ namespace BarPromenade
                 return;
             }
 
-            bubbles.DismissAll();
-            manLook.CancelImmediately();
-            womanLook.CancelImmediately();
-            ReleasePairReservation();
             isEngaged = false;
+            ResetConversationState();
         }
 
         private void RollBackShownLine(
@@ -484,7 +623,10 @@ namespace BarPromenade
                 return;
             }
 
-            cast.ReleasePairConversation();
+            if (cast != null)
+            {
+                cast.ReleasePairConversation();
+            }
             hasPairReservation = false;
         }
 

@@ -192,8 +192,8 @@ namespace BarPromenade.Tests.EditMode
                 prefabs.Sum(prefab => prefab
                     .GetComponent<MountainRoadCafeCastAssetRegistry>()
                     .ClipBindings.Count),
-                Is.EqualTo(9),
-                "The isolated cafe library is a nine-clip contract.");
+                Is.EqualTo(10),
+                "The isolated cafe library is a ten-clip contract.");
         }
 
         [Test]
@@ -300,6 +300,81 @@ namespace BarPromenade.Tests.EditMode
                         $"Cafe semantic anchor '{stableId}' does not own " +
                         "exactly one bespoke figure.");
                 }
+            }
+            finally
+            {
+                UnityEngine.Object.DestroyImmediate(parent);
+            }
+        }
+
+        [Test]
+        [Category("MountainRoad")]
+        public void LoneInterjection_RequiresPairReservationAndReturnsToIdle()
+        {
+            var parent = new GameObject("Cafe Lone Interjection Test");
+            try
+            {
+                MountainRoadCafeWorldResult result =
+                    MountainRoadCafeWorldBuilder.Build(
+                        parent.transform,
+                        CreateCafePlan());
+                MountainRoadCafeCastController controller = result.Cast;
+                MountainRoadCafeCastPresentation lone = result.NpcRoot
+                    .GetComponentsInChildren<
+                        MountainRoadCafeCastPresentation>(true)
+                    .Single(presentation =>
+                        presentation.Role ==
+                        MountainRoadCafeCastRole.LonePatron);
+
+                Assert.That(
+                    controller.TryBeginLonePatronInterjection(),
+                    Is.False,
+                    "The lone beat cannot pre-empt an unreserved pair.");
+                Assert.That(controller.TryReservePairConversation(), Is.True);
+                Assert.That(
+                    controller.TryBeginLonePatronInterjection(),
+                    Is.True);
+                Assert.That(
+                    controller.TryBeginLonePatronInterjection(),
+                    Is.False,
+                    "The one-shot cannot be started twice.");
+                Assert.That(controller.IsLonePatronInterjecting, Is.True);
+                Assert.That(
+                    lone.CurrentClipKind,
+                    Is.EqualTo(MountainRoadCafeCastClipKind.Interject));
+
+                float duration =
+                    controller.LonePatronInterjectionDurationSeconds;
+                Assert.That(duration, Is.GreaterThan(0f));
+                float firstStep = duration * 0.5f;
+                Assert.That(
+                    controller.AdvanceLonePatronInterjection(firstStep),
+                    Is.True);
+                Assert.That(
+                    controller.LonePatronInterjectionElapsedSeconds,
+                    Is.EqualTo(firstStep).Within(0.0001f));
+                Assert.That(
+                    lone.CurrentClipKind,
+                    Is.EqualTo(MountainRoadCafeCastClipKind.Interject));
+                Assert.That(
+                    lone.CurrentClipTimeSeconds,
+                    Is.EqualTo(firstStep).Within(0.0001f));
+
+                Assert.That(
+                    controller.AdvanceLonePatronInterjection(
+                        duration - firstStep),
+                    Is.False,
+                    "The completed one-shot reports no active remainder.");
+                Assert.That(controller.IsLonePatronInterjecting, Is.False);
+                Assert.That(
+                    lone.CurrentClipKind,
+                    Is.EqualTo(MountainRoadCafeCastClipKind.Idle));
+                Assert.That(
+                    controller.IsPairConversationReserved,
+                    Is.True,
+                    "The conversation owns its reservation until its caller " +
+                    "finishes the interruption.");
+                Assert.That(controller.ReleasePairConversation(), Is.True);
             }
             finally
             {
@@ -782,14 +857,10 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(registry.ModelRoot, Is.Not.Null);
             Assert.That(registry.Role, Is.EqualTo(expectedRole));
             Assert.That(registry.IdleClip, Is.Not.Null);
-            Assert.That(
-                registry.BeatClip,
-                expectedRole == MountainRoadCafeCastRole.LonePatron
-                    ? Is.Null
-                    : Is.Not.Null);
+            Assert.That(registry.BeatClip, Is.Not.Null);
             int expectedClipCount = expectedRole switch
             {
-                MountainRoadCafeCastRole.LonePatron => 1,
+                MountainRoadCafeCastRole.LonePatron => 2,
                 MountainRoadCafeCastRole.Attendant => 4,
                 _ => 2
             };
@@ -809,6 +880,13 @@ namespace BarPromenade.Tests.EditMode
                     clip.Kind == MountainRoadCafeCastClipKind.Wipe ||
                     clip.Kind == MountainRoadCafeCastClipKind.Walk;
                 Assert.That(clip.Loop, Is.EqualTo(expectedLoop));
+            }
+            if (expectedRole == MountainRoadCafeCastRole.LonePatron)
+            {
+                Assert.That(
+                    registry.BeatClip,
+                    Is.SameAs(registry.GetClip(
+                        MountainRoadCafeCastClipKind.Interject)));
             }
             Assert.That(
                 registry.FindModelTransform(

@@ -60,9 +60,23 @@ namespace BarPromenade
             private set;
         }
 
-        /// <summary>The climb, while it is being driven. Null once the car has
-        /// stopped, and on any visit that did not arrive in it.</summary>
+        /// <summary>
+        /// The car's journey on this side of the mountain: the climb while it
+        /// is being driven, and then the offer to be driven back down. Null
+        /// only on a visit that found no car here at all.
+        /// </summary>
         public LastRouteRideController Ride { get; private set; }
+
+        /// <summary>
+        /// The two-choice menu the Ferryman answers through up here, and the
+        /// only reason this scene has one at all. Null on a visit with no car
+        /// on the apron.
+        /// </summary>
+        public InventoryTargetInteractionController FerrymanMenu
+        {
+            get;
+            private set;
+        }
 
         /// <summary>The bench on the brink and the free counter stool.</summary>
         public IReadOnlyList<CityBenchSitInteraction> Seats
@@ -238,18 +252,48 @@ namespace BarPromenade
         }
 
         /// <summary>
-        /// The Ferryman's car, on whichever of its two terms this visit is.
+        /// The Ferryman's car, on whichever of its terms this visit is.
         ///
         /// Arriving IN it builds it back inside the tunnel and sets it going;
         /// coming back later finds it parked on the terminal apron with the
         /// man on its bonnet, because that is where the session says it is.
-        /// Every other visit builds nothing at all - he is still on the island
-        /// in the city, and there has never been a copy of him in both places.
+        /// Either way he can be asked to drive back down, which is the whole
+        /// of what changed when the road stopped being one-way.
+        ///
+        /// **Getting here any other way puts him here too.** Every route into
+        /// this area that is not the car itself is the chart - the area tab,
+        /// or a point picked on it - and a chart that can drop the hero on a
+        /// mountain six hundred metres above a car he has not taken would
+        /// strand him: there is no road down and the cableway only goes up.
+        /// So an arrival that is not the ride and not the cabin advances the
+        /// stage itself and parks the car at the end of the road, which is the
+        /// one place on this mountain a car can be. It costs the island its
+        /// car, and that is not a side effect to be sorry about - it is the
+        /// same invariant as ever, that he is in exactly one place, honoured
+        /// by a way in that did not exist when the ladder only went up.
         /// </summary>
         private void BuildLastRoute(Camera camera)
         {
             bool arrivingByCar =
                 HadAreaArrival && ArrivalToken == AreaArrivalToken.Ferryman;
+            bool arrivingByCabin =
+                HadAreaArrival && ArrivalToken == AreaArrivalToken.Cableway;
+            if (!arrivingByCar &&
+                !arrivingByCabin &&
+                GameSessionState.FerrymanRide ==
+                LastRouteFerrymanRideStage.NotTaken)
+            {
+                // The chart put him up here. Bring the car up with him.
+                GameSessionState.TryAdvanceFerrymanRide(
+                    LastRouteFerrymanRideStage.InTransit);
+                GameSessionState.TryAdvanceFerrymanRide(
+                    LastRouteFerrymanRideStage.Arrived);
+                GameLog.Info(
+                    "mountain_road",
+                    "last_route_car_brought_up_by_arrival",
+                    GameLog.Field("arrival", ArrivalToken.ToString()));
+            }
+
             bool alreadyParked =
                 GameSessionState.FerrymanRide ==
                 LastRouteFerrymanRideStage.Arrived;
@@ -275,29 +319,42 @@ namespace BarPromenade
                     out facing);
             }
 
+            // AlwaysDipped on BOTH branches, and that is the fix for "фары
+            // должны быть реальным источником света а не фейковым". This
+            // used to be `arrivingByCar`, so every arrival that was not the
+            // ride itself - the area tab, a point on the chart - stood the
+            // car dead centre of the apron with no Light on it at all and
+            // two halos riding a night factor only the City ever writes.
+            // The arriving car needs no mode of its own: `Follow` below
+            // takes it to full beam while the journey runs, and it settles
+            // onto the same standing beam when it stops.
             LastRouteCar = LastRouteCarFactory.Create(
                 transform,
                 LastRouteCarPlan.At(position, facing),
                 Player,
                 camera,
-                arrivingByCar);
+                LastRouteCarLamps.AlwaysDipped);
             if (LastRouteCar == null)
             {
                 GameLog.Warning("mountain_road", "last_route_car_missing");
                 return;
             }
 
-            // He speaks up here now, and only speaks: a repertoire rather
-            // than the island's menu, because that menu's second option is
-            // "leave the city?" and the city is six hundred metres below
-            // us. See LastRouteFerrymanFactory for the fork.
+            // He gets the menu up here as well as on the island, from his
+            // own pool of small talk, and its second option is the mirror of
+            // the island's: not "leave the city?" but "back to it?". It is a
+            // real question now - the road runs both ways - and the whole
+            // difference between the two ends is which way the car is
+            // pointing. See LastRouteFerrymanVoice for the pairing.
+            FerrymanMenu = gameObject
+                .AddComponent<InventoryTargetInteractionController>();
+            FerrymanMenu.Initialize(Player, CameraFollow, IntoxicationHud);
             LastRouteFerryman = LastRouteFerrymanFactory.Create(
                 transform,
                 LastRouteFerrymanPlan.Create(LastRouteCar),
                 LastRouteCar,
-                null,
-                GameSessionState.CitySeed,
-                LastRouteFerrymanQuips.MountainLineKeys);
+                FerrymanMenu,
+                LastRouteFerrymanVoice.Mountain(GameSessionState.CitySeed));
 
             Transform carRoot = LastRouteCar.transform.parent != null
                 ? LastRouteCar.transform.parent
@@ -305,26 +362,30 @@ namespace BarPromenade
             LastRouteCarSeatInteraction seat = carRoot
                 .GetComponentInChildren<LastRouteCarSeatInteraction>(true);
             seat?.AttachFerryman(LastRouteFerryman);
-            if (!arrivingByCar)
-            {
-                // Parked and waiting. He is on the bonnet with his coin and
-                // the seat beside him is not on offer, because the offer was
-                // "leave the city" and the city is behind us.
-                return;
-            }
-
             if (seat == null)
             {
                 GameLog.Warning("mountain_road", "last_route_seat_missing");
                 return;
             }
 
-            Ride = LastRouteRideController.CreateForMountain(
-                transform,
-                seat,
-                carRoot.GetComponent<LastRouteCarDriver>(),
-                LastRouteFerryman,
-                () => LastRouteMountainDrivePlanner.Create(Plan));
+            // Both terms end up armed for the descent; they differ only in
+            // whether there is a climb in front of it. Parked, the offer is
+            // live the moment the hero walks up; arriving, it becomes live
+            // when the car stops and the man is back on his bonnet.
+            Ride = arrivingByCar
+                ? LastRouteRideController.CreateForMountainArrival(
+                    transform,
+                    seat,
+                    carRoot.GetComponent<LastRouteCarDriver>(),
+                    LastRouteFerryman,
+                    () => LastRouteMountainDrivePlanner.CreateArrival(Plan),
+                    () => LastRouteMountainDrivePlanner.CreateDeparture(Plan))
+                : LastRouteRideController.CreateForMountainDeparture(
+                    transform,
+                    seat,
+                    carRoot.GetComponent<LastRouteCarDriver>(),
+                    LastRouteFerryman,
+                    () => LastRouteMountainDrivePlanner.CreateDeparture(Plan));
 
             // The beams follow the journey directly. They used to be powered
             // by the atmosphere, because the atmosphere was putting the sun

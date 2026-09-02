@@ -31,6 +31,7 @@ namespace BarPromenade
         public float CurrentWeight => currentWeight;
         public float LastAppliedYawDegrees { get; private set; }
         public Transform SpeechAnchor => head;
+        public Transform TargetHead => targetHead;
 
         public void Initialize(
             MountainRoadCafeCastPresentation configuredPresentation,

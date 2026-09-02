@@ -934,7 +934,7 @@ namespace BarPromenade.Tests.PlayMode
                         LastRouteFerrymanPlan.Create(harness.Car),
                         harness.Car,
                         harness.TargetInteraction,
-                        1,
+                        LastRouteFerrymanVoice.Island(1),
                         taintedProvider),
                     Throws.InvalidOperationException,
                     "A staged prefab carrying physics must not spawn.");
@@ -1049,7 +1049,8 @@ namespace BarPromenade.Tests.PlayMode
                 plan,
                 registry,
                 targetInteraction,
-                GameSessionState.DefaultCitySeed);
+                LastRouteFerrymanVoice.Island(
+                    GameSessionState.DefaultCitySeed));
             Assert.That(
                 harness.Ferryman,
                 Is.Not.Null,

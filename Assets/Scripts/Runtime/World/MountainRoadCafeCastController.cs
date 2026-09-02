@@ -13,10 +13,11 @@ namespace BarPromenade
 
     /// <summary>
     /// Applies one pure service clock to all four authored figures and the
-    /// optional environment-owned cup presentation. The sleeping lone patron
-    /// never enters it; each member of the pair derives a stable role-specific
-    /// drink window from that clock. No animation events, root motion or NPC
-    /// audio participate in scheduling.
+    /// optional environment-owned cup presentation. The lone patron owns one
+    /// separately requested interjection and never enters the service clock;
+    /// each member of the pair derives a stable role-specific drink window
+    /// from that clock. No animation events, root motion or NPC audio
+    /// participate in scheduling.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class MountainRoadCafeCastController : MonoBehaviour
@@ -49,11 +50,21 @@ namespace BarPromenade
         private float activationRadiusSquared;
         private float elapsedSeconds;
         private bool isPairConversationReserved;
+        private bool isLonePatronInterjecting;
+        private float lonePatronInterjectionElapsedSeconds;
 
         public bool IsInitialized { get; private set; }
         public bool IsTimelineArmed { get; private set; }
         public bool IsPairConversationReserved =>
             isPairConversationReserved;
+        public bool IsLonePatronInterjecting =>
+            isLonePatronInterjecting;
+        public float LonePatronInterjectionElapsedSeconds =>
+            lonePatronInterjectionElapsedSeconds;
+        public float LonePatronInterjectionDurationSeconds =>
+            lonePatron?.Registry.BeatClip != null
+                ? lonePatron.Registry.BeatClip.length
+                : 0f;
         public MountainRoadCafeCastEpisode ActiveEpisode =>
             ResolveEpisode(timeline?.Frame.Phase ??
                            MountainRoadCafeServicePhase.Wiping);
@@ -157,6 +168,8 @@ namespace BarPromenade
             elapsedSeconds = 0f;
             IsTimelineArmed = false;
             isPairConversationReserved = false;
+            isLonePatronInterjecting = false;
+            lonePatronInterjectionElapsedSeconds = 0f;
             IsInitialized = true;
             if (configuredServicePresentation != null &&
                 !BindServicePresentation(configuredServicePresentation))
@@ -320,6 +333,86 @@ namespace BarPromenade
             return true;
         }
 
+        /// <summary>
+        /// Starts the sleeping husband's authored one-shot while the pair's
+        /// conversation reservation still owns both Idle poses. The caller
+        /// advances this separate clock so the spoken line and gesture share
+        /// one deterministic schedule.
+        /// </summary>
+        public bool TryBeginLonePatronInterjection()
+        {
+            if (!IsInitialized ||
+                !isPairConversationReserved ||
+                isLonePatronInterjecting ||
+                !lonePatron.CanBeginBeat ||
+                lonePatron.Registry.BeatClip == null)
+            {
+                return false;
+            }
+
+            isLonePatronInterjecting = true;
+            lonePatronInterjectionElapsedSeconds = 0f;
+            ApplyFrame(timeline.Frame);
+            return true;
+        }
+
+        public bool AdvanceLonePatronInterjection(float deltaSeconds)
+        {
+            if (float.IsNaN(deltaSeconds) ||
+                float.IsInfinity(deltaSeconds) ||
+                deltaSeconds < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(deltaSeconds),
+                    "Cafe interjection time must be finite and non-negative.");
+            }
+
+            if (!IsInitialized || !isLonePatronInterjecting)
+            {
+                return false;
+            }
+
+            float duration = LonePatronInterjectionDurationSeconds;
+            if (duration <= 0f)
+            {
+                CancelLonePatronInterjection();
+                return false;
+            }
+
+            lonePatronInterjectionElapsedSeconds = Mathf.Min(
+                lonePatronInterjectionElapsedSeconds + deltaSeconds,
+                duration);
+            lonePatron.ApplyClip(
+                MountainRoadCafeCastClipKind.Interject,
+                lonePatronInterjectionElapsedSeconds);
+            if (lonePatronInterjectionElapsedSeconds < duration)
+            {
+                return true;
+            }
+
+            isLonePatronInterjecting = false;
+            lonePatron.ApplyClip(
+                MountainRoadCafeCastClipKind.Idle,
+                elapsedSeconds);
+            return false;
+        }
+
+        public bool CancelLonePatronInterjection()
+        {
+            if (!IsInitialized)
+            {
+                return false;
+            }
+
+            bool wasInterjecting = isLonePatronInterjecting;
+            isLonePatronInterjecting = false;
+            lonePatronInterjectionElapsedSeconds = 0f;
+            lonePatron.ApplyClip(
+                MountainRoadCafeCastClipKind.Idle,
+                elapsedSeconds);
+            return wasInterjecting;
+        }
+
         private void Update()
         {
             Advance(Time.deltaTime);
@@ -441,13 +534,19 @@ namespace BarPromenade
                 0f);
             servicePresentation?.ResetExact();
             isPairConversationReserved = false;
+            isLonePatronInterjecting = false;
+            lonePatronInterjectionElapsedSeconds = 0f;
         }
 
         private void ApplyFrame(MountainRoadCafeServiceFrame frame)
         {
             lonePatron.ApplyClip(
-                MountainRoadCafeCastClipKind.Idle,
-                elapsedSeconds);
+                isLonePatronInterjecting
+                    ? MountainRoadCafeCastClipKind.Interject
+                    : MountainRoadCafeCastClipKind.Idle,
+                isLonePatronInterjecting
+                    ? lonePatronInterjectionElapsedSeconds
+                    : elapsedSeconds);
 
             bool pairManDrinks = frame.IsDrinking(
                 MountainRoadCafeCastRole.PairMan);
@@ -458,7 +557,7 @@ namespace BarPromenade
                 pairManDrinks
                     ? frame.GetDrinkElapsedSeconds(
                         MountainRoadCafeCastRole.PairMan)
-                    : 0f);
+                    : elapsedSeconds);
             bool pairWomanDrinks = frame.IsDrinking(
                 MountainRoadCafeCastRole.PairWoman);
             pairWoman.ApplyClip(
@@ -468,7 +567,7 @@ namespace BarPromenade
                 pairWomanDrinks
                     ? frame.GetDrinkElapsedSeconds(
                         MountainRoadCafeCastRole.PairWoman)
-                    : 0f);
+                    : elapsedSeconds);
 
             MountainRoadCafeCastClipKind attendantClip;
             switch (frame.Phase)

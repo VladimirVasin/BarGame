@@ -92,6 +92,22 @@ namespace BarPromenade
             new Color(0.48f, 0.14f, 0.105f, 1f);
         private static readonly Color LampLens =
             new Color(0.58f, 0.78f, 0.65f, 1f);
+
+        /// <summary>
+        /// The cold half of the summit's colour argument, against the cafe's
+        /// sulphur thirty metres away. The dock lamp and the boarding flood
+        /// were carrying this number twice; the station practical keeps its
+        /// own slightly deeper green because it burns behind the canopy.
+        /// </summary>
+        private static readonly Color StationLampColor =
+            new Color(0.62f, 0.8f, 0.72f);
+
+        /// <summary>Halo sizes for a station lens. Smaller than the car's
+        /// (`0.55`/`2.10`) because these hang under a canopy and a ball wider
+        /// than the roof reads as a leak rather than a lamp.</summary>
+        private const float StationHaloInnerSize = 0.44f;
+
+        private const float StationHaloOuterSize = 1.75f;
         private static readonly Color FadedSign =
             new Color(0.56f, 0.52f, 0.39f, 1f);
         private static readonly Color CabinWarm =
@@ -1078,14 +1094,21 @@ namespace BarPromenade
                 Vector3.forward);
             Light flood = lightObject.AddComponent<Light>();
             flood.type = LightType.Spot;
-            flood.color = new Color(0.62f, 0.8f, 0.72f);
-            flood.intensity = 6.5f;
+            flood.color = StationLampColor;
+
+            // `6.5 → 13` (2026-09-02). This throws `4.34 m` down and out
+            // across the kerb, so it was delivering `0.35` onto the one
+            // approach a passenger walks. Doubling it is still only half the
+            // band's ceiling, and the station has to be the cold half of a
+            // pair whose warm half (the cafe wash) burns at `15`.
+            flood.intensity = 13f;
             flood.range = 15f;
             flood.spotAngle = 100f;
             flood.innerSpotAngle = 54f;
             flood.shadows = LightShadows.None;
             flood.renderMode = LightRenderMode.ForcePixel;
             flood.bounceIntensity = 0f;
+            AddStationHalo(lens.transform);
         }
 
         /// <summary>
@@ -1180,20 +1203,32 @@ namespace BarPromenade
                 Vector3.forward);
             Light lamp = lightObject.AddComponent<Light>();
             lamp.type = LightType.Spot;
-            lamp.color = new Color(0.62f, 0.8f, 0.72f);
+            lamp.color = StationLampColor;
 
-            // Throw, not taste: `3.40 m` to the strip, so `7.0` delivers
+            // Throw, not taste: `3.40 m` to the strip, so `7.0` delivered
             // `0.61` there against the station practical's `0.42` on the pad.
             // Half again as bright as the ground beside it is what makes it
-            // read as the marked spot, and it stays inside the mountain's
-            // `1.65`-`16` band rather than importing a city number.
-            lamp.intensity = 7f;
+            // read as the marked spot.
+            //
+            // `7 → 15` (2026-09-02, the user's "не выделяется вход в
+            // канатную дорогу"). Being half again brighter than the ground
+            // beside it was the right RULE and too small a margin to survive
+            // the walk: from the vehicle apron this dock is over twenty
+            // metres away through Exp2 fog at `0.026`, which has taken a
+            // third of the contrast out of the frame before the difference
+            // between `0.61` and `0.42` is asked to carry. `15` delivers
+            // `1.30` - three times the pad rather than half again - and the
+            // lens now also has a halo, which is the part that actually
+            // survives the distance. Still inside the `1.65`-`16` band, and
+            // under the `18` the summit tests refuse above.
+            lamp.intensity = 15f;
             lamp.range = 9f;
             lamp.spotAngle = 72f;
             lamp.innerSpotAngle = 40f;
             lamp.shadows = LightShadows.None;
             lamp.renderMode = LightRenderMode.ForcePixel;
             lamp.bounceIntensity = 0.08f;
+            AddStationHalo(lens.transform);
         }
 
         private static Light BuildStationPractical(Transform parent)
@@ -1234,14 +1269,47 @@ namespace BarPromenade
             // station a night-light beside a lit room - and the two are
             // meant to be a pair, one cold and one warm, each pulling the
             // eye across the yard to its own side.
-            light.intensity = 7.2f;
+            //
+            // `7.2 → 14` (2026-09-02): "pulling the eye across the yard" is
+            // a claim about a `42 m` pad, and at `7.2` from `4.31 m` up this
+            // pulled it about as far as the pad it stands on. The cafe's own
+            // facade wash is `15`, so the pair is only a pair at this order.
+            light.intensity = 14f;
             light.range = 16f;
             light.spotAngle = 78f;
             light.innerSpotAngle = 46f;
             light.shadows = LightShadows.None;
             light.renderMode = LightRenderMode.ForcePixel;
             light.bounceIntensity = 0.08f;
+            AddStationHalo(lens.transform);
             return light;
+        }
+
+        /// <summary>
+        /// The blurred ball of light a lamp actually is in fog, on a
+        /// station lens.
+        ///
+        /// Not one fixture on this mountain had one, while every fixed lamp
+        /// in the City does - and the City's stated reason applies here with
+        /// more force, not less: an emissive lens is a couple of pixels the
+        /// ExpSquared fog eats, and this pad is `42 m` long inside a `120 m`
+        /// draw range. Raising the three station Lights makes the GROUND
+        /// under them brighter; this is what makes the station itself
+        /// findable from the far side of the yard, which is what "вход не
+        /// выделяется" was actually about.
+        ///
+        /// Always-burning, so it is deliberately outside the night registry -
+        /// see <see cref="CityLightHalo.CreateAlwaysBurning"/>.
+        /// </summary>
+        private static void AddStationHalo(Transform lens)
+        {
+            CityLightHalo.CreateAlwaysBurning(
+                lens,
+                Vector3.zero,
+                StationHaloInnerSize,
+                StationHaloOuterSize,
+                new Color(0.72f, 0.92f, 0.83f, 0.80f),
+                new Color(0.44f, 0.62f, 0.55f, 0f));
         }
 
         private static void BuildSupports(

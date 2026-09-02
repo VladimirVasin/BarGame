@@ -199,7 +199,7 @@ Assets/
     Animations/
       CityPedestrianLocomotion.fbx      shared 37-clip NpcHumanV2 locomotion/action library
       CityPedestrianLocomotion.json     gait/contact/clearance/apex + staged wheel-contact manifest
-      MountainRoadCafeCast.{fbx,json}   isolated nine-clip sleep/drink/wipe/walk/pour library + soundless tap/smoke idles
+      MountainRoadCafeCast.{fbx,json}   isolated ten-clip sleep/interject/drink/wipe/walk/pour library + soundless tap/smoke idles
       NightlifeShelterResidents.{fbx,json} isolated three-loop warmer/seated/sleeper library
       MothersHouseMother.{fbx,json}     isolated one-clip bank: MotherRock, 6 s of breathing only — the rock belongs to the chair, not to her
     Textures/
@@ -385,7 +385,7 @@ Assets/
         MountainRoad{Terrain,Surface,Scenery}*.cs 76 m terrain, gorge, road + colliderless terminal apron
         MountainRoadSurfaceAppearance.cs six printed + nine borrowed measured surface families
         MountainRoadCafe{WorldBuilder,WorldResult}.cs imported enterable 48-mesh glass cafe composition
-        MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs nine-clip cast: silent sleeper/attendant + drinking, talking pair
+        MountainRoadCafeCast{Plan,Provider,AssetRegistry,Factory,Presentation,Controller}.cs ten-clip cast: every-third-exchange ignored husband one-shot + silent attendant + drinking, talking pair
         MountainCableway{Motion,Controller,WorldBuilder}.cs continuous cabins + causal machinery
         MountainCablewayDriveRules.cs   distance-driven brake/launch so a cabin docks ON the point
         AlpineVillage{Plan,Planner,Validator,TerrainSampler}.cs 82 m lane, OBB-safe plots + looming 74° / 60 m ridge, 12 m margin, brink mesh
@@ -890,7 +890,7 @@ Assets/
       MountainRoadTests.cs               route length/rise/hairpins/plateau/world contracts
       MountainRoadTerminalTests.cs       apron, landmarks, terrain blend + cabin clearance
       MountainRoadCafeCastTests.cs       roles/gaps/v2 atlas density/clip blend/world ownership
-      MountainRoadCafeConversationTests.cs fixed RU/EN pair loop, action-safe queue, smoke gate + partner look
+      MountainRoadCafeConversationTests.cs fixed RU/EN pair loop, every-third completed-exchange husband interruption, wrap-safe queue + partner-only look
       MountainCablewayTests.cs            loop continuity, world ownership and causal audio
       MountainCablewayRideTests.cs        exact docking, boarding step, treads, return station
       AlpineVillageTests.cs               lane grade, OBB seed sweep, looming bowl, shared-edge two-submesh ground/brink, weather + teleport ground
