@@ -124,7 +124,8 @@ namespace BarPromenade
 
             Atmosphere = SupermarketInteriorAtmosphere.Install(
                 transform,
-                Layout);
+                Layout,
+                World.AssetRegistry);
 
             GameObject musicObject =
                 new GameObject("Supermarket Music");
@@ -161,7 +162,8 @@ namespace BarPromenade
             SecurityCameras = SupermarketSecurityCameraWorldBuilder.Build(
                 transform,
                 Layout,
-                Player.GameObject.transform);
+                Player.GameObject.transform,
+                World.AssetRegistry);
             BuildShelfShop(ui);
             BuildStatus(ui, camera);
             BuildExit();
@@ -291,7 +293,9 @@ namespace BarPromenade
                 ShelfShopView,
                 IntoxicationHud,
                 CameraFollow,
-                World.Shelves);
+                World.Shelves,
+                Player.PresentationVisibility,
+                Cashier.Presentation);
 
             shelfStations.Clear();
             for (int index = 0; index < World.Shelves.Count; index++)

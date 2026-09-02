@@ -109,7 +109,8 @@ namespace BarPromenade
         public static IReadOnlyList<SupermarketSecurityCamera> Build(
             Transform parent,
             SupermarketInteriorLayoutPlan plan,
-            Transform playerBody)
+            Transform playerBody,
+            SupermarketInteriorAssetRegistry assetRegistry = null)
         {
             if (parent == null)
             {
@@ -129,12 +130,18 @@ namespace BarPromenade
                 headPositions.Length);
             for (int index = 0; index < headPositions.Length; index++)
             {
-                cameras.Add(BuildCamera(
-                    root,
-                    plan,
-                    headPositions[index],
-                    index + 1,
-                    playerBody));
+                cameras.Add(assetRegistry != null
+                    ? BindAuthoredCamera(
+                        root,
+                        assetRegistry,
+                        index + 1,
+                        playerBody)
+                    : BuildCamera(
+                        root,
+                        plan,
+                        headPositions[index],
+                        index + 1,
+                        playerBody));
             }
 
             GameLog.Info(
@@ -235,6 +242,22 @@ namespace BarPromenade
             var camera = unit
                 .AddComponent<SupermarketSecurityCamera>();
             camera.Initialize(head.transform, playerBody);
+            return camera;
+        }
+
+        private static SupermarketSecurityCamera BindAuthoredCamera(
+            Transform controllerRoot,
+            SupermarketInteriorAssetRegistry assetRegistry,
+            int index,
+            Transform playerBody)
+        {
+            string role = $"cctv_head_{index:00}";
+            Transform headPivot = assetRegistry.GetAnchor(role);
+            var controller = new GameObject(
+                $"Supermarket Security Camera {index}");
+            controller.transform.SetParent(controllerRoot, false);
+            var camera = controller.AddComponent<SupermarketSecurityCamera>();
+            camera.Initialize(headPivot, playerBody);
             return camera;
         }
 

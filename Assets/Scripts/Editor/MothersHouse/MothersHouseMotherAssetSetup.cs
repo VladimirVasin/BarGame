@@ -358,7 +358,7 @@ namespace BarPromenade.Editor
                         MotionVectorGenerationMode.Object;
                     if (renderer is SkinnedMeshRenderer skinned)
                     {
-                        skinned.updateWhenOffscreen = false;
+                        skinned.updateWhenOffscreen = true;
                     }
 
                     // One colour in all four slots. The variants exist so a

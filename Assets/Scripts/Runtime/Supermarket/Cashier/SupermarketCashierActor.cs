@@ -4,9 +4,10 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Samples the hero every frame and feeds the surveillance and
-    /// blink logic into the presentation. Runs after the player motor
-    /// and camera so the stare lands on the settled body position.
+    /// Samples the hero every frame and feeds look/blink intent into the
+    /// presentation. The active fixed-neck asset uses only bounded human
+    /// tracking; the retained Watcher can additionally consume extension and
+    /// startle state. Runs after the player motor and camera.
     /// </summary>
     [DisallowMultipleComponent]
     [DefaultExecutionOrder(340)]
@@ -78,12 +79,18 @@ namespace BarPromenade
                     : playerBody.position + up * FallbackFocusHeight;
             }
 
-            surveillance.Update(distance, lookDot, deltaTime);
+            bool usesWatcherBehavior =
+                presentation.UsesExtensibleNeck;
+            if (usesWatcherBehavior)
+            {
+                surveillance.Update(distance, lookDot, deltaTime);
+            }
+
             var command = new SupermarketCashierPoseCommand(
-                surveillance.Extension,
-                surveillance.StartleWeight,
-                surveillance.ScanFrozen,
-                surveillance.BlinkSuppressed,
+                usesWatcherBehavior ? surveillance.Extension : 0f,
+                usesWatcherBehavior ? surveillance.StartleWeight : 0f,
+                usesWatcherBehavior && surveillance.ScanFrozen,
+                usesWatcherBehavior && surveillance.BlinkSuppressed,
                 focusPoint,
                 hasFocus);
             presentation.Apply(deltaTime, command);

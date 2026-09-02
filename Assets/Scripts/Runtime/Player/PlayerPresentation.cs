@@ -119,11 +119,16 @@ namespace BarPromenade
         void EndClip();
     }
 
+    public interface IRendererPresentation
+    {
+        IReadOnlyList<Renderer> Renderers { get; }
+    }
+
     public interface IPlayerPresentation :
+        IRendererPresentation,
         IPlayerMotionPresentation,
         IPlayerStatusPresentation
     {
-        IReadOnlyList<Renderer> Renderers { get; }
         Transform VisualRoot { get; }
         PlayerPresentationMetrics Metrics { get; }
         bool InteractionHandoffLocked { get; }
@@ -141,8 +146,9 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Coordinates temporary presentation hiding across nested modal owners.
-    /// The first lease snapshots enabled state and the final lease restores it.
+    /// Coordinates temporary character-presentation hiding across nested
+    /// modal owners. The first lease snapshots enabled state and the final
+    /// lease restores it.
     /// </summary>
     public sealed class PlayerPresentationVisibility
     {
@@ -191,7 +197,7 @@ namespace BarPromenade
             }
         }
 
-        private readonly IPlayerPresentation presentation;
+        private readonly IRendererPresentation presentation;
         private readonly Behaviour[] shadows;
         private readonly Dictionary<object, int> rendererOwners =
             new Dictionary<object, int>(ReferenceComparer.Instance);
@@ -205,11 +211,12 @@ namespace BarPromenade
         private int shadowLeaseCount;
 
         public PlayerPresentationVisibility(
-            IPlayerPresentation playerPresentation,
+            IRendererPresentation rendererPresentation,
             params Behaviour[] shadowBehaviours)
         {
-            presentation = playerPresentation ??
-                throw new ArgumentNullException(nameof(playerPresentation));
+            presentation = rendererPresentation ??
+                throw new ArgumentNullException(
+                    nameof(rendererPresentation));
             shadows = shadowBehaviours ?? Array.Empty<Behaviour>();
         }
 

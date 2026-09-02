@@ -293,56 +293,64 @@ namespace BarPromenade.Tests.EditMode
             {
                 SupermarketInteriorLayoutPlan plan =
                     SupermarketInteriorLayoutPlanner.Generate(20260815);
-                SupermarketInteriorWorldBuilder.Build(
+                SupermarketInteriorWorldResult result =
+                    SupermarketInteriorWorldBuilder.Build(
                     parent.transform,
                     plan);
+                SupermarketInteriorAssetRegistry registry =
+                    result.AssetRegistry;
+                Assert.That(
+                    registry,
+                    Is.Not.Null,
+                    "The hall must come from the authored interior prefab.");
 
-                var expectedTextures = new HashSet<Texture>();
+                var expectedKinds = new HashSet<SupermarketSurfaceKind>();
                 foreach (SupermarketSurfaceKind kind in
                          Enum.GetValues(typeof(SupermarketSurfaceKind)))
                 {
-                    expectedTextures.Add(
-                        SupermarketSurfaceAppearance.GetTexture(kind));
+                    expectedKinds.Add(kind);
                 }
 
-                var seenTextures = new HashSet<Texture>();
-                int texturedRendererCount = 0;
-                Renderer[] renderers = parent
-                    .GetComponentsInChildren<Renderer>(true);
-                foreach (Renderer renderer in renderers)
+                var seenKinds = new HashSet<SupermarketSurfaceKind>();
+                foreach (SupermarketInteriorPartBinding part in registry.Parts)
                 {
-                    var properties = new MaterialPropertyBlock();
-                    renderer.GetPropertyBlock(properties);
-                    Texture texture =
-                        properties.GetTexture(BaseMapId);
-                    if (texture == null ||
-                        !expectedTextures.Contains(texture))
+                    Assert.That(part, Is.Not.Null);
+                    Assert.That(part.Renderer, Is.Not.Null, part.SourceName);
+                    Assert.That(
+                        registry.TryGetPart(part.SourceName, out var resolved),
+                        Is.True,
+                        part.SourceName);
+                    Assert.That(resolved, Is.SameAs(part));
+                    if (string.IsNullOrEmpty(part.SurfaceKind))
                     {
+                        Assert.That(part.Sheet, Is.Null.Or.Empty);
                         continue;
                     }
 
-                    texturedRendererCount++;
-                    Vector4 transform =
-                        properties.GetVector(BaseMapTransformId);
                     Assert.That(
-                        transform.x,
-                        Is.GreaterThan(0f),
-                        $"Invalid U tiling on {renderer.name}.");
+                        Enum.TryParse(
+                            part.SurfaceKind,
+                            false,
+                            out SupermarketSurfaceKind kind),
+                        Is.True,
+                        $"Unknown authored supermarket surface " +
+                        $"'{part.SurfaceKind}' on '{part.SourceName}'.");
+                    Assert.That(part.Sheet, Is.EqualTo(part.SurfaceKind));
+                    var properties = new MaterialPropertyBlock();
+                    part.Renderer.GetPropertyBlock(properties);
                     Assert.That(
-                        transform.y,
-                        Is.GreaterThan(0f),
-                        $"Invalid V tiling on {renderer.name}.");
-                    seenTextures.Add(texture);
+                        properties.GetTexture(BaseMapId),
+                        Is.SameAs(
+                            SupermarketSurfaceAppearance.GetTexture(kind)),
+                        part.SourceName);
+                    seenKinds.Add(kind);
                 }
 
                 Assert.That(
-                    texturedRendererCount,
-                    Is.GreaterThanOrEqualTo(30),
-                    "The hall's big surfaces must carry the packaged " +
-                    "sheets.");
-                Assert.That(
-                    seenTextures,
-                    Is.EquivalentTo(expectedTextures));
+                    seenKinds,
+                    Is.EquivalentTo(expectedKinds),
+                    "The authored semantic bindings must preserve all six " +
+                    "supermarket surface families.");
             }
             finally
             {

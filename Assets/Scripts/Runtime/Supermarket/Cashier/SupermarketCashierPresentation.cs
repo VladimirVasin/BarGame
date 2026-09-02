@@ -34,18 +34,15 @@ namespace BarPromenade
     }
 
     /// <summary>
-    /// Fully procedural pose for the Watcher Cashier: no clips, no
-    /// Animator controller. Every frame restores the imported rest
-    /// pose, plants the hunched body with both palms dead-still on the
-    /// checkout, then lays the five re-parented neck segments along a
-    /// pursuit curve: the head literally travels to hover beside the
-    /// hero anywhere in the shop, the chain stretching to reach and
-    /// arcing up over any shelf standing in the straight line. The
-    /// undersized head is pinned to the curve tip by its authored
-    /// neck-attachment point, so it can never tear off the chain.
+    /// Procedural checkout pose shared by two separately authored assets.
+    /// The active ordinary cashier keeps his fixed human neck and only turns
+    /// his head within a conservative limit. The retained Watcher asset can
+    /// still opt into the original five-segment pursuit curve.
     /// </summary>
     [DisallowMultipleComponent]
-    public sealed class SupermarketCashierPresentation : MonoBehaviour
+    public sealed class SupermarketCashierPresentation :
+        MonoBehaviour,
+        IRendererPresentation
     {
         public const float NeckSegmentHeight = 0.11f;
         public const float RestNeckLength = 0.55f;
@@ -56,6 +53,36 @@ namespace BarPromenade
         public const float HoverLiftMeters = 0.25f;
         public const float ObstacleClearanceMeters = 0.50f;
         public const float ObstacleMarginMeters = 0.22f;
+
+        /// <summary>
+        /// How much further out the arch LOOKS AHEAD than safety needs.
+        ///
+        /// This is what makes the transition smooth rather than merely
+        /// damped. The arch target is solved against boxes grown by this
+        /// much, so the neck starts lifting while the straight line is
+        /// still clear of the real shelf; by the time the hard margin
+        /// would bite, the eased shape is already up there and nothing
+        /// has to jump. Damping alone could not do it - a damped step
+        /// function still starts from the step.
+        /// </summary>
+        public const float ArchAnticipationMeters = 0.75f;
+
+        /// <summary>
+        /// The neck's own half-thickness, plus the head's.
+        ///
+        /// The clip probe was a ZERO-RADIUS point test, so the chain had
+        /// no thickness at all: a shelf edge could pass between the curve
+        /// and the drawn tube. The widest thing on the chain is the head
+        /// (`0.0952` in X after the `1.12` scale) and the segment rings
+        /// run to `0.077`, so this covers both.
+        /// </summary>
+        public const float NeckProbeRadiusMeters = 0.10f;
+
+        /// <summary>Seconds for the arch to rise, and to fall again. The
+        /// rise is quicker: he is dodging a shelf, not posing.</summary>
+        public const float ArchRaiseSmoothTime = 0.22f;
+
+        public const float ArchLowerSmoothTime = 0.38f;
         public const float WatcherHeadTiltDegrees = 6f;
         public const float ScanYawDegrees = 4f;
         public const float ScanYawHertz = 0.18f;
@@ -63,6 +90,7 @@ namespace BarPromenade
         public const float ScanPitchHertz = 0.11f;
         public const float PupilDartMeters = 0.012f;
         public const float StartledPupilScale = 0.62f;
+        public const float FixedHeadLookLimitDegrees = 28f;
         public const string EyeWhiteRole = "wide_watcher_eye";
         public const string PupilRole = "visible_eye_pupil";
 
@@ -86,6 +114,8 @@ namespace BarPromenade
         private Vector3[] segmentRestScales = Array.Empty<Vector3>();
         private Vector3[] pivotRestDirLocals = Array.Empty<Vector3>();
         private Vector3 tipRestInNeck;
+        private Vector3 leftPupilOffsetInEye;
+        private Vector3 rightPupilOffsetInEye;
         private Vector3 headAnchorLocal;
         private Quaternion headLookOffset = Quaternion.identity;
         private Vector3 leftHandTarget;
@@ -93,12 +123,23 @@ namespace BarPromenade
         private Bounds headLimits;
         private IReadOnlyList<Bounds> obstacles = Array.Empty<Bounds>();
         private bool hasPoseContext;
+        private float archHeight;
+        private float archWeight;
+        private float archHeightVelocity;
+        private float archWeightVelocity;
+        private bool hasArchState;
         private float scanElapsed;
+        private bool usesExtensibleNeck;
         private bool isInitialized;
 
         public bool IsInitialized => isInitialized;
+        public IReadOnlyList<Renderer> Renderers =>
+            registry != null
+                ? registry.Renderers
+                : Array.Empty<Renderer>();
         public float CurrentExtension { get; private set; }
         public float NeckStretchRatio { get; private set; }
+        public bool UsesExtensibleNeck => usesExtensibleNeck;
         public bool EyesClosed => blink != null && blink.EyesClosed;
         public Vector3 HeadWorldPosition =>
             registry != null && registry.Head != null
@@ -119,9 +160,16 @@ namespace BarPromenade
             animator.runtimeAnimatorController = null;
             animator.cullingMode = AnimatorCullingMode.AlwaysAnimate;
 
-            BindNeckChain();
+            usesExtensibleNeck = registry.UsesExtensibleNeck;
+            if (usesExtensibleNeck)
+            {
+                BindNeckChain();
+            }
+
+            CaptureHeadLookOffset();
             CaptureBaseBonePoses();
             CaptureBlinkRenderers();
+            CapturePupilOffsets();
             blink = new SupermarketCashierBlinkState();
             NeckStretchRatio = 1f;
             isInitialized = true;
@@ -159,6 +207,37 @@ namespace BarPromenade
             ApplyBodyPose();
 
             Vector3 up = registry.transform.up;
+            if (usesExtensibleNeck)
+            {
+                ApplyExtensibleNeck(safeDeltaTime, command, up);
+            }
+            else
+            {
+                ApplyFixedHead(command, up);
+                CurrentExtension = 0f;
+                NeckStretchRatio = 1f;
+            }
+
+            ApplyEyes(command, up);
+
+            blink.Advance(
+                safeDeltaTime,
+                usesExtensibleNeck && command.BlinkSuppressed);
+            for (int index = 0; index < blinkRenderers.Length; index++)
+            {
+                Renderer target = blinkRenderers[index];
+                if (target != null)
+                {
+                    target.forceRenderingOff = blink.EyesClosed;
+                }
+            }
+        }
+
+        private void ApplyExtensibleNeck(
+            float deltaTime,
+            in SupermarketCashierPoseCommand command,
+            Vector3 up)
+        {
             Vector3 restTip = registry.Neck.TransformPoint(tipRestInNeck);
             Vector3 chainBase = registry.NeckPivots[0].position;
             Vector3 pursuit = ResolvePursuitPoint(
@@ -173,23 +252,12 @@ namespace BarPromenade
             ResolveCurveControls(
                 chainBase,
                 tip,
+                deltaTime,
                 out Vector3 controlA,
                 out Vector3 controlB);
 
             ApplyNeckCurve(chainBase, controlA, controlB, tip);
             ApplyHead(command, tip, up);
-            ApplyEyes(command, up);
-
-            blink.Advance(safeDeltaTime, command.BlinkSuppressed);
-            for (int index = 0; index < blinkRenderers.Length; index++)
-            {
-                Renderer target = blinkRenderers[index];
-                if (target != null)
-                {
-                    target.forceRenderingOff = blink.EyesClosed;
-                }
-            }
-
             CurrentExtension = command.Extension;
             NeckStretchRatio = Mathf.Max(
                 1f,
@@ -226,9 +294,13 @@ namespace BarPromenade
 
             for (int index = 0; index < obstacles.Count; index++)
             {
-                if (obstacles[index].Contains(pursuit))
+                // The head is a volume, not a point: test it against the
+                // same padded box the curve uses, or the face sinks into a
+                // shelf it is hovering just inside of.
+                Bounds guarded = Expand(obstacles[index], 0f);
+                if (guarded.Contains(pursuit))
                 {
-                    pursuit.y = obstacles[index].max.y +
+                    pursuit.y = guarded.max.y +
                         ObstacleClearanceMeters * 0.7f;
                 }
             }
@@ -254,20 +326,157 @@ namespace BarPromenade
         private void ResolveCurveControls(
             Vector3 from,
             Vector3 to,
+            float deltaTime,
+            out Vector3 controlA,
+            out Vector3 controlB)
+        {
+            StraightControls(from, to, out controlA, out controlB);
+            if (!hasPoseContext)
+            {
+                archWeight = 0f;
+                archWeightVelocity = 0f;
+                return;
+            }
+
+            // The TARGET is solved against an anticipation envelope that is
+            // deliberately larger than the one safety uses, so the arch
+            // starts rising while the straight line is still clear of the
+            // real shelf. By the time the hard margin would bite, the eased
+            // shape is already there and nothing has to jump.
+            float target = SolveArchHeight(
+                from,
+                controlA,
+                controlB,
+                to,
+                ArchAnticipationMeters);
+            bool wantsArch = !float.IsNegativeInfinity(target);
+            if (!wantsArch)
+            {
+                target = archHeight;
+            }
+
+            if (!hasArchState)
+            {
+                hasArchState = true;
+                archHeight = wantsArch ? target : from.y;
+                archWeight = wantsArch ? 1f : 0f;
+                archHeightVelocity = 0f;
+                archWeightVelocity = 0f;
+            }
+
+            archWeight = Damp(
+                archWeight,
+                wantsArch ? 1f : 0f,
+                ref archWeightVelocity,
+                wantsArch ? ArchRaiseSmoothTime : ArchLowerSmoothTime,
+                deltaTime);
+            if (wantsArch)
+            {
+                archHeight = Damp(
+                    archHeight,
+                    target,
+                    ref archHeightVelocity,
+                    ArchRaiseSmoothTime,
+                    deltaTime);
+            }
+
+            BlendControls(from, to, out controlA, out controlB);
+
+            // And the floor. Everything above is about how it LOOKS; this is
+            // the part that must be true on every single frame, including
+            // every frame of the blend. If the shape we are actually about to
+            // render still touches a shelf, the height is taken to whatever
+            // clears it and the eased value is snapped to match, so the ease
+            // resumes from the truth rather than fighting it.
+            for (int attempt = 0; attempt < 5; attempt++)
+            {
+                if (!CurveTouchesAnyObstacle(
+                        from, controlA, controlB, to))
+                {
+                    return;
+                }
+
+                float safe = SolveArchHeight(
+                    from,
+                    controlA,
+                    controlB,
+                    to,
+                    0f);
+                if (float.IsNegativeInfinity(safe))
+                {
+                    return;
+                }
+
+                archHeight = Mathf.Max(
+                    archHeight,
+                    safe + (attempt * 0.35f));
+                archWeight = 1f;
+                archWeightVelocity = 0f;
+                archHeightVelocity = 0f;
+                BlendControls(from, to, out controlA, out controlB);
+            }
+        }
+
+        /// <summary>
+        /// The unarched shape. Controls at the chord's thirds are the degree
+        /// elevation of a straight line, so this is exactly a straight rod -
+        /// which is the point.
+        /// </summary>
+        private static void StraightControls(
+            Vector3 from,
+            Vector3 to,
             out Vector3 controlA,
             out Vector3 controlB)
         {
             controlA = Vector3.Lerp(from, to, 1f / 3f);
             controlB = Vector3.Lerp(from, to, 2f / 3f);
-            if (!hasPoseContext)
-            {
-                return;
-            }
+        }
 
+        /// <summary>
+        /// The two shapes, mixed by <see cref="archWeight"/>.
+        ///
+        /// BOTH discontinuities have to be blended, not just the obvious one.
+        /// The arched solution moves the controls ALONG the run as well as
+        /// up: `1/3, 2/3` becomes `0.20, 0.80`. Blending only the height
+        /// would still slide the control points sideways in one frame.
+        /// </summary>
+        private void BlendControls(
+            Vector3 from,
+            Vector3 to,
+            out Vector3 controlA,
+            out Vector3 controlB)
+        {
+            float weight = Mathf.Clamp01(archWeight);
+            controlA = Vector3.Lerp(
+                from,
+                to,
+                Mathf.Lerp(1f / 3f, 0.20f, weight));
+            controlB = Vector3.Lerp(
+                from,
+                to,
+                Mathf.Lerp(2f / 3f, 0.80f, weight));
+            float height = Mathf.Min(archHeight, headLimits.max.y);
+            controlA.y = Mathf.Lerp(controlA.y, height, weight);
+            controlB.y = Mathf.Lerp(controlB.y, height, weight);
+        }
+
+        /// <summary>
+        /// The plateau height the given shape would need to clear every
+        /// obstacle it touches, or negative infinity when it touches none.
+        /// <paramref name="extraMargin"/> grows the boxes beyond the safety
+        /// margin, which is how the arch is made to anticipate.
+        /// </summary>
+        private float SolveArchHeight(
+            Vector3 from,
+            Vector3 controlA,
+            Vector3 controlB,
+            Vector3 to,
+            float extraMargin)
+        {
             float clearance = float.NegativeInfinity;
             for (int index = 0; index < obstacles.Count; index++)
             {
-                Bounds expanded = Expand(obstacles[index]);
+                Bounds expanded = Expand(obstacles[index], extraMargin);
                 if (!CurveTouchesBounds(
                         from, controlA, controlB, to, expanded))
                 {
@@ -279,29 +488,35 @@ namespace BarPromenade
                     expanded.max.y + ObstacleClearanceMeters);
             }
 
-            if (float.IsNegativeInfinity(clearance))
+            return clearance;
+        }
+
+        private static float Damp(
+            float current,
+            float target,
+            ref float velocity,
+            float smoothTime,
+            float deltaTime)
+        {
+            if (deltaTime <= 0f)
             {
-                return;
+                return current;
             }
 
-            for (int attempt = 0; attempt < 4; attempt++)
+            float next = Mathf.SmoothDamp(
+                current,
+                target,
+                ref velocity,
+                smoothTime,
+                Mathf.Infinity,
+                deltaTime);
+            if (Mathf.Abs(target - next) <= 0.0005f)
             {
-                float height = Mathf.Min(
-                    clearance,
-                    headLimits.max.y);
-                controlA = Vector3.Lerp(from, to, 0.20f);
-                controlA.y = height;
-                controlB = Vector3.Lerp(from, to, 0.80f);
-                controlB.y = height;
-                if (height >= headLimits.max.y ||
-                    !CurveTouchesAnyObstacle(
-                        from, controlA, controlB, to))
-                {
-                    return;
-                }
-
-                clearance += 0.35f;
+                velocity = 0f;
+                return target;
             }
+
+            return next;
         }
 
         private bool CurveTouchesAnyObstacle(
@@ -317,7 +532,7 @@ namespace BarPromenade
                         controlA,
                         controlB,
                         to,
-                        Expand(obstacles[index])))
+                        Expand(obstacles[index], 0f)))
                 {
                     return true;
                 }
@@ -348,13 +563,29 @@ namespace BarPromenade
             return false;
         }
 
-        private static Bounds Expand(Bounds bounds)
+        /// <summary>
+        /// The obstacle box as the neck must see it: its own margin, the
+        /// chain's thickness, and whatever anticipation the caller wants.
+        ///
+        /// THE Y TERM USED TO BE HALF WHAT IT READ AS.
+        /// <c>Bounds.Expand(Vector3)</c> adds HALF its argument to the
+        /// extents, which is why every other caller in this project passes
+        /// `margin * 2f`. The vertical term here did not, so a `2.05 m`
+        /// shelf was guarded to `2.16` where the two horizontal terms were
+        /// guarded to the full `0.22` per side. Vertical is the one axis
+        /// this fixture actually has to clear.
+        /// </summary>
+        private static Bounds Expand(Bounds bounds, float extraMargin)
         {
+            float margin =
+                ObstacleMarginMeters +
+                NeckProbeRadiusMeters +
+                Mathf.Max(0f, extraMargin);
             Bounds expanded = bounds;
             expanded.Expand(new Vector3(
-                ObstacleMarginMeters * 2f,
-                ObstacleMarginMeters,
-                ObstacleMarginMeters * 2f));
+                margin * 2f,
+                margin * 2f,
+                margin * 2f));
             return expanded;
         }
 
@@ -474,6 +705,54 @@ namespace BarPromenade
             head.position += tip - head.TransformPoint(headAnchorLocal);
         }
 
+        /// <summary>
+        /// The ordinary cashier can acknowledge movement in the hall without
+        /// acquiring any non-human anatomy. Rotation is measured from the
+        /// restored pose every frame and capped, while the authored head
+        /// position and neck scale remain untouched.
+        /// </summary>
+        private void ApplyFixedHead(
+            in SupermarketCashierPoseCommand command,
+            Vector3 up)
+        {
+            Transform head = registry.Head;
+            Quaternion restRotation = head.rotation;
+            Vector3 faceDirection;
+            if (command.HasFocus)
+            {
+                Vector3 toFocus = command.FocusPoint - head.position;
+                faceDirection = toFocus.sqrMagnitude > 0.0001f
+                    ? toFocus.normalized
+                    : registry.transform.forward;
+            }
+            else
+            {
+                float scanYaw = command.ScanFrozen
+                    ? 0f
+                    : ScanYawDegrees * Mathf.Sin(
+                        scanElapsed * ScanYawHertz * 2f * Mathf.PI);
+                float scanPitch = command.ScanFrozen
+                    ? 0f
+                    : ScanPitchDegrees * Mathf.Sin(
+                        scanElapsed * ScanPitchHertz * 2f * Mathf.PI);
+                faceDirection =
+                    Quaternion.AngleAxis(scanYaw, up) *
+                    Quaternion.AngleAxis(
+                        -scanPitch,
+                        registry.transform.right) *
+                    registry.transform.forward;
+            }
+
+            Quaternion desired = Quaternion.LookRotation(
+                    faceDirection,
+                    up) *
+                headLookOffset;
+            head.rotation = Quaternion.RotateTowards(
+                restRotation,
+                desired,
+                FixedHeadLookLimitDegrees);
+        }
+
         private void ApplyEyes(
             in SupermarketCashierPoseCommand command,
             Vector3 up)
@@ -486,19 +765,49 @@ namespace BarPromenade
             float pupilScale = Mathf.Lerp(
                 1f,
                 StartledPupilScale,
-                command.StartleWeight);
+                usesExtensibleNeck ? command.StartleWeight : 0f);
 
-            ApplyEye(registry.FaceEyeLeft, dart, pupilScale);
-            ApplyEye(registry.FaceEyeRight, dart, pupilScale);
+            ApplyEye(
+                registry.FaceEyeLeft,
+                dart,
+                pupilScale,
+                leftPupilOffsetInEye);
+            ApplyEye(
+                registry.FaceEyeRight,
+                dart,
+                pupilScale,
+                rightPupilOffsetInEye);
         }
 
+        /// <summary>
+        /// Pinches one pupil WITHOUT dragging it out of its socket.
+        ///
+        /// THE PINCH USED TO TELEPORT THE PUPILS OUT OF THE HEAD, and it
+        /// read exactly as the user reported it: "the pupils look so far
+        /// down it feels like they are not there at all". They were not
+        /// looking anywhere. `face.eye.L` rests at `z 1.606` while the
+        /// pupil it drives is drawn at `1.963` - the generator says so
+        /// outright, "the bones rest far below the authored face" - so the
+        /// pupil hangs `0.357 m` above its own bone's origin. Scaling that
+        /// bone scales about the ORIGIN, so a startled `0.62` walked the
+        /// pupil `0.357 * 0.38 = 0.135 m` straight down: four and a half
+        /// times the eye white's own `0.029 m` radius, out through the
+        /// chin. The startle is exactly when the hero is close and looking,
+        /// which is why it only ever showed up close.
+        ///
+        /// So the scale is compensated by the translation it induces. The
+        /// offset is captured once at bind time in the bone's own space, so
+        /// it costs one cached vector and no per-frame search.
+        /// </summary>
         private static void ApplyEye(
             Transform eye,
             Vector3 dart,
-            float pupilScale)
+            float pupilScale,
+            Vector3 pupilOffsetInEye)
         {
-            eye.position += dart;
             eye.localScale *= pupilScale;
+            eye.position += dart + eye.TransformVector(
+                pupilOffsetInEye * (1f - pupilScale));
         }
 
         /// <summary>
@@ -561,6 +870,23 @@ namespace BarPromenade
             headAnchorLocal =
                 registry.Head.InverseTransformPoint(restTipWorld);
 
+            segmentStretchAxes = new int[neckSegments.Length];
+            segmentRestScales = new Vector3[neckSegments.Length];
+            pivotRestDirLocals = new Vector3[neckSegments.Length];
+            for (int index = 0; index < neckSegments.Length; index++)
+            {
+                Transform segment = neckSegments[index];
+                segmentRestScales[index] = segment.localScale;
+                segmentStretchAxes[index] = DominantAxis(
+                    segment.InverseTransformDirection(up));
+                pivotRestDirLocals[index] = pivots[index]
+                    .InverseTransformDirection(up);
+            }
+        }
+
+        private void CaptureHeadLookOffset()
+        {
+            Vector3 up = registry.transform.up;
             Vector3 eyeCenter =
                 (registry.FaceEyeLeft.position +
                  registry.FaceEyeRight.position) * 0.5f;
@@ -576,19 +902,6 @@ namespace BarPromenade
                 Quaternion.Inverse(
                     Quaternion.LookRotation(restFace.normalized, up)) *
                 registry.Head.rotation;
-
-            segmentStretchAxes = new int[neckSegments.Length];
-            segmentRestScales = new Vector3[neckSegments.Length];
-            pivotRestDirLocals = new Vector3[neckSegments.Length];
-            for (int index = 0; index < neckSegments.Length; index++)
-            {
-                Transform segment = neckSegments[index];
-                segmentRestScales[index] = segment.localScale;
-                segmentStretchAxes[index] = DominantAxis(
-                    segment.InverseTransformDirection(up));
-                pivotRestDirLocals[index] = pivots[index]
-                    .InverseTransformDirection(up);
-            }
         }
 
         private void CaptureBaseBonePoses()
@@ -727,6 +1040,54 @@ namespace BarPromenade
             return absY >= absZ ? 1 : 2;
         }
 
+        /// <summary>
+        /// Where each pupil is drawn, in its own eye bone's space.
+        ///
+        /// Captured from the renderer bounds rather than assumed, so the
+        /// compensation in <see cref="ApplyEye"/> stays correct if the
+        /// generator ever moves the eyes or the head scale changes again.
+        /// A missing pupil leaves the offset zero, which makes the
+        /// compensation a no-op rather than an exception - the blink
+        /// capture already refuses a model with the wrong eye count.
+        /// </summary>
+        private void CapturePupilOffsets()
+        {
+            leftPupilOffsetInEye = Vector3.zero;
+            rightPupilOffsetInEye = Vector3.zero;
+            IReadOnlyList<SupermarketCashierRendererBinding> bindings =
+                registry.RendererBindings;
+            for (int index = 0; index < bindings.Count; index++)
+            {
+                SupermarketCashierRendererBinding binding =
+                    bindings[index];
+                if (binding == null ||
+                    binding.Renderer == null ||
+                    !string.Equals(
+                        binding.Role,
+                        PupilRole,
+                        StringComparison.Ordinal))
+                {
+                    continue;
+                }
+
+                Vector3 centre = binding.Renderer.bounds.center;
+                if (binding.RendererName.EndsWith(
+                        ".R",
+                        StringComparison.Ordinal))
+                {
+                    rightPupilOffsetInEye = registry.FaceEyeRight
+                        .InverseTransformVector(
+                            centre - registry.FaceEyeRight.position);
+                }
+                else
+                {
+                    leftPupilOffsetInEye = registry.FaceEyeLeft
+                        .InverseTransformVector(
+                            centre - registry.FaceEyeLeft.position);
+                }
+            }
+        }
+
         private void CaptureBlinkRenderers()
         {
             var targets = new List<Renderer>(4);
@@ -800,12 +1161,17 @@ namespace BarPromenade
             }
 
             IReadOnlyList<Transform> pivots = registry.NeckPivots;
-            if (pivots.Count !=
-                SupermarketCashierAssetRegistry.NeckSegmentCount)
+            int expectedPivotCount = registry.UsesExtensibleNeck
+                ? SupermarketCashierAssetRegistry.WatcherNeckSegmentCount
+                : 0;
+            if (pivots.Count != expectedPivotCount)
             {
                 throw new InvalidOperationException(
-                    "The cashier prefab requires exactly five neck " +
-                    "pivots.");
+                    registry.UsesExtensibleNeck
+                        ? "The Watcher cashier requires exactly five " +
+                          "neck pivots."
+                        : "The ordinary cashier must not bind extensible " +
+                          "neck pivots.");
             }
 
             for (int index = 0; index < pivots.Count; index++)

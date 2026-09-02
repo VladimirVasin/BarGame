@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "cemetery_watchman_v1",
   "display_name": "Cemetery Watchman",
@@ -25,7 +25,7 @@
     2000
   ],
   "staged": true,
-  "pool_eligible": false,
+  "pool_eligible": true,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
@@ -44,14 +44,27 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
+  "ambient_idle_clip": "WatchmanStreetIdle",
+  "ambient_walk_clip": "WatchmanStreetWalk",
   "shared_clips": [
     "WatchmanWatch",
-    "WatchmanShuffle"
+    "WatchmanShuffle",
+    "WatchmanStreetIdle",
+    "WatchmanStreetWalk",
+    "WatchmanSit"
   ],
-  "rides_bus": false,
-  "seated_clearance_m": null,
+  "rides_bus": true,
+  "seated_clearance_m": [
+    0.84,
+    0.99
+  ],
   "perch_seat_height_m": null,
-  "build_signature": "f57c60f96fb450ac754a893ef20e5f2fdd05f3670098d278ba17751f2f90ba7d",
+  "perch_support_contact_m": null,
+  "perch_support_radius_m": null,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "376128e1fcbc5880ab5f52b9fa939819b007da651fa4d27904fcbeace19a477e",
   "bones": [
     {
       "name": "root",

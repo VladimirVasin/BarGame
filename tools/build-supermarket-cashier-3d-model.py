@@ -1,20 +1,21 @@
 #!/usr/bin/env python3
-"""Build the deterministic low-poly supermarket Watcher Cashier.
+"""Build either deterministic low-poly supermarket cashier design.
 
 Run this with Blender, not CPython:
 
     blender --background --factory-startup --python \
-        tools/build-supermarket-cashier-3d-model.py
+        tools/build-supermarket-cashier-3d-model.py -- --variant normal
 
-The cashier is an animation-free model on the NpcHumanV2-compatible
-31-bone A-pose skeleton. His signature is a grotesquely long neck built
-from five rigid segments anchored on PIVOT_Neck.01..05 empties:
-the runtime re-parents the segments under the pivots (the wheelchair
-mechanism pattern) and stretches, bends and retracts the chain
-procedurally, so the shared NpcHumanV2-compatible Avatar and every
-31-bone validator stay untouched. The undersized head and the enormous
-asymmetric watcher eyes ride the chain tip through the ordinary
-head/eye bones.
+    blender --background --factory-startup --python \
+        tools/build-supermarket-cashier-3d-model.py -- --variant watcher
+
+Both variants are animation-free models on the NpcHumanV2-compatible
+31-bone A-pose skeleton and share the same cashier uniform, palette and
+detail atlas. ``normal`` is the active ordinary clerk: a 1.75 m adult
+with a human-proportioned head and one short neck mesh rigid to the
+canonical neck bone. ``watcher`` preserves the former bizarre design:
+five rigid segments anchored on PIVOT_Neck.01..05 empties, an undersized
+head and the room-spanning procedural stretch contract.
 
 Blender source space is metres, Z-up, forward -Y and anatomical left +X.
 """
@@ -28,6 +29,41 @@ import os
 from pathlib import Path
 import sys
 
+sys.path.insert(0, str(Path(__file__).resolve().parent))
+
+import atlas_kit  # noqa: E402
+from supermarket_cashier_detail_atlas import (  # noqa: E402
+    CASHIER_ATLAS_REGIONS,
+    DETAIL_ATLAS_NAME,
+    DETAIL_ATLAS_REGION_PROP,
+    DETAIL_ATLAS_SIZE,
+    DETAIL_ATLAS_UV_INSET_PX,
+    paint_cashier_detail_atlas,
+    texture_asset_path,
+    write_detail_atlas,
+)
+from supermarket_cashier_variants import (  # noqa: E402
+    CASHIER_VARIANTS,
+    CashierVariant,
+    NECK_BASE,
+    NECK_PIVOT_NAMES,
+    NECK_RADIUS_BOTTOM,
+    NECK_RADIUS_TOP,
+    NECK_RING_EXTRA_RADIUS,
+    NECK_SEGMENT_COUNT,
+    NECK_SEGMENT_HEIGHT,
+    NORMAL_VARIANT,
+    WATCHER_VARIANT,
+    head_center,
+    head_point,
+    head_radii,
+    head_size,
+    make_collar_geometry,
+    make_fixed_neck_geometry,
+    make_normal_torso_geometry,
+    neck_segment_radii,
+)
+
 try:
     import bpy
     from mathutils import Vector
@@ -37,34 +73,16 @@ except ImportError as error:  # pragma: no cover - Blender-only entry point.
     ) from error
 
 
-GENERATOR_VERSION = "2.0.0"
-DESIGN_ID = "watcher_cashier_v1"
-DISPLAY_NAME = "Watcher Cashier"
+# Runtime-facing identity is selected once after CLI parsing.
+GENERATOR_VERSION = WATCHER_VARIANT.generator_version
+DESIGN_ID = WATCHER_VARIANT.design_id
+DISPLAY_NAME = WATCHER_VARIANT.display_name
+TOTAL_HEIGHT = WATCHER_VARIANT.total_height
+SIGNATURE_ANATOMY = WATCHER_VARIANT.signature_anatomy
 SEED = 731209
-# The neck raises the resting silhouette well above the shared 1.75 m
-# canon; the validator below owns the exact resting height instead.
-TOTAL_HEIGHT = 2.05
 MIN_TRIANGLES = 1100
 MAX_TRIANGLES = 2200
 SHARED_MATERIAL_ASSET = "Assets/Player3D/Materials/Player3DLit.mat"
-SIGNATURE_ANATOMY = ("stretch_neck", "undersized_head")
-
-NECK_BASE = (0.0, -0.015, 1.335)
-NECK_SEGMENT_COUNT = 5
-NECK_SEGMENT_HEIGHT = 0.11
-NECK_REST_LENGTH = NECK_SEGMENT_COUNT * NECK_SEGMENT_HEIGHT
-# The pursuit solver stretches the chain to reach the hero anywhere in
-# the hall: up to 18 m of neck from 0.55 m at rest.
-NECK_MAX_STRETCH_RATIO = 32.7
-NECK_RADIUS_BOTTOM = 0.075
-NECK_RADIUS_TOP = 0.065
-NECK_RING_EXTRA_RADIUS = 0.012
-NECK_PIVOT_NAMES = tuple(
-    f"PIVOT_Neck.{index + 1:02d}" for index in range(NECK_SEGMENT_COUNT)
-)
-
-HEAD_CENTER = (0.006, -0.028, 1.960)
-HEAD_RADII = (0.085, 0.078, 0.090)
 
 
 def load_character_build_base():
@@ -86,6 +104,9 @@ def load_character_build_base():
 
 
 base = load_character_build_base()
+# Both cashier variants author directly against the present-day V2 bone
+# landmarks.  The historical profile name is load-bearing in the shared
+# helper: it is the only spec-less path that skips the legacy-to-V2 remap.
 base.NPC_PROFILE_KEY = "watcher_cashier"
 
 PALETTE = {
@@ -112,41 +133,67 @@ PALETTE = {
 }
 
 # The helper owns the NpcHumanV2-compatible skeleton and deterministic
-# geometry/export implementation. Override only source identity and palette.
-base.GENERATOR_VERSION = GENERATOR_VERSION
-base.DESIGN_ID = DESIGN_ID
-base.SEED = SEED
-base.PALETTE = PALETTE
+# geometry/export implementation.  One Blender process builds one variant,
+# so activating it once before constructing the builder is deterministic and
+# cannot leak state between outputs.
+ACTIVE_VARIANT = WATCHER_VARIANT
+
+
+def activate_variant(variant: CashierVariant) -> None:
+    global ACTIVE_VARIANT
+    global GENERATOR_VERSION, DESIGN_ID, DISPLAY_NAME
+    global TOTAL_HEIGHT, SIGNATURE_ANATOMY
+
+    ACTIVE_VARIANT = variant
+    GENERATOR_VERSION = variant.generator_version
+    DESIGN_ID = variant.design_id
+    DISPLAY_NAME = variant.display_name
+    TOTAL_HEIGHT = variant.total_height
+    SIGNATURE_ANATOMY = variant.signature_anatomy
+
+    base.GENERATOR_VERSION = GENERATOR_VERSION
+    base.DESIGN_ID = DESIGN_ID
+    base.SEED = SEED
+    base.PALETTE = PALETTE
 
 
 def parse_args() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument(
+        "--variant",
+        choices=tuple(CASHIER_VARIANTS),
+        default=NORMAL_VARIANT.key,
+        help=(
+            "normal builds the active fixed-neck clerk; watcher preserves "
+            "the former segmented, extensible design"
+        ),
+    )
+    parser.add_argument(
         "--output",
         type=Path,
-        default=Path(
-            "ArtSource/Supermarket/Cashier/Blender/SupermarketCashier3D.blend"
-        ),
+        default=None,
     )
     parser.add_argument(
         "--fbx",
         type=Path,
-        default=Path(
-            "Assets/Supermarket/Cashier/Models/SupermarketCashier3D.fbx"
-        ),
+        default=None,
     )
     parser.add_argument(
         "--manifest",
         type=Path,
-        default=Path(
-            "Assets/Supermarket/Cashier/Models/SupermarketCashier3D.json"
-        ),
+        default=None,
     )
     parser.add_argument(
         "--preview",
         type=Path,
+        default=None,
+    )
+    parser.add_argument(
+        "--atlas",
+        type=Path,
         default=Path(
-            "ArtSource/Supermarket/Cashier/Blender/SupermarketCashier3D.png"
+            "Assets/Supermarket/Cashier/Textures/"
+            "SupermarketCashier3DDetailAtlas.png"
         ),
     )
     parser.add_argument("--no-preview", action="store_true")
@@ -154,21 +201,143 @@ def parse_args() -> argparse.Namespace:
         sys.argv[sys.argv.index("--") + 1 :] if "--" in sys.argv else []
     )
     config = parser.parse_args(arguments)
-    for field_name in ("output", "fbx", "manifest", "preview"):
+    variant = CASHIER_VARIANTS[config.variant]
+    source_root = Path("ArtSource/Supermarket/Cashier/Blender")
+    model_root = Path("Assets/Supermarket/Cashier/Models")
+    defaults = {
+        "output": source_root / f"{variant.output_stem}.blend",
+        "fbx": model_root / f"{variant.output_stem}.fbx",
+        "manifest": model_root / f"{variant.output_stem}.json",
+        "preview": source_root / f"{variant.output_stem}.png",
+    }
+    for field_name, default_path in defaults.items():
+        if getattr(config, field_name) is None:
+            setattr(config, field_name, default_path)
+    config.variant_spec = variant
+    for field_name in ("output", "fbx", "manifest", "atlas", "preview"):
         setattr(config, field_name, getattr(config, field_name).resolve())
     return config
 
 
-def neck_segment_radii(index: int) -> tuple[float, float]:
-    span = NECK_RADIUS_BOTTOM - NECK_RADIUS_TOP
-    lower = NECK_RADIUS_BOTTOM - span * index / NECK_SEGMENT_COUNT
-    upper = NECK_RADIUS_BOTTOM - span * (index + 1) / NECK_SEGMENT_COUNT
-    return lower, upper
-
-
 class CashierBuilder(base.PedestrianBuilder):
-    def __init__(self):
+    def __init__(self, variant: CashierVariant, atlas_path=None):
+        # `spec=None` IS LOAD BEARING and must stay that way. The base
+        # class resolves `anatomy_profile_key` from `spec.key` when a spec
+        # exists and from the module global `NPC_PROFILE_KEY` when it does
+        # not - and `_remap_head_point` early-outs for the profile
+        # "watcher_cashier", returning every head vertex untouched. Give
+        # this builder a real ArchetypeSpec and the head goes through the
+        # default NpcHumanV2 remap instead: the face collapses and the
+        # ten-micron height assert fails. That is why the atlas below is
+        # wired by hand rather than through `spec.texture_regions`, the
+        # way the cemetery raven does it.
         super().__init__(spec=None)
+        self.variant = variant
+        self.atlas_path = atlas_path
+
+    def attach_preview_atlas(self, material) -> None:
+        """Multiply the object colour by the detail atlas in the review.
+
+        Overridden because the base implementation names its image from
+        `self.spec.model_name`, and this builder's spec is deliberately
+        `None`. Samples Closest/CLIP exactly like the Unity import
+        (Point/Clamp), so the preview shows what the game draws; parts
+        with no UV0 fall on texel (0, 0), the reserved white cell, and
+        stay flat colour. None of this reaches the FBX - Unity imports
+        no materials from these files.
+        """
+
+        if self.atlas_path is None or not Path(self.atlas_path).is_file():
+            return
+        nodes = material.node_tree.nodes
+        links = material.node_tree.links
+        shader = next(
+            node for node in nodes if node.type == "BSDF_PRINCIPLED"
+        )
+        object_info = next(
+            node for node in nodes if node.type == "OBJECT_INFO"
+        )
+        image = bpy.data.images.load(str(self.atlas_path))
+        image.name = "IMG_SupermarketCashier3DDetailAtlas"
+        image.pack()
+        texture = nodes.new("ShaderNodeTexImage")
+        texture.image = image
+        texture.interpolation = "Closest"
+        texture.extension = "CLIP"
+        mix = nodes.new("ShaderNodeMix")
+        mix.data_type = "RGBA"
+        mix.blend_type = "MULTIPLY"
+        next(
+            socket for socket in mix.inputs
+            if socket.identifier == "Factor_Float"
+        ).default_value = 1.0
+        color_a = next(
+            socket for socket in mix.inputs
+            if socket.identifier == "A_Color"
+        )
+        color_b = next(
+            socket for socket in mix.inputs
+            if socket.identifier == "B_Color"
+        )
+        result = next(
+            socket for socket in mix.outputs
+            if socket.identifier == "Result_Color"
+        )
+        for link in list(links):
+            if link.to_socket == shader.inputs["Base Color"]:
+                links.remove(link)
+        links.new(object_info.outputs["Color"], color_a)
+        links.new(texture.outputs["Color"], color_b)
+        links.new(result, shader.inputs["Base Color"])
+        material["bp_detail_atlas"] = DETAIL_ATLAS_NAME
+
+    def assign_atlas_uvs(self) -> None:
+        """Lay every declared region's part into its atlas sub-rect."""
+
+        if self.result is None:
+            raise RuntimeError("Build has not been initialized")
+        parts_by_name = {
+            part.obj.name: part for part in self.result.parts
+        }
+        for region in CASHIER_ATLAS_REGIONS:
+            part = parts_by_name.get(region.renderer)
+            if part is None:
+                raise RuntimeError(
+                    f"Atlas region {region.name} names a missing part "
+                    f"{region.renderer}"
+                )
+            rect_uv = atlas_kit.uv_rect_normalized(
+                region.x,
+                region.y,
+                region.width,
+                region.height,
+                DETAIL_ATLAS_SIZE,
+                DETAIL_ATLAS_UV_INSET_PX,
+            )
+            if region.kind == "ring":
+                atlas_kit.assign_ring_strip_uv(
+                    part.obj,
+                    rect_uv,
+                    region.sides,
+                    region.rings,
+                    region.name,
+                    DETAIL_ATLAS_REGION_PROP,
+                )
+            elif region.kind == "box":
+                # The box mapper wants the PIXEL rect and the atlas size,
+                # not the normalized rect the ring mapper takes.
+                atlas_kit.assign_box_panel_uv(
+                    part.obj,
+                    (region.x, region.y, region.width, region.height),
+                    DETAIL_ATLAS_SIZE,
+                    region.name,
+                    DETAIL_ATLAS_REGION_PROP,
+                )
+            else:
+                raise RuntimeError(
+                    f"Atlas region {region.name} has unknown kind "
+                    f"{region.kind}"
+                )
 
     def build(self):
         self.reset_scene()
@@ -205,9 +374,19 @@ class CashierBuilder(base.PedestrianBuilder):
             root, rig, export_collection, material
         )
         self.build_body()
-        self.build_neck_chain()
+        if self.variant.key == WATCHER_VARIANT.key:
+            self.build_neck_chain()
+        else:
+            self.build_fixed_neck()
         self.build_face()
         self.build_uniform()
+        # After every part exists and before the metadata pass: the box
+        # mapper reads WORLD-space normals, so parenting has to be
+        # resolved first.
+        bpy.context.view_layer.update()
+        self.assign_atlas_uvs()
+        if self.atlas_path is not None:
+            self.attach_preview_atlas(material)
         self.configure_scene_metadata()
         return self.result
 
@@ -223,14 +402,21 @@ class CashierBuilder(base.PedestrianBuilder):
         return material
 
     def build_body(self) -> None:
+        torso = base.make_tapered_box(
+            (0, 0.010, 0.790),
+            (0, -0.004, 1.335),
+            (0.300, 0.180, 0),
+            (0.340, 0.198, 0),
+        )
+        if self.variant.key == NORMAL_VARIANT.key:
+            # The Watcher's original torso ends flat at the mechanism's
+            # foot.  Give the ordinary clerk a small sloping shoulder yoke
+            # inside the same renderer, so only the last 12 cm read as neck
+            # while the shared uniform and arm silhouette stay recognisable.
+            torso = make_normal_torso_geometry(base, torso)
         self.add_part(
             "GEO_Torso",
-            base.make_tapered_box(
-                (0, 0.010, 0.790),
-                (0, -0.004, 1.335),
-                (0.300, 0.180, 0),
-                (0.340, 0.198, 0),
-            ),
+            torso,
             "chest",
             "body",
             "shirt",
@@ -429,21 +615,46 @@ class CashierBuilder(base.PedestrianBuilder):
                 "neck_skin",
             )
 
+    def build_fixed_neck(self) -> None:
+        """One ordinary neck rigid to the canonical NpcHumanV2 bone.
+
+        This is deliberately not a collapsed version of the Watcher's
+        mechanism.  It has no auxiliary pivot, no separately re-parented
+        segment and no stretch marker for runtime code to mistake for a
+        dormant periscope.
+        """
+
+        self.add_part(
+            "GEO_Neck",
+            make_fixed_neck_geometry(base),
+            "neck",
+            "body",
+            "neck_skin",
+        )
+
     def build_face(self) -> None:
-        # A deliberately undersized head perched on the giant neck. The
-        # head and face ride the canonical head/eye bones; the runtime
-        # translates the head bone by the chain's extension delta, so
-        # the authored offset above the bone rest stays constant.
+        # The Watcher keeps his undersized high head; the ordinary variant
+        # maps the same recognisable face down to a 1.75 m crown and proves
+        # adult height/width ratios in the validator.  Both ride the same
+        # canonical head/eye bones.
         self.add_part(
             "GEO_Head",
-            base.make_ellipsoid(HEAD_CENTER, HEAD_RADII, 12, 6),
+            base.make_ellipsoid(
+                head_center(self.variant),
+                head_radii(self.variant),
+                12,
+                6,
+            ),
             "head",
-            "undersized_watcher_head",
+            self.variant.head_role,
             "skin",
         )
         self.add_part(
             "HAIR_FlatCombover",
-            base.make_box((0.000, 0.010, 2.020), (0.120, 0.130, 0.050)),
+            base.make_box(
+                head_point(self.variant, (0.000, 0.010, 2.020)),
+                head_size(self.variant, (0.120, 0.130, 0.050)),
+            ),
             "head",
             "hair",
             "hair",
@@ -451,7 +662,10 @@ class CashierBuilder(base.PedestrianBuilder):
         self.add_part(
             "FACE_Ear.L",
             base.make_ellipsoid(
-                (0.088, -0.028, 1.952), (0.020, 0.016, 0.036), 8, 4
+                head_point(self.variant, (0.088, -0.028, 1.952)),
+                head_size(self.variant, (0.020, 0.016, 0.036)),
+                8,
+                4,
             ),
             "head",
             "human_face",
@@ -460,18 +674,24 @@ class CashierBuilder(base.PedestrianBuilder):
         self.add_part(
             "FACE_Ear.R",
             base.make_ellipsoid(
-                (-0.088, -0.024, 1.948), (0.020, 0.016, 0.034), 8, 4
+                head_point(self.variant, (-0.088, -0.024, 1.948)),
+                head_size(self.variant, (0.020, 0.016, 0.034)),
+                8,
+                4,
             ),
             "head",
             "human_face",
             "skin_shadow",
         )
-        # Enormous curious eye whites for such a small head; the right
-        # one runs 8% larger than the left on purpose.
+        # The recognisable curious eye whites are shared; the right one
+        # runs 8% larger than the left on purpose.
         self.add_part(
             "FACE_EyeWhite.L",
             base.make_ellipsoid(
-                (0.041, -0.098, 1.972), (0.034, 0.014, 0.026), 8, 4
+                head_point(self.variant, (0.041, -0.098, 1.972)),
+                head_size(self.variant, (0.034, 0.014, 0.026)),
+                8,
+                4,
             ),
             "head",
             "wide_watcher_eye",
@@ -480,8 +700,8 @@ class CashierBuilder(base.PedestrianBuilder):
         self.add_part(
             "FACE_EyeWhite.R",
             base.make_ellipsoid(
-                (-0.043, -0.098, 1.970),
-                (0.0367, 0.0151, 0.0281),
+                head_point(self.variant, (-0.043, -0.098, 1.970)),
+                head_size(self.variant, (0.0367, 0.0151, 0.0281)),
                 8,
                 4,
             ),
@@ -495,7 +715,10 @@ class CashierBuilder(base.PedestrianBuilder):
         self.add_part(
             "FACE_Pupil.L",
             base.make_ellipsoid(
-                (0.041, -0.113, 1.972), (0.011, 0.007, 0.013), 8, 4
+                head_point(self.variant, (0.041, -0.113, 1.972)),
+                head_size(self.variant, (0.011, 0.007, 0.013)),
+                8,
+                4,
             ),
             "face.eye.L",
             "visible_eye_pupil",
@@ -504,7 +727,10 @@ class CashierBuilder(base.PedestrianBuilder):
         self.add_part(
             "FACE_Pupil.R",
             base.make_ellipsoid(
-                (-0.043, -0.114, 1.970), (0.011, 0.007, 0.013), 8, 4
+                head_point(self.variant, (-0.043, -0.114, 1.970)),
+                head_size(self.variant, (0.011, 0.007, 0.013)),
+                8,
+                4,
             ),
             "face.eye.R",
             "visible_eye_pupil",
@@ -514,10 +740,10 @@ class CashierBuilder(base.PedestrianBuilder):
         self.add_part(
             "FACE_Brow.L",
             base.make_tapered_box(
-                (0.012, -0.100, 2.004),
-                (0.078, -0.096, 2.012),
-                (0.012, 0.009, 0),
-                (0.015, 0.009, 0),
+                head_point(self.variant, (0.012, -0.100, 2.004)),
+                head_point(self.variant, (0.078, -0.096, 2.012)),
+                head_size(self.variant, (0.012, 0.009, 0)),
+                head_size(self.variant, (0.015, 0.009, 0)),
             ),
             "head",
             "human_face",
@@ -526,10 +752,10 @@ class CashierBuilder(base.PedestrianBuilder):
         self.add_part(
             "FACE_Brow.R",
             base.make_tapered_box(
-                (-0.080, -0.095, 1.998),
-                (-0.014, -0.100, 2.008),
-                (0.015, 0.009, 0),
-                (0.012, 0.009, 0),
+                head_point(self.variant, (-0.080, -0.095, 1.998)),
+                head_point(self.variant, (-0.014, -0.100, 2.008)),
+                head_size(self.variant, (0.015, 0.009, 0)),
+                head_size(self.variant, (0.012, 0.009, 0)),
             ),
             "head",
             "human_face",
@@ -538,7 +764,10 @@ class CashierBuilder(base.PedestrianBuilder):
         self.add_part(
             "FACE_Nose",
             base.make_ellipsoid(
-                (0.004, -0.108, 1.938), (0.016, 0.020, 0.026), 8, 4
+                head_point(self.variant, (0.004, -0.108, 1.938)),
+                head_size(self.variant, (0.016, 0.020, 0.026)),
+                8,
+                4,
             ),
             "head",
             "human_face",
@@ -547,24 +776,21 @@ class CashierBuilder(base.PedestrianBuilder):
         # Barely a mouth; he never uses it.
         self.add_part(
             "FACE_Mouth",
-            base.make_box((0.000, -0.104, 1.905), (0.020, 0.008, 0.006)),
+            base.make_box(
+                head_point(self.variant, (0.000, -0.104, 1.905)),
+                head_size(self.variant, (0.020, 0.008, 0.006)),
+            ),
             "head",
             "human_face",
             "skin_shadow",
         )
 
     def build_uniform(self) -> None:
-        # The too-tight collar chokes the neck base: its top radius is
-        # visibly narrower than the first neck segment above it.
+        # The same too-tight uniform collar survives on both designs.  It
+        # is clothing, not anatomy, and keeps its atlas region and role.
         self.add_part(
             "CLO_TightCollar",
-            base.make_frustum_between(
-                (NECK_BASE[0], NECK_BASE[1], 1.318),
-                (NECK_BASE[0], NECK_BASE[1], 1.352),
-                0.084,
-                0.062,
-                12,
-            ),
+            make_collar_geometry(base, self.variant),
             "chest",
             "strangling_collar",
             "collar",
@@ -661,16 +887,16 @@ class CashierBuilder(base.PedestrianBuilder):
         scene["bp_signature_anatomy"] = json.dumps(
             list(SIGNATURE_ANATOMY), separators=(",", ":")
         )
-        scene["bp_neck_design"] = "segmented periscope neck"
-        scene["bp_eye_design"] = "wide asymmetric watcher eyes"
+        scene["bp_neck_design"] = self.variant.neck_design
+        scene["bp_eye_design"] = self.variant.eye_design
 
 
-def validate_cashier_result(result):
-    """Standalone contract check for the bespoke cashier.
+def validate_cashier_result(result, atlas, variant: CashierVariant):
+    """Standalone contract check for either bespoke cashier variant.
 
-    Mirrors the shared pedestrian validation but owns the cashier's
-    numbers: the five neck pivots, the raised resting height and the
-    surveillance design details.
+    Mirrors the shared pedestrian validation but owns the variant split:
+    the ordinary model must have one fixed human neck and adult head ratios,
+    while the preserved Watcher must retain all five procedural pivots.
     """
 
     bpy.context.view_layer.update()
@@ -707,10 +933,15 @@ def validate_cashier_result(result):
     if bpy.data.actions:
         errors.append("Cashier model must contain no authored Actions")
 
-    if tuple(result.pivots) != NECK_PIVOT_NAMES:
+    expected_pivots = (
+        NECK_PIVOT_NAMES
+        if variant.key == WATCHER_VARIANT.key
+        else ()
+    )
+    if tuple(result.pivots) != expected_pivots:
         errors.append(
             f"Neck pivots are {tuple(result.pivots)!r}; "
-            f"expected {NECK_PIVOT_NAMES!r}"
+            f"expected {expected_pivots!r}"
         )
     for name, pivot in result.pivots.items():
         if pivot.type != "EMPTY" or pivot.parent != result.root:
@@ -731,33 +962,92 @@ def validate_cashier_result(result):
         "CLO_NameTag",
         "GEO_Hand.L",
         "GEO_Hand.R",
-    } | {
-        f"NECK_Segment.{index + 1:02d}"
-        for index in range(NECK_SEGMENT_COUNT)
     }
+    if variant.key == WATCHER_VARIANT.key:
+        required |= {
+            f"NECK_Segment.{index + 1:02d}"
+            for index in range(NECK_SEGMENT_COUNT)
+        }
+    else:
+        required.add("GEO_Neck")
     missing = sorted(required.difference(parts))
     if missing:
         errors.append(f"Missing required cashier design parts: {missing}")
 
-    for index in range(NECK_SEGMENT_COUNT):
-        segment = parts.get(f"NECK_Segment.{index + 1:02d}")
-        if segment is None:
-            continue
-        if segment.bone != "root":
+    if variant.key == WATCHER_VARIANT.key:
+        for index in range(NECK_SEGMENT_COUNT):
+            segment = parts.get(f"NECK_Segment.{index + 1:02d}")
+            if segment is None:
+                continue
+            if segment.bone != "root":
+                errors.append(
+                    f"{segment.obj.name} must bind to the static root so "
+                    "the runtime can re-parent it under its pivot"
+                )
+            if segment.obj.get("bp_pivot") != NECK_PIVOT_NAMES[index]:
+                errors.append(
+                    f"{segment.obj.name} must carry its pivot marker"
+                )
+    else:
+        neck = parts.get("GEO_Neck")
+        if neck is not None and (
+            neck.bone != "neck" or neck.role != "body"
+        ):
             errors.append(
-                f"{segment.obj.name} must bind to the static root so "
-                "the runtime can re-parent it under its pivot"
+                "The ordinary cashier neck must be one body mesh rigid "
+                "to the canonical neck bone"
             )
-        if segment.obj.get("bp_pivot") != NECK_PIVOT_NAMES[index]:
+        forbidden = sorted(
+            name for name in parts
+            if name.startswith("NECK_Segment.")
+        )
+        if forbidden:
             errors.append(
-                f"{segment.obj.name} must carry its pivot marker"
+                "The ordinary cashier still contains stretch segments: "
+                f"{forbidden}"
             )
+        stretch_parts = sorted(
+            part.obj.name for part in result.parts
+            if "stretch" in part.role
+            or bool(part.obj.get("bp_pivot", False))
+        )
+        if stretch_parts:
+            errors.append(
+                "The ordinary cashier still contains stretch metadata: "
+                f"{stretch_parts}"
+            )
+        if neck is not None:
+            neck_points = [
+                neck.obj.matrix_world @ vertex.co
+                for vertex in neck.obj.data.vertices
+            ]
+            neck_height = max(point.z for point in neck_points) - min(
+                point.z for point in neck_points
+            )
+            if not 0.10 <= neck_height <= 0.14:
+                errors.append(
+                    "The ordinary cashier neck is not visibly short: "
+                    f"{neck_height:.3f} m"
+                )
+
+    head = parts.get("GEO_Head")
+    if head is not None and (
+        head.bone != "head" or head.role != variant.head_role
+    ):
+        errors.append(
+            f"GEO_Head must use role {variant.head_role!r} on head"
+        )
 
     eye_widths = {}
     for side in ("L", "R"):
         eye = parts.get(f"FACE_EyeWhite.{side}")
         pupil = parts.get(f"FACE_Pupil.{side}")
         if eye is not None:
+            if eye.bone != "head" or eye.role != "wide_watcher_eye":
+                errors.append(
+                    f"{side} eye white must preserve the head-bound "
+                    "wide_watcher_eye runtime contract"
+                )
             coordinates = [
                 eye.obj.matrix_world @ vertex.co
                 for vertex in eye.obj.data.vertices
@@ -766,9 +1056,13 @@ def validate_cashier_result(result):
                 point.x for point in coordinates
             ) - min(point.x for point in coordinates)
         if pupil is not None:
-            if pupil.bone != f"face.eye.{side}":
+            if (
+                pupil.bone != f"face.eye.{side}"
+                or pupil.role != "visible_eye_pupil"
+            ):
                 errors.append(
-                    f"{side} pupil must be rigid to face.eye.{side}"
+                    f"{side} pupil must preserve visible_eye_pupil on "
+                    f"face.eye.{side}"
                 )
             if max(pupil.color[:3]) >= 0.08:
                 errors.append(f"{side} pupil is not properly dark")
@@ -777,13 +1071,20 @@ def validate_cashier_result(result):
             errors.append(
                 "The right eye must run visibly larger than the left"
             )
-        head = parts.get("GEO_Head")
         if head is not None:
-            head_width = HEAD_RADII[0] * 2.0
+            head_width = head_radii(variant)[0] * 2.0
             if eye_widths["L"] + eye_widths["R"] < head_width * 0.80:
                 errors.append(
-                    "The combined eye width must dominate the tiny head"
+                    "The combined eye width must preserve the cashier face"
                 )
+
+    collar = parts.get("CLO_TightCollar")
+    if collar is not None and (
+        collar.bone != "chest" or collar.role != "strangling_collar"
+    ):
+        errors.append(
+            "CLO_TightCollar must preserve strangling_collar on chest"
+        )
 
     mesh_count = len(result.parts)
     triangle_count = 0
@@ -850,6 +1151,34 @@ def validate_cashier_result(result):
                 f"got {bounds_max.z:.6f}"
             )
 
+    if variant.key == NORMAL_VARIANT.key and head is not None:
+        head_vertices = [
+            head.obj.matrix_world @ vertex.co
+            for vertex in head.obj.data.vertices
+        ]
+        head_height = max(point.z for point in head_vertices) - min(
+            point.z for point in head_vertices
+        )
+        head_width = max(point.x for point in head_vertices) - min(
+            point.x for point in head_vertices
+        )
+        heads_tall = TOTAL_HEIGHT / head_height
+        shoulder_width = abs(
+            base.BONE_BY_NAME["upper_arm.L"].head[0] -
+            base.BONE_BY_NAME["upper_arm.R"].head[0]
+        )
+        shoulder_to_head = shoulder_width / head_width
+        if not 6.90 <= heads_tall <= 7.75:
+            errors.append(
+                "Ordinary cashier head ratio is "
+                f"{heads_tall:.3f}; expected 6.90-7.75 heads tall"
+            )
+        if not 2.20 <= shoulder_to_head <= 2.65:
+            errors.append(
+                "Ordinary cashier shoulder/head ratio is "
+                f"{shoulder_to_head:.3f}; expected 2.20-2.65"
+            )
+
     if any(
         obj.type in {"LIGHT", "CAMERA"}
         for obj in result.export_collection.objects
@@ -869,6 +1198,7 @@ def validate_cashier_result(result):
         "anatomy_standard": base.NPC_ANATOMY_STANDARD,
         "rest_pelvis_height_m": base.NPC_PELVIS_HEIGHT,
         "signature_anatomy": list(SIGNATURE_ANATOMY),
+        "detail_atlas_sha256": atlas.sha256,
         "skeleton": [
             {
                 "name": spec.name,
@@ -985,7 +1315,13 @@ def render_preview(path: Path, result) -> None:
     bpy.ops.render.render(write_still=True)
 
 
-def write_manifest(path: Path, result, report) -> None:
+def write_manifest(
+    path: Path,
+    result,
+    report,
+    atlas,
+    variant: CashierVariant,
+) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     payload = {
         "generator": "tools/build-supermarket-cashier-3d-model.py",
@@ -1018,12 +1354,35 @@ def write_manifest(path: Path, result, report) -> None:
         "animation_count": 0,
         "animations": [],
         "build_signature": report.build_signature,
-        "neck_design": "segmented_periscope_v1",
-        "neck_segment_count": NECK_SEGMENT_COUNT,
-        "neck_rest_length_m": base.stable_float(NECK_REST_LENGTH),
-        "neck_segment_height_m": NECK_SEGMENT_HEIGHT,
-        "neck_max_stretch_ratio": NECK_MAX_STRETCH_RATIO,
-        "eye_design": "wide_watcher_asymmetric",
+        "neck_design": variant.neck_design,
+        "neck_segment_count": variant.neck_segment_count,
+        "neck_rest_length_m": base.stable_float(
+            variant.neck_rest_length
+        ),
+        "neck_segment_height_m": variant.neck_segment_height,
+        "neck_max_stretch_ratio": variant.neck_max_stretch_ratio,
+        "eye_design": variant.eye_design,
+        "texture_bindings": [
+            {
+                "texture_asset": texture_asset_path(atlas.path),
+                "sha256": atlas.sha256,
+                "size": [atlas.width, atlas.height],
+                "regions": [
+                    {
+                        "name": region.name,
+                        "renderer": region.renderer,
+                        "rect_px": [
+                            region.x,
+                            region.y,
+                            region.width,
+                            region.height,
+                        ],
+                        "kind": region.kind,
+                    }
+                    for region in CASHIER_ATLAS_REGIONS
+                ],
+            }
+        ],
         "bones": [
             {
                 "name": spec.name,
@@ -1062,15 +1421,21 @@ def write_manifest(path: Path, result, report) -> None:
 
 def main() -> None:
     config = parse_args()
-    result = CashierBuilder().build()
-    report = validate_cashier_result(result)
+    variant = config.variant_spec
+    activate_variant(variant)
+    # Painted before the build so the Blender review render samples the
+    # very file Unity imports.
+    atlas = write_detail_atlas(paint_cashier_detail_atlas(), config.atlas)
+    result = CashierBuilder(variant, atlas_path=config.atlas).build()
+    report = validate_cashier_result(result, atlas, variant)
     if not config.no_preview:
         render_preview(config.preview, result)
     base.export_fbx(config.fbx, result)
-    write_manifest(config.manifest, result, report)
+    write_manifest(config.manifest, result, report, atlas, variant)
     base.save_blend(config.output)
     print("SUPERMARKET CASHIER 3D BUILD OK")
     print(f"  Blender: {bpy.app.version_string}")
+    print(f"  Variant: {variant.key}")
     print(f"  Design: {DESIGN_ID}")
     print(
         f"  Skeleton bones: {len(base.SKELETON)} "
@@ -1084,6 +1449,7 @@ def main() -> None:
     print(f"  Blend: {config.output}")
     print(f"  FBX: {config.fbx}")
     print(f"  Manifest: {config.manifest}")
+    print(f"  Atlas: {config.atlas} ({atlas.sha256[:12]}...)")
     if not config.no_preview:
         print(f"  Preview: {config.preview}")
 

@@ -99,12 +99,10 @@ namespace BarPromenade.Tests.PlayMode
 
             // SHE FACES THE ROOM, NOT THE HEARTH.
             //
-            // Measured on her ROOT, not on the face patch. A skinned
-            // renderer's `bounds` is the bind-pose box moved by its own
-            // transform - `updateWhenOffscreen` is off for every pedestrian -
-            // so it does not follow the animated skull and reported her nose
-            // three millimetres BEHIND her head bone, which is neither true
-            // nor false, just meaningless.
+            // Measured on her ROOT, not on the face patch. Dynamic skinned
+            // bounds now keep her modular parts visible, but a renderer AABB
+            // is still a geometry envelope rather than a semantic facing
+            // direction.
             Vector3 localForward = room.InverseTransformDirection(
                 interior.Mother.transform.forward);
             Assert.That(

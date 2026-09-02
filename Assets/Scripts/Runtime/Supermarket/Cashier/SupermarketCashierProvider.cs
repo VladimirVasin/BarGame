@@ -16,7 +16,7 @@ namespace BarPromenade
     {
         public const string ResourcePath =
             "Supermarket/SupermarketCashierProvider";
-        public const string DesignId = "watcher_cashier_v1";
+        public const string DesignId = "supermarket_cashier_v1";
 
         [SerializeField] private GameObject cashierPrefab;
 

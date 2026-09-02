@@ -151,9 +151,11 @@ Assets/
       BarBartenderProvider.asset    dedicated six-armed NPC prefab link
       Textures/                     four interior albedos + exterior brick/plaster sheets
     Supermarket/
+      SupermarketInterior3D.prefab     passive 16 x 11 x 3.6 m authored shop + semantic registry
       SupermarketExterior3D.prefab     complete passive fixed-metre neighbourhood-store exterior
+      Products/                        six imported per-item passive prefab outputs
       ExteriorTextures/               wall/fascia atlases + metric brick/metal albedos
-      SupermarketCashierProvider.asset  dedicated Watcher Cashier prefab link
+      SupermarketCashierProvider.asset  active normal cashier prefab link
     PlayerHome/
       PlayerHomeExterior3D.prefab      passive Series 209-1-inspired home exterior + semantic registry
       ExteriorTextures/               nine dedicated stucco/brick/roof/wood/metal/frame/glass/concrete sheets
@@ -248,12 +250,18 @@ Assets/
       Models/BarBartender3D.{fbx,json}  1.75 m six-armed NpcHumanV2 model / v2.0.0 manifest
       Prefabs/BarBartender.prefab       provider-bound passive runtime bartender
   Supermarket/
+    Interior/
+      Models/SupermarketInterior3D.{fbx,json}  passive authored hall, fixtures, pivots + measured contract
+    Products/
+      Models/SupermarketProducts3D.{fbx,json}  six-item passive product pack / 33 meshes / 2,276 tris
     Models/
       SupermarketExterior3D.fbx        complete passive 15.5 x 15.5 x 6.4 m exterior
       SupermarketExterior3D.json       semantic surfaces, bounds, door anchor + signature
     Cashier/
-      Models/SupermarketCashier3D.{fbx,json}  NpcHumanV2 Watcher / v2.0.0 manifest
-      Prefabs/SupermarketCashier.prefab       provider-bound passive runtime cashier
+      Models/SupermarketCashier3D.{fbx,json}         active normal v1.0.0 / 40 meshes / 1,244 tris
+      Models/SupermarketWatcherCashier3D.{fbx,json}  retained Bizarre v2.2.0 / 44 / 1,588
+      Prefabs/SupermarketCashier.prefab               provider-bound active normal cashier
+      Prefabs/SupermarketWatcherCashier.prefab        retained inactive Watcher asset
   PlayerHome/
     Models/
       PlayerHomeExterior3D.fbx         47-part passive 13 x 12 x 8.8 m home exterior
@@ -290,6 +298,8 @@ Assets/
         GameTimeDayNightRules.cs  night/dawn/day/dusk visual sample
         GameWeatherRules.cs       seeded 90-minute clear/light-rain/heavy-rain slots
         RuntimePrimitiveFactory.cs shared material primitives, oriented batches + opt-in XZ planar UVs
+        NpcDesignAppearance.cs    exact 28-design Normal/Bizarre catalog (7/21; spawn-neutral)
+        NpcSkinnedMeshCullingGuard.cs  live-pose bounds for every modular humanoid renderer
       Diagnostics/   bounded NDJSON session log, rotation and F8 snapshot
       Audio/         shared mixer routing, filtered themes and generated retro audio
         GameAudioMixer.cs                  canonical groups, snapshots and transitions
@@ -546,8 +556,8 @@ Assets/
         HomeBathroomBuilder.cs   oriented toilet, shower/sink and pipe damage
         HomeInteriorDressingBuilder.cs  collider-free poverty/neglect details
         SupermarketInteriorLayout*.cs  room/aisles/fixtures, 3 shelves + 5 slots
-        SupermarketInteriorWorldBuilder.cs  worn shop, finite products, checkout shell
-        SupermarketSecurityCameraWorldBuilder.cs  four corner CCTV heads servoed at the hero
+        SupermarketInteriorWorldBuilder.cs  authored shop placement + plan-owned collision and finite products
+        SupermarketSecurityCameraWorldBuilder.cs  four authored corner CCTV pivots servoed at the hero
         Supermarket{Shelf,Product}View.cs  registered physical stock and source IDs
         StairwellLayout*.cs      three elevations, connected flights and blocker
         StairwellWorldBuilder.cs stairs, landings, rails, doors and physical ramps
@@ -739,7 +749,7 @@ Assets/
         InventoryState.cs           atomic bounded stack mutations + starters
         InventoryConsumableCatalog.cs food floors, relief and bottled servings
         InventoryMenuModel.cs       wrapping selection and examine state
-        InventoryItemModelFactory.cs shared low-poly world/preview item models
+        InventoryItemModelFactory.cs six authored product prefabs + low-poly models for other items
         HomeRefrigeratorInventoryAdapter.cs  slot sources -> inventory IDs
         SupermarketProductCatalog.cs five offers with localized metadata/prices
         SupermarketPurchaseRules.cs  pure finite-source/cash/stack validation
@@ -794,15 +804,21 @@ Assets/
       BarPatronWorldBuilder.cs      pooled 3D guests on NPC anchors, seated via seat contract
       Bar/Bartender/                provider, registry, world builder, presentation + service choreography
       Drinks/        stable IDs, retail catalog, atomic purchases and shop UI
-      Supermarket/Cashier/  the Watcher Cashier: provider-bound passive prefab
+      Supermarket/Cashier/  normal observing cashier + retained inactive Watcher asset
         SupermarketCashierProvider.cs      one addressable ref to the off-Resources prefab
-        SupermarketCashierAssetRegistry.cs bones, five neck pivots, renderer bindings
+        SupermarketCashierAssetRegistry.cs bones, ordinary head/eye + renderer bindings
         SupermarketCashierFactory.cs       spawn on the plan anchor + passivity guard + magnet
-        SupermarketCashierPresentation.cs  procedural hunch, periscope chain, pupils, blink
-        SupermarketCashierActor.cs         samples the hero, drives surveillance + pose
-        SupermarketCashierSurveillanceState.cs pure periscope/startle/blink-suppression logic
+        SupermarketCashierPresentation.cs  procedural hunch, bounded head/eye look + blink
+        SupermarketCashierActor.cs         samples the hero, drives bounded attention + pose
+        SupermarketCashierSurveillanceState.cs pure local-look/startle/blink-suppression logic
         SupermarketCashierBlinkState.cs    pure 6.5 s rare-blink cycle
         SupermarketCashierInteraction.cs   E talk stub on its own trigger
+      Supermarket/Interior/ passive Blender hall bridge
+        SupermarketInteriorAssetRegistry.cs  semantic parts/anchors, shared surfaces + measured metadata
+        SupermarketInteriorModelResources.cs canonical Resources load/instantiate boundary
+      Supermarket/Products/ passive six-item Blender product bridge
+        SupermarketProductAssetRegistry.cs per-item parts/bounds/source metadata
+        SupermarketProductModelResources.cs canonical per-item Resources load/instantiate boundary
       UI/            shared soot/bone 640x360 IMGUI, pause/inventory, HUD, maps and F9 debug
         RetroUiTheme.cs             flat frames, soot grain, semantic values + packaged Roboto/legacy fallback
         BalanceCheckView.cs         crisp overhead arc, arrow and risk meter
@@ -831,11 +847,13 @@ Assets/
       City/CityBuildingSurfaceTextureImporter.cs path-specific Clamp/Repeat, max-size, mip and readability contract
       City/Church{AssetSetup,ModelImporter}.cs Catholic FBX import, materials, prefabs + validation
       Bar/BarAssetSetup.cs       shared interior/exterior importer, prefab and manifest validation
-      Supermarket/SupermarketExterior{AssetSetup,ModelImporter}.cs passive model/texture import, Resources prefab + manifest validation
+      Supermarket/SupermarketExterior{AssetSetup,ModelImporter}.cs passive exterior import, Resources prefab + manifest validation
+      Supermarket/SupermarketInteriorAssetSetup.cs passive hall import, anchor/part binding + manifest validation
+      Supermarket/SupermarketProductAssetSetup.cs six extracted Resources prefabs + passive pack validation
       PlayerHome/PlayerHomeExterior{AssetSetup,ModelImporter}.cs passive import, prefab authoring + exact lit-window validation
       AudioMixerAssetSetup.cs  idempotent shared mixer topology and snapshot authoring
       MountainRoadCafeCastAssetSetup.cs  isolated v2 model/clip/256 px atlas import, validation + provider setup
-      NpcHumanV2AssetSetup.cs       one batch rebuild/validation entry point for all 24 rigged humanoid NPC assets
+      NpcHumanV2AssetSetup.cs       one batch rebuild/validation entry point for all 26 on-disk humanoid NPC designs; cashier swap leaves active cast unchanged
       City/NPC/CityArchShelterResidentAssetSetup.cs isolated three-model/atlas/loop prefab + provider pipeline
       MothersHouse/MothersHouseMotherAssetSetup.cs  her own pipeline: the shared descriptor reads clip names out of the ONE bank and demands a walk, and she has neither
       City/NPC/CityPedestrianTextureImporter.cs  routes pedestrian detail atlases to the Hero V2 atlas import contract (Point/Clamp/sRGB/256/no mip)
@@ -853,6 +871,8 @@ Assets/
       CityBuildingPrototypeRuntimeTests.cs City/Home placement, six opaque bindings, inset foundation, slot shader + half-space policy
       BarModelContractTests.cs    shared interior + complete bar_exterior_v2 manifest/runtime contract
       SupermarketExteriorModelContractTests.cs dimensions, sheets, clearance, passive importer + prefab registry contract
+      SupermarketInteriorModelContractTests.cs fixed metres, semantic/product anchors, sheets, passive prefab + layout parity
+      SupermarketProductModelContractTests.cs six-item manifest/import/prefab/passivity/bounds contract
       PlayerHomeExteriorModelContractTests.cs dimensions, outward gallery, sheets, clearance + exactly one emissive pane
       RuntimePrimitiveFactoryTests.cs four exterior assets/import/seam/MPB/UV contract incl. box-projected world UVs
       CityParkSurfaceAppearanceTests.cs  eight park sheets: recipes/import/source contract, UV mode, textured lawn/park build + landmark-only decoration texturing
@@ -965,6 +985,7 @@ Assets/
       HomePlayerOcclusionControllerPlayModeTests.cs  lifecycle + dither/Forward+ GPU checks
       InteriorSoundscapePlayModeTests.cs    spatial routing, crossfade and lifecycle
       Player3DOrdinaryPresentationPlayModeTests.cs  locomotion/status/falls/all-fours/shadow
+      NpcSkinnedMeshCullingPlayModeTests.cs  seven provider-prefab samples keep every skinned part on dynamic bounds
       IntoxicationStatusPlayModeTests.cs hybrid handoff, fixed root, one-phase Rise cleanup
       PlayerAnimatedInteraction3DPlayModeTests.cs   clip sampling, pelvis alignment and cleanup
       PlayerDoorActionPlayModeTests.cs terminal transition commit + cancellation cleanup
@@ -1005,6 +1026,13 @@ ArtSource/
   MountainRoad/                  mountain albedo contract, borrowed sheets + Blender misc source/preview
     Cafe/Blender/                generated fixed-metre cafe `.blend`
     Cafe/Preview/                deterministic Nighthawks-composition review PNG
+  Supermarket/Interior/
+    Blender/                     generated fixed-metre shop-interior `.blend`
+    Preview/                     deterministic authored-interior review PNG
+  Supermarket/Cashier/Blender/   active normal + retained inactive Watcher `.blend`/preview pairs
+  Supermarket/Products/
+    Blender/                     generated six-item product-pack `.blend`
+    Preview/                     deterministic unbranded product review PNG
   Village/Blender/               village kit `.blend` source and contact sheet (no sheet of its own)
   Church/Blender/                Catholic `.blend` source + accepted exterior/interior previews
   MothersHouse/
@@ -1041,6 +1069,11 @@ tools/
   build-bar-3d-model.py          shared interior + complete fixed-metre pub exterior/export validator
   bar_exterior.py                deterministic 38-part late-Victorian pub geometry
   build-bar-textures.py          interior sheets + exterior brick/plaster albedos
+  build-supermarket-cashier-3d-model.py  normal/Watcher cashier build, export and contract validation
+  supermarket_cashier_variants.py       shared variant descriptors + normal/head geometry helpers
+  supermarket_cashier_detail_atlas.py   shared deterministic uniform-detail atlas schema and painter
+  build-supermarket-interior-3d-model.py  60-mesh fixed-metre shop interior + anchors/passivity/export validator
+  build-supermarket-products-3d-model.py  33-mesh six-item passive product pack + pivot/export validator
   build-supermarket-exterior-3d-model.py  36-part fixed-metre shop exterior + semantic/clearance/export validator
   build-supermarket-exterior-textures.py  wall/fascia atlases + repeatable brick/metal sheets and validator
   build-player-home-exterior-3d-model.py  47-part Series 209-1-inspired exterior + exact geometry/light validator
@@ -1369,6 +1402,9 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                             -> CityBusRideController board / later-stop exit
                          -> ordinary location door -> PlayerDoorActionPlan
                             -> guided dock + DoorUseEnter/Loop/Exit
+                            -> supermarket City entrance only
+                               -> 0.242 m road/curb prompt-height tolerance
+                               -> same physical guided dock
                             -> terminal neutral pose -> SceneTransitionService
                          -> BarEntrance/BarExit -> BarInterior/City
                          or SupermarketEntrance/Exit -> SupermarketInterior
@@ -1426,7 +1462,7 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                                           -> split counter + shifted table approach
                                           -> HomeRefrigeratorWorldBuilder
                                              -> hollow worn cabinet + eight slots
-                                             -> vodka / egg / open stew can
+                                             -> shared product prefabs: vodka / egg / open stew can
                                              -> HomeRefrigeratorItemCatalog + ItemView
                                                 -> localized metadata + tight triggers
        -> HomeBalconyLayoutPlanner -> HomeBalconyLayoutValidator
@@ -1574,17 +1610,20 @@ player -> PlayerInteractor -> InteractionPromptView -> same guarded Interact act
                              -> GameSessionState wallet + drinking progress
        -> SupermarketInteriorLayoutPlanner -> validated 16x11x3.6 shop
                                              -> three physical shelf views
-                                                -> noodles + day-old loaf
-                                                -> vodka + closed stew
-                                                -> chicken egg
-                                             -> decorative checkout + Watcher Cashier
-                                                -> pursuit curve -> head hovers by the hero
-                                                -> arcs over shelves, never clips
-                                                -> caught-looking retract + stare
+                                                -> exact product-pack anchors
+                                                   -> noodles + day-old loaf
+                                                   -> vodka + closed stew
+                                                   -> chicken egg
+                                             -> decorative checkout + normal cashier
+                                                -> ordinary fixed-length neck
+                                                -> bounded eye/head tracking from the till
+                                                -> retained Watcher asset is never instantiated
                                                 -> E talk stub -> placeholder line
                                              -> four corner CCTV heads track the hero
                                              -> six practicals + one flickering row
        -> SupermarketShelfStation -> product-centered authored shelf camera
+                                   -> renderer-only hero + cashier hide leases
+                                      -> exact state restore on every exit
                                    -> cyclic stocked-shelf navigation
                                       -> muted clickable arrows beside product
                                       -> pointer/keyboard/gamepad shared action

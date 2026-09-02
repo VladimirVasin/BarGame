@@ -7,7 +7,7 @@ namespace BarPromenade
 {
     public sealed class PlayerInteractor : MonoBehaviour
     {
-        private const float InteractionRadius = 1.65f;
+        public const float InteractionRadius = 1.65f;
         private readonly Collider[] overlapBuffer = new Collider[24];
 
         // Filled in place every Update; the array-returning overload

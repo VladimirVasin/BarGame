@@ -134,6 +134,7 @@ namespace BarPromenade
             detailAtlas = configuredDetailAtlas ??
                 throw new ArgumentNullException(
                     nameof(configuredDetailAtlas));
+            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
             ValidateClipContract();
             ApplyBaseColors();
             SetCoffeePotVisible(false);
@@ -213,6 +214,11 @@ namespace BarPromenade
                     target.enabled = visible;
                 }
             }
+        }
+
+        private void Awake()
+        {
+            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
         }
 
         private void OnEnable()

@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Linq;
 using NUnit.Framework;
@@ -27,18 +27,29 @@ namespace BarPromenade.Tests.EditMode
             "Assets/Pedestrians/Staged/Prefabs/PipebackRoller3D.prefab";
         private const string PipebackRollerDesignId =
             "pipeback_roller_v1";
-        // The Pipeback Roller, the Yard Babushka, the Weigh Attendant,
-        // the Cemetery Mourner, the Cemetery Watchman and the Seacoast
-        // Fisherman contribute two staged loops each. The two park
-        // players carry three: an idle, a trudge held for a later pass,
-        // and the authored shout they throw at each other. The Ferryman
-        // carries FIVE, because he is the only design with two seats and
-        // the only one that walks between them: a wait on his bonnet, the
-        // drop off it, the trudge round the car that this is finally for,
-        // the transition in through his own door, and the driving loop it
-        // arrives at.
-        private const int StagedLocomotionClipCount =
-            (6 * 2) + (2 * 3) + 5;
+        // Every clip in the shared bank that is NOT a roaming design's
+        // street pair or its declared ride. The name used to be
+        // `StagedLocomotionClipCount`, back when "staged" and "off the
+        // street" were the same thing; since seven residents were promoted
+        // on 2026-09-02 they are not, and this constant tracks the second.
+        //
+        //   - The four designs taken off the street keep everything they
+        //     had: an idle and a walk each, and a seated loop for all but
+        //     the Helmet Lamp hopper, who never declared one.  4*2 + 3 = 11
+        //   - The Pipeback Roller is staged and has never roamed.       2
+        //   - The seven promoted residents each keep the PLACED pair
+        //     their own presentation plays - the babushka's carpet
+        //     beating, the mourner's graveside rite - on top of the
+        //     street pair counted through the catalog.            7*2 = 14
+        //   - The two park players add the shout they throw at each
+        //     other.                                                    2
+        //   - The Ferryman carries FIVE, because he is the only design
+        //     with two seats and the only one that walks between them: a
+        //     wait on his bonnet, the drop off it, the trudge round the
+        //     car that this is finally for, the transition in through his
+        //     own door, and the driving loop it arrives at.             5
+        private const int NonRoamingLocomotionClipCount =
+            11 + 2 + 14 + 2 + 5;
 
         /// <summary>
         /// The library's two clips that are not loops, both the
@@ -224,6 +235,32 @@ namespace BarPromenade.Tests.EditMode
                     "ChairCarrierSit",
                     "KettleHatSit",
                     "LongArmSit",
+                    // The two residents promoted onto Route 01. The other
+                    // five walk to the stop and watch the bus go: the
+                    // mourner's coat hem, the babushka's housecoat and the
+                    // fisherman's shouldered rod all reach further below or
+                    // above the pelvis bone than a cushion can absorb.
+                    "WeigherSit",
+                    "WatchmanSit",
+                    // The ordinary street gait, one pair per promoted
+                    // resident. It is the hero's own eight-key walk cycle
+                    // merged onto each design's base pose, which is why
+                    // seven designs share one recipe and still keep their
+                    // own coats and posture.
+                    "BabushkaStreetIdle",
+                    "BabushkaStreetWalk",
+                    "WeigherStreetIdle",
+                    "WeigherStreetWalk",
+                    "MournerStreetIdle",
+                    "MournerStreetWalk",
+                    "WatchmanStreetIdle",
+                    "WatchmanStreetWalk",
+                    "FishermanStreetIdle",
+                    "FishermanStreetWalk",
+                    "ChessStreetIdle",
+                    "ChessStreetWalk",
+                    "CheckersStreetIdle",
+                    "CheckersStreetWalk",
                     // The Ferryman's seated loop is not a Route 01 ride: it
                     // is him behind the wheel of his own car. He is the one
                     // design with two seats, and the sit slot carries the
@@ -232,9 +269,10 @@ namespace BarPromenade.Tests.EditMode
                 },
                 locomotionClips.Select(
                     clip => NormalizeAnimationClipName(clip.name)));
-            // Production owns two clips per catalog design and its declared
-            // seated loops; the isolated Pipeback and Yard Babushka
-            // contribute two more each.
+            // The street owns two clips per catalog design plus the rides
+            // those designs declare; everything else in the bank belongs to
+            // a design that does not roam, or to the placed role of one that
+            // also does.
             int seatedCount = CityPedestrianResources.Archetypes
                 .Count(archetype => archetype.CanRideBus);
             Assert.That(
@@ -242,7 +280,7 @@ namespace BarPromenade.Tests.EditMode
                 Has.Length.EqualTo(
                     (CityPedestrianResources.Archetypes.Count * 2) +
                     seatedCount +
-                    StagedLocomotionClipCount));
+                    NonRoamingLocomotionClipCount));
             // Every clip loops except a transition between two postures,
             // and a transition that DID loop would be the bug: loop-pose
             // normalisation drags its last frame back towards its first,
@@ -355,6 +393,181 @@ namespace BarPromenade.Tests.EditMode
                 designId,
                 idleClipName,
                 walkClipName);
+        }
+
+        [TestCase(
+            CityPedestrianResources.BabushkaDesignId,
+            "BabushkaSmoke",
+            "BabushkaBeat",
+            "BabushkaStreetIdle",
+            "BabushkaStreetWalk")]
+        [TestCase(
+            CityPedestrianResources.WeighAttendantDesignId,
+            "WeigherCheck",
+            "WeighedPace",
+            "WeigherStreetIdle",
+            "WeigherStreetWalk")]
+        [TestCase(
+            CityPedestrianResources.WatchmanDesignId,
+            "WatchmanWatch",
+            "WatchmanShuffle",
+            "WatchmanStreetIdle",
+            "WatchmanStreetWalk")]
+        [TestCase(
+            CityPedestrianResources.MournerDesignId,
+            "MournerMourn",
+            "MournerWalk",
+            "MournerStreetIdle",
+            "MournerStreetWalk")]
+        [TestCase(
+            CityPedestrianResources.FishermanDesignId,
+            "FishermanLean",
+            "FishermanTrudge",
+            "FishermanStreetIdle",
+            "FishermanStreetWalk")]
+        [TestCase(
+            CityPedestrianResources.ChessPlayerDesignId,
+            "ChessBrood",
+            "ChessTrudge",
+            "ChessStreetIdle",
+            "ChessStreetWalk")]
+        [TestCase(
+            CityPedestrianResources.CheckersPlayerDesignId,
+            "CheckersMull",
+            "CheckersTrudge",
+            "CheckersStreetIdle",
+            "CheckersStreetWalk")]
+        public void PromotedResidents_KeepTheirPlacedRoleAndGainAStreetGait(
+            string designId,
+            string placedIdleClipName,
+            string placedWalkClipName,
+            string streetIdleClipName,
+            string streetWalkClipName)
+        {
+            // The whole point of the promotion, in one assertion each way.
+            //
+            // A promoted resident could not simply have its walk slot
+            // rewritten. The babushka's walk clip is `BabushkaBeat` - a
+            // carpet being beaten on the spot, feet planted - and the drying
+            // yard plays exactly that. So the design carries TWO pairs on one
+            // prefab: the placed pair every staged presentation reads through
+            // `IdleClip`/`WalkClip`, and the street pair the roaming pool
+            // reads through `RoamingIdleClip`/`RoamingWalkClip`. Break either
+            // half and the bug is silent - the yard stops beating its carpet,
+            // or the pavement fills with people beating carpets as they walk.
+            Assert.That(
+                CityPedestrianResources.Roams(designId),
+                Is.True,
+                $"'{designId}' was promoted to the street on 2026-09-02.");
+            Assert.That(
+                CityPedestrianResources.TryGetArchetype(
+                    designId,
+                    out CityPedestrianArchetype archetype),
+                Is.True);
+
+            GameObject prefab = CityPedestrianResources.LoadPrefab(archetype);
+            Assert.That(
+                prefab,
+                Is.Not.Null,
+                $"'{designId}' roams, so its prefab must live under " +
+                "Assets/Resources where the pool can load it.");
+            CityPedestrianAssetRegistry registry =
+                prefab.GetComponent<CityPedestrianAssetRegistry>();
+            Assert.That(registry, Is.Not.Null);
+            Assert.That(registry.DesignId, Is.EqualTo(designId));
+
+            Assert.That(
+                NormalizeAnimationClipName(registry.IdleClip.name),
+                Is.EqualTo(placedIdleClipName),
+                "The placed role reads the idle slot and must not move.");
+            Assert.That(
+                NormalizeAnimationClipName(registry.WalkClip.name),
+                Is.EqualTo(placedWalkClipName),
+                "The placed role reads the walk slot and must not move.");
+
+            Assert.That(registry.AmbientIdleClip, Is.Not.Null);
+            Assert.That(registry.AmbientWalkClip, Is.Not.Null);
+            Assert.That(
+                NormalizeAnimationClipName(registry.RoamingIdleClip.name),
+                Is.EqualTo(streetIdleClipName));
+            Assert.That(
+                NormalizeAnimationClipName(registry.RoamingWalkClip.name),
+                Is.EqualTo(streetWalkClipName));
+            Assert.That(registry.RoamingIdleClip.isLooping, Is.True);
+            Assert.That(registry.RoamingWalkClip.isLooping, Is.True);
+            Assert.That(
+                AssetDatabase.GetAssetPath(registry.RoamingWalkClip),
+                Is.EqualTo(LocomotionAnimationPath),
+                "The street gait is authored into the shared pedestrian " +
+                "bank. It cannot be a reference to the hero's own clip: the " +
+                "pedestrian importer locks the root height and bakes the " +
+                "pelvis arc into the pose, and the hero's importer does not.");
+
+            // The two pairs have to be genuinely different clips, or the
+            // promotion did nothing.
+            Assert.That(
+                registry.RoamingIdleClip,
+                Is.Not.SameAs(registry.IdleClip));
+            Assert.That(
+                registry.RoamingWalkClip,
+                Is.Not.SameAs(registry.WalkClip));
+        }
+
+        [Test]
+        public void OffTheStreetDesigns_StillResolveWithoutAStreetGait()
+        {
+            // The four walkers taken off the street on 2026-09-02 are not
+            // deleted and must not become undeletable-by-accident either:
+            // the courtyard vignettes cast the Lampshade, the Long-Arm and
+            // the Chair Carrier by name, and the mother's teapot is ten of
+            // the Kettle Hat walker's renderers borrowed whole. They resolve;
+            // they do not roam; and they carry no street gait, because
+            // nothing would ever play it.
+            string[] offTheStreet =
+            {
+                CityPedestrianResources.LampshadeDesignId,
+                CityPedestrianResources.KettleHatDesignId,
+                CityPedestrianResources.LongArmDesignId,
+                CityPedestrianResources.HelmetLampDesignId
+            };
+            for (int index = 0; index < offTheStreet.Length; index++)
+            {
+                string designId = offTheStreet[index];
+                Assert.That(
+                    CityPedestrianResources.TryGetArchetype(
+                        designId,
+                        out CityPedestrianArchetype archetype),
+                    Is.True,
+                    $"'{designId}' must still resolve.");
+                Assert.That(
+                    CityPedestrianResources.Roams(designId),
+                    Is.False,
+                    $"'{designId}' must not be on the street.");
+
+                GameObject prefab =
+                    CityPedestrianResources.LoadPrefab(archetype);
+                Assert.That(
+                    prefab,
+                    Is.Not.Null,
+                    $"'{designId}' must stay loadable from Resources.");
+                CityPedestrianAssetRegistry registry =
+                    prefab.GetComponent<CityPedestrianAssetRegistry>();
+                Assert.That(registry, Is.Not.Null);
+                Assert.That(
+                    registry.AmbientIdleClip,
+                    Is.Null,
+                    $"'{designId}' does not roam and must carry no street " +
+                    "gait.");
+                Assert.That(registry.AmbientWalkClip, Is.Null);
+                Assert.That(
+                    registry.RoamingIdleClip,
+                    Is.SameAs(registry.IdleClip),
+                    "With no street gait the roaming slots fall back to the " +
+                    "design's own pair.");
+                Assert.That(
+                    registry.RoamingWalkClip,
+                    Is.SameAs(registry.WalkClip));
+            }
         }
 
         [Test]
@@ -629,14 +842,32 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     new[]
                     {
-                        CityPedestrianResources.LampshadeDesignId,
                         CityPedestrianResources.ChairCarrierDesignId,
-                        CityPedestrianResources.KettleHatDesignId,
-                        CityPedestrianResources.LongArmDesignId,
-                        CityPedestrianResources.HelmetLampDesignId
+                        CityPedestrianResources.BabushkaDesignId,
+                        CityPedestrianResources.WeighAttendantDesignId,
+                        CityPedestrianResources.WatchmanDesignId,
+                        CityPedestrianResources.ChessPlayerDesignId,
+                        CityPedestrianResources.CheckersPlayerDesignId,
+                        CityPedestrianResources.MournerDesignId,
+                        CityPedestrianResources.FishermanDesignId
                     }),
                 "The stable catalog order is part of the deterministic " +
                 "spawn contract.");
+            Assert.That(
+                archetypes.Select(archetype => archetype.DesignId),
+                Is.SubsetOf(
+                    CityPedestrianResources.AllArchetypes.Select(
+                        archetype => archetype.DesignId)),
+                "The street pool must be part of the resolvable catalog.");
+            Assert.That(
+                CityPedestrianResources.AllArchetypes.Count,
+                Is.EqualTo(archetypes.Count + 4),
+                "Four designs resolve without roaming: the Lampshade " +
+                "Walker, the Kettle Hat walker, the Long-Arm Walker and " +
+                "the Helmet Lamp hopper. They were taken off the street on " +
+                "2026-09-02 and deliberately kept in the project - the " +
+                "courtyard vignettes cast three of them by name, and the " +
+                "mother's teapot is built out of the fourth.");
 
             GameObject[] prefabs = CityPedestrianResources.LoadPrefabs();
             Assert.That(prefabs.Length, Is.EqualTo(archetypes.Count));
@@ -703,16 +934,33 @@ namespace BarPromenade.Tests.EditMode
                     $"{archetype.MaximumPoolInstances} pooled instance(s).");
             }
 
-            // The only design carrying a working light stays single, which is
-            // what bounds the worn lights in the world now that ordinary
-            // designs repeat.
+            // The worn lights in the world used to be bounded by keeping the
+            // one design that carries a lamp to a single pooled instance.
+            // Since 2026-09-02 the bound is stronger and worth stating as
+            // what it now is: NO design on the street wears a light at all.
+            // The hopper is the only one who ever did, and he is off the
+            // street. This is the assertion that would catch a promotion
+            // that quietly put a real-time Light back into the ambient
+            // crowd, which is a rendering cost per pedestrian, not a look.
             Assert.That(
                 composition.Count(
                     entry => string.Equals(
                         entry.DesignId,
                         CityPedestrianResources.HelmetLampDesignId,
                         StringComparison.Ordinal)),
-                Is.EqualTo(1));
+                Is.Zero,
+                "The hopper is off the street and must not be pooled.");
+            for (int index = 0; index < prefabs.Length; index++)
+            {
+                CityPedestrianAssetRegistry registry =
+                    prefabs[index]
+                        .GetComponent<CityPedestrianAssetRegistry>();
+                Assert.That(
+                    registry.HeadLamp,
+                    Is.Null,
+                    $"'{registry.DesignId}' roams and must not wear a " +
+                    "real-time light.");
+            }
         }
 
         [Test]
@@ -740,8 +988,12 @@ namespace BarPromenade.Tests.EditMode
             }
 
             // The declaration itself, on the catalog and nowhere else.
+            // Read from the WHOLE catalog rather than the street pool: the
+            // Kettle Hat walker stopped roaming on 2026-09-02 and still has
+            // to resolve, because the mother's teapot is ten of his
+            // renderers borrowed whole.
             IReadOnlyList<CityPedestrianArchetype> archetypes =
-                CityPedestrianResources.Archetypes;
+                CityPedestrianResources.AllArchetypes;
             Assert.That(
                 archetypes
                     .Where(archetype => archetype.CarriesBoilingKettle)
@@ -750,21 +1002,24 @@ namespace BarPromenade.Tests.EditMode
                 Is.EqualTo(
                     new[] { CityPedestrianResources.KettleHatDesignId }),
                 "Only the Kettle Hat walker declares a boiling kettle.");
-            GameObject[] prefabs = CityPedestrianResources.LoadPrefabs();
-            for (int index = 0; index < prefabs.Length; index++)
+            for (int index = 0; index < archetypes.Count; index++)
             {
-                CityPedestrianAssetRegistry other =
-                    prefabs[index].GetComponent<CityPedestrianAssetRegistry>();
+                GameObject other = CityPedestrianResources.LoadPrefab(
+                    archetypes[index]);
+                Assert.That(
+                    other,
+                    Is.Not.Null,
+                    $"'{archetypes[index].DesignId}' does not resolve.");
                 bool isKettle = string.Equals(
-                    other.DesignId,
+                    archetypes[index].DesignId,
                     CityPedestrianResources.KettleHatDesignId,
                     StringComparison.Ordinal);
                 Assert.That(
-                    prefabs[index].GetComponentInChildren<
+                    other.GetComponentInChildren<
                         CityKettleHatRigAnchors>(true) != null,
                     Is.EqualTo(isKettle),
-                    $"'{other.DesignId}' kettle anchors do not match its " +
-                    "declaration.");
+                    $"'{archetypes[index].DesignId}' kettle anchors do not " +
+                    "match its declaration.");
             }
 
             // The lid pivot: the head's own frame, under the head, and

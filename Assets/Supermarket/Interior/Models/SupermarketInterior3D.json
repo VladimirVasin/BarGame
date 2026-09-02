@@ -1,0 +1,3133 @@
+{
+  "generator": "tools/build-supermarket-interior-3d-model.py",
+  "generator_version": "1.0.0",
+  "blender_version": "5.0.1",
+  "design_id": "supermarket_interior_v1",
+  "display_name": "Bar Promenade Supermarket Interior",
+  "dimensions_m": {
+    "width": 16.0,
+    "depth": 11.0,
+    "height": 3.6
+  },
+  "wall_thickness_m": 0.25,
+  "entrance_opening_m": {
+    "width": 2.4,
+    "height": 2.94
+  },
+  "authored_text": [],
+  "baked_products": false,
+  "source_axes": {
+    "right": "+X",
+    "forward": "+Y",
+    "up": "+Z"
+  },
+  "unity_axes": {
+    "right": "+X",
+    "forward": "+Z",
+    "up": "+Y",
+    "fbx_axis_forward": "-Z",
+    "fbx_axis_up": "Y",
+    "bake_space_transform": false
+  },
+  "root_contract": {
+    "origin": "room_footprint_centre_ground",
+    "scale_mode": "fixed_meters",
+    "source_forward_axis": "+Y",
+    "unity_forward_axis": "+Z",
+    "axis_conversion": "swap_y_z_and_reverse_winding",
+    "runtime_wrapper_yaw_degrees": 0.0
+  },
+  "runtime_wrapper_yaw_degrees": 0.0,
+  "colliders": false,
+  "lights": false,
+  "cameras": false,
+  "rigidbodies": false,
+  "audio_sources": false,
+  "materials": false,
+  "animation_count": 0,
+  "bounds_min": [
+    -8.125,
+    -5.625,
+    -0.12
+  ],
+  "bounds_max": [
+    8.125,
+    5.625,
+    3.6
+  ],
+  "unity_bounds_min": [
+    -8.125,
+    -0.12,
+    -5.625
+  ],
+  "unity_bounds_max": [
+    8.125,
+    3.6,
+    5.625
+  ],
+  "mesh_count": 60,
+  "triangle_count": 4884,
+  "budgets": {
+    "maximum_renderers": 90,
+    "maximum_triangles": 30000,
+    "imported_colliders": 0,
+    "imported_lights": 0,
+    "imported_cameras": 0,
+    "imported_rigidbodies": 0
+  },
+  "anchors": [
+    {
+      "name": "cashier",
+      "role": "cashier",
+      "local_position": [
+        5.28,
+        -2.82,
+        0.0
+      ],
+      "unity_local_position": [
+        5.28,
+        0.0,
+        -2.82
+      ]
+    },
+    {
+      "name": "cctv_head_01",
+      "role": "cctv_head_01",
+      "local_position": [
+        -7.13,
+        -4.63,
+        3.1
+      ],
+      "unity_local_position": [
+        -7.13,
+        3.1,
+        -4.63
+      ]
+    },
+    {
+      "name": "cctv_head_02",
+      "role": "cctv_head_02",
+      "local_position": [
+        7.13,
+        -4.63,
+        3.1
+      ],
+      "unity_local_position": [
+        7.13,
+        3.1,
+        -4.63
+      ]
+    },
+    {
+      "name": "cctv_head_03",
+      "role": "cctv_head_03",
+      "local_position": [
+        -7.13,
+        4.63,
+        3.1
+      ],
+      "unity_local_position": [
+        -7.13,
+        3.1,
+        4.63
+      ]
+    },
+    {
+      "name": "cctv_head_04",
+      "role": "cctv_head_04",
+      "local_position": [
+        7.13,
+        4.63,
+        3.1
+      ],
+      "unity_local_position": [
+        7.13,
+        3.1,
+        4.63
+      ]
+    },
+    {
+      "name": "cctv_mount_01",
+      "role": "cctv_mount_01",
+      "local_position": [
+        -7.13,
+        -4.63,
+        3.6
+      ],
+      "unity_local_position": [
+        -7.13,
+        3.6,
+        -4.63
+      ]
+    },
+    {
+      "name": "cctv_mount_02",
+      "role": "cctv_mount_02",
+      "local_position": [
+        7.13,
+        -4.63,
+        3.6
+      ],
+      "unity_local_position": [
+        7.13,
+        3.6,
+        -4.63
+      ]
+    },
+    {
+      "name": "cctv_mount_03",
+      "role": "cctv_mount_03",
+      "local_position": [
+        -7.13,
+        4.63,
+        3.6
+      ],
+      "unity_local_position": [
+        -7.13,
+        3.6,
+        4.63
+      ]
+    },
+    {
+      "name": "cctv_mount_04",
+      "role": "cctv_mount_04",
+      "local_position": [
+        7.13,
+        4.63,
+        3.6
+      ],
+      "unity_local_position": [
+        7.13,
+        3.6,
+        4.63
+      ]
+    },
+    {
+      "name": "checkout",
+      "role": "checkout",
+      "local_position": [
+        5.5,
+        -3.525,
+        0.0
+      ],
+      "unity_local_position": [
+        5.5,
+        0.0,
+        -3.525
+      ]
+    },
+    {
+      "name": "entrance",
+      "role": "entrance",
+      "local_position": [
+        0.0,
+        -5.5,
+        0.0
+      ],
+      "unity_local_position": [
+        0.0,
+        0.0,
+        -5.5
+      ]
+    },
+    {
+      "name": "product_chicken_egg",
+      "role": "product_chicken_egg",
+      "local_position": [
+        0.4,
+        4.455,
+        0.5725
+      ],
+      "unity_local_position": [
+        0.4,
+        0.5725,
+        4.455
+      ]
+    },
+    {
+      "name": "product_closed_stew_can",
+      "role": "product_closed_stew_can",
+      "local_position": [
+        1.06,
+        1.02,
+        0.4125
+      ],
+      "unity_local_position": [
+        1.06,
+        0.4125,
+        1.02
+      ]
+    },
+    {
+      "name": "product_day_old_loaf",
+      "role": "product_day_old_loaf",
+      "local_position": [
+        -4.4,
+        1.18,
+        1.0125
+      ],
+      "unity_local_position": [
+        -4.4,
+        1.0125,
+        1.18
+      ]
+    },
+    {
+      "name": "product_instant_noodles",
+      "role": "product_instant_noodles",
+      "local_position": [
+        -4.4,
+        -1.2,
+        0.4125
+      ],
+      "unity_local_position": [
+        -4.4,
+        0.4125,
+        -1.2
+      ]
+    },
+    {
+      "name": "product_vodka_bottle",
+      "role": "product_vodka_bottle",
+      "local_position": [
+        1.07,
+        -1.0,
+        1.6125
+      ],
+      "unity_local_position": [
+        1.07,
+        1.6125,
+        -1.0
+      ]
+    },
+    {
+      "name": "room_centre",
+      "role": "room_centre",
+      "local_position": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "unity_local_position": [
+        0.0,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "shelf_cold",
+      "role": "shelf_cold",
+      "local_position": [
+        -0.05,
+        4.575,
+        0.0
+      ],
+      "unity_local_position": [
+        -0.05,
+        0.0,
+        4.575
+      ]
+    },
+    {
+      "name": "shelf_dry",
+      "role": "shelf_dry",
+      "local_position": [
+        -4.7,
+        0.0,
+        0.0
+      ],
+      "unity_local_position": [
+        -4.7,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "shelf_pantry",
+      "role": "shelf_pantry",
+      "local_position": [
+        1.35,
+        0.0,
+        0.0
+      ],
+      "unity_local_position": [
+        1.35,
+        0.0,
+        0.0
+      ]
+    },
+    {
+      "name": "stockroom",
+      "role": "stockroom",
+      "local_position": [
+        5.725,
+        4.575,
+        0.0
+      ],
+      "unity_local_position": [
+        5.725,
+        0.0,
+        4.575
+      ]
+    },
+    {
+      "name": "tube_01",
+      "role": "tube_01",
+      "local_position": [
+        -5.2,
+        0.0,
+        3.41
+      ],
+      "unity_local_position": [
+        -5.2,
+        3.41,
+        0.0
+      ]
+    },
+    {
+      "name": "tube_02",
+      "role": "tube_02",
+      "local_position": [
+        -1.75,
+        0.0,
+        3.41
+      ],
+      "unity_local_position": [
+        -1.75,
+        3.41,
+        0.0
+      ]
+    },
+    {
+      "name": "tube_03",
+      "role": "tube_03",
+      "local_position": [
+        1.75,
+        0.0,
+        3.41
+      ],
+      "unity_local_position": [
+        1.75,
+        3.41,
+        0.0
+      ]
+    },
+    {
+      "name": "tube_04",
+      "role": "tube_04",
+      "local_position": [
+        5.2,
+        0.0,
+        3.41
+      ],
+      "unity_local_position": [
+        5.2,
+        3.41,
+        0.0
+      ]
+    }
+  ],
+  "parts": [
+    {
+      "name": "Floor",
+      "role": "floor",
+      "group": "fixed",
+      "sheet": "Linoleum",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.255,
+        0.285,
+        0.265,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.255,
+          0.285,
+          0.265
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 12,
+      "triangles": 20,
+      "bounds_min": [
+        -8.0,
+        -5.5,
+        -0.12
+      ],
+      "bounds_max": [
+        8.0,
+        5.5,
+        0.0
+      ]
+    },
+    {
+      "name": "Ceiling",
+      "role": "ceiling",
+      "group": "fixed",
+      "sheet": "Ceiling",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.4,
+        0.43,
+        0.38,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.4,
+          0.43,
+          0.38
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 8,
+      "triangles": 12,
+      "bounds_min": [
+        -8.0,
+        -5.5,
+        3.48
+      ],
+      "bounds_max": [
+        8.0,
+        5.5,
+        3.6
+      ]
+    },
+    {
+      "name": "Front Wall",
+      "role": "wall",
+      "group": "fixed",
+      "sheet": "WallPaint",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.275,
+        0.305,
+        0.265,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.275,
+          0.305,
+          0.265
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -8.0,
+        -5.625,
+        0.0
+      ],
+      "bounds_max": [
+        8.0,
+        -5.375,
+        3.6
+      ]
+    },
+    {
+      "name": "Back Wall",
+      "role": "wall",
+      "group": "fixed",
+      "sheet": "WallPaint",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.56,
+        0.57,
+        0.47,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.56,
+          0.57,
+          0.47
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -8.0,
+        5.375,
+        0.0
+      ],
+      "bounds_max": [
+        8.0,
+        5.625,
+        3.6
+      ]
+    },
+    {
+      "name": "Left Wall",
+      "role": "wall",
+      "group": "fixed",
+      "sheet": "WallPaint",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.275,
+        0.305,
+        0.265,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.275,
+          0.305,
+          0.265
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -8.125,
+        -5.5,
+        0.0
+      ],
+      "bounds_max": [
+        -7.875,
+        5.5,
+        3.6
+      ]
+    },
+    {
+      "name": "Right Wall",
+      "role": "wall",
+      "group": "fixed",
+      "sheet": "WallPaint",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.56,
+        0.57,
+        0.47,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.56,
+          0.57,
+          0.47
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        7.875,
+        -5.5,
+        0.0
+      ],
+      "bounds_max": [
+        8.125,
+        5.5,
+        3.6
+      ]
+    },
+    {
+      "name": "Entrance Frame",
+      "role": "entrance_frame",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.34,
+        0.36,
+        0.31,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.31
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -1.285,
+        -5.625,
+        0.0
+      ],
+      "bounds_max": [
+        1.285,
+        -5.375,
+        3.025
+      ]
+    },
+    {
+      "name": "Perimeter Skirting",
+      "role": "trim",
+      "group": "fixed",
+      "sheet": "WallPaint",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.275,
+        0.305,
+        0.265,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.275,
+          0.305,
+          0.265
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 60,
+      "triangles": 100,
+      "bounds_min": [
+        -7.878,
+        -5.378,
+        -0.003
+      ],
+      "bounds_max": [
+        7.878,
+        5.378,
+        0.135
+      ]
+    },
+    {
+      "name": "Bottle Green Wall Stripe",
+      "role": "trim",
+      "group": "fixed",
+      "sheet": "WallPaint",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.29,
+        0.43,
+        0.34,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.29,
+          0.43,
+          0.34
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        -7.8815,
+        -5.25,
+        0.97
+      ],
+      "bounds_max": [
+        7.8815,
+        5.3815,
+        1.19
+      ]
+    },
+    {
+      "name": "Ceiling Grid",
+      "role": "ceiling_grid",
+      "group": "fixed",
+      "sheet": "Ceiling",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.275,
+        0.305,
+        0.265,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.275,
+          0.305,
+          0.265
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 144,
+      "triangles": 240,
+      "bounds_min": [
+        -7.83,
+        -5.33,
+        3.4875
+      ],
+      "bounds_max": [
+        7.83,
+        5.33,
+        3.5225
+      ]
+    },
+    {
+      "name": "Fluorescent Housing 01",
+      "role": "fluorescent_housing",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.155,
+        0.175,
+        0.165,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.155,
+          0.175,
+          0.165
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        -5.37,
+        -2.35,
+        3.36
+      ],
+      "bounds_max": [
+        -5.03,
+        2.35,
+        3.515
+      ]
+    },
+    {
+      "name": "Fluorescent Tube 01",
+      "role": "fluorescent_tube",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        1.0,
+        1.0,
+        0.92,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          0.92
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 20,
+      "triangles": 36,
+      "bounds_min": [
+        -5.2525,
+        -2.17,
+        3.36007
+      ],
+      "bounds_max": [
+        -5.1475,
+        2.17,
+        3.45993
+      ]
+    },
+    {
+      "name": "Fluorescent Housing 02",
+      "role": "fluorescent_housing",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.155,
+        0.175,
+        0.165,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.155,
+          0.175,
+          0.165
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        -1.92,
+        -2.35,
+        3.36
+      ],
+      "bounds_max": [
+        -1.58,
+        2.35,
+        3.515
+      ]
+    },
+    {
+      "name": "Fluorescent Tube 02",
+      "role": "fluorescent_tube",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        1.0,
+        1.0,
+        0.92,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          0.92
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 20,
+      "triangles": 36,
+      "bounds_min": [
+        -1.8025,
+        -2.17,
+        3.36007
+      ],
+      "bounds_max": [
+        -1.6975,
+        2.17,
+        3.45993
+      ]
+    },
+    {
+      "name": "Fluorescent Housing 03",
+      "role": "fluorescent_housing",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.155,
+        0.175,
+        0.165,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.155,
+          0.175,
+          0.165
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        1.58,
+        -2.35,
+        3.36
+      ],
+      "bounds_max": [
+        1.92,
+        2.35,
+        3.515
+      ]
+    },
+    {
+      "name": "Fluorescent Tube 03",
+      "role": "fluorescent_tube",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        1.0,
+        1.0,
+        0.92,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          0.92
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 20,
+      "triangles": 36,
+      "bounds_min": [
+        1.6975,
+        -2.17,
+        3.36007
+      ],
+      "bounds_max": [
+        1.8025,
+        2.17,
+        3.45993
+      ]
+    },
+    {
+      "name": "Fluorescent Housing 04",
+      "role": "fluorescent_housing",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.155,
+        0.175,
+        0.165,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.155,
+          0.175,
+          0.165
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        5.03,
+        -2.35,
+        3.36
+      ],
+      "bounds_max": [
+        5.37,
+        2.35,
+        3.515
+      ]
+    },
+    {
+      "name": "Fluorescent Tube 04",
+      "role": "fluorescent_tube",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        1.0,
+        1.0,
+        0.92,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          0.92
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 20,
+      "triangles": 36,
+      "bounds_min": [
+        5.1475,
+        -2.17,
+        3.36007
+      ],
+      "bounds_max": [
+        5.2525,
+        2.17,
+        3.45993
+      ]
+    },
+    {
+      "name": "Linoleum Repairs",
+      "role": "grime",
+      "group": "fixed",
+      "sheet": "Linoleum",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.165,
+        0.185,
+        0.17,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.165,
+          0.185,
+          0.17
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        -6.75,
+        -3.62,
+        0.0
+      ],
+      "bounds_max": [
+        6.86,
+        2.88,
+        0.018
+      ]
+    },
+    {
+      "name": "Back Wall Damp",
+      "role": "grime",
+      "group": "fixed",
+      "sheet": "WallPaint",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.19,
+        0.23,
+        0.18,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.19,
+          0.23,
+          0.18
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -6.575,
+        5.35,
+        0.26
+      ],
+      "bounds_max": [
+        4.0,
+        5.368,
+        2.46
+      ]
+    },
+    {
+      "name": "Shelf Dry Frame",
+      "role": "shelf_dry",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.34,
+        0.36,
+        0.31,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.31
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 176,
+      "triangles": 308,
+      "bounds_min": [
+        -5.2,
+        -2.65,
+        0.0
+      ],
+      "bounds_max": [
+        -4.2,
+        2.65,
+        2.05
+      ]
+    },
+    {
+      "name": "Shelf Dry Tiers",
+      "role": "shelf_dry",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.47,
+        0.48,
+        0.39,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.48,
+          0.39
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        -5.17,
+        -2.6,
+        0.3475
+      ],
+      "bounds_max": [
+        -4.2025,
+        2.6,
+        1.647
+      ]
+    },
+    {
+      "name": "Shelf Dry Rails",
+      "role": "shelf_dry",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.31,
+        0.105,
+        0.045,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.31,
+          0.105,
+          0.045
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        -4.224,
+        -2.53,
+        0.1975
+      ],
+      "bounds_max": [
+        -4.2,
+        2.53,
+        1.561
+      ]
+    },
+    {
+      "name": "Shelf Pantry Frame",
+      "role": "shelf_pantry",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.34,
+        0.36,
+        0.31,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.31
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 176,
+      "triangles": 308,
+      "bounds_min": [
+        0.85,
+        -2.35,
+        0.0
+      ],
+      "bounds_max": [
+        1.85,
+        2.35,
+        2.05
+      ]
+    },
+    {
+      "name": "Shelf Pantry Tiers",
+      "role": "shelf_pantry",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.47,
+        0.48,
+        0.39,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.48,
+          0.39
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        0.8525,
+        -2.3,
+        0.3475
+      ],
+      "bounds_max": [
+        1.82,
+        2.3,
+        1.647
+      ]
+    },
+    {
+      "name": "Shelf Pantry Rails",
+      "role": "shelf_pantry",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.31,
+        0.105,
+        0.045,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.31,
+          0.105,
+          0.045
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        0.85,
+        -2.23,
+        0.1975
+      ],
+      "bounds_max": [
+        0.874,
+        2.23,
+        1.561
+      ]
+    },
+    {
+      "name": "Shelf Cold Cabinet",
+      "role": "shelf_cold",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.38,
+        0.47,
+        0.45,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.38,
+          0.47,
+          0.45
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 80,
+      "triangles": 140,
+      "bounds_min": [
+        -3.2,
+        4.25,
+        0.0
+      ],
+      "bounds_max": [
+        3.1,
+        4.9,
+        2.25
+      ]
+    },
+    {
+      "name": "Shelf Cold Recess",
+      "role": "shelf_cold",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.245,
+        0.315,
+        0.305,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.245,
+          0.315,
+          0.305
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -3.09,
+        4.7775,
+        0.2175
+      ],
+      "bounds_max": [
+        2.99,
+        4.8125,
+        2.1675
+      ]
+    },
+    {
+      "name": "Shelf Cold Tiers",
+      "role": "shelf_cold",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.47,
+        0.48,
+        0.39,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.47,
+          0.48,
+          0.39
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 128,
+      "triangles": 224,
+      "bounds_min": [
+        -3.11,
+        4.255,
+        0.235
+      ],
+      "bounds_max": [
+        3.01,
+        4.89,
+        2.085
+      ]
+    },
+    {
+      "name": "Shelf Cold Interior Tube",
+      "role": "shelf_cold",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        1.0,
+        1.0,
+        0.92,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          1.0,
+          1.0,
+          0.92
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -3.05,
+        4.2675,
+        2.0825
+      ],
+      "bounds_max": [
+        2.95,
+        4.3225,
+        2.1575
+      ]
+    },
+    {
+      "name": "Shelf Cold Frost",
+      "role": "shelf_cold",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.6,
+        0.72,
+        0.69,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.6,
+          0.72,
+          0.69
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -2.56,
+        4.254,
+        0.37
+      ],
+      "bounds_max": [
+        2.14,
+        4.266,
+        1.45
+      ]
+    },
+    {
+      "name": "Checkout Counter",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "Counter",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.31,
+        0.38,
+        0.32,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.31,
+          0.38,
+          0.32
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 44,
+      "triangles": 76,
+      "bounds_min": [
+        4.1,
+        -4.0,
+        0.0
+      ],
+      "bounds_max": [
+        6.9,
+        -3.05,
+        1.05
+      ]
+    },
+    {
+      "name": "Checkout Conveyor Belt",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.075,
+        0.085,
+        0.075,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.075,
+          0.085,
+          0.075
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        4.33,
+        -3.89175,
+        1.05
+      ],
+      "bounds_max": [
+        6.01,
+        -3.19825,
+        1.102
+      ]
+    },
+    {
+      "name": "Checkout Front Panels",
+      "role": "checkout",
+      "group": "fixed",
+      "sheet": "Counter",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.67,
+        0.61,
+        0.38,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.67,
+          0.61,
+          0.38
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        4.282,
+        -3.9925,
+        0.294
+      ],
+      "bounds_max": [
+        6.718,
+        -3.9575,
+        0.903
+      ]
+    },
+    {
+      "name": "Checkout Register",
+      "role": "register",
+      "group": "fixed",
+      "sheet": "Counter",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.29,
+        0.31,
+        0.27,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.29,
+          0.31,
+          0.27
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        6.078,
+        -3.705,
+        1.02
+      ],
+      "bounds_max": [
+        6.658,
+        -3.225,
+        1.35
+      ]
+    },
+    {
+      "name": "Checkout Register Display",
+      "role": "register",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.74,
+        0.35,
+        0.16,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.74,
+          0.35,
+          0.16
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        6.213,
+        -3.732363,
+        1.219747
+      ],
+      "bounds_max": [
+        6.523,
+        -3.689637,
+        1.330253
+      ]
+    },
+    {
+      "name": "Checkout Register Keys",
+      "role": "register",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.5,
+        0.51,
+        0.43,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.5,
+          0.51,
+          0.43
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 96,
+      "triangles": 168,
+      "bounds_min": [
+        6.2155,
+        -3.726,
+        1.109
+      ],
+      "bounds_max": [
+        6.5205,
+        -3.712,
+        1.221
+      ]
+    },
+    {
+      "name": "Checkout Bag Rack",
+      "role": "bag_rack",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.34,
+        0.36,
+        0.31,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.31
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 20,
+      "triangles": 36,
+      "bounds_min": [
+        6.6225,
+        -3.281154,
+        1.05
+      ],
+      "bounds_max": [
+        6.6775,
+        -3.228846,
+        1.55
+      ]
+    },
+    {
+      "name": "Checkout Bag Rack Hooks",
+      "role": "bag_rack",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.34,
+        0.36,
+        0.31,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.31
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        6.43,
+        -3.2725,
+        1.4725
+      ],
+      "bounds_max": [
+        6.87,
+        -3.2375,
+        1.5075
+      ]
+    },
+    {
+      "name": "Checkout Empty Bags",
+      "role": "bag_rack",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.62,
+        0.67,
+        0.57,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.67,
+          0.57
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 48,
+      "triangles": 84,
+      "bounds_min": [
+        6.41,
+        -3.326,
+        1.07
+      ],
+      "bounds_max": [
+        6.84,
+        -3.288,
+        1.37
+      ]
+    },
+    {
+      "name": "Stockroom Facade",
+      "role": "stockroom_facade",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.24,
+        0.3,
+        0.26,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.24,
+          0.3,
+          0.26
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 64,
+      "triangles": 112,
+      "bounds_min": [
+        4.65,
+        4.25,
+        0.0
+      ],
+      "bounds_max": [
+        6.8,
+        4.38,
+        2.35
+      ]
+    },
+    {
+      "name": "Stockroom Push Plate",
+      "role": "stockroom_facade",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.34,
+        0.36,
+        0.31,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.34,
+          0.36,
+          0.31
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        5.415,
+        4.2675,
+        1.127
+      ],
+      "bounds_max": [
+        6.035,
+        4.2925,
+        1.317
+      ]
+    },
+    {
+      "name": "Stockroom Empty Cartons",
+      "role": "carton",
+      "group": "fixed",
+      "sheet": "Cardboard",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.44,
+        0.34,
+        0.2,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.44,
+          0.34,
+          0.2
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        4.755,
+        3.855,
+        0.0
+      ],
+      "bounds_max": [
+        5.385,
+        4.325,
+        0.96
+      ]
+    },
+    {
+      "name": "Stockroom Carton Tape",
+      "role": "carton",
+      "group": "fixed",
+      "sheet": "Cardboard",
+      "emissive": false,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.62,
+        0.51,
+        0.31,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.62,
+          0.51,
+          0.31
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        5.015,
+        3.87,
+        0.553
+      ],
+      "bounds_max": [
+        5.1875,
+        4.31,
+        0.972
+      ]
+    },
+    {
+      "name": "CCTV Mount 01",
+      "role": "cctv_mount",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.155,
+        0.175,
+        0.165,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.155,
+          0.175,
+          0.165
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -7.25,
+        -4.75,
+        3.1
+      ],
+      "bounds_max": [
+        -7.01,
+        -4.51,
+        3.6
+      ]
+    },
+    {
+      "name": "CCTV Head 01",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.235,
+        0.255,
+        0.245,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.235,
+          0.255,
+          0.245
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_01",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -7.285,
+        -4.75,
+        2.965
+      ],
+      "bounds_max": [
+        -6.975,
+        -4.07,
+        3.29
+      ]
+    },
+    {
+      "name": "CCTV Head 01 Lens",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.028,
+        0.032,
+        0.035,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.028,
+          0.032,
+          0.035
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_01",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -7.225,
+        -4.135,
+        3.005
+      ],
+      "bounds_max": [
+        -7.035,
+        -4.0225,
+        3.195
+      ]
+    },
+    {
+      "name": "CCTV Head 01 LED",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.85,
+        0.12,
+        0.08,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.85,
+          0.12,
+          0.08
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_01",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -7.065,
+        -4.735,
+        3.18
+      ],
+      "bounds_max": [
+        -7.015,
+        -4.685,
+        3.23
+      ]
+    },
+    {
+      "name": "CCTV Mount 02",
+      "role": "cctv_mount",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.155,
+        0.175,
+        0.165,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.155,
+          0.175,
+          0.165
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        7.01,
+        -4.75,
+        3.1
+      ],
+      "bounds_max": [
+        7.25,
+        -4.51,
+        3.6
+      ]
+    },
+    {
+      "name": "CCTV Head 02",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.235,
+        0.255,
+        0.245,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.235,
+          0.255,
+          0.245
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_02",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        6.975,
+        -4.75,
+        2.965
+      ],
+      "bounds_max": [
+        7.285,
+        -4.07,
+        3.29
+      ]
+    },
+    {
+      "name": "CCTV Head 02 Lens",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.028,
+        0.032,
+        0.035,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.028,
+          0.032,
+          0.035
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_02",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        7.035,
+        -4.135,
+        3.005
+      ],
+      "bounds_max": [
+        7.225,
+        -4.0225,
+        3.195
+      ]
+    },
+    {
+      "name": "CCTV Head 02 LED",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.85,
+        0.12,
+        0.08,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.85,
+          0.12,
+          0.08
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_02",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        7.195,
+        -4.735,
+        3.18
+      ],
+      "bounds_max": [
+        7.245,
+        -4.685,
+        3.23
+      ]
+    },
+    {
+      "name": "CCTV Mount 03",
+      "role": "cctv_mount",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.155,
+        0.175,
+        0.165,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.155,
+          0.175,
+          0.165
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -7.25,
+        4.51,
+        3.1
+      ],
+      "bounds_max": [
+        -7.01,
+        4.75,
+        3.6
+      ]
+    },
+    {
+      "name": "CCTV Head 03",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.235,
+        0.255,
+        0.245,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.235,
+          0.255,
+          0.245
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_03",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -7.285,
+        4.51,
+        2.965
+      ],
+      "bounds_max": [
+        -6.975,
+        5.19,
+        3.29
+      ]
+    },
+    {
+      "name": "CCTV Head 03 Lens",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.028,
+        0.032,
+        0.035,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.028,
+          0.032,
+          0.035
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_03",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        -7.225,
+        5.125,
+        3.005
+      ],
+      "bounds_max": [
+        -7.035,
+        5.2375,
+        3.195
+      ]
+    },
+    {
+      "name": "CCTV Head 03 LED",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.85,
+        0.12,
+        0.08,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.85,
+          0.12,
+          0.08
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_03",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        -7.065,
+        4.525,
+        3.18
+      ],
+      "bounds_max": [
+        -7.015,
+        4.575,
+        3.23
+      ]
+    },
+    {
+      "name": "CCTV Mount 04",
+      "role": "cctv_mount",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.155,
+        0.175,
+        0.165,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.155,
+          0.175,
+          0.165
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        7.01,
+        4.51,
+        3.1
+      ],
+      "bounds_max": [
+        7.25,
+        4.75,
+        3.6
+      ]
+    },
+    {
+      "name": "CCTV Head 04",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "ShelfMetal",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.235,
+        0.255,
+        0.245,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.235,
+          0.255,
+          0.245
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_04",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        6.975,
+        4.51,
+        2.965
+      ],
+      "bounds_max": [
+        7.285,
+        5.19,
+        3.29
+      ]
+    },
+    {
+      "name": "CCTV Head 04 Lens",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": false,
+      "casts_shadows": true,
+      "shadows": true,
+      "base_color": [
+        0.028,
+        0.032,
+        0.035,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.028,
+          0.032,
+          0.035
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_04",
+      "colliders": [],
+      "vertices": 32,
+      "triangles": 56,
+      "bounds_min": [
+        7.035,
+        5.125,
+        3.005
+      ],
+      "bounds_max": [
+        7.225,
+        5.2375,
+        3.195
+      ]
+    },
+    {
+      "name": "CCTV Head 04 LED",
+      "role": "cctv_head",
+      "group": "fixed",
+      "sheet": "",
+      "emissive": true,
+      "casts_shadows": false,
+      "shadows": false,
+      "base_color": [
+        0.85,
+        0.12,
+        0.08,
+        1.0
+      ],
+      "tint": {
+        "field": "",
+        "rgb": [
+          0.85,
+          0.12,
+          0.08
+        ],
+        "scale": 1.0,
+        "lerp_field": "",
+        "lerp_rgb": [
+          0.0,
+          0.0,
+          0.0
+        ],
+        "lerp_t": 0.0
+      },
+      "parent_anchor": "cctv_head_04",
+      "colliders": [],
+      "vertices": 16,
+      "triangles": 28,
+      "bounds_min": [
+        7.195,
+        4.525,
+        3.18
+      ],
+      "bounds_max": [
+        7.245,
+        4.575,
+        3.23
+      ]
+    }
+  ],
+  "build_signature": "bfd912a7867e8d8d72dc0f819530176483764e449a293c817a57e3aeedb7b928"
+}

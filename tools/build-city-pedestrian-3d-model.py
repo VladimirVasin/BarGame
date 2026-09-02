@@ -528,6 +528,16 @@ class ArchetypeSpec:
     # are canon overlays, not validation failures: the story and art bibles
     # require the named silhouettes to remain abnormal in exactly these ways.
     signature_anatomy: tuple[str, ...] = ()
+
+    # The street gait, for a design that has a placed role AND roams.
+    #
+    # A promoted resident cannot simply have its walk slot rewritten: the
+    # babushka's `walk_clip` is `BabushkaBeat`, a stationary carpet beating,
+    # and her yard presentation plays exactly that. So the roaming pool reads
+    # this pair instead when it is declared, and the staged presentations go
+    # on reading `idle_clip` / `walk_clip` untouched.
+    ambient_idle_clip: str | None = None
+    ambient_walk_clip: str | None = None
     # Optional detail atlas: the PNG file name under the texture directory
     # and the parts that carry UV0 into its regions. Every other part of the
     # design stays flat colour without a UV layer, exactly like the designs
@@ -563,6 +573,11 @@ ARCHETYPES = {
         "LampshadeIdle", "LampshadeWalk", (800, 1400),
         sit_clip="LampshadeSit", seated_clearance_m=(0.85, 0.94),
         signature_anatomy=("hunched_posture", "lampshade_hood"),
+        # Off the street since 2026-09-02: the roaming pool is
+        # ordinary people now. The design stays in the project and
+        # stays resolvable - the courtyard vignettes and the
+        # mother's teapot place it by hand.
+        pool_eligible=False,
     ),
     "chair_carrier": ArchetypeSpec(
         "chair_carrier", "chair_carrier_v1", "Chair Carrier", 241109,
@@ -587,6 +602,11 @@ ARCHETYPES = {
         texture_regions=KETTLE_ATLAS_REGIONS,
         rig_anchors=KETTLE_RIG_ANCHORS,
         signature_effects=("boiling_kettle",),
+        # Off the street since 2026-09-02: the roaming pool is
+        # ordinary people now. The design stays in the project and
+        # stays resolvable - the courtyard vignettes and the
+        # mother's teapot place it by hand.
+        pool_eligible=False,
     ),
     "long_arm": ArchetypeSpec(
         "long_arm", "long_arm_walker_v1", "Long-Arm Walker", 418833,
@@ -595,6 +615,11 @@ ARCHETYPES = {
         (800, 1300), (0.020, 0.140),
         sit_clip="LongArmSit", seated_clearance_m=(0.87, 0.96),
         signature_anatomy=("long_forearms", "heavy_hands", "mouthless_face"),
+        # Off the street since 2026-09-02: the roaming pool is
+        # ordinary people now. The design stays in the project and
+        # stays resolvable - the courtyard vignettes and the
+        # mother's teapot place it by hand.
+        pool_eligible=False,
     ),
     "helmet_lamp": ArchetypeSpec(
         "helmet_lamp", "helmet_lamp_hopper_v1", "Helmet Lamp Hopper", 527194,
@@ -602,6 +627,11 @@ ARCHETYPES = {
         "HelmetLampPedestrian3D.png", "HelmetLampIdle", "HelmetLampHop",
         (800, 1700), None, (0.080, 0.400),
         signature_anatomy=("stout_body", "hind_feet"),
+        # Off the street since 2026-09-02: the roaming pool is
+        # ordinary people now. The design stays in the project and
+        # stays resolvable - the courtyard vignettes and the
+        # mother's teapot place it by hand.
+        pool_eligible=False,
     ),
     "pipeback_roller": ArchetypeSpec(
         "pipeback_roller", "pipeback_roller_v1", "Pipeback Roller", 631907,
@@ -625,7 +655,9 @@ ARCHETYPES = {
         "YardBabushka3D.png", "BabushkaSmoke", "BabushkaBeat",
         (900, 2000),
         staged=True,
-        pool_eligible=False,
+        pool_eligible=True,
+        ambient_idle_clip="BabushkaStreetIdle",
+        ambient_walk_clip="BabushkaStreetWalk",
     ),
     # The mother, in her chair. The one design in the game that never
     # stands, never walks and never speaks: both clip slots carry the same
@@ -661,8 +693,11 @@ ARCHETYPES = {
         "WeighbridgeAttendant3D.blend", "WeighbridgeAttendant3D",
         "WeighbridgeAttendant3D.png", "WeigherCheck", "WeighedPace",
         (900, 2000),
+        sit_clip="WeigherSit", seated_clearance_m=(0.84, 0.99),
         staged=True,
-        pool_eligible=False,
+        pool_eligible=True,
+        ambient_idle_clip="WeigherStreetIdle",
+        ambient_walk_clip="WeigherStreetWalk",
     ),
     # The cemetery mourner. One staged model for the scripted graveside
     # visit: a woman in deep mourning enters the gate with a bouquet
@@ -676,8 +711,10 @@ ARCHETYPES = {
         "CemeteryMourner3D.blend", "CemeteryMourner3D",
         "CemeteryMourner3D.png", "MournerMourn", "MournerWalk",
         (900, 2000),
+        ambient_idle_clip="MournerStreetIdle",
+        ambient_walk_clip="MournerStreetWalk",
         staged=True,
-        pool_eligible=False,
+        pool_eligible=True,
     ),
     # The cemetery watchman. One staged model for the permanent post
     # at the gate lodge: an extremely snide old man who watches every
@@ -690,8 +727,11 @@ ARCHETYPES = {
         "CemeteryWatchman3D.blend", "CemeteryWatchman3D",
         "CemeteryWatchman3D.png", "WatchmanWatch", "WatchmanShuffle",
         (900, 2000),
+        sit_clip="WatchmanSit", seated_clearance_m=(0.84, 0.99),
         staged=True,
-        pool_eligible=False,
+        pool_eligible=True,
+        ambient_idle_clip="WatchmanStreetIdle",
+        ambient_walk_clip="WatchmanStreetWalk",
     ),
     # The lake fisherman. One staged model for the permanent post at
     # the head of the boat-station pier: a hooded man in a yellow
@@ -707,8 +747,10 @@ ARCHETYPES = {
         "LakeFisherman3D.blend", "LakeFisherman3D",
         "LakeFisherman3D.png", "FishermanLean", "FishermanTrudge",
         (900, 2000),
+        ambient_idle_clip="FishermanStreetIdle",
+        ambient_walk_clip="FishermanStreetWalk",
         staged=True,
-        pool_eligible=False,
+        pool_eligible=True,
     ),
     # The park chess player. One staged model for the permanent post at
     # the west park chess set: an old man alone at one of the two tables
@@ -769,8 +811,10 @@ ARCHETYPES = {
         "ParkChessPlayer3D.blend", "ParkChessPlayer3D",
         "ParkChessPlayer3D.png", "ChessBrood", "ChessTrudge",
         (900, 2100),
+        ambient_idle_clip="ChessStreetIdle",
+        ambient_walk_clip="ChessStreetWalk",
         staged=True,
-        pool_eligible=False,
+        pool_eligible=True,
         perch_seat_height_m=(0.53, 0.55),
         action_clip="ChessJeer",
     ),
@@ -800,8 +844,10 @@ ARCHETYPES = {
         "ParkCheckersPlayer3D.blend", "ParkCheckersPlayer3D",
         "ParkCheckersPlayer3D.png", "CheckersMull", "CheckersTrudge",
         (900, 2200),
+        ambient_idle_clip="CheckersStreetIdle",
+        ambient_walk_clip="CheckersStreetWalk",
         staged=True,
-        pool_eligible=False,
+        pool_eligible=True,
         perch_seat_height_m=(0.53, 0.55),
         action_clip="CheckersJeer",
     ),
@@ -9207,8 +9253,14 @@ def write_manifest(
         "animation_count": 0,
         "animations": [],
         "shared_animation_source": spec.animation_source,
+        "ambient_idle_clip": spec.ambient_idle_clip,
+        "ambient_walk_clip": spec.ambient_walk_clip,
         "shared_clips": list(dict.fromkeys(
             [spec.idle_clip, spec.walk_clip]
+            + ([spec.ambient_idle_clip]
+               if spec.ambient_idle_clip is not None else [])
+            + ([spec.ambient_walk_clip]
+               if spec.ambient_walk_clip is not None else [])
             + ([spec.sit_clip] if spec.sit_clip is not None else [])
             + ([spec.action_clip] if spec.action_clip is not None else [])
             + ([spec.dismount_clip] if spec.dismount_clip is not None else [])
@@ -9395,6 +9447,90 @@ def write_manifest(
 
 
 ACTION_SPECS = (
+    ActionSpec(
+        "FishermanStreetIdle", "lake_fisherman_v1", 2.0, 48,
+        "ordinary standing citizen, weight square",
+        "quiet standing breath",
+    ),
+    ActionSpec(
+        "FishermanStreetWalk", "lake_fisherman_v1", 1.0, 24,
+        "ordinary standing citizen, weight square",
+        "the hero's own eight-key walk cycle",
+    ),
+    ActionSpec(
+        "ChessStreetIdle", "park_chess_player_v1", 2.0, 48,
+        "ordinary standing citizen, weight square",
+        "quiet standing breath",
+    ),
+    ActionSpec(
+        "ChessStreetWalk", "park_chess_player_v1", 1.0, 24,
+        "ordinary standing citizen, weight square",
+        "the hero's own eight-key walk cycle",
+    ),
+    ActionSpec(
+        "CheckersStreetIdle", "park_checkers_player_v1", 2.0, 48,
+        "ordinary standing citizen, weight square",
+        "quiet standing breath",
+    ),
+    ActionSpec(
+        "CheckersStreetWalk", "park_checkers_player_v1", 1.0, 24,
+        "ordinary standing citizen, weight square",
+        "the hero's own eight-key walk cycle",
+    ),
+    ActionSpec(
+        "WeigherSit", "weigh_attendant_v1", 2.75, 66,
+        "ordinary seated citizen on a bus bench",
+        "settled seat with one slow breath",
+        seated=True,
+    ),
+    ActionSpec(
+        "WatchmanSit", "cemetery_watchman_v1", 2.9, 70,
+        "ordinary seated citizen on a bus bench",
+        "settled seat with one slow breath",
+        seated=True,
+    ),
+    # The four promoted residents' street gait. Same recipe on four
+    # different base poses, so each keeps its own coat and posture.
+    ActionSpec(
+        "BabushkaStreetIdle", "yard_babushka_v1", 2.0, 48,
+        "ordinary standing citizen, weight square",
+        "quiet standing breath",
+    ),
+    ActionSpec(
+        "BabushkaStreetWalk", "yard_babushka_v1", 1.0, 24,
+        "ordinary standing citizen, weight square",
+        "the hero's own eight-key walk cycle",
+    ),
+    ActionSpec(
+        "WeigherStreetIdle", "weigh_attendant_v1", 2.0, 48,
+        "ordinary standing citizen, weight square",
+        "quiet standing breath",
+    ),
+    ActionSpec(
+        "WeigherStreetWalk", "weigh_attendant_v1", 1.0, 24,
+        "ordinary standing citizen, weight square",
+        "the hero's own eight-key walk cycle",
+    ),
+    ActionSpec(
+        "WatchmanStreetIdle", "cemetery_watchman_v1", 2.0, 48,
+        "ordinary standing citizen, weight square",
+        "quiet standing breath",
+    ),
+    ActionSpec(
+        "WatchmanStreetWalk", "cemetery_watchman_v1", 1.0, 24,
+        "ordinary standing citizen, weight square",
+        "the hero's own eight-key walk cycle",
+    ),
+    ActionSpec(
+        "MournerStreetIdle", "cemetery_mourner_v1", 2.0, 48,
+        "ordinary standing citizen, weight square",
+        "quiet standing breath",
+    ),
+    ActionSpec(
+        "MournerStreetWalk", "cemetery_mourner_v1", 1.0, 24,
+        "ordinary standing citizen, weight square",
+        "the hero's own eight-key walk cycle",
+    ),
     ActionSpec(
         "LampshadeIdle", "lampshade_walker_v1", 2.0, 48,
         "persistent C-curve, withdrawn neck, bent knees",
@@ -11100,6 +11236,121 @@ def ferry_kick(
     return kicked
 
 
+# --- The ordinary citizen gait -------------------------------------------
+#
+# THIS IS THE HERO'S OWN WALK, TRANSPLANTED. `tools/build-player-3d-model.py`
+# authors `Walk` as an eight-key cycle - contact, down, pass, up for each leg
+# - over `1.0 s` at `24` fps, and every leg, pelvis, spine, chest and head key
+# below is copied from it verbatim. It transfers without retargeting because
+# both rigs are the same 31-bone NpcHumanV2 skeleton with the same rest pose;
+# `npc_v2_bone_specs()` reproduces Hero V2's landmarks to the millimetre.
+#
+# ONE THING COULD NOT BE COPIED LITERALLY. The hero aims his upper arms with
+# `BonePose.target_direction`, which this generator's `BonePose` does not
+# have - it carries rotation, location and scale only. The swing is therefore
+# re-expressed as an X rotation of the same magnitude, read off the hero's own
+# aim vectors: `atan2(y, -z)` of each, giving `25.5` degrees at contact,
+# `18.1` at the down beat, `5.9` at the pass and `12.8` at the up beat.
+# Negative X is forward for both arms and legs on this rig, so the
+# opposite-arm-to-leg relationship survives the conversion.
+#
+# The cycle is a RECIPE rather than a clip: it is merged onto each design's
+# own base pose, so a promoted resident keeps its own posture, coat and
+# carried props and only its gait becomes ordinary.
+def citizen_walk_legs(
+    left_forward: float,
+    lift: float,
+    swing: float,
+) -> dict[str, BonePose]:
+    """One key of the hero cycle, parameterised by which leg leads.
+
+    `left_forward` is `+1` at left contact and `-1` at right contact;
+    `lift` separates the down beat from the contact; `swing` is the arm
+    amplitude in degrees.
+    """
+
+    lead = left_forward
+    return {
+        "pelvis": BonePose(
+            rotation_degrees=(1.0 + lift, 3.0 * lead, -2.2 * lead)),
+        "spine": BonePose(rotation_degrees=(-4.0 - lift * 0.8, 0.0, 1.4 * lead)),
+        "chest": BonePose(
+            rotation_degrees=(4.4 + lift * 0.6, -1.5 * lead, -1.6 * lead)),
+        "head": BonePose(rotation_degrees=(1.0, 0.0, 0.6 * lead)),
+        "upper_arm.L": BonePose(rotation_degrees=(swing, 0.0, 0.0)),
+        "upper_arm.R": BonePose(rotation_degrees=(-swing, 0.0, 0.0)),
+        "forearm.L": BonePose(
+            rotation_degrees=(-21.0 - swing * 0.16, 3.0, -3.0)),
+        "forearm.R": BonePose(
+            rotation_degrees=(-21.0 + swing * 0.16, -4.0, 3.0)),
+    }
+
+
+# The eight hero keys, verbatim in the legs. Each row is
+# (phase, thighL, shinL, footL, thighR, shinR, footR, lift, armSwingL).
+CITIZEN_WALK_CYCLE = (
+    (0.000, -26.0, 12.0, 10.0, 20.0, 24.0, -12.0, 0.0, 25.5, 1.0),
+    (0.125, -18.0, 24.0, 3.0, 14.0, 42.0, -18.0, 1.0, 18.1, 0.6),
+    (0.250, 5.0, 6.0, -6.0, -8.0, 52.0, 12.0, 0.0, 5.9, -0.3),
+    (0.375, 18.0, 10.0, -14.0, -24.0, 34.0, 8.0, -1.0, -12.8, -0.6),
+    (0.500, 20.0, 24.0, -12.0, -26.0, 12.0, 10.0, 0.0, -23.6, -1.0),
+    (0.625, 14.0, 42.0, -18.0, -18.0, 24.0, 3.0, 1.0, -17.8, -0.6),
+    (0.750, -8.0, 52.0, 12.0, 5.0, 6.0, -6.0, 0.0, -5.1, 0.3),
+    (0.875, -24.0, 34.0, 8.0, 18.0, 10.0, -14.0, -1.0, 13.7, 0.6),
+)
+
+
+def citizen_walk_keys(
+    base: dict[str, BonePose],
+) -> tuple[tuple[float, dict[str, BonePose]], ...]:
+    """The hero's walk on one design's base pose, closed back onto key 0."""
+
+    keys: list[tuple[float, dict[str, BonePose]]] = []
+    for row in CITIZEN_WALK_CYCLE:
+        phase, tl, sl, fl, tr, sr, fr, lift, swing, lead = row
+        pose = dict(citizen_walk_legs(lead, lift, swing))
+        pose["thigh.L"] = BonePose(rotation_degrees=(tl, 0.0, 0.0))
+        pose["shin.L"] = BonePose(rotation_degrees=(sl, 0.0, 0.0))
+        pose["foot.L"] = BonePose(rotation_degrees=(fl, 0.0, 0.0))
+        pose["thigh.R"] = BonePose(rotation_degrees=(tr, 0.0, 0.0))
+        pose["shin.R"] = BonePose(rotation_degrees=(sr, 0.0, 0.0))
+        pose["foot.R"] = BonePose(rotation_degrees=(fr, 0.0, 0.0))
+        keys.append((phase, merge_pose(base, pose)))
+    keys.append((1.0, keys[0][1]))
+    return tuple(keys)
+
+
+def citizen_idle_keys(
+    base: dict[str, BonePose],
+) -> tuple[tuple[float, dict[str, BonePose]], ...]:
+    """A quiet standing breath, so a promoted resident has a street idle.
+
+    Deliberately small: this is a person waiting to cross a road, not a
+    performance. Two seconds, one inhale, back to the base pose.
+    """
+
+    def breath(amount: float) -> dict[str, BonePose]:
+        return merge_pose(
+            base,
+            {
+                "spine": BonePose(rotation_degrees=(-0.9 * amount, 0.0, 0.0)),
+                "chest": BonePose(rotation_degrees=(1.4 * amount, 0.0, 0.0)),
+                "head": BonePose(
+                    rotation_degrees=(-0.5 * amount, 0.6 * amount, 0.0)),
+                "upper_arm.L": BonePose(
+                    rotation_degrees=(1.2 * amount, 0.0, 0.0)),
+                "upper_arm.R": BonePose(
+                    rotation_degrees=(1.2 * amount, 0.0, 0.0)),
+            },
+        )
+
+    return (
+        (0.0, breath(0.0)),
+        (0.45, breath(1.0)),
+        (1.0, breath(0.0)),
+    )
+
+
 def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]:
     lampshade = lampshade_base_pose()
     chair = chair_base_pose()
@@ -12057,6 +12308,22 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
     # off two different stances, because unlike every other staged
     # design his idle is seated and his walk is not.
     chess = chess_player_base_pose()
+    # The four promoted residents ride Route 01 like anyone else. Each is
+    # the shared seated leg shape over its own authored upper body, so the
+    # babushka keeps her stoop and the watchman his clasped hands; only the
+    # knees and hips are common, and those are common on this rig anyway.
+    weigh_seated = seated_pose(weigh)
+    weigh_seated_breath = merge_pose(weigh_seated, {
+        "pelvis": BonePose(rotation_degrees=(-6.0, -1.2, 1.2)),
+        "chest": BonePose(rotation_degrees=(3.0, 0.8, -1.0)),
+        "head": BonePose(rotation_degrees=(1.0, 0.0, 0.8)),
+    })
+    watchman_seated = seated_pose(watchman)
+    watchman_seated_breath = merge_pose(watchman_seated, {
+        "pelvis": BonePose(rotation_degrees=(-6.0, 1.0, -1.0)),
+        "chest": BonePose(rotation_degrees=(3.0, -0.5, 0.8)),
+        "head": BonePose(rotation_degrees=(1.0, 0.0, -0.5)),
+    })
     # ------------------------------------------------------- ferryman
     ferry_wait = ferryman_base_pose()
     ferry_wait_inhale = ferry_breath(ferry_wait, 1.0)
@@ -13292,6 +13559,20 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (0.75, watchman_step_pl),
             (1.0, watchman_step_l),
         ),
+        "FishermanStreetIdle": citizen_idle_keys(fisher),
+        "FishermanStreetWalk": citizen_walk_keys(fisher),
+        "ChessStreetIdle": citizen_idle_keys(chess),
+        "ChessStreetWalk": citizen_walk_keys(chess),
+        "CheckersStreetIdle": citizen_idle_keys(checkers),
+        "CheckersStreetWalk": citizen_walk_keys(checkers),
+        "BabushkaStreetIdle": citizen_idle_keys(babushka),
+        "BabushkaStreetWalk": citizen_walk_keys(babushka),
+        "WeigherStreetIdle": citizen_idle_keys(weigh),
+        "WeigherStreetWalk": citizen_walk_keys(weigh),
+        "WatchmanStreetIdle": citizen_idle_keys(watchman),
+        "WatchmanStreetWalk": citizen_walk_keys(watchman),
+        "MournerStreetIdle": citizen_idle_keys(mourner),
+        "MournerStreetWalk": citizen_walk_keys(mourner),
         "MournerWalk": (
             (0.0, mourner_walk_l),
             (0.25, mourner_walk_pr),
@@ -13377,6 +13658,8 @@ def animation_keys() -> dict[str, tuple[tuple[float, dict[str, BonePose]], ...]]
             (1.0, fisher_step_l),
         ),
         "LampshadeSit": ((0.0, lamp_seated), (0.5, lamp_seated_breath), (1.0, lamp_seated)),
+        "WeigherSit": ((0.0, weigh_seated), (0.5, weigh_seated_breath), (1.0, weigh_seated)),
+        "WatchmanSit": ((0.0, watchman_seated), (0.5, watchman_seated_breath), (1.0, watchman_seated)),
         "ChairCarrierSit": ((0.0, chair_seated), (0.5, chair_seated_breath), (1.0, chair_seated)),
         "KettleHatSit": ((0.0, kettle_seated), (0.5, kettle_seated_breath), (1.0, kettle_seated)),
         "LongArmSit": ((0.0, long_seated), (0.5, long_seated_sway), (1.0, long_seated)),

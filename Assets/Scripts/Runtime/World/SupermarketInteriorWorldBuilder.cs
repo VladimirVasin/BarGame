@@ -57,9 +57,10 @@ namespace BarPromenade
             root.SetParent(parent, false);
             try
             {
-                BuildShell(root, plan);
-                BuildCeilingFixtures(root, plan);
-                BuildGrimeAndEmptyClutter(root, plan);
+                SupermarketInteriorAssetRegistry assetRegistry =
+                    SupermarketInteriorModelResources.Instantiate(root);
+                ValidateAuthoredLayout(assetRegistry, plan);
+                BuildShellCollision(root, plan);
 
                 var shelves = new List<SupermarketShelfView>(
                     plan.Shelves.Count);
@@ -68,7 +69,8 @@ namespace BarPromenade
                     SupermarketShelfView shelf = BuildShelf(
                         root,
                         plan.Shelves[index],
-                        shouldBuildSource);
+                        shouldBuildSource,
+                        assetRegistry);
                     shelves.Add(shelf);
                 }
 
@@ -80,7 +82,8 @@ namespace BarPromenade
                 return new SupermarketInteriorWorldResult(
                     root,
                     shelves,
-                    checkout);
+                    checkout,
+                    assetRegistry);
             }
             catch
             {
@@ -89,7 +92,59 @@ namespace BarPromenade
             }
         }
 
-        private static void BuildShell(
+        private static void ValidateAuthoredLayout(
+            SupermarketInteriorAssetRegistry assetRegistry,
+            SupermarketInteriorLayoutPlan plan)
+        {
+            const float tolerance = 0.01f;
+            SupermarketInteriorDimensions dimensions =
+                assetRegistry.Dimensions;
+            if (Mathf.Abs(dimensions.Width - plan.RoomSize.x) > tolerance ||
+                Mathf.Abs(dimensions.Depth - plan.RoomSize.y) > tolerance ||
+                Mathf.Abs(dimensions.Height - plan.RoomHeight) > tolerance ||
+                Mathf.Abs(
+                    dimensions.WallThickness - plan.WallThickness) >
+                tolerance)
+            {
+                throw new InvalidOperationException(
+                    "The authored supermarket interior dimensions no " +
+                    "longer match its layout plan.");
+            }
+
+            RequireAnchor(assetRegistry, "entrance");
+            RequireAnchor(assetRegistry, "room_centre");
+            RequireAnchor(assetRegistry, "shelf_dry");
+            RequireAnchor(assetRegistry, "shelf_pantry");
+            RequireAnchor(assetRegistry, "shelf_cold");
+            RequireAnchor(assetRegistry, "checkout");
+            RequireAnchor(assetRegistry, "stockroom");
+            RequireAnchor(assetRegistry, "cashier");
+            RequireAnchor(assetRegistry, "product_instant_noodles");
+            RequireAnchor(assetRegistry, "product_day_old_loaf");
+            RequireAnchor(assetRegistry, "product_vodka_bottle");
+            RequireAnchor(assetRegistry, "product_closed_stew_can");
+            RequireAnchor(assetRegistry, "product_chicken_egg");
+            for (int index = 1; index <= 4; index++)
+            {
+                RequireAnchor(assetRegistry, $"cctv_head_{index:00}");
+                RequireAnchor(assetRegistry, $"tube_{index:00}");
+            }
+        }
+
+        private static void RequireAnchor(
+            SupermarketInteriorAssetRegistry assetRegistry,
+            string role)
+        {
+            if (!assetRegistry.TryGetAnchor(role, out Transform anchor) ||
+                anchor == null)
+            {
+                throw new InvalidOperationException(
+                    $"The authored supermarket interior has no '{role}' " +
+                    "anchor.");
+            }
+        }
+
+        private static void BuildShellCollision(
             Transform root,
             SupermarketInteriorLayoutPlan plan)
         {
@@ -101,95 +156,55 @@ namespace BarPromenade
             float halfDepth = depth * 0.5f;
             const float entranceWidth = 2.4f;
 
-            CreateSurfacedBox(
-                "Supermarket Worn Linoleum Floor",
+            CreatePhysicsBox(
+                "Supermarket Floor Collision",
                 root,
                 new Vector3(0f, -0.06f, 0f),
-                new Vector3(width, 0.12f, depth),
-                Floor,
-                SupermarketSurfaceKind.Linoleum,
-                SurfaceProjection.BoxXZ,
-                true);
-            CreateSurfacedBox(
-                "Supermarket Back Wall",
+                new Vector3(width, 0.12f, depth));
+            CreatePhysicsBox(
+                "Supermarket Back Wall Collision",
                 root,
                 new Vector3(0f, height * 0.5f, halfDepth),
-                new Vector3(width, height, wall),
-                Wall,
-                SupermarketSurfaceKind.WallPaint,
-                SurfaceProjection.BoxXY,
-                true);
-            CreateSurfacedBox(
-                "Supermarket Left Wall",
+                new Vector3(width, height, wall));
+            CreatePhysicsBox(
+                "Supermarket Left Wall Collision",
                 root,
                 new Vector3(-halfWidth, height * 0.5f, 0f),
-                new Vector3(wall, height, depth),
-                WallShadow,
-                SupermarketSurfaceKind.WallPaint,
-                SurfaceProjection.BoxZY,
-                true);
-            CreateSurfacedBox(
-                "Supermarket Right Wall",
+                new Vector3(wall, height, depth));
+            CreatePhysicsBox(
+                "Supermarket Right Wall Collision",
                 root,
                 new Vector3(halfWidth, height * 0.5f, 0f),
-                new Vector3(wall, height, depth),
-                Wall,
-                SupermarketSurfaceKind.WallPaint,
-                SurfaceProjection.BoxZY,
-                true);
+                new Vector3(wall, height, depth));
 
             float frontSegmentWidth =
                 (width - entranceWidth) * 0.5f;
             float frontCenterOffset =
                 entranceWidth * 0.5f + frontSegmentWidth * 0.5f;
-            CreateSurfacedBox(
-                "Supermarket Front Wall Left",
+            CreatePhysicsBox(
+                "Supermarket Front Wall Left Collision",
                 root,
                 new Vector3(
                     -frontCenterOffset,
                     height * 0.5f,
                     -halfDepth),
-                new Vector3(frontSegmentWidth, height, wall),
-                WallShadow,
-                SupermarketSurfaceKind.WallPaint,
-                SurfaceProjection.BoxXY,
-                true);
-            CreateSurfacedBox(
-                "Supermarket Front Wall Right",
+                new Vector3(frontSegmentWidth, height, wall));
+            CreatePhysicsBox(
+                "Supermarket Front Wall Right Collision",
                 root,
                 new Vector3(
                     frontCenterOffset,
                     height * 0.5f,
                     -halfDepth),
-                new Vector3(frontSegmentWidth, height, wall),
-                Wall,
-                SupermarketSurfaceKind.WallPaint,
-                SurfaceProjection.BoxXY,
-                true);
-            CreateSurfacedBox(
-                "Supermarket Entrance Header",
+                new Vector3(frontSegmentWidth, height, wall));
+            CreatePhysicsBox(
+                "Supermarket Entrance Header Collision",
                 root,
                 new Vector3(
                     0f,
                     height - 0.33f,
                     -halfDepth),
-                new Vector3(entranceWidth, 0.66f, wall),
-                WallShadow,
-                SupermarketSurfaceKind.WallPaint,
-                SurfaceProjection.BoxXY,
-                true);
-            CreateSurfacedBox(
-                "Supermarket Ceiling",
-                root,
-                new Vector3(0f, height + 0.06f, 0f),
-                new Vector3(width, 0.12f, depth),
-                new Color(0.40f, 0.43f, 0.38f),
-                SupermarketSurfaceKind.Ceiling,
-                SurfaceProjection.BoxXZ,
-                false);
-
-            BuildWallStripe(root, plan);
-            BuildEntranceDress(root, plan);
+                new Vector3(entranceWidth, 0.66f, wall));
         }
 
         private static void BuildWallStripe(
@@ -338,21 +353,13 @@ namespace BarPromenade
         private static SupermarketShelfView BuildShelf(
             Transform roomRoot,
             SupermarketShelfPlan plan,
-            Func<string, bool> shouldBuildSource)
+            Func<string, bool> shouldBuildSource,
+            SupermarketInteriorAssetRegistry assetRegistry)
         {
             Transform shelfRoot = new GameObject(
                 $"Supermarket Shelf {plan.Id}").transform;
             shelfRoot.SetParent(roomRoot, false);
             shelfRoot.localPosition = plan.RootPosition;
-
-            if (plan.Kind == SupermarketShelfKind.ColdShelf)
-            {
-                BuildColdShelfGeometry(shelfRoot, plan);
-            }
-            else
-            {
-                BuildGondolaGeometry(shelfRoot, plan);
-            }
 
             BoxCollider bodyCollider =
                 shelfRoot.gameObject.AddComponent<BoxCollider>();
@@ -376,7 +383,8 @@ namespace BarPromenade
                 shelfRoot,
                 plan,
                 view,
-                shouldBuildSource);
+                shouldBuildSource,
+                assetRegistry);
             return view;
         }
 
@@ -556,7 +564,8 @@ namespace BarPromenade
             Transform shelfRoot,
             SupermarketShelfPlan plan,
             SupermarketShelfView shelfView,
-            Func<string, bool> shouldBuildSource)
+            Func<string, bool> shouldBuildSource,
+            SupermarketInteriorAssetRegistry assetRegistry)
         {
             for (int index = 0; index < plan.Products.Count; index++)
             {
@@ -572,7 +581,20 @@ namespace BarPromenade
                     shelfRoot,
                     slot.AvailableSize);
                 model.name = $"Supermarket Product {slot.Id}";
-                model.localPosition = slot.LocalPosition;
+                string anchorRole = GetProductAnchorRole(slot.ItemId);
+                Transform anchor = assetRegistry.GetAnchor(anchorRole);
+                Vector3 authoredLocalPosition =
+                    shelfRoot.InverseTransformPoint(anchor.position);
+                if (Vector3.Distance(
+                        authoredLocalPosition,
+                        slot.LocalPosition) > 0.01f)
+                {
+                    throw new InvalidOperationException(
+                        $"Product anchor '{anchorRole}' no longer matches " +
+                        $"the layout plan for '{slot.Id}'.");
+                }
+
+                model.position = anchor.position;
                 model.localRotation = slot.LocalRotation;
                 Renderer[] renderers =
                     model.GetComponentsInChildren<Renderer>(true);
@@ -588,12 +610,40 @@ namespace BarPromenade
                     selectionCollider,
                     shelfView);
                 shelfView.RegisterProduct(productView);
-                BuildProductPriceTag(shelfRoot, plan, slot, index);
+                BuildProductPriceTag(
+                    shelfRoot,
+                    model,
+                    plan,
+                    slot,
+                    index);
+            }
+        }
+
+        private static string GetProductAnchorRole(InventoryItemId itemId)
+        {
+            switch (itemId)
+            {
+                case InventoryItemId.InstantNoodles:
+                    return "product_instant_noodles";
+                case InventoryItemId.DayOldLoaf:
+                    return "product_day_old_loaf";
+                case InventoryItemId.VodkaBottle:
+                    return "product_vodka_bottle";
+                case InventoryItemId.ClosedStewCan:
+                    return "product_closed_stew_can";
+                case InventoryItemId.ChickenEgg:
+                    return "product_chicken_egg";
+                default:
+                    throw new ArgumentOutOfRangeException(
+                        nameof(itemId),
+                        itemId,
+                        "The shelf item has no authored support anchor.");
             }
         }
 
         private static void BuildProductPriceTag(
             Transform shelfRoot,
+            Transform productRoot,
             SupermarketShelfPlan shelf,
             SupermarketProductSlotPlan slot,
             int index)
@@ -617,13 +667,17 @@ namespace BarPromenade
                 tagSize = new Vector3(0.28f, 0.13f, 0.018f);
             }
 
-            RuntimePrimitiveFactory.CreateBox(
+            GameObject tag = RuntimePrimitiveFactory.CreateBox(
                 $"Product Price Tag {index + 1}",
                 shelfRoot,
                 position,
                 tagSize,
                 PriceTag,
                 false);
+            // The tag is part of the finite offer, not permanent shelf
+            // dressing. Keep its shelf-space pose but make the purchased
+            // product own its lifetime so both disappear atomically.
+            tag.transform.SetParent(productRoot, true);
         }
 
         private static Transform BuildCheckout(
@@ -645,39 +699,13 @@ namespace BarPromenade
                 checkout.Bounds.center.x,
                 0f,
                 checkout.Bounds.center.y);
-            Vector3 size = checkout.Size;
-            CreateSurfacedBox(
-                "Checkout Base",
-                checkoutRoot,
-                new Vector3(0f, size.y * 0.5f, 0f),
-                size,
-                CheckoutBase,
-                SupermarketSurfaceKind.Counter,
-                SurfaceProjection.BoxXY,
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Checkout Conveyor Belt",
-                checkoutRoot,
-                new Vector3(-0.33f, size.y + 0.035f, -0.02f),
-                new Vector3(size.x * 0.60f, 0.07f, size.z * 0.78f),
-                Belt,
-                false);
-            CreateSurfacedBox(
-                "Checkout Front Trim",
-                checkoutRoot,
-                new Vector3(0f, size.y * 0.67f, -size.z * 0.51f),
-                new Vector3(size.x * 0.94f, 0.12f, 0.035f),
-                CheckoutTrim,
-                SupermarketSurfaceKind.Counter,
-                SurfaceProjection.BoxXY,
-                false);
-            BuildCashRegister(checkoutRoot, size);
-            BuildBagRack(checkoutRoot, size);
-
             BoxCollider collider =
                 checkoutRoot.gameObject.AddComponent<BoxCollider>();
-            collider.center = new Vector3(0f, size.y * 0.5f, 0f);
-            collider.size = size;
+            collider.center = new Vector3(
+                0f,
+                checkout.Height * 0.5f,
+                0f);
+            collider.size = checkout.Size;
             return checkoutRoot;
         }
 
@@ -768,42 +796,6 @@ namespace BarPromenade
                 stockroom.Bounds.center.x,
                 0f,
                 stockroom.Bounds.center.y);
-            RuntimePrimitiveFactory.CreateBox(
-                "Stockroom Door",
-                stockRoot,
-                new Vector3(0f, stockroom.Height * 0.5f, 0f),
-                stockroom.Size,
-                new Color(0.24f, 0.30f, 0.26f),
-                false);
-            RuntimePrimitiveFactory.CreateBox(
-                "Stockroom Door Push Plate",
-                stockRoot,
-                new Vector3(
-                    0f,
-                    stockroom.Height * 0.52f,
-                    -stockroom.Bounds.height * 0.51f),
-                new Vector3(0.62f, 0.19f, 0.025f),
-                ShelfFrame,
-                false);
-            CreateSurfacedBox(
-                "Stockroom Empty Carton Lower",
-                stockRoot,
-                new Vector3(-0.66f, 0.28f, -0.49f),
-                new Vector3(0.62f, 0.56f, 0.46f),
-                Cardboard,
-                SupermarketSurfaceKind.Cardboard,
-                SurfaceProjection.BoxXY,
-                false);
-            CreateSurfacedBox(
-                "Stockroom Empty Carton Upper",
-                stockRoot,
-                new Vector3(-0.58f, 0.76f, -0.45f),
-                new Vector3(0.48f, 0.40f, 0.40f),
-                new Color(0.38f, 0.29f, 0.17f),
-                SupermarketSurfaceKind.Cardboard,
-                SurfaceProjection.BoxXY,
-                false);
-
             BoxCollider collider =
                 stockRoot.gameObject.AddComponent<BoxCollider>();
             collider.center = new Vector3(
@@ -811,6 +803,20 @@ namespace BarPromenade
                 stockroom.Height * 0.5f,
                 0f);
             collider.size = stockroom.Size;
+        }
+
+        private static BoxCollider CreatePhysicsBox(
+            string name,
+            Transform parent,
+            Vector3 localPosition,
+            Vector3 size)
+        {
+            var holder = new GameObject(name);
+            holder.transform.SetParent(parent, false);
+            holder.transform.localPosition = localPosition;
+            BoxCollider collider = holder.AddComponent<BoxCollider>();
+            collider.size = size;
+            return collider;
         }
 
         private static BoxCollider BuildSelectionCollider(

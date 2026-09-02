@@ -20,20 +20,101 @@ namespace BarPromenade.Tests.EditMode
             }
         }
 
+        /// <summary>
+        /// The face follows the hero across the shop, but it comes HOME as
+        /// he walks up. At the counter the periscope is gone entirely and
+        /// he is just a tall man behind a till; from the far aisle he is
+        /// craning the whole way.
+        ///
+        /// This replaces an earlier contract that asserted the pursuit
+        /// weight saturated at `1.5 m` and `12 m` alike. That was the
+        /// design until 2026-09-02; the retract is deliberate, not a
+        /// regression.
+        /// </summary>
         [Test]
-        public void Extension_PursuesAtEveryDistance()
+        public void Extension_ComesHomeAsTheHeroWalksUp()
         {
             var state = new SupermarketCashierSurveillanceState();
 
-            // The face follows the hero anywhere in the shop: the
-            // pursuit weight saturates near the counter and in the
-            // farthest aisle alike.
-            Simulate(state, 1.5f, -1f, 3f);
-            Assert.That(state.Extension, Is.EqualTo(1f).Within(0.001f));
+            Simulate(state, 12f, -1f, 4f);
+            Assert.That(
+                state.Extension,
+                Is.EqualTo(1f).Within(0.001f),
+                "From the far aisle he must be at full stretch.");
 
-            state.Reset();
-            Simulate(state, 12f, -1f, 3f);
-            Assert.That(state.Extension, Is.EqualTo(1f).Within(0.001f));
+            // Now the hero closes to the till and the neck comes in.
+            Simulate(
+                state,
+                SupermarketCashierSurveillanceState
+                    .CloseRetractFullMeters - 0.3f,
+                -1f,
+                4f);
+            Assert.That(
+                state.Extension,
+                Is.EqualTo(0f).Within(0.001f),
+                "At the counter the neck must be an ordinary neck.");
+
+            // And pays back out as he leaves.
+            Simulate(
+                state,
+                SupermarketCashierSurveillanceState
+                    .CloseRetractReleaseMeters + 1f,
+                -1f,
+                4f);
+            Assert.That(
+                state.Extension,
+                Is.EqualTo(1f).Within(0.001f),
+                "Backing away must pay the neck out again.");
+        }
+
+        /// <summary>
+        /// The band between the two thresholds is a ramp, not a switch -
+        /// otherwise the neck would snap home the instant the hero crossed
+        /// a line, which is the thing the whole chain was smoothed to
+        /// avoid.
+        /// </summary>
+        [Test]
+        public void Extension_RampsAcrossTheCloseBandRatherThanSnapping()
+        {
+            float near = SupermarketCashierSurveillanceState
+                .CloseRetractFullMeters;
+            float far = SupermarketCashierSurveillanceState
+                .CloseRetractReleaseMeters;
+            Assert.That(
+                far,
+                Is.GreaterThan(near + 0.5f),
+                "The close band is too narrow to ramp across.");
+
+            var state = new SupermarketCashierSurveillanceState();
+            Simulate(state, (near + far) * 0.5f, -1f, 6f);
+            Assert.That(
+                state.Extension,
+                Is.InRange(0.2f, 0.8f),
+                "Mid-band the neck must be part way out, not at either " +
+                "end.");
+        }
+
+        /// <summary>
+        /// Being caught at the counter must not pay the neck back OUT to
+        /// the startle cap. The more retracted of the two wins.
+        /// </summary>
+        [Test]
+        public void Startle_AtTheCounterDoesNotExtendHim()
+        {
+            var state = new SupermarketCashierSurveillanceState();
+            float close = SupermarketCashierSurveillanceState
+                .CloseRetractFullMeters - 0.3f;
+            Simulate(state, close, -1f, 4f);
+            Assert.That(state.Extension, Is.EqualTo(0f).Within(0.001f));
+
+            Simulate(state, close, 1f, 2f);
+            Assert.That(state.IsStartled, Is.True);
+            Assert.That(
+                state.Extension,
+                Is.LessThanOrEqualTo(
+                    SupermarketCashierSurveillanceState
+                        .StartleExtensionCap),
+                "A startle at the till must never push the neck out.");
         }
 
         [Test]
@@ -93,7 +174,112 @@ namespace BarPromenade.Tests.EditMode
                 "release the startle.");
 
             Simulate(state, 12f, -1f, 1.0f);
+            Assert.That(
+                state.IsStartled,
+                Is.True,
+                "The exit hold alone no longer releases him: the " +
+                "cooldown has to burn down first.");
+
+            Simulate(
+                state,
+                12f,
+                -1f,
+                SupermarketCashierSurveillanceState
+                    .StartleCooldownSeconds);
             Assert.That(state.IsStartled, Is.False);
+        }
+
+        /// <summary>
+        /// Being caught has to cost him a few seconds of staying pulled in.
+        /// Before the cooldown the only gate was the exit hold, so half a
+        /// second of the hero turning away popped the periscope straight
+        /// back out and the beat read as a twitch.
+        /// </summary>
+        [Test]
+        public void Startle_HoldsTheRetractForTheWholeCooldown()
+        {
+            var state = new SupermarketCashierSurveillanceState();
+            Simulate(state, 12f, -1f, 3f);
+
+            // Time is measured from the NOTICE, not from the look-away: the
+            // cooldown starts the moment he is caught and burns while the
+            // hero is still staring at him.
+            float sinceNoticed = 0f;
+            while (!state.IsStartled && sinceNoticed < 5f)
+            {
+                state.Update(12f, 1f, Step);
+                sinceNoticed += Step;
+            }
+
+            Assert.That(state.IsStartled, Is.True);
+            sinceNoticed = 0f;
+
+            while (state.IsStartled && sinceNoticed < 20f)
+            {
+                state.Update(12f, -1f, Step);
+                sinceNoticed += Step;
+            }
+
+            Assert.That(
+                state.IsStartled,
+                Is.False,
+                "He never let go at all.");
+            Assert.That(
+                sinceNoticed,
+                Is.GreaterThanOrEqualTo(
+                    SupermarketCashierSurveillanceState
+                        .StartleCooldownSeconds - Step),
+                "The retract must hold for the whole cooldown, even " +
+                "though the hero looked away at once.");
+            Assert.That(
+                sinceNoticed,
+                Is.LessThan(
+                    SupermarketCashierSurveillanceState
+                        .StartleCooldownSeconds + 0.5f),
+                "The cooldown must not stack on top of the exit hold.");
+        }
+
+        /// <summary>
+        /// The neck eases rather than snapping. `MoveTowards` moved at a
+        /// constant rate, so the chain jerked into motion and stopped dead
+        /// at the cap; a critically damped approach has no such step in its
+        /// velocity. Measured as: the per-frame delta must rise from rest
+        /// and fall again toward the target, never open at full speed.
+        /// </summary>
+        [Test]
+        public void Extension_EasesInAndOutRatherThanRunningAtAFixedRate()
+        {
+            var state = new SupermarketCashierSurveillanceState();
+
+            float previous = state.Extension;
+            var deltas = new System.Collections.Generic.List<float>();
+            for (int frame = 0; frame < 200 && state.Extension < 0.98f; frame++)
+            {
+                state.Update(6f, -1f, Step);
+                deltas.Add(state.Extension - previous);
+                previous = state.Extension;
+            }
+
+            Assert.That(
+                deltas.Count,
+                Is.GreaterThan(10),
+                "The ramp is too short to judge its shape.");
+            Assert.That(
+                deltas[0],
+                Is.LessThan(deltas[deltas.Count / 3]),
+                "The neck must ease IN - the first frame cannot already " +
+                "be moving at full rate.");
+
+            float peak = 0f;
+            for (int index = 0; index < deltas.Count; index++)
+            {
+                peak = Mathf.Max(peak, deltas[index]);
+            }
+
+            Assert.That(
+                deltas[deltas.Count - 1],
+                Is.LessThan(peak * 0.6f),
+                "The neck must ease OUT - it cannot arrive at full rate.");
         }
 
         [Test]
@@ -138,7 +324,16 @@ namespace BarPromenade.Tests.EditMode
             Simulate(state, 12f, 1f, 0.5f);
             Assert.That(state.IsStartled, Is.True);
 
-            Simulate(state, 12f, -1f, 1.0f);
+            // Run to the exact frame he lets go, rather than guessing the
+            // time: the resume delay starts THERE, and the cooldown has
+            // already been burning since the notice.
+            float guard = 0f;
+            while (state.IsStartled && guard < 20f)
+            {
+                state.Update(12f, -1f, Step);
+                guard += Step;
+            }
+
             Assert.That(state.IsStartled, Is.False);
             Assert.That(
                 state.BlinkSuppressed,

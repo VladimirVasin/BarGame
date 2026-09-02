@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "cemetery_mourner_v1",
   "display_name": "Cemetery Mourner",
@@ -25,7 +25,7 @@
     2000
   ],
   "staged": true,
-  "pool_eligible": false,
+  "pool_eligible": true,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
@@ -44,14 +44,23 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
+  "ambient_idle_clip": "MournerStreetIdle",
+  "ambient_walk_clip": "MournerStreetWalk",
   "shared_clips": [
     "MournerMourn",
-    "MournerWalk"
+    "MournerWalk",
+    "MournerStreetIdle",
+    "MournerStreetWalk"
   ],
   "rides_bus": false,
   "seated_clearance_m": null,
   "perch_seat_height_m": null,
-  "build_signature": "69102eeded0cc518ccf738900c41b3225f3b3687e3e930301cf120b1c9014af4",
+  "perch_support_contact_m": null,
+  "perch_support_radius_m": null,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "68af868485b9c87d44fec67d96a77ba48aa9e7bfa01eae5d969f938eb272691a",
   "bones": [
     {
       "name": "root",

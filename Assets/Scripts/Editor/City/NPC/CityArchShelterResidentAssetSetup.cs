@@ -262,7 +262,7 @@ namespace BarPromenade.Editor
                         MotionVectorGenerationMode.Object;
                     if (renderer is SkinnedMeshRenderer skinned)
                     {
-                        skinned.updateWhenOffscreen = false;
+                        skinned.updateWhenOffscreen = true;
                     }
                     renderers.Add(renderer);
                     bindings.Add(

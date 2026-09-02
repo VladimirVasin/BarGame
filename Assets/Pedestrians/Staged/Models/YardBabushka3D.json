@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "yard_babushka_v1",
   "display_name": "Yard Babushka",
@@ -25,7 +25,7 @@
     2000
   ],
   "staged": true,
-  "pool_eligible": false,
+  "pool_eligible": true,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
@@ -44,14 +44,23 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
+  "ambient_idle_clip": "BabushkaStreetIdle",
+  "ambient_walk_clip": "BabushkaStreetWalk",
   "shared_clips": [
     "BabushkaSmoke",
-    "BabushkaBeat"
+    "BabushkaBeat",
+    "BabushkaStreetIdle",
+    "BabushkaStreetWalk"
   ],
   "rides_bus": false,
   "seated_clearance_m": null,
   "perch_seat_height_m": null,
-  "build_signature": "e02c51b734b5611e55e30f97dc2ac9442ac7dcc77f66c95e79e7f8686a846196",
+  "perch_support_contact_m": null,
+  "perch_support_radius_m": null,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "2e15e90c8e29078e0bdfc6ba1c114117a3b85c0eb81a7da848257e4379888e48",
   "bones": [
     {
       "name": "root",

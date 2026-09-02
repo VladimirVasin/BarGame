@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "park_chess_player_v1",
   "display_name": "Park Chess Player",
@@ -25,7 +25,7 @@
     2100
   ],
   "staged": true,
-  "pool_eligible": false,
+  "pool_eligible": true,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
@@ -44,9 +44,13 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
+  "ambient_idle_clip": "ChessStreetIdle",
+  "ambient_walk_clip": "ChessStreetWalk",
   "shared_clips": [
     "ChessBrood",
     "ChessTrudge",
+    "ChessStreetIdle",
+    "ChessStreetWalk",
     "ChessJeer"
   ],
   "rides_bus": false,
@@ -55,7 +59,12 @@
     0.53,
     0.55
   ],
-  "build_signature": "191959f2e3f7471da935a16d95cce3057d85a344b7f94bddcb98b6f58ef8a168",
+  "perch_support_contact_m": null,
+  "perch_support_radius_m": null,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "8d17ad80d8890ada0cc183c75a56b97eabd28d5b5a02d340b764f01476183e83",
   "bones": [
     {
       "name": "root",

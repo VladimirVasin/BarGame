@@ -371,10 +371,28 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 prefab.GetComponentsInChildren<Light>(true),
                 Is.Empty);
+            // She used to be required to stay OUT of Resources, because
+            // staged and roaming were opposites. Since 2026-09-02 she is
+            // both: she still beats her carpet here, and she also walks the
+            // pavement, so the pool has to be able to `Resources.Load` her.
+            // What the yard actually depends on is that the provider and the
+            // pool agree on ONE prefab - two copies would drift, and the
+            // drift would be silent.
+            GameObject published =
+                Resources.Load<GameObject>("Pedestrians/YardBabushka3D");
             Assert.That(
-                Resources.Load<GameObject>("Pedestrians/YardBabushka3D"),
-                Is.Null,
-                "The staged babushka must stay outside Resources.");
+                published,
+                Is.Not.Null,
+                "The babushka roams as well as standing here, so her prefab " +
+                "must be loadable from Resources.");
+            Assert.That(
+                published,
+                Is.SameAs(prefab),
+                "The yard and the street must share one prefab asset.");
+            Assert.That(
+                CityPedestrianResources.Roams(
+                    DryingYardBabushkaProvider.DesignId),
+                Is.True);
         }
 
         private static CityDistrictPointOfInterestDescriptor

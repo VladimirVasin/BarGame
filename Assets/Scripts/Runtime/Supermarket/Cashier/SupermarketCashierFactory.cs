@@ -5,14 +5,15 @@ using UnityEngine;
 namespace BarPromenade
 {
     /// <summary>
-    /// Instantiates the one Watcher Cashier behind the checkout. No
-    /// pool, no director: one clerk, one register, always watching.
+    /// Instantiates the one ordinary cashier behind the checkout. No pool or
+    /// director: one clerk, one register. The retained Watcher prefab can use
+    /// this same path when explicitly supplied by tooling or a test.
     /// </summary>
     public static class SupermarketCashierFactory
     {
         public const string RuntimeRootName =
             "Supermarket Cashier Runtime";
-        public const float AttentionFocusHeight = 2.0f;
+        public const float FallbackAttentionFocusHeight = 1.58f;
 
         public static SupermarketCashierActor Create(
             Transform parent,
@@ -93,11 +94,16 @@ namespace BarPromenade
             var actor = instance.AddComponent<SupermarketCashierActor>();
             actor.Initialize(presentation, playerBody, playerHead);
 
-            // The clerk is colliderless, so the hero's Silent Hill
-            // attention notices him through a magnet raised to where
-            // the head hovers on the extended neck.
+            // The clerk is colliderless, so the hero's attention notices him
+            // through a magnet placed at the authored head height. This is
+            // data-derived because the active human and retained Watcher have
+            // deliberately different silhouettes.
             var magnet = instance.AddComponent<PlayerAttentionMagnet>();
-            magnet.FocusHeight = AttentionFocusHeight;
+            Vector3 localHead = instance.transform.InverseTransformPoint(
+                registry.Head.position);
+            magnet.FocusHeight = localHead.y > 0.1f
+                ? localHead.y
+                : FallbackAttentionFocusHeight;
             ReportSpawn(instance, plan);
             return actor;
         }

@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "skeleton_source": "NpcHumanV2 compatible A-pose v4.0.0",
   "anatomy_standard": "NpcHumanV2",
@@ -9,7 +9,7 @@
   "fps": 24,
   "root_motion": false,
   "mesh_count": 0,
-  "clip_count": 37,
+  "clip_count": 53,
   "clips": [
     {
       "name": "LampshadeIdle",
@@ -30,7 +30,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.679074,
+        -0.340505
+      ],
+      "animated_local_xz_max_m": [
+        0.672111,
+        0.502934
+      ],
+      "animated_local_xz_size_m": [
+        1.351185,
+        0.843439
+      ]
     },
     {
       "name": "LampshadeWalk",
@@ -51,7 +63,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.69481,
+        -0.648755
+      ],
+      "animated_local_xz_max_m": [
+        0.676506,
+        0.488034
+      ],
+      "animated_local_xz_size_m": [
+        1.371316,
+        1.13679
+      ]
     },
     {
       "name": "LampshadeSit",
@@ -75,7 +99,19 @@
       "seated_headroom_m": 0.906993,
       "seated_drop_m": 0.375742,
       "seated_contact_m": 0.075577,
-      "seated_floor_drop_limit_m": 0.41
+      "seated_floor_drop_limit_m": 0.41,
+      "animated_local_xz_min_m": [
+        -0.682057,
+        -0.368048
+      ],
+      "animated_local_xz_max_m": [
+        0.66822,
+        0.454677
+      ],
+      "animated_local_xz_size_m": [
+        1.350278,
+        0.822726
+      ]
     },
     {
       "name": "ChairCarrierIdle",
@@ -96,7 +132,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.507496,
+        -0.513269
+      ],
+      "animated_local_xz_max_m": [
+        0.506865,
+        0.228672
+      ],
+      "animated_local_xz_size_m": [
+        1.014361,
+        0.741941
+      ]
     },
     {
       "name": "ChairCarrierWalk",
@@ -117,7 +165,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.504697,
+        -0.55697
+      ],
+      "animated_local_xz_max_m": [
+        0.503934,
+        0.539337
+      ],
+      "animated_local_xz_size_m": [
+        1.008631,
+        1.096307
+      ]
     },
     {
       "name": "ChairCarrierSit",
@@ -141,7 +201,19 @@
       "seated_headroom_m": 0.918459,
       "seated_drop_m": 0.37958,
       "seated_contact_m": 0.081311,
-      "seated_floor_drop_limit_m": 0.41
+      "seated_floor_drop_limit_m": 0.41,
+      "animated_local_xz_min_m": [
+        -0.500338,
+        -0.589458
+      ],
+      "animated_local_xz_max_m": [
+        0.504638,
+        0.45535
+      ],
+      "animated_local_xz_size_m": [
+        1.004976,
+        1.044808
+      ]
     },
     {
       "name": "KettleHatIdle",
@@ -162,7 +234,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.548688,
+        -0.433327
+      ],
+      "animated_local_xz_max_m": [
+        0.54846,
+        0.395632
+      ],
+      "animated_local_xz_size_m": [
+        1.097148,
+        0.82896
+      ]
     },
     {
       "name": "KettleHatWalk",
@@ -183,7 +267,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.553619,
+        -0.417133
+      ],
+      "animated_local_xz_max_m": [
+        0.554273,
+        0.506872
+      ],
+      "animated_local_xz_size_m": [
+        1.107892,
+        0.924005
+      ]
     },
     {
       "name": "KettleHatSit",
@@ -207,7 +303,19 @@
       "seated_headroom_m": 0.913886,
       "seated_drop_m": 0.390296,
       "seated_contact_m": 0.128356,
-      "seated_floor_drop_limit_m": 0.41
+      "seated_floor_drop_limit_m": 0.41,
+      "animated_local_xz_min_m": [
+        -0.545935,
+        -0.39144
+      ],
+      "animated_local_xz_max_m": [
+        0.539224,
+        0.474699
+      ],
+      "animated_local_xz_size_m": [
+        1.085159,
+        0.866138
+      ]
     },
     {
       "name": "LongArmIdle",
@@ -229,7 +337,19 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
-      "hand_min_clearance_m": 0.096824
+      "hand_min_clearance_m": 0.096824,
+      "animated_local_xz_min_m": [
+        -0.497399,
+        -0.494983
+      ],
+      "animated_local_xz_max_m": [
+        0.524337,
+        0.186923
+      ],
+      "animated_local_xz_size_m": [
+        1.021736,
+        0.681907
+      ]
     },
     {
       "name": "LongArmWalk",
@@ -251,7 +371,19 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.0,
-      "hand_min_clearance_m": 0.089466
+      "hand_min_clearance_m": 0.089466,
+      "animated_local_xz_min_m": [
+        -0.679784,
+        -0.654544
+      ],
+      "animated_local_xz_max_m": [
+        0.679602,
+        0.267387
+      ],
+      "animated_local_xz_size_m": [
+        1.359387,
+        0.921931
+      ]
     },
     {
       "name": "LongArmSit",
@@ -275,7 +407,19 @@
       "seated_headroom_m": 0.915455,
       "seated_drop_m": 0.374798,
       "seated_contact_m": 0.063611,
-      "seated_floor_drop_limit_m": 0.41
+      "seated_floor_drop_limit_m": 0.41,
+      "animated_local_xz_min_m": [
+        -0.521326,
+        -0.295263
+      ],
+      "animated_local_xz_max_m": [
+        0.518162,
+        0.443635
+      ],
+      "animated_local_xz_size_m": [
+        1.039487,
+        0.738898
+      ]
     },
     {
       "name": "HelmetLampIdle",
@@ -297,7 +441,19 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.011503,
-      "apex_lift_m": 0.011503
+      "apex_lift_m": 0.011503,
+      "animated_local_xz_min_m": [
+        -0.410842,
+        -0.41268
+      ],
+      "animated_local_xz_max_m": [
+        0.411285,
+        0.254039
+      ],
+      "animated_local_xz_size_m": [
+        0.822127,
+        0.666719
+      ]
     },
     {
       "name": "HelmetLampHop",
@@ -319,7 +475,19 @@
       ],
       "ground_min_m": 0.0,
       "ground_max_contact_gap_m": 0.236358,
-      "apex_lift_m": 0.236358
+      "apex_lift_m": 0.236358,
+      "animated_local_xz_min_m": [
+        -0.430767,
+        -0.399248
+      ],
+      "animated_local_xz_max_m": [
+        0.430952,
+        0.499315
+      ],
+      "animated_local_xz_size_m": [
+        0.861719,
+        0.898563
+      ]
     },
     {
       "name": "PipebackIdle",
@@ -343,7 +511,19 @@
       "wheel_ground_max_contact_gap_m": 0.0,
       "footrest_min_clearance_m": 0.142284,
       "rim_hand_max_distance_m": 0.080388,
-      "seat_contact_max_gap_m": 0.003853
+      "seat_contact_max_gap_m": 0.003853,
+      "animated_local_xz_min_m": [
+        -0.72715,
+        -0.437726
+      ],
+      "animated_local_xz_max_m": [
+        0.72715,
+        0.635557
+      ],
+      "animated_local_xz_size_m": [
+        1.4543,
+        1.073283
+      ]
     },
     {
       "name": "PipebackRoll",
@@ -367,7 +547,85 @@
       "wheel_ground_max_contact_gap_m": 0.0,
       "footrest_min_clearance_m": 0.142284,
       "rim_hand_max_distance_m": 0.079949,
-      "seat_contact_max_gap_m": 0.017715
+      "seat_contact_max_gap_m": 0.017715,
+      "animated_local_xz_min_m": [
+        -0.72715,
+        -0.453514
+      ],
+      "animated_local_xz_max_m": [
+        0.72715,
+        0.645082
+      ],
+      "animated_local_xz_size_m": [
+        1.4543,
+        1.098596
+      ]
+    },
+    {
+      "name": "BabushkaStreetIdle",
+      "archetype": "yard_babushka_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "quiet standing breath",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.734284,
+        -0.332196
+      ],
+      "animated_local_xz_max_m": [
+        0.736574,
+        0.436524
+      ],
+      "animated_local_xz_size_m": [
+        1.470858,
+        0.76872
+      ]
+    },
+    {
+      "name": "BabushkaStreetWalk",
+      "archetype": "yard_babushka_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "the hero's own eight-key walk cycle",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.928715,
+        -0.547808
+      ],
+      "animated_local_xz_max_m": [
+        0.830231,
+        0.605403
+      ],
+      "animated_local_xz_size_m": [
+        1.758946,
+        1.153212
+      ]
     },
     {
       "name": "BabushkaSmoke",
@@ -388,7 +646,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.560411,
+        -0.480874
+      ],
+      "animated_local_xz_max_m": [
+        0.669427,
+        0.277179
+      ],
+      "animated_local_xz_size_m": [
+        1.229839,
+        0.758052
+      ]
     },
     {
       "name": "BabushkaBeat",
@@ -409,7 +679,121 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.868744,
+        -0.361847
+      ],
+      "animated_local_xz_max_m": [
+        0.543401,
+        1.06006
+      ],
+      "animated_local_xz_size_m": [
+        1.412146,
+        1.421907
+      ]
+    },
+    {
+      "name": "WeigherSit",
+      "archetype": "weigh_attendant_v1",
+      "duration_seconds": 2.75,
+      "frame_start": 0,
+      "frame_end": 66,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary seated citizen on a bus bench",
+      "gait": "settled seat with one slow breath",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "seated_headroom_m": 0.914559,
+      "seated_drop_m": 0.384033,
+      "seated_contact_m": 0.053765,
+      "seated_floor_drop_limit_m": 0.41,
+      "animated_local_xz_min_m": [
+        -0.549473,
+        -0.393592
+      ],
+      "animated_local_xz_max_m": [
+        0.545228,
+        0.465463
+      ],
+      "animated_local_xz_size_m": [
+        1.094701,
+        0.859055
+      ]
+    },
+    {
+      "name": "WeigherStreetIdle",
+      "archetype": "weigh_attendant_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "quiet standing breath",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.748669,
+        -0.195936
+      ],
+      "animated_local_xz_max_m": [
+        0.750888,
+        0.172243
+      ],
+      "animated_local_xz_size_m": [
+        1.499557,
+        0.368179
+      ]
+    },
+    {
+      "name": "WeigherStreetWalk",
+      "archetype": "weigh_attendant_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "the hero's own eight-key walk cycle",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.815504,
+        -0.547808
+      ],
+      "animated_local_xz_max_m": [
+        0.824198,
+        0.46675
+      ],
+      "animated_local_xz_size_m": [
+        1.639702,
+        1.014559
+      ]
     },
     {
       "name": "WeigherCheck",
@@ -430,7 +814,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.847934,
+        -0.576387
+      ],
+      "animated_local_xz_max_m": [
+        0.546685,
+        0.45712
+      ],
+      "animated_local_xz_size_m": [
+        1.394619,
+        1.033508
+      ]
     },
     {
       "name": "WeighedPace",
@@ -451,7 +847,85 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.577997,
+        -0.509575
+      ],
+      "animated_local_xz_max_m": [
+        0.576815,
+        0.331575
+      ],
+      "animated_local_xz_size_m": [
+        1.154812,
+        0.841149
+      ]
+    },
+    {
+      "name": "MournerStreetIdle",
+      "archetype": "cemetery_mourner_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "quiet standing breath",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.533699,
+        -0.342322
+      ],
+      "animated_local_xz_max_m": [
+        0.510785,
+        0.285893
+      ],
+      "animated_local_xz_size_m": [
+        1.044484,
+        0.628214
+      ]
+    },
+    {
+      "name": "MournerStreetWalk",
+      "archetype": "cemetery_mourner_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "the hero's own eight-key walk cycle",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.871961,
+        -0.545607
+      ],
+      "animated_local_xz_max_m": [
+        0.821001,
+        0.463875
+      ],
+      "animated_local_xz_size_m": [
+        1.692962,
+        1.009482
+      ]
     },
     {
       "name": "MournerWalk",
@@ -472,7 +946,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.564675,
+        -0.493805
+      ],
+      "animated_local_xz_max_m": [
+        0.494132,
+        0.274795
+      ],
+      "animated_local_xz_size_m": [
+        1.058807,
+        0.7686
+      ]
     },
     {
       "name": "MournerMourn",
@@ -493,7 +979,121 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.676625,
+        -0.539262
+      ],
+      "animated_local_xz_max_m": [
+        0.554213,
+        0.632021
+      ],
+      "animated_local_xz_size_m": [
+        1.230838,
+        1.171283
+      ]
+    },
+    {
+      "name": "WatchmanSit",
+      "archetype": "cemetery_watchman_v1",
+      "duration_seconds": 2.9,
+      "frame_start": 0,
+      "frame_end": 70,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary seated citizen on a bus bench",
+      "gait": "settled seat with one slow breath",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "seated": true,
+      "seated_headroom_m": 0.909434,
+      "seated_drop_m": 0.378949,
+      "seated_contact_m": 0.048497,
+      "seated_floor_drop_limit_m": 0.41,
+      "animated_local_xz_min_m": [
+        -0.299171,
+        -0.198772
+      ],
+      "animated_local_xz_max_m": [
+        0.305754,
+        0.456347
+      ],
+      "animated_local_xz_size_m": [
+        0.604925,
+        0.655119
+      ]
+    },
+    {
+      "name": "WatchmanStreetIdle",
+      "archetype": "cemetery_watchman_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "quiet standing breath",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.686931,
+        -0.201402
+      ],
+      "animated_local_xz_max_m": [
+        0.688529,
+        0.183827
+      ],
+      "animated_local_xz_size_m": [
+        1.37546,
+        0.38523
+      ]
+    },
+    {
+      "name": "WatchmanStreetWalk",
+      "archetype": "cemetery_watchman_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "the hero's own eight-key walk cycle",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.8157,
+        -0.547808
+      ],
+      "animated_local_xz_max_m": [
+        0.823974,
+        0.46675
+      ],
+      "animated_local_xz_size_m": [
+        1.639674,
+        1.014559
+      ]
     },
     {
       "name": "WatchmanWatch",
@@ -514,7 +1114,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.332766,
+        -0.209964
+      ],
+      "animated_local_xz_max_m": [
+        0.323579,
+        0.299017
+      ],
+      "animated_local_xz_size_m": [
+        0.656345,
+        0.508981
+      ]
     },
     {
       "name": "WatchmanShuffle",
@@ -535,7 +1147,85 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.309018,
+        -0.439395
+      ],
+      "animated_local_xz_max_m": [
+        0.310744,
+        0.305713
+      ],
+      "animated_local_xz_size_m": [
+        0.619763,
+        0.745108
+      ]
+    },
+    {
+      "name": "FishermanStreetIdle",
+      "archetype": "lake_fisherman_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "quiet standing breath",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.754202,
+        -0.224139
+      ],
+      "animated_local_xz_max_m": [
+        0.596176,
+        1.821095
+      ],
+      "animated_local_xz_size_m": [
+        1.350377,
+        2.045235
+      ]
+    },
+    {
+      "name": "FishermanStreetWalk",
+      "archetype": "lake_fisherman_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "the hero's own eight-key walk cycle",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -2.254169,
+        -0.550093
+      ],
+      "animated_local_xz_max_m": [
+        0.839128,
+        2.018479
+      ],
+      "animated_local_xz_size_m": [
+        3.093297,
+        2.568571
+      ]
     },
     {
       "name": "FishermanLean",
@@ -556,7 +1246,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.577566,
+        -0.224916
+      ],
+      "animated_local_xz_max_m": [
+        0.268114,
+        2.110863
+      ],
+      "animated_local_xz_size_m": [
+        0.845681,
+        2.33578
+      ]
     },
     {
       "name": "FishermanTrudge",
@@ -577,7 +1279,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.604493,
+        -0.548359
+      ],
+      "animated_local_xz_max_m": [
+        0.273379,
+        2.144359
+      ],
+      "animated_local_xz_size_m": [
+        0.877872,
+        2.692717
+      ]
     },
     {
       "name": "FerrymanWait",
@@ -601,12 +1315,31 @@
       "perched": true,
       "perch_seat_height_min_m": 0.506004,
       "perch_seat_height_max_m": 0.507747,
+      "perch_support_contact_min_m": 0.866865,
+      "perch_support_contact_max_m": 0.866865,
+      "perch_support_radius_m": 0.0,
       "perch_pelvis_lift_m": -0.021778,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.011777
+      ],
       "perch_contact_parts": [
         "GEO_BootSole.L",
         "GEO_BootSole.R"
       ],
-      "seated_drop_m": 0.485969
+      "seated_drop_m": 0.485969,
+      "animated_local_xz_min_m": [
+        -0.279475,
+        -0.268494
+      ],
+      "animated_local_xz_max_m": [
+        0.532931,
+        0.908761
+      ],
+      "animated_local_xz_size_m": [
+        0.812406,
+        1.177255
+      ]
     },
     {
       "name": "FerrymanTrudge",
@@ -627,7 +1360,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.278643,
+        -0.450031
+      ],
+      "animated_local_xz_max_m": [
+        0.278563,
+        0.406069
+      ],
+      "animated_local_xz_size_m": [
+        0.557206,
+        0.8561
+      ]
     },
     {
       "name": "FerrymanDismount",
@@ -646,6 +1391,18 @@
         0.0,
         0.0,
         0.0
+      ],
+      "animated_local_xz_min_m": [
+        -0.278777,
+        -0.420019
+      ],
+      "animated_local_xz_max_m": [
+        0.283289,
+        0.844517
+      ],
+      "animated_local_xz_size_m": [
+        0.562067,
+        1.264536
       ]
     },
     {
@@ -665,6 +1422,18 @@
         0.0,
         0.0,
         0.0
+      ],
+      "animated_local_xz_min_m": [
+        -0.338118,
+        -0.427168
+      ],
+      "animated_local_xz_max_m": [
+        0.589988,
+        0.911957
+      ],
+      "animated_local_xz_size_m": [
+        0.928106,
+        1.339125
       ]
     },
     {
@@ -689,7 +1458,85 @@
       "seated_headroom_m": 0.943046,
       "seated_drop_m": 0.21962,
       "seated_contact_m": 0.045095,
-      "seated_floor_drop_limit_m": 0.22
+      "seated_floor_drop_limit_m": 0.22,
+      "animated_local_xz_min_m": [
+        -0.28751,
+        -0.149006
+      ],
+      "animated_local_xz_max_m": [
+        0.285811,
+        0.911957
+      ],
+      "animated_local_xz_size_m": [
+        0.573321,
+        1.060962
+      ]
+    },
+    {
+      "name": "ChessStreetIdle",
+      "archetype": "park_chess_player_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "quiet standing breath",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.491567,
+        -0.17582
+      ],
+      "animated_local_xz_max_m": [
+        0.494141,
+        0.677512
+      ],
+      "animated_local_xz_size_m": [
+        0.985708,
+        0.853332
+      ]
+    },
+    {
+      "name": "ChessStreetWalk",
+      "archetype": "park_chess_player_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "the hero's own eight-key walk cycle",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.840208,
+        -0.54857
+      ],
+      "animated_local_xz_max_m": [
+        0.846909,
+        0.469626
+      ],
+      "animated_local_xz_size_m": [
+        1.687118,
+        1.018196
+      ]
     },
     {
       "name": "ChessBrood",
@@ -713,11 +1560,30 @@
       "perched": true,
       "perch_seat_height_min_m": 0.537254,
       "perch_seat_height_max_m": 0.542873,
+      "perch_support_contact_min_m": 0.775737,
+      "perch_support_contact_max_m": 0.778049,
+      "perch_support_radius_m": 0.0,
       "perch_pelvis_lift_m": 0.063573,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.018905
+      ],
       "perch_contact_parts": [
         "GEO_BootSole.L"
       ],
-      "seated_drop_m": 0.606446
+      "seated_drop_m": 0.606446,
+      "animated_local_xz_min_m": [
+        -0.287313,
+        -0.180106
+      ],
+      "animated_local_xz_max_m": [
+        0.29748,
+        0.677512
+      ],
+      "animated_local_xz_size_m": [
+        0.584793,
+        0.857617
+      ]
     },
     {
       "name": "ChessTrudge",
@@ -738,7 +1604,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.286693,
+        -0.527786
+      ],
+      "animated_local_xz_max_m": [
+        0.28945,
+        0.375636
+      ],
+      "animated_local_xz_size_m": [
+        0.576143,
+        0.903422
+      ]
     },
     {
       "name": "ChessJeer",
@@ -762,11 +1640,96 @@
       "perched": true,
       "perch_seat_height_min_m": 0.537254,
       "perch_seat_height_max_m": 0.537254,
+      "perch_support_contact_min_m": 0.777916,
+      "perch_support_contact_max_m": 0.778068,
+      "perch_support_radius_m": 0.0,
       "perch_pelvis_lift_m": 0.061172,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.01465
+      ],
       "perch_contact_parts": [
         "GEO_BootSole.L"
       ],
-      "seated_drop_m": 0.598426
+      "seated_drop_m": 0.598426,
+      "animated_local_xz_min_m": [
+        -0.298091,
+        -0.17666
+      ],
+      "animated_local_xz_max_m": [
+        0.867691,
+        0.68351
+      ],
+      "animated_local_xz_size_m": [
+        1.165782,
+        0.86017
+      ]
+    },
+    {
+      "name": "CheckersStreetIdle",
+      "archetype": "park_checkers_player_v1",
+      "duration_seconds": 2.0,
+      "frame_start": 0,
+      "frame_end": 48,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "quiet standing breath",
+      "keyed_bone_count": 31,
+      "loop_max_error": 0.0,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.491567,
+        -0.17582
+      ],
+      "animated_local_xz_max_m": [
+        0.494141,
+        0.677512
+      ],
+      "animated_local_xz_size_m": [
+        0.985708,
+        0.853332
+      ]
+    },
+    {
+      "name": "CheckersStreetWalk",
+      "archetype": "park_checkers_player_v1",
+      "duration_seconds": 1.0,
+      "frame_start": 0,
+      "frame_end": 24,
+      "loop": true,
+      "one_shot": false,
+      "in_place": true,
+      "authored_posture": "ordinary standing citizen, weight square",
+      "gait": "the hero's own eight-key walk cycle",
+      "keyed_bone_count": 31,
+      "loop_max_error": 1e-06,
+      "root_translation_range_m": [
+        0.0,
+        0.0,
+        0.0
+      ],
+      "ground_min_m": 0.0,
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.840208,
+        -0.54857
+      ],
+      "animated_local_xz_max_m": [
+        0.846909,
+        0.469626
+      ],
+      "animated_local_xz_size_m": [
+        1.687118,
+        1.018196
+      ]
     },
     {
       "name": "CheckersMull",
@@ -790,11 +1753,30 @@
       "perched": true,
       "perch_seat_height_min_m": 0.537254,
       "perch_seat_height_max_m": 0.542873,
+      "perch_support_contact_min_m": 0.775715,
+      "perch_support_contact_max_m": 0.778049,
+      "perch_support_radius_m": 0.0,
       "perch_pelvis_lift_m": 0.063573,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.018656
+      ],
       "perch_contact_parts": [
         "GEO_BootSole.L"
       ],
-      "seated_drop_m": 0.606446
+      "seated_drop_m": 0.606446,
+      "animated_local_xz_min_m": [
+        -0.291282,
+        -0.179106
+      ],
+      "animated_local_xz_max_m": [
+        0.292854,
+        0.677512
+      ],
+      "animated_local_xz_size_m": [
+        0.584136,
+        0.856618
+      ]
     },
     {
       "name": "CheckersTrudge",
@@ -815,7 +1797,19 @@
         0.0
       ],
       "ground_min_m": 0.0,
-      "ground_max_contact_gap_m": 0.0
+      "ground_max_contact_gap_m": 0.0,
+      "animated_local_xz_min_m": [
+        -0.286693,
+        -0.527786
+      ],
+      "animated_local_xz_max_m": [
+        0.28945,
+        0.42254
+      ],
+      "animated_local_xz_size_m": [
+        0.576143,
+        0.950326
+      ]
     },
     {
       "name": "CheckersJeer",
@@ -839,12 +1833,31 @@
       "perched": true,
       "perch_seat_height_min_m": 0.537254,
       "perch_seat_height_max_m": 0.537254,
+      "perch_support_contact_min_m": 0.777916,
+      "perch_support_contact_max_m": 0.778068,
+      "perch_support_radius_m": 0.0,
       "perch_pelvis_lift_m": 0.061172,
+      "perch_pelvis_planar_m": [
+        0.0,
+        0.01465
+      ],
       "perch_contact_parts": [
         "GEO_BootSole.L"
       ],
-      "seated_drop_m": 0.598426
+      "seated_drop_m": 0.598426,
+      "animated_local_xz_min_m": [
+        -0.298091,
+        -0.17666
+      ],
+      "animated_local_xz_max_m": [
+        0.867691,
+        0.68351
+      ],
+      "animated_local_xz_size_m": [
+        1.165782,
+        0.86017
+      ]
     }
   ],
-  "build_signature": "03423cb909e3d693ec7746ec0aef8b2ecf763be8438c8fce3f598141e06cfbd8"
+  "build_signature": "9751eb68d0e78ee29495c4963621cd70b007f31068f5dc64b9e35224b82aa4cf"
 }

@@ -203,6 +203,7 @@ namespace BarPromenade
                 configuredSourceGeneratorVersion ?? string.Empty;
             designId = configuredDesignId ?? string.Empty;
             buildSignature = configuredBuildSignature ?? string.Empty;
+            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
             ApplyBaseColors();
         }
 
@@ -227,6 +228,11 @@ namespace BarPromenade
                 binding.Renderer.SetPropertyBlock(properties);
                 properties.Clear();
             }
+        }
+
+        private void Awake()
+        {
+            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
         }
 
         private void OnEnable()

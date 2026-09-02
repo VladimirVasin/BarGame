@@ -1,4 +1,4 @@
-using System.Collections.Generic;
+﻿using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 
@@ -422,7 +422,12 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 registry.WalkClip.name,
                 Is.EqualTo("WeighedPace"));
-            Assert.That(registry.SitClip, Is.Null);
+            // She gained a seated loop on 2026-09-02, when she was
+            // promoted to the street and onto Route 01. It belongs to the
+            // bus, not to the weighbridge: the placed presentation here
+            // still plays the check loop above and never touches it.
+            Assert.That(registry.SitClip, Is.Not.Null);
+            Assert.That(registry.SitClip.name, Is.EqualTo("WeigherSit"));
             Assert.That(registry.IdleClip.isLooping, Is.True);
             Assert.That(registry.WalkClip.isLooping, Is.True);
 
@@ -445,11 +450,25 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 prefab.GetComponentsInChildren<Light>(true),
                 Is.Empty);
+            // She used to be required to stay OUT of Resources, because
+            // staged and roaming were opposites. She is now both, and what
+            // the weighbridge depends on is that it and the street share ONE
+            // prefab asset - two copies would drift silently.
+            GameObject published = Resources.Load<GameObject>(
+                "Pedestrians/WeighbridgeAttendant3D");
             Assert.That(
-                Resources.Load<GameObject>(
-                    "Pedestrians/WeighbridgeAttendant3D"),
-                Is.Null,
-                "The staged attendant must stay outside Resources.");
+                published,
+                Is.Not.Null,
+                "The attendant roams as well as standing here, so her " +
+                "prefab must be loadable from Resources.");
+            Assert.That(
+                published,
+                Is.SameAs(prefab),
+                "The weighbridge and the street must share one prefab.");
+            Assert.That(
+                CityPedestrianResources.Roams(
+                    WeighbridgeAttendantProvider.DesignId),
+                Is.True);
         }
 
         private static float DistancePointToSegment(

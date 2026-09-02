@@ -10,7 +10,8 @@ namespace BarPromenade
         internal SupermarketInteriorWorldResult(
             Transform root,
             IList<SupermarketShelfView> shelves,
-            Transform checkoutRoot)
+            Transform checkoutRoot,
+            SupermarketInteriorAssetRegistry assetRegistry)
         {
             Root = root ?? throw new ArgumentNullException(nameof(root));
             Shelves = new ReadOnlyCollection<SupermarketShelfView>(
@@ -19,11 +20,14 @@ namespace BarPromenade
                         nameof(shelves))));
             CheckoutRoot = checkoutRoot ?? throw new ArgumentNullException(
                 nameof(checkoutRoot));
+            AssetRegistry = assetRegistry ?? throw new ArgumentNullException(
+                nameof(assetRegistry));
         }
 
         public Transform Root { get; }
         public IReadOnlyList<SupermarketShelfView> Shelves { get; }
         public Transform CheckoutRoot { get; }
+        public SupermarketInteriorAssetRegistry AssetRegistry { get; }
 
         public bool TryGetShelf(
             string shelfId,

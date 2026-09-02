@@ -730,7 +730,7 @@ MonoBehaviour:
   sourceGeneratorVersion: 1.1.0
   sourcePose: apose
   sourceTriangleCount: 1984
-  buildSignature: 89785446e1c3121a0631e99a8f17e085
+  buildSignature: eebfd32829e4f0d939929f0a329c5a99
   faceAtlas:
     renderer: {fileID: 5003129424709676154}
     texture: {fileID: 2800000, guid: d6f6d740cb0367244abd513c4b15dbea, type: 3}

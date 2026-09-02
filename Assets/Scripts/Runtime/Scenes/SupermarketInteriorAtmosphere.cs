@@ -141,7 +141,8 @@ namespace BarPromenade
 
         public static SupermarketInteriorAtmosphere Install(
             Transform parent,
-            SupermarketInteriorLayoutPlan plan)
+            SupermarketInteriorLayoutPlan plan,
+            SupermarketInteriorAssetRegistry assetRegistry = null)
         {
             if (parent == null)
             {
@@ -193,7 +194,8 @@ namespace BarPromenade
             atmosphere.Practicals = lights;
             atmosphere.Flicker = InstallFlicker(
                 parent,
-                lights[FlickerRowIndex]);
+                lights[FlickerRowIndex],
+                assetRegistry);
             atmosphere.CreatePostProcessVolume();
 
             GameLog.Info(
@@ -289,22 +291,31 @@ namespace BarPromenade
 
         private static SupermarketFluorescentFlicker InstallFlicker(
             Transform sceneRoot,
-            Light rowLight)
+            Light rowLight,
+            SupermarketInteriorAssetRegistry assetRegistry)
         {
-            Renderer tubeRenderer = null;
+            Renderer tubeRenderer = assetRegistry != null &&
+                assetRegistry.TryGetRendererByRole(
+                    $"tube_{FlickerRowIndex + 1:00}",
+                    out Renderer authoredTube)
+                    ? authoredTube
+                    : null;
             string tubeName =
                 $"Supermarket Fluorescent Tube {FlickerRowIndex + 1}";
-            Renderer[] renderers = sceneRoot
-                .GetComponentsInChildren<Renderer>(true);
-            for (int index = 0; index < renderers.Length; index++)
+            if (tubeRenderer == null)
             {
-                if (string.Equals(
-                        renderers[index].name,
-                        tubeName,
-                        StringComparison.Ordinal))
+                Renderer[] renderers = sceneRoot
+                    .GetComponentsInChildren<Renderer>(true);
+                for (int index = 0; index < renderers.Length; index++)
                 {
-                    tubeRenderer = renderers[index];
-                    break;
+                    if (string.Equals(
+                            renderers[index].name,
+                            tubeName,
+                            StringComparison.Ordinal))
+                    {
+                        tubeRenderer = renderers[index];
+                        break;
+                    }
                 }
             }
 

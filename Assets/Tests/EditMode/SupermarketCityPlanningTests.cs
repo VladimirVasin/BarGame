@@ -117,6 +117,33 @@ namespace BarPromenade.Tests.EditMode
         }
 
         [Test]
+        public void EntranceDoorApproach_CoversEntireGradedPromptReach()
+        {
+            float kerbRise =
+                CityStreetSurfacePlanner.SidewalkTop -
+                CityStreetSurfacePlanner.RoadTop;
+            float promptReach =
+                PlayerInteractor.InteractionRadius +
+                SupermarketEntranceGeometry.InteractionTriggerRadius;
+            float maximumGradeRise =
+                promptReach *
+                (CityElevationPlan.MaximumBusGradePercent / 100f);
+
+            Assert.That(kerbRise, Is.GreaterThan(0f));
+            Assert.That(
+                kerbRise,
+                Is.GreaterThan(PlayerMotor.InteractionVerticalTolerance));
+            Assert.That(
+                SupermarketEntranceGeometry
+                    .DoorApproachVerticalTolerance,
+                Is.EqualTo(
+                    kerbRise +
+                    maximumGradeRise +
+                    PlayerMotor.InteractionVerticalTolerance)
+                    .Within(Tolerance));
+        }
+
+        [Test]
         public void AuthoredExterior_UsesExactLotOrIsOmittedWhenItCannotFit()
         {
             CityGenerationSettings generous =

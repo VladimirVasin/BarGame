@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using NUnit.Framework;
 using UnityEngine;
 using UnityEngine.SceneManagement;
@@ -203,6 +204,16 @@ namespace BarPromenade.Tests.PlayMode
             bool previousCinematicMotion =
                 root.CameraFollow.CinematicMotionEnabled;
             bool previousHudVisibility = root.IntoxicationHud.Visible;
+            IReadOnlyList<Renderer> playerRenderers =
+                root.Player.Visual.Renderers;
+            IReadOnlyList<Renderer> cashierRenderers =
+                root.Cashier.Presentation.Renderers;
+            bool[] previousPlayerRendererStates =
+                CaptureRendererStates(playerRenderers);
+            bool[] previousCashierRendererStates =
+                CaptureRendererStates(cashierRenderers);
+            Assert.That(playerRenderers, Is.Not.Empty);
+            Assert.That(cashierRenderers, Is.Not.Empty);
 
             Assert.That(
                 root.ShelfShop.Open(dryShelf, root.Player.Interactor),
@@ -214,6 +225,11 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(root.CameraFollow.OrbitInputEnabled, Is.False);
             Assert.That(root.CameraFollow.CinematicMotionEnabled, Is.False);
             Assert.That(root.IntoxicationHud.Visible, Is.False);
+            Assert.That(
+                root.Player.PresentationVisibility.RenderersHidden,
+                Is.True);
+            AssertAllRenderersDisabled(playerRenderers);
+            AssertAllRenderersDisabled(cashierRenderers);
             AssertSelectedProductCentered(root, dryShelf);
             AssertNavigationArrowsFlankSelectedProduct(root);
 
@@ -285,6 +301,57 @@ namespace BarPromenade.Tests.PlayMode
             Assert.That(
                 root.IntoxicationHud.Visible,
                 Is.EqualTo(previousHudVisibility));
+            Assert.That(
+                root.Player.PresentationVisibility.RenderersHidden,
+                Is.False);
+            AssertRendererStates(
+                playerRenderers,
+                previousPlayerRendererStates);
+            AssertRendererStates(
+                cashierRenderers,
+                previousCashierRendererStates);
+        }
+
+        [UnityTest]
+        public IEnumerator ShelfBrowser_DisableRestoresCharacterRenderers()
+        {
+            SupermarketInteriorRoot root = null;
+            yield return LoadSceneAndWaitForRoot(value => root = value);
+            yield return WaitUntil(
+                () => root.IsInitialized,
+                "Supermarket runtime root did not finish initialization.");
+
+            Assert.That(
+                root.World.TryGetShelf(
+                    SupermarketInteriorLayoutPlanner.DryGoodsShelfId,
+                    out SupermarketShelfView dryShelf),
+                Is.True);
+
+            IReadOnlyList<Renderer> playerRenderers =
+                root.Player.Visual.Renderers;
+            IReadOnlyList<Renderer> cashierRenderers =
+                root.Cashier.Presentation.Renderers;
+            bool[] playerStates = CaptureRendererStates(playerRenderers);
+            bool[] cashierStates = CaptureRendererStates(cashierRenderers);
+
+            Assert.That(
+                root.ShelfShop.Open(dryShelf, root.Player.Interactor),
+                Is.True);
+            yield return null;
+
+            AssertAllRenderersDisabled(playerRenderers);
+            AssertAllRenderersDisabled(cashierRenderers);
+
+            root.ShelfShop.enabled = false;
+            yield return null;
+
+            Assert.That(root.ShelfShop.IsOpen, Is.False);
+            Assert.That(BarMinigameModalLock.IsAnyLocked, Is.False);
+            Assert.That(
+                root.Player.PresentationVisibility.RenderersHidden,
+                Is.False);
+            AssertRendererStates(playerRenderers, playerStates);
+            AssertRendererStates(cashierRenderers, cashierStates);
         }
 
         private static void AssertSelectedProductCentered(
@@ -357,6 +424,59 @@ namespace BarPromenade.Tests.PlayMode
                 root.ShelfShopView.ContainsPointerBlockingWorldSelection(
                     leftInputScreen),
                 Is.True);
+        }
+
+        private static bool[] CaptureRendererStates(
+            IReadOnlyList<Renderer> renderers)
+        {
+            var states = new bool[renderers.Count];
+            for (int index = 0; index < renderers.Count; index++)
+            {
+                Renderer renderer = renderers[index];
+                states[index] = renderer != null && renderer.enabled;
+            }
+
+            return states;
+        }
+
+        private static void AssertAllRenderersDisabled(
+            IReadOnlyList<Renderer> renderers)
+        {
+            int rendererCount = 0;
+            for (int index = 0; index < renderers.Count; index++)
+            {
+                Renderer renderer = renderers[index];
+                if (renderer == null)
+                {
+                    continue;
+                }
+
+                rendererCount++;
+                Assert.That(
+                    renderer.enabled,
+                    Is.False,
+                    $"Renderer '{renderer.name}' stayed visible.");
+            }
+
+            Assert.That(rendererCount, Is.GreaterThan(0));
+        }
+
+        private static void AssertRendererStates(
+            IReadOnlyList<Renderer> renderers,
+            IReadOnlyList<bool> expectedStates)
+        {
+            Assert.That(renderers.Count, Is.EqualTo(expectedStates.Count));
+            for (int index = 0; index < renderers.Count; index++)
+            {
+                Renderer renderer = renderers[index];
+                bool actual = renderer != null && renderer.enabled;
+                Assert.That(
+                    actual,
+                    Is.EqualTo(expectedStates[index]),
+                    renderer != null
+                        ? $"Renderer '{renderer.name}' restored incorrectly."
+                        : $"Renderer slot {index} restored incorrectly.");
+            }
         }
 
         private static bool TryFindProduct(

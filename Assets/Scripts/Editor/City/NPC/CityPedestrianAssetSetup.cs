@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -87,31 +87,31 @@ namespace BarPromenade.Editor
         public const string PipebackRollerPrefabPath =
             "Assets/Pedestrians/Staged/Prefabs/PipebackRoller3D.prefab";
         public const string YardBabushkaPrefabPath =
-            "Assets/Pedestrians/Staged/Prefabs/YardBabushka3D.prefab";
+            "Assets/Resources/Pedestrians/YardBabushka3D.prefab";
         public const string YardBabushkaProviderPath =
             "Assets/Resources/City/DryingYardBabushkaProvider.asset";
         public const string WeighAttendantPrefabPath =
-            "Assets/Pedestrians/Staged/Prefabs/WeighbridgeAttendant3D.prefab";
+            "Assets/Resources/Pedestrians/WeighbridgeAttendant3D.prefab";
         public const string WeighAttendantProviderPath =
             "Assets/Resources/City/WeighbridgeAttendantProvider.asset";
         public const string CemeteryMournerPrefabPath =
-            "Assets/Pedestrians/Staged/Prefabs/CemeteryMourner3D.prefab";
+            "Assets/Resources/Pedestrians/CemeteryMourner3D.prefab";
         public const string CemeteryMournerProviderPath =
             "Assets/Resources/City/CemeteryMournerProvider.asset";
         public const string CemeteryWatchmanPrefabPath =
-            "Assets/Pedestrians/Staged/Prefabs/CemeteryWatchman3D.prefab";
+            "Assets/Resources/Pedestrians/CemeteryWatchman3D.prefab";
         public const string CemeteryWatchmanProviderPath =
             "Assets/Resources/City/CemeteryWatchmanProvider.asset";
         public const string LakeFishermanPrefabPath =
-            "Assets/Pedestrians/Staged/Prefabs/LakeFisherman3D.prefab";
+            "Assets/Resources/Pedestrians/LakeFisherman3D.prefab";
         public const string SeacoastFishermanProviderPath =
             "Assets/Resources/City/SeacoastFishermanProvider.asset";
         public const string ParkChessPlayerPrefabPath =
-            "Assets/Pedestrians/Staged/Prefabs/ParkChessPlayer3D.prefab";
+            "Assets/Resources/Pedestrians/ParkChessPlayer3D.prefab";
         public const string ParkChessPlayerProviderPath =
             "Assets/Resources/City/ParkChessPlayerProvider.asset";
         public const string ParkCheckersPlayerPrefabPath =
-            "Assets/Pedestrians/Staged/Prefabs/ParkCheckersPlayer3D.prefab";
+            "Assets/Resources/Pedestrians/ParkCheckersPlayer3D.prefab";
         public const string ParkCheckersPlayerProviderPath =
             "Assets/Resources/City/ParkCheckersPlayerProvider.asset";
         public const string LastRouteFerrymanModelPath =
@@ -206,8 +206,9 @@ namespace BarPromenade.Editor
         /// <summary>
         /// An idle and a walk for every production or staged design, plus one
         /// authored seated loop for each design that declares a Route 01 ride,
-        /// one authored beat for each design that declares an action, and one
-        /// more for the single design that also has to get off a car.
+        /// one authored beat for each design that declares an action, one
+        /// more for the single design that also has to get off a car, and a
+        /// second idle/walk pair for each promoted resident that also roams.
         /// </summary>
         private static int ExpectedLocomotionClipCount
         {
@@ -229,6 +230,11 @@ namespace BarPromenade.Editor
                     if (Descriptors[index].HasDismount)
                     {
                         count++;
+                    }
+
+                    if (Descriptors[index].HasAmbientGait)
+                    {
+                        count += 2;
                     }
                 }
 
@@ -352,7 +358,11 @@ namespace BarPromenade.Editor
                 1.5f,
                 900,
                 2000,
-                isStaged: true),
+                isStaged: true,
+                ambientIdleClipName: "BabushkaStreetIdle",
+                ambientWalkClipName: "BabushkaStreetWalk",
+                ambientIdleDuration: 2f,
+                ambientWalkDuration: 1f),
             // The cold-weighbridge attendant: the idle slot carries
             // the weigher's check loop and the walk slot the weighed
             // worker's deck pace. Staged like the babushka — authored
@@ -371,7 +381,13 @@ namespace BarPromenade.Editor
                 12f,
                 900,
                 2000,
-                isStaged: true),
+                isStaged: true,
+                sitClipName: "WeigherSit",
+                sitDuration: 2.75f,
+                ambientIdleClipName: "WeigherStreetIdle",
+                ambientWalkClipName: "WeigherStreetWalk",
+                ambientIdleDuration: 2f,
+                ambientWalkDuration: 1f),
             // The cemetery mourner: the idle slot carries the whole
             // graveside rite (lay, thirty seconds of sobbing, wipe)
             // and the walk slot the grieving gait. Staged like the
@@ -391,7 +407,11 @@ namespace BarPromenade.Editor
                 1.5f,
                 900,
                 2000,
-                isStaged: true),
+                isStaged: true,
+                ambientIdleClipName: "MournerStreetIdle",
+                ambientWalkClipName: "MournerStreetWalk",
+                ambientIdleDuration: 2f,
+                ambientWalkDuration: 1f),
             // The cemetery watchman: the idle slot carries the snide
             // watch loop and the walk slot the hands-behind-back
             // shuffle reserved for a later patrol pass. Staged like
@@ -410,7 +430,13 @@ namespace BarPromenade.Editor
                 1.5f,
                 900,
                 2000,
-                isStaged: true),
+                isStaged: true,
+                sitClipName: "WatchmanSit",
+                sitDuration: 2.9f,
+                ambientIdleClipName: "WatchmanStreetIdle",
+                ambientWalkClipName: "WatchmanStreetWalk",
+                ambientIdleDuration: 2f,
+                ambientWalkDuration: 1f),
             // The lake fisherman: the idle slot carries the leaning
             // fishing loop and the walk slot an oilskin trudge kept
             // for a later pass. Staged like the watchman — authored
@@ -432,6 +458,10 @@ namespace BarPromenade.Editor
                 900,
                 2000,
                 isStaged: true,
+                ambientIdleClipName: "FishermanStreetIdle",
+                ambientWalkClipName: "FishermanStreetWalk",
+                ambientIdleDuration: 2f,
+                ambientWalkDuration: 1f,
                 carriesFishingRig: true),
             // The park chess player: the idle slot carries the brooding
             // loop and the walk slot a park trudge kept for a later
@@ -454,6 +484,10 @@ namespace BarPromenade.Editor
                 900,
                 2100,
                 isStaged: true,
+                ambientIdleClipName: "ChessStreetIdle",
+                ambientWalkClipName: "ChessStreetWalk",
+                ambientIdleDuration: 2f,
+                ambientWalkDuration: 1f,
                 actionClipName: "ChessJeer",
                 actionDuration: 2f),
             // The park checkers player: the second man at the same set,
@@ -478,6 +512,10 @@ namespace BarPromenade.Editor
                 900,
                 2200,
                 isStaged: true,
+                ambientIdleClipName: "CheckersStreetIdle",
+                ambientWalkClipName: "CheckersStreetWalk",
+                ambientIdleDuration: 2f,
+                ambientWalkDuration: 1f,
                 actionClipName: "CheckersJeer",
                 actionDuration: 2f),
             // The Ferryman. The library's first design with TWO seats:
@@ -817,26 +855,61 @@ namespace BarPromenade.Editor
                 return;
             }
 
+            // The model and its manifest are staged art either way: they are
+            // authored by the shared library and only ever read through this
+            // tool, so they stay out of the shipped Resources bundle.
             if (!descriptor.ModelPath.StartsWith(
                     "Assets/Pedestrians/Staged/",
                     StringComparison.OrdinalIgnoreCase) ||
                 !descriptor.ManifestPath.StartsWith(
                     "Assets/Pedestrians/Staged/",
-                    StringComparison.OrdinalIgnoreCase) ||
-                !descriptor.PrefabPath.StartsWith(
-                    "Assets/Pedestrians/Staged/",
-                    StringComparison.OrdinalIgnoreCase) ||
-                descriptor.PrefabPath.IndexOf(
-                    "/Resources/",
-                    StringComparison.OrdinalIgnoreCase) >= 0 ||
-                CityPedestrianResources.TryGetArchetype(
-                    descriptor.DesignId,
-                    out _))
+                    StringComparison.OrdinalIgnoreCase))
             {
                 throw new InvalidOperationException(
                     $"Staged pedestrian '{descriptor.DesignId}' must keep " +
-                    "all staged assets outside Resources and remain absent " +
-                    "from the production pedestrian catalog.");
+                    "its model and manifest under Assets/Pedestrians/Staged.");
+            }
+
+            // The prefab is where the two kinds part company.
+            //
+            // A staged design used to be defined by ABSENCE from the roaming
+            // catalog, and this gate enforced that absence. Since 2026-09-02
+            // seven ordinary residents are BOTH: the babushka still beats her
+            // carpet in the drying yard where the yard planner places her by
+            // reference, and she also walks the pavement where the pool loads
+            // her by `Resources.Load`. One prefab serves both - the same
+            // asset, read through two different clip pairs - so it has to
+            // live where `Resources.Load` can find it.
+            //
+            // The rule that replaces the old one: a design's prefab must sit
+            // on the side of the Resources boundary that matches whether the
+            // runtime catalog knows its design id. Being in the catalog while
+            // staying outside Resources is the failure that matters - the
+            // pool would resolve an archetype and then load nothing.
+            bool roams = CityPedestrianResources.Roams(descriptor.DesignId);
+            bool prefabInResources = descriptor.PrefabPath.StartsWith(
+                "Assets/Resources/",
+                StringComparison.OrdinalIgnoreCase);
+            if (roams != prefabInResources)
+            {
+                throw new InvalidOperationException(
+                    $"Staged pedestrian '{descriptor.DesignId}' " +
+                    (roams
+                        ? "is in the roaming catalog, so its prefab must " +
+                          "live under Assets/Resources where the pool can " +
+                          "load it."
+                        : "is absent from the roaming catalog, so its " +
+                          "prefab must stay outside Resources."));
+            }
+
+            if (!roams &&
+                !descriptor.PrefabPath.StartsWith(
+                    "Assets/Pedestrians/Staged/",
+                    StringComparison.OrdinalIgnoreCase))
+            {
+                throw new InvalidOperationException(
+                    $"Staged pedestrian '{descriptor.DesignId}' must keep " +
+                    "its prefab under Assets/Pedestrians/Staged.");
             }
         }
 
@@ -2303,6 +2376,18 @@ namespace BarPromenade.Editor
                     descriptor.ActionDuration,
                     animationManifest)
                 : null;
+            AnimationClip ambientIdle = descriptor.HasAmbientGait
+                ? LoadLocomotionClip(
+                    descriptor.AmbientIdleClipName,
+                    descriptor.AmbientIdleDuration,
+                    animationManifest)
+                : null;
+            AnimationClip ambientWalk = descriptor.HasAmbientGait
+                ? LoadLocomotionClip(
+                    descriptor.AmbientWalkClipName,
+                    descriptor.AmbientWalkDuration,
+                    animationManifest)
+                : null;
             BuildPrefab(
                 descriptor,
                 modelAsset,
@@ -2311,6 +2396,8 @@ namespace BarPromenade.Editor
                 walk,
                 sit,
                 action,
+                ambientIdle,
+                ambientWalk,
                 manifest,
                 animationManifest);
         }
@@ -2419,6 +2506,27 @@ namespace BarPromenade.Editor
                 throw new InvalidOperationException(
                     "A design without a declared Route 01 ride must not " +
                     "carry a seated clip.");
+            }
+
+            if (descriptor.HasAmbientGait)
+            {
+                ValidateLocomotionClip(
+                    registry.AmbientIdleClip,
+                    descriptor.AmbientIdleClipName,
+                    descriptor.AmbientIdleDuration,
+                    animationManifest);
+                ValidateLocomotionClip(
+                    registry.AmbientWalkClip,
+                    descriptor.AmbientWalkClipName,
+                    descriptor.AmbientWalkDuration,
+                    animationManifest);
+            }
+            else if (registry.AmbientIdleClip != null ||
+                     registry.AmbientWalkClip != null)
+            {
+                throw new InvalidOperationException(
+                    "A design that does not roam must not carry a street " +
+                    "gait: the pool would play a clip nothing validated.");
             }
 
             if (descriptor.HasAction)
@@ -2572,6 +2680,19 @@ namespace BarPromenade.Editor
                           !string.Equals(
                               NormalizeClipName(registry.ActionClip.name),
                               descriptor.ActionClipName,
+                              StringComparison.Ordinal))) ||
+                        (descriptor.HasAmbientGait &&
+                         (registry.AmbientIdleClip == null ||
+                          registry.AmbientWalkClip == null ||
+                          !string.Equals(
+                              NormalizeClipName(
+                                  registry.AmbientIdleClip.name),
+                              descriptor.AmbientIdleClipName,
+                              StringComparison.Ordinal) ||
+                          !string.Equals(
+                              NormalizeClipName(
+                                  registry.AmbientWalkClip.name),
+                              descriptor.AmbientWalkClipName,
                               StringComparison.Ordinal))))
                     {
                         QueueBuildWhenSourcesExist();
@@ -2733,12 +2854,27 @@ namespace BarPromenade.Editor
                     "metadata.");
             }
 
-            if (descriptor.IsStaged &&
-                (!manifest.staged || manifest.pool_eligible))
+            // `staged` and `pool_eligible` used to be opposites; since the
+            // seven residents were promoted they are independent. `staged`
+            // still means 'authored by the shared library and placed by
+            // hand', and `pool_eligible` now means exactly what the runtime
+            // catalog says - see `ValidateDescriptorScope` for the same rule
+            // applied to where the prefab lives.
+            if (descriptor.IsStaged && !manifest.staged)
             {
                 throw new InvalidOperationException(
-                    "A staged pedestrian manifest must declare its " +
-                    "staged, non-pool status.");
+                    "A staged pedestrian manifest must declare its staged " +
+                    "status.");
+            }
+
+            if (manifest.pool_eligible !=
+                CityPedestrianResources.Roams(descriptor.DesignId))
+            {
+                throw new InvalidOperationException(
+                    $"'{descriptor.DesignId}' declares pool_eligible=" +
+                    $"{manifest.pool_eligible} in its manifest, which " +
+                    "disagrees with the runtime pedestrian catalog. The art " +
+                    "generator and the catalog must be promoted together.");
             }
 
             if (descriptor.IsWheelchair &&
@@ -3155,6 +3291,12 @@ namespace BarPromenade.Editor
                 {
                     clipOwners.Add(descriptor.DismountClipName, descriptor);
                 }
+
+                if (descriptor.HasAmbientGait)
+                {
+                    clipOwners.Add(descriptor.AmbientIdleClipName, descriptor);
+                    clipOwners.Add(descriptor.AmbientWalkClipName, descriptor);
+                }
             }
 
             HashSet<string> names =
@@ -3242,6 +3384,22 @@ namespace BarPromenade.Editor
                              StringComparison.Ordinal))
                 {
                     expectedDuration = owner.DismountDuration;
+                }
+                else if (owner.HasAmbientGait &&
+                         string.Equals(
+                             clip.name,
+                             owner.AmbientIdleClipName,
+                             StringComparison.Ordinal))
+                {
+                    expectedDuration = owner.AmbientIdleDuration;
+                }
+                else if (owner.HasAmbientGait &&
+                         string.Equals(
+                             clip.name,
+                             owner.AmbientWalkClipName,
+                             StringComparison.Ordinal))
+                {
+                    expectedDuration = owner.AmbientWalkDuration;
                 }
                 else
                 {
@@ -3450,16 +3608,23 @@ namespace BarPromenade.Editor
         /// <summary>
         /// The clips a design's own model manifest must declare, in the
         /// order the art generator writes them: idle, walk, then the
-        /// optional seated ride and the optional authored beat.
+        /// optional street gait, the optional seated ride and the optional
+        /// authored beat.
         /// </summary>
         private static string[] ExpectedSharedClips(
             PedestrianDescriptor descriptor)
         {
-            var clips = new List<string>(4)
+            var clips = new List<string>(6)
             {
                 descriptor.IdleClipName,
                 descriptor.WalkClipName
             };
+            if (descriptor.HasAmbientGait)
+            {
+                clips.Add(descriptor.AmbientIdleClipName);
+                clips.Add(descriptor.AmbientWalkClipName);
+            }
+
             if (descriptor.RidesBus)
             {
                 clips.Add(descriptor.SitClipName);
@@ -3486,6 +3651,8 @@ namespace BarPromenade.Editor
             AnimationClip walk,
             AnimationClip sit,
             AnimationClip action,
+            AnimationClip ambientIdle,
+            AnimationClip ambientWalk,
             CityPedestrianManifest manifest,
             CityPedestrianAnimationManifest animationManifest)
         {
@@ -3542,7 +3709,7 @@ namespace BarPromenade.Editor
                         MotionVectorGenerationMode.Object;
                     if (renderer is SkinnedMeshRenderer skinned)
                     {
-                        skinned.updateWhenOffscreen = false;
+                        skinned.updateWhenOffscreen = true;
                     }
 
                     Color baseColor = ParseColor(source.base_color);
@@ -3670,7 +3837,9 @@ namespace BarPromenade.Editor
                     descriptor.PreservesAirborneMotion,
                     pelvis,
                     sit,
-                    action);
+                    action,
+                    ambientIdle,
+                    ambientWalk);
 
                 if (descriptor.HasDetailAtlas)
                 {
@@ -5265,8 +5434,16 @@ namespace BarPromenade.Editor
                 string dismountClipName = null,
                 float dismountDuration = 0f,
                 bool carriesBoilingKettle = false,
-                string detailAtlasPath = null)
+                string detailAtlasPath = null,
+                string ambientIdleClipName = null,
+                string ambientWalkClipName = null,
+                float ambientIdleDuration = 0f,
+                float ambientWalkDuration = 0f)
             {
+                AmbientIdleClipName = ambientIdleClipName;
+                AmbientWalkClipName = ambientWalkClipName;
+                AmbientIdleDuration = ambientIdleDuration;
+                AmbientWalkDuration = ambientWalkDuration;
                 CarriesBoilingKettle = carriesBoilingKettle;
                 DetailAtlasPath = detailAtlasPath;
                 DismountClipName = dismountClipName;
@@ -5314,6 +5491,25 @@ namespace BarPromenade.Editor
             public string SitClipName { get; }
             public float SitDuration { get; }
             public bool RidesBus => !string.IsNullOrEmpty(SitClipName);
+
+            /// <summary>
+            /// The ordinary street gait of a design that has a placed role
+            /// AND roams, or <c>null</c> for one that does neither.
+            ///
+            /// A promoted resident cannot simply have its walk slot
+            /// rewritten. The babushka's <c>WalkClipName</c> is
+            /// <c>BabushkaBeat</c> - a carpet being beaten on the spot - and
+            /// her drying-yard presentation plays exactly that. So the
+            /// roaming pool reads this pair when it is declared, and every
+            /// staged presentation goes on reading the idle and walk slots
+            /// untouched.
+            /// </summary>
+            public string AmbientIdleClipName { get; }
+            public string AmbientWalkClipName { get; }
+            public float AmbientIdleDuration { get; }
+            public float AmbientWalkDuration { get; }
+            public bool HasAmbientGait =>
+                !string.IsNullOrEmpty(AmbientIdleClipName);
 
             /// <summary>
             /// The design's one authored non-locomotion beat, or

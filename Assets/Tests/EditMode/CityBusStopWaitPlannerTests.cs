@@ -260,10 +260,26 @@ namespace BarPromenade.Tests.EditMode
                     "A seated design sits back into the cushion.");
             }
 
+            // Riding is the exception on the street, not the rule, and each
+            // refusal below is a measurement rather than a preference. The
+            // runtime aligns the shared rest pelvis to the cushion, so a
+            // design can only sit if the distance from that bone down to the
+            // underside of its own seated hips is a hip. For three of the
+            // promoted residents it is not: the mourner's coat hem hangs
+            // 0.426 m below the pelvis and the babushka's housecoat 0.335 m,
+            // against 0.05-0.13 m for every design that does ride, and the
+            // fisherman's shouldered rod rises 1.905 m above it. Lifting any
+            // of them by their own contact distance floats the body; not
+            // lifting them drives the garment through the cushion. The two
+            // park players refuse for the same reason at the other end - the
+            // shout they throw at each other rises 1.19 m, and the clearance
+            // band applies to every seated clip a design owns.
             Assert.That(
                 riders,
-                Is.EqualTo(archetypes.Count - 1),
-                "Exactly one design declares no seated ride.");
+                Is.EqualTo(3),
+                "Three of the eight street designs ride: the Chair Carrier, " +
+                "the Weigh Attendant and the Cemetery Watchman. The other " +
+                "five walk to the stop and watch the bus go.");
             Assert.That(
                 CityPedestrianResources.TryGetArchetype(
                     CityPedestrianResources.HelmetLampDesignId,
@@ -272,8 +288,14 @@ namespace BarPromenade.Tests.EditMode
             Assert.That(
                 hopper.CanRideBus,
                 Is.False,
-                "The one design that hops and wears a working light stays " +
-                "on the pavement by declaration.");
+                "The design that hops and wears a working light declares no " +
+                "ride. It stopped roaming on 2026-09-02 and still has to " +
+                "resolve, so the declaration still has to hold.");
+            Assert.That(
+                CityPedestrianResources.Roams(
+                    CityPedestrianResources.HelmetLampDesignId),
+                Is.False,
+                "The hopper is off the street.");
         }
 
         [Test]

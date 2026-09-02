@@ -4,6 +4,12 @@ using UnityEngine;
 
 namespace BarPromenade
 {
+    public enum SupermarketCashierNeckMode
+    {
+        FixedHuman = 0,
+        ExtensibleWatcher = 1
+    }
+
     [Serializable]
     public sealed class SupermarketCashierRendererBinding
     {
@@ -13,6 +19,7 @@ namespace BarPromenade
         [SerializeField] private string paletteName;
         [SerializeField] private Renderer renderer;
         [SerializeField] private Color baseColor = Color.white;
+        [SerializeField] private bool usesDetailAtlas;
 
         public SupermarketCashierRendererBinding(
             string configuredRendererName,
@@ -20,7 +27,8 @@ namespace BarPromenade
             string configuredBoneName,
             string configuredPaletteName,
             Renderer configuredRenderer,
-            Color configuredBaseColor)
+            Color configuredBaseColor,
+            bool configuredUsesDetailAtlas = false)
         {
             rendererName = configuredRendererName ?? string.Empty;
             role = configuredRole ?? string.Empty;
@@ -28,6 +36,7 @@ namespace BarPromenade
             paletteName = configuredPaletteName ?? string.Empty;
             renderer = configuredRenderer;
             baseColor = configuredBaseColor;
+            usesDetailAtlas = configuredUsesDetailAtlas;
         }
 
         public string RendererName => rendererName;
@@ -36,22 +45,39 @@ namespace BarPromenade
         public string PaletteName => paletteName;
         public Renderer Renderer => renderer;
         public Color BaseColor => baseColor;
+        public bool UsesDetailAtlas => usesDetailAtlas;
     }
 
     /// <summary>
-    /// Serialized editor-built bindings of the Watcher Cashier prefab:
-    /// the exact bones the procedural pose needs, the five neck chain
-    /// pivots and the per-renderer manifest colors.
+    /// Serialized editor-built bindings shared by the active ordinary
+    /// cashier and the retained Watcher variant. Both use the same rig and
+    /// palette bindings; only the Watcher carries the optional five-pivot
+    /// extensible neck chain.
     /// </summary>
     [DisallowMultipleComponent]
     public sealed class SupermarketCashierAssetRegistry : MonoBehaviour
     {
-        public const int NeckSegmentCount = 5;
+        public const int WatcherNeckSegmentCount = 5;
+
+        // Kept as a source-compatible alias for the preserved Watcher tests
+        // and tooling. New code should use WatcherNeckSegmentCount.
+        public const int NeckSegmentCount = WatcherNeckSegmentCount;
 
         private static readonly int BaseColorId =
             Shader.PropertyToID("_BaseColor");
         private static readonly int LegacyColorId =
             Shader.PropertyToID("_Color");
+        private static readonly int BaseMapId =
+            Shader.PropertyToID("_BaseMap");
+        private static readonly int LegacyMapId =
+            Shader.PropertyToID("_MainTex");
+
+        /// <summary>
+        /// The `256 px` greyscale sheet that multiplies under the flat
+        /// palette. Null on a build that predates it, and everything
+        /// still renders - it only stops being detailed.
+        /// </summary>
+        [SerializeField] private Texture2D detailAtlas;
 
         [SerializeField] private Animator animator;
         [SerializeField] private Transform modelRoot;
@@ -79,6 +105,7 @@ namespace BarPromenade
         [SerializeField] private Transform rightHand;
 
         [Header("Neck chain")]
+        [SerializeField] private SupermarketCashierNeckMode neckMode;
         [SerializeField] private Transform[] neckPivots =
             Array.Empty<Transform>();
 
@@ -108,6 +135,9 @@ namespace BarPromenade
         public Transform RightUpperArm => rightUpperArm;
         public Transform RightForearm => rightForearm;
         public Transform RightHand => rightHand;
+        public SupermarketCashierNeckMode NeckMode => neckMode;
+        public bool UsesExtensibleNeck =>
+            neckMode == SupermarketCashierNeckMode.ExtensibleWatcher;
         public IReadOnlyList<Transform> NeckPivots => neckPivots;
 
         public Bounds LocalBounds => localBounds;
@@ -134,13 +164,16 @@ namespace BarPromenade
             Transform configuredRightUpperArm,
             Transform configuredRightForearm,
             Transform configuredRightHand,
+            SupermarketCashierNeckMode configuredNeckMode,
             Transform[] configuredNeckPivots,
             Bounds configuredLocalBounds,
             int configuredSourceTriangleCount,
             string configuredSourceGeneratorVersion,
             string configuredDesignId,
-            string configuredBuildSignature)
+            string configuredBuildSignature,
+            Texture2D configuredDetailAtlas = null)
         {
+            detailAtlas = configuredDetailAtlas;
             animator = configuredAnimator;
             modelRoot = configuredModelRoot;
             renderers = configuredRenderers ?? Array.Empty<Renderer>();
@@ -159,6 +192,7 @@ namespace BarPromenade
             rightUpperArm = configuredRightUpperArm;
             rightForearm = configuredRightForearm;
             rightHand = configuredRightHand;
+            neckMode = configuredNeckMode;
             neckPivots = configuredNeckPivots ??
                 Array.Empty<Transform>();
             localBounds = configuredLocalBounds;
@@ -167,6 +201,7 @@ namespace BarPromenade
                 configuredSourceGeneratorVersion ?? string.Empty;
             designId = configuredDesignId ?? string.Empty;
             buildSignature = configuredBuildSignature ?? string.Empty;
+            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
             ApplyBaseColors();
         }
 
@@ -188,9 +223,26 @@ namespace BarPromenade
                 binding.Renderer.GetPropertyBlock(properties);
                 properties.SetColor(BaseColorId, binding.BaseColor);
                 properties.SetColor(LegacyColorId, binding.BaseColor);
+
+                // One shared material serves every authored part, so the atlas
+                // rides the property block beside the colour. Parts
+                // without a region keep the plain material and sample the
+                // reserved white cell at texel (0, 0) if they ever do get
+                // a UV, so leaving them off the atlas is safe either way.
+                if (binding.UsesDetailAtlas && detailAtlas != null)
+                {
+                    properties.SetTexture(BaseMapId, detailAtlas);
+                    properties.SetTexture(LegacyMapId, detailAtlas);
+                }
+
                 binding.Renderer.SetPropertyBlock(properties);
                 properties.Clear();
             }
+        }
+
+        private void Awake()
+        {
+            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
         }
 
         private void OnEnable()

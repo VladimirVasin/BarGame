@@ -607,24 +607,40 @@ The vertical slice contains:
   A slot's `CharacterController` is enabled only after a unique, obstacle-safe
   spawn and disabled before pooling. The dedicated layer collides with the player,
   ignores other pedestrians and is excluded from camera/interaction queries.
-  The live humanoid-NPC asset set comprises `24` rigged designs: five pooled
-  walkers, `16` staged residents and the dedicated bartender, Watcher Cashier
-  and bus driver. Every rigged design uses `NpcHumanV2`, the exact Hero V2
+  The on-disk humanoid-NPC asset set comprises `26` rigged designs: five
+  production-folder pedestrian models, `17` staged residents, the active
+  bartender, normal supermarket cashier and bus driver, plus the retained
+  inactive Watcher Cashier. The active humanoid cast does not grow because the
+  normal cashier replaces the Watcher one for one. Every rigged design uses
+  `NpcHumanV2`, the exact Hero V2
   31-bone A-pose hierarchy and Avatar copied from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a common
   `0.835 m` rest pelvis. The five pooled and nine ordinary staged model
   manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
   The four Mountain Road cafe models and their separate `10`-clip bank use
-  `4.5.2`; the shelter trio and dedicated three-loop bank use `4.2.0`; the
-  three special manifests use `2.0.0`. The generated FBXs were
+  `4.5.2`; the shelter trio and dedicated three-loop bank use `4.2.0`.
+  The bartender and bus-driver manifests use `2.0.0`; the cashier generator
+  owns the active `1.0.0` normal output (`1.75 m`, `40` meshes / `1,244`
+  triangles) and the retained `2.2.0` Watcher output (`2.05 m`, `44` /
+  `1,588`) over one shared `256 px` garment-detail atlas. The generated FBXs were
   reimported and every production prefab/provider output rebuilt; runtime
   therefore consumes the replaced models, not legacy prefabs behind revised
-  authoring data. The special models measure `50` meshes/`1,436` triangles
-  for the full-body `1.75 m` bartender, `44`/`1,588` for the cashier and
-  `48`/`1,496` for the driver. This is a shared adult anatomical substrate,
+  authoring data. Every modular `SkinnedMeshRenderer` is governed by
+  `NpcSkinnedMeshCullingGuard`: the seven humanoid authoring pipelines serialize
+  dynamic bounds, and the six registry families reassert that contract once
+  when an instance wakes. Clip-driven limbs and procedural bones therefore
+  cannot be frustum-culled by the small A-pose boxes imported from the separate
+  model FBXs. The other special active models include the
+  `50`-mesh/`1,436`-triangle full-body `1.75 m` bartender and the
+  `48`-mesh/`1,496`-triangle driver. This is a shared adult anatomical substrate,
   not a character redesign: the mouthless Long-Arm, kettle and hopper
-  silhouettes, six bartender arms, cashier's undersized head and `18 m`
-  stretch neck, and driver's horizontal eyes remain canonical overlays.
+  silhouettes, six bartender arms and driver's horizontal eyes remain
+  canonical overlays. The active cashier keeps the same uniform, face, blink
+  and attentive gaze, but uses an ordinary head and non-scaling human neck;
+  the former `18 m` treatment survives only in the inactive
+  `watcher_cashier_v1` asset. The appearance catalog covers all `28` designs on
+  disk — `7` bizarre and `21` normal — while ordinary gameplay instantiates
+  only `supermarket_cashier_v1` at the checkout.
   The pool holds one presentation per registered design — Lampshade Walker,
   Chair Carrier, Kettle Hat Walker, Long-Arm Walker and Helmet Lamp Hopper —
   each with four material-property-block palettes. All five use dedicated
@@ -1305,7 +1321,10 @@ The vertical slice contains:
   constrained motor guides the visible hero to an explicit grounded dock and
   facing, holds a neutral frame, then plays the planted
   `DoorUseEnter/Loop/Exit` lean and short physical-right-hand press. Only the
-  terminal neutral completion may request the separate scene transition;
+  terminal neutral completion may request the separate scene transition. The
+  City supermarket entrance alone opts into a calculated `0.242 m` initial
+  vertical tolerance covering the complete road/curb/graded prompt reach;
+  every other door retains the common `0.02 m` default;
 - ordinary URP mesh shadows cast from the real character geometry in every
   gameplay root, plus one small light-independent analytic contact patch fixed
   to the grounded player root. The patch follows foot plant and expands,
@@ -1630,18 +1649,24 @@ The vertical slice contains:
   grade, local dust, a slow ceiling fan and a skippable `1.35 s` single-camera
   Bezier reveal establish the interior without changing the chase-camera
   contract or the fog-free `220 m` bar range;
-- one separate runtime-composed `16 x 11 x 3.6 m` `SupermarketInterior` with
-  protected aisles, three shelf sections, a stockroom facade and a decorative
-  checkout staffed by the Watcher Cashier — a bespoke animation-free 3D
-  clerk on the shared `NpcHumanV2` 31-bone Hero V2 Avatar at a `0.835 m`
-  rest pelvis, whose five-segment neck lies along a
-  pursuit curve: his body never leaves the register, but the head travels
-  the whole hall — up to `18 m` of neck — to hover beside the hero,
-  the sample-verified curve climbing over any shelf or counter in the
-  way; he snap-retracts with hysteresis when
-  the hero turns to look (pupils pinched, blinking suppressed) and
-  otherwise blinks once per `6.5 s`; a
-  separate `E — talk` stub answers with a placeholder stare. Four chunky
+- one separate `16 x 11 x 3.6 m` `SupermarketInterior` whose fixed shell,
+  profiled shelf bodies, recessed cold cabinet, checkout, stockroom facade,
+  fluorescent housings and articulated CCTV pivots are one deterministic
+  passive Blender asset. The validated layout plan still owns protected
+  aisles and the placement data for collision, product slots and interactions;
+  runtime composition owns the actual colliders, finite-product lifetimes,
+  practical lights and interaction objects. Five trimmed counter-clockwise
+  skirting sections bury their rear and bottom faces `3 mm` into the wall/floor
+  and meet without coplanar corner overlap. Its
+  decorative checkout is staffed by `supermarket_cashier_v1` — a passive
+  ordinary-proportioned `1.75 m`, `40`-mesh / `1,244`-triangle 3D clerk on the
+  shared `NpcHumanV2` 31-bone Hero V2 Avatar at a `0.835 m` rest pelvis. He keeps the former uniform, detail atlas,
+  attentive face, planted hands and hunch, but his ordinary neck never scales:
+  only the eyes and head follow the hero through a bounded `28°` turn while
+  the complete body remains behind the register. He retains the rare blink and
+  a separate `E — talk` placeholder. The former `watcher_cashier_v1` with its
+  five-segment `18 m` pursuit neck remains a named model/prefab asset but is not
+  provider-reachable or instantiated in ordinary gameplay. Four chunky
   ceiling-corner CCTV units servo their lenses after the hero from the
   first frame (fake-emissive recording LEDs, no colliders, no real
   lights), and the hall runs on a fluorescent light budget: six
@@ -1652,17 +1677,32 @@ The vertical slice contains:
   the first available physical product. The modal browser keeps one continuous
   lock while previous/next input cycles through every stocked shelf, skips
   empty shelves and moves the camera to the selected shelf while aiming at the
-  selected model's visual bounds. Muted clickable arrows sit directly beside
-  the product instead of adding another footer hint; keyboard and gamepad use
-  the same navigation path;
-- the three supermarket shelves contain exactly one finite physical unit of
-  five catalog products: instant noodles and a day-old loaf, vodka and a closed
-  stew can, plus one chicken egg on the cold shelf. Confirming a purchase
+  selected model's visual bounds. Renderer-only owner leases hide the hero and
+  active cashier during this view without disabling either gameplay root, then
+  restore every renderer's captured state on all exit paths. Muted clickable
+  arrows sit directly beside the product instead of adding another footer hint;
+  keyboard and gamepad use the same navigation path;
+- one deterministic passive `supermarket_product_pack_v1` Blender asset owns
+  the six generic, unbranded and text-free product models shared by the shop,
+  inventory previews, Home refrigerator and cat-feeding flow: instant noodles,
+  day-old loaf, vodka bottle, closed stew can, open stew can and chicken egg.
+  Its `33` meshes / `2,276` triangles feed an asset setup responsible for one
+  Resources prefab per item; runtime supplies selection collision and lifetime.
+  The three shop shelves contain exactly one finite physical unit of each of
+  only five offers: noodles and loaf, vodka and closed stew, plus the egg on
+  the cold shelf. Their
+  bottom-centre pivots sit on exact authored tier anchors instead of floating
+  or overhanging. The `0.46 m` vodka source uses a `0.37 m` shop fit envelope on
+  the unobstructed third/top tier and remains below the shelving-unit top during
+  selection; closed stew occupies the first tier. The open can's world source
+  remains the Home/cat flow, and it does not add a sixth store offer. Confirming a purchase
   atomically deducts its integer price, adds one matching inventory item and
   commits the product's stable world-source ID. The bought model and collider
   disappear immediately, and the source filter keeps that shelf position empty
   after leaving and re-entering until `BeginNewGame`. Failures for insufficient
-  cash, a full stack or an already-bought source mutate nothing. Closed stew is
+  cash, a full stack or an already-bought source mutate nothing. The product's
+  child price tag disappears with it instead of remaining on an empty shelf.
+  Closed stew is
   a separate `ClosedStewCan` item from the refrigerator's `OpenStewCan` and
   therefore cannot satisfy the stairwell cat's feeding requirement;
 - one compact validated `10 x 8 x 3.4 m` home interior with explicit main-room
@@ -1678,8 +1718,9 @@ The vertical slice contains:
   hollow liner, three stained shelves, a lower drawer, frost, grime and two
   door bins. Six cavity slots and two door slots form the storage contract;
   the initial occupied slots hold a vodka bottle, one chicken egg and an open
-  can of stew. Each occupant owns stable catalog metadata, registered
-  renderers and a tight non-blocking selection trigger. A successful `Take`
+  can of stew, instantiated from the same passive six-item product pack used by
+  shop and inventory presentation. Each occupant owns stable catalog metadata,
+  registered renderers and a tight non-blocking selection trigger. A successful `Take`
   now transfers the item into the run inventory, removes the physical model
   and persists the stable collected slot across scene round trips;
 - one localized modal refrigerator interaction: the Home camera follows an

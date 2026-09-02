@@ -12,15 +12,38 @@ namespace BarPromenade
     {
         private PlayerDoorActionController activeController;
         private PlayerDoorActionPlan plan;
+        private float initialVerticalTolerance =
+            PlayerMotor.InteractionVerticalTolerance;
 
         public bool IsConfigured { get; private set; }
         public PlayerDoorActionPlan Plan => plan;
+        public float InitialVerticalTolerance =>
+            initialVerticalTolerance;
 
         public void Configure(PlayerDoorActionPlan configuredPlan)
         {
+            Configure(
+                configuredPlan,
+                PlayerMotor.InteractionVerticalTolerance);
+        }
+
+        public void Configure(
+            PlayerDoorActionPlan configuredPlan,
+            float configuredInitialVerticalTolerance)
+        {
             configuredPlan.Validate(nameof(configuredPlan));
+            if (float.IsNaN(configuredInitialVerticalTolerance) ||
+                float.IsInfinity(configuredInitialVerticalTolerance) ||
+                configuredInitialVerticalTolerance < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(configuredInitialVerticalTolerance));
+            }
+
             CancelOwnedAction();
             plan = configuredPlan;
+            initialVerticalTolerance =
+                configuredInitialVerticalTolerance;
             IsConfigured = true;
         }
 
@@ -65,6 +88,7 @@ namespace BarPromenade
             bool accepted = controller.TryBegin(
                 this,
                 plan,
+                initialVerticalTolerance,
                 () =>
                 {
                     if (activeController == controller)

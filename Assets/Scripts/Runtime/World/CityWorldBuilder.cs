@@ -1430,7 +1430,8 @@ namespace BarPromenade
             SphereCollider trigger =
                 entranceObject.AddComponent<SphereCollider>();
             trigger.isTrigger = true;
-            trigger.radius = 1.05f;
+            trigger.radius =
+                SupermarketEntranceGeometry.InteractionTriggerRadius;
             supermarket =
                 entranceObject.AddComponent<SupermarketEntrance>();
             supermarket.Configure(
@@ -1451,7 +1452,9 @@ namespace BarPromenade
                 PlayerDoorActionPlan.CreateStationary(
                     entranceObject.transform.position,
                     doorDock,
-                    -direction));
+                    -direction),
+                SupermarketEntranceGeometry
+                    .DoorApproachVerticalTolerance);
         }
 
         private static void BuildHomeFront(

@@ -90,12 +90,33 @@ namespace BarPromenade
             PlayerDoorActionPlan plan,
             Action completed)
         {
+            return TryBegin(
+                owner,
+                plan,
+                PlayerMotor.InteractionVerticalTolerance,
+                completed);
+        }
+
+        public bool TryBegin(
+            UnityEngine.Object owner,
+            PlayerDoorActionPlan plan,
+            float initialVerticalTolerance,
+            Action completed)
+        {
             if (completed == null)
             {
                 throw new ArgumentNullException(nameof(completed));
             }
 
             plan.Validate(nameof(plan));
+            if (float.IsNaN(initialVerticalTolerance) ||
+                float.IsInfinity(initialVerticalTolerance) ||
+                initialVerticalTolerance < 0f)
+            {
+                throw new ArgumentOutOfRangeException(
+                    nameof(initialVerticalTolerance));
+            }
+
             if (!CanBegin(owner))
             {
                 return false;
@@ -113,7 +134,8 @@ namespace BarPromenade
                     definition,
                     plan.EntryPose,
                     plan.ActionHipPosition,
-                    plan.ExitPose);
+                    plan.ExitPose,
+                    initialVerticalTolerance);
             }
             catch
             {

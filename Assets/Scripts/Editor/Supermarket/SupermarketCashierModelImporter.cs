@@ -10,11 +10,20 @@ namespace BarPromenade.Editor
     {
         private void OnPreprocessModel()
         {
-            if (!string.Equals(
-                    assetPath,
-                    SupermarketCashierAssetSetup.ModelPath,
-                    StringComparison.OrdinalIgnoreCase) ||
-                !(assetImporter is ModelImporter importer))
+            if (!(assetImporter is ModelImporter importer))
+            {
+                return;
+            }
+
+            bool isOrdinary = string.Equals(
+                assetPath,
+                SupermarketCashierAssetSetup.ModelPath,
+                StringComparison.OrdinalIgnoreCase);
+            bool isWatcher = string.Equals(
+                assetPath,
+                SupermarketCashierAssetSetup.WatcherModelPath,
+                StringComparison.OrdinalIgnoreCase);
+            if (!isOrdinary && !isWatcher)
             {
                 return;
             }
@@ -89,7 +98,15 @@ namespace BarPromenade.Editor
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
                         importedPath,
+                        SupermarketCashierAssetSetup.WatcherModelPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
                         SupermarketCashierAssetSetup.ManifestPath,
+                        StringComparison.OrdinalIgnoreCase) ||
+                    string.Equals(
+                        importedPath,
+                        SupermarketCashierAssetSetup.WatcherManifestPath,
                         StringComparison.OrdinalIgnoreCase) ||
                     string.Equals(
                         importedPath,

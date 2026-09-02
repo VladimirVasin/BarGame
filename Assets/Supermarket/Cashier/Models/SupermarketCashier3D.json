@@ -1,34 +1,27 @@
 {
   "generator": "tools/build-supermarket-cashier-3d-model.py",
-  "generator_version": "2.0.0",
+  "generator_version": "1.0.0",
   "blender_version": "5.0.1",
-  "design_id": "watcher_cashier_v1",
-  "display_name": "Watcher Cashier",
+  "design_id": "supermarket_cashier_v1",
+  "display_name": "Supermarket Cashier",
   "seed": 731209,
-  "height_m": 2.05,
+  "height_m": 1.75,
   "anatomy_standard": "NpcHumanV2",
   "rest_pelvis_height_m": 0.835,
   "signature_anatomy": [
-    "stretch_neck",
-    "undersized_head"
+    "wide_asymmetric_eyes"
   ],
   "pose": "apose",
   "forward_axis": "-Y",
   "anatomical_left_axis": "+X",
-  "mesh_count": 44,
-  "triangle_count": 1588,
+  "mesh_count": 40,
+  "triangle_count": 1244,
   "triangle_budget": [
     1100,
     2200
   ],
   "pool_eligible": false,
-  "pivot_names": [
-    "PIVOT_Neck.01",
-    "PIVOT_Neck.02",
-    "PIVOT_Neck.03",
-    "PIVOT_Neck.04",
-    "PIVOT_Neck.05"
-  ],
+  "pivot_names": [],
   "bounds_min": [
     -0.804029,
     -0.216191,
@@ -37,7 +30,7 @@
   "bounds_max": [
     0.806029,
     0.134829,
-    2.05
+    1.75
   ],
   "material_asset": "Assets/Player3D/Materials/Player3DLit.mat",
   "emissive": false,
@@ -46,13 +39,146 @@
   "rigidbodies": false,
   "animation_count": 0,
   "animations": [],
-  "build_signature": "eca36033e15985ab71e20082b576300bd43b5f18d188de901dcee329302cc035",
-  "neck_design": "segmented_periscope_v1",
-  "neck_segment_count": 5,
-  "neck_rest_length_m": 0.55,
-  "neck_segment_height_m": 0.11,
-  "neck_max_stretch_ratio": 32.7,
+  "build_signature": "e478fa5c19e2a5fb6e6f2d041153c1ae445c029a4081fe83c73f28031d067678",
+  "neck_design": "fixed_human_v1",
+  "neck_segment_count": 0,
+  "neck_rest_length_m": 0.127883,
+  "neck_segment_height_m": 0.0,
+  "neck_max_stretch_ratio": 1.0,
   "eye_design": "wide_watcher_asymmetric",
+  "texture_bindings": [
+    {
+      "texture_asset": "Assets/Supermarket/Cashier/Textures/SupermarketCashier3DDetailAtlas.png",
+      "sha256": "078e23ee55612cb1408614c30a127f164d0e865a493d390e08146e48627a6db0",
+      "size": [
+        256,
+        256
+      ],
+      "regions": [
+        {
+          "name": "VestFront.L",
+          "renderer": "CLO_VestFront.L",
+          "rect_px": [
+            64,
+            0,
+            64,
+            64
+          ],
+          "kind": "box"
+        },
+        {
+          "name": "VestFront.R",
+          "renderer": "CLO_VestFront.R",
+          "rect_px": [
+            128,
+            0,
+            64,
+            64
+          ],
+          "kind": "box"
+        },
+        {
+          "name": "VestBack",
+          "renderer": "CLO_VestBack",
+          "rect_px": [
+            192,
+            0,
+            64,
+            64
+          ],
+          "kind": "box"
+        },
+        {
+          "name": "ShirtBib",
+          "renderer": "CLO_ShirtBib",
+          "rect_px": [
+            0,
+            64,
+            64,
+            64
+          ],
+          "kind": "box"
+        },
+        {
+          "name": "Collar",
+          "renderer": "CLO_TightCollar",
+          "rect_px": [
+            64,
+            64,
+            64,
+            64
+          ],
+          "kind": "ring"
+        },
+        {
+          "name": "Sleeve.L",
+          "renderer": "GEO_Forearm.L",
+          "rect_px": [
+            128,
+            64,
+            64,
+            64
+          ],
+          "kind": "ring"
+        },
+        {
+          "name": "Sleeve.R",
+          "renderer": "GEO_Forearm.R",
+          "rect_px": [
+            192,
+            64,
+            64,
+            64
+          ],
+          "kind": "ring"
+        },
+        {
+          "name": "Trouser.L",
+          "renderer": "GEO_Thigh.L",
+          "rect_px": [
+            0,
+            128,
+            64,
+            64
+          ],
+          "kind": "ring"
+        },
+        {
+          "name": "Trouser.R",
+          "renderer": "GEO_Thigh.R",
+          "rect_px": [
+            64,
+            128,
+            64,
+            64
+          ],
+          "kind": "ring"
+        },
+        {
+          "name": "Sole.L",
+          "renderer": "CLO_ShoeSole.L",
+          "rect_px": [
+            128,
+            128,
+            64,
+            64
+          ],
+          "kind": "box"
+        },
+        {
+          "name": "Sole.R",
+          "renderer": "CLO_ShoeSole.R",
+          "rect_px": [
+            192,
+            128,
+            64,
+            64
+          ],
+          "kind": "box"
+        }
+      ]
+    }
+  ],
   "bones": [
     {
       "name": "root",
@@ -901,7 +1027,7 @@
     },
     {
       "name": "GEO_Head",
-      "role": "undersized_watcher_head",
+      "role": "human_head",
       "bone": "head",
       "palette_name": "skin",
       "base_color": [
@@ -912,6 +1038,20 @@
       ],
       "vertices": 62,
       "triangles": 120
+    },
+    {
+      "name": "GEO_Neck",
+      "role": "body",
+      "bone": "neck",
+      "palette_name": "neck_skin",
+      "base_color": [
+        0.615,
+        0.58,
+        0.5,
+        1.0
+      ],
+      "vertices": 24,
+      "triangles": 44
     },
     {
       "name": "GEO_Pelvis",
@@ -1022,8 +1162,8 @@
         0.355,
         1.0
       ],
-      "vertices": 8,
-      "triangles": 12
+      "vertices": 16,
+      "triangles": 24
     },
     {
       "name": "GEO_UpperArm.L",
@@ -1066,76 +1206,6 @@
       ],
       "vertices": 8,
       "triangles": 12
-    },
-    {
-      "name": "NECK_Segment.01",
-      "role": "stretch_neck_segment",
-      "bone": "root",
-      "palette_name": "neck_skin",
-      "base_color": [
-        0.615,
-        0.58,
-        0.5,
-        1.0
-      ],
-      "vertices": 44,
-      "triangles": 80
-    },
-    {
-      "name": "NECK_Segment.02",
-      "role": "stretch_neck_segment",
-      "bone": "root",
-      "palette_name": "neck_skin",
-      "base_color": [
-        0.615,
-        0.58,
-        0.5,
-        1.0
-      ],
-      "vertices": 44,
-      "triangles": 80
-    },
-    {
-      "name": "NECK_Segment.03",
-      "role": "stretch_neck_segment",
-      "bone": "root",
-      "palette_name": "neck_skin",
-      "base_color": [
-        0.615,
-        0.58,
-        0.5,
-        1.0
-      ],
-      "vertices": 44,
-      "triangles": 80
-    },
-    {
-      "name": "NECK_Segment.04",
-      "role": "stretch_neck_segment",
-      "bone": "root",
-      "palette_name": "neck_skin",
-      "base_color": [
-        0.615,
-        0.58,
-        0.5,
-        1.0
-      ],
-      "vertices": 44,
-      "triangles": 80
-    },
-    {
-      "name": "NECK_Segment.05",
-      "role": "stretch_neck_segment",
-      "bone": "root",
-      "palette_name": "neck_skin",
-      "base_color": [
-        0.615,
-        0.58,
-        0.5,
-        1.0
-      ],
-      "vertices": 44,
-      "triangles": 80
     }
   ]
 }

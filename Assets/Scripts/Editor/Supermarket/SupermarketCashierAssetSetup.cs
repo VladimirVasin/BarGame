@@ -10,9 +10,10 @@ using UnityEngine.Rendering;
 namespace BarPromenade.Editor
 {
     /// <summary>
-    /// Imports the Watcher Cashier FBX against the production Hero/NPC V2
-    /// Generic Avatar and builds the passive runtime prefab outside
-    /// Resources, binding it to the one addressable provider asset.
+    /// Imports the ordinary and retained Watcher cashier FBXs against the
+    /// production Hero/NPC V2 Generic Avatar. Both remain passive prefabs
+    /// outside Resources; the addressable provider binds only the ordinary
+    /// variant used by the supermarket scene.
     /// </summary>
     [InitializeOnLoad]
     public static class SupermarketCashierAssetSetup
@@ -21,33 +22,79 @@ namespace BarPromenade.Editor
             "Assets/Supermarket/Cashier/Models/SupermarketCashier3D.fbx";
         public const string ManifestPath =
             "Assets/Supermarket/Cashier/Models/SupermarketCashier3D.json";
+        public const string WatcherModelPath =
+            "Assets/Supermarket/Cashier/Models/" +
+            "SupermarketWatcherCashier3D.fbx";
+        public const string WatcherManifestPath =
+            "Assets/Supermarket/Cashier/Models/" +
+            "SupermarketWatcherCashier3D.json";
         public const string PlayerModelPath =
             "Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx";
         public const string SharedMaterialPath =
             "Assets/Player3D/Materials/Player3DLit.mat";
         public const string PrefabPath =
             "Assets/Supermarket/Cashier/Prefabs/SupermarketCashier.prefab";
+        public const string WatcherPrefabPath =
+            "Assets/Supermarket/Cashier/Prefabs/" +
+            "SupermarketWatcherCashier.prefab";
         public const string ProviderPath =
             "Assets/Resources/Supermarket/SupermarketCashierProvider.asset";
 
-        private const string ExpectedDesignId = "watcher_cashier_v1";
+        /// <summary>
+        /// The greyscale detail sheet the generator paints beside the FBX.
+        /// Import settings are owned by
+        /// <c>SupermarketCashierTextureImporter</c>, which keys on this
+        /// exact path.
+        /// </summary>
+        public const string DetailAtlasPath =
+            "Assets/Supermarket/Cashier/Textures/" +
+            "SupermarketCashier3DDetailAtlas.png";
+
         private const string ExpectedPose = "apose";
-        private const string ExpectedNeckDesign =
-            "segmented_periscope_v1";
         private const string ExpectedEyeDesign =
             "wide_watcher_asymmetric";
-        private const int ExpectedNeckSegmentCount = 5;
-        private const float ExpectedHeight = 2.05f;
         private const int MinimumTriangleCount = 1100;
         private const int MaximumTriangleCount = 2200;
 
-        private static readonly string[] ExpectedPivotNames =
+        private static readonly string[] WatcherPivotNames =
         {
             "PIVOT_Neck.01",
             "PIVOT_Neck.02",
             "PIVOT_Neck.03",
             "PIVOT_Neck.04",
             "PIVOT_Neck.05"
+        };
+
+        private static readonly CashierVariant NormalVariant =
+            new CashierVariant(
+                "ordinary",
+                ModelPath,
+                ManifestPath,
+                PrefabPath,
+                SupermarketCashierProvider.DesignId,
+                "fixed_human_v1",
+                "human_head",
+                1.75f,
+                SupermarketCashierNeckMode.FixedHuman,
+                Array.Empty<string>());
+
+        private static readonly CashierVariant WatcherVariant =
+            new CashierVariant(
+                "retained Watcher",
+                WatcherModelPath,
+                WatcherManifestPath,
+                WatcherPrefabPath,
+                "watcher_cashier_v1",
+                "segmented_periscope_v1",
+                "undersized_watcher_head",
+                2.05f,
+                SupermarketCashierNeckMode.ExtensibleWatcher,
+                WatcherPivotNames);
+
+        private static readonly CashierVariant[] Variants =
+        {
+            NormalVariant,
+            WatcherVariant
         };
 
         private static bool isBuilding;
@@ -68,7 +115,8 @@ namespace BarPromenade.Editor
         {
             BuildOrThrow();
             Debug.Log(
-                $"Supermarket cashier prefab rebuilt at '{PrefabPath}'.");
+                "Supermarket cashier prefabs rebuilt at " +
+                $"'{PrefabPath}' and '{WatcherPrefabPath}'.");
         }
 
         [MenuItem("Bar Promenade/Supermarket Cashier 3D/Validate Imported Contract")]
@@ -76,17 +124,29 @@ namespace BarPromenade.Editor
         {
             ValidateOrThrow();
             Debug.Log(
-                "Supermarket cashier passive prefab contract is " +
+                "Both supermarket cashier passive prefab contracts are " +
                 "valid. (The imported model itself is not diffed - " +
                 "only the built prefab is checked.)");
         }
 
         public static bool SourcesExist()
         {
-            return File.Exists(ModelPath) &&
-                File.Exists(ManifestPath) &&
-                File.Exists(PlayerModelPath) &&
-                File.Exists(SharedMaterialPath);
+            if (!File.Exists(PlayerModelPath) ||
+                !File.Exists(SharedMaterialPath))
+            {
+                return false;
+            }
+
+            for (int index = 0; index < Variants.Length; index++)
+            {
+                if (!File.Exists(Variants[index].ModelPath) ||
+                    !File.Exists(Variants[index].ManifestPath))
+                {
+                    return false;
+                }
+            }
+
+            return true;
         }
 
         public static void QueueBuildWhenSourcesExist()
@@ -119,31 +179,12 @@ namespace BarPromenade.Editor
             try
             {
                 EnsureFolderForAsset(PrefabPath);
+                EnsureFolderForAsset(WatcherPrefabPath);
                 EnsureFolderForAsset(ProviderPath);
                 AssetDatabase.ImportAsset(
                     PlayerModelPath,
                     ImportAssetOptions.ForceUpdate |
                     ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(
-                    ModelPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-                AssetDatabase.ImportAsset(
-                    ManifestPath,
-                    ImportAssetOptions.ForceUpdate |
-                    ImportAssetOptions.ForceSynchronousImport);
-
-                SupermarketCashierManifest manifest =
-                    LoadAndValidateManifest();
-                GameObject modelAsset =
-                    AssetDatabase.LoadAssetAtPath<GameObject>(ModelPath);
-                if (modelAsset == null)
-                {
-                    throw new InvalidOperationException(
-                        $"Unity did not import a model from " +
-                        $"'{ModelPath}'.");
-                }
-
                 Material sharedMaterial =
                     AssetDatabase.LoadAssetAtPath<Material>(
                         SharedMaterialPath);
@@ -154,7 +195,37 @@ namespace BarPromenade.Editor
                         $"'{SharedMaterialPath}'.");
                 }
 
-                BuildPrefab(modelAsset, sharedMaterial, manifest);
+                for (int index = 0; index < Variants.Length; index++)
+                {
+                    CashierVariant variant = Variants[index];
+                    AssetDatabase.ImportAsset(
+                        variant.ModelPath,
+                        ImportAssetOptions.ForceUpdate |
+                        ImportAssetOptions.ForceSynchronousImport);
+                    AssetDatabase.ImportAsset(
+                        variant.ManifestPath,
+                        ImportAssetOptions.ForceUpdate |
+                        ImportAssetOptions.ForceSynchronousImport);
+
+                    SupermarketCashierManifest manifest =
+                        LoadAndValidateManifest(variant);
+                    GameObject modelAsset =
+                        AssetDatabase.LoadAssetAtPath<GameObject>(
+                            variant.ModelPath);
+                    if (modelAsset == null)
+                    {
+                        throw new InvalidOperationException(
+                            $"Unity did not import the {variant.Label} " +
+                            $"cashier model from '{variant.ModelPath}'.");
+                    }
+
+                    BuildPrefab(
+                        variant,
+                        modelAsset,
+                        sharedMaterial,
+                        manifest);
+                }
+
                 BindProvider();
                 AssetDatabase.SaveAssets();
                 ValidateOrThrow();
@@ -167,16 +238,47 @@ namespace BarPromenade.Editor
 
         public static void ValidateOrThrow()
         {
-            SupermarketCashierManifest manifest =
-                LoadAndValidateManifest();
+            Avatar playerAvatar = FindModelAvatar();
+            Material expectedMaterial =
+                AssetDatabase.LoadAssetAtPath<Material>(
+                    SharedMaterialPath);
+            for (int index = 0; index < Variants.Length; index++)
+            {
+                ValidateVariantOrThrow(
+                    Variants[index],
+                    playerAvatar,
+                    expectedMaterial);
+            }
 
-            GameObject prefab =
+            GameObject activePrefab =
                 AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
+            SupermarketCashierProvider provider =
+                AssetDatabase.LoadAssetAtPath<SupermarketCashierProvider>(
+                    ProviderPath);
+            if (provider == null ||
+                provider.CashierPrefab != activePrefab)
+            {
+                throw new InvalidOperationException(
+                    "The cashier provider asset must reference only the " +
+                    "ordinary built prefab.");
+            }
+        }
+
+        private static void ValidateVariantOrThrow(
+            CashierVariant variant,
+            Avatar playerAvatar,
+            Material expectedMaterial)
+        {
+            SupermarketCashierManifest manifest =
+                LoadAndValidateManifest(variant);
+            GameObject prefab =
+                AssetDatabase.LoadAssetAtPath<GameObject>(
+                    variant.PrefabPath);
             if (prefab == null)
             {
                 throw new InvalidOperationException(
-                    $"Supermarket cashier prefab is missing at " +
-                    $"'{PrefabPath}'.");
+                    $"The {variant.Label} cashier prefab is missing at " +
+                    $"'{variant.PrefabPath}'.");
             }
 
             SupermarketCashierAssetRegistry registry =
@@ -184,10 +286,10 @@ namespace BarPromenade.Editor
             if (registry == null)
             {
                 throw new InvalidOperationException(
-                    "Supermarket cashier prefab has no asset registry.");
+                    $"The {variant.Label} cashier prefab has no asset " +
+                    "registry.");
             }
 
-            Avatar playerAvatar = FindModelAvatar();
             if (registry.Animator == null ||
                 registry.Animator.applyRootMotion ||
                 registry.Animator.runtimeAnimatorController != null ||
@@ -200,7 +302,7 @@ namespace BarPromenade.Editor
                     "and disable root motion.");
             }
 
-            ValidateRegistryBindings(registry);
+            ValidateRegistryBindings(registry, variant);
             if (registry.Renderers.Count != manifest.mesh_count ||
                 registry.RendererBindings.Count != manifest.mesh_count)
             {
@@ -225,7 +327,7 @@ namespace BarPromenade.Editor
             }
 
             if (Mathf.Abs(
-                    registry.LocalBounds.size.y - ExpectedHeight) >
+                    registry.LocalBounds.size.y - variant.ExpectedHeight) >
                     0.035f ||
                 Mathf.Abs(registry.LocalBounds.min.y) > 0.025f)
             {
@@ -245,9 +347,6 @@ namespace BarPromenade.Editor
                     "Collider, Light or Rigidbody component.");
             }
 
-            Material expectedMaterial =
-                AssetDatabase.LoadAssetAtPath<Material>(
-                    SharedMaterialPath);
             for (int index = 0;
                  index < registry.Renderers.Count;
                  index++)
@@ -264,16 +363,6 @@ namespace BarPromenade.Editor
             }
 
             ValidateEyeBindings(registry.RendererBindings);
-
-            SupermarketCashierProvider provider =
-                AssetDatabase.LoadAssetAtPath<SupermarketCashierProvider>(
-                    ProviderPath);
-            if (provider == null || provider.CashierPrefab != prefab)
-            {
-                throw new InvalidOperationException(
-                    "The cashier provider asset must reference the " +
-                    "built prefab.");
-            }
         }
 
         private static void ValidateDependencyStamp()
@@ -283,10 +372,31 @@ namespace BarPromenade.Editor
                 return;
             }
 
-            SupermarketCashierManifest manifest;
             try
             {
-                manifest = LoadAndValidateManifest();
+                for (int index = 0; index < Variants.Length; index++)
+                {
+                    CashierVariant variant = Variants[index];
+                    SupermarketCashierManifest manifest =
+                        LoadAndValidateManifest(variant);
+                    GameObject prefab =
+                        AssetDatabase.LoadAssetAtPath<GameObject>(
+                            variant.PrefabPath);
+                    SupermarketCashierAssetRegistry registry =
+                        prefab != null
+                            ? prefab.GetComponent<
+                                SupermarketCashierAssetRegistry>()
+                            : null;
+                    if (registry == null ||
+                        !string.Equals(
+                            registry.BuildSignature,
+                            manifest.build_signature,
+                            StringComparison.Ordinal))
+                    {
+                        QueueBuildWhenSourcesExist();
+                        return;
+                    }
+                }
             }
             catch (Exception exception)
             {
@@ -296,19 +406,6 @@ namespace BarPromenade.Editor
                 return;
             }
 
-            GameObject prefab =
-                AssetDatabase.LoadAssetAtPath<GameObject>(PrefabPath);
-            SupermarketCashierAssetRegistry registry = prefab != null
-                ? prefab.GetComponent<SupermarketCashierAssetRegistry>()
-                : null;
-            if (registry == null ||
-                !string.Equals(
-                    registry.BuildSignature,
-                    manifest.build_signature,
-                    StringComparison.Ordinal))
-            {
-                QueueBuildWhenSourcesExist();
-            }
         }
 
         private static void RunQueuedBuild()
@@ -332,14 +429,16 @@ namespace BarPromenade.Editor
         }
 
         private static SupermarketCashierManifest
-            LoadAndValidateManifest()
+            LoadAndValidateManifest(CashierVariant variant)
         {
             TextAsset source =
-                AssetDatabase.LoadAssetAtPath<TextAsset>(ManifestPath);
+                AssetDatabase.LoadAssetAtPath<TextAsset>(
+                    variant.ManifestPath);
             if (source == null)
             {
                 throw new InvalidOperationException(
-                    $"Could not import manifest '{ManifestPath}'.");
+                    $"Could not import manifest " +
+                    $"'{variant.ManifestPath}'.");
             }
 
             SupermarketCashierManifest manifest =
@@ -348,6 +447,7 @@ namespace BarPromenade.Editor
             if (manifest == null ||
                 manifest.parts == null ||
                 manifest.bones == null ||
+                manifest.signature_anatomy == null ||
                 manifest.pivot_names == null)
             {
                 throw new InvalidOperationException(
@@ -356,7 +456,7 @@ namespace BarPromenade.Editor
 
             if (!string.Equals(
                     manifest.design_id,
-                    ExpectedDesignId,
+                    variant.DesignId,
                     StringComparison.Ordinal) ||
                 !string.Equals(
                     manifest.pose,
@@ -364,20 +464,22 @@ namespace BarPromenade.Editor
                     StringComparison.Ordinal) ||
                 !string.Equals(
                     manifest.neck_design,
-                    ExpectedNeckDesign,
+                    variant.NeckDesign,
                     StringComparison.Ordinal) ||
                 !string.Equals(
                     manifest.eye_design,
                     ExpectedEyeDesign,
                     StringComparison.Ordinal) ||
-                manifest.neck_segment_count != ExpectedNeckSegmentCount)
+                manifest.neck_segment_count !=
+                    variant.PivotNames.Length)
             {
                 throw new InvalidOperationException(
                     "Supermarket cashier design, neck or eye contract " +
                     "differs from the approved source.");
             }
 
-            if (Mathf.Abs(manifest.height_m - ExpectedHeight) >
+            if (Mathf.Abs(
+                    manifest.height_m - variant.ExpectedHeight) >
                     0.0001f ||
                 manifest.mesh_count != manifest.parts.Length ||
                 manifest.mesh_count < 24 ||
@@ -409,12 +511,12 @@ namespace BarPromenade.Editor
             }
 
             if (!manifest.pivot_names.SequenceEqual(
-                    ExpectedPivotNames,
+                    variant.PivotNames,
                     StringComparer.Ordinal))
             {
                 throw new InvalidOperationException(
-                    "Supermarket cashier neck pivots diverge from the " +
-                    "five authored PIVOT_Neck anchors.");
+                    $"The {variant.Label} cashier neck pivots diverge " +
+                    "from its authored contract.");
             }
 
             if (string.IsNullOrWhiteSpace(manifest.build_signature) ||
@@ -425,11 +527,55 @@ namespace BarPromenade.Editor
                     "source metadata.");
             }
 
-            ValidateManifestDesignParts(manifest.parts);
+            NpcDesignAppearance expectedAppearance =
+                variant.NeckMode ==
+                    SupermarketCashierNeckMode.FixedHuman
+                    ? NpcDesignAppearance.Normal
+                    : NpcDesignAppearance.Bizarre;
+            if (!NpcDesignAppearanceCatalog.TryGet(
+                    manifest.design_id,
+                    out NpcDesignAppearance appearance) ||
+                appearance != expectedAppearance)
+            {
+                throw new InvalidOperationException(
+                    $"The {variant.Label} cashier design classification " +
+                    $"must be {expectedAppearance}.");
+            }
+
+            if (variant.NeckMode ==
+                    SupermarketCashierNeckMode.FixedHuman &&
+                (manifest.neck_max_stretch_ratio > 1.0001f ||
+                 manifest.signature_anatomy.Contains(
+                     "stretch_neck",
+                     StringComparer.Ordinal) ||
+                 manifest.signature_anatomy.Contains(
+                     "undersized_head",
+                     StringComparer.Ordinal)))
+            {
+                throw new InvalidOperationException(
+                    "The ordinary cashier cannot declare a stretched " +
+                    "neck or undersized head.");
+            }
+
+            if (variant.NeckMode ==
+                    SupermarketCashierNeckMode.ExtensibleWatcher &&
+                (!manifest.signature_anatomy.Contains(
+                     "stretch_neck",
+                     StringComparer.Ordinal) ||
+                 !manifest.signature_anatomy.Contains(
+                     "undersized_head",
+                     StringComparer.Ordinal)))
+            {
+                throw new InvalidOperationException(
+                    "The retained Watcher lost its signature anatomy.");
+            }
+
+            ValidateManifestDesignParts(variant, manifest.parts);
             return manifest;
         }
 
         private static void ValidateManifestDesignParts(
+            CashierVariant variant,
             IReadOnlyList<SupermarketCashierManifestPart> parts)
         {
             Dictionary<string, SupermarketCashierManifestPart> byName =
@@ -439,7 +585,7 @@ namespace BarPromenade.Editor
             RequirePart(
                 byName,
                 "GEO_Head",
-                "undersized_watcher_head",
+                variant.HeadRole,
                 "head");
             RequirePart(
                 byName,
@@ -471,8 +617,14 @@ namespace BarPromenade.Editor
                 "CLO_NameTag",
                 "uniform_detail",
                 "chest");
+            if (variant.NeckMode ==
+                SupermarketCashierNeckMode.FixedHuman)
+            {
+                RequirePart(byName, "GEO_Neck", "body", "neck");
+            }
+
             for (int index = 1;
-                 index <= ExpectedNeckSegmentCount;
+                 index <= variant.PivotNames.Length;
                  index++)
             {
                 RequirePart(
@@ -509,12 +661,16 @@ namespace BarPromenade.Editor
         }
 
         private static void BuildPrefab(
+            CashierVariant variant,
             GameObject modelAsset,
             Material sharedMaterial,
             SupermarketCashierManifest manifest)
         {
-            GameObject prefabRoot =
-                new GameObject("SupermarketCashier");
+            GameObject prefabRoot = new GameObject(
+                variant.NeckMode ==
+                    SupermarketCashierNeckMode.FixedHuman
+                    ? "SupermarketCashier"
+                    : "SupermarketWatcherCashier");
             try
             {
                 GameObject model =
@@ -545,6 +701,40 @@ namespace BarPromenade.Editor
                         "the manifest.");
                 }
 
+                // Which parts the generator actually laid into the atlas.
+                // Anything absent keeps the plain flat palette colour,
+                // which is a legitimate state - the head and the neck are
+                // deliberately not in the sheet.
+                var atlasRenderers = new HashSet<string>(
+                    StringComparer.Ordinal);
+                Texture2D detailAtlas = null;
+                if (manifest.texture_bindings != null &&
+                    manifest.texture_bindings.Length > 0)
+                {
+                    SupermarketCashierManifestTextureBinding sheet =
+                        manifest.texture_bindings[0];
+                    detailAtlas =
+                        AssetDatabase.LoadAssetAtPath<Texture2D>(
+                            DetailAtlasPath);
+                    if (detailAtlas == null)
+                    {
+                        throw new InvalidOperationException(
+                            "The cashier manifest declares a detail " +
+                            $"atlas but '{DetailAtlasPath}' is missing.");
+                    }
+
+                    if (sheet.regions != null)
+                    {
+                        for (int index = 0;
+                             index < sheet.regions.Length;
+                             index++)
+                        {
+                            atlasRenderers.Add(
+                                sheet.regions[index].renderer);
+                        }
+                    }
+                }
+
                 List<Renderer> rendererList =
                     new List<Renderer>(manifest.parts.Length);
                 List<SupermarketCashierRendererBinding> bindings =
@@ -573,7 +763,7 @@ namespace BarPromenade.Editor
                         MotionVectorGenerationMode.Object;
                     if (renderer is SkinnedMeshRenderer skinned)
                     {
-                        skinned.updateWhenOffscreen = false;
+                        skinned.updateWhenOffscreen = true;
                     }
 
                     bindings.Add(
@@ -583,7 +773,8 @@ namespace BarPromenade.Editor
                             source.bone,
                             source.palette_name,
                             renderer,
-                            ParseColor(source.base_color)));
+                            ParseColor(source.base_color),
+                            atlasRenderers.Contains(source.name)));
                     rendererList.Add(renderer);
                 }
 
@@ -612,14 +803,14 @@ namespace BarPromenade.Editor
                     AnimatorCullingMode.AlwaysAnimate;
 
                 Transform[] neckPivots =
-                    new Transform[ExpectedPivotNames.Length];
+                    new Transform[variant.PivotNames.Length];
                 for (int index = 0;
-                     index < ExpectedPivotNames.Length;
+                     index < variant.PivotNames.Length;
                      index++)
                 {
                     neckPivots[index] = RequireTransform(
                         transformsByName,
-                        ExpectedPivotNames[index],
+                        variant.PivotNames[index],
                         "cashier prefab");
                 }
 
@@ -666,6 +857,7 @@ namespace BarPromenade.Editor
                         transformsByName, "forearm.R", "cashier prefab"),
                     RequireTransform(
                         transformsByName, "hand.R", "cashier prefab"),
+                    variant.NeckMode,
                     neckPivots,
                     CalculateLocalBounds(
                         prefabRoot.transform,
@@ -673,17 +865,18 @@ namespace BarPromenade.Editor
                     manifest.triangle_count,
                     manifest.generator_version,
                     manifest.design_id,
-                    manifest.build_signature);
+                    manifest.build_signature,
+                    detailAtlas);
 
                 GameObject saved = PrefabUtility.SaveAsPrefabAsset(
                     prefabRoot,
-                    PrefabPath,
+                    variant.PrefabPath,
                     out bool success);
                 if (!success || saved == null)
                 {
                     throw new InvalidOperationException(
                         "Could not save Supermarket cashier prefab at " +
-                        $"'{PrefabPath}'.");
+                        $"'{variant.PrefabPath}'.");
                 }
             }
             finally
@@ -715,7 +908,8 @@ namespace BarPromenade.Editor
         }
 
         private static void ValidateRegistryBindings(
-            SupermarketCashierAssetRegistry registry)
+            SupermarketCashierAssetRegistry registry,
+            CashierVariant variant)
         {
             Transform[] required =
             {
@@ -741,13 +935,14 @@ namespace BarPromenade.Editor
                     "procedural torso, eye or arm binding.");
             }
 
-            if (registry.NeckPivots.Count !=
-                ExpectedNeckSegmentCount ||
+            if (registry.NeckMode != variant.NeckMode ||
+                registry.NeckPivots.Count !=
+                    variant.PivotNames.Length ||
                 registry.NeckPivots.Any(pivot => pivot == null))
             {
                 throw new InvalidOperationException(
-                    "Supermarket cashier registry must bind exactly " +
-                    "five neck pivots.");
+                    $"The {variant.Label} cashier registry has the " +
+                    "wrong neck mode or pivot count.");
             }
 
             for (int index = 0;
@@ -974,12 +1169,51 @@ namespace BarPromenade.Editor
             }
         }
 
+        private sealed class CashierVariant
+        {
+            public CashierVariant(
+                string label,
+                string modelPath,
+                string manifestPath,
+                string prefabPath,
+                string designId,
+                string neckDesign,
+                string headRole,
+                float expectedHeight,
+                SupermarketCashierNeckMode neckMode,
+                string[] pivotNames)
+            {
+                Label = label;
+                ModelPath = modelPath;
+                ManifestPath = manifestPath;
+                PrefabPath = prefabPath;
+                DesignId = designId;
+                NeckDesign = neckDesign;
+                HeadRole = headRole;
+                ExpectedHeight = expectedHeight;
+                NeckMode = neckMode;
+                PivotNames = pivotNames ?? Array.Empty<string>();
+            }
+
+            public string Label { get; }
+            public string ModelPath { get; }
+            public string ManifestPath { get; }
+            public string PrefabPath { get; }
+            public string DesignId { get; }
+            public string NeckDesign { get; }
+            public string HeadRole { get; }
+            public float ExpectedHeight { get; }
+            public SupermarketCashierNeckMode NeckMode { get; }
+            public string[] PivotNames { get; }
+        }
+
         [Serializable]
         private sealed class SupermarketCashierManifest
         {
             public string generator_version;
             public string design_id;
             public float height_m;
+            public string[] signature_anatomy;
             public string pose;
             public string forward_axis;
             public string anatomical_left_axis;
@@ -1001,6 +1235,24 @@ namespace BarPromenade.Editor
             public string eye_design;
             public SupermarketCashierManifestBone[] bones;
             public SupermarketCashierManifestPart[] parts;
+            public SupermarketCashierManifestTextureBinding[]
+                texture_bindings;
+        }
+
+        [Serializable]
+        private sealed class SupermarketCashierManifestTextureBinding
+        {
+            public string texture_asset;
+            public string sha256;
+            public SupermarketCashierManifestAtlasRegion[] regions;
+        }
+
+        [Serializable]
+        private sealed class SupermarketCashierManifestAtlasRegion
+        {
+            public string name;
+            public string renderer;
+            public string kind;
         }
 
         [Serializable]

@@ -172,6 +172,94 @@ namespace BarPromenade.Tests.PlayMode
             }
         }
 
+        [UnityTest]
+        public IEnumerator ConfiguredVerticalTolerance_StartsAtGradedPromptEdge()
+        {
+            DoorTestContext context = CreateContext(
+                "Door Kerb Approach");
+            Vector3 start = context.Player.GameObject.transform.position;
+            float kerbRise =
+                CityStreetSurfacePlanner.SidewalkTop -
+                CityStreetSurfacePlanner.RoadTop;
+            float maximumPromptGradeRise =
+                (PlayerInteractor.InteractionRadius +
+                 SupermarketEntranceGeometry.InteractionTriggerRadius) *
+                (CityElevationPlan.MaximumBusGradePercent / 100f);
+            Vector3 dock =
+                start +
+                Vector3.forward * 0.90f +
+                Vector3.up *
+                (kerbRise + maximumPromptGradeRise);
+            PlayerDoorActionPlan raisedPlan =
+                PlayerDoorActionPlan.CreateStationary(
+                    Vector3.forward,
+                    dock,
+                    Vector3.forward);
+
+            try
+            {
+                context.Target.Configure(raisedPlan);
+                Assert.That(
+                    context.Target.TryBegin(
+                        context.Player.Interactor,
+                        () => { }),
+                    Is.False,
+                    "The ordinary 0.02 m doorway tolerance must still " +
+                    "reject a hero at the graded road edge of the prompt.");
+
+                context.Target.Configure(
+                    raisedPlan,
+                    SupermarketEntranceGeometry
+                        .DoorApproachVerticalTolerance);
+                Assert.That(
+                    context.Target.InitialVerticalTolerance,
+                    Is.EqualTo(
+                        SupermarketEntranceGeometry
+                            .DoorApproachVerticalTolerance));
+                Assert.That(
+                    context.Target.TryBegin(
+                        context.Player.Interactor,
+                        () => { }),
+                    Is.True,
+                    "A visible supermarket prompt from road level must " +
+                    "start the existing positioned door approach.");
+                Assert.That(context.Controller.IsPlaying, Is.True);
+                Assert.That(
+                    context.Interaction.Phase,
+                    Is.EqualTo(
+                        PlayerAnimatedInteractionPhase.Positioning));
+                Assert.That(context.Player.Motor.InputEnabled, Is.False);
+                Assert.That(
+                    context.Player.Interactor.InputEnabled,
+                    Is.False);
+
+                yield return null;
+
+                Vector3 planarMove =
+                    context.Player.GameObject.transform.position - start;
+                planarMove.y = 0f;
+                Assert.That(
+                    planarMove.magnitude,
+                    Is.GreaterThan(0.001f),
+                    "Accepting E must visibly move the hero toward the " +
+                    "door instead of silently rejecting the action.");
+
+                context.Target.enabled = false;
+                yield return null;
+                Assert.That(
+                    context.Interaction.Phase,
+                    Is.EqualTo(PlayerAnimatedInteractionPhase.Idle));
+                Assert.That(context.Player.Motor.InputEnabled, Is.True);
+                Assert.That(
+                    context.Player.Interactor.InputEnabled,
+                    Is.True);
+            }
+            finally
+            {
+                context.Dispose();
+            }
+        }
+
         private static DoorTestContext CreateContext(string label)
         {
             GameObject cameraObject =

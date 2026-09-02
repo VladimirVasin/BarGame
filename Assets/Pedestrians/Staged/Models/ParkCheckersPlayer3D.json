@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "park_checkers_player_v1",
   "display_name": "Park Checkers Player",
@@ -25,7 +25,7 @@
     2200
   ],
   "staged": true,
-  "pool_eligible": false,
+  "pool_eligible": true,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
@@ -44,9 +44,13 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
+  "ambient_idle_clip": "CheckersStreetIdle",
+  "ambient_walk_clip": "CheckersStreetWalk",
   "shared_clips": [
     "CheckersMull",
     "CheckersTrudge",
+    "CheckersStreetIdle",
+    "CheckersStreetWalk",
     "CheckersJeer"
   ],
   "rides_bus": false,
@@ -55,7 +59,12 @@
     0.53,
     0.55
   ],
-  "build_signature": "3755993a476e0947f604ad9a7613bd0e492ca8af651321edd246fc18b8266047",
+  "perch_support_contact_m": null,
+  "perch_support_radius_m": null,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "ede133abc4f7929793665c501a4c0474369edc31365e5c174275109a0c8370d4",
   "bones": [
     {
       "name": "root",

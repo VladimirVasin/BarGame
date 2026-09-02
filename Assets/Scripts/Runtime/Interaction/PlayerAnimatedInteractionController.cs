@@ -461,6 +461,22 @@ namespace BarPromenade
             PlayerAnimatedInteractionPose authoredEntryPose,
             Vector3 actionHipPosition,
             PlayerAnimatedInteractionPose authoredExitPose,
+            float initialVerticalTolerance)
+        {
+            return BeginPositionedInternal(
+                definition,
+                authoredEntryPose,
+                actionHipPosition,
+                authoredExitPose,
+                null,
+                initialVerticalTolerance);
+        }
+
+        public bool BeginPositioned(
+            PlayerAnimatedInteractionDefinition definition,
+            PlayerAnimatedInteractionPose authoredEntryPose,
+            Vector3 actionHipPosition,
+            PlayerAnimatedInteractionPose authoredExitPose,
             PlayerAnimatedInteractionPelvisTransition transition)
         {
             return BeginPositionedInternal(

@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "weigh_attendant_v1",
   "display_name": "Weigh Attendant",
@@ -25,7 +25,7 @@
     2000
   ],
   "staged": true,
-  "pool_eligible": false,
+  "pool_eligible": true,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
@@ -44,14 +44,27 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
+  "ambient_idle_clip": "WeigherStreetIdle",
+  "ambient_walk_clip": "WeigherStreetWalk",
   "shared_clips": [
     "WeigherCheck",
-    "WeighedPace"
+    "WeighedPace",
+    "WeigherStreetIdle",
+    "WeigherStreetWalk",
+    "WeigherSit"
   ],
-  "rides_bus": false,
-  "seated_clearance_m": null,
+  "rides_bus": true,
+  "seated_clearance_m": [
+    0.84,
+    0.99
+  ],
   "perch_seat_height_m": null,
-  "build_signature": "7aabb419e05582d88ab3449e277786c19ade480f5fcad0def77d0cf330c19df4",
+  "perch_support_contact_m": null,
+  "perch_support_radius_m": null,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "8a714ae55eaefdc9c3e688a228a825e061c9bc819862bab7dfa323591245bc01",
   "bones": [
     {
       "name": "root",

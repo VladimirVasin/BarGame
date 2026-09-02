@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -106,6 +106,18 @@ namespace BarPromenade
         [SerializeField] private Transform rightFootAnchor;
         [SerializeField] private AnimationClip idleClip;
         [SerializeField] private AnimationClip walkClip;
+        /// <summary>
+        /// The street gait, for a design that also has a placed role.
+        ///
+        /// The babushka's `walkClip` is `BabushkaBeat` - a stationary carpet
+        /// beating her yard presentation plays deliberately - so a promoted
+        /// resident cannot simply have its walk slot rewritten. The roaming
+        /// pool reads this pair when it is set; every staged presentation
+        /// goes on reading `idleClip` / `walkClip` untouched.
+        /// </summary>
+        [SerializeField] private AnimationClip ambientIdleClip;
+
+        [SerializeField] private AnimationClip ambientWalkClip;
         [SerializeField] private AnimationClip sitClip;
         [SerializeField] private AnimationClip actionClip;
         [SerializeField] private Bounds localBounds;
@@ -150,6 +162,16 @@ namespace BarPromenade
         /// The design's authored seated loop, or <c>null</c> for a design that
         /// declares no seated ride.
         /// </summary>
+        public AnimationClip AmbientIdleClip => ambientIdleClip;
+        public AnimationClip AmbientWalkClip => ambientWalkClip;
+
+        /// <summary>The pair the roaming pool should actually play.</summary>
+        public AnimationClip RoamingIdleClip =>
+            ambientIdleClip != null ? ambientIdleClip : idleClip;
+
+        public AnimationClip RoamingWalkClip =>
+            ambientWalkClip != null ? ambientWalkClip : walkClip;
+
         public AnimationClip SitClip => sitClip;
 
         /// <summary>
@@ -222,7 +244,9 @@ namespace BarPromenade
             bool configuredPreservesAirborneMotion = false,
             Transform configuredPelvisAnchor = null,
             AnimationClip configuredSitClip = null,
-            AnimationClip configuredActionClip = null)
+            AnimationClip configuredActionClip = null,
+            AnimationClip configuredAmbientIdleClip = null,
+            AnimationClip configuredAmbientWalkClip = null)
         {
             headLamp = configuredHeadLamp;
             preservesAirborneMotion = configuredPreservesAirborneMotion;
@@ -239,12 +263,15 @@ namespace BarPromenade
             walkClip = configuredWalkClip;
             sitClip = configuredSitClip;
             actionClip = configuredActionClip;
+            ambientIdleClip = configuredAmbientIdleClip;
+            ambientWalkClip = configuredAmbientWalkClip;
             localBounds = configuredLocalBounds;
             sourceTriangleCount = configuredSourceTriangleCount;
             sourceGeneratorVersion = configuredSourceGeneratorVersion ??
                 string.Empty;
             designId = configuredDesignId ?? string.Empty;
             buildSignature = configuredBuildSignature ?? string.Empty;
+            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
             ApplyPaletteVariant(0);
         }
 
@@ -306,6 +333,11 @@ namespace BarPromenade
                 target.SetPropertyBlock(properties);
                 properties.Clear();
             }
+        }
+
+        private void Awake()
+        {
+            NpcSkinnedMeshCullingGuard.EnableDynamicBounds(modelRoot);
         }
 
         private void OnEnable()

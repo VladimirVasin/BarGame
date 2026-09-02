@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "lampshade_walker_v1",
   "display_name": "Lampshade Walker",
@@ -28,7 +28,7 @@
     1400
   ],
   "staged": false,
-  "pool_eligible": true,
+  "pool_eligible": false,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
@@ -47,6 +47,8 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
+  "ambient_idle_clip": null,
+  "ambient_walk_clip": null,
   "shared_clips": [
     "LampshadeIdle",
     "LampshadeWalk",
@@ -58,7 +60,12 @@
     0.94
   ],
   "perch_seat_height_m": null,
-  "build_signature": "026d7c01b6cf9466f0cfc68d1f338b71ef41338b18380cec914c42a8409faea1",
+  "perch_support_contact_m": null,
+  "perch_support_radius_m": null,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "229f5b504dc4bcee76cd9fb86b6b5682b60f8fc94d2d32098d6a36e3a727494e",
   "bones": [
     {
       "name": "root",

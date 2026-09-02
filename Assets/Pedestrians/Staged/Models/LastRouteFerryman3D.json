@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "last_route_ferryman_v1",
   "display_name": "Last Route Ferryman",
@@ -44,6 +44,8 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
+  "ambient_idle_clip": null,
+  "ambient_walk_clip": null,
   "shared_clips": [
     "FerrymanWait",
     "FerrymanTrudge",
@@ -60,7 +62,12 @@
     0.5,
     0.52
   ],
-  "build_signature": "e189d915a736c45c14e126ea211e369c22b634cf1968c540c90e52c47f221b4c",
+  "perch_support_contact_m": null,
+  "perch_support_radius_m": null,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "262d7492bdf6136f5b7e2210242977a2544295b687540ab1b14549e633a354b1",
   "bones": [
     {
       "name": "root",

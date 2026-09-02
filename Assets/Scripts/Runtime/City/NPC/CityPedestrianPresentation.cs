@@ -274,12 +274,16 @@ namespace BarPromenade
             locomotionMixer = AnimationMixerPlayable.Create(
                 graph,
                 hasSitPlayable ? 3 : 2);
+            // The ROAMING pair, which is the ambient one where a design
+            // declares it and the ordinary slots otherwise. A promoted
+            // resident walks the street on the shared citizen gait while its
+            // placed copy goes on beating a carpet or holding a gate.
             idlePlayable = AnimationClipPlayable.Create(
                 graph,
-                registry.IdleClip);
+                registry.RoamingIdleClip);
             walkPlayable = AnimationClipPlayable.Create(
                 graph,
-                registry.WalkClip);
+                registry.RoamingWalkClip);
             idlePlayable.SetApplyFootIK(false);
             idlePlayable.SetApplyPlayableIK(false);
             walkPlayable.SetApplyFootIK(false);

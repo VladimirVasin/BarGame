@@ -6,8 +6,10 @@ namespace BarPromenade
 {
     /// <summary>
     /// Builds the shared low-poly models used by physical world items and the
-    /// inventory preview. Generated parts reuse packaged materials and never
-    /// create colliders; owning systems add interaction geometry when needed.
+    /// inventory preview. The five stocked supermarket products and the open
+    /// refrigerator stew can come from passive Blender-authored Resources
+    /// prefabs; personal items retain their compact procedural models. Neither
+    /// path creates colliders; owning systems add interaction geometry.
     /// </summary>
     public static class InventoryItemModelFactory
     {
@@ -88,35 +90,23 @@ namespace BarPromenade
                 case InventoryItemId.Lighter:
                     return BuildLighter(parent, rootPrefix);
                 case InventoryItemId.VodkaBottle:
-                    return BuildVodkaBottle(
-                        parent,
-                        availableSize,
-                        rootPrefix);
+                    return SupermarketProductModelResources.Instantiate(
+                        itemId, parent, availableSize, rootPrefix);
                 case InventoryItemId.ChickenEgg:
-                    return BuildChickenEgg(
-                        parent,
-                        availableSize,
-                        rootPrefix);
+                    return SupermarketProductModelResources.Instantiate(
+                        itemId, parent, availableSize, rootPrefix);
                 case InventoryItemId.OpenStewCan:
-                    return BuildOpenStewCan(
-                        parent,
-                        availableSize,
-                        rootPrefix);
+                    return SupermarketProductModelResources.Instantiate(
+                        itemId, parent, availableSize, rootPrefix);
                 case InventoryItemId.ClosedStewCan:
-                    return BuildClosedStewCan(
-                        parent,
-                        availableSize,
-                        rootPrefix);
+                    return SupermarketProductModelResources.Instantiate(
+                        itemId, parent, availableSize, rootPrefix);
                 case InventoryItemId.InstantNoodles:
-                    return BuildInstantNoodles(
-                        parent,
-                        availableSize,
-                        rootPrefix);
+                    return SupermarketProductModelResources.Instantiate(
+                        itemId, parent, availableSize, rootPrefix);
                 case InventoryItemId.DayOldLoaf:
-                    return BuildDayOldLoaf(
-                        parent,
-                        availableSize,
-                        rootPrefix);
+                    return SupermarketProductModelResources.Instantiate(
+                        itemId, parent, availableSize, rootPrefix);
                 default:
                     throw new ArgumentOutOfRangeException(
                         nameof(itemId),

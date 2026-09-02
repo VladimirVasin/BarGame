@@ -1,5 +1,6 @@
 using System;
 using System.Collections;
+using System.Collections.Generic;
 using System.IO;
 using NUnit.Framework;
 using UnityEngine;
@@ -1072,10 +1073,123 @@ namespace BarPromenade.Tests.PlayMode
         [Explicit("Capture, not a test. Run one area at a time.")]
         public IEnumerator Supermarket()
         {
+            SupermarketInteriorRoot supermarketRoot = null;
             yield return Capture(
                 SceneIds.SupermarketInterior,
-                Root<SupermarketInteriorRoot>(),
-                HeroShots());
+                () =>
+                {
+                    supermarketRoot = Object.FindAnyObjectByType<
+                        SupermarketInteriorRoot>();
+                    return supermarketRoot;
+                },
+                () => SupermarketShots(supermarketRoot));
+        }
+
+        private static Shot[] SupermarketShots(
+            SupermarketInteriorRoot supermarketRoot)
+        {
+            Assert.That(supermarketRoot, Is.Not.Null);
+            Assert.That(supermarketRoot.World, Is.Not.Null);
+            Assert.That(supermarketRoot.World.Shelves, Has.Count.EqualTo(3));
+            IReadOnlyList<SupermarketShelfView> shelves =
+                supermarketRoot.World.Shelves;
+            return new[]
+            {
+                Shot.NearHero(
+                    "01-entrance-overview",
+                    new Vector3(0f, 1.5f, -3.6f),
+                    new Vector3(0f, 1.2f, 9f),
+                    62f),
+                ShelfShot("02-dry-products", shelves[0]),
+                ShelfShot("03-pantry-products", shelves[1]),
+                ShelfShot("04-cold-product", shelves[2]),
+            };
+        }
+
+        private static Shot ShelfShot(
+            string name,
+            SupermarketShelfView shelf)
+        {
+            Assert.That(shelf, Is.Not.Null);
+            Assert.That(shelf.Products, Is.Not.Empty);
+            Bounds productBounds = default;
+            bool hasBounds = false;
+            for (int index = 0; index < shelf.Products.Count; index++)
+            {
+                SupermarketProductView product = shelf.Products[index];
+                Assert.That(
+                    product.TryGetWorldBounds(out Bounds currentBounds),
+                    Is.True,
+                    $"{shelf.Id} product {index} has no renderer bounds.");
+                Assert.That(
+                    Mathf.Abs(
+                        currentBounds.min.y - product.transform.position.y),
+                    Is.LessThanOrEqualTo(0.012f),
+                    $"{product.ItemId} is not grounded on its shelf tier.");
+                if (product.ItemId == InventoryItemId.VodkaBottle)
+                {
+                    float topTierSurface = product.transform.parent
+                        .TransformPoint(new Vector3(
+                            0f,
+                            SupermarketInteriorLayoutPlanner
+                                .GondolaThirdTierTop,
+                            0f))
+                        .y;
+                    Assert.That(
+                        product.transform.position.y,
+                        Is.EqualTo(topTierSurface).Within(0.012f),
+                        "The vodka bottle is not on the unobstructed top " +
+                        "shelf tier.");
+                    float selectedTop = product.transform.position.y +
+                        currentBounds.size.y * 1.08f;
+                    float shelfTop = product.transform.parent
+                        .TransformPoint(new Vector3(
+                            0f,
+                            shelf.Plan.Height,
+                            0f))
+                        .y;
+                    Assert.That(
+                        selectedTop,
+                        Is.LessThan(shelfTop),
+                        "Selected vodka bottle rises above the shelving " +
+                        "unit.");
+                }
+
+                if (!hasBounds)
+                {
+                    productBounds = currentBounds;
+                    hasBounds = true;
+                }
+                else
+                {
+                    productBounds.Encapsulate(currentBounds);
+                }
+            }
+
+            Vector3 cameraPosition = shelf.CameraPosition;
+            float fieldOfView = shelf.CameraFieldOfView;
+            if (shelf.Kind == SupermarketShelfKind.ColdShelf)
+            {
+                Vector3 facing = shelf.transform.TransformDirection(
+                    shelf.Plan.FacingDirection).normalized;
+                cameraPosition = productBounds.center + facing * 1.8f +
+                    Vector3.up * 0.45f;
+                fieldOfView = 48f;
+            }
+            else if (shelf.Kind ==
+                     SupermarketShelfKind.PantryAndSpirits)
+            {
+                fieldOfView = 62f;
+            }
+
+            Debug.Log(
+                $"Supermarket capture '{name}': camera={cameraPosition}, " +
+                $"target={productBounds.center}, bounds={productBounds}.");
+            return Shot.At(
+                name,
+                cameraPosition,
+                productBounds.center,
+                fieldOfView);
         }
 
         [UnityTest]

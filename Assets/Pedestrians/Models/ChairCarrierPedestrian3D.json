@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "chair_carrier_v1",
   "display_name": "Chair Carrier",
@@ -46,6 +46,8 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
+  "ambient_idle_clip": null,
+  "ambient_walk_clip": null,
   "shared_clips": [
     "ChairCarrierIdle",
     "ChairCarrierWalk",
@@ -57,7 +59,12 @@
     0.97
   ],
   "perch_seat_height_m": null,
-  "build_signature": "16ebe2bbf2b602ec13cdfa9c1e1907444674b98185201f5d9d4969f9df6d997b",
+  "perch_support_contact_m": null,
+  "perch_support_radius_m": null,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "916735f3db1027f17f2254f036db1cfd4e9f6f19f8295b6862c0e4360a6d5bf9",
   "bones": [
     {
       "name": "root",

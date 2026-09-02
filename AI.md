@@ -503,40 +503,90 @@ returns. They spawn at randomly
   walker per event, uses much longer random delays throughout and retains
   authored simulation pace; walkers already active at dusk are not culled
   early.
-  The production humanoid-NPC asset set contains `24` rigged designs: the five
-  pooled walkers, `16` staged residents and the dedicated bartender, Watcher
-  Cashier and bus driver. Every one uses `NpcHumanV2`: the exact Hero V2
+  The on-disk humanoid-NPC asset set contains `26` rigged designs: the five
+  models in the production pedestrian folder, `17` staged residents, the
+  active bartender, normal supermarket cashier and bus driver, plus the
+  retained inactive Watcher Cashier. The active humanoid cast does not grow:
+  `supermarket_cashier_v1` replaces `watcher_cashier_v1` one for one. Roaming
+  is no longer the same distinction:
+  since 2026-09-02 the street pool is eight, and seven of those eight are
+  staged residents that roam as well. Every one uses `NpcHumanV2`: the exact Hero V2
   31-bone A-pose hierarchy and Avatar copied from
   `Assets/Player3D/V2/Models/PlayerCharacter3DV2.fbx`, with a shared
-  `0.835 m` rest pelvis. The five pooled and nine ordinary staged model
-  manifests plus the `37`-clip `CityPedestrianLocomotion` bank use `4.0.0`.
-  The four Mountain Road cafe models and their separate `10`-clip bank use
-  `4.5.2`; the shelter trio and isolated three-loop bank use `4.2.0`; the
-  three special manifests use `2.0.0`. Their FBXs were
+  `0.835 m` rest pelvis. The five production-folder and nine ordinary staged
+  model manifests, the four Mountain Road cafe models with their separate
+  `10`-clip bank, and the `53`-clip `CityPedestrianLocomotion` bank all use
+  `4.5.2` — one shared generator, so one version. The mother and her own bank
+  sit one revision back at `4.5.1`; the shelter trio and their isolated
+  three-loop bank at `4.3.1`; the
+  bartender and driver manifests use `2.0.0`. The cashier generator owns two
+  sibling assets over one `256 px` garment-detail atlas: the `1.0.0`
+  `SupermarketCashier3D` output is the active `1.75 m`, `40`-mesh / `1,244`-tri
+  ordinary-proportioned clerk, while the retained `2.2.0`, `44`-mesh / `1,588`-tri
+  `SupermarketWatcherCashier3D` preserves the former undersized head and
+  segmented periscope neck without remaining provider-reachable. Their FBXs were
   reimported and the production prefabs/provider assets rebuilt, so runtime uses
   these models rather than retaining the former bodies behind new plans.
-  The special models measure `50` meshes/`1,436` triangles for the
-  full-body `1.75 m` bartender, `44`/`1,588` for the cashier and
-  `48`/`1,496` for the driver. The bartender's prefab is loaded through
+  Every modular `SkinnedMeshRenderer` refreshes its bounds from the live pose
+  through `NpcSkinnedMeshCullingGuard`. Clip-driven limbs and bounded
+  procedural looks therefore cannot be frustum-culled by the small A-pose boxes
+  imported from the separate model FBXs.
+  The other special active models include the `50`-mesh/`1,436`-triangle
+  full-body `1.75 m` bartender and the `48`-mesh/`1,496`-triangle driver. The
+  bartender's prefab is loaded through
   `BarBartenderProvider` at the authored counter anchor; procedural idle and
   ordinary one-bottle touch/carry/steady service are live, while
   multi-ingredient cocktail ordering and the six-arm bottle chord remain
   deferred. The common adult substrate changes large anatomical proportions,
   not identity: the Long-Arm remains mouthless with ground-reaching forearms
   and heavy hands, the kettle and hopper silhouettes remain, the bartender
-  keeps six arms, the cashier keeps the undersized head and `18 m` stretch
-  neck, and the driver keeps the long horizontal eyes.
-  The presentation pool repeats the stable ordered
-  catalog: a Lampshade Walker, a Chair Carrier, a Kettle Hat Walker, a
-  Long-Arm Walker and a Helmet Lamp Hopper. The first four also declare a
-  seated Route 01 ride and own an authored `Sit` loop; the hopper declares
-  none and stays on the pavement. Each ordinary design owns three
-  City instances and the lamp-bearing hopper exactly one, which is what still
-  caps the worn lights in the world at one. The pool exceeds the active
-  population, so a repeat encounter shows a different mix. All five pooled
-  designs use their own looping in-place locomotion: the Lampshade
+  keeps six arms, and the driver keeps the long horizontal eyes. The active
+  cashier keeps the former uniform, face, blink and attentive bounded gaze but
+  has an ordinary head and a non-scaling human neck; the old `18 m` Watcher
+  treatment survives only in its inactive asset. `NpcDesignAppearanceCatalog`
+  consequently covers `28` on-disk character designs: `7` bizarre and `21`
+  normal, with the inactive Watcher remaining bizarre and the active cashier
+  classified normal.
+  The presentation pool repeats a stable ordered catalog of eight ordinary
+  people: the Chair Carrier, the Yard Babushka, the Weigh Attendant, the
+  Cemetery Watchman, the two Park players, the Cemetery Mourner and the Lake
+  Fisherman. Seven of those keep a placed role as well, so each carries TWO
+  clip pairs on one prefab — the placed pair its own presentation reads
+  through `IdleClip`/`WalkClip`, which is why the babushka can still beat her
+  carpet on the spot in the drying yard, and an ordinary street pair the pool
+  reads through `RoamingIdleClip`/`RoamingWalkClip`. That street gait is the
+  hero's own eight-key walk cycle re-authored into the pedestrian bank rather
+  than referenced: the pedestrian importer forces
+  `lockRootHeightY`/`lockRootPositionXZ` and bakes the vertical pelvis arc
+  into the pose where his importer does not, and the pedestrian `Animator`
+  runs with `applyRootMotion = false`, so a reference to his clip asset would
+  have produced a walk with a dead pelvis. It is merged onto each design's own
+  base pose, so seven designs share one gait and each keeps its coat and
+  posture.
+  Three of the eight declare a seated Route 01 ride and own an authored `Sit`
+  loop — the Chair Carrier, the Weigh Attendant and the Cemetery Watchman. The
+  other five are refused by measurement rather than by preference: seating
+  aligns the shared rest pelvis to the cushion, and the mourner's coat hem
+  hangs `0.4256 m` below that bone and the babushka's housecoat `0.3347 m`
+  against `0.05-0.13 m` on every design that does ride, while the fisherman's
+  shouldered rod rises `1.9047 m` above it and the park players' shout
+  `1.19 m`, both through the cabin ceiling. No design on the street wears a
+  real-time light at all, which replaces the former cap of exactly one. The
+  pool exceeds the active population, so a repeat encounter shows a different
+  mix.
+  Four walkers came off the street in the same change and were deliberately
+  kept in the project: the courtyard vignettes cast the Lampshade, the Long-Arm
+  and the Chair Carrier by name, and `MothersHouseKettleProp` instantiates the
+  Kettle Hat walker whole to borrow ten of his renderers for the mother's
+  teapot. They resolve through `CityPedestrianResources.TryGetArchetype`, which
+  searches the roaming catalog and the non-roaming table alike, while the
+  narrower `Roams` answers whether a design is actually on the street; their
+  prefabs stay in `Resources` and only their catalog membership changed. Their
+  own looping in-place locomotion is intact: the Lampshade
   stays hunched through idle and walks in short uneven steps, the upright Chair
-  Carrier uses a precise high-knee gait beneath an inverted cafe chair, the
+  Carrier — the one design of the old five that stayed, because he was always
+  an ordinary man with a strange load rather than a strange body — uses a
+  precise high-knee gait beneath an inverted cafe chair, the
   stout short-legged Kettle Hat Walker waddles in fast small steps while its
   belly and its oversized skewed enamel kettle swing against each other — and
   that kettle is permanently on the boil, in every state including the bus
@@ -557,9 +607,10 @@ returns. They spawn at randomly
   legs, and the Helmet Lamp Hopper crosses ground in two-footed rabbit bounds
   on `0.46 m` hind feet with a `0.24 m` apex, wearing the one working light
   the pedestrian contract allows: a single always-on shadowless `7.5 m` Spot
-  on its miner's helmet. Its archetype declares a maximum of one pooled
-  instance, so at most one
-  such light exists in the world however large the pool grows. Every walker
+  on its miner's helmet. He is now off the street, so no such light exists in
+  the ambient crowd at all - a stronger bound than the maximum of one pooled
+  instance his archetype used to declare, and one an EditMode test asserts
+  directly over every roaming prefab rather than over his instance count. Every walker
   keeps the shared `1.75 m`
   envelope and fixed collider:
   the kettle design is short by proportion, with the human mass ending near
@@ -835,7 +886,10 @@ pockets start at `CityCourtyardPocketPlanner.cs` and
 instantiated by `CityCourtyardResident{Plan,Factory,Presentation}.cs`.
 Supermarket truth starts
 at `Assets/Scripts/Runtime/Scenes/SupermarketInteriorRoot.cs` and
-`Assets/Scripts/Runtime/World/SupermarketInteriorLayoutPlanner.cs`. Session-time
+`Assets/Scripts/Runtime/World/SupermarketInteriorLayoutPlanner.cs`; authored
+hall and product geometry is exposed by `SupermarketInteriorAssetRegistry` and
+`SupermarketProduct{AssetRegistry,ModelResources}`, then shared with inventory
+and refrigerator presentation through `InventoryItemModelFactory`. Session-time
 truth lives in `Assets/Scripts/Runtime/Core/GameTimeState.cs`,
 `GameTimeRuntime.cs` and `GameTimeDayNightRules.cs`.
 
@@ -893,8 +947,9 @@ repository evidence. This does not require running every test layer.
   imported as a model asset; it is not composed at runtime out of
   `RuntimePrimitiveFactory` boxes and cylinders. The existing generators are
   the pattern to copy — player, pedestrians, bus, bus driver, bartender,
-  cashier, cat, chess set, Last Route car, church, Mountain Road misc and City
-  misc — each pairing its script with a measured JSON manifest and a
+  cashier, supermarket interior and product pack, cat, chess set, Last Route
+  car, church, Mountain Road misc and City misc — each pairing its script with
+  a measured JSON manifest and a
   determinism check. Blender lives at
   `C:\Program Files\Blender Foundation\Blender 5.0\blender.exe`.
   This is a rule for what is built from now on. The structural runtime-primitive
@@ -911,9 +966,15 @@ repository evidence. This does not require running every test layer.
   to any one room; if a number is specific to the bar it lives in the bar's
   generator. The bar is the first thing built on it
   (`tools/build-bar-3d-model.py`, with `tools/bar_parts.py` for Unity-space
-  authoring) and is fully migrated, interior and facade; the supermarket
-  exterior is the next complete fixed-metre user, while its interior and the
-  apartment/stairwell remain future migrations.
+  authoring) and is fully migrated, interior and facade. The supermarket is
+  now the next complete fixed-metre user: its exterior comes from
+  `tools/build-supermarket-exterior-3d-model.py`, while the passive interior
+  shell, fixtures and CCTV pivots come from
+  `tools/build-supermarket-interior-3d-model.py`. Its six reusable generic,
+  unbranded and text-free product models come from the separate passive
+  `tools/build-supermarket-products-3d-model.py` pack: five are finite shop
+  stock, while the open stew can enters the world only through the Home
+  refrigerator/cat flow. The apartment/stairwell remain future migrations.
 - **Blender's axes reach Unity by SWAPPING the last two, not by negating one.**
   Unity `(x, y, z)` is Blender `(x, z, y)` under the project's export settings
   (`axis_forward="-Z", axis_up="Y"`) plus `bakeAxisConversion`; the

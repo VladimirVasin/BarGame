@@ -6,6 +6,317 @@ Entries from months before the previous full month live in `ai/archive/`;
 see [`ai/README.md`](README.md) for the retention rule.
 Earlier entries: [`work-log-2026-07.md`](archive/work-log-2026-07.md).
 
+## 2026-09-02 — The cashier is normal; the Watcher is kept offstage
+
+By explicit user decision, the supermarket's active cashier changed from the
+Bizarre `watcher_cashier_v1` to the Normal `supermarket_cashier_v1`. This is a
+one-for-one cast replacement, not a second clerk, so the active humanoid cast
+does not grow. The new `1.0.0` production model measures `1.75 m`, `40` meshes and
+`1,244` triangles. It keeps the same worn uniform, detail atlas, hunched till
+pose, attentive face, blink and talk stub, but its head has ordinary proportions
+and its human-length neck never scales. Eyes and head may track the hero only
+inside a bounded `28°` turn; the complete body remains behind the
+register. CCTV still supplies the room-wide pursuit and still reads before the
+cashier from the entrance.
+
+The old design was deliberately preserved rather than overwritten. Its source,
+preview, FBX/manifest and prefab now use the
+`SupermarketWatcherCashier3D`/`SupermarketWatcherCashier` names; the provider
+continues to use the canonical `SupermarketCashier3D`/`SupermarketCashier`
+paths for the normal version and never references the retained Watcher. Both
+variants share the existing `SupermarketCashier3DDetailAtlas.png`.
+Variant data/head helpers and the deterministic atlas painter live in
+`supermarket_cashier_variants.py` and
+`supermarket_cashier_detail_atlas.py`, keeping the Blender entry point at
+`1,458` lines without duplicating the two builds.
+
+The appearance catalog now contains all `28` on-disk character designs:
+`7` Bizarre and `21` Normal. The retained Watcher keeps its Bizarre verdict;
+the production cashier adds the Normal verdict. The story and art bibles were
+amended as part of the same explicit decision: the `18 m` neck is no longer an
+active hallucination or scale example, while the supermarket remains a place
+of quiet observation. Former pursuit-curve architecture notes stay in place as
+superseded asset history instead of being rewritten as current runtime truth.
+
+Verification for the paired implementation: Blender generated and validated
+the normal output (`40` meshes / `1,244` triangles, signature
+`e478fa5c19e2a5fb6e6f2d041153c1ae445c029a4081fe83c73f28031d067678`) and the
+unchanged Watcher output (`44` / `1,588`, signature
+`2ff45e3d6276d6b37a5ee00eaac752f53cc52a315844da5b744e0cd83cd95a0c`).
+`dotnet build BarPromenade.Editor.csproj` completed with zero errors; Unity's
+`SupermarketCashierAssetSetup.Run` exited `0` with self-validation green; the
+focused `NpcDesignAppearanceTests` and `SupermarketCashierAssetTests` passed
+`11/11`. The current-fact documents were searched for active Watcher/`18 m`
+claims and scoped `git diff --check` passed. Full suites and a player build were
+intentionally not run in fast mode.
+
+## 2026-09-02 — The street is ordinary people now
+
+Four of the five roaming pedestrian designs were `bizarre` — the faceless
+Lampshade Walker, the Kettle Hat runt, the Long-Arm Walker and the Helmet Lamp
+hopper — so the ordinary city read as a parade of oddities. All four came off
+the street and seven ordinary staged residents took their places, giving a
+street pool of eight with the Chair Carrier, who was already both.
+
+**The gait is the hero's own walk, re-authored rather than referenced.** It
+could not be a reference: `CityPedestrianModelImporter` forces
+`lockRootHeightY`/`lockRootPositionXZ`/`keepOriginal*`, baking the vertical
+pelvis arc into the pose where the hero's importer does not, and the pedestrian
+`Animator` runs with `applyRootMotion = false` — pointing at his clip asset
+would have produced a walk with a dead pelvis. Three editor gates also require
+the clip to live in `CityPedestrianLocomotion.fbx`. So `CITIZEN_WALK_CYCLE` in
+the generator is his eight-key cycle copied key for key, with his
+`target_direction` arm aims re-expressed as X rotations of the same magnitude
+(`25.5°`, `18.1°`, `5.9°`, `12.8°`, read off his own aim vectors). It is merged
+onto each design's base pose, so seven designs share one gait and each keeps
+its coat and posture.
+
+**A promoted design carries two clip pairs on one prefab.** Rewriting the walk
+slot would have broken the placed roles: the babushka's `walk_clip` is
+`BabushkaBeat`, a carpet beaten on the spot with the feet planted, and the
+drying yard plays exactly that. `ArchetypeSpec`, the editor descriptor and
+`CityPedestrianAssetRegistry` each gained an optional ambient idle/walk pair;
+staged presentations still read `IdleClip`/`WalkClip`, the pool reads
+`RoamingIdleClip`/`RoamingWalkClip`, which fall back to the first pair when no
+street gait is declared.
+
+**Two rules that used to hold no longer do, both recorded as accepted
+exceptions in `ai/architecture-notes.md`.** The catalog is now two tables:
+`OrderedArchetypes` roams, `NonRoamingArchetypes` holds the four withdrawn
+designs, `TryGetArchetype` searches both and the new
+`CityPedestrianResources.Roams` answers the narrower question. And `staged` and
+`pool_eligible` stopped being the same bit inverted — both editor gates now ask
+`Roams` instead of inferring it, and a design's prefab must sit on the matching
+side of the `Resources` boundary. The seven promoted prefabs moved into
+`Assets/Resources/Pedestrians/` with `git mv`, so their GUIDs and every scene
+reference survived; their models and manifests stayed staged.
+
+**The four withdrawn designs stay in the project and must not be deleted.**
+`CityCourtyardResidentPlan` casts the Lampshade, the Long-Arm and the Chair
+Carrier by name, and `MothersHouseKettleProp` instantiates the Kettle Hat
+walker whole to borrow ten of his renderers for the mother's teapot. Their
+prefabs stay in `Resources`; only their catalog membership changed.
+
+**Three of the eight ride Route 01, and the five refusals are measurements,
+not preferences.** Seating aligns the shared rest pelvis to the cushion, so a
+design can sit only if the drop from that bone to the underside of its seated
+body is a hip — `0.05–0.13 m` on every rider. The mourner's coat hem hangs
+`0.4256 m` below it and the babushka's housecoat `0.3347 m`, so lifting either
+by its own contact distance floats the body and not lifting it drives the
+garment through the cushion; the fisherman's shouldered rod rises `1.9047 m`
+above the pelvis and the park players' shout `1.19 m`, both through the cabin
+ceiling. The babushka's seated pose was authored and then withdrawn once her
+`seated_contact_m` came back at `0.335` against `0.05–0.13` for everyone else.
+Riders: Chair Carrier, Weigh Attendant, Cemetery Watchman.
+
+The clip bank went `37 → 53` Actions (14 street clips, 2 new seated loops) and
+the generator's own validators — triangle budget, height, anatomy, sole
+contact, grounding, determinism — passed on the rebuild.
+
+**Verification.** `NpcHumanV2AssetSetup.RunBatch` rebuilt every NPC asset
+clean. EditMode across `CityPedestrian`, `CityCourtyard`, `CityBusStopWait`,
+`NpcDesignAppearance`, `SceneFlowSmoke`, `CityBar`, `BarPatron`, `MothersHouse`
+and `CityYard`: 82 passed, 0 failed. Eight tests encoded the old five-design
+pool and were rewritten rather than patched — the catalog order, the 37-clip
+name list, the per-design triangle/renderer cases, the kettle declaration (now
+read from the whole catalog rather than the street pool) and the seated-ride
+count. Two new tests were added: one proving each promoted resident keeps its
+placed pair AND gains a distinct street pair, one proving the four withdrawn
+designs still resolve, still load from `Resources` and carry no street gait.
+The pool-composition test now asserts that no roaming design wears a
+real-time `Light` at all, which is a stronger bound than the old "the hopper
+appears exactly once".
+
+**Known and deliberate:** `BarPatronWorldBuilder` seeds the bar crowd from the
+same pool, so the bar now shows the promoted residents. The story bible's §14
+concern — that letting the named mortals wander the whole city dilutes their
+namedness — was raised before the change, confirmed, and is recorded in the
+architecture notes with the fix that would apply if the mortality register is
+ever written: per-zone spawn weighting, not a reversal.
+
+## 2026-09-02 — Four supermarket follow-ups close the visible regressions
+
+The perimeter skirting flickered because its sweep ran into the wall, left its
+rear face coplanar with the wall paint, kept its bottom exactly on the floor and
+overlapped neighbouring top faces at the corners. The Blender generator now
+runs five counter-clockwise trimmed sections into the room, buries the rear and
+bottom by `3 mm`, and preserves a visible `135 mm` height / `23 mm` projection.
+The generator validator pins those bounds; the regenerated passive interior is
+still `60` meshes / `4,884` triangles and now has build signature
+`bfd912a7867e8d8d72dc0f819530176483764e449a293c817a57e3aeedb7b928`.
+
+The shop instance of the `0.46 m` vodka source now uses a `0.37 m` fit envelope
+on the unobstructed third/top pantry tier; even its `1.08x` selected state stays
+below the `2.05 m` shelving-unit top. Closed stew moved to the first tier. The
+source product pack itself did not change. Opening the physical shelf browser
+now acquires renderer-only visibility leases for both the hero and Watcher
+Cashier: their gameplay roots remain active, while every normal exit, failed
+open and lifecycle cleanup restores each renderer's exact previous state.
+
+The supermarket prompt could previously reach the hero across its combined
+`1.65 m + 1.05 m` overlap while the common door action rejected the curb/graded-street
+height delta above `0.02 m`. Only this entrance now opts into a calculated
+`0.242 m` initial vertical tolerance, enough for the complete visible prompt
+reach; the existing constrained walk to the grounded door dock is unchanged,
+and every other door keeps the strict default.
+
+**Verified:** Blender `5.0.1` generation plus validation passed; Unity imported
+the final FBX/manifest/prefab. The focused PlayMode batch passed `4/4` for the
+graded entrance, shelf visibility/restoration and supermarket capture contracts.
+After the literal top-tier correction, `AreaCaptureFixture.Supermarket` passed
+again `1/1`; its final pantry frame shows the whole bottle and can, and asserts
+grounded bounds plus selected-bottle clearance. Broad suites and a player build
+were intentionally not run in fast mode.
+
+## 2026-09-02 — Every character design gets a normal/bizarre verdict
+
+On the user's request: mark each NPC model as ordinary-looking or not. It
+drives nothing yet — the point is that the answer exists, decided once against
+the bibles, rather than re-argued at whatever call site needs it first.
+
+**The rule is the art bible's own, quoted rather than invented.** It names the
+axis exactly once, in the Long-Arm Walker's description
+(`ai/city-zones-art-bible.md` §15): «его странность — само тело, а не надетый
+или несомый предмет». So a strange BODY is bizarre; a strange thing worn or
+carried leaves the design normal. That is why the Chair Carrier with a cafe
+chair caged over his head is normal and the Kettle Hat Walker is not — the
+kettle really is a hat, but the human mass under it stops at `1.40 m` and the
+figure is `10.9` heads tall. Animals are judged as ordinary specimens of their
+own species, which the bible also insists on for the raven: «Это обычные
+зимующие птицы… Никакой мистики».
+
+`7` bizarre — Long-Arm (mouthless, forearms to the ankles), Lampshade (no head
+geometry at all: `GEO_FaceVoid`, `head_height_m: 0`), Kettle Hat, Helmet Lamp
+Hopper (`0.46 m` hind feet, never takes a step), the six-armed bartender, the
+Watcher cashier and the stairwell cat. `20` normal.
+
+Four verdicts were genuine judgement calls and are recorded as such in the
+catalog's comments. The Lampshade Walker's hood is worn, but there is no face
+inside it, and a faceless figure is a fact about a body. The Pipeback Roller
+follows an existing accepted decision — the strangeness is the chair's organ
+pipes, never the rider's disability. The Ferryman's eyes are never drawn, but
+by a cast shadow under a cap brim; he is the Lampshade Walker's near neighbour
+and the reason the two verdicts differ.
+
+The fourth was overruled and is better for it: the **long-eyed bus driver**
+was drafted bizarre on the reasoning that eyes are anatomy, and the user moved
+him to normal. The rest of the design agrees with them — his head is authored
+as an "ordinary low-poly human" one, his generator's validator rejects any
+part that would "replace or conceal the human head", and
+`ai/architecture-notes.md:1109` already called the long eyes "the slightly
+bizarre identity ... rather than distorted anatomy". A stylised eye on an
+ordinary head belongs with the worn things.
+
+**It went into C# and not the manifests, and the user was right to ask why.**
+The plan began with a manifest field beside `signature_anatomy`, which is
+where it belongs. The cost is what changed the answer: the generators have no
+manifest-only mode, so one JSON key means `27` Blender runs rewriting `27`
+tracked FBXs, blends and preview PNGs. Worse, seventeen pedestrian manifests
+carry a stale `generator_version` — which IS inside the build signature — so
+their signatures move on any rebuild whatever the new field does, and
+`ValidateDependencyStamp` then dirties every pedestrian prefab. Tens of
+megabytes of binary churn, in a tree already deep in someone else's feature,
+for a marker nothing reads. `Assets/Scripts/Runtime/Core/NpcDesignAppearance.cs`
+costs one file and touches no model at all.
+
+`NpcDesignAppearanceTests` is what keeps that honest: it sweeps the manifest
+folders and the five named one-offs, and asserts the catalog's key set equals
+the design ids on disk **in both directions**, so neither a new design without
+a verdict nor a verdict for a deleted design can pass. A third case checks the
+catalog against the generator's own `ordinary_head` exemption set — the four
+designs the build itself refuses to hold to human proportions cannot be marked
+normal.
+
+**Verified:** `4/4`, and `git status` shows two new `.cs` files and no `.fbx`,
+`.blend`, `.png` or `.json` whatsoever, which was the whole point.
+
+**Doc defects found while counting, not fixed here:** `AI.md:506` says `24`
+rigged designs; there are `25` — the Mother (`mother_v1`, generator `4.5.1`)
+is in none of the three buckets the sentence enumerates. The same stale `24`
+is in `ai/architecture-notes.md:178`, `ai/project-overview.md:610`,
+`ai/system-tree.md:846` and `ai/systems-map.md:91`. `AI.md:519` also gives the
+shelter trio as `4.2.0` where the manifests say `4.3.1`. Separately,
+`signature_anatomy` is written by four generators and read by nothing at all —
+no C#, no test — unlike `signature_effects`, which has a validator.
+
+## 2026-09-02 — The supermarket interior and shared product pack move to Blender
+
+The `16 x 11 x 3.6 m` shop shell is no longer assembled from runtime display
+primitives. `tools/build-supermarket-interior-3d-model.py` now owns the
+deterministic `supermarket_interior_v1` source, preview and passive FBX/manifest:
+`60` meshes / `4,884` triangles covering the thick entrance, ceiling grid,
+profiled shelf bodies, recessed cold cabinet, checkout, stockroom facade,
+fluorescent housings and articulated CCTV mount/head assemblies. Six existing
+surface kinds remain shared; the authored asset adds no brand, advertisement or
+baked product stock. The final interior build signature is
+`bfd912a7867e8d8d72dc0f819530176483764e449a293c817a57e3aeedb7b928`.
+
+`tools/build-supermarket-products-3d-model.py` now owns the separate
+`supermarket_product_pack_v1`: six coincident bottom-centre item roots for
+instant noodles, day-old loaf, vodka bottle, closed/open stew cans and chicken
+egg, exported as `33` meshes / `2,276` triangles under
+`Assets/Supermarket/Products/Models`. The manifest carries no authored text,
+brand, imported material, collision, light, camera, rigidbody, audio or
+animation, and pins build signature
+`2437d765ab7b7004a05d281193ae78e26b2c6728e641e57273ecc0d9842821b7`.
+`SupermarketProductAssetSetup` extracts one passive Resources prefab per item;
+the common resource boundary routes the same six models through supermarket
+shelves, live inventory previews, the Home refrigerator and cat feeding.
+
+`SupermarketInteriorAssetSetup` imports that fixed-metre model and builds the
+passive `Resources/Supermarket/SupermarketInterior3D.prefab` plus its semantic
+registry. The manifest and EditMode contract keep dimensions, metre bounds,
+passivity, surface bindings and layout-anchor parity explicit. Runtime
+composition still owns collision, finite products, practical lights, the
+Watcher Cashier, CCTV servo controllers, purchase UI and transitions. Each
+runtime product now owns its `Product Price Tag`, so a completed purchase
+removes both instead of leaving a label on the empty shelf.
+
+The five shop instances now bind their bottom pivots to exact authored tier
+anchors, eliminating the previous float and shelf-edge overhang. The sixth
+model, `OpenStewCan`, has only the Home refrigerator/cat world source and does
+not alter the five-offer shop contract. The `0.46 m` vodka source is displayed
+through a `0.37 m` shop-only fit envelope on the unobstructed third/top tier, so
+its selected bounds stay below the shelving-unit top; closed stew occupies the
+first tier. Visual review also caught the cold cabinet's
+recess panel at its front plane: it now sits against the actual back, and the
+egg anchor moved from behind the centre mullion into the adjacent clear bay.
+
+**Verified:** Blender `5.0.1` generation and validation passed for both the
+interior (`60` meshes / `4,884` triangles) and product pack (`33` meshes /
+`2,276` triangles). Unity imported all six Resources prefabs and validated the
+product/interior contracts. `SupermarketProductModelContractTests` passed
+`4/4`, including all six factory routes, stable hierarchy names and the
+scale-safe `0.12 m` open can. `AreaCaptureFixture.Supermarket` passed `1/1` and
+wrote the entrance, dry-goods, pantry and cold-shelf frames; the capture also
+asserts every renderer bound is grounded and the selected vodka bottle remains
+below the shelving-unit top. Broad suites and a player build were intentionally
+not run in fast mode.
+
+## 2026-09-02 — Rigged NPC parts stop vanishing at oblique camera angles
+
+The Watcher Cashier exposed a shared culling fault rather than bad mesh
+topology. His prefab contains `39` separate `SkinnedMeshRenderer` parts and
+five transform-driven neck meshes; the same modular construction is used
+across the humanoid library. All seven asset pipelines left
+`updateWhenOffscreen` false. Their aggregate registry bounds describe only the
+bind pose and were never renderer culling bounds, so a posed hand or head could
+leave its small imported A-pose box and disappear as the camera crossed that
+box's frustum edge. The cashier made the fault extreme because his head can
+travel across the full `18 m` hall.
+
+`NpcSkinnedMeshCullingGuard` now enables live skinned-bounds updates in all six
+registry families when an instance wakes; their authoring paths apply the same
+contract when assets are configured. This covers all `24` rigged humanoid
+designs, including pooled and staged pedestrians, the cafe cast, shelter trio,
+Mother, bartender, cashier and bus driver, without changing meshes, bind poses,
+root bones, animation or population lifecycle. The runtime scan is one-shot,
+so recycling a pooled pedestrian does not allocate or rescan its renderers.
+
+Verification: the focused `NpcSkinnedMeshCullingPlayModeTests` passed (`1/1`),
+instantiating seven provider-prefab samples and checking every modular skinned
+part. Full suites and a player build were intentionally not run in fast mode.
+
 ## 2026-09-02 — The cafe husband interrupts the exchange, and the dark counter reads
 
 The first husband pass counted complete ten-pair LOOPS, so its advertised
@@ -51,6 +362,180 @@ summit-light test passed (`1/1`). The explicit PlayMode cafe contact capture
 passed (`1/1`), and all four fresh frames were reviewed after the third light
 iteration. Full suites and a player build were intentionally not run in fast
 mode.
+
+## 2026-09-02 — The cashier comes home up close, and his pupils stop falling out
+
+**THE PUPILS WERE NOT LOOKING DOWN. THEY WERE BEING THROWN OUT OF HIS HEAD.**
+The user's report — "up close the pupils look so far down it feels like they
+are not there at all" — is exactly what the geometry does. `ApplyEye` pinched a
+startled pupil with `eye.localScale *= pupilScale`, and a scale is about the
+transform's ORIGIN. `face.eye.L` rests at `z 1.606` while the pupil it drives
+is drawn at `1.963`: the generator says so in as many words, "the bones rest
+far below the authored face". So the pupil hangs `0.357 m` above its own bone,
+and a fully startled `0.62` walked it `0.357 * 0.38 = 0.135 m` straight down —
+four and a half times the eye white's own `0.029 m` radius, out through the
+chin. It only ever showed up close because the startle only fires when the hero
+is near enough to look at him. The bug predates the head scale; at `1.0` the
+drop was `0.139 m`.
+
+Fixed by compensating the translation the scale induces:
+`eye.position += dart + eye.TransformVector(offset * (1 - scale))`, with the
+offset captured once at bind from the pupil renderer's own bounds in the eye
+bone's space — measured rather than assumed, so it stays correct if the
+generator moves the eyes or the head is rescaled again.
+
+**The neck now comes home as the hero walks up.** `distanceToPlayer` had been
+passed into `SupermarketCashierSurveillanceState.Update` since the first
+version and never read: the extension target was a flat `1`. It is now a
+`SmoothStep` across `CloseRetractFullMeters = 2` to
+`CloseRetractReleaseMeters = 4`, so at the till the periscope is gone entirely
+and he is a slightly tall man behind a counter — nothing about him is wrong
+until you back away. The retract is deliberately COMPLETE rather than partial;
+a neck left half out at arm's length reads as a bug in the reach rather than as
+a man pretending. Startle and range now take the MORE retracted of the two, so
+being caught at the counter cannot pay the neck back out to the startle cap.
+
+`Extension_PursuesAtEveryDistance` asserted the opposite contract — saturation
+at `1.5 m` and `12 m` alike — and was rewritten deliberately, not repaired. Two
+new cases pin the mid-band ramp and the startle-at-the-counter case.
+
+**Verification is blocked on the shared checkout, and not by this change.** The
+runtime assembly compiled clean at `14:00:51`; the neighbouring Codex session
+wrote `SupermarketInteriorWorldResult.cs` and `SupermarketInteriorWorldBuilder.cs`
+at `14:01:15` against a `SupermarketInteriorAssetRegistry` that did not exist
+yet, and its later first draft has an unassigned `out` at line 415. Every error
+in the build is in files this session never touched. The supermarket EditMode
+selection and the full suite still need running once that settles.
+
+## 2026-09-02 — The cashier gets a detail atlas, and his neck stops snapping
+
+Three asks: give him the atlas the 4.x designs have, make the change between
+his two neck shapes smooth, and stop the neck or head passing through a shelf.
+
+**The two neck shapes were a hard branch with TWO discontinuities in it.**
+`ResolveCurveControls` solved a straight chain as controls at the chord's
+thirds — which is the degree elevation of a line, so state A is exactly a
+straight rod — and an arched one as controls at `0.20`/`0.80` with their `y`
+overwritten by an absolute plateau height. The switch was a bare early return
+on one boolean, recomputed from scratch every `LateUpdate` with no stored
+weight, no hysteresis and no previous frame: the hero moved a centimetre and
+the whole chain folded in one frame. Blending only the height would not have
+fixed it, because the controls also slide ALONG the run.
+
+Both are blended now on one `archWeight`, and the weight is not merely damped:
+a damped step function still starts from the step. The arch TARGET is solved
+against an anticipation envelope `0.75 m` larger than the safety one, so the
+neck starts lifting while the straight line is still clear of the real shelf
+and is already up there by the time the hard margin would bite. Rise `0.22 s`,
+fall `0.38 s` — he is dodging a shelf, not posing.
+
+**Safety is a floor under the blend, not a mode.** After the eased shape is
+built it is re-tested against the true margin, and if it still touches, the
+height goes to whatever clears it and the eased value is snapped to match so
+the ease resumes from the truth instead of fighting it. That holds on every
+frame of the transition, which is the frame range a naive blend would have
+spent inside the shelf.
+
+**Two real defects found while doing it.** `Expand` passed
+`ObstacleMarginMeters` unmultiplied on Y where both horizontal axes got
+`margin * 2f` — and `Bounds.Expand` adds HALF its argument to the extents, so
+the vertical guard was half what it read as, on the one axis this fixture has
+to clear. And the clip probe was eleven ZERO-RADIUS point tests, so the chain
+had no thickness at all: a shelf edge could pass between the sampled curve and
+the drawn tube. Both fixed; the probe now carries `NeckProbeRadiusMeters` for
+the widest thing on the chain, which after the `1.12` head scale is the head.
+The pursuit point is guarded against the same padded box, so the face cannot
+hover inside a shelf it is just clipping.
+
+**The atlas follows the cemetery raven, not the pedestrian archetypes, and
+that choice is forced.** `CashierBuilder` passes `spec=None`, and that is load
+bearing: `anatomy_profile_key` falls back to the module global
+`NPC_PROFILE_KEY` only while the spec is null, and `_remap_head_point`
+early-outs for the profile `watcher_cashier`. Give this builder a real
+`ArchetypeSpec` and every head vertex goes through the default NpcHumanV2
+remap instead — the face collapses and the ten-micron height assert fails. So
+the atlas is declared by hand: a local `CashierAtlasRegion` table, a local
+`assign_atlas_uvs` calling `atlas_kit` directly, and an overridden
+`attach_preview_atlas` (the base one names its image from
+`spec.model_name`).
+
+Eleven regions on 64 px cells: both vest fronts, the vest back, the shirt bib,
+the collar, both sleeves, both trouser legs and both soles. The head, ears,
+eyes and neck segments are deliberately absent — the face is finished and the
+user asked for it untouched, and the neck stretches thirty-two fold, which
+would smear any painted mark. The ink band is `140-236` rather than the raven's
+`100-185`, because this palette is mid-olive rather than near-black and a
+darker grey reads as dirt instead of a seam. `1588` triangles and `44` meshes,
+unchanged: an atlas costs no geometry and no new hue.
+
+Runtime binding is the raven's: the registry carries the `Texture2D` and sets
+`_BaseMap` through the same `MaterialPropertyBlock` that already carries each
+part's flat colour, so one shared material still serves all 44 parts.
+`SupermarketCashierTextureImporter` locks the sheet to Point/Clamp/sRGB/no-mips
+— not taste, since a 4x4 grid with a one-pixel inset would bleed under bilinear.
+
+**Verified:** the Blender build with all its own validators, 52/52 across the
+supermarket EditMode tests, then the full suite. Import settings confirmed on
+disk (`filterMode: 0`, mipmaps off, uncompressed, 256).
+
+## 2026-09-02 — The cashier gets a bigger head, a smooth neck and a cooldown
+
+Three asks in one pass, on the user's instruction: a slightly larger head with
+the face left alone, smooth neck sizing, and four seconds of holding still
+after he is caught looking.
+
+**A bigger head is not a bigger `HEAD_RADII`, and that is the whole finding.**
+`GEO_Head` was the only part in the file derived from the head constants; the
+hair, both ears, both eye whites, both pupils, both brows, the nose and the
+mouth are eleven independent world-metre literals. Growing the skull alone
+lifts the skin out from under all of them — the eye whites sit flush with it
+and keep only `13.7 mm` of bulge, half gone by `+5 %` and entirely swallowed by
+`+19 %`, which would have ended with pupils floating on bare skin. There is
+also a validator demanding the two eyes keep `80 %` of the head's width, and it
+caps growth of the skull alone at `+3.97 %`.
+
+So the whole head group is scaled together — `head_point()` and `head_size()`
+wrap every literal — and because the eyes scale with it that ratio is
+invariant and the cap does not bind. Verified as geometry rather than by eye:
+the left eye's bulge scales by exactly `1.120`, i.e. the face is the same
+drawing, larger.
+
+**The pivot is the crown, and that is what makes it free.** `TOTAL_HEIGHT` is
+validated to ten microns and the skull's north pole vertex is what sets it, so
+pinning that vertex keeps his resting height, his manifest `height_m` and
+everything in Unity that reads them untouched. The head grows downward and
+outward instead, which only deepens its seat in the neck's top segment — the
+one join a bigger head cannot break (`0.015 m` of overlap becomes `0.037`).
+`HEAD_SCALE = 1.12` takes the silhouette from about `11.4` heads tall to
+`10.2`: still emphatically the `undersized_head` signature, just less pinched.
+`1588` triangles and `44` meshes, unchanged — a scale costs no geometry.
+
+**The neck now eases.** `SupermarketCashierSurveillanceState` drove both
+`Extension` and `StartleWeight` with `MoveTowards`, a constant velocity with a
+discontinuity at each end, so the periscope jerked into motion and stopped dead
+at the cap. Both now run on `SmoothDamp` with per-direction smooth times
+matched to the old rates (`0.55`/`0.18` extend/retract, `0.10`/`0.35` on the
+startle weight) and a `0.0005` settle snap, because a critically damped
+approach never quite lands. The presentation is a pure function of `Extension`
+and adds no stepping of its own, so smoothing the state smooths the whole
+chain.
+
+**`StartleCooldownSeconds = 4`.** Release used to need only the `0.8 s` exit
+hold, so half a second of the hero turning away popped the periscope straight
+back out and being caught read as a twitch. It now needs both gates: the
+cooldown elapsed AND the hero looking away for the exit hold. The cooldown runs
+from the NOTICE and burns while he is still being stared at, so a long stare
+does not stack a second four seconds on top of itself.
+
+**Verified:** the Blender build (all its own validators, including the height
+and eye-dominance checks) plus 16/16 across `SupermarketCashierStateTests` and
+`SupermarketCashierAssetTests`, then the full EditMode suite. Two existing
+tests asserted he lets go about a second after the gaze breaks; that is the
+contract the cooldown deliberately replaces, so both were rewritten to measure
+from the actual state transitions rather than from guessed timings — the first
+drafts got this wrong precisely because the cooldown starts at the notice, not
+at the look-away. Two new cases pin the cooldown and the ease-in/ease-out shape
+of the ramp.
 
 ## 2026-09-02 — A floodlight over the apron, on the island's terms
 

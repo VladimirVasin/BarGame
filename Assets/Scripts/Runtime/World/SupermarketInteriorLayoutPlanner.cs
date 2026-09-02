@@ -10,6 +10,13 @@ namespace BarPromenade
         public const float RoomDepth = 11f;
         public const float RoomHeight = 3.6f;
         public const float WallThickness = 0.25f;
+        public const float ShelfTierThickness = 0.065f;
+        public const float GondolaFirstTierTop = 0.4125f;
+        public const float GondolaSecondTierTop = 1.0125f;
+        public const float GondolaThirdTierTop = 1.6125f;
+        public const float ColdFirstTierTop = 0.5725f;
+        public const float ColdSecondTierTop = 1.1725f;
+        public const float ColdThirdTierTop = 1.7725f;
 
         public const string DryGoodsShelfId = "shelf-dry-goods";
         public const string PantryShelfId = "shelf-pantry-spirits";
@@ -158,14 +165,20 @@ namespace BarPromenade
                             supermarketId,
                             "instant-noodles",
                             InventoryItemId.InstantNoodles,
-                            new Vector3(0.57f, 0.48f, -1.20f),
+                            new Vector3(
+                                0.30f,
+                                GondolaFirstTierTop,
+                                -1.20f),
                             Quaternion.Euler(0f, -90f, 0f),
                             new Vector3(0.48f, 0.34f, 0.30f)),
                         CreateProduct(
                             supermarketId,
                             "day-old-loaf",
                             InventoryItemId.DayOldLoaf,
-                            new Vector3(0.57f, 1.12f, 1.18f),
+                            new Vector3(
+                                0.30f,
+                                GondolaSecondTierTop,
+                                1.18f),
                             Quaternion.Euler(0f, -90f, 0f),
                             new Vector3(0.56f, 0.32f, 0.34f))
                     }),
@@ -186,14 +199,20 @@ namespace BarPromenade
                             supermarketId,
                             "vodka-bottle",
                             InventoryItemId.VodkaBottle,
-                            new Vector3(-0.57f, 0.43f, -1.00f),
+                            new Vector3(
+                                -0.28f,
+                                GondolaThirdTierTop,
+                                -1.00f),
                             Quaternion.Euler(0f, 90f, 0f),
-                            new Vector3(0.42f, 0.57f, 0.38f)),
+                            new Vector3(0.42f, 0.37f, 0.38f)),
                         CreateProduct(
                             supermarketId,
                             "closed-stew-can",
                             InventoryItemId.ClosedStewCan,
-                            new Vector3(-0.57f, 1.10f, 1.02f),
+                            new Vector3(
+                                -0.29f,
+                                GondolaFirstTierTop,
+                                1.02f),
                             Quaternion.Euler(0f, 90f, 0f),
                             new Vector3(0.42f, 0.34f, 0.36f))
                     }),
@@ -214,7 +233,7 @@ namespace BarPromenade
                             supermarketId,
                             "chicken-egg",
                             InventoryItemId.ChickenEgg,
-                            new Vector3(0f, 0.70f, -0.40f),
+                            new Vector3(0.45f, ColdFirstTierTop, -0.12f),
                             Quaternion.identity,
                             new Vector3(0.48f, 0.34f, 0.36f))
                     })

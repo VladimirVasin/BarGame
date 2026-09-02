@@ -1,6 +1,6 @@
 {
   "generator": "tools/build-city-pedestrian-3d-model.py",
-  "generator_version": "4.0.0",
+  "generator_version": "4.5.2",
   "blender_version": "5.0.1",
   "design_id": "helmet_lamp_hopper_v1",
   "display_name": "Helmet Lamp Hopper",
@@ -28,7 +28,7 @@
     1700
   ],
   "staged": false,
-  "pool_eligible": true,
+  "pool_eligible": false,
   "wheel_radius_m": 0.0,
   "pivot_names": [],
   "bounds_min": [
@@ -47,6 +47,8 @@
   "animation_count": 0,
   "animations": [],
   "shared_animation_source": "Assets/Pedestrians/Animations/CityPedestrianLocomotion.fbx",
+  "ambient_idle_clip": null,
+  "ambient_walk_clip": null,
   "shared_clips": [
     "HelmetLampIdle",
     "HelmetLampHop"
@@ -54,7 +56,12 @@
   "rides_bus": false,
   "seated_clearance_m": null,
   "perch_seat_height_m": null,
-  "build_signature": "0729b43bacaf644cd6c1c59e532460ca29b664ee22ed781d46fc62e440634d11",
+  "perch_support_contact_m": null,
+  "perch_support_radius_m": null,
+  "floor_seated_contact_m": null,
+  "lying_height_m": null,
+  "lying_support_plane_offset_m": 0.0,
+  "build_signature": "01bd7c0c97827fbce382ae3a43d8a82535b811ef5e8f2b3b0683995e8e9541cf",
   "bones": [
     {
       "name": "root",

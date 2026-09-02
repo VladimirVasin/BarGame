@@ -178,6 +178,8 @@ namespace BarPromenade
                         throw new InvalidOperationException(
                             $"Product '{product.Id}' lies outside the room.");
                     }
+
+                    ValidateProductFitsShelf(shelf, product);
                 }
             }
 
@@ -197,6 +199,75 @@ namespace BarPromenade
                     "The three shelves must expose exactly the five " +
                     "authored supermarket products.");
             }
+        }
+
+        private static void ValidateProductFitsShelf(
+            SupermarketShelfPlan shelf,
+            SupermarketProductSlotPlan product)
+        {
+            Vector3 half = product.AvailableSize * 0.5f;
+            Vector3 right = product.LocalRotation * Vector3.right;
+            Vector3 up = product.LocalRotation * Vector3.up;
+            Vector3 forward = product.LocalRotation * Vector3.forward;
+            float extentX =
+                Mathf.Abs(right.x) * half.x +
+                Mathf.Abs(up.x) * half.y +
+                Mathf.Abs(forward.x) * half.z;
+            float extentZ =
+                Mathf.Abs(right.z) * half.x +
+                Mathf.Abs(up.z) * half.y +
+                Mathf.Abs(forward.z) * half.z;
+            const float edgeInset = 0.01f;
+            if (Mathf.Abs(product.LocalPosition.x) + extentX >
+                    shelf.Size.x * 0.5f - edgeInset ||
+                Mathf.Abs(product.LocalPosition.z) + extentZ >
+                    shelf.Size.z * 0.5f - edgeInset)
+            {
+                throw new InvalidOperationException(
+                    $"Product '{product.Id}' overhangs shelf '{shelf.Id}'.");
+            }
+
+            float[] tierTops = shelf.Kind == SupermarketShelfKind.ColdShelf
+                ? new[]
+                {
+                    SupermarketInteriorLayoutPlanner.ColdFirstTierTop,
+                    SupermarketInteriorLayoutPlanner.ColdSecondTierTop,
+                    SupermarketInteriorLayoutPlanner.ColdThirdTierTop
+                }
+                : new[]
+                {
+                    SupermarketInteriorLayoutPlanner.GondolaFirstTierTop,
+                    SupermarketInteriorLayoutPlanner.GondolaSecondTierTop,
+                    SupermarketInteriorLayoutPlanner.GondolaThirdTierTop
+                };
+            const float supportTolerance = 0.02f;
+            float bottom = product.LocalPosition.y;
+            float top = bottom + product.AvailableSize.y;
+            for (int index = 0; index < tierTops.Length; index++)
+            {
+                float support = tierTops[index];
+                if (Mathf.Abs(bottom - support) > supportTolerance)
+                {
+                    continue;
+                }
+
+                float clearanceTop = index + 1 < tierTops.Length
+                    ? tierTops[index + 1] -
+                        SupermarketInteriorLayoutPlanner.ShelfTierThickness
+                    : shelf.Height - 0.08f;
+                if (top <= clearanceTop + supportTolerance)
+                {
+                    return;
+                }
+
+                throw new InvalidOperationException(
+                    $"Product '{product.Id}' does not fit between the " +
+                    $"tiers of shelf '{shelf.Id}'.");
+            }
+
+            throw new InvalidOperationException(
+                $"Product '{product.Id}' is not grounded on an authored " +
+                $"tier of shelf '{shelf.Id}'.");
         }
 
         private static void ValidateShelf(

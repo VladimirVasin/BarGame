@@ -28,6 +28,10 @@ namespace BarPromenade
         private IntoxicationHudView hud;
         private PlayerCameraFollow cameraFollow;
         private Camera targetCamera;
+        private PlayerPresentationVisibility playerVisibility;
+        private PlayerPresentationVisibility cashierVisibility;
+        private IDisposable playerRenderersHidden;
+        private IDisposable cashierRenderersHidden;
         private SupermarketShelfView activeShelf;
         private bool cameraWasFixed;
         private Vector3 previousFixedPosition;
@@ -59,12 +63,18 @@ namespace BarPromenade
             SupermarketShelfShopView shopView,
             IntoxicationHudView intoxicationHud,
             PlayerCameraFollow follow,
-            IReadOnlyList<SupermarketShelfView> shopShelves)
+            IReadOnlyList<SupermarketShelfView> shopShelves,
+            PlayerPresentationVisibility playerPresentationVisibility = null,
+            IRendererPresentation cashierPresentation = null)
         {
             Close();
             view = shopView;
             hud = intoxicationHud;
             cameraFollow = follow;
+            playerVisibility = playerPresentationVisibility;
+            cashierVisibility = cashierPresentation != null
+                ? new PlayerPresentationVisibility(cashierPresentation)
+                : null;
             targetCamera = follow != null
                 ? follow.GetComponent<Camera>()
                 : Camera.main;
@@ -140,6 +150,7 @@ namespace BarPromenade
 
             try
             {
+                AcquireCharacterVisibility();
                 CaptureCameraState();
                 activeShelf = shelf;
                 RefreshProducts();
@@ -272,7 +283,11 @@ namespace BarPromenade
         public void Close()
         {
             bool hadOwnership =
-                IsOpen || modalLock.IsLocked || activeShelf != null;
+                IsOpen ||
+                modalLock.IsLocked ||
+                activeShelf != null ||
+                playerRenderersHidden != null ||
+                cashierRenderersHidden != null;
             IsOpen = false;
             FeedbackKey = string.Empty;
             if (hadOwnership)
@@ -404,8 +419,27 @@ namespace BarPromenade
                 }
             }
 
+            ReleaseCharacterVisibility();
             modalLock.Restore();
             Physics.SyncTransforms();
+        }
+
+        private void AcquireCharacterVisibility()
+        {
+            playerRenderersHidden = playerVisibility?.AcquireHidden(
+                this,
+                PlayerPresentationVisibilityScope.Renderers);
+            cashierRenderersHidden = cashierVisibility?.AcquireHidden(
+                this,
+                PlayerPresentationVisibilityScope.Renderers);
+        }
+
+        private void ReleaseCharacterVisibility()
+        {
+            cashierRenderersHidden?.Dispose();
+            cashierRenderersHidden = null;
+            playerRenderersHidden?.Dispose();
+            playerRenderersHidden = null;
         }
 
         private void RefreshProducts()

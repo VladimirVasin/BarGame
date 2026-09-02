@@ -175,13 +175,15 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   emitted only by designs that declare them, so the other thirteen city
   signatures are byte-identical.
 - **Accepted — NpcHumanV2 is the common adult anatomical substrate:** all
-  `24` rigged humanoid NPC models (five pooled street archetypes, sixteen
-  staged roles and bartender/cashier/bus-driver) copy the production Hero V2
-  31-bone A-pose Avatar and use its `0.835 m` rest pelvis. Ordinary silhouettes
-  target roughly `7–7.5` heads and `2.3–2.5` head-width shoulders without
-  increasing polygon density. Canon-required deformations — six bartender
-  arms, the cashier's long neck, the Long-Arm figure, kettle head and hopper
-  feet — remain authored overlays on that substrate, not anatomy regressions.
+  `26` rigged humanoid NPC model designs on disk copy the production Hero V2
+  31-bone A-pose Avatar and use its `0.835 m` rest pelvis. The active humanoid
+  cast does not grow: the new normal supermarket cashier replaces the Watcher
+  one for one, while the latter remains an inactive asset. Ordinary silhouettes target
+  roughly `7–7.5` heads and `2.3–2.5` head-width shoulders without increasing
+  polygon density. Canon-required deformations — six bartender arms, the
+  Long-Arm figure, kettle head and hopper feet — remain authored overlays on
+  that substrate; the retained Watcher's long neck is asset history, not an
+  active-world overlay.
   Amended 2026-08-31 by explicit user request: the three arch-shelter residents
   are no longer unrigged exceptions. They are staged Hero-Avatar prefabs with
   separate `256 px` detail atlases and three long, autonomous, bone-only loops
@@ -194,10 +196,58 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   breathing blanket replaces it. The
   legacy static residents remain in the City-misc catalog only for
   compatibility and are never instantiated.
+
+- **Accepted — the normal/bizarre verdict lives in C#, temporarily:** every
+  character design now carries one of two marks,
+  `NpcDesignAppearance.Normal` or `.Bizarre`, in
+  `Assets/Scripts/Runtime/Core/NpcDesignAppearance.cs`, keyed on `design_id`
+  and covering all `28` designs (the `26` rigged humanoid assets plus the raven
+  and the cat; the hero's own models are out of scope). The line is this
+  document's and the art bible's, not a new one: strangeness of the BODY is
+  bizarre, a strange thing worn or carried is not — «его странность — само
+  тело, а не надетый или несомый предмет»
+  (`ai/city-zones-art-bible.md` §15). Animals are judged as ordinary
+  specimens of their own species. Seven designs are bizarre: Long-Arm,
+  Lampshade, Kettle Hat and Helmet Lamp Hopper among the pooled walkers, the
+  six-armed bartender, the retained Watcher cashier and the stairwell cat.
+  The active `supermarket_cashier_v1` joins the normal group, giving `7`
+  bizarre and `21` normal designs without increasing the active cast. The
+  long-eyed bus driver is NORMAL by explicit user decision — his head is
+  authored as an ordinary one and his own generator refuses any part that
+  would replace or conceal it, so a stylised eye sits nearer a worn thing
+  than a wrong body.
+
+  **Runtime does not read it yet, and its home is provisional.** Editor asset
+  validation may assert a recorded verdict, but model selection stays explicit
+  in providers. The natural place is beside `signature_anatomy` in each model
+  manifest, and it belongs there the day behaviour depends on it. It is not
+  there now because the generators
+  have no manifest-only mode — `main()` always exports the FBX and saves the
+  blend — so one JSON key would cost `28` Blender runs rewriting `28` tracked
+  FBXs, blends and preview PNGs. Seventeen pedestrian manifests also carry a
+  stale `generator_version`, which sits inside the build signature, so their
+  signatures would move on any rebuild regardless, and
+  `CityPedestrianAssetSetup.ValidateDependencyStamp` would then dirty every
+  pedestrian prefab. `NpcDesignAppearanceTests` asserts the table's key set
+  equals the design ids on disk in both directions, so the duplication cannot
+  silently rot while it lasts.
   `NpcHumanV2AssetSetup.RunBatch` is the single asset-authoring entry point
   that rebuilds and validates all seven pipelines. This decision supersedes
   both the former static-shelter exception and older notes that kept ambient
   passengers on a `0.70 m` rig.
+- **Accepted — modular humanoid visibility follows the live pose, not the
+  model-FBX bind pose:** each character is split into many rigidly skinned
+  renderers, while its model and clip banks are separate assets; clips and
+  bounded procedural looks can still move parts outside imported per-part
+  A-pose boxes. Those boxes therefore are not valid culling envelopes. The
+  retained Watcher asset is the historical extreme case, but production no
+  longer stretches a cashier across the hall.
+  `NpcSkinnedMeshCullingGuard.EnableDynamicBounds` sets `updateWhenOffscreen`
+  for every skinned descendant when each registry is configured and once when
+  a runtime instance wakes; all seven humanoid asset builders serialize the
+  same value. The imported meshes, bind poses and `rootBone` assignments stay
+  untouched. The bounded active NPC population makes the extra offscreen
+  skinning cost preferable to angle-dependent missing limbs or whole figures.
 - **Accepted — The Nightlife arch reuses measured City surface families:**
   fifteen exact imported component names map shell, stairs, terrace, cladding,
   roof, barrel, fuel, bedding and sparse clutter to existing masonry,
@@ -1367,8 +1417,8 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   («никакой мистики» at the cemetery, the mourner, the watchman, the fisherman
   and the church). Rather than weaken those bans, they are re-read as
   describing **level `0-1`** of the story bible's `0-5` scale, which is the
-  city exactly as it ships today — strange pedestrians, six-armed bartender
-  and eighteen-metre cashier neck included. The explanation the story bible
+  city exactly as it ships today — strange pedestrians and the six-armed
+  bartender included. The explanation the story bible
   supplies is not supernatural at all: **everything strange in the game is the
   hero's, because the game is about his alcoholism.** The citizens are
   ordinary and nobody ever reacts to any of it, which is the single rule the
@@ -1536,9 +1586,11 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   `CityWheelchairNpcAssetRegistry` bindings without acquiring a runtime actor,
   collider, light, audio source, interaction or persistence.
   Isolation is structural rather than conventional:
-  `CityPedestrianResources.OrderedArchetypes` remains the only production
-  catalog, no directory scan discovers staged prefabs, and the City/Home pool
-  compositions remain `13` and `8`. Consequently the Pipeback Roller cannot
+  `CityPedestrianResources.OrderedArchetypes` remains the roaming catalog (see
+  the promotion note below for the second table beside it, which the Pipeback
+  Roller is also absent from), no directory scan discovers staged prefabs, and
+  the City/Home pool compositions remain `13` and `8`. Consequently the
+  Pipeback Roller cannot
   roam either exterior, wait at a stop or occupy Route 01 merely because its
   imported asset exists.
   **Deferred — production wheelchair locomotion:** registration requires an
@@ -1551,6 +1603,89 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   who remains in their chair. Until those contracts exist, moving the prefab
   into `Resources`, adding it to the catalog or declaring a seated ride is an
   architecture change, not an asset toggle.
+- **Accepted — Seven staged residents promoted to the street (2026-09-02):**
+  the architecture change the rule above describes, made deliberately and on
+  request. Four of the five roaming designs were `bizarre` — the faceless
+  Lampshade Walker, the Kettle Hat runt, the Long-Arm Walker and the Helmet
+  Lamp hopper — so the ordinary city read as a parade of oddities. The four
+  were taken off the street and seven ordinary staged residents took their
+  places: the Yard Babushka, the Weigh Attendant, the Cemetery Mourner, the
+  Cemetery Watchman, the Lake Fisherman and the two Park players. With the
+  Chair Carrier, who was already ordinary and already roaming, the street pool
+  is eight.
+
+  Four consequences worth naming, because each one is a rule that used to hold
+  and no longer does:
+
+  1. **The catalog is two tables, not one.** `OrderedArchetypes` is what
+     roams; `NonRoamingArchetypes` holds the four that were withdrawn.
+     `TryGetArchetype` searches both and answers "can this design be
+     resolved"; the new `CityPedestrianResources.Roams` answers "is it on the
+     street". The four are NOT dead weight and must not be deleted:
+     `CityCourtyardResidentPlan` casts the Lampshade, the Long-Arm and the
+     Chair Carrier by name, and `MothersHouseKettleProp` instantiates the
+     Kettle Hat walker whole in order to borrow ten of his renderers for the
+     mother's teapot.
+  2. **`staged` and `pool_eligible` stopped being opposites.** They were the
+     same bit inverted, and both `ValidateDescriptorScope` and the manifest
+     check enforced that. `staged` still means "authored by the shared art
+     library and placed by hand"; `pool_eligible` now means exactly what the
+     runtime catalog says, and both editor gates ask `Roams` rather than
+     inferring it. The prefab of a design that roams must live under
+     `Assets/Resources`; the prefab of one that does not must stay under
+     `Assets/Pedestrians/Staged/`. Models and manifests stay staged either
+     way.
+  3. **A promoted design carries two clip pairs on one prefab.** Its walk slot
+     could not simply be rewritten: the babushka's `walk_clip` is
+     `BabushkaBeat`, a carpet beaten on the spot with the feet planted, and
+     the drying yard plays exactly that. So `ArchetypeSpec`, the editor
+     descriptor and `CityPedestrianAssetRegistry` each gained an optional
+     `ambient_idle`/`ambient_walk` pair. Staged presentations go on reading
+     `IdleClip`/`WalkClip` untouched; the roaming pool reads
+     `RoamingIdleClip`/`RoamingWalkClip`, which fall back to the first pair
+     when no street gait is declared.
+  4. **The street gait is the hero's walk re-authored, not referenced.**
+     `CityPedestrianModelImporter` forces `lockRootHeightY` /
+     `lockRootPositionXZ` / `keepOriginal*`, baking the vertical pelvis arc
+     into the pose, and the hero's importer does not; the pedestrian
+     `Animator` also runs with `applyRootMotion = false`. Pointing at the
+     hero's own clip asset would therefore produce a walk with a dead pelvis,
+     and three editor gates require the clip to live in
+     `CityPedestrianLocomotion.fbx` besides. The generator's
+     `CITIZEN_WALK_CYCLE` is the hero's eight-key cycle copied key for key,
+     with his `target_direction` arm aims re-expressed as X rotations of the
+     same magnitude (`25.5°`, `18.1°`, `5.9°`, `12.8°`, read off his own aim
+     vectors). It is a recipe merged onto each design's base pose, so seven
+     designs share one gait and keep their own coats and posture.
+
+  **Three of the eight ride Route 01, and the five refusals are
+  measurements.** Seating aligns the shared rest pelvis to the cushion, so a
+  design can sit only if the drop from that bone to the underside of its own
+  seated body is a hip: `0.05-0.13 m` for every design that rides. The
+  mourner's coat hem hangs `0.4256 m` below it and the babushka's housecoat
+  `0.3347 m` — lifting either by its own contact distance floats the body,
+  and not lifting it drives the garment through the cushion. The fisherman's
+  shouldered rod rises `1.9047 m` above the pelvis, and the park players'
+  `ChessJeer`/`CheckersJeer` shout rises `1.19 m`, both past the cabin
+  ceiling; the clearance band applies to every seated clip a design owns, not
+  only to the one it would ride in. Riders: the Chair Carrier, the Weigh
+  Attendant and the Cemetery Watchman.
+
+  **The story bible's concern, recorded rather than resolved.**
+  `ai/city-story-bible.md` §14 builds the mortality register on "six to eight
+  specific people" — the watchman, the fisherman, the old men at the boards,
+  the babushkas, the weigh attendant — and warns outright that with fewer, the
+  epidemic would have to be shown through anonymous passers-by. Letting those
+  same people wander the whole city dilutes exactly the namedness that section
+  depends on. This was raised before the change and the change was confirmed;
+  if the register is ever written, the fix is a per-zone spawn weighting that
+  keeps each of them common where they belong and rare elsewhere, not a
+  reversal of the promotion.
+
+  **Known and deliberate:** `BarPatronWorldBuilder` seeds the bar crowd from
+  the same pool, so the bar now shows the promoted residents instead of the
+  four oddities. If that is ever unwanted, the bar needs its own list rather
+  than a narrowing of the street.
 - **Accepted — Local player-relative street pedestrians:** City layout and session
   seed produce one immutable, radius-safe graph over sidewalk lanes, junction
   turns and explicit three-link zebra connectors. Recursive 2-core pruning
@@ -2623,20 +2758,21 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   a stale stack or a no-effect food use mutates nothing. Refrigerator `Use`
   remains unavailable; items are taken into the hero inventory first.
 - **Accepted — Separate finite-stock supermarket interior:**
-  `SupermarketInterior` owns one validated `16 x 11 x 3.6 m` runtime-composed
-  room with protected aisles, three shelf sections, a stockroom facade and a
-  decorative unstaffed checkout. The sprite cashier is removed with the rest
-  of the sprite NPCs; a dedicated 3D cashier arrives in a later pass, and the
-  register does not process
-  sales. Each shelf owns an authored fixed camera and one interaction station.
+  `SupermarketInterior` owns one validated `16 x 11 x 3.6 m` room with
+  protected aisles, three shelf sections, a stockroom facade and a decorative
+  checkout staffed by the separate normal supermarket cashier. The register does not
+  process sales. Each shelf owns an authored fixed camera and one interaction
+  station.
   One continuous modal browser cycles through every available physical product
   in deterministic shelf/slot order, skips empty shelves and never releases its
   captured player/camera state while changing shelves. The selected shelf keeps
   its authored camera position and field of view while the rotation targets the
   combined world renderer bounds of the selected product. Muted clickable
   previous/next arrows follow the product's projected screen bounds; pointer,
-  keyboard and gamepad all use the same navigation path without replacing or
-  fading or replacing the player presentation.
+  keyboard and gamepad all use the same navigation path. The browser takes
+  owner-scoped renderer-only visibility leases over both hero and cashier
+  presentations: gameplay roots stay active, and ordinary exit, failed
+  open, disable and destroy restore each captured renderer state exactly.
   `SupermarketProductCatalog` offers exactly one physical chicken egg, vodka
   bottle, closed stew can, instant noodles and day-old loaf. Each product has a
   stable source ID. `GameSessionState.TryPurchaseWorldItem` is the sole commit
@@ -2648,7 +2784,50 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   cash, source or inventory state. `ClosedStewCan` is deliberately distinct
   from the refrigerator's `OpenStewCan`, so buying sealed stew cannot satisfy
   the cat-feeding requirement. Entry and exit use the shared DoorTransition and
-  restore the supermarket's own City return point.
+  restore the supermarket's own City return point. The City entrance alone
+  configures the common door action with a calculated `0.242 m` initial vertical
+  tolerance covering the complete visible prompt reach across road grade and
+  curb; its approach remains a constrained walk to the grounded dock, while
+  all other doors keep the shared `0.02 m` default.
+- **Accepted — Passive Blender supermarket interior:** The fixed shell,
+  entrance, ceiling grid and fluorescent housings, three profiled shelf bodies,
+  recessed cold cabinet, checkout, stockroom facade and four CCTV
+  mount/head-pivot assemblies come from the deterministic
+  `supermarket_interior_v1` Blender asset. Its measured manifest owns semantic
+  parts, metre bounds, shared surface sheets, a build signature and anchors
+  checked against `SupermarketInteriorLayoutPlanner`; the prefab itself owns no
+  Collider, Light, Camera, Rigidbody, AudioSource or Animator. Unity continues
+  to own shell/fixture collision, shelf triggers, five finite product lifetimes
+  and selection colliders, practical lights, flicker, the cashier, CCTV servo
+  controllers, UI and scene transitions. CCTV controllers rotate only the
+  authored head pivots, and a purchased product owns its price tag so both
+  leave on the same transaction. Five counter-clockwise perimeter-skirting
+  sweeps bury rear and bottom faces `3 mm` into their neighbouring wall/floor
+  surfaces and trim corner joins, removing all coplanar render pairs while
+  preserving the visible profile.
+- **Accepted — Shared passive Blender supermarket product pack:**
+  `tools/build-supermarket-products-3d-model.py` owns one deterministic
+  `supermarket_product_pack_v1` source under
+  `ArtSource/Supermarket/Products` and exports
+  `Assets/Supermarket/Products/Models/SupermarketProducts3D.{fbx,json}`.
+  The pack contains six coincident bottom-centre item roots — instant noodles,
+  day-old loaf, vodka bottle, closed stew can, open stew can and chicken egg —
+  over `33` meshes / `2,276` triangles. They are deliberately generic:
+  `authored_text` and `brands` are empty, and the source imports no Collider,
+  material, Light, Camera, Rigidbody, AudioSource or animation. Its fixed build
+  signature is
+  `2437d765ab7b7004a05d281193ae78e26b2c6728e641e57273ecc0d9842821b7`.
+  `SupermarketProductAssetSetup` extracts one passive Resources prefab per
+  item; `SupermarketProductModelResources` and `InventoryItemModelFactory`
+  reuse those same render models on shop shelves, in live inventory previews,
+  inside the Home refrigerator and during the cat-feeding flow. Runtime keeps
+  ownership of selection collision, sizing and item lifetime. Only five item
+  IDs are supermarket offers: their bottom pivots bind to exact tier anchors
+  in the interior asset. `OpenStewCan` has only the Home refrigerator/cat world
+  source and never becomes a supermarket offer. The vodka source is exactly
+  `0.46 m` tall; only its shop instance uses a `0.37 m` fit envelope on the
+  unobstructed third/top tier, keeping the `1.08x` selected bounds below the
+  `2.05 m` shelving-unit top. Closed stew occupies the first tier.
 - **Accepted — Reusable inventory-backed target interaction:** A target-specific
   adapter supplies one validated `InventoryItemRequirement`, localized Talk,
   confirmation and missing-item keys, and an idempotent
@@ -3665,21 +3844,41 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   anchor and `BarBartenderServiceChoreography` owns the implemented physical
   service motions; only the separate cocktail/minigame expansion remains
   deferred.
-- **Accepted — The Watcher Cashier:** The supermarket checkout is staffed
+- **Accepted by explicit user decision, 2026-09-02 — the active cashier is
+  normal and the Watcher is retained, not deleted:** the production provider
+  now selects `supermarket_cashier_v1`, an ordinary-proportioned `1.75 m`
+  version of the same clerk (`1.0.0`, `40` meshes / `1,244` triangles). Uniform,
+  detail atlas, attentive face, planted checkout pose, blink, `28°` bounded
+  eye/head tracking and talk stub remain; the neck has ordinary
+  human length, never scales, and the head never leaves the body. The active
+  source/model/prefab retain the canonical generic names
+  `SupermarketCashier3D.{blend,png,fbx,json}` and
+  `SupermarketCashier.prefab`. The former `2.05 m`, `44`-mesh / `1,588`-triangle
+  `watcher_cashier_v1` is preserved as
+  `SupermarketWatcherCashier3D.{blend,png,fbx,json}` plus
+  `SupermarketWatcherCashier.prefab`, but no production provider references it
+  and ordinary gameplay never instantiates it. Both share
+  `SupermarketCashier3DDetailAtlas.png`. This is a one-for-one cast replacement,
+  not a new resident: the active humanoid cast does not grow, while the on-disk
+  appearance catalog contains `28` designs (`7` bizarre, `21` normal).
+- **Superseded for production on 2026-09-02; retained as an inactive asset —
+  The Watcher Cashier:** the former supermarket checkout was staffed
   by one bespoke animation-free 3D clerk (`watcher_cashier_v1`) built by
   `tools/build-supermarket-cashier-3d-model.py` on the exact shared 31-bone
   Player Avatar. His signature long neck is five rigid segments on exported
   `PIVOT_Neck.01..05` empties: the runtime re-parents the segments under the
   pivots and folds the pivots into a chain off the neck bone (the wheelchair
   mechanism pattern), so the shared Avatar and every 31-bone validator stay
-  untouched while the chain stretches to `2.4x`, bends serpentine on
-  per-segment shares and carries the deliberately undersized head after its
-  tip. The prefab lives outside Resources behind
-  `SupermarketCashierProvider` (the yard-wheelchair provider pattern), is
-  validated passive (no Collider/Rigidbody/AudioSource/Light/Camera) and
-  gets a `PlayerAttentionMagnet` at `2.0 m` so the hero and the clerk can
-  catch each other staring.
-- **Accepted — Pursuit-curve neck solve:** The chain is not rotated by
+  untouched while the chain spans up to `18 m` (about `32.7x` its `0.55 m`
+  rest length), bends serpentine on per-segment shares and carries the
+  deliberately undersized head after its tip. The retained prefab lives outside
+  Resources and is validated passive (no
+  Collider/Rigidbody/AudioSource/Light/Camera). In its former production
+  configuration, the provider/factory path also gave the clerk a
+  `PlayerAttentionMagnet` at `2.0 m` so the hero and the clerk could catch each
+  other staring.
+- **Superseded with the active Watcher; retained asset history — pursuit-curve
+  neck solve:** the chain is not rotated by
   per-joint shares; each frame the five pivots are laid explicitly along a
   cubic staple from the neck base to the head target — the hero's face
   plus a `0.85 m` standoff and `0.25 m` lift, clamped to the hall box.
@@ -3697,14 +3896,17 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   (`InverseTransformPoint` captured at bind), so head rotation happens
   around that joint — never around the distant canonical head bone — and
   the head cannot tear off the chain.
-- **Accepted — Cashier surveillance logic is pure:**
+- **Superseded with the active Watcher; retained implementation history —
+  room-wide cashier surveillance:**
   `SupermarketCashierSurveillanceState` owns the numbers — a pursuit
-  weight that saturates whenever the hero is present, asymmetric creep
-  `0.9/s` vs guilty retract `2.4/s`, a caught-looking startle entered at
-  `dot > cos 22°` held `0.15 s` and released at `dot < cos 30°` held
-  `0.8 s` that caps extension at `0.30`, freezes the idle scan, pinches the
-  pupils and suppresses blinking `1.2 s` past release —
-  and `SupermarketCashierBlinkState` owns the rare `6.5 s` blink cycle that
+  weight eased by `SmoothDamp` (`0.55 s` out, `0.18 s` in) toward a
+  distance target: ordinary neck inside `2 m`, full pursuit beyond `4 m`
+  and a smooth band between. A caught-looking startle enters at
+  `dot > cos 22°` held `0.15 s`, releases at `dot < cos 30°` held
+  `0.8 s`, caps extension at `0.30` and holds the guilty retract for at
+  least `4 s` from the notice. It freezes the idle scan, pinches the
+  pupils and suppresses blinking `1.2 s` past release.
+  `SupermarketCashierBlinkState` owns the rare `6.5 s` blink cycle that
   restarts from zero after every suppression, so the stare after being
   watched is always a full unbroken cycle. Both are Unity-free and covered
   by EditMode tests; the presentation only renders their outputs, restoring
@@ -3764,22 +3966,23 @@ Decisions marked `Proposed` become accepted only after implementation confirms t
   indoor ambient/sun mood is skipped while the balcony borrows City
   lighting and reasserts itself the moment the shot returns inside.
   Light count is unchanged — the five-light budget stands.
-- **Accepted — Corner CCTV heads:** Four camera units hang in the room
-  corners, positions resolved purely from the plan
-  (`RoomSize/WallThickness/RoomHeight`, inset `0.55 m`, drop `0.42 m`).
-  Each head snaps onto the hero at initialization and then servos at
-  `240°/s` (`Quaternion.RotateTowards`), so the lens is always trained on
-  him. The units are dressing under the supermarket's one-directional
-  light budget: primitive boxes, a fake-emissive recording LED with
-  shadows off, no Collider and no Light.
+- **Superseded 2026-09-02 — Runtime-primitive corner CCTV heads:** The
+  passive Blender-interior decision above replaced the primitive housings
+  with four authored mount/head-pivot assemblies at the current plan parity:
+  `0.62 m` corner inset and `0.50 m` head drop. Runtime retains only the
+  controller objects: each initializes on the hero and servos its authored
+  `cctv_head_XX` pivot at `240°/s` (`Quaternion.RotateTowards`). The
+  fake-emissive recording LEDs still cast no shadows, and the assemblies add
+  no Collider or Light.
 - **Accepted — Supermarket fluorescent light budget:** The hall moves off
   the single flat directional onto an explicit six-practical budget
   (`SupermarketInteriorAtmosphere`): one shadowless cold point under each
-  of the four fluorescent rows (`1.05` intensity, `7.6 m` range), one
+  of the four fluorescent rows (`1.45` intensity, `8.4 m` range), one
   warm accent over the checkout — deliberately the only warmth in the
-  hall, pooled on the Watcher Cashier — and one cool spill by the cold
-  shelf. The directional key steps down `0.48 -> 0.36` and stays the
-  scene's only shadow caster. Row two flickers on a deterministic
+  hall, pooled on the active cashier — and one cool spill by the cold
+  shelf. The directional fill remains at `0.72` intensity with `0.45`
+  shadow strength and stays the scene's only shadow caster. Row three
+  flickers on a deterministic
   stepped pattern (`0.11 s` steps, dips to `0.30`), dimming both its
   light and its fake-emissive tube tint through a MaterialPropertyBlock.
   The budget is test-enforced: six lights, none directional, all

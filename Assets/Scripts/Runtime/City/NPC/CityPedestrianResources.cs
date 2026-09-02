@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using UnityEngine;
 using Object = UnityEngine.Object;
@@ -275,9 +275,39 @@ namespace BarPromenade
         public const string HelmetLampPrefabResourcePath =
             "Pedestrians/HelmetLampPedestrian3D";
 
-        // Kept as the legacy single-prefab entry point.
+        // The seven ordinary residents promoted to the street (2026-09-02).
+        // Each keeps its placed role as well: the babushka still beats her
+        // carpet in the drying yard, the watchman still holds the cemetery
+        // gate. Only their roaming copies read the ambient gait.
+        public const string BabushkaDesignId = "yard_babushka_v1";
+        public const string BabushkaPrefabResourcePath =
+            "Pedestrians/YardBabushka3D";
+        public const string WeighAttendantDesignId = "weigh_attendant_v1";
+        public const string WeighAttendantPrefabResourcePath =
+            "Pedestrians/WeighbridgeAttendant3D";
+        public const string WatchmanDesignId = "cemetery_watchman_v1";
+        public const string WatchmanPrefabResourcePath =
+            "Pedestrians/CemeteryWatchman3D";
+        public const string ChessPlayerDesignId = "park_chess_player_v1";
+        public const string ChessPlayerPrefabResourcePath =
+            "Pedestrians/ParkChessPlayer3D";
+        public const string CheckersPlayerDesignId =
+            "park_checkers_player_v1";
+        public const string CheckersPlayerPrefabResourcePath =
+            "Pedestrians/ParkCheckersPlayer3D";
+        public const string MournerDesignId = "cemetery_mourner_v1";
+        public const string MournerPrefabResourcePath =
+            "Pedestrians/CemeteryMourner3D";
+        public const string FishermanDesignId = "lake_fisherman_v1";
+        public const string FishermanPrefabResourcePath =
+            "Pedestrians/LakeFisherman3D";
+
+        // The legacy single-prefab entry point. It used to resolve to the
+        // Lampshade Walker, which no longer roams - a caller asking for "a
+        // pedestrian" with no further qualification must get one that is
+        // actually on the street.
         public const string PrefabResourcePath =
-            LampshadePrefabResourcePath;
+            ChairCarrierPrefabResourcePath;
 
         // Headroom values below are the measured maxima the deterministic
         // generator reports for each design's own authored seated clip, and
@@ -328,7 +358,121 @@ namespace BarPromenade
         private static readonly CityPedestrianSeatedRide LongArmSeatedRide =
             new CityPedestrianSeatedRide(0.054f, 0.24f, 0.915f);
 
+        /// <summary>
+        /// The quilted jacket is the bulkiest thing on the cushion, so she
+        /// sits a little further back than the rest.
+        /// </summary>
+        private static readonly CityPedestrianSeatedRide
+            WeighAttendantSeatedRide =
+                new CityPedestrianSeatedRide(0.044f, 0.21f, 0.915f);
+
+        /// <summary>
+        /// Bony hips under a telogreika: the least of any rider, which is why
+        /// he needs the smallest lift of the five.
+        /// </summary>
+        private static readonly CityPedestrianSeatedRide WatchmanSeatedRide =
+            new CityPedestrianSeatedRide(0.038f, 0.20f, 0.909f);
+
+        // THREE ORDINARY RESIDENTS DELIBERATELY DO NOT RIDE. The band above
+        // is measured from the design's own seated clip, and for these three
+        // the measurement is dominated by something that is not a hip: the
+        // mourner's coat hem hangs `0.426 m` below the pelvis bone, the
+        // babushka's housecoat `0.335 m`, and the fisherman's shouldered rod
+        // rises `1.905 m` above it. Lifting any of them by their own contact
+        // distance would float the body; not lifting them would drive the
+        // garment through the cushion. They walk the street and wait at the
+        // stop, and the bus passes them by.
+
+        /// <summary>
+        /// The designs that ROAM. Ordinary people only, since 2026-09-02:
+        /// the four strange walkers were taken off the street and seven
+        /// ordinary residents took their places.
+        ///
+        /// This is no longer the whole catalog. Anything that merely needs to
+        /// RESOLVE a design - the courtyard vignettes, the mother's teapot -
+        /// must go through `TryGetArchetype`, which also searches
+        /// `NonRoamingArchetypes`.
+        /// </summary>
         private static readonly CityPedestrianArchetype[] OrderedArchetypes =
+        {
+            new CityPedestrianArchetype(
+                ChairCarrierDesignId,
+                ChairCarrierPrefabResourcePath,
+                1.18f,
+                1.30f,
+                0.98f,
+                1.06f,
+                CityPedestrianArchetype.UnlimitedPoolInstances,
+                0f,
+                ChairCarrierSeatedRide),
+            new CityPedestrianArchetype(
+                BabushkaDesignId,
+                BabushkaPrefabResourcePath,
+                0.78f,
+                0.90f,
+                0.90f,
+                0.98f),
+            new CityPedestrianArchetype(
+                WeighAttendantDesignId,
+                WeighAttendantPrefabResourcePath,
+                1.02f,
+                1.16f,
+                0.96f,
+                1.04f,
+                CityPedestrianArchetype.UnlimitedPoolInstances,
+                0f,
+                WeighAttendantSeatedRide),
+            new CityPedestrianArchetype(
+                WatchmanDesignId,
+                WatchmanPrefabResourcePath,
+                0.92f,
+                1.04f,
+                0.94f,
+                1.02f,
+                CityPedestrianArchetype.UnlimitedPoolInstances,
+                0f,
+                WatchmanSeatedRide),
+            new CityPedestrianArchetype(
+                ChessPlayerDesignId,
+                ChessPlayerPrefabResourcePath,
+                0.86f,
+                0.98f,
+                0.92f,
+                1.00f),
+            new CityPedestrianArchetype(
+                CheckersPlayerDesignId,
+                CheckersPlayerPrefabResourcePath,
+                0.88f,
+                1.00f,
+                0.93f,
+                1.01f),
+            new CityPedestrianArchetype(
+                MournerDesignId,
+                MournerPrefabResourcePath,
+                0.82f,
+                0.94f,
+                0.90f,
+                0.98f),
+            new CityPedestrianArchetype(
+                FishermanDesignId,
+                FishermanPrefabResourcePath,
+                1.00f,
+                1.14f,
+                0.96f,
+                1.04f),
+        };
+
+        /// <summary>
+        /// Designs that exist, resolve and may be placed by hand, but never
+        /// enter the roaming pool.
+        ///
+        /// They are not dead weight and must not be deleted: the courtyard
+        /// vignettes cast the Lampshade, Long-Arm and Chair Carrier by name,
+        /// and `MothersHouseKettleProp` instantiates the Kettle Hat walker
+        /// whole in order to borrow its ten kettle renderers for the
+        /// mother's teapot.
+        /// </summary>
+        private static readonly CityPedestrianArchetype[] NonRoamingArchetypes =
         {
             new CityPedestrianArchetype(
                 LampshadeDesignId,
@@ -340,16 +484,6 @@ namespace BarPromenade
                 CityPedestrianArchetype.UnlimitedPoolInstances,
                 0f,
                 LampshadeSeatedRide),
-            new CityPedestrianArchetype(
-                ChairCarrierDesignId,
-                ChairCarrierPrefabResourcePath,
-                1.18f,
-                1.30f,
-                0.98f,
-                1.06f,
-                CityPedestrianArchetype.UnlimitedPoolInstances,
-                0f,
-                ChairCarrierSeatedRide),
             // Short fast steps: the stout walker covers less ground per stride
             // than either taller design, so it moves slower while its shorter
             // clips play back faster.
@@ -403,8 +537,48 @@ namespace BarPromenade
         private static readonly IReadOnlyList<CityPedestrianArchetype>
             ReadOnlyArchetypes = Array.AsReadOnly(OrderedArchetypes);
 
+        private static readonly IReadOnlyList<CityPedestrianArchetype>
+            ReadOnlyAllArchetypes = Array.AsReadOnly(
+                Concat(OrderedArchetypes, NonRoamingArchetypes));
+
+        private static CityPedestrianArchetype[] Concat(
+            CityPedestrianArchetype[] first,
+            CityPedestrianArchetype[] second)
+        {
+            var all = new CityPedestrianArchetype[
+                first.Length + second.Length];
+            Array.Copy(first, 0, all, 0, first.Length);
+            Array.Copy(second, 0, all, first.Length, second.Length);
+            return all;
+        }
+
         public static IReadOnlyList<CityPedestrianArchetype> Archetypes =>
             ReadOnlyArchetypes;
+
+        /// <summary>
+        /// Every design the library can resolve, roaming or not, in a stable
+        /// order: the street pool first, then the rest. This is what a
+        /// contract test that means "the whole catalog" should read;
+        /// <see cref="Archetypes"/> means "what walks the street", and the
+        /// two stopped being the same thing on 2026-09-02.
+        /// </summary>
+        public static IReadOnlyList<CityPedestrianArchetype> AllArchetypes =>
+            ReadOnlyAllArchetypes;
+
+        /// <summary>
+        /// Whether a design is on the street, as opposed to merely being
+        /// resolvable. `TryGetArchetype` answers the second question and
+        /// searches both tables; this one answers the first.
+        ///
+        /// The distinction only started to matter when the two tables
+        /// stopped being the same thing: the Kettle Hat walker still has to
+        /// resolve, because the mother's teapot is built out of him, but he
+        /// no longer roams.
+        /// </summary>
+        public static bool Roams(string designId)
+        {
+            return TryFind(OrderedArchetypes, designId, out _);
+        }
 
         public static GameObject LoadPrefab()
         {
@@ -526,10 +700,24 @@ namespace BarPromenade
             string designId,
             out CityPedestrianArchetype archetype)
         {
-            for (int index = 0; index < OrderedArchetypes.Length; index++)
+            // BOTH lists, and that is the whole point of the split. Resolving
+            // a design is not the same question as spawning one: the mother's
+            // teapot and the courtyard vignettes ask this about designs that
+            // deliberately never roam, and answering `false` for them would
+            // throw at `MothersHouseKettleProp.Create` and
+            // `CityCourtyardResidentFactory.ResolveArchetype`.
+            return TryFind(OrderedArchetypes, designId, out archetype) ||
+                   TryFind(NonRoamingArchetypes, designId, out archetype);
+        }
+
+        private static bool TryFind(
+            CityPedestrianArchetype[] catalog,
+            string designId,
+            out CityPedestrianArchetype archetype)
+        {
+            for (int index = 0; index < catalog.Length; index++)
             {
-                CityPedestrianArchetype candidate =
-                    OrderedArchetypes[index];
+                CityPedestrianArchetype candidate = catalog[index];
                 if (string.Equals(
                         candidate.DesignId,
                         designId,
